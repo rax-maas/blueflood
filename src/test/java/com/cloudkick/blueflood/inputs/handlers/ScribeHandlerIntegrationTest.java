@@ -1,15 +1,13 @@
 package com.cloudkick.blueflood.inputs.handlers;
 
-import com.cloudkick.blueflood.exceptions.CacheException;
 import com.cloudkick.blueflood.cache.MetadataCache;
+import com.cloudkick.blueflood.exceptions.CacheException;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
-import com.cloudkick.blueflood.inputs.handlers.AlternateScribeHandler;
-import com.cloudkick.blueflood.inputs.handlers.ScribeHandler;
-import com.cloudkick.blueflood.inputs.handlers.ScribeHandlerIface;
 import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.ScheduleContext;
-import com.cloudkick.blueflood.types.*;
+import com.cloudkick.blueflood.types.Locator;
+import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
 import junit.framework.Assert;
 import org.apache.thrift.TBase;
@@ -19,7 +17,6 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import scribe.thrift.LogEntry;
 import scribe.thrift.ResultCode;
 import telescope.thrift.*;
-import telescope.thrift.Metric;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -69,7 +66,7 @@ public class ScribeHandlerIntegrationTest extends CqlTestBase {
         manageShards.add(7);
         context = new ScheduleContext(System.currentTimeMillis() - 1000L, manageShards);
         Configuration.init();
-        myScribeHandler = new AlternateScribeHandler("myScribeHandler", "1", Configuration.getProperties(), context);
+        myScribeHandler = new AlternateScribeHandler(context);
     }
 
     public void testLog() throws IOException, TException{

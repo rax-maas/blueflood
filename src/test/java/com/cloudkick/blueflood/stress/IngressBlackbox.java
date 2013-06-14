@@ -11,9 +11,9 @@ import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Rollup;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.scribe.ConnectionException;
-import com.cloudkick.scribe.LogException;
-import com.cloudkick.scribe.ScribeClient;
+import com.cloudkick.blueflood.scribe.ConnectionException;
+import com.cloudkick.blueflood.scribe.LogException;
+import com.cloudkick.blueflood.scribe.ScribeClient;
 import com.netflix.astyanax.model.Column;
 import scribe.thrift.LogEntry;
 
