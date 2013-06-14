@@ -1,0 +1,67 @@
+package com.cloudkick.blueflood.types;
+
+import com.cloudkick.blueflood.utils.Util;
+
+public abstract class AbstractRollupStat {
+    private long longValue;
+    private double doubleValue;
+    private boolean isFloatingPoint;
+
+    public AbstractRollupStat() {
+        this.longValue = 0;
+        this.doubleValue = 0;
+        this.isFloatingPoint = false;
+    }
+
+    public boolean isFloatingPoint() {
+        return this.isFloatingPoint;
+    }
+
+    public double toDouble() {
+        return this.doubleValue;
+    }
+
+    public long toLong() {
+        return this.longValue;
+    }
+
+    @Override
+    public boolean equals(Object otherObject) {
+        if (!(otherObject instanceof AbstractRollupStat)) {
+            return false;
+        }
+
+        AbstractRollupStat other = (AbstractRollupStat)otherObject;
+
+        if (this.isFloatingPoint != other.isFloatingPoint()) {
+            return false;
+        }
+
+        if (this.isFloatingPoint) {
+            return this.toDouble() == other.toDouble();
+        } else {
+            return this.toLong() == other.toLong();
+        }
+    }
+
+    public void setLongValue(long value) {
+        this.isFloatingPoint = false;
+        this.longValue = value;
+    }
+
+    public void setDoubleValue(double value) {
+        this.isFloatingPoint = true;
+        this.doubleValue = value;
+    }
+    
+    abstract void handleFullResMetric(Object o) throws RuntimeException;
+    abstract void handleRollupMetric(Rollup rollup) throws RuntimeException;
+    abstract public byte getStatType();
+    
+    public String toString() {
+        if (isFloatingPoint)
+            return Util.DECIMAL_FORMAT.format(doubleValue);
+        else
+            return Long.toString(longValue);
+    }
+}
