@@ -10,7 +10,6 @@ import com.cloudkick.blueflood.service.ScheduleContext;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.MetricsCollection;
 import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.fb303.Fb303Handler;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.*;
@@ -27,7 +26,6 @@ import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,8 +64,8 @@ public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
     
     private AbstractScribeHandler scribeImpl;
 
-    public ScribeHandler(String name, String version, Map<Object,Object> props, ScheduleContext context) {
-        this.scribeImpl = new AbstractScribeHandler(name, version, props) {
+    public ScribeHandler(ScheduleContext context) {
+        this.scribeImpl = new AbstractScribeHandler() {
             @Override
             public ResultCode Log(List<LogEntry> messages) throws TException {
                 return ScribeHandler.this.Log(messages);
@@ -167,8 +165,6 @@ public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
     }
 
     private MetricsCollection getMetricsCollectionFromScribeMessages(List<LogEntry> messages) {
-        String category = "";
-        long timestamp = 0;
         // convert LogEntry to Telescope.
 
         final MetricsCollection metricsCollection = new MetricsCollection();
@@ -209,17 +205,13 @@ public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
             if (metrics != null) {
                 updateContext(metrics);
                 metricsCollection.add(metrics);
-                timestamp = cmTelescope.getTelescope().getTimestamp();
             }
 
-            category = message.category;
             telescopeCount.inc();
         }
 
         bufferedMetrics.inc(metricsCollection.size());
         metricsPerBundle.update(metricsCollection.size());
-        scribeImpl.updateLastProcessedTime(category, timestamp);
-        scribeImpl.updateMessageCounter(category, messages.size());
 
         return metricsCollection;
     }

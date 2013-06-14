@@ -7,6 +7,7 @@ import com.cloudkick.blueflood.thrift.UnrecoverableException;
 import com.cloudkick.blueflood.utils.RestartGauge;
 import com.cloudkick.blueflood.utils.StatsEmitter;
 import com.cloudkick.blueflood.utils.Util;
+import com.cloudkick.blueflood.utils.Version;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.GraphiteReporter;
@@ -226,7 +227,7 @@ public class Main {
 
         String version = "development";
         try {
-            version = com.cloudkick.util.Version.getHashVersion();
+            version = Version.getHashVersion();
             if (version == null)
                 version = "development";
         } catch (IOException ex) {

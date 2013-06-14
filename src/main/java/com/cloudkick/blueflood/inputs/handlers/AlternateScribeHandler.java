@@ -13,8 +13,8 @@ import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.cloudkick.blueflood.service.ScheduleContext;
-import com.cloudkick.ele.internal.Account;
-import com.cloudkick.ele.internal.InternalAPIFactory;
+import com.cloudkick.blueflood.internal.Account;
+import com.cloudkick.blueflood.internal.InternalAPIFactory;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Counter;
@@ -96,7 +96,6 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
             .withFunction(new LogEntryConverter(
                 new ThreadPoolBuilder().withName("Telescope parsing").build(),
                 context.asTicker(),
-                scribeImpl,
                 bufferedMetrics)
                 .withLogger(log))
             .withFunction(new TypeAndUnitProcessor(

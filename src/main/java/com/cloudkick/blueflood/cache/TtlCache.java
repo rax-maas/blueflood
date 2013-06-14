@@ -1,9 +1,9 @@
 package com.cloudkick.blueflood.cache;
 
 import com.cloudkick.blueflood.rollup.Granularity;
-import com.cloudkick.ele.internal.Account;
-import com.cloudkick.ele.internal.ClusterException;
-import com.cloudkick.ele.internal.InternalAPI;
+import com.cloudkick.blueflood.internal.Account;
+import com.cloudkick.blueflood.internal.ClusterException;
+import com.cloudkick.blueflood.internal.InternalAPI;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

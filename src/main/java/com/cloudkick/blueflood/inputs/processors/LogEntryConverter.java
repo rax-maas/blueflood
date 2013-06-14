@@ -5,16 +5,11 @@ import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.inputs.handlers.ScribeHandler;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.MetricsCollection;
-import com.cloudkick.fb303.Fb303Handler;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.yammer.metrics.core.*;
 import org.apache.thrift.TException;
 import scribe.thrift.LogEntry;
 
@@ -36,13 +31,11 @@ public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry
     
     // todo: if the interface on ScheduleContext coulc be pared down, all this class needs is getCurrentTimeMillis().
     private final Ticker ticker;
-    private final Fb303Handler scribeImpl;
     private final Counter bufferedMetrics;
     
-    public LogEntryConverter(ListeningExecutorService threadPool, Ticker ticker, Fb303Handler scribeImpl, Counter bufferedMetrics) {
+    public LogEntryConverter(ListeningExecutorService threadPool, Ticker ticker, Counter bufferedMetrics) {
         super(threadPool);
         this.ticker = ticker;
-        this.scribeImpl = scribeImpl;
         this.bufferedMetrics = bufferedMetrics;
     }
     
@@ -105,17 +98,13 @@ public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry
             final List<Metric> metrics = cmTelescope.toMetrics();
             if (metrics != null) {
                 metricsCollection.add(metrics);
-                timestamp = cmTelescope.getTelescope().getTimestamp();
             }
 
-            category = message.category;
             telescopeCount.inc();
         }
 
         bufferedMetrics.inc(metricsCollection.size());
         metricsPerBundle.update(metricsCollection.size());
-        scribeImpl.updateLastProcessedTime(category, timestamp);
-        scribeImpl.updateMessageCounter(category, messages.size());
 
         return metricsCollection;
     }

@@ -1,7 +1,7 @@
 package com.cloudkick.blueflood.cache;
 
 import com.cloudkick.blueflood.rollup.Granularity;
-import com.cloudkick.ele.internal.*;
+import com.cloudkick.blueflood.internal.*;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import junit.framework.Assert;
