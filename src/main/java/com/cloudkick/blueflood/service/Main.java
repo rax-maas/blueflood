@@ -41,28 +41,6 @@ public class Main {
         }
     }
     
-    // temporary: Use old configuration settings to force current configuration values for run types.
-    private static void adjustConfiguration() {
-        final Map<Object, Object> properties = new HashMap<Object, Object>(Configuration.getProperties());
-        
-        // no scribe host means this is not an ingestor.
-        properties.put("INGEST_MODE", "NONE".equals(properties.get("SCRIBE_HOST")) ? "false" : "true");
-        
-        // no telescope host means it definitely is not query node.  We could have also keyed off SHARD_PULL_PERIOD, 
-        // but it is less accurate in testing environments.
-        properties.put("QUERY_MODE", "NONE".equals(properties.get("TELESCOPE_HOST")) ? "false" : "true");
-        
-        // every node is technically a rollup node (the thread always started previoiusly).
-        properties.put("ROLLUP_MODE", "NONE".equals(properties.get("SHARDS")) ? "false" : "true");
-        
-        // reset the configuration.
-        Configuration.init(new Properties() {{
-            for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-                put(entry.getKey(), entry.getValue());
-            }
-        }});
-    }
-    
     private static void startShardStateServices(ScheduleContext context) {
         if (Configuration.getBooleanProperty("INGEST_MODE") || Configuration.getBooleanProperty("ROLLUP_MODE")) {
             // these threads are responsible for sending/receiving schedule context state to/from the database.
@@ -215,7 +193,6 @@ public class Main {
         // load configuration.
         try {
             Configuration.init();
-            adjustConfiguration();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
