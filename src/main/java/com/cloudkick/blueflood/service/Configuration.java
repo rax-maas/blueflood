@@ -78,7 +78,7 @@ public class Configuration {
         props.put("GRAPHITE_PORT", "2003");
         props.put("GRAPHITE_PREFIX", "unconfiguredNode.ele.gauges.");
         
-        props.put("INGESTION_MODE", "true");
+        props.put("INGEST_MODE", "true");
         props.put("ROLLUP_MODE", "true");
         props.put("QUERY_MODE", "true");
     }
