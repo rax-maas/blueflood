@@ -64,7 +64,7 @@ public class Main {
     
     private static void startIngestService(ScheduleContext context, String version) {
         // start up ingestion services.
-        if (Configuration.getBooleanProperty("INGESTION_MODE")) {
+        if (Configuration.getBooleanProperty("INGEST_MODE")) {
             ScribeHandlerIface scribeHandler = new AlternateScribeHandler(context);
             scribe.Processor processor = new scribe.Processor(scribeHandler.getScribe());
         
