@@ -37,23 +37,12 @@
         <id>ele</id>
         <properties>
           <build.profile.id>ele</build.profile.id>
+          <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
         </properties>
       </profile>
   </profiles>
 
   <build>
-
-    <filters>
-      <filter>profiles/${build.profile.id}/config.properties</filter>
-    </filters>
-
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-
     <plugins>
 
       <!-- compile -->
