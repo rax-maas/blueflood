@@ -1,0 +1,16 @@
+CREATE KEYSPACE DATA
+    WITH placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy'
+    AND strategy_options = {replication_factor:1};
+USE DATA;
+
+CREATE COLUMN FAMILY metrics_locator WITH column_type='Standard' WITH comparator='UTF8Type';
+CREATE COLUMN FAMILY metrics_discovery WITH column_type='Standard' WITH comparator='UTF8Type';
+CREATE COLUMN FAMILY metrics_state WITH column_type='Standard' WITH comparator='UTF8Type';
+CREATE COLUMN FAMILY metrics_metadata WITH column_type='Standard' WITH comparator='UTF8Type';
+CREATE COLUMN FAMILY metrics_string WITH column_type='Standard' WITH comparator='UTF8Type';
+CREATE COLUMN FAMILY metrics_full WITH column_type='Standard' WITH comparator='LongType';
+CREATE COLUMN FAMILY metrics_5m WITH column_type='Standard' WITH comparator='LongType';
+CREATE COLUMN FAMILY metrics_20m WITH column_type='Standard' WITH comparator='LongType';
+CREATE COLUMN FAMILY metrics_60m WITH column_type='Standard' WITH comparator='LongType';
+CREATE COLUMN FAMILY metrics_240m WITH column_type='Standard' WITH comparator='LongType';
+CREATE COLUMN FAMILY metrics_1440m WITH column_type='Standard' WITH comparator='LongType';
