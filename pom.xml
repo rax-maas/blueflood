@@ -16,6 +16,7 @@
     <!-- Only unit tests are run by default. -->
     <skip.integration.tests>true</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
+    <thriftbin>/usr/bin/thrift</thriftbin>
   </properties>
 
   <profiles>
@@ -31,22 +32,17 @@
           <skip.integration.tests>false</skip.integration.tests>
           <skip.unit.tests>true</skip.unit.tests>
         </properties>
-    </profile>
+      </profile>
+      <profile>
+        <id>ele</id>
+        <properties>
+          <build.profile.id>ele</build.profile.id>
+          <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
+        </properties>
+      </profile>
   </profiles>
 
   <build>
-
-    <filters>
-      <filter>profiles/${build.profile.id}/config.properties</filter>
-    </filters>
-
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-
     <plugins>
 
       <!-- compile -->
@@ -142,7 +138,7 @@
         <artifactId>maven-thrift-plugin</artifactId>
         <version>0.1.10</version>
         <configuration>
-          <thriftExecutable>/opt/thrift-ele/bin/thrift</thriftExecutable>
+          <thriftExecutable>${thriftbin}</thriftExecutable>
         </configuration>
         <executions>
           <execution>
