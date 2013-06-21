@@ -16,6 +16,7 @@
     <!-- Only unit tests are run by default. -->
     <skip.integration.tests>true</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
+    <thriftbin>/usr/bin/thrift</thriftbin>
   </properties>
 
   <profiles>
@@ -148,7 +149,7 @@
         <artifactId>maven-thrift-plugin</artifactId>
         <version>0.1.10</version>
         <configuration>
-          <thriftExecutable>${build.thriftbin}</thriftExecutable>
+          <thriftExecutable>${thriftbin}</thriftExecutable>
         </configuration>
         <executions>
           <execution>
