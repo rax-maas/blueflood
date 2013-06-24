@@ -148,11 +148,16 @@
             </goals>
             <configuration>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
+              <!-- do not require zookeeper for these tests. -->
+              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
                 <include>**/*Integration*.java</include>
               </includes>
+              <excludes>
+                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+              </excludes>
             </configuration>
           </execution>
         </executions>
