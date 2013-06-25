@@ -150,6 +150,7 @@
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
+              <argLine>-DCASSANDRA_CLUSTER=127.0.0.1:19170</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/log4j-test.properties</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
