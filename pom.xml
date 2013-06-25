@@ -31,6 +31,8 @@
           <!-- Only integration tests are run. -->
           <skip.integration.tests>false</skip.integration.tests>
           <skip.unit.tests>true</skip.unit.tests>
+          <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+          <cassandra.rpcPort>19170</cassandra.rpcPort>
         </properties>
       </profile>
       <profile>
@@ -97,6 +99,41 @@
       </plugin>
 
       <!-- Used for integration tests -->
+      <!-- Spin up Cassandra -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cassandra-maven-plugin</artifactId>
+        <version>1.2.1-1</version>
+        <executions>
+          <execution>
+            <id>delete-cassandra</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>delete</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>start-cassandra</id>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <listenAddress>${cassandra.listenAddress}</listenAddress>
+              <rpcPort>${cassandra.rpcPort}</rpcPort>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-cassandra</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+            <configuration>
+              <listenAddress>${cassandra.listenAddress}</listenAddress>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -111,11 +148,21 @@
             </goals>
             <configuration>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
+              <!-- do not require zookeeper for these tests. -->
+              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
+              <argLine>-Dlog4j.configuration=file://${basedir}/log4j-test.properties</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
                 <include>**/*Integration*.java</include>
               </includes>
+              <excludes>
+                <!-- requires an API service -->
+                <exclude>**/InternalApiIntegrationTest.java</exclude>
+                <!-- this one requires a live zookeeper -->
+                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
+              </excludes>
             </configuration>
           </execution>
         </executions>
