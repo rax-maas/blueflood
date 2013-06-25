@@ -103,7 +103,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
-        <version>1.0.0-1</version>
+        <version>1.2.1-1</version>
         <executions>
           <execution>
             <id>delete-cassandra</id>
@@ -150,7 +150,6 @@
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
-              <argLine>-DCASSANDRA_CLUSTER=127.0.0.1:19170</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/log4j-test.properties</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
@@ -159,6 +158,7 @@
               </includes>
               <excludes>
                 <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <exclude>**/InternalApiIntegrationTest.java</exclude>
               </excludes>
             </configuration>
           </execution>
