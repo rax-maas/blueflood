@@ -157,8 +157,11 @@
                 <include>**/*Integration*.java</include>
               </includes>
               <excludes>
-                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <!-- requires an API service -->
                 <exclude>**/InternalApiIntegrationTest.java</exclude>
+                <!-- this one requires a live zookeeper -->
+                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
               </excludes>
             </configuration>
           </execution>
