@@ -13,6 +13,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
@@ -36,6 +37,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             final ObjectName nameObj = new ObjectName(name);
             mbs.registerMBean(this, nameObj);
             instantiateYammerMetrics(MetadataCache.class, null, nameObj);
+        } catch (InstanceAlreadyExistsException doNotCare) {
+            log.debug(doNotCare.getMessage());
         } catch (Exception ex) {
             log.error("Unable to register mbean for " + getClass().getName(), ex);
         }
