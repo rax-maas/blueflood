@@ -88,7 +88,7 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
         for (Locator locator : locators) {
             locator = locators[0];// fix
 
-            for (Granularity g2 : Granularity.values()) {
+            for (Granularity g2 : Granularity.granularities()) {
                 List<RollupMetric> rms = rh.GetRollupByPoints(
                         locator.toString(),
                         baseMillis, 

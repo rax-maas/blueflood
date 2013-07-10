@@ -38,7 +38,7 @@ public class SlotTest extends TestCase {
         assertEquals(expected, actual);
     }
     
-    public void testRangeIteratorFullAnd5m() {
+    public void testRangeIteratorFullAnd5m() throws Exception {
         Set<Range> expectedRanges = new HashSet<Range>();
         expectedRanges.add(new Range(0, 299999));
         expectedRanges.add(new Range(300000, 599999));
@@ -56,7 +56,7 @@ public class SlotTest extends TestCase {
         }
     }
     
-    public void testRangeIterator20m() {
+    public void testRangeIterator20m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_20, 3600000, 33);
         Set<Range> actualRanges = new HashSet<Range>();
         int baseMillis = 6500000;
@@ -69,7 +69,7 @@ public class SlotTest extends TestCase {
         assertEquals(expectedRanges, actualRanges);
     }
     
-    public void testRangeIterator60m() {
+    public void testRangeIterator60m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_60, 1334577600000L, 72);
         Set<Range> actualRanges = new HashSet<Range>();
         long baseMillis = 1334582854000L; // nearly Mon Apr 16 06:26:52 PDT 2012
@@ -82,7 +82,7 @@ public class SlotTest extends TestCase {
         assertEquals(expectedRanges, actualRanges);
     }
     
-    public void testRangeIterator240m() {
+    public void testRangeIterator240m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_240, 1334534400000L, 66);
         Set<Range> actualRanges = new HashSet<Range>();
         long baseMillis = 1334582854000L; // nearly Mon Apr 16 06:26:52 PDT 2012
@@ -199,7 +199,7 @@ public class SlotTest extends TestCase {
     }
     
     public void testRangeDerivation() {
-        for (Granularity gran : Granularity.values()) {
+        for (Granularity gran : Granularity.granularities()) {
             long now = 1334582854000L;
             int nowSlot = gran.slot(now);
             now = gran.snapMillis(now);

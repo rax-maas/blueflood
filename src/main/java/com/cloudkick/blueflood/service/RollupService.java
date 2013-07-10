@@ -24,6 +24,7 @@ class RollupService implements Runnable, RollupServiceMBean {
     private static final long ROLLUP_DELAY_MILLIS = 1000 * 60 * 5; // 5 minutes.
     
     private final ScheduleContext context;
+    private final ShardStateManager shardStateManager;
     private final Timer polltimer = Metrics.newTimer(RollupService.class, "Poll Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Meter rejectedSlotChecks = Metrics.newMeter(RollupService.class, "Rejected Slot Checks", "Rollups", TimeUnit.MINUTES);
     private final ThreadPoolExecutor locatorFetchExecutors;
@@ -59,8 +60,8 @@ class RollupService implements Runnable, RollupServiceMBean {
 
     RollupService(ScheduleContext context) {
         this.context = context;
-        
-        try { 
+        this.shardStateManager = context.getShardStateManager();
+        try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.cloudkick.blueflood.service:type=%s", getClass().getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
@@ -254,7 +255,7 @@ class RollupService implements Runnable, RollupServiceMBean {
      * @param shard shard to be added
      */
     public void addShard(Integer shard) {
-        if (!context.getManagedShards().contains(shard))
+        if (!shardStateManager.getManagedShards().contains(shard))
             context.addShard(shard);
     }
 
@@ -264,7 +265,7 @@ class RollupService implements Runnable, RollupServiceMBean {
      * @param shard shard to be removed
      */
     public void removeShard(Integer shard) {
-        if (context.getManagedShards().contains(shard))
+        if (shardStateManager.getManagedShards().contains(shard))
             context.removeShard(shard);
     }
 
@@ -274,7 +275,7 @@ class RollupService implements Runnable, RollupServiceMBean {
      * @return list of managed shards (unmodifiable collection)
      */
     public Collection<Integer> getManagedShards() {
-        return new TreeSet<Integer>(context.getManagedShards());
+        return new TreeSet<Integer>(shardStateManager.getManagedShards());
     }
 
     public synchronized Collection<Integer> getRecentlyScheduledShards() {
@@ -285,11 +286,7 @@ class RollupService implements Runnable, RollupServiceMBean {
     public synchronized Collection<String> getMetricsState(int shard, int slot) {
         final List<String> results = new ArrayList<String>();
 
-        for (Granularity g : Granularity.values()) {
-            if (g == Granularity.FULL) {
-                continue;
-            }
-
+        for (Granularity g : Granularity.rollupGranularities()) {
             final Map<Integer, UpdateStamp> stateTimestamps = context.getSlotStamps(g, shard);
             if (stateTimestamps == null) {
                 continue;
@@ -306,11 +303,7 @@ class RollupService implements Runnable, RollupServiceMBean {
     public synchronized Collection<String> getOldestUnrolledSlotPerGranularity(int shard) {
         final Set<String> results = new HashSet<String>();
 
-        for (Granularity g : Granularity.values()) {
-            if (g == Granularity.FULL) {
-                continue;
-            }
-
+        for (Granularity g : Granularity.rollupGranularities()) {
             final Map<Integer, UpdateStamp> stateTimestamps = context.getSlotStamps(g, shard);
             if (stateTimestamps == null || stateTimestamps.isEmpty()) {
                 continue;

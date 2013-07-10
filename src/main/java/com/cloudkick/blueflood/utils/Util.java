@@ -5,8 +5,6 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.AbstractRollupStat;
 import org.apache.commons.codec.digest.DigestUtils;
 import telescope.thrift.Metric;
-import telescope.thrift.Telescope;
-import telescope.thrift.UnitEnum;
 
 import java.text.DecimalFormat;
 import java.text.Format;
@@ -76,7 +74,7 @@ public class Util {
     
     public static Granularity granularityFromStateCol(String s) {
         String field = s.split(",", -1)[0];
-        for (Granularity g : Granularity.values())
+        for (Granularity g : Granularity.granularities())
             if (g.name().startsWith(field))
                 return g;
         return null;
