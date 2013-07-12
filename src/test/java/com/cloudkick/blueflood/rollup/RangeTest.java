@@ -1,5 +1,6 @@
 package com.cloudkick.blueflood.rollup;
 
+import com.cloudkick.blueflood.exceptions.GranularityException;
 import com.cloudkick.blueflood.types.Average;
 import com.cloudkick.blueflood.types.Range;
 import junit.framework.TestCase;
@@ -55,7 +56,7 @@ public class RangeTest extends TestCase {
             Iterable<Range> myRanges = Range.getRangesToRollup(Granularity.MIN_1440, 1, 300000);
             Assert.fail("Never should have gotten here");
         }
-        catch (RuntimeException e) {
+        catch (GranularityException e) {
             assertEquals("Nothing coarser than metrics_1440m", e.getMessage());
         }
 

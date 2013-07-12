@@ -3,6 +3,7 @@ package com.cloudkick.blueflood.io;
 import com.cloudkick.blueflood.exceptions.CacheException;
 import com.cloudkick.blueflood.cache.MetadataCache;
 import com.cloudkick.blueflood.rollup.Granularity;
+import com.cloudkick.blueflood.service.ShardStateManager;
 import com.cloudkick.blueflood.service.UpdateStamp;
 import com.cloudkick.blueflood.types.*;
 import com.cloudkick.blueflood.utils.Util;
@@ -108,19 +109,10 @@ public class AstyanaxReader extends AstyanaxIO {
         return unitString;
     }
 
-    public Map<Integer, Map<Granularity, Map<Integer, UpdateStamp>>> getAllShardStates(Collection<Integer> shards) throws ConnectionException {
+    public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(GET_ALL_SHARDS);
-        Map<Integer, Map<Granularity, Map<Integer, UpdateStamp>>> results = new HashMap<Integer, Map<Granularity, Map<Integer, UpdateStamp>>>();
         try {
             for (int shard : shards) {
-                Map<Granularity, Map<Integer, UpdateStamp>> map = new HashMap<Granularity, Map<Integer, UpdateStamp>>();
-                map.put(Granularity.MIN_5, new HashMap<Integer, UpdateStamp>());
-                map.put(Granularity.MIN_20, new HashMap<Integer, UpdateStamp>());
-                map.put(Granularity.MIN_60, new HashMap<Integer, UpdateStamp>());
-                map.put(Granularity.MIN_240, new HashMap<Integer, UpdateStamp>());
-                map.put(Granularity.MIN_1440, new HashMap<Integer, UpdateStamp>());
-                results.put(shard, map);
-
                 RowQuery<Long, String> query = keyspace
                         .prepareQuery(CF_METRICS_STATE)
                         .getKey((long) shard);
@@ -128,22 +120,14 @@ public class AstyanaxReader extends AstyanaxIO {
 
                 for (Column<String> column : columns) {
                     String columnName = column.getName();
-                    Long columnValue = column.getLongValue();
+                    long timestamp = column.getLongValue();
                     Granularity g = Util.granularityFromStateCol(columnName);
                     int slot = Util.slotFromStateCol(columnName);
+
                     boolean isRemove = UpdateStamp.State.Rolled.code().equals(Util.stateFromStateCol(columnName));
-                    Map<Integer, UpdateStamp> subMap = map.get(g);
-                    if (subMap.containsKey(slot)) {
-                        // coalesce.
-                        UpdateStamp stamp = subMap.get(slot);
-                        if (stamp.getTimestamp() < columnValue)
-                            subMap.put(slot, new UpdateStamp(columnValue, isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active, false));
-                        else if (stamp.getTimestamp() == columnValue && isRemove)
-                            // remove wins in a tie.
-                            stamp.setState(UpdateStamp.State.Rolled);
-                    } else {
-                        subMap.put(slot, new UpdateStamp(columnValue, isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active, false));
-                    }
+                    UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
+
+                    shardStateManager.updateSlotOnRead(shard, g, slot, timestamp, state);
                 }
             }
         } catch (ConnectionException e) {
@@ -153,8 +137,6 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
-        return results;
-
     }
 
     public List<MetricInfo> getMetricsForCheck(String accountId, String entityId, String checkId) {

@@ -1,9 +1,9 @@
 package com.cloudkick.blueflood.cache;
 
-import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.internal.Account;
 import com.cloudkick.blueflood.internal.ClusterException;
 import com.cloudkick.blueflood.internal.InternalAPI;
+import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -28,7 +28,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     
     // these values get used in the absence of a ttl (internal API failure, etc.).
     static final Map<Granularity, TimeValue> SAFETY_TTLS = new HashMap<Granularity, TimeValue>() {{
-        for (Granularity gran : Granularity.values())
+        for (Granularity gran : Granularity.granularities())
             put(gran, new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
     }};
     
@@ -98,7 +98,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     // override this if you're not interested in caching the entire ttl map.
     protected Map<String, TimeValue> buildTtlMap(Account acct) {
         Map<String, TimeValue> map = new HashMap<String, TimeValue>();
-        for (Granularity gran : Granularity.values())
+        for (Granularity gran : Granularity.granularities())
             map.put(gran.shortName(), acct.getMetricTtl(gran.shortName()));
         return map;
     }

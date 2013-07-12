@@ -2,9 +2,11 @@ package com.cloudkick.blueflood.service;
 
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Range;
+import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Timer;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,15 +20,13 @@ class RollupContext {
     private final Range range;
     private final AtomicInteger counter = new AtomicInteger(0);
     private final Thread owner;
-    private final Timer executeTimer;
-    private final Histogram waitHist;
+    private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
     
-    RollupContext(Range range, Granularity srcGran, Thread owner, Timer executeTimer, Histogram waitHist) {
+    RollupContext(Range range, Granularity srcGran, Thread owner) {
         this.range = range;
         this.srcGran = srcGran;
         this.owner = owner;
-        this.executeTimer = executeTimer;
-        this.waitHist = waitHist;
     }
     
     void decrement() { 

@@ -80,10 +80,10 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
     private AbstractScribeHandler scribeImpl;
     
     private final AsyncChain<List<LogEntry>, List<Boolean>> telescopeProcessor;
-    
+
     public AlternateScribeHandler(ScheduleContext context) {
         this.context = context;
-        
+
         this.scribeImpl = new AbstractScribeHandler() {
             @Override
             public ResultCode Log(List<LogEntry> messages) throws TException {
@@ -95,7 +95,7 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
         telescopeProcessor = new AsyncChain<List<LogEntry>, List<Boolean>>()
             .withFunction(new LogEntryConverter(
                 new ThreadPoolBuilder().withName("Telescope parsing").build(),
-                context.asTicker(),
+                context.asMillisecondsSinceEpochTicker(),
                 bufferedMetrics)
                 .withLogger(log))
             .withFunction(new TypeAndUnitProcessor(

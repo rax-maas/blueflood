@@ -62,7 +62,7 @@ public class SerializationTest {
     @Test
     public void testBadSerializationVersion() {
         byte[] buf = new byte[] {99, 99};  // hopefully we won't have 99 different serialization versions.
-        for (Granularity g : Granularity.values()) {
+        for (Granularity g : Granularity.granularities()) {
             try {
                 NumericSerializer.get(g).fromByteBuffer(ByteBuffer.wrap(buf));
                 Assert.fail(String.format("Should have errored out %s", g.name()));
@@ -136,8 +136,7 @@ public class SerializationTest {
         if (System.getProperty("GENERATE_ROLLUP_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("tests/test-data/serializations/rollup_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
             for (Rollup rollup : toSerializeRollup) {
-                for (Granularity g : Granularity.values()) {
-                    if (g == Granularity.FULL) continue;
+                for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = NumericSerializer.get(g).toByteBuffer(rollup);
                     os.write(Base64.encodeBase64(bb.array()));
                     os.write("\n".getBytes());
@@ -154,8 +153,7 @@ public class SerializationTest {
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("tests/test-data/serializations/rollup_version_" + version + ".bin"));
             for (int i = 0; i < toSerializeRollup.length; i++) {
-                for (Granularity g : Granularity.values()) {
-                    if (g == Granularity.FULL) continue;
+                for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
                     Rollup rollup = (Rollup)NumericSerializer.get(g).fromByteBuffer(bb);
                     Assert.assertTrue(String.format("Deserialization for rollup broken at %d", version),
@@ -167,8 +165,7 @@ public class SerializationTest {
         
         // current round tripping.
         for (Rollup rollup : toSerializeRollup) {
-            for (Granularity g : Granularity.values()) {
-                if (g == Granularity.FULL) continue;
+            for (Granularity g : Granularity.rollupGranularities()) {
                 ByteBuffer bb = NumericSerializer.get(g).toByteBuffer(rollup);
                 Assert.assertTrue(rollup.equals(NumericSerializer.get(g).fromByteBuffer(bb)));
             }
@@ -200,7 +197,7 @@ public class SerializationTest {
             toSerializeRollup[3]
         };
         
-        for (Granularity gran : Granularity.values()) {
+        for (Granularity gran : Granularity.granularities()) {
             for (int i = 0; i < inputs.length; i++) {
                 try {
                     Object dst = NumericSerializer.get(gran).fromByteBuffer(NumericSerializer.get(gran).toByteBuffer(inputs[i]));

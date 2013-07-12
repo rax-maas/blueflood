@@ -24,7 +24,7 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private static final Logger log = LoggerFactory.getLogger(ShardStateWorker.class);
     
     protected final Collection<Integer> allShards;
-    protected final ScheduleContext context;
+    protected final ShardStateManager shardStateManager;
     protected final Timer timer = Metrics.newTimer(getClass(), "Stats", TimeUnit.MILLISECONDS, TimeUnit.MINUTES);
     
     private long lastOp = 0L;
@@ -36,9 +36,10 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private final Counter errors;
     private Gauge activeGauge;
     private Gauge periodGauge;
-    
-    ShardStateWorker(Collection<Integer> allShards, ScheduleContext context, TimeValue period) {
-        this.context = context;
+    ;
+
+    ShardStateWorker(Collection<Integer> allShards, ShardStateManager shardStateManager, TimeValue period) {
+        this.shardStateManager = shardStateManager;
         this.allShards = Collections.unmodifiableCollection(allShards);
         this.periodMs = period.toMillis();
         

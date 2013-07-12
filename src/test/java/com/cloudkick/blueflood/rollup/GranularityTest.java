@@ -1,9 +1,11 @@
 package com.cloudkick.blueflood.rollup;
 
+import com.cloudkick.blueflood.exceptions.GranularityException;
 import com.cloudkick.blueflood.types.Average;
 import com.cloudkick.blueflood.types.Range;
 import com.cloudkick.blueflood.utils.TimeValue;
 import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -102,19 +104,30 @@ public class GranularityTest {
                     actual);
         }
     }
-    
-    @Test(expected = RuntimeException.class)
-    public void testTooCoarse() {
+
+    @Test(expected = GranularityException.class)
+    public void testTooCoarse() throws Exception {
         Granularity g = Granularity.FULL;
-        while (true)
+        Granularity[] granularities = Granularity.granularities();
+
+        int count = 1;
+        while (true) {
             g = g.coarser();
+            Assert.assertEquals(granularities[count++], g);
+        }
     }
-    
-    @Test(expected = RuntimeException.class)
-    public void testTooFine() {
+
+    @Test(expected = GranularityException.class)
+    public void testTooFine() throws Exception {
         Granularity g = Granularity.MIN_1440;
-        while (true)
+        Granularity[] granularities = Granularity.granularities();
+
+        int count = granularities.length - 2;
+
+        while (true) {
             g = g.finer();
+            Assert.assertEquals(granularities[count--], g);
+        }
     }
     
     @Test(expected = RuntimeException.class)
@@ -129,7 +142,7 @@ public class GranularityTest {
     
     @Test
     public void testGranularityEqualityAndFromString() {
-        for (Granularity g : Granularity.values()) {
+        for (Granularity g : Granularity.granularities()) {
             TestCase.assertTrue(g == Granularity.fromString(g.name()));
             TestCase.assertTrue(g.equals(Granularity.fromString(g.name())));
             TestCase.assertFalse(g.equals(new Object()));

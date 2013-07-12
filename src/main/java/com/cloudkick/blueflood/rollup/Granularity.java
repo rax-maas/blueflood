@@ -1,5 +1,6 @@
 package com.cloudkick.blueflood.rollup;
 
+import com.cloudkick.blueflood.exceptions.GranularityException;
 import com.cloudkick.blueflood.types.Range;
 import com.cloudkick.blueflood.utils.TimeValue;
 
@@ -32,7 +33,8 @@ public class Granularity {
     
     private static final Granularity LAST = MIN_1440;
     
-    private static final Granularity[] values = new Granularity[] { FULL, MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 };
+    private static final Granularity[] granularities = new Granularity[] { FULL, MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 };
+    private static final Granularity[] rollupGranularities = new Granularity[] { MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 };
     
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
     
@@ -77,15 +79,15 @@ public class Granularity {
     
     // returns the next coarser granularity.
     // FULL -> 5m -> 20m -> 60m -> 240m -> 1440m -> explosion.
-    public Granularity coarser() { 
-        if (this == LAST) throw new RuntimeException("Nothing coarser than " + name());
-        return values[index + 1]; 
+    public Granularity coarser() throws GranularityException {
+        if (this == LAST) throw new GranularityException("Nothing coarser than " + name());
+        return granularities[index + 1];
     }
     
     // opposite of coarser().
-    public Granularity finer() {
-        if (this == FULL) throw new RuntimeException("Nothing finer than " + name());
-        return values[index - 1];
+    public Granularity finer() throws GranularityException {
+        if (this == FULL) throw new GranularityException("Nothing finer than " + name());
+        return granularities[index - 1];
     }
     
     // todo: needs explanation.
@@ -126,19 +128,20 @@ public class Granularity {
     // return all the locator keys of this slot and its finer children, recursively.
     public Set<String> getChildrenKeys(int slot, int shard) {
         HashSet<String> set = new HashSet<String>();
-        // full resolution has no children.
-        if (this == Granularity.FULL)
+        try {
+            Granularity finer = finer();
+            int factor = finer.numSlots() / numSlots();
+            // basically this: add all the keys this slot maps to in the finer granularity,
+            // then add their children too.
+            for (int i = 0; i < factor; i++) {
+                int childSlot = slot * factor + i;
+                set.add(finer.formatLocatorKey(childSlot, shard));
+                set.addAll(finer.getChildrenKeys(childSlot, shard));
+            }
             return set;
-        Granularity finer = finer();
-        int factor = finer.numSlots() / numSlots();
-        // basically this: add all the keys this slot maps to in the finer granularity,
-        // then add their children too.
-        for (int i = 0; i < factor; i++) {
-            int childSlot = slot * factor + i;
-            set.add(finer.formatLocatorKey(childSlot, shard));
-            set.addAll(finer.getChildrenKeys(childSlot, shard));
+        } catch (GranularityException ex) {
+            return set;
         }
-        return set;
     }
     
     /** iterates over locator keys (gran + slot) for a given time range */
@@ -194,7 +197,7 @@ public class Granularity {
         int closest = Integer.MAX_VALUE;
         Granularity gran = null;
         
-        for (Granularity g : Granularity.values()) {
+        for (Granularity g : Granularity.granularities()) {
             int diff = 0;
             // deciding when to use full resolution is tricky because we don't know the period of the check in question.
             // assume the minimum was selected and go from there.
@@ -226,10 +229,12 @@ public class Granularity {
         else return obj == this;
     }
 
-    public static Granularity[] values() { return values; }
+    public static Granularity[] granularities() { return granularities; }
+
+    public static Granularity[] rollupGranularities() { return rollupGranularities; }
     
     public static Granularity fromString(String s) {
-        for (Granularity g : values)
+        for (Granularity g : granularities)
             if (g.name().equals(s) || g.shortName().equals(s))
                 return g;
         return null;
@@ -243,7 +248,7 @@ public class Granularity {
     
     // get granularity from a locator key.
     public static Granularity granularityFromKey(String key) {
-        for (Granularity g : values)
+        for (Granularity g : granularities)
             if (key.startsWith(g.name() + ","))
                 return g;
         throw new RuntimeException("Unexpected granularity: " + key);
