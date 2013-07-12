@@ -1,5 +1,6 @@
 package com.cloudkick.blueflood.types;
 
+import com.cloudkick.blueflood.exceptions.GranularityException;
 import com.cloudkick.blueflood.rollup.Granularity;
 
 import java.util.Arrays;
@@ -59,7 +60,8 @@ public class Range {
      * @param stopMillis
      * @return
      */
-    public static Iterable<Range> getRangesToRollup(Granularity g, final long startMillis, final long stopMillis) {
+    public static Iterable<Range> getRangesToRollup(Granularity g, final long startMillis,
+                                                    final long stopMillis) throws GranularityException {
         final long snappedStartMillis = g.coarser().snapMillis(startMillis);
         final long snappedStopMillis = g.coarser().snapMillis(stopMillis + g.coarser().milliseconds());
 
