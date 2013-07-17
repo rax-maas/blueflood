@@ -68,7 +68,7 @@ def main():
     if not options.host:
         options.host = 'localhost'
     if not options.port:
-        options.port = '18000'
+        options.port = '19000'
 
     payload = _generate_metrics_data()
     prettyjsondata = json.dumps(payload, indent=4, separators=(',', ': '))
@@ -78,8 +78,10 @@ def main():
     print(url)
 
     try:
-        requests.post(url, data=json.dumps(payload))
-    except:
+        r = requests.post(url, data=json.dumps(payload))
+        print(r)
+    except Exception, ex:
+        print(ex)
         raise Exception('Cannot ingest metrics into bluflood')
 
 main()
