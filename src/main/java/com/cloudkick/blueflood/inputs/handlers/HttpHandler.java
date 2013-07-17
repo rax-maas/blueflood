@@ -51,6 +51,7 @@ public class HttpHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpHandler.class);
     private static  TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
+    private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
     private int port;
     private AsyncChain<MetricsCollection, Boolean> processorChain;
@@ -130,6 +131,7 @@ public class HttpHandler {
 
             pipeline.addLast("decoder", new HttpRequestDecoder());
             pipeline.addLast("encoder", new HttpResponseEncoder());
+            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("handler", router);
 
             return pipeline;
