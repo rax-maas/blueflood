@@ -41,7 +41,7 @@ public class RollupHandler implements RollupServer.Iface {
             int points) throws TException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
+        return GetRollupByGranularity(accountId, metricName, from, to, g);
     }
 
     public RollupMetrics GetDataByResolution(
@@ -54,18 +54,19 @@ public class RollupHandler implements RollupServer.Iface {
         if (resolution == null)
           throw new TException("Resolution is not set");
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
+        return GetRollupByGranularity(accountId, metricName, from, to, g);
     }
 
 
     RollupMetrics GetRollupByGranularity(
+            String accountId,
             String metricName,
             long from,
             long to,
             Granularity g) throws TException {
 
         final TimerContext ctx = metricsFetchTimer.time();
-        final Locator locator = new Locator(metricName);
+        final Locator locator = Locator.createLocatorFromAccountIdAndName(accountId, metricName);
         final List<RollupMetric> points = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
                 new Range(g.snapMillis(from), to),
