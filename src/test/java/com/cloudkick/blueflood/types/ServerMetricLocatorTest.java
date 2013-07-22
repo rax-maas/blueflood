@@ -44,6 +44,7 @@ public class ServerMetricLocatorTest {
         Assert.assertEquals("someDim.someMetric", locator.getMetric());
         Assert.assertEquals("someAccount", locator.getAccountId());
         Assert.assertEquals("someEntity", locator.getEntityId());
+        Assert.assertEquals("someEntity,someCheck_testingComma,someDim.someMetric", locator.getMetricName());
     }
 
     @Test

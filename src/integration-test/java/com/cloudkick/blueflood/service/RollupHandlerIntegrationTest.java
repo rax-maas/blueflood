@@ -88,9 +88,10 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
         for (Locator locator : locators) {
             locator = locators[0];// fix
 
-            for (Granularity g2 : Granularity.values()) {
-                List<RollupMetric> rms = rh.GetRollupByPoints(
-                        locator.toString(),
+            for (Granularity g2 : Granularity.granularities()) {
+                List<RollupMetric> rms = rh.GetDataByPoints(
+                        locator.getAccountId(),
+                        locator.getMetricName(),
                         baseMillis, 
                         baseMillis + 86400000, 
                         points.get(g2.name())).getMetrics();
@@ -112,12 +113,12 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
         final RollupHandler rh = new RollupHandler();
 
         for (Locator locator : locators) {
-            assertEquals(1440, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
-            assertEquals(289, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
-            assertEquals(73, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
-            assertEquals(25, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
-            assertEquals(7, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
-            assertEquals(2, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
+            assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
+            assertEquals(289, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
+            assertEquals(73, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
+            assertEquals(25, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
+            assertEquals(7, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
+            assertEquals(2, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
         }
     }
 
@@ -125,12 +126,12 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
         final RollupHandler rh = new RollupHandler();
 
         for (Locator locator : locators) {
-            assertEquals(1440, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
-            assertEquals(288, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
-            assertEquals(72, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
-            assertEquals(24, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
-            assertEquals(6, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
-            assertEquals(1, rh.GetRollupByResolution(locator.toString(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
+            assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
+            assertEquals(288, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
+            assertEquals(72, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
+            assertEquals(24, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
+            assertEquals(6, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
+            assertEquals(1, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
         }
     }
 

@@ -33,27 +33,30 @@ public class RollupHandler implements RollupServer.Iface {
     public RollupHandler() {
     }
 
-    public RollupMetrics GetRollupByPoints(
-            String metricName, 
+    public RollupMetrics GetDataByPoints(
+            String accountId,
+            String metricName,
             long from,
-            long to, 
+            long to,
             int points) throws TException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        return GetRollupByGranularity(metricName, from, to, g);
+        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
     }
 
-    public RollupMetrics GetRollupByResolution(
+    public RollupMetrics GetDataByResolution(
+            String accountId,
             String metricName,
-            long from, 
-            long to, 
+            long from,
+            long to,
             Resolution resolution) throws TException {
         rollupsByGranularityMeter.mark();
         if (resolution == null)
           throw new TException("Resolution is not set");
-        Granularity g = Granularity.values()[resolution.getValue()];
-        return GetRollupByGranularity(metricName, from, to, g);
+        Granularity g = Granularity.granularities()[resolution.getValue()];
+        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
     }
+
 
     RollupMetrics GetRollupByGranularity(
             String metricName,

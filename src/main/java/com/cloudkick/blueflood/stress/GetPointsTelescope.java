@@ -1,9 +1,10 @@
 package com.cloudkick.blueflood.stress;
 
 import com.cloudkick.blueflood.rollup.Granularity;
+import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.blueflood.service.Configuration;
-import com.cloudkick.blueflood.utils.MetricHelper;
+import com.cloudkick.cep.util.Configuration;
+import com.cloudkick.util.MetricHelper;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -52,13 +53,18 @@ public class GetPointsTelescope {
         Resolution res = "string".equals(options.get("resolution")) ? null : fromGranularity((Granularity) options.get("resolution"));
 
         String mz = (String) options.get("monitoringZone");
-        String metricName = (String) options.get("metricName");
+        //Currently metricName has two meanings. We'll call one metricLabel temporarily for now.
+        String metricLabel = (String) options.get("metricName");
+        String accountId = (String) options.get("acctId");
         if (mz != null) {
-            metricName = String.format("%s.%s", mz, metricName);
+            metricLabel = String.format("%s.%s", mz, metricLabel);
         }
+        String metricName = ServerMetricLocator.createFromTelescopePrimitives(accountId, (String)options.get("entityId"), 
+        		(String)options.get("checkId"), (String)metricLabel).getMetricName();
 
         try {
-            RollupMetrics metrics = client.GetRollupByResolution(
+            RollupMetrics metrics = client.GetDataByResolution(
+                accountId,
                 metricName,
                 from,
                 to,

@@ -28,6 +28,10 @@ public class Locator {
     public String getAccountId() {
         return stringRep.split(metricTokenSeparator)[0];
     }
+    
+    public String getMetricName() {
+        return stringRep.substring(stringRep.indexOf(metricTokenSeparator)+1);
+    }
 
     public boolean equals(Locator other) {
         return stringRep.equals(other.toString());
