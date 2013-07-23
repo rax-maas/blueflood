@@ -101,9 +101,16 @@
       <!-- Used for integration tests -->
       <!-- Spin up Cassandra -->
       <plugin>
+        <!--mvn install:install-file -DgroupId=org.codehaus.mojo -DartifactId=cassandra-maven-plugin -Dversion=1.0.8-1 -Dpackaging=jar -Dfile=./lib/cassandra-maven-plugin-1.0.8-1.jar-->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
-        <version>1.2.1-1</version>
+        <version>1.0.8-1</version>
+        <configuration>
+          <listenAddress>${cassandra.listenAddress}</listenAddress>
+          <rpcPort>${cassandra.rpcPort}</rpcPort>
+          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+          <cassandraDir>/tmp/bf-cassandra/</cassandraDir>
+        </configuration>
         <executions>
           <execution>
             <id>delete-cassandra</id>
@@ -117,10 +124,6 @@
             <goals>
               <goal>start</goal>
             </goals>
-            <configuration>
-              <listenAddress>${cassandra.listenAddress}</listenAddress>
-              <rpcPort>${cassandra.rpcPort}</rpcPort>
-            </configuration>
           </execution>
           <execution>
             <id>stop-cassandra</id>
