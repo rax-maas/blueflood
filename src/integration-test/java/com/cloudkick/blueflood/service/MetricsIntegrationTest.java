@@ -1,15 +1,12 @@
-package com.cloudkick.blueflood.rollup;
+package com.cloudkick.blueflood.service;
 
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
-import com.cloudkick.blueflood.service.UpdateStamp;
-import com.cloudkick.blueflood.types.Locator;
-import com.cloudkick.blueflood.types.Range;
-import com.cloudkick.blueflood.types.Rollup;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
+import com.cloudkick.blueflood.rollup.Granularity;
+import com.cloudkick.blueflood.types.*;
 import com.cloudkick.blueflood.utils.Util;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
@@ -307,8 +304,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         // Simulate active or running state for all the slots for all granularities.
         for (int shard : shards) {
             Map<Granularity, Map<Integer, UpdateStamp>> allUpdates = new HashMap<Granularity, Map<Integer, UpdateStamp>>();
-            for (Granularity granularity : Granularity.values()) {
-                if (granularity == Granularity.FULL) continue;
+            for (Granularity granularity : Granularity.rollupGranularities()) {
                 Map<Integer, UpdateStamp> updates = new HashMap<Integer, UpdateStamp>();
                 for (int slot = 0; slot < granularity.numSlots(); slot++) {
                     updates.put(slot, new UpdateStamp(System.currentTimeMillis() - 10000, UpdateStamp.State.Active,
@@ -322,8 +318,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         // Now simulate rolled up state for all the slots for all granularities.
         for (int shard : shards) {
             Map<Granularity, Map<Integer, UpdateStamp>> allUpdates = new HashMap<Granularity, Map<Integer, UpdateStamp>>();
-            for (Granularity granularity : Granularity.values()) {
-                if (granularity == Granularity.FULL) continue;
+            for (Granularity granularity : Granularity.rollupGranularities()) {
                 Map<Integer, UpdateStamp> updates = new HashMap<Integer, UpdateStamp>();
                 for (int slot = 0; slot < granularity.numSlots(); slot++) {
                     updates.put(slot, new UpdateStamp(System.currentTimeMillis(), UpdateStamp.State.Rolled,
@@ -335,18 +330,19 @@ public class MetricsIntegrationTest extends CqlTestBase {
         }
 
         // Now we would have the longest row for each shard because we filled all the slots.
-        // Now test whether getAllShardStates returns all the slots [https://issues.rax.io/browse/CMD-11]
+        // Now test whether getAndUpdateAllShardStates returns all the slots [https://issues.rax.io/browse/CMD-11]
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        int count = 0;
-        for (Map.Entry<Integer, Map<Granularity, Map<Integer, UpdateStamp>>> shardStates : reader.getAllShardStates(shards).entrySet()) {
-            assertEquals(Granularity.MIN_5.numSlots(), shardStates.getValue().get(Granularity.MIN_5).size());
-            assertEquals(Granularity.MIN_20.numSlots(), shardStates.getValue().get(Granularity.MIN_20).size());
-            assertEquals(Granularity.MIN_60.numSlots(), shardStates.getValue().get(Granularity.MIN_60).size());
-            assertEquals(Granularity.MIN_240.numSlots(), shardStates.getValue().get(Granularity.MIN_240).size());
-            assertEquals(Granularity.MIN_1440.numSlots(), shardStates.getValue().get(Granularity.MIN_1440).size());
-            count += 1;
+        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
+        ShardStateManager shardStateManager = ctx.getShardStateManager();
+
+        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), shards);
+
+        for (Integer shard : shards) {
+            for (Granularity granularity : Granularity.rollupGranularities()) {
+                ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
+                assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
+            }
         }
-        assertEquals(shards.size(), count);
     }
     
     public void testUpdateStampCoaelescing() throws Exception {
@@ -365,8 +361,13 @@ public class MetricsIntegrationTest extends CqlTestBase {
         writer.persistShardState(shard, updates);
         
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        Map<Granularity, Map<Integer, UpdateStamp>> dbShardState = reader.getAllShardStates(Lists.newArrayList(shard)).get(shard);
-        assertNotNull(dbShardState.get(Granularity.MIN_5));
-        assertEquals(UpdateStamp.State.Rolled, dbShardState.get(Granularity.MIN_5).get(slot).getState());
+        //Map<Granularity, Map<Integer, UpdateStamp>> dbShardState = reader.getAndUpdateAllShardStates(Lists.newArrayList(shard)).get(shard);
+        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
+        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), Lists.newArrayList(shard));
+        ShardStateManager shardStateManager = ctx.getShardStateManager();
+        ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
+
+        assertNotNull(slotStateManager.getSlotStamps());
+        assertEquals(UpdateStamp.State.Rolled, slotStateManager.getSlotStamps().get(slot).getState());
     }
 }

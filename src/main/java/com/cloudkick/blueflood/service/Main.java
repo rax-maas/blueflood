@@ -18,7 +18,10 @@ import scribe.thrift.scribe;
 import telescope.thrift.RollupServer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.*;
 
 /**
@@ -40,15 +43,15 @@ public class Main {
             }
         }
     }
-
+    
     private static void startShardStateServices(ScheduleContext context) {
         if (Configuration.getBooleanProperty("INGEST_MODE") || Configuration.getBooleanProperty("ROLLUP_MODE")) {
             // these threads are responsible for sending/receiving schedule context state to/from the database.
             final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
             
             try {
-                final Thread shardPush = new Thread(new ShardStatePusher(allShards, context), "Shard state writer");
-                final Thread shardPull = new Thread(new ShardStatePuller(allShards, context), "Shard state reader");
+                final Thread shardPush = new Thread(new ShardStatePusher(allShards, context.getShardStateManager()), "Shard state writer");
+                final Thread shardPull = new Thread(new ShardStatePuller(allShards, context.getShardStateManager()), "Shard state reader");
                 
                 shardPull.start();
                 shardPush.start();

@@ -17,7 +17,7 @@ public class InternalAPIFactory {
     private static int PAGINATION_RETRY_COUNT = 3;
 
     static final Map<Granularity, TimeValue> SAFETY_TTLS = new HashMap<Granularity, TimeValue>() {{
-        for (Granularity gran : Granularity.values())
+        for (Granularity gran : Granularity.granularities())
             put(gran, new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
     }};
 

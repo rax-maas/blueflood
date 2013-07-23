@@ -5,11 +5,14 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Range;
 import com.netflix.astyanax.model.Column;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * fetches locators for a given slot and feeds a worker queue with rollup work. When those are all done notifies the
@@ -23,7 +26,9 @@ class LocatorFetchRunnable implements Runnable {
     private final String parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
-    
+    private static final Timer rollupLocatorExecuteTimer = Metrics.newTimer(RollupService.class, "Locate and Schedule Rollups for Slot", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+
+
     LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupExecutor) {
         this.rollupExecutor = rollupExecutor;
         this.parentSlotKey = destSlotKey;
@@ -32,12 +37,21 @@ class LocatorFetchRunnable implements Runnable {
     }
     
     public void run() {
-        final TimerContext timerCtx = scheduleCtx.getRollupLocatorExecuteTimer().time();
+        final TimerContext timerCtx = rollupLocatorExecuteTimer.time();
         final Granularity parentGran = Granularity.granularityFromKey(parentSlotKey);
         final int parentSlot = Granularity.slotFromKey(parentSlotKey);
         final int shard = Granularity.shardFromKey(parentSlotKey);
         final Range parentRange = parentGran.deriveRange(parentSlot, serverTime);
-        final RollupContext ctx = new RollupContext(parentRange, parentGran.finer(), Thread.currentThread(), scheduleCtx.getRollupExecuteTimer(), scheduleCtx.getRollupWaitHist());
+        Granularity finerGran;
+
+        try {
+            finerGran = parentGran.finer();
+        } catch (Exception ex) {
+            log.error("No finer granularity available than " + parentGran);
+            return;
+        }
+        final RollupContext ctx = new RollupContext(parentRange, finerGran, Thread.currentThread());
+
         if (log.isTraceEnabled())
             log.trace("Getting locators for {} {} @ {}", new Object[]{parentSlotKey, parentRange.toString(), scheduleCtx.getCurrentTimeMillis()});
         // todo: I can see this set becoming a memory hog.  There might be a better way of doing this.

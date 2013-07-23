@@ -51,7 +51,7 @@ public class RollupHandler implements RollupServer.Iface {
         rollupsByGranularityMeter.mark();
         if (resolution == null)
           throw new TException("Resolution is not set");
-        Granularity g = Granularity.values()[resolution.getValue()];
+        Granularity g = Granularity.granularities()[resolution.getValue()];
         return GetRollupByGranularity(metricName, from, to, g);
     }
 
