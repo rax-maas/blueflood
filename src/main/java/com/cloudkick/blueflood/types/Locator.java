@@ -13,12 +13,12 @@ public class Locator {
 
     public Locator(String rep) throws IllegalArgumentException {
         setStringRep(rep);
-        accountId = stringRep.split(metricTokenSeparator)[0];
-        metricName = stringRep.substring(stringRep.indexOf(metricTokenSeparator)+1);
     }
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
         this.stringRep = rep;
+        accountId = this.stringRep.split(metricTokenSeparator)[0];
+        metricName = this.stringRep.substring(this.stringRep.indexOf(metricTokenSeparator)+1);
     }
 
     protected boolean isValidDBKey(String dbKey, String delim) {
