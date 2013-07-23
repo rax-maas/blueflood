@@ -1,7 +1,10 @@
 package com.cloudkick.blueflood.cache;
 
+import com.cloudkick.blueflood.internal.Account;
+import com.cloudkick.blueflood.internal.AccountMapEntry;
+import com.cloudkick.blueflood.internal.AccountTest;
+import com.cloudkick.blueflood.internal.InternalAPI;
 import com.cloudkick.blueflood.rollup.Granularity;
-import com.cloudkick.blueflood.internal.*;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import junit.framework.Assert;
@@ -16,7 +19,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +73,7 @@ public class TtlCacheTest {
     
     private void warmCache() {
         for (int i = 0; i < 100; i++) {
-            for (Granularity gran : Granularity.values()) {
+            for (Granularity gran : Granularity.granularities()) {
                 twoSecondCache.getTtl("ackVCKg1rk", gran);
                 twoSecondCache.getTtl("acAAAAAAAA", gran);
             }
@@ -104,7 +106,7 @@ public class TtlCacheTest {
     public void testDefaultsAreNotNormallyUsed() {
         warmCache();
         for (String acctId : new String[] {"ackVCKg1rk", "acAAAAAAAA"})
-            for (Granularity gran : Granularity.values())
+            for (Granularity gran : Granularity.granularities())
                 Assert.assertFalse(TtlCache.SAFETY_TTLS.get(gran).toSeconds() == twoSecondCache.getTtl(acctId, gran).toSeconds());
     }
     

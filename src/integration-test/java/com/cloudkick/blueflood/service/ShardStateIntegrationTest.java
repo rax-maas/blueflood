@@ -18,8 +18,8 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         long time = 1234000L;
         Collection<Integer> shards = Lists.newArrayList(1, 2, 3, 4);
         ScheduleContext ctx = new ScheduleContext(time, shards);
-        ShardStateWorker pull = new ShardStatePuller(shards, ctx);
-        ShardStateWorker push = new ShardStatePusher(shards, ctx);
+        ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
+        ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
         
         for (long t = time; t < time + 10000000; t += 1000) {
             ctx.update(t + 0, 1);
@@ -34,8 +34,7 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         pull.performOperation();
         
         // the numbers we're testing against are the number of slots per granularity in 10000 seconds.
-        for (Granularity g : Granularity.values()) {
-            if (g == Granularity.FULL) continue;
+        for (Granularity g : Granularity.rollupGranularities()) {
             for (int shard : shards) {
                 if (g == Granularity.MIN_5)
                     assertEquals(34, ctx.getSlotStamps(g, shard).size());
@@ -65,10 +64,10 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         ScheduleContext ctxA = new ScheduleContext(time, shardsA);
         ScheduleContext ctxB = new ScheduleContext(time, shardsB);
 
-        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA);
-        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA);
-        ShardStateWorker pushB = new ShardStatePusher(allShards, ctxB);
-        ShardStateWorker pullB = new ShardStatePuller(allShards, ctxB);
+        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager());
+        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager());
+        ShardStateWorker pushB = new ShardStatePusher(allShards, ctxB.getShardStateManager());
+        ShardStateWorker pullB = new ShardStatePuller(allShards, ctxB.getShardStateManager());
         
         // send a few updates to all contexts.
         for (ScheduleContext ctx : new ScheduleContext[] { ctxA, ctxB }) {
@@ -95,8 +94,7 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         pullB.performOperation();
         
         // states should be the same.
-        for (Granularity g : Granularity.values()) {
-            if (g == Granularity.FULL) continue;
+        for (Granularity g : Granularity.rollupGranularities()) {
             for (int shard : allShards)
                 assertEquals(ctxA.getSlotStamps(g, shard), ctxB.getSlotStamps(g, shard));
         }
@@ -132,8 +130,7 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         // given the false impression that all timestamps are the same.
         
         // states should have synced up and be the same again.
-        for (Granularity g : Granularity.values()) {
-            if (g == Granularity.FULL) continue;
+        for (Granularity g : Granularity.rollupGranularities()) {
             assertEquals(ctxA.getSlotStamps(g, commonShard), ctxB.getSlotStamps(g, commonShard));
         }
     }
@@ -158,8 +155,8 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         }};
         
         ScheduleContext ctxA = new ScheduleContext(time, shardsA);
-        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA);
-        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA);
+        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager());
+        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager());
         
         // update.
         time += 1000;
@@ -205,8 +202,8 @@ public class ShardStateIntegrationTest extends CqlTestBase {
         final CountDownLatch latch = new CountDownLatch(2);
         final Throwable[] errBucket = new Throwable[2];
         Thread pushPull = new Thread() { public void run() {
-            ShardStateWorker push = new ShardStatePusher(shards, ctx);
-            ShardStateWorker pull = new ShardStatePuller(shards, ctx);
+            ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
+            ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
             push.setPeriod(1);
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();

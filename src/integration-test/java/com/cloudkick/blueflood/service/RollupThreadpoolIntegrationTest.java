@@ -80,6 +80,8 @@ public class RollupThreadpoolIntegrationTest extends CqlTestBase {
         // start the rollups.
         Thread rollupThread = new Thread(rollupService, "rollup service test");
         rollupThread.start();
+
+        Class.forName("com.cloudkick.blueflood.service.RollupContext"); // Static initializer for the metric
         
         MetricsRegistry registry = Metrics.defaultRegistry();
         Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.cloudkick.blueflood.service", "RollupService", "Rollup Execution Timer"));

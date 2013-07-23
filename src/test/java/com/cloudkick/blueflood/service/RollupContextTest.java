@@ -2,13 +2,13 @@ package com.cloudkick.blueflood.service;
 
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Range;
-import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.MetricsRegistry;
-import java.util.concurrent.TimeUnit;
-
+import com.yammer.metrics.core.Timer;
 import junit.framework.TestCase;
+
+import java.util.concurrent.TimeUnit;
 
 public class RollupContextTest extends TestCase{
 
@@ -18,9 +18,9 @@ public class RollupContextTest extends TestCase{
         Thread myThread = new Thread();
         Timer myTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
         MetricsRegistry REGISTRY = Metrics.defaultRegistry();
-        Histogram myHistogram = REGISTRY.newHistogram(RollupContext.class, "Rollup-Histogram", false);
+        Histogram myHistogram = REGISTRY.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
 
-        RollupContext myRollupContext = new RollupContext(myRange, gran, myThread, myTimer, myHistogram);
+        RollupContext myRollupContext = new RollupContext(myRange, gran, myThread);
 
         assertNotNull(myRollupContext);
         assertTrue(myRollupContext.done());

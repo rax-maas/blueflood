@@ -1,5 +1,6 @@
 package com.cloudkick.blueflood.service;
 
+import com.cloudkick.blueflood.exceptions.GranularityException;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.types.Locator;
@@ -31,11 +32,18 @@ class RollupRunnable implements Runnable {
     }
     
     public void run() {
+        if (log.isDebugEnabled()) {
+            try {
+                log.debug("Executing rollup {}->{} for {} {}", new Object[] {ctx.getSourceGranularity().name(),
+                        ctx.getSourceGranularity().coarser().name(), ctx.getRange().toString(), locator});
+            } catch (GranularityException ex) {
+                log.error("Don't have any granularity coarser than " + ctx.getSourceGranularity());
+                return;
+            }
+        }
+
         ctx.getWaitHist().update(System.currentTimeMillis() - startWait);
         TimerContext timerContext = ctx.getExecuteTimer().time();
-        if (log.isDebugEnabled())
-            log.debug("Executing rollup {}->{} for {} {}", new Object[] {ctx.getSourceGranularity().name(), ctx.getSourceGranularity().coarser().name(), ctx.getRange().toString(), locator});
-        
         try {
             TimerContext calcCtx = calcTimer.time();
             Rollup rollup;

@@ -1,6 +1,8 @@
 package com.cloudkick.blueflood.io;
 
 import com.cloudkick.blueflood.cache.TtlCache;
+import com.cloudkick.blueflood.internal.Account;
+import com.cloudkick.blueflood.internal.InternalAPIFactory;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.cloudkick.blueflood.rollup.MetricsPersistenceOptimizerFactory;
@@ -10,10 +12,8 @@ import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Rollup;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
-import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.blueflood.internal.Account;
-import com.cloudkick.blueflood.internal.InternalAPIFactory;
 import com.cloudkick.blueflood.utils.TimeValue;
+import com.cloudkick.blueflood.utils.Util;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.netflix.astyanax.ColumnListMutation;
@@ -23,7 +23,6 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.util.HashMap;
 import java.util.List;
@@ -236,13 +235,13 @@ public class AstyanaxWriter extends AstyanaxIO {
         try {
             boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
+            ColumnListMutation<String> mutation = mutationBatch.withRow(CF_METRICS_STATE, (long)shard);
             for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> granEntry : updates.entrySet()) {
                 Granularity g = granEntry.getKey();
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
                     // granularity,slot,state
                     String columnName = Util.formatStateColumnName(g, entry.getKey(), entry.getValue().getState().code());
-                    mutationBatch.withRow(CF_METRICS_STATE, (long)shard)
-                            .putColumn(columnName, entry.getValue().getTimestamp())
+                    mutation.putColumn(columnName, entry.getValue().getTimestamp())
                                     // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
                                     // written. this effectively creates a check-then-set update that fails if the value currently in the
                                     // database is newer.
