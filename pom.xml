@@ -101,7 +101,10 @@
       <!-- Used for integration tests -->
       <!-- Spin up Cassandra -->
       <plugin>
-        <!--mvn install:install-file -DgroupId=org.codehaus.mojo -DartifactId=cassandra-maven-plugin -Dversion=1.0.8-1 -Dpackaging=jar -Dfile=./lib/cassandra-maven-plugin-1.0.8-1.jar-->
+        <!-- Install using:
+        mkdir -p ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1
+        cp lib/cassandra-maven* ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1/
+        -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
         <version>1.0.8-1</version>
