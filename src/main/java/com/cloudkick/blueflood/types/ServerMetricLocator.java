@@ -23,7 +23,7 @@ public class ServerMetricLocator extends Locator {
         this.entityId = entityId.replace(expectedDelim, persistDelim);
         this.checkId = checkId.replace(expectedDelim, persistDelim);
         this.metric = metric.replace(expectedDelim, persistDelim);
-        setMetricName(this.buildStringRep());
+        setStringRep(this.buildStringRep());
     }
 
     private ServerMetricLocator(String locator) throws IllegalArgumentException {
@@ -37,7 +37,7 @@ public class ServerMetricLocator extends Locator {
         this.entityId = tokens[1];
         this.checkId = tokens[2];
         this.metric = tokens[3];
-        setMetricName(this.buildStringRep());
+        setStringRep(this.buildStringRep());
     }
 
     public String getCheckId() {
