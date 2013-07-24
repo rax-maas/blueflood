@@ -133,7 +133,7 @@ public class IngressBlackbox extends CqlTestBase {
         }
 
         // let's get those points now.
-        Locator[] locators = new ServerMetricLocator[] {
+        Locator[] locators = new Locator[] {
             ServerMetricLocator.createFromTelescopePrimitives(account, entity, agentCheckName, agentMetricName),
             ServerMetricLocator.createFromTelescopePrimitives(account, entity, externalCheckName,
                     Util.generateMetricName(externalMetricName, mzId))

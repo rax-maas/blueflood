@@ -1,6 +1,7 @@
 package com.cloudkick.blueflood.rollup;
 
 import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.TimeValue;
@@ -12,9 +13,9 @@ import java.util.concurrent.TimeUnit;
 public class StringMetricsPersistenceOptimizerIntegrationTest extends
         CqlTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
-    private ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
+    private Locator locator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
             "randomEntity", "randomCheck", "randomDim.randomMetric");
-    private ServerMetricLocator otherLocator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
+    private Locator otherLocator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
             "randomEntity", "randomCheck", "randomBooleanMetric");
 
     @Before
@@ -45,7 +46,7 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
     // Testing an edge case when there are no metrics available for a locator
     // in the database
     public void testShouldPersistForFirstInsertOfLocator() throws Exception {
-        final ServerMetricLocator dummyLocator = ServerMetricLocator.createFromTelescopePrimitives("acct", "ent",
+        final Locator dummyLocator = ServerMetricLocator.createFromTelescopePrimitives("acct", "ent",
                 "check", "dim.metric");
         final long collectionTimeInSecs = 45678;
         final String testMetric = "HTTP GET failed";

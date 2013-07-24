@@ -43,7 +43,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
         Metric metric = new Metric((byte)MetricHelper.Type.STRING);
         metric.setValueStr("version 1.0.43342346");
         Telescope tel = writeMetric(metricName, metric);
-        ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
+        Locator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
                 tel.getEntityId(), tel.getCheckId(), Util.generateMetricName(metricName, tel.getMonitoringZoneId()));
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -54,7 +54,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
     
     @Test
     public void testCanReadMetadata() throws Exception {
-        ServerMetricLocator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acOne", "ent", "ch", "mz.met");
+        Locator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acOne", "ent", "ch", "mz.met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
 // TODO: uncomment the following pending https://issues.rax.io/browse/CMD-139

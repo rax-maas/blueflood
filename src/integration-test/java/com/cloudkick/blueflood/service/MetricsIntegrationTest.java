@@ -37,7 +37,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxTester at = new AstyanaxTester();
         MutationBatch mb = at.createMutationBatch();
         for (String checkName : checkNames) {
-            ServerMetricLocator loc = ServerMetricLocator.createFromTelescopePrimitives(
+            Locator loc = ServerMetricLocator.createFromTelescopePrimitives(
                     "ac" + CqlTestBase.randString(8), "en" + CqlTestBase.randString(8), checkName, "dim0.intmetric");
             allCheckNames.add(checkName);
             int shard = Util.computeShard(checkName);

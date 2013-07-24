@@ -61,7 +61,7 @@ public class AppMetricLocator extends Locator {
         return String.format("%s,%s,%s,%s", this.service, this.host, this.instance, this.metricName);
     }
 
-    public boolean equals(ServerMetricLocator other) {
+    public boolean equals(Locator other) {
         return other.toString().equals(toString());
     }
 

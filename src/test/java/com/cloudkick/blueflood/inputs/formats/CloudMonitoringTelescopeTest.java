@@ -1,6 +1,7 @@
 package com.cloudkick.blueflood.inputs.formats;
 
 import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
@@ -24,7 +25,7 @@ public class CloudMonitoringTelescopeTest {
         int count = 0;
         for (Map.Entry<String, telescope.thrift.Metric> entry : tel.getMetrics().entrySet()){
             Metric bfMetric = bfMetrics.get(count++);
-            ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
+            Locator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
                     tel.getEntityId(), tel.getCheckId(),  Util.generateMetricName(entry.getKey(), tel.getMonitoringZoneId()));
             Assert.assertTrue(bfMetric.getLocator().equals(locator));
             Assert.assertEquals(tel.getTimestamp(), bfMetric.getCollectionTime());

@@ -61,7 +61,7 @@ public class ServerMetricLocator extends Locator {
          return String.format("%s,%s,%s,%s", this.acctId, this.entityId, this.checkId, this.metric);
     }
 
-    public boolean equals(ServerMetricLocator other) {
+    public boolean equals(Locator other) {
         return other.toString().equals(toString());
     }
 

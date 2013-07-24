@@ -25,7 +25,7 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
     final String externalEntityId = "en" + CqlTestBase.randString(8);
     final String acctId2 = "otherAc" + CqlTestBase.randString(8);
     final String mzId = "mz" + CqlTestBase.randString(3).toUpperCase();
-    final Locator[] locators = new ServerMetricLocator[] {
+    final Locator[] locators = new Locator[] {
         ServerMetricLocator.createFromTelescopePrimitives(acctId, agentEntityId, agentCheckName,
                 dimension + ".intmetric"),
         ServerMetricLocator.createFromTelescopePrimitives(acctId, externalEntityId, externalCheckName,
@@ -92,8 +92,8 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
                 List<RollupMetric> rms = rh.GetDataByPoints(
                         locator.getAccountId(),
                         locator.getMetricName(),
-                        baseMillis, 
-                        baseMillis + 86400000, 
+                        baseMillis,
+                        baseMillis + 86400000,
                         points.get(g2.name())).getMetrics();
                 assertEquals((int) answers.get(g2.name()), rms.size());
             }

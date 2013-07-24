@@ -1,5 +1,6 @@
 package com.cloudkick.blueflood.io;
 
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.MetricHelper;
 import telescope.thrift.Metric;
@@ -37,9 +38,9 @@ public class AstyanaxWriterIntegrationTest extends CqlTestBase {
     public void testMetadataGetsWritten() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);
         
-        ServerMetricLocator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acONE", "entityId", "checkId",
+        Locator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acONE", "entityId", "checkId",
                 "mz.metric");
-        ServerMetricLocator loc2 = ServerMetricLocator.createFromTelescopePrimitives("acTWO", "entityId", "checkId",
+        Locator loc2 = ServerMetricLocator.createFromTelescopePrimitives("acTWO", "entityId", "checkId",
                 "mz.metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
