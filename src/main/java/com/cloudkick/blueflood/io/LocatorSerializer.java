@@ -27,6 +27,6 @@ public class LocatorSerializer extends AbstractSerializer<Locator>{
         if (byteBuffer == null) {
             return null;
         }
-        return new Locator(charset.decode(byteBuffer).toString());
+        return Locator.createLocatorFromDbKey(charset.decode(byteBuffer).toString());
     }
 }

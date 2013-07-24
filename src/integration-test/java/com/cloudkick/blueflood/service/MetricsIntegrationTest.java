@@ -7,6 +7,7 @@ import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.*;
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.Util;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
@@ -37,7 +38,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxTester at = new AstyanaxTester();
         MutationBatch mb = at.createMutationBatch();
         for (String checkName : checkNames) {
-            Locator loc = ServerMetricLocator.createFromTelescopePrimitives(
+            Locator loc = Locator.createLocatorFromPathComponents(
                     "ac" + CqlTestBase.randString(8), "en" + CqlTestBase.randString(8), checkName, "dim0.intmetric");
             allCheckNames.add(checkName);
             int shard = Util.computeShard(checkName);
@@ -94,8 +95,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         final String dimension = "dim0";
         final long endMillis = baseMillis + (60 * 60 * hours * 1000);
         writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
-        final Locator locator = ServerMetricLocator.createFromTelescopePrimitives(acctId, entityId, checkName,
-                dimension + ".intmetric");
+        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, dimension + ".intmetric");
 
         for (Granularity gran : new Granularity[] {Granularity.FULL, Granularity.MIN_5, Granularity.MIN_20, Granularity.MIN_60, Granularity.MIN_240}) {
             
@@ -154,8 +154,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         final String dimension = "dim0";
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
         writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
-        final Locator locator = ServerMetricLocator.createFromTelescopePrimitives(acctId, entityId, checkName,
-                "dim0.intmetric");
+        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, "dim0.intmetric");
 
         // FULL -> 5m
         Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
@@ -215,8 +214,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         String checkName = "with_mz";
         String mzId = "mzGRD";
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        final Locator locator = ServerMetricLocator.createFromTelescopePrimitives(acctId, entityId, checkName,
-                Util.generateMetricName("intmetric", mzId));
+        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, Util.generateMetricName("intmetric", mzId));
         
         final Telescope withMz = makeTelescope("withMz", checkName, acctId, "module", entityId, "target", baseMillis, null);
         withMz.setMonitoringZoneId(mzId);
@@ -245,8 +243,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         final String entityId = "en" + CqlTestBase.randString(8);
         final String checkName = "test_simple_insert";
         // fyi, metric names are "intmetric" and "doublemetric"
-        final Locator locator  = ServerMetricLocator.createFromTelescopePrimitives(acctId, entityId, checkName,
-                "dim0.intmetric");
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, "dim0.intmetric");
         
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -274,8 +271,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L;
         Collection<Telescope> telescopes = new ArrayList<Telescope>();
-        final Locator locator = ServerMetricLocator.createFromTelescopePrimitives("ac0001", "en0001", "ch0001",
-                "dim0.test-metric");
+        final Locator locator = Locator.createLocatorFromDbKey("ac0001.en0001.ch0001.dim0.test-metric");
         for (int i = 0; i < 100; i++) {
             Telescope t = new Telescope("tId", "ch0001", "ac0001", "http", "en0001", "www.example.com", baseMillis + (i * 1000), 1, VerificationModel.ONE);
             Map<String, Metric> metrics = new HashMap<String, Metric>();

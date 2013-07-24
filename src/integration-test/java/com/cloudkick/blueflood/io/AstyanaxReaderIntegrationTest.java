@@ -3,7 +3,6 @@ package com.cloudkick.blueflood.io;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Range;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.utils.MetricHelper;
 import org.junit.Assert;
@@ -24,7 +23,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
         Telescope tel = writeMetric(metricName, metric);
         AstyanaxReader reader = AstyanaxReader.getInstance();
 
-        Locator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(), tel.getEntityId(),
+        Locator locator = Locator.createLocatorFromPathComponents(tel.getAcctId(), tel.getEntityId(),
                 tel.getCheckId(), Util.generateMetricName(metricName, tel.getMonitoringZoneId()));
         List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(tel.getTimestamp() - 100000,
                 tel.getTimestamp() + 100000), Granularity.FULL);
@@ -43,7 +42,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
         Metric metric = new Metric((byte)MetricHelper.Type.STRING);
         metric.setValueStr("version 1.0.43342346");
         Telescope tel = writeMetric(metricName, metric);
-        Locator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
+        Locator locator = Locator.createLocatorFromPathComponents(tel.getAcctId(),
                 tel.getEntityId(), tel.getCheckId(), Util.generateMetricName(metricName, tel.getMonitoringZoneId()));
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -54,7 +53,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
     
     @Test
     public void testCanReadMetadata() throws Exception {
-        Locator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acOne", "ent", "ch", "mz.met");
+        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.ch.mz.met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
 // TODO: uncomment the following pending https://issues.rax.io/browse/CMD-139

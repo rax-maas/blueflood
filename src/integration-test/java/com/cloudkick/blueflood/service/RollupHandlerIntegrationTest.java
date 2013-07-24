@@ -26,10 +26,8 @@ public class RollupHandlerIntegrationTest extends CqlTestBase {
     final String acctId2 = "otherAc" + CqlTestBase.randString(8);
     final String mzId = "mz" + CqlTestBase.randString(3).toUpperCase();
     final Locator[] locators = new Locator[] {
-        ServerMetricLocator.createFromTelescopePrimitives(acctId, agentEntityId, agentCheckName,
-                dimension + ".intmetric"),
-        ServerMetricLocator.createFromTelescopePrimitives(acctId, externalEntityId, externalCheckName,
-                Util.generateMetricName("intmetric", mzId)),
+        Locator.createLocatorFromPathComponents(acctId, agentEntityId, agentCheckName, dimension + ".intmetric"),
+        Locator.createLocatorFromPathComponents(acctId, externalEntityId, externalCheckName, Util.generateMetricName("intmetric", mzId)),
     };
     final Map<String, Set<String>> checkToMetricsMap = new HashMap<String, Set<String>>();
 

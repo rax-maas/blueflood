@@ -4,7 +4,6 @@ import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnList;
@@ -29,7 +28,7 @@ public class GetPoints {
         Map<String, Object> options = parseOptions(args);
         validate(options);
         
-        Locator locator = ServerMetricLocator.createFromTelescopePrimitives(
+        Locator locator = Locator.createLocatorFromPathComponents(
                 (String)options.get("acctId"), 
                 (String)options.get("entityId"), 
                 (String)options.get("checkId"),

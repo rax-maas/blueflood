@@ -7,7 +7,6 @@ import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.ScheduleContext;
 import com.cloudkick.blueflood.types.Locator;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
 import junit.framework.Assert;
 import org.apache.thrift.TBase;
@@ -105,7 +104,7 @@ public class ScribeHandlerIntegrationTest extends CqlTestBase {
         Assert.assertEquals(ResultCode.OK, ResultCode.findByValue(myResultCode.getValue()));
         Thread.sleep(20000); // Unit and type processing occurs in a thread. No guarantee of completion before return of Log()
 
-        Locator loc = ServerMetricLocator.createFromTelescopePrimitives(tscope.getAcctId(), tscope.getEntityId(),
+        Locator loc = Locator.createLocatorFromPathComponents(tscope.getAcctId(), tscope.getEntityId(),
                 tscope.getCheckId(), Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
         try {
             Object u = cache.get(loc, "unit");

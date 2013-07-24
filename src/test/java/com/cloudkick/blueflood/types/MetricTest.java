@@ -12,7 +12,7 @@ public class MetricTest {
 
     @Test
     public void testMetricType() {
-        Locator locator = new Locator("accountId.metricName");
+        Locator locator = Locator.createLocatorFromDbKey("accountId.metricName");
 
         Metric metric = new Metric(locator, "Foo", System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
         Assert.assertEquals("S", metric.getType().toString());
@@ -50,7 +50,7 @@ public class MetricTest {
 
     @Test
     public void testTTL() {
-        Locator locator = new Locator("accountId.metricName");
+        Locator locator = Locator.createLocatorFromDbKey("accountId.metricName");
         Metric metric = new Metric(locator, "Foo", System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
 
         try {
