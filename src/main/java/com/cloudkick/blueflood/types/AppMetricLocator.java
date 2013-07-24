@@ -30,7 +30,7 @@ public class AppMetricLocator extends Locator {
         this.host = tokens[1];
         this.instance = tokens[2];
         this.metricName = tokens[3];
-        setMetricName(this.buildStringRep());
+        setStringRep(this.buildStringRep());
     }
 
     private AppMetricLocator(String service, String host, String instance, String metricName) {
@@ -38,7 +38,7 @@ public class AppMetricLocator extends Locator {
         this.host = host;
         this.instance = instance;
         this.metricName = metricName;
-        setMetricName(this.buildStringRep());
+        setStringRep(this.buildStringRep());
     }
 
     public String getService() {

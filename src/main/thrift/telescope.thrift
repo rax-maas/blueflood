@@ -284,16 +284,19 @@ service TelescopeTestServer
 
 service RollupServer
 {
-  RollupMetrics GetRollupByPoints(
-      1: string metricName,
-      2: i64 from,
-      3: i64 to,
-      4: i32 points);
-  RollupMetrics GetRollupByResolution(
-      1: string metricName,
-      2: i64 from,
-      3: i64 to,
-      4: Resolution resolution);
+  RollupMetrics GetDataByPoints(
+      1: string accountId,
+      2: string metricName,
+      3: i64 from,
+      4: i64 to,
+      5: i32 points);
+  RollupMetrics GetDataByResolution(
+      1: string accountId,
+      2: string metricName,
+      3: i64 from,
+      4: i64 to,
+      5: Resolution resolution);
+
   list<MetricInfo> GetMetricsForCheck(
       1: string acctId,
       2: string entityId,
