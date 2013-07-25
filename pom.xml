@@ -184,6 +184,15 @@
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
         </configuration>
+        <executions>
+          <execution>
+            <id>generate-fat-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assembly</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
