@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.service;
 
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
@@ -13,7 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ShardStateIntegrationTest extends CqlTestBase {
+public class ShardStateIntegrationTest extends IntegrationTestBase {
     public void testSingleShardManager() {
         long time = 1234000L;
         Collection<Integer> shards = Lists.newArrayList(1, 2, 3, 4);

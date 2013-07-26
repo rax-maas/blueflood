@@ -24,7 +24,7 @@ public class RollupHandler implements RollupServer.Iface {
 
     private final Meter rollupsByPointsMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by points", "BF-API", TimeUnit.SECONDS);
     private final Meter rollupsByGranularityMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by gran", "BF-API", TimeUnit.SECONDS);
-    private final Timer metricsForCheckTimer = Metrics.newTimer(RollupHandler.class, "Get metrics for check", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    protected final Timer metricsForCheckTimer = Metrics.newTimer(RollupHandler.class, "Get metrics for check", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Timer metricsFetchTimer = Metrics.newTimer(RollupHandler.class, "Get metrics from db", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Timer rollupsCalcOnReadTimer = Metrics.newTimer(RollupHandler.class, "Rollups calculation on read", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Histogram numFullPointsReturned = Metrics.newHistogram(RollupHandler.class, "Full res points returned", true);
@@ -41,7 +41,7 @@ public class RollupHandler implements RollupServer.Iface {
             int points) throws TException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        return GetRollupByGranularity(accountId, metricName, from, to, g);
+        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
     }
 
     public RollupMetrics GetDataByResolution(
@@ -54,19 +54,23 @@ public class RollupHandler implements RollupServer.Iface {
         if (resolution == null)
           throw new TException("Resolution is not set");
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        return GetRollupByGranularity(accountId, metricName, from, to, g);
+        return GetRollupByGranularity(accountId + "," + metricName, from, to, g);
+    }
+
+    @Override
+    public List<MetricInfo> GetMetricsForCheck(String acctId, String entityId, String checkId) throws TException {
+        throw new TException("Not implemented.");
     }
 
 
     RollupMetrics GetRollupByGranularity(
-            String accountId,
             String metricName,
             long from,
             long to,
             Granularity g) throws TException {
 
         final TimerContext ctx = metricsFetchTimer.time();
-        final Locator locator = Locator.createLocatorFromAccountIdAndName(accountId, metricName);
+        final Locator locator = new Locator(metricName);
         final List<RollupMetric> points = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
                 new Range(g.snapMillis(from), to),
@@ -113,13 +117,5 @@ public class RollupHandler implements RollupServer.Iface {
         String unitString = AstyanaxReader.getUnitString(locator);
 
         return new RollupMetrics(points, unitString);
-    }
-
-    public List<MetricInfo> GetMetricsForCheck(String accountId, String entityId, String checkId) throws TException {
-        final TimerContext ctx = metricsForCheckTimer.time();
-        List<MetricInfo> metrics = AstyanaxReader.getInstance().getMetricsForCheck(accountId, entityId, checkId);
-        ctx.stop();
-
-        return metrics;
     }
 }
