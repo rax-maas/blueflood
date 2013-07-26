@@ -21,7 +21,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
     final String acctId = "ac" + IntegrationTestBase.randString(8);
     final String metricName = "met_" + IntegrationTestBase.randString(8);
     final Locator[] locators = new Locator[] {
-            Locator.createLocatorFromAccountIdAndName(acctId, metricName)
+            Locator.createLocatorFromPathComponents(acctId, metricName)
     };
 
     @Override
@@ -76,8 +76,8 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 List<RollupMetric> rms = rh.GetDataByPoints(
                         locator.getAccountId(),
                         locator.getMetricName(),
-                        baseMillis, 
-                        baseMillis + 86400000, 
+                        baseMillis,
+                        baseMillis + 86400000,
                         points.get(g2.name())).getMetrics();
                 assertEquals((int) answers.get(g2.name()), rms.size());
             }

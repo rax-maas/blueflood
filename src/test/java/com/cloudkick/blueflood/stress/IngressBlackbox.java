@@ -9,7 +9,6 @@ import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.RollupServiceMBean;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Rollup;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.scribe.ConnectionException;
 import com.cloudkick.blueflood.scribe.LogException;
@@ -133,10 +132,9 @@ public class IngressBlackbox extends IntegrationTestBase {
         }
 
         // let's get those points now.
-        Locator[] locators = new ServerMetricLocator[] {
-            ServerMetricLocator.createFromTelescopePrimitives(account, entity, agentCheckName, agentMetricName),
-            ServerMetricLocator.createFromTelescopePrimitives(account, entity, externalCheckName,
-                    Util.generateMetricName(externalMetricName, mzId))
+        Locator[] locators = new Locator[] {
+            Locator.createLocatorFromPathComponents(account, entity, agentCheckName, agentMetricName),
+            Locator.createLocatorFromPathComponents(account, entity, externalCheckName, Util.generateMetricName(externalMetricName, mzId))
         };
         for (Locator locator : locators) {
             AstyanaxReader reader = AstyanaxReader.getInstance();

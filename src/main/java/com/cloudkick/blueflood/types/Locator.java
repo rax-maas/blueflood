@@ -1,5 +1,7 @@
 package com.cloudkick.blueflood.types;
 
+import org.apache.commons.lang.StringUtils;
+
 public class Locator {
     private static String metricTokenSeparator = ",";
 
@@ -11,8 +13,8 @@ public class Locator {
         // Left empty
     }
 
-    public Locator(String rep) throws IllegalArgumentException {
-        setStringRep(rep);
+    private Locator(String fullyQualifiedMetricName) throws IllegalArgumentException {
+        setStringRep(fullyQualifiedMetricName);
     }
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
@@ -41,7 +43,11 @@ public class Locator {
         return stringRep.equals(other.toString());
     }
 
-    public static Locator createLocatorFromAccountIdAndName(String accountId, String name) {
-        return new Locator(String.format("%s%s%s", accountId, metricTokenSeparator, name));
+    public static Locator createLocatorFromPathComponents(String accountId, String... parts) throws IllegalArgumentException {
+        return new Locator(accountId + metricTokenSeparator + StringUtils.join(parts, metricTokenSeparator));
+    }
+
+    public static Locator createLocatorFromDbKey(String fullyQualifiedMetricName) throws IllegalArgumentException {
+        return new Locator(fullyQualifiedMetricName);
     }
 }

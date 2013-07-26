@@ -1,6 +1,8 @@
 package com.cloudkick.blueflood.io;
 
-import com.cloudkick.blueflood.types.ServerMetricLocator;
+import com.cloudkick.blueflood.types.Locator;
+import com.cloudkick.blueflood.utils.MetricHelper;
+import telescope.thrift.Metric;
 
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
     
@@ -8,33 +10,31 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
-        
+
         writeMetric("string_metric", "This is a string test");
         
         assertNumberOfRows("metrics_string", 1);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
     }
-    
+
     public void testEnsureNumericMetricsDoNotEndUpInStringSpaces() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
-        
+
         writeMetric("long_metric", 64L);
         
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 1);
         assertNumberOfRows("metrics_locator", 1);
     }
-    
+
     public void testMetadataGetsWritten() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);
-        
-        ServerMetricLocator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acONE", "entityId", "checkId",
-                "mz.metric");
-        ServerMetricLocator loc2 = ServerMetricLocator.createFromTelescopePrimitives("acTWO", "entityId", "checkId",
-                "mz.metric");
+
+        Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
         // multiple cols on a single locator should produce a single row.
@@ -52,7 +52,7 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         writer.writeMetadataValue(loc1, "f", "Some6String");
 
         assertNumberOfRows("metrics_metadata", 1);
-        
+
         // new locator means new row.
         writer.writeMetadataValue(loc2, "a", "strrrrring");
         assertNumberOfRows("metrics_metadata", 2);
