@@ -4,10 +4,6 @@ import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.MetricHelper;
 import telescope.thrift.Metric;
 
-public class AstyanaxWriterIntegrationTest extends CqlTestBase {
-
-import com.cloudkick.blueflood.types.ServerMetricLocator;
-
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
     
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
