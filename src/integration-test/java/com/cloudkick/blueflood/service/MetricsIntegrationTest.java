@@ -134,7 +134,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         assertEquals(60 * hours, rollup.getCount());
     }
-    
     public void testRollupGenerationSimple() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -143,7 +142,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
-        writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
 
         writeFullData(locator, baseMillis, hours, writer);
