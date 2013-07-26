@@ -70,7 +70,7 @@ public class RollupHandler implements RollupServer.Iface {
             Granularity g) throws TException {
 
         final TimerContext ctx = metricsFetchTimer.time();
-        final Locator locator = new Locator(metricName);
+        final Locator locator = Locator.createLocatorFromDbKey(metricName);
         final List<RollupMetric> points = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
                 new Range(g.snapMillis(from), to),

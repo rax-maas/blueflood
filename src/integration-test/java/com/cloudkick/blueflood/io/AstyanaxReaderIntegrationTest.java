@@ -4,6 +4,8 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
+import com.cloudkick.blueflood.utils.Util;
+import com.cloudkick.blueflood.utils.MetricHelper;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,7 +31,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
                 metric.getCollectionTime()), Granularity.FULL);
         assertEquals(numPoints, res.size());
     }
-    
+
     @Test
     public void testCanReadString() throws Exception {
         Metric metric = writeMetric("string_metric", "version 1.0.43342346");
@@ -40,10 +42,10 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
                 metric.getCollectionTime() + 100000), Granularity.FULL);
         assertTrue(res.size() > 0);
     }
-    
+
     @Test
     public void testCanReadMetadata() throws Exception {
-        ServerMetricLocator loc1 = ServerMetricLocator.createFromTelescopePrimitives("acOne", "ent", "ch", "mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
 // TODO: uncomment the following pending https://issues.rax.io/browse/CMD-139
@@ -53,7 +55,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
 //            put("c", new byte[]{11,22,33,44,55,66,77,88});
 //            put("d", new byte[]{-1,-2,-3,-4});
 //        }};
-        
+
 //        for (Map.Entry<String, byte[]> entry : expected.entrySet()) {
 //            writer.writeMetadataValue(loc1, entry.getKey(), entry.getValue());
 //        }

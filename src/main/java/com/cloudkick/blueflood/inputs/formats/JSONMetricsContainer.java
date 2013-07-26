@@ -23,7 +23,7 @@ public class JSONMetricsContainer extends MetricsContainer {
 
         final List<Metric> metrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
-            final Locator locator = Locator.createLocatorFromAccountIdAndName(jsonMetric.getAccountId(),
+            final Locator locator = Locator.createLocatorFromPathComponents(jsonMetric.getAccountId(),
                     jsonMetric.getMetricName());
             final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                     new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());

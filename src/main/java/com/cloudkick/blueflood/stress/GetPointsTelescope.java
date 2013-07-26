@@ -1,10 +1,10 @@
 package com.cloudkick.blueflood.stress;
 
 import com.cloudkick.blueflood.rollup.Granularity;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
-import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.service.Configuration;
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.MetricHelper;
+import com.cloudkick.blueflood.utils.Util;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -59,7 +59,7 @@ public class GetPointsTelescope {
         if (mz != null) {
             metricLabel = String.format("%s.%s", mz, metricLabel);
         }
-        String metricName = ServerMetricLocator.createFromTelescopePrimitives(accountId, (String)options.get("entityId"), 
+        String metricName = Locator.createLocatorFromPathComponents(accountId, (String)options.get("entityId"),
         		(String)options.get("checkId"), (String)metricLabel).getMetricName();
 
         try {

@@ -145,7 +145,7 @@ public class AstyanaxReader extends AstyanaxIO {
         final String dBKey = Util.generateMetricsDiscoveryDBKey(accountId, entityId, checkId);
         for (Column<String> col : getMetricsList(dBKey)) {
             String metric = col.getName();
-            String unitString = getUnitString(ServerMetricLocator.createFromTelescopePrimitives(accountId, entityId, checkId, metric));
+            String unitString = getUnitString(Locator.createLocatorFromPathComponents(accountId, entityId, checkId, metric));
             results.add(new MetricInfo(col.getName(), unitString));
         }
         return results;

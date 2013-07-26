@@ -1,8 +1,8 @@
 package com.cloudkick.blueflood.rollup;
 
+import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.Metric;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.netflix.astyanax.MutationBatch;
 import org.junit.Before;
@@ -12,10 +12,8 @@ import java.util.concurrent.TimeUnit;
 public class StringMetricsPersistenceOptimizerIntegrationTest extends
         IntegrationTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
-    private ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
-            "randomEntity", "randomCheck", "randomDim.randomMetric");
-    private ServerMetricLocator otherLocator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
-            "randomEntity", "randomCheck", "randomBooleanMetric");
+    private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
+    private Locator otherLocator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomBooleanMetric");
 
     @Before
     protected void setUp() throws Exception {
@@ -45,8 +43,7 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
     // Testing an edge case when there are no metrics available for a locator
     // in the database
     public void testShouldPersistForFirstInsertOfLocator() throws Exception {
-        final ServerMetricLocator dummyLocator = ServerMetricLocator.createFromTelescopePrimitives("acct", "ent",
-                "check", "dim.metric");
+        final Locator dummyLocator = Locator.createLocatorFromDbKey("acct.ent.check.dim.metric");
         final long collectionTimeInSecs = 45678;
         final String testMetric = "HTTP GET failed";
         final Metric newMetric = new Metric(dummyLocator, testMetric, collectionTimeInSecs,
