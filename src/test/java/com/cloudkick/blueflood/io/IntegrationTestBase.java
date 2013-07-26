@@ -95,7 +95,7 @@ public class IntegrationTestBase extends TestCase {
     
     protected Metric writeMetric(String name, Object value) throws Exception {
         final List<Metric> metrics = new ArrayList<Metric>();
-        final Locator locator = Locator.createLocatorFromAccountIdAndName("acctId", name);
+        final Locator locator = Locator.createLocatorFromPathComponents("acctId", name);
         Metric metric = new Metric(locator, value, System.currentTimeMillis(),
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
@@ -110,7 +110,7 @@ public class IntegrationTestBase extends TestCase {
         final long now = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
-            final Locator locator = Locator.createLocatorFromAccountIdAndName(accountId, "met." + randString(8));
+            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met", randString(8));
             metrics.add(getRandomIntMetric(locator, now - 10000000));
         }
 

@@ -1,6 +1,5 @@
 package com.cloudkick.blueflood.cache;
 
-import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.MetricMetadata;

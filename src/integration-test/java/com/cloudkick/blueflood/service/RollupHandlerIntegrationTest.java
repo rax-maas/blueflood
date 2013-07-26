@@ -21,7 +21,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
     final String acctId = "ac" + IntegrationTestBase.randString(8);
     final String metricName = "met_" + IntegrationTestBase.randString(8);
     final Locator[] locators = new Locator[] {
-            Locator.createLocatorFromAccountIdAndName(acctId, metricName)
+            Locator.createLocatorFromPathComponents(acctId, metricName)
     };
 
     @Override

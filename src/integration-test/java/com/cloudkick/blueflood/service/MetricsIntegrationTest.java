@@ -30,7 +30,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String accountId = "ac" + randString(8);
         final List<Locator> locators = new ArrayList<Locator>();
         for (int i = 0; i < hours; i++) {
-            locators.add(Locator.createLocatorFromAccountIdAndName(accountId, "test:locator:inserts:" + i));
+            locators.add(Locator.createLocatorFromPathComponents(accountId, "test:locator:inserts:" + i));
         }
 
         AstyanaxTester at = new AstyanaxTester();
@@ -86,7 +86,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (60 * 60 * hours * 1000);
-        final Locator locator = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
+        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
 
         writeFullData(locator, baseMillis, hours,  writer);
         for (Granularity gran : new Granularity[] {Granularity.FULL, Granularity.MIN_5, Granularity.MIN_20, Granularity.MIN_60, Granularity.MIN_240}) {
@@ -144,7 +144,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
         writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
-        final Locator locator = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
+        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
 
         writeFullData(locator, baseMillis, hours, writer);
 
@@ -206,7 +206,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer," + randString(8);
 
-        final Locator locator  = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -231,7 +231,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L;
 
-        final Locator locator = Locator.createLocatorFromAccountIdAndName("ac0001",
+        final Locator locator = Locator.createLocatorFromPathComponents("ac0001",
                 "fooService,fooServer," + randString(8));
 
         final List<Metric> metrics = new ArrayList<Metric>();
