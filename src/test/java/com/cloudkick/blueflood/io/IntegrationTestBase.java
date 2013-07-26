@@ -1,8 +1,9 @@
 package com.cloudkick.blueflood.io;
 
-import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.types.Locator;
+import com.cloudkick.blueflood.types.Metric;
+import com.cloudkick.blueflood.utils.TimeValue;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
@@ -10,14 +11,14 @@ import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
 import junit.framework.Assert;
 import junit.framework.TestCase;
-import telescope.thrift.Metric;
-import telescope.thrift.Telescope;
-import telescope.thrift.VerificationModel;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
-public class CqlTestBase extends TestCase {
+public class IntegrationTestBase extends TestCase {
 
     static {
         try {
@@ -92,27 +93,28 @@ public class CqlTestBase extends TestCase {
         // meh
     }
     
-    protected Telescope writeMetric(String name, Metric m) throws Exception {
-        Map<String, Metric> metrics = new HashMap<String, Metric>();
-        metrics.put(name, m);
-        
-        Telescope tel = new Telescope("id", "checkId", "acctId", "http", "entityId", "target", System.currentTimeMillis(), 1, VerificationModel.ONE);
-        tel.setMonitoringZoneId("mzGRD");
-        tel.setMetrics(metrics);
-        final CloudMonitoringTelescope cloudMonitoringTelescope = new CloudMonitoringTelescope(tel);
+    protected Metric writeMetric(String name, Object value) throws Exception {
+        final List<Metric> metrics = new ArrayList<Metric>();
+        final Locator locator = Locator.createLocatorFromAccountIdAndName("acctId", name);
+        Metric metric = new Metric(locator, value, System.currentTimeMillis(),
+                new TimeValue(1, TimeUnit.DAYS), "unknown");
+        metrics.add(metric);
+        AstyanaxWriter.getInstance().insertFull(metrics);
 
-        AstyanaxWriter.getInstance().insertFull(cloudMonitoringTelescope.toMetrics());
-        return tel;
+        return metric;
     }
 
-    protected static Map<String, Metric> makeRandomIntMetrics(String dimension, int count) {
-        Map<String, Metric> map = new HashMap<String, Metric>();
+    protected List<Metric> makeRandomIntMetrics(int count) {
+        final String accountId = "ac" + randString(8);
+        List<Metric> metrics = new ArrayList<Metric>();
+        final long now = System.currentTimeMillis();
+
         for (int i = 0; i < count; i++) {
-            Metric m = new Metric((byte)'i');
-            m.setValueI32(rand.nextInt());
-            map.put(dimension + "." + randString(8), m);
+            final Locator locator = Locator.createLocatorFromAccountIdAndName(accountId, "met." + randString(8));
+            metrics.add(getRandomIntMetric(locator, now - 10000000));
         }
-        return map;
+
+        return metrics;
     }
 
     protected static String randString(int length) {
@@ -122,23 +124,11 @@ public class CqlTestBase extends TestCase {
         return sb.toString();
     }
 
-    protected static Map<String, Metric> makeMetrics(String dimension) {
-        Map<String, Metric> metrics = new HashMap<String, Metric>();
-
-        Metric intmetric = new Metric((byte)'i');
-        intmetric.setValueI32(32 + Math.abs(rand.nextInt(10)));
-        if (dimension != null)
-            metrics.put(dimension + ".intmetric", intmetric);
-        else
-            metrics.put("intmetric", intmetric);
-
-        return metrics;
+    protected int getRandomIntMetricValue() {
+        return rand.nextInt();
     }
 
-    public static Telescope makeTelescope(String id, String checkId, String acctId, String checkModule, String entityId, String target, long timestamp, String dimension) {
-        Telescope tel = new Telescope(id, checkId, acctId, checkModule, entityId, target, timestamp, 1, VerificationModel.ONE);
-        tel.setMetrics(makeMetrics(dimension));
-        return tel;
+    protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
+        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
-
 }

@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.rollup;
 
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.ServerMetricLocator;
 import com.cloudkick.blueflood.utils.TimeValue;
@@ -10,7 +10,7 @@ import org.junit.Before;
 import java.util.concurrent.TimeUnit;
 
 public class StringMetricsPersistenceOptimizerIntegrationTest extends
-        CqlTestBase {
+        IntegrationTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
     private ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives("randomAccount",
             "randomEntity", "randomCheck", "randomDim.randomMetric");

@@ -3,7 +3,7 @@ package com.cloudkick.blueflood.inputs.handlers;
 import com.cloudkick.blueflood.cache.MetadataCache;
 import com.cloudkick.blueflood.exceptions.CacheException;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.ScheduleContext;
 import com.cloudkick.blueflood.types.Locator;
@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-public class ScribeHandlerIntegrationTest extends CqlTestBase {
+public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
     private ScheduleContext context;
     private Collection<Integer> manageShards = new HashSet<Integer>();
     private static TSerializer serializer;

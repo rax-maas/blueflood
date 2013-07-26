@@ -114,7 +114,7 @@ public class Main {
         // start up query services.
         if (Configuration.getBooleanProperty("QUERY_MODE")) {
             String metricsQuery = "Metrics Query";
-            RollupServer.Iface rollupHandler = new RollupHandler();
+            RollupServer.Iface rollupHandler = new CloudMonitoringRollupHandler();
             RollupServer.Processor rollupProcessor = new RollupServer.Processor(rollupHandler);
     
             final BlockingQueue<Runnable> thriftOverflowQueueTelescopes = new ArrayBlockingQueue<Runnable>(
