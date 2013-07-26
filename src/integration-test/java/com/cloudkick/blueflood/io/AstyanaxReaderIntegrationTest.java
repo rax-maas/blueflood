@@ -14,7 +14,7 @@ import telescope.thrift.Telescope;
 import java.util.List;
 
 public class AstyanaxReaderIntegrationTest extends CqlTestBase {
-    
+
     @Test
     public void testCanReadNumeric() throws Exception {
         String metricName = "long_metric";
@@ -35,7 +35,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
                 tel.getTimestamp()), Granularity.FULL);
         assertEquals(numPoints, res.size());
     }
-    
+
     @Test
     public void testCanReadString() throws Exception {
         String metricName = "string_metric";
@@ -50,10 +50,10 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
                 tel.getTimestamp() + 100000), Granularity.FULL);
         assertTrue(res.size() > 0);
     }
-    
+
     @Test
     public void testCanReadMetadata() throws Exception {
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.ch.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
 // TODO: uncomment the following pending https://issues.rax.io/browse/CMD-139
@@ -63,7 +63,7 @@ public class AstyanaxReaderIntegrationTest extends CqlTestBase {
 //            put("c", new byte[]{11,22,33,44,55,66,77,88});
 //            put("d", new byte[]{-1,-2,-3,-4});
 //        }};
-        
+
 //        for (Map.Entry<String, byte[]> entry : expected.entrySet()) {
 //            writer.writeMetadataValue(loc1, entry.getKey(), entry.getValue());
 //        }

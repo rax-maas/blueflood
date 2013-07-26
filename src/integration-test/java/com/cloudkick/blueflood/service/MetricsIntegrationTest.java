@@ -271,7 +271,7 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L;
         Collection<Telescope> telescopes = new ArrayList<Telescope>();
-        final Locator locator = Locator.createLocatorFromDbKey("ac0001.en0001.ch0001.dim0.test-metric");
+        final Locator locator = Locator.createLocatorFromPathComponents("ac0001", "en0001", "ch0001", "dim0", "test-metric");
         for (int i = 0; i < 100; i++) {
             Telescope t = new Telescope("tId", "ch0001", "ac0001", "http", "en0001", "www.example.com", baseMillis + (i * 1000), 1, VerificationModel.ONE);
             Map<String, Metric> metrics = new HashMap<String, Metric>();

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class GenericMetricsPersistenceOptimizerIntegrationTest extends
         CqlTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
-    private Locator locator = Locator.createLocatorFromDbKey("randomAccount.randomEntity.randomCheck.randomDim.randomMetric");
+    private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
 
     @Before
     protected void setUp() throws Exception {
@@ -47,7 +47,7 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
     // Testing an edge case when there are no metrics available for a locator
     // in the database
     public void testShouldPersistForFirstInsertOfLocator() throws Exception {
-        final Locator dummyLocator = Locator.createLocatorFromDbKey("acctId.entityId.checkId.dim.metric");
+        final Locator dummyLocator = Locator.createLocatorFromPathComponents("acctId", "entityId", "checkId", "dim", "metric");
         final long collectionTimeInSecs = 45678;
         final int testMetric = 789;
         final Metric newMetric = new Metric(dummyLocator, testMetric, collectionTimeInSecs,

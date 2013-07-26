@@ -13,8 +13,8 @@ public class MetadataCacheIntegrationTest extends CqlTestBase {
         assertNumberOfRows("metrics_metadata", 0);
         
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.chk.mz.met");
-        Locator loc2 = Locator.createLocatorFromDbKey("acTwo.ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "chk", "mz", "met");
         cache.put(loc1, "metaA", "some string");
         cache.put(loc1, "metaB", "fooz");
         cache.put(loc1, "metaC", "some other string");
@@ -26,15 +26,15 @@ public class MetadataCacheIntegrationTest extends CqlTestBase {
     }
     
     public void testGetNull() throws Exception {
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         assertNull(cache1.get(loc1, "foo"));
         assertNull(cache1.get(loc1, "foo"));
     }
 
     public void testCollisions() throws Exception {
-        Locator loc1 = Locator.createLocatorFromDbKey("ac76PeGPSR,entZ4MYd1W,chJ0fvB5Ao,mzord.truncated"); // put unit of bytes
-        Locator loc2 = Locator.createLocatorFromDbKey("acTmPLSgfv,enLctkAMeN,chQwBe5YiE,mzdfw.cert_end_in"); // put type of I
+        Locator loc1 = Locator.createLocatorFromPathComponents("ac76PeGPSR", "entZ4MYd1W", "chJ0fvB5Ao", "mzord", "truncated"); // put unit of bytes
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I
 
         MetadataCache cache = MetadataCache.getInstance();
 
@@ -44,7 +44,7 @@ public class MetadataCacheIntegrationTest extends CqlTestBase {
     }
     
     public void testGet() throws Exception {
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         MetadataCache cache2 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         
@@ -75,7 +75,7 @@ public class MetadataCacheIntegrationTest extends CqlTestBase {
     }
     
     public void testPutsAreNotDuplicative() throws Exception {
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         String key = "metaA";
         String v1 = new String("Hello");
@@ -116,7 +116,7 @@ public class MetadataCacheIntegrationTest extends CqlTestBase {
     
     public void testTypedGet() throws Exception {
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        Locator loc1 = Locator.createLocatorFromDbKey("acOne.ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         // TODO: uncomment, pending https://issues.rax.io/browse/CMD-139
 //        Integer expectedInt = 23;
 //        Double expectedDouble = 43d;

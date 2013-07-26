@@ -5,40 +5,40 @@ import com.cloudkick.blueflood.utils.MetricHelper;
 import telescope.thrift.Metric;
 
 public class AstyanaxWriterIntegrationTest extends CqlTestBase {
-    
+
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
-        
+
         Metric metric = new Metric((byte)MetricHelper.Type.STRING);
         metric.setValueStr("This is a string test");
         writeMetric("string_metric", metric);
-        
+
         assertNumberOfRows("metrics_string", 1);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
     }
-    
+
     public void testEnsureNumericMetricsDoNotEndUpInStringSpaces() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
-        
+
         Metric metric = new Metric((byte)MetricHelper.Type.INT64);
         metric.setValueI64(64L);
         writeMetric("long_metric", metric);
-        
+
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 1);
         assertNumberOfRows("metrics_locator", 1);
     }
-    
+
     public void testMetadataGetsWritten() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);
-        
-        Locator loc1 = Locator.createLocatorFromDbKey("acONE.entityId.checkId.mz.metric");
-        Locator loc2 = Locator.createLocatorFromDbKey("acTWO.entityId.checkId.mz.metric");
+
+        Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
         // multiple cols on a single locator should produce a single row.
@@ -56,7 +56,7 @@ public class AstyanaxWriterIntegrationTest extends CqlTestBase {
         writer.writeMetadataValue(loc1, "f", "Some6String");
 
         assertNumberOfRows("metrics_metadata", 1);
-        
+
         // new locator means new row.
         writer.writeMetadataValue(loc2, "a", "strrrrring");
         assertNumberOfRows("metrics_metadata", 2);

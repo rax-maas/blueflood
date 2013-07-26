@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit;
 public class StringMetricsPersistenceOptimizerIntegrationTest extends
         CqlTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
-    private Locator locator = Locator.createLocatorFromDbKey("randomAccount.randomEntity.randomCheck.randomDim.randomMetric");
-    private Locator otherLocator = Locator.createLocatorFromDbKey("randomAccount.randomEntity.randomCheck.randomBooleanMetric");
+    private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
+    private Locator otherLocator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomBooleanMetric");
 
     @Before
     protected void setUp() throws Exception {
