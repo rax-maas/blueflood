@@ -6,15 +6,17 @@ import telescope.thrift.Metric;
 
 public class AstyanaxWriterIntegrationTest extends CqlTestBase {
 
+import com.cloudkick.blueflood.types.ServerMetricLocator;
+
+public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
+    
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
 
-        Metric metric = new Metric((byte)MetricHelper.Type.STRING);
-        metric.setValueStr("This is a string test");
-        writeMetric("string_metric", metric);
-
+        writeMetric("string_metric", "This is a string test");
+        
         assertNumberOfRows("metrics_string", 1);
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
@@ -25,10 +27,8 @@ public class AstyanaxWriterIntegrationTest extends CqlTestBase {
         assertNumberOfRows("metrics_full", 0);
         assertNumberOfRows("metrics_locator", 0);
 
-        Metric metric = new Metric((byte)MetricHelper.Type.INT64);
-        metric.setValueI64(64L);
-        writeMetric("long_metric", metric);
-
+        writeMetric("long_metric", 64L);
+        
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 1);
         assertNumberOfRows("metrics_locator", 1);

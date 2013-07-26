@@ -2,12 +2,13 @@ package com.cloudkick.blueflood.cache;
 
 import com.cloudkick.blueflood.io.CqlTestBase;
 import com.cloudkick.blueflood.types.Locator;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.MetricMetadata;
 import com.cloudkick.blueflood.utils.TimeValue;
 
 import java.util.concurrent.TimeUnit;
 
-public class MetadataCacheIntegrationTest extends CqlTestBase {
+public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
     public void testPut() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);

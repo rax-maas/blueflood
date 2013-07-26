@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.rollup;
 
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
@@ -11,7 +11,7 @@ import org.junit.Before;
 import java.util.concurrent.TimeUnit;
 
 public class GenericMetricsPersistenceOptimizerIntegrationTest extends
-        CqlTestBase {
+        IntegrationTestBase {
     private MetricsPersistenceOptimizer metricsOptimizer;
     private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
 

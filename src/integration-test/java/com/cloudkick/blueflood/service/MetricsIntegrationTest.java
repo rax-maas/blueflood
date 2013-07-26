@@ -1,82 +1,76 @@
 package com.cloudkick.blueflood.service;
 
-import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.*;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.Util;
+import com.cloudkick.blueflood.utils.TimeValue;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.Column;
-import telescope.thrift.Metric;
-import telescope.thrift.Telescope;
-import telescope.thrift.VerificationModel;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Some of these tests here were horribly contrived to mimic behavior in Writer. The problem with this approach is that
  * when logic in Writer changes, these tests can break unless the logic is changed here too. */
-public class MetricsIntegrationTest extends CqlTestBase {
+public class MetricsIntegrationTest extends IntegrationTestBase {
     
     // returns a collection all checks that were written at some point.
     // this was a lot cooler back when the slot changed with time.
-    private Collection<String> writeLocatorsOnly(int hours) throws Exception {
+    private Collection<Locator> writeLocatorsOnly(int hours) throws Exception {
         // duplicate the logic from Writer.writeFull() that inserts locator rows.
-        List<String> checkNames = new ArrayList<String>();
-        Set<String> allCheckNames = new HashSet<String>();
-        int checkNameCounter = 0;
-        for (int i = 0; i < hours; i++)
-            checkNames.add("test:locator:inserts:" + checkNameCounter++);
+        final String accountId = "ac" + randString(8);
+        final List<Locator> locators = new ArrayList<Locator>();
+        for (int i = 0; i < hours; i++) {
+            locators.add(Locator.createLocatorFromAccountIdAndName(accountId, "test:locator:inserts:" + i));
+        }
 
         AstyanaxTester at = new AstyanaxTester();
         MutationBatch mb = at.createMutationBatch();
-        for (String checkName : checkNames) {
-            Locator loc = Locator.createLocatorFromPathComponents(
-                    "ac" + CqlTestBase.randString(8), "en" + CqlTestBase.randString(8), checkName, "dim0.intmetric");
-            allCheckNames.add(checkName);
-            int shard = Util.computeShard(checkName);
 
+        for (Locator locator : locators) {
+            int shard = Util.computeShard(locator.toString());
             mb.withRow(at.getLocatorCF(), (long)shard)
-                    .putColumn(loc, "", 100000);
+                    .putColumn(locator, "", 100000);
         }
         mb.execute();
-        return allCheckNames;
+
+        return locators;
     }
 
     private void writeFullData(
+            Locator locator,
             long baseMillis, 
             int hours,
-            final String acctId,
-            final String entityId,
-            final String checkName,
-            final String dimension,
             AstyanaxWriter writer) throws Exception {
         // insert something every minute for 48h
         for (int i = 0; i < 60 * hours; i++) {
             final long curMillis = baseMillis + i * 60000;
-            final CloudMonitoringTelescope cmTelescope = new CloudMonitoringTelescope(
-                    makeTelescope("uuid", checkName, acctId, "module", entityId, "target", curMillis, dimension));
-
-            writer.insertFull(cmTelescope.toMetrics());
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(getRandomIntMetric(locator, curMillis));
+            writer.insertFull(metrics);
         }
     }
 
     public void testLocatorsWritten() throws Exception {
-        Collection<String> checkNames = writeLocatorsOnly(48);
-
-        Set<String> locators = new HashSet<String>();
+        Collection<Locator> locators = writeLocatorsOnly(48);
         AstyanaxReader r = AstyanaxReader.getInstance();
-        for (String checkName : checkNames)
-            for (Column<Locator> locatorCol : r.getAllLocators(Util.computeShard(checkName)))
-                locators.add(locatorCol.getName().toString());
-        assertEquals(48, locators.size());
+
+        Set<String> actualLocators = new HashSet<String>();
+        for (Locator locator : locators) {
+            for (Column<Locator> locatorCol : r.getAllLocators(Util.computeShard(locator.toString()))) {
+                actualLocators.add(locatorCol.getName().toString());
+            }
+        }
+        assertEquals(48, actualLocators.size());
     }
 
     // tests how rollup generation could be done optimally when regenerating large swaths of rollups.  It 
@@ -89,14 +83,12 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         int hours = 48;
-        final String acctId = "ac" + CqlTestBase.randString(8);
-        final String entityId = "ac" + CqlTestBase.randString(8);
-        final String checkName = "test_rollup_b";
-        final String dimension = "dim0";
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (60 * 60 * hours * 1000);
-        writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, dimension + ".intmetric");
+        final Locator locator = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
 
+        writeFullData(locator, baseMillis, hours,  writer);
         for (Granularity gran : new Granularity[] {Granularity.FULL, Granularity.MIN_5, Granularity.MIN_20, Granularity.MIN_60, Granularity.MIN_240}) {
             
             // this logic would have to be encapsulated somewhere:
@@ -148,13 +140,13 @@ public class MetricsIntegrationTest extends CqlTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         int hours = 48;
-        final String acctId = "ac" + CqlTestBase.randString(8);
-        final String entityId = "ac" + CqlTestBase.randString(8);
-        final String checkName = "test_rollup_a";
-        final String dimension = "dim0";
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
         writeFullData(baseMillis, hours, acctId, entityId, checkName, dimension, writer);
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, "dim0.intmetric");
+        final Locator locator = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
+
+        writeFullData(locator, baseMillis, hours, writer);
 
         // FULL -> 5m
         Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
@@ -205,56 +197,25 @@ public class MetricsIntegrationTest extends CqlTestBase {
         Rollup rollup = reader.readAndCalculate(locator, range, Granularity.MIN_1440);
         assertEquals(60 * hours, rollup.getCount());
     }
-    
-    public void testMonitoringZoneIsPrepended() throws ConnectionException {
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        String acctId = "ac" + CqlTestBase.randString(8);
-        String entityId = "en" + CqlTestBase.randString(8);
-        String checkName = "with_mz";
-        String mzId = "mzGRD";
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, Util.generateMetricName("intmetric", mzId));
-        
-        final Telescope withMz = makeTelescope("withMz", checkName, acctId, "module", entityId, "target", baseMillis, null);
-        withMz.setMonitoringZoneId(mzId);
-        assertTrue(withMz.getMetrics().keySet().contains("intmetric"));
-        final CloudMonitoringTelescope cmTelescope = new CloudMonitoringTelescope(withMz);
 
-        writer.insertFull(cmTelescope.toMetrics());
-        // write them.
-        writer.insertFull(cmTelescope.toMetrics());
-        
-        // read them back.
-        int expectedWithMz = 1;
-        int actualWithMz = 0;
-        for (Column col : reader.getNumericRollups(locator, Granularity.FULL, baseMillis, baseMillis + 10000)) {
-            actualWithMz += 1;
-        }
-        assertEquals(expectedWithMz, actualWithMz);
-    }
-    
     public void testSimpleInsertAndGet() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
-        final String acctId = "ac" + CqlTestBase.randString(8);
-        final String entityId = "en" + CqlTestBase.randString(8);
-        final String checkName = "test_simple_insert";
-        // fyi, metric names are "intmetric" and "doublemetric"
-        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, entityId, checkName, "dim0.intmetric");
-        
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromAccountIdAndName(acctId, metricName);
+
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
         for (int i = 0; i < 10; i++) {
             final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
             expectedTimestamps.add(curMillis);
-
-            final CloudMonitoringTelescope cmTelescope = new CloudMonitoringTelescope(
-                    makeTelescope("uuid", checkName, acctId, "module", entityId, "target", curMillis, "dim0"));
-
-            writer.insertFull(cmTelescope.toMetrics());
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(getRandomIntMetric(locator, curMillis));
+            writer.insertFull(metrics);
         }
         
         Set<Long> actualTimestamps = new HashSet<Long>();
@@ -266,22 +227,20 @@ public class MetricsIntegrationTest extends CqlTestBase {
     }
 
     public void testConsecutiveWriteAndRead() throws ConnectionException, IOException {
-        System.err.println("testConsecutiveWriteAndRead");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L;
-        Collection<Telescope> telescopes = new ArrayList<Telescope>();
-        final Locator locator = Locator.createLocatorFromPathComponents("ac0001", "en0001", "ch0001", "dim0", "test-metric");
+
+        final Locator locator = Locator.createLocatorFromAccountIdAndName("ac0001",
+                "fooService,fooServer," + randString(8));
+
+        final List<Metric> metrics = new ArrayList<Metric>();
         for (int i = 0; i < 100; i++) {
-            Telescope t = new Telescope("tId", "ch0001", "ac0001", "http", "en0001", "www.example.com", baseMillis + (i * 1000), 1, VerificationModel.ONE);
-            Map<String, Metric> metrics = new HashMap<String, Metric>();
-            Metric m = new Metric((byte)'i');
-            m.setValueI32(i);
-            metrics.put("dim0.test_metric", m);
-            t.setMetrics(metrics);
-            telescopes.add(t);
-            writer.insertFull(new CloudMonitoringTelescope(t).toMetrics());
-            telescopes.clear();
+            final Metric metric = new Metric(locator, i, baseMillis + (i * 1000),
+                    new TimeValue(1, TimeUnit.DAYS), "unknown");
+            metrics.add(metric);
+            writer.insertFull(metrics);
+            metrics.clear();
         }
         
         int count = 0;
@@ -293,7 +252,6 @@ public class MetricsIntegrationTest extends CqlTestBase {
     }
     
     public void testShardStateWriteRead() throws Exception {
-        System.err.println("testShardStateWriteRead");
         final Collection<Integer> shards = Lists.newArrayList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 

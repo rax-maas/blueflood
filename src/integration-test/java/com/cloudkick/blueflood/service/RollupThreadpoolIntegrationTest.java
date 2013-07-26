@@ -1,9 +1,8 @@
 package com.cloudkick.blueflood.service;
 
-import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.Util;
 import com.netflix.astyanax.model.Column;
@@ -11,15 +10,10 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.core.Timer;
-import telescope.thrift.Telescope;
-import telescope.thrift.VerificationModel;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 // this test used to measure rollups that were refused, but we don't care anymore. Not it makes sure that all rollups
 // get executed.
-public class RollupThreadpoolIntegrationTest extends CqlTestBase {
+public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
     private static final Integer threadsInRollupPool = 2;
     
     static {
@@ -30,8 +24,6 @@ public class RollupThreadpoolIntegrationTest extends CqlTestBase {
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
         assertEquals(Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
-        
-        final String checkName = "testManyLocators";
         int shardToTest = 0;
 
         // I want to see what happens when RollupService.rollupExecutors gets too much work. It should never reject
@@ -40,17 +32,12 @@ public class RollupThreadpoolIntegrationTest extends CqlTestBase {
 
         // now we need to write data that will generate an enormous amount of locators.
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        Telescope tel = new Telescope("telId", checkName, "acctId", "checkModule", "entityId", "target", time * 1000, 1, VerificationModel.ONE);
-        Collection<Telescope> telescopes = new ArrayList<Telescope>();
-        telescopes.add(tel);
        
         final int NUM_LOCATORS = 5000;
         int locatorCount = 0;
         while (locatorCount < NUM_LOCATORS) {
             // generate 100 random metrics.
-            tel.setMetrics(CqlTestBase.makeRandomIntMetrics("dim0", 100));
-            CloudMonitoringTelescope cmTelescope = new CloudMonitoringTelescope(tel);
-            writer.insertFull(cmTelescope.toMetrics());
+            writer.insertFull(makeRandomIntMetrics(100));
             locatorCount += 100;
         }
 

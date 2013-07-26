@@ -1,7 +1,7 @@
 package com.cloudkick.blueflood.stress;
 
 
-import com.cloudkick.blueflood.io.CqlTestBase;
+import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.rollup.Granularity;
@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class IngressBlackbox extends CqlTestBase {
+public class IngressBlackbox extends IntegrationTestBase {
     private static final boolean WRITING = true;
     private static final long START_DATE = 1335796192139L;
 

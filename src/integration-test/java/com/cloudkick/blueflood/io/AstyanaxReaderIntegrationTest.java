@@ -2,52 +2,44 @@ package com.cloudkick.blueflood.io;
 
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
+import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
 import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.utils.MetricHelper;
+import com.cloudkick.blueflood.types.ServerMetricLocator;
 import org.junit.Assert;
 import org.junit.Test;
-import telescope.thrift.Metric;
 import telescope.thrift.RollupMetric;
-import telescope.thrift.Telescope;
 
 import java.util.List;
 
-public class AstyanaxReaderIntegrationTest extends CqlTestBase {
-
+public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
+    
     @Test
     public void testCanReadNumeric() throws Exception {
-        String metricName = "long_metric";
-        Metric metric = new Metric((byte)MetricHelper.Type.UINT64);
-        metric.setValueI64(74L);
-        Telescope tel = writeMetric(metricName, metric);
+        Metric metric = writeMetric("long_metric", 74L);
         AstyanaxReader reader = AstyanaxReader.getInstance();
 
-        Locator locator = Locator.createLocatorFromPathComponents(tel.getAcctId(), tel.getEntityId(),
-                tel.getCheckId(), Util.generateMetricName(metricName, tel.getMonitoringZoneId()));
-        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(tel.getTimestamp() - 100000,
-                tel.getTimestamp() + 100000), Granularity.FULL);
+        final Locator locator = metric.getLocator();
+        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
         int numPoints = res.size();
         assertTrue(numPoints > 0);
 
         // Test that the RangeBuilder is end-inclusive on the timestamp.
-        res = reader.getDatapointsForRange(locator, new Range(tel.getTimestamp() - 100000,
-                tel.getTimestamp()), Granularity.FULL);
+        res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime()), Granularity.FULL);
         assertEquals(numPoints, res.size());
     }
 
     @Test
     public void testCanReadString() throws Exception {
-        String metricName = "string_metric";
-        Metric metric = new Metric((byte)MetricHelper.Type.STRING);
-        metric.setValueStr("version 1.0.43342346");
-        Telescope tel = writeMetric(metricName, metric);
-        Locator locator = Locator.createLocatorFromPathComponents(tel.getAcctId(),
-                tel.getEntityId(), tel.getCheckId(), Util.generateMetricName(metricName, tel.getMonitoringZoneId()));
+        Metric metric = writeMetric("string_metric", "version 1.0.43342346");
+        final Locator locator = metric.getLocator();
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(tel.getTimestamp() - 100000,
-                tel.getTimestamp() + 100000), Granularity.FULL);
+        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
         assertTrue(res.size() > 0);
     }
 
