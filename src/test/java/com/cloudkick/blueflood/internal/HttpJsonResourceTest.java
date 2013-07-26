@@ -1,10 +1,10 @@
 package com.cloudkick.blueflood.internal;
 
-import junit.framework.Assert;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -4,9 +4,6 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
-import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.blueflood.utils.MetricHelper;
-import com.cloudkick.blueflood.types.ServerMetricLocator;
 import org.junit.Assert;
 import org.junit.Test;
 import telescope.thrift.RollupMetric;
@@ -24,12 +21,12 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
         int numPoints = res.size();
-        assertTrue(numPoints > 0);
+        Assert.assertTrue(numPoints > 0);
 
         // Test that the RangeBuilder is end-inclusive on the timestamp.
         res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime()), Granularity.FULL);
-        assertEquals(numPoints, res.size());
+        Assert.assertEquals(numPoints, res.size());
     }
 
     @Test
@@ -40,7 +37,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
-        assertTrue(res.size() > 0);
+        Assert.assertTrue(res.size() > 0);
     }
 
     @Test

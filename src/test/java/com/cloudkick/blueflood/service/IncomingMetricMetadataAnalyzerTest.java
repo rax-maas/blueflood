@@ -4,7 +4,7 @@ import com.cloudkick.blueflood.cache.MetadataCache;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.utils.MetricHelper;
 import com.cloudkick.blueflood.utils.TimeValue;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;

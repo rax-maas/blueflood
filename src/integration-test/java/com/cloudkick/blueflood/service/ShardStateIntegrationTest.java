@@ -5,6 +5,8 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ShardStateIntegrationTest extends IntegrationTestBase {
+
+    @Test
     public void testSingleShardManager() {
         long time = 1234000L;
         Collection<Integer> shards = Lists.newArrayList(1, 2, 3, 4);
@@ -37,19 +41,20 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         for (Granularity g : Granularity.rollupGranularities()) {
             for (int shard : shards) {
                 if (g == Granularity.MIN_5)
-                    assertEquals(34, ctx.getSlotStamps(g, shard).size());
+                    Assert.assertEquals(34, ctx.getSlotStamps(g, shard).size());
                 else if (g == Granularity.MIN_20)
-                    assertEquals(9, ctx.getSlotStamps(g, shard).size());
+                    Assert.assertEquals(9, ctx.getSlotStamps(g, shard).size());
                 else if (g == Granularity.MIN_60)
-                    assertEquals(4, ctx.getSlotStamps(g, shard).size());
+                    Assert.assertEquals(4, ctx.getSlotStamps(g, shard).size());
                 else if (g == Granularity.MIN_240)
-                    assertEquals(1, ctx.getSlotStamps(g, shard).size());
+                    Assert.assertEquals(1, ctx.getSlotStamps(g, shard).size());
                 else if (g == Granularity.MIN_1440)
-                    assertEquals(1, ctx.getSlotStamps(g, shard).size());
+                    Assert.assertEquals(1, ctx.getSlotStamps(g, shard).size());
             }
         }
     }
-    
+
+    @Test
     public void testConcurrentShardManagers() {
         long time = 1234000L;
         // notice how they share shard 5.
@@ -96,7 +101,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // states should be the same.
         for (Granularity g : Granularity.rollupGranularities()) {
             for (int shard : allShards)
-                assertEquals(ctxA.getSlotStamps(g, shard), ctxB.getSlotStamps(g, shard));
+                Assert.assertEquals(ctxA.getSlotStamps(g, shard), ctxB.getSlotStamps(g, shard));
         }
         
         time += 300000; // this pushes us forward at least one slot.
@@ -110,10 +115,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxB.setCurrentTimeMillis(time);
         
         // states should not be the same in some places.
-        assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 1).equals(ctxB.getSlotStamps(Granularity.MIN_5, 1)));
-        assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 11).equals(ctxB.getSlotStamps(Granularity.MIN_5, 11)));
-        assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 3).equals(ctxB.getSlotStamps(Granularity.MIN_5, 3)));
-        assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 33).equals(ctxB.getSlotStamps(Granularity.MIN_5, 33)));
+        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 1).equals(ctxB.getSlotStamps(Granularity.MIN_5, 1)));
+        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 11).equals(ctxB.getSlotStamps(Granularity.MIN_5, 11)));
+        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 3).equals(ctxB.getSlotStamps(Granularity.MIN_5, 3)));
+        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 33).equals(ctxB.getSlotStamps(Granularity.MIN_5, 33)));
         
         // this is where the syncing should happen. Order is important for a valid test.  A contains the updates, so
         // I want to write that one first.  B contains old data and it gets written second.  Part of what I'm verifying
@@ -131,19 +136,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         
         // states should have synced up and be the same again.
         for (Granularity g : Granularity.rollupGranularities()) {
-            assertEquals(ctxA.getSlotStamps(g, commonShard), ctxB.getSlotStamps(g, commonShard));
+            Assert.assertEquals(ctxA.getSlotStamps(g, commonShard), ctxB.getSlotStamps(g, commonShard));
         }
     }
-    
-    // this is here so I know which integers map to which shards.
-    public void _testHashing() {
-        for (int i = 0; i < 10000; i++) {
-            int shard = Util.computeShard(Long.toString(i));
-            if (shard < 5)
-                System.out.println(String.format("%d->%d", i, shard));
-        }
-    }
-    
+
+    @Test
     // this test illustrates how loading shard state clobbered the knowledge that a shard,slot had already been 
     // rolled up.
     public void testUpdateClobbering() {
@@ -172,7 +169,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         
         // should be ready to schedule.
         ctxA.scheduleSlotsOlderThan(300000);
-        assertEquals(1, ctxA.getScheduledCount());
+        Assert.assertEquals(1, ctxA.getScheduledCount());
         
         // simulate slots getting run.
         int count = 0;
@@ -182,18 +179,19 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             ctxA.scheduleSlotsOlderThan(300000);
             count += 1;
         }
-        assertEquals(5, count);
+        Assert.assertEquals(5, count);
         
         // verify that scheduling doesn't find anything else.
         ctxA.scheduleSlotsOlderThan(300000);
-        assertEquals(0, ctxA.getScheduledCount());
+        Assert.assertEquals(0, ctxA.getScheduledCount());
         
         // reloading under these circumstances (no updates) should not affect the schedule.
         pullA.performOperation();
         ctxA.scheduleSlotsOlderThan(300000);
-        assertEquals(0, ctxA.getScheduledCount());
+        Assert.assertEquals(0, ctxA.getScheduledCount());
     }
-    
+
+    @Test
     public void testShardOperationsConcurrency() throws InterruptedException {
         final long tryFor = 15000;
         final AtomicLong time = new AtomicLong(1234L);
@@ -240,7 +238,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         pushPull.start();
         updateIterator.start();
         latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
-        assertNull(errBucket[0]);
-        assertNull(errBucket[1]);
+        Assert.assertNull(errBucket[0]);
+        Assert.assertNull(errBucket[1]);
     }
 }

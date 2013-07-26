@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.types;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class MaxValueTest {
             max.handleFullResMetric(val);
         }
         Assert.assertTrue(max.isFloatingPoint());
-        Assert.assertEquals(90.48232472545334, max.toDouble());
+        Assert.assertEquals(90.48232472545334, max.toDouble(), 0);
     }
 
     @Test
@@ -42,7 +42,7 @@ public class MaxValueTest {
         // The max value in the input set is 99.0 which is of type double
         Assert.assertTrue(max.isFloatingPoint());
         // Assert that indeed 99.0 is the maximum value
-        Assert.assertEquals(99.0, max.toDouble());
+        Assert.assertEquals(99.0, max.toDouble(), 0);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class MaxValueTest {
 
         max = netRollup.getMaxValue();
         Assert.assertTrue(max.isFloatingPoint());
-        Assert.assertEquals(5.67d, max.toDouble());
+        Assert.assertEquals(5.67d, max.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right max
         netRollup = new Rollup();
