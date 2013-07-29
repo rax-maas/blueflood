@@ -1,9 +1,11 @@
 package com.cloudkick.blueflood.types;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.IOException;
 
-public class AverageTest extends TestCase {
+public class AverageTest {
     private static final double UNACCEPTABLE_DIFFERENCE = 0.000000001d;
     
     private static long[] LONG_SRC = new long[]{
@@ -14,25 +16,28 @@ public class AverageTest extends TestCase {
         34,53465,456,75467,4567,4576,45764357645L,673465,3456,3457,4567,45674567345634654L,756456,745674356345L,645367456L
     };
     
+    @Test    
     public void testLongAverage() {
         Average avg = new Average();
         avg.add(2L);
         avg.add(4L);
         avg.add(4L);
-        assertEquals(3L, avg.toLong());
+        Assert.assertEquals(3L, avg.toLong());
     }
     
+    @Test
     public void testDoubleAverage() {
         Average avg = new Average();
         avg.add(2.0D);
         avg.add(4.0D);
         avg.add(4.0D);
-        assertEquals(3.3333333333333335D, avg.toDouble());
+        Assert.assertEquals(3.3333333333333335D, avg.toDouble(), 0);
         
         // this a double, so average will be off due to rounding.
-        assertEquals(3.3333333333333335D, avg.toDouble());
+        Assert.assertEquals(3.3333333333333335D, avg.toDouble(), 0);
     }
-    
+   
+    @Test
     public void testDoubleAveragingApproaches() {
         // standard average.
         double sum = 0;
@@ -50,7 +55,7 @@ public class AverageTest extends TestCase {
         
     }
         
-    
+    @Test
     public void testLongAveragingApproaches() {
         // standard average.
         long sum = 0;
@@ -78,9 +83,10 @@ public class AverageTest extends TestCase {
             rmean += (v + remainder - rmean) / count;
             remainder = (v + remainder - rmean) % count;
         }
-        assertTrue((double) Math.abs(rmean - mean) / (double) mean < UNACCEPTABLE_DIFFERENCE); // should be really close to the true mean.
+        Assert.assertTrue((double) Math.abs(rmean - mean) / (double) mean < UNACCEPTABLE_DIFFERENCE); // should be really close to the true mean.
     }
     
+    @Test
     public void testFloatingRollup() {
         Average baseline = new Average();
         for (int i = 0; i < 1234; i++) 
@@ -95,9 +101,10 @@ public class AverageTest extends TestCase {
         rollup.addBatch(11d, 2565);
         rollup.addBatch(17d, 767);
         
-        assertTrue(Math.abs(rollup.toDouble() - baseline.toDouble()) < UNACCEPTABLE_DIFFERENCE);
+        Assert.assertTrue(Math.abs(rollup.toDouble() - baseline.toDouble()) < UNACCEPTABLE_DIFFERENCE);
     }
     
+    @Test
     public void testLongRollup() {
         Average baseline = new Average();
         for (int i = 0; i < 1234; i++) 
@@ -112,9 +119,10 @@ public class AverageTest extends TestCase {
         rollup.addBatch(11L, 2565);
         rollup.addBatch(17L, 767);
         
-        assertEquals(baseline.toLong(), rollup.toLong());
+        Assert.assertEquals(baseline.toLong(), rollup.toLong());
     }
 
+    @Test
     public void testAddRollup() throws IOException{
         Average avg = new Average(1, new Double(3.0));
         Rollup rollup = new Rollup();
@@ -122,30 +130,31 @@ public class AverageTest extends TestCase {
         rollup.handleFullResMetric(0.0);
         rollup.handleFullResMetric(0.0);
 
-        assertEquals(3.0, avg.toDouble());
+        Assert.assertEquals(3.0, avg.toDouble(), 0);
         avg.handleRollupMetric(rollup);
-        assertEquals(1.0, avg.toDouble());
+        Assert.assertEquals(1.0, avg.toDouble(), 0);
 
         avg = new Average(1, new Long(3));
-        assertEquals(3, avg.toLong());
+        Assert.assertEquals(3, avg.toLong());
         rollup = new Rollup();
         rollup.handleFullResMetric(0);
         rollup.handleFullResMetric(0);
         avg.handleRollupMetric(rollup);
-        assertEquals(1, avg.toLong());
+        Assert.assertEquals(1, avg.toLong());
     }
 
+    @Test
     public void testConstructorUnsupportedVariableType() {
        boolean failed = false;
        try {
            Average avg = new Average(1, new String("test"));
-           fail();
+           Assert.fail();
        }
        catch (RuntimeException e) {
-           assertEquals("Unexpected type: java.lang.String", e.getMessage());
+           Assert.assertEquals("Unexpected type: java.lang.String", e.getMessage());
            failed = true;
        }
 
-       assertEquals(true, failed);
+       Assert.assertEquals(true, failed);
     }
 }

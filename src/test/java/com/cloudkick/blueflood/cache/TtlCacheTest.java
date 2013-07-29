@@ -7,9 +7,9 @@ import com.cloudkick.blueflood.internal.InternalAPI;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
-import junit.framework.Assert;
 import org.apache.http.client.HttpResponseException;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

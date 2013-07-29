@@ -6,7 +6,9 @@ import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.netflix.astyanax.MutationBatch;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -16,7 +18,7 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
     private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
 
     @Before
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         metricsOptimizer = new GenericMetricsPersistenceOptimizer();
@@ -44,6 +46,7 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
         mb.execute();
     }
 
+    @Test
     // Testing an edge case when there are no metrics available for a locator
     // in the database
     public void testShouldPersistForFirstInsertOfLocator() throws Exception {
@@ -57,9 +60,10 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should return true as cassandra doesn't have any
         // metrics for this locator yet
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
     }
 
+    @Test
     public void testShouldPersistHappyCase() throws Exception {
         int testMetric = 123;
         long collectionTimeInSecs = 56789;
@@ -70,7 +74,7 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should be true as for non-string metrics we don't
         // care
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
 
         testMetric = 789;
         collectionTimeInSecs++;
@@ -81,6 +85,6 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should now be true as we do not have the same metric
         // as the one in the database
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
     }
 }

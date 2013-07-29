@@ -1,14 +1,16 @@
 package com.cloudkick.blueflood.rollup;
 
 import com.cloudkick.blueflood.types.Range;
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class SlotTest extends TestCase {
+public class SlotTest {
     private static final int shard = 0;
     
+    @Test
     public void testSlotIterator() {
         long baseMillis = 1331650343000L;
         int expectedSlot = 3634;
@@ -22,7 +24,7 @@ public class SlotTest extends TestCase {
         Set<String> actual = new HashSet<String>();
         for (String i : Granularity.FULL.locatorKeys(shard, baseMillis, baseMillis + 300000))
             actual.add(i);
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
         
         actual.clear();
         expected.clear();
@@ -35,9 +37,10 @@ public class SlotTest extends TestCase {
         int scale = Granularity.FULL.numSlots() - expectedSlot - 2; // puts me 2 slots before the end.
         for (String locatorKey : Granularity.FULL.locatorKeys(shard, baseMillis + (scale * 300000), baseMillis + ((scale + 3) * 300000)))
             actual.add(locatorKey);
-        assertEquals(expected, actual);
+        Assert.assertEquals(expected, actual);
     }
     
+    @Test
     public void testRangeIteratorFullAnd5m() throws Exception {
         Set<Range> expectedRanges = new HashSet<Range>();
         expectedRanges.add(new Range(0, 299999));
@@ -52,10 +55,11 @@ public class SlotTest extends TestCase {
                 actualRanges.add(time);
                 verifySingleSlot(time, g);
             }
-            assertEquals(expectedRanges, actualRanges);
+            Assert.assertEquals(expectedRanges, actualRanges);
         }
     }
     
+    @Test
     public void testRangeIterator20m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_20, 3600000, 33);
         Set<Range> actualRanges = new HashSet<Range>();
@@ -66,9 +70,10 @@ public class SlotTest extends TestCase {
             actualRanges.add(time);
             verifySingleSlot(time, Granularity.MIN_20);
         }
-        assertEquals(expectedRanges, actualRanges);
+        Assert.assertEquals(expectedRanges, actualRanges);
     }
     
+    @Test
     public void testRangeIterator60m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_60, 1334577600000L, 72);
         Set<Range> actualRanges = new HashSet<Range>();
@@ -79,9 +84,10 @@ public class SlotTest extends TestCase {
             actualRanges.add(time);
             verifySingleSlot(time, Granularity.MIN_60);
         }
-        assertEquals(expectedRanges, actualRanges);
+        Assert.assertEquals(expectedRanges, actualRanges);
     }
     
+    @Test
     public void testRangeIterator240m() throws Exception {
         Set<Range> expectedRanges = makeRanges(Granularity.MIN_240, 1334534400000L, 66);
         Set<Range> actualRanges = new HashSet<Range>();
@@ -92,7 +98,7 @@ public class SlotTest extends TestCase {
             actualRanges.add(time);
             verifySingleSlot(time, Granularity.MIN_240);    
         }
-        assertEquals(expectedRanges, actualRanges);
+        Assert.assertEquals(expectedRanges, actualRanges);
     } 
     
     // there is no testRangeIterator1440m because range iteration isn't defined for that granularity because there
@@ -102,7 +108,7 @@ public class SlotTest extends TestCase {
     private void verifySingleSlot(Range r, Granularity g) {
         int init = g.slot(r.start);
         for (long time = r.start; time <= r.stop; time += 1000)
-            assertEquals(init, g.slot(time));
+            Assert.assertEquals(init, g.slot(time));
     }
     
     // create a collection of consecutive ranges.
@@ -117,60 +123,64 @@ public class SlotTest extends TestCase {
         return set;
     }
     
+    @Test
     public void testSlotCalculationsRawAnd5m() {
         final long now = 1331650343000L;
         final long slot = 3634;
-        assertEquals(slot, Granularity.millisToSlot(now));
+        Assert.assertEquals(slot, Granularity.millisToSlot(now));
         
         // 5 mins now should be in the next slot.
-        assertEquals(slot + 1, Granularity.millisToSlot(now + Granularity.MILLISECONDS_IN_SLOT));
-        assertEquals(slot + 1, Granularity.FULL.slot(now + Granularity.MILLISECONDS_IN_SLOT));
-        assertEquals(slot + 1, Granularity.MIN_5.slot(now + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(slot + 1, Granularity.millisToSlot(now + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(slot + 1, Granularity.FULL.slot(now + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(slot + 1, Granularity.MIN_5.slot(now + Granularity.MILLISECONDS_IN_SLOT));
         
         // should repeat after however many seconds are in NUMBER_OF_SLOTS * MILLISECONDS_PER_SLOT
-        assertEquals(slot, Granularity.millisToSlot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
-        assertEquals(slot, Granularity.FULL.slot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
-        assertEquals(slot, Granularity.MIN_5.slot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
+        Assert.assertEquals(slot, Granularity.millisToSlot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
+        Assert.assertEquals(slot, Granularity.FULL.slot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
+        Assert.assertEquals(slot, Granularity.MIN_5.slot(now + (Granularity.FULL.numSlots() * Granularity.MILLISECONDS_IN_SLOT)));
         
         // test the very end of the cycle.
         long endOfCycle = now + ((Granularity.FULL.numSlots() - slot - 1) * Granularity.MILLISECONDS_IN_SLOT); // basically the number of secs to get to slot == 4095
-        assertEquals(Granularity.FULL.numSlots() - 1, Granularity.millisToSlot(endOfCycle));
-        assertEquals(Granularity.FULL.numSlots() - 1, Granularity.FULL.slot(endOfCycle));
-        assertEquals(Granularity.MIN_5.numSlots() - 1, Granularity.MIN_5.slot(endOfCycle));
+        Assert.assertEquals(Granularity.FULL.numSlots() - 1, Granularity.millisToSlot(endOfCycle));
+        Assert.assertEquals(Granularity.FULL.numSlots() - 1, Granularity.FULL.slot(endOfCycle));
+        Assert.assertEquals(Granularity.MIN_5.numSlots() - 1, Granularity.MIN_5.slot(endOfCycle));
         
         // adding 300s (one slot) should wrap back around to zero.
-        assertEquals(0, Granularity.millisToSlot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
-        assertEquals(0, Granularity.FULL.slot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
-        assertEquals(0, Granularity.MIN_5.slot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(0, Granularity.millisToSlot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(0, Granularity.FULL.slot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(endOfCycle + Granularity.MILLISECONDS_IN_SLOT));
     }
 
+    @Test
     public void testSlotRelationships() {
         final long now = 1331650343000L;
         final long slot = 3634;
-        assertEquals(slot, Granularity.FULL.slot(now));
-        assertEquals(slot, Granularity.MIN_5.slot(now));
+        Assert.assertEquals(slot, Granularity.FULL.slot(now));
+        Assert.assertEquals(slot, Granularity.MIN_5.slot(now));
      
-        assertEquals(Granularity.FULL.numSlots(), Granularity.MIN_5.numSlots());
-        assertEquals(Granularity.FULL.numSlots() / 4, Granularity.MIN_20.numSlots());
-        assertEquals(Granularity.FULL.numSlots() / 12, Granularity.MIN_60.numSlots());
-        assertEquals(Granularity.FULL.numSlots() / 48, Granularity.MIN_240.numSlots());
-        assertEquals(Granularity.FULL.numSlots() / 288, Granularity.MIN_1440.numSlots());
+        Assert.assertEquals(Granularity.FULL.numSlots(), Granularity.MIN_5.numSlots());
+        Assert.assertEquals(Granularity.FULL.numSlots() / 4, Granularity.MIN_20.numSlots());
+        Assert.assertEquals(Granularity.FULL.numSlots() / 12, Granularity.MIN_60.numSlots());
+        Assert.assertEquals(Granularity.FULL.numSlots() / 48, Granularity.MIN_240.numSlots());
+        Assert.assertEquals(Granularity.FULL.numSlots() / 288, Granularity.MIN_1440.numSlots());
         
         // make sure there are no remainders for the minute ratios
-        assertTrue(Granularity.FULL.numSlots() % 4 == 0);
-        assertTrue(Granularity.FULL.numSlots() % 12 == 0);
-        assertTrue(Granularity.FULL.numSlots() % 48 == 0);
-        assertTrue(Granularity.FULL.numSlots() % 288 == 0);
+        Assert.assertTrue(Granularity.FULL.numSlots() % 4 == 0);
+        Assert.assertTrue(Granularity.FULL.numSlots() % 12 == 0);
+        Assert.assertTrue(Granularity.FULL.numSlots() % 48 == 0);
+        Assert.assertTrue(Granularity.FULL.numSlots() % 288 == 0);
     } 
-    
+
+    @Test
     public void testStaticSameAsFull() {
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         final long endMillis = baseMillis + (1000 * 60 * 60 * 48); // +48hrs
-        assertEquals(Granularity.millisToSlot(baseMillis), Granularity.FULL.slot(baseMillis));
-        assertEquals(Granularity.millisToSlot(endMillis), Granularity.FULL.slot(endMillis));
+        Assert.assertEquals(Granularity.millisToSlot(baseMillis), Granularity.FULL.slot(baseMillis));
+        Assert.assertEquals(Granularity.millisToSlot(endMillis), Granularity.FULL.slot(endMillis));
         
     }
     
+    @Test
     // make sure the same kind of tests still pass at coarser granularities.
     public void testCoarseSlotCalculations() {
         final long now = 1334582854000L;
@@ -181,65 +191,67 @@ public class SlotTest extends TestCase {
             final long slot = initialSlots[i];
             final Granularity gran = granularities[i]; 
             
-            assertEquals(slot, gran.slot(now));
+            Assert.assertEquals(slot, gran.slot(now));
             
             // next slot should increment by 1.
-            assertEquals(slot + 1, gran.slot(now + gran.milliseconds()));
+            Assert.assertEquals(slot + 1, gran.slot(now + gran.milliseconds()));
             
             // should repeat.
-            assertEquals(slot, gran.slot(now + gran.milliseconds() * gran.numSlots()));
+            Assert.assertEquals(slot, gran.slot(now + gran.milliseconds() * gran.numSlots()));
             
             // very end of cycle.
             long endOfCycle = now + (gran.numSlots() - slot - 1) * gran.milliseconds();
-            assertEquals(gran.numSlots() - 1, gran.slot(endOfCycle));
+            Assert.assertEquals(gran.numSlots() - 1, gran.slot(endOfCycle));
             
             // adding seconds() should wrap back to zero.
-            assertEquals(0, gran.slot(endOfCycle + gran.milliseconds()));
+            Assert.assertEquals(0, gran.slot(endOfCycle + gran.milliseconds()));
         }
     }
     
+    @Test
     public void testRangeDerivation() {
         for (Granularity gran : Granularity.granularities()) {
             long now = 1334582854000L;
             int nowSlot = gran.slot(now);
             now = gran.snapMillis(now);
             Range nowRange = new Range(now, now + gran.milliseconds() - 1);
-            assertEquals(nowRange, gran.deriveRange(nowSlot, now));
+            Assert.assertEquals(nowRange, gran.deriveRange(nowSlot, now));
             
             Range prevRange = gran.deriveRange(nowSlot - 1, now);
-            assertEquals(gran.milliseconds(), nowRange.start - prevRange.start);
+            Assert.assertEquals(gran.milliseconds(), nowRange.start - prevRange.start);
             
             // incrementing nowSlot forces us to test slot wrapping.
             Range wayBeforeRange = gran.deriveRange(nowSlot + 1, now);
-            assertEquals(gran.numSlots() - 1, (nowRange.start - wayBeforeRange.start) / gran.milliseconds());
+            Assert.assertEquals(gran.numSlots() - 1, (nowRange.start - wayBeforeRange.start) / gran.milliseconds());
         }
     }
-    
+   
+    @Test
     public void testSlotChildren() {
         // the relationship between slots plays out here.
         
         // full res slots have no children.
         int expect = 0;
-        assertEquals(expect, Granularity.FULL.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.FULL.getChildrenKeys(4, shard).size());
         
         // min5 slots contain only their full res counterpart.
         expect = expect * 1 + 1;
-        assertEquals(expect, Granularity.MIN_5.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.MIN_5.getChildrenKeys(4, shard).size());
         
         // min20 slots contain their 4 min5 children and full res grandchildren.
         expect = expect * 4 + 4;
-        assertEquals(expect, Granularity.MIN_20.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.MIN_20.getChildrenKeys(4, shard).size());
         
         // and so on. the relationship between min60 and min20 is a factor of 3.
         expect = expect * 3 + 3;
-        assertEquals(expect, Granularity.MIN_60.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.MIN_60.getChildrenKeys(4, shard).size());
         
         // min240 and min60 is a factor of 4.
         expect = expect *4 + 4;
-        assertEquals(expect, Granularity.MIN_240.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.MIN_240.getChildrenKeys(4, shard).size());
         
         // min1440 and min240 is a factor of 6.
         expect = expect * 6 + 6;
-        assertEquals(expect, Granularity.MIN_1440.getChildrenKeys(4, shard).size());
+        Assert.assertEquals(expect, Granularity.MIN_1440.getChildrenKeys(4, shard).size());
     }
 }

@@ -3,14 +3,15 @@ package com.cloudkick.blueflood.rollup;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.io.Constants;
 import com.cloudkick.blueflood.types.Average;
-import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.utils.MetricHelper;
-import junit.framework.TestCase;
+import com.cloudkick.blueflood.utils.Util;
+import org.junit.Assert;
+import org.junit.Test;
 import telescope.thrift.Metric;
 
 import java.util.Random;
 
-public class UtilTest extends TestCase {
+public class UtilTest {
     private static final Random rand = new Random();
     
     private static String randomString(int length) {
@@ -20,32 +21,34 @@ public class UtilTest extends TestCase {
         return sb.toString();
     }
     
+    @Test
     public void testComputeShard() {
         for (int i = 0; i < 10000; i++) {
             int shard = Util.computeShard(randomString(rand.nextInt(100) + 1));
-            assertTrue(shard >= 0);
-            assertTrue(shard < Constants.NUMBER_OF_SHARDS);
+            Assert.assertTrue(shard >= 0);
+            Assert.assertTrue(shard < Constants.NUMBER_OF_SHARDS);
         }
     }
     
+    @Test
     public void testParseShards() {
-        assertEquals(128, Util.parseShards("ALL").size());
-        assertEquals(0, Util.parseShards("NONE").size());
-        assertEquals(5, Util.parseShards("1,9,4,23,0").size());
+        Assert.assertEquals(128, Util.parseShards("ALL").size());
+        Assert.assertEquals(0, Util.parseShards("NONE").size());
+        Assert.assertEquals(5, Util.parseShards("1,9,4,23,0").size());
         
         try {
             Util.parseShards("1,x,23");
-            assertTrue("Should not have gotten here.", false);
+            Assert.assertTrue("Should not have gotten here.", false);
         } catch (NumberFormatException expected) {}
         
         try {
             Util.parseShards("EIGHTY");
-            assertTrue("Should not have gotten here.", false);
+            Assert.assertTrue("Should not have gotten here.", false);
         } catch (NumberFormatException expected) {}
         
         try {
             Util.parseShards("1,2,3,4,0,-1");
-            assertTrue("Should not have gotten here.", false);
+            Assert.assertTrue("Should not have gotten here.", false);
         } catch (NumberFormatException expected) {}
 
         boolean exception = false;
@@ -53,12 +56,13 @@ public class UtilTest extends TestCase {
             Util.parseShards("" + (Constants.NUMBER_OF_SHARDS + 1));
         } catch (NumberFormatException expected) {
             exception = true;
-            assertEquals("Invalid shard identifier: 129", expected.getMessage());
+            Assert.assertEquals("Invalid shard identifier: 129", expected.getMessage());
         }
 
-        assertEquals(true, exception);
+        Assert.assertEquals(true, exception);
     }
 
+    @Test
     public void testGetMetricValue() {
         Metric m1 = new Metric((byte) MetricHelper.Type.DOUBLE);
         Metric m2 = new Metric((byte)MetricHelper.Type.STRING);
@@ -72,11 +76,11 @@ public class UtilTest extends TestCase {
         m4.setValueI64(23);
         m5.setValueI32(1991);
 
-        assertEquals(100.0, CloudMonitoringTelescope.getMetricValue(m1));
-        assertEquals("a", CloudMonitoringTelescope.getMetricValue(m2));
-        assertEquals(7, CloudMonitoringTelescope.getMetricValue(m3));
-        assertEquals(new Long(23), (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
-        assertEquals((Long)23L, (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
+        Assert.assertEquals(100.0, CloudMonitoringTelescope.getMetricValue(m1));
+        Assert.assertEquals("a", CloudMonitoringTelescope.getMetricValue(m2));
+        Assert.assertEquals(7, CloudMonitoringTelescope.getMetricValue(m3));
+        Assert.assertEquals(new Long(23), (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
+        Assert.assertEquals((Long)23L, (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
 
         boolean failed = false;
 
@@ -85,12 +89,13 @@ public class UtilTest extends TestCase {
         }
         catch (RuntimeException e) {
             failed = true;
-            assertEquals("Unexpected metric type: " + (char)m6.getMetricType(), e.getMessage());
+            Assert.assertEquals("Unexpected metric type: " + (char)m6.getMetricType(), e.getMessage());
         }
 
-        assertEquals(true, failed);
+        Assert.assertEquals(true, failed);
     }
 
+    @Test
     public void testCreateMetric() {
         Double myDouble = new Double(66.6);
         Long myLong = new Long(4578);
@@ -102,21 +107,21 @@ public class UtilTest extends TestCase {
         Metric m;
 
         m = Util.createMetric(myDouble);
-        assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
+        Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
 
         m = Util.createMetric(myLong);
-        assertEquals(new Long(4578), (Long) m.getValueI64());
-        assertEquals((Long) 4578L, (Long) m.getValueI64());
+        Assert.assertEquals(new Long(4578), (Long) m.getValueI64());
+        Assert.assertEquals((Long) 4578L, (Long) m.getValueI64());
 
         m = Util.createMetric(myInteger);
-        assertEquals(1224, CloudMonitoringTelescope.getMetricValue(m));
+        Assert.assertEquals(1224, CloudMonitoringTelescope.getMetricValue(m));
 
         m = Util.createMetric(myAverage1);
-        assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
+        Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
 
         m = Util.createMetric(myAverage2);
-        assertEquals(new Long(4578), (Long) CloudMonitoringTelescope.getMetricValue(m));
-        assertEquals((Long)4578L, (Long) CloudMonitoringTelescope.getMetricValue(m));
+        Assert.assertEquals(new Long(4578), (Long) CloudMonitoringTelescope.getMetricValue(m));
+        Assert.assertEquals((Long)4578L, (Long) CloudMonitoringTelescope.getMetricValue(m));
 
         boolean failed = false;
 
@@ -125,46 +130,53 @@ public class UtilTest extends TestCase {
         }
         catch (RuntimeException e) {
             failed = true;
-            assertEquals("Unexpected type for rollup: telescope.thrift.Metric", e.getMessage());
+            Assert.assertEquals("Unexpected type for rollup: telescope.thrift.Metric", e.getMessage());
         }
 
-        assertEquals(true, failed);
+        Assert.assertEquals(true, failed);
     }
 
+    @Test
     public void testFormatStateColumnName() {
-        assertEquals("metrics_full,1,okay", Util.formatStateColumnName(Granularity.FULL, 1, "okay"));
+        Assert.assertEquals("metrics_full,1,okay", Util.formatStateColumnName(Granularity.FULL, 1, "okay"));
     }
 
+    @Test
     public void testGranularityFromStateCol() {
         Granularity myGranularity = Util.granularityFromStateCol("metrics_full,1,okay");
-        assertNotNull(myGranularity);
-        assertEquals(myGranularity, Granularity.FULL);
+        Assert.assertNotNull(myGranularity);
+        Assert.assertEquals(myGranularity, Granularity.FULL);
 
         myGranularity = Util.granularityFromStateCol("FULL");
-        assertNull(myGranularity);
+        Assert.assertNull(myGranularity);
     }
 
+    @Test
     public void testSlotFromStateCol() {
-        assertEquals(1, Util.slotFromStateCol("metrics_full,1,okay"));
+        Assert.assertEquals(1, Util.slotFromStateCol("metrics_full,1,okay"));
     }
 
+    @Test
     public void testStateFromStateCol() {
-        assertEquals("okay", Util.stateFromStateCol("metrics_full,1,okay"));
+        Assert.assertEquals("okay", Util.stateFromStateCol("metrics_full,1,okay"));
     }
 
+    @Test
     public void testIsExternalMetric() {
-        assertEquals(true, Util.isExternalMetric("mzORD.blah"));
-        assertEquals(false, Util.isExternalMetric("dim0.blah"));
+        Assert.assertEquals(true, Util.isExternalMetric("mzORD.blah"));
+        Assert.assertEquals(false, Util.isExternalMetric("dim0.blah"));
     }
 
+    @Test
     public void testGetDimensionFromKey() {
-        assertEquals("mzORD", Util.getDimensionFromKey("mzORD.blah"));
-        assertEquals("dim0", Util.getDimensionFromKey("dim0.blah"));
+        Assert.assertEquals("mzORD", Util.getDimensionFromKey("mzORD.blah"));
+        Assert.assertEquals("dim0", Util.getDimensionFromKey("dim0.blah"));
     }
 
+    @Test
     public void testGetMetricFromKey() {
-        assertEquals("blah.sawtooth", Util.getMetricFromKey("mzGRD.blah.sawtooth"));
-        assertEquals("blah", Util.getMetricFromKey("mzGRD.blah"));
-        assertEquals("sawtooth", Util.getMetricFromKey("dim0.sawtooth"));
+        Assert.assertEquals("blah.sawtooth", Util.getMetricFromKey("mzGRD.blah.sawtooth"));
+        Assert.assertEquals("blah", Util.getMetricFromKey("mzGRD.blah"));
+        Assert.assertEquals("sawtooth", Util.getMetricFromKey("dim0.sawtooth"));
     }
 }

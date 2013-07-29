@@ -7,7 +7,6 @@ import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.ScheduleContext;
 import com.cloudkick.blueflood.types.Locator;
 import com.netflix.astyanax.model.ColumnList;
-import junit.framework.Assert;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -16,6 +15,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.URI;

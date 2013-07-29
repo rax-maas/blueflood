@@ -1,11 +1,11 @@
 package com.cloudkick.blueflood.io;
 
 import com.cloudkick.blueflood.types.Locator;
-import com.cloudkick.blueflood.utils.MetricHelper;
-import telescope.thrift.Metric;
+import org.junit.Test;
 
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
-    
+
+    @Test
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
@@ -18,6 +18,7 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         assertNumberOfRows("metrics_locator", 0);
     }
 
+    @Test
     public void testEnsureNumericMetricsDoNotEndUpInStringSpaces() throws Exception {
         assertNumberOfRows("metrics_string", 0);
         assertNumberOfRows("metrics_full", 0);
@@ -30,6 +31,7 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         assertNumberOfRows("metrics_locator", 1);
     }
 
+    @Test
     public void testMetadataGetsWritten() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);
 

@@ -1,9 +1,9 @@
 package com.cloudkick.blueflood.inputs.formats;
 
 import com.cloudkick.blueflood.types.Metric;
-import junit.framework.Assert;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.StringWriter;

@@ -17,8 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-import static junit.framework.Assert.fail;
-
 public class SerializationTest {
     
     private final static Object[] toSerializeFull = new Object[] {
@@ -39,7 +37,7 @@ public class SerializationTest {
                 try {
                     rollup.handleFullResMetric(val * (i+1));
                 } catch (Exception e) {
-                    fail("Test data generation failed");
+                    Assert.fail("Test data generation failed");
                 }
             }
             toSerializeRollup[i] = rollup;
@@ -52,7 +50,7 @@ public class SerializationTest {
                 try {
                     rollup.handleFullResMetric(val * (i+1));
                 } catch (Exception e) {
-                    fail("Test data generation failed");
+                    Assert.fail("Test data generation failed");
                 }
             }
             toSerializeRollup[2 + i] = rollup;
@@ -264,7 +262,6 @@ public class SerializationTest {
             String actual = (String)NumericSerializer.get(gran).fromByteBuffer(bb);
             Assert.assertEquals(expected, actual);
         } catch (RuntimeException ex) {
-            System.out.println(ex.getMessage());
             throw ex.getCause();
         }
     }

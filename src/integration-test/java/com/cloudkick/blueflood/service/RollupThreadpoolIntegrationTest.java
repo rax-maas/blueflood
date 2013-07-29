@@ -10,6 +10,8 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.core.Timer;
+import org.junit.Assert;
+import org.junit.Test;
 
 // this test used to measure rollups that were refused, but we don't care anymore. Not it makes sure that all rollups
 // get executed.
@@ -20,10 +22,11 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         // run this test with a configuration so that threadpool queue size is artificially constrained smaller.
         System.setProperty("MAX_ROLLUP_THREADS", threadsInRollupPool.toString());
     }
-    
+
+    @Test
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
-        assertEquals(Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
+        Assert.assertEquals(Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
         int shardToTest = 0;
 
         // I want to see what happens when RollupService.rollupExecutors gets too much work. It should never reject
@@ -50,7 +53,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
 
         // Make sure number of locators for test shard is greater than number of rollup threads.
         // This is required so that rollups would be rejected for some locators.
-        assertTrue(threadsInRollupPool < locatorsForTestShard);
+        Assert.assertTrue(threadsInRollupPool < locatorsForTestShard);
 
         // great. now lets schedule those puppies.
         ScheduleContext ctx = new ScheduleContext(time, Util.parseShards(String.valueOf(shardToTest)));
@@ -73,7 +76,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         MetricsRegistry registry = Metrics.defaultRegistry();
         Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.cloudkick.blueflood.service", "RollupService", "Rollup Execution Timer"));
         
-        assertNotNull(rollupsTimer);
+        Assert.assertNotNull(rollupsTimer);
         
         // wait up to 120s for those rollups to finish.
         long start = System.currentTimeMillis();
@@ -81,10 +84,10 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
             try { Thread.currentThread().sleep(1000); } catch (Exception ex) { }
             if (rollupsTimer.count() >= locatorsForTestShard)
                 break;
-            assertTrue(String.format("rollups:%d", rollupsTimer.count()), System.currentTimeMillis() - start < 120000);
+            Assert.assertTrue(String.format("rollups:%d", rollupsTimer.count()), System.currentTimeMillis() - start < 120000);
         }
         
         // make sure there were some that were delayed. If not, we need to increase NUM_LOCATORS.
-        assertTrue(rollupsTimer.count() > 0);
+        Assert.assertTrue(rollupsTimer.count() > 0);
     }
 }
