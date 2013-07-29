@@ -33,7 +33,7 @@ is accomplished by exposing many settings through [JMX](http://www.oracle.com/te
 
 ## RollupService
 * __Active__: indicates that rollups can be scheduled. There is a poll method 
-  that always looks for opportunities to schedule rollups, but non will be
+  that always looks for opportunities to schedule rollups, but none will be
   scheduled unless this flag is set.  After setting to __false__ it may take
   some time for pending rollups to drain.
 * __InFlightRollupCount__: the number of rollups being executed right now.
@@ -59,7 +59,7 @@ is accomplished by exposing many settings through [JMX](http://www.oracle.com/te
   will enqueue a lot of rollups and consume a lot of memory.
 
 The goal of these tunables is to allow flexible configuration so that a rollup
-slave will always have rollups to execute when the are available.
+slave will always have rollups to execute when they are available.
 
 ### Poll Timer
 Monitors how long it takes for the poll() method to look for schedulable slots.
@@ -67,7 +67,7 @@ If poll times are unacceptably high, you should consider adding another
 rollup slave.  See also RollupService.PollPeriod.
 
 ### Rejected Slot Checks
-Monitors how ofen slot checks are rejected because no thread is available to 
+Monitors how often slot checks are rejected because no thread is available to 
 service the request.  If this is regularly happening, you may wish to increase
 RollupService.PollPeriod.
 
@@ -85,7 +85,7 @@ number of threads specified and RollupService.RollupConcurrency can handle.
 Monitors:
 
 * how long scribe Log() calls are taking.
-* number of telescopes received on the scribe interface.
+* number of thrift messages received on the scribe interface.
 * how much time is spent deserializing thrift messages.
 
 ## ShardStatePuller/ShardStatePusher
@@ -95,17 +95,18 @@ from the database.  Also monitors how long the calls take and if there were
 any errors (such as timeouts).  The pusher/puller can also be turned off
 through this interface.
 
-## CqlExecute
+## io.Instrumentation
 
-This interface gives visibilty into cassandra performance from Bluefoods
+This interface gives visibilty into Cassandra performance from Blueflood's
 perspective.
 
 Most exposed meters monitor how long it takes to perform some cassandra
 operation.  Keep in mind that the histogram values are biased towards the
-most recent 5 minutes of input.
+most recent 5 minutes of data.
 
-### Cassandra Read Errors/Cassandra Write Errors
+### InstrumentatedConnectionPoolMonitor
 
-Monitors the overall rate of cassandra read and write errors.  Spikes here 
-usually indicate systemic problems. 
-
+Monitors the rates of cassandra read and write errors.  Spikes here 
+may indicate systemic problems. Note that a high rate of 'Pool Exhausted'
+exceptions with a multi-node Cassandra cluster is to be expected and not
+problematic (except when seen alongside operation timeouts).
