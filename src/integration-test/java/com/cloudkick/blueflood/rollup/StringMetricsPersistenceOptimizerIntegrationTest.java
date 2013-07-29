@@ -5,7 +5,9 @@ import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.netflix.astyanax.MutationBatch;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -16,7 +18,7 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
     private Locator otherLocator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomBooleanMetric");
 
     @Before
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         metricsOptimizer = new StringMetricsPersistenceOptimizer();
@@ -40,6 +42,7 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
         mb.execute();
     }
 
+    @Test
     // Testing an edge case when there are no metrics available for a locator
     // in the database
     public void testShouldPersistForFirstInsertOfLocator() throws Exception {
@@ -53,9 +56,10 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should return true as cassandra doesn't have any
         // metrics for this locator yet
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
     }
 
+    @Test
     public void testShouldPersistHappyCase() throws Exception {
         String testMetric = "HTTP GET failed";
         long collectionTimeInSecs = 56789;
@@ -66,7 +70,7 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should be false as we have the same metric as the one
         // in the database
-        assertEquals(false, shouldPersist);
+        Assert.assertEquals(false, shouldPersist);
 
         testMetric = "HTTP GET succeeded";
         collectionTimeInSecs++;
@@ -77,22 +81,23 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should now be true as we do not have the same metric
         // as the one in the database
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
     }
 
+    @Test
     public void testShouldPersistForBooleanMetrics() throws Exception {
         boolean testMetric = false;
         long collectionTimeInSecs = 56789;
         Metric newMetric = new Metric(otherLocator, testMetric, collectionTimeInSecs,
                 new TimeValue(2, TimeUnit.DAYS), "unknown");
 
-        assertTrue(newMetric.isBoolean());
+        Assert.assertTrue(newMetric.isBoolean());
 
         boolean shouldPersist = metricsOptimizer.shouldPersist(newMetric);
 
         // shouldPersist should be false as we have the same metric as the one
         // in the database
-        assertEquals(false, shouldPersist);
+        Assert.assertEquals(false, shouldPersist);
 
         testMetric = true;
         collectionTimeInSecs++;
@@ -103,6 +108,6 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
         // shouldPersist should now be true as we do not have the same metric
         // as the one in the database
-        assertEquals(true, shouldPersist);
+        Assert.assertEquals(true, shouldPersist);
     }
 }

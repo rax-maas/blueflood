@@ -8,11 +8,12 @@ import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.ScheduleContext;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.utils.Util;
-import junit.framework.Assert;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.junit.Assert;
+import org.junit.Test;
 import scribe.thrift.LogEntry;
 import scribe.thrift.ResultCode;
 import telescope.thrift.*;
@@ -68,6 +69,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         myScribeHandler = new AlternateScribeHandler(context);
     }
 
+    @Test
     public void testLog() throws IOException, TException{
         setupTestPrerequisites();
         Assert.assertNotNull(myScribeHandler);
@@ -84,6 +86,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
 
     }
 
+    @Test
     public void testUnitPersistence() throws IOException, TException, InterruptedException {
         setupTestPrerequisites();
 

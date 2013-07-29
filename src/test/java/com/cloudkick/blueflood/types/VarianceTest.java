@@ -1,12 +1,12 @@
 package com.cloudkick.blueflood.types;
 
-import junit.framework.Assert;
 import org.apache.commons.lang.ArrayUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class VarianceTest {
@@ -68,7 +68,7 @@ public class VarianceTest {
     @Test
     public void testFullResMetricVarianceForOneSample() {
         variance.handleFullResMetric(3.14);
-        Assert.assertEquals(0.0, variance.toDouble());
+        Assert.assertEquals(0.0, variance.toDouble(), 0);
     }
 
     @Test

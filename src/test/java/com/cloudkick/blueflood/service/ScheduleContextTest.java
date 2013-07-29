@@ -243,7 +243,6 @@ public class ScheduleContextTest {
             long time = clock.get();  // saves a bit of lock contention.
             for (int i = 0; i < days * 24 * 60 * 60; i += 30) {
                 if (latch.getCount() == 0) {
-                    System.out.println(getName() + " quitting early.");
                     break;
                 }
                 time += 30000;
@@ -252,7 +251,6 @@ public class ScheduleContextTest {
                 ctx.update(time, shard);
                 count++;
             }
-            System.out.println("Updates " + count);
             updateCount.set(count);
             latch.countDown();
         }};
@@ -266,7 +264,6 @@ public class ScheduleContextTest {
                 // sleep here the update thread gets starved and has a hard time completing.
                 try { sleep(100L); } catch (Exception ex) {}
             }
-            System.out.println("Schedules " + count);
             scheduleCount.set(count);
             latch.countDown();
         }};
@@ -280,7 +277,6 @@ public class ScheduleContextTest {
                     count++;
                 }
             }
-            System.out.println("Executions " + count);
             executionCount.set(count);
             latch.countDown();
         }};
@@ -290,13 +286,10 @@ public class ScheduleContextTest {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("Examining latch");
                 while (latch.getCount() > 0) {
-                    System.out.println("Forcefully decrementing latch");
                     softTimeoutReached.set(true);
                     latch.countDown();
                 }
-                System.out.println("Done examining latch");
             }
         }, MULTI_THREAD_SOFT_TIMEOUT.toMillis());
 

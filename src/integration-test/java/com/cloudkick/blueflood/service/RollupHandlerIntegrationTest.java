@@ -8,6 +8,8 @@ import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
 import com.cloudkick.blueflood.types.Rollup;
+import org.junit.Assert;
+import org.junit.Test;
 import telescope.thrift.Resolution;
 import telescope.thrift.RollupMetric;
 
@@ -25,7 +27,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
     };
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
@@ -40,6 +42,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Test
     public void testGetRollupByPoints() throws Exception {
 
         // generate every level of rollup for the raw data
@@ -79,11 +82,12 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis,
                         baseMillis + 86400000,
                         points.get(g2.name())).getMetrics();
-                assertEquals((int) answers.get(g2.name()), rms.size());
+                Assert.assertEquals((int) answers.get(g2.name()), rms.size());
             }
         }
     }
 
+    @Test
     public void testGetRollupByResolution() throws Exception {
 
         // generate every level of rollup for the raw data
@@ -97,25 +101,26 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         final RollupHandler rh = new RollupHandler();
 
         for (Locator locator : locators) {
-            assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
-            assertEquals(289, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
-            assertEquals(73, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
-            assertEquals(25, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
-            assertEquals(7, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
-            assertEquals(2, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
+            Assert.assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
+            Assert.assertEquals(289, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
+            Assert.assertEquals(73, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
+            Assert.assertEquals(25, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
+            Assert.assertEquals(7, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
+            Assert.assertEquals(2, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
         }
     }
 
+    @Test
     public void testGetMissingRollupsByResolution() throws Exception {
         final RollupHandler rh = new RollupHandler();
 
         for (Locator locator : locators) {
-            assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
-            assertEquals(288, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
-            assertEquals(72, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
-            assertEquals(24, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
-            assertEquals(6, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
-            assertEquals(1, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
+            Assert.assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
+            Assert.assertEquals(288, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
+            Assert.assertEquals(72, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
+            Assert.assertEquals(24, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
+            Assert.assertEquals(6, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
+            Assert.assertEquals(1, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
         }
     }
 

@@ -6,12 +6,14 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.core.Timer;
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-public class RollupContextTest extends TestCase{
+public class RollupContextTest {
 
+    @Test
     public void testRollupContextConstructor() {
         Range myRange = new Range(0, 300000);
         Granularity gran = Granularity.MIN_5;
@@ -22,17 +24,16 @@ public class RollupContextTest extends TestCase{
 
         RollupContext myRollupContext = new RollupContext(myRange, gran, myThread);
 
-        assertNotNull(myRollupContext);
-        assertTrue(myRollupContext.done());
+        Assert.assertNotNull(myRollupContext);
+        Assert.assertTrue(myRollupContext.done());
         myRollupContext.increment();
-        assertFalse(myRollupContext.done());
+        Assert.assertFalse(myRollupContext.done());
         myRollupContext.decrement();
-        assertTrue(myRollupContext.done());
+        Assert.assertTrue(myRollupContext.done());
 
-        assertEquals(myTimer, myRollupContext.getExecuteTimer());
-        assertEquals(myHistogram, myRollupContext.getWaitHist());
-        assertEquals(gran, myRollupContext.getSourceGranularity());
-        assertEquals(myRange, myRollupContext.getRange());
-
+        Assert.assertEquals(myTimer, myRollupContext.getExecuteTimer());
+        Assert.assertEquals(myHistogram, myRollupContext.getWaitHist());
+        Assert.assertEquals(gran, myRollupContext.getSourceGranularity());
+        Assert.assertEquals(myRange, myRollupContext.getRange());
     }
 }

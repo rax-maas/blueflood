@@ -5,14 +5,18 @@ import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
 import com.cloudkick.blueflood.rollup.Granularity;
-import com.cloudkick.blueflood.types.*;
 import com.cloudkick.blueflood.types.Locator;
-import com.cloudkick.blueflood.utils.Util;
+import com.cloudkick.blueflood.types.Metric;
+import com.cloudkick.blueflood.types.Range;
+import com.cloudkick.blueflood.types.Rollup;
 import com.cloudkick.blueflood.utils.TimeValue;
+import com.cloudkick.blueflood.utils.Util;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.Column;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
@@ -60,6 +64,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Test
     public void testLocatorsWritten() throws Exception {
         Collection<Locator> locators = writeLocatorsOnly(48);
         AstyanaxReader r = AstyanaxReader.getInstance();
@@ -70,9 +75,10 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 actualLocators.add(locatorCol.getName().toString());
             }
         }
-        assertEquals(48, actualLocators.size());
+        Assert.assertEquals(48, actualLocators.size());
     }
 
+    @Test
     // tests how rollup generation could be done optimally when regenerating large swaths of rollups.  It 
     // minimizes round trips around column selection.  The operations are reduced to:
     // 1) one long slice read.
@@ -132,8 +138,10 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
         Rollup rollup = reader.readAndCalculate(locator, range, Granularity.MIN_1440);
 
-        assertEquals(60 * hours, rollup.getCount());
+        Assert.assertEquals(60 * hours, rollup.getCount());
     }
+
+    @Test
     public void testRollupGenerationSimple() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -193,9 +201,10 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
         Rollup rollup = reader.readAndCalculate(locator, range, Granularity.MIN_1440);
-        assertEquals(60 * hours, rollup.getCount());
+        Assert.assertEquals(60 * hours, rollup.getCount());
     }
 
+    @Test
     public void testSimpleInsertAndGet() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -221,9 +230,10 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         for (Column<Long> col : reader.getNumericRollups(locator, Granularity.FULL, baseMillis, lastMillis))
             actualTimestamps.add(col.getName());
-        assertEquals(expectedTimestamps, actualTimestamps);
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
+    @Test
     public void testConsecutiveWriteAndRead() throws ConnectionException, IOException {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -244,11 +254,12 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         int count = 0;
         for (Column<Long> col : reader.getNumericRollups(locator, Granularity.FULL, baseMillis, baseMillis + 500000)) {
             int v = (Integer)col.getValue(NumericSerializer.get(Granularity.FULL));
-            assertEquals(count, v);
+            Assert.assertEquals(count, v);
             count++;
         }
     }
-    
+
+    @Test
     public void testShardStateWriteRead() throws Exception {
         final Collection<Integer> shards = Lists.newArrayList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
@@ -292,11 +303,12 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         for (Integer shard : shards) {
             for (Granularity granularity : Granularity.rollupGranularities()) {
                 ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
-                assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
+                Assert.assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
             }
         }
     }
-    
+
+    @Test
     public void testUpdateStampCoaelescing() throws Exception {
         final int shard = 24;
         final int slot = 16;
@@ -319,7 +331,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ShardStateManager shardStateManager = ctx.getShardStateManager();
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 
-        assertNotNull(slotStateManager.getSlotStamps());
-        assertEquals(UpdateStamp.State.Rolled, slotStateManager.getSlotStamps().get(slot).getState());
+        Assert.assertNotNull(slotStateManager.getSlotStamps());
+        Assert.assertEquals(UpdateStamp.State.Rolled, slotStateManager.getSlotStamps().get(slot).getState());
     }
 }

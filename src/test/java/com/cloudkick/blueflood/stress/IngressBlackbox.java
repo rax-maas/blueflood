@@ -1,19 +1,20 @@
 package com.cloudkick.blueflood.stress;
 
-
+import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.io.NumericSerializer;
-import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.rollup.Granularity;
+import com.cloudkick.blueflood.scribe.ConnectionException;
+import com.cloudkick.blueflood.scribe.LogException;
+import com.cloudkick.blueflood.scribe.ScribeClient;
 import com.cloudkick.blueflood.service.Configuration;
 import com.cloudkick.blueflood.service.RollupServiceMBean;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Rollup;
 import com.cloudkick.blueflood.utils.Util;
-import com.cloudkick.blueflood.scribe.ConnectionException;
-import com.cloudkick.blueflood.scribe.LogException;
-import com.cloudkick.blueflood.scribe.ScribeClient;
 import com.netflix.astyanax.model.Column;
+import org.junit.Assert;
+import org.junit.Test;
 import scribe.thrift.LogEntry;
 
 import java.io.IOException;
@@ -25,11 +26,12 @@ public class IngressBlackbox extends IntegrationTestBase {
     private static final long START_DATE = 1335796192139L;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         if (WRITING)
             super.setUp();
     }
 
+    @Test
     public void testThatRollupsHappen() throws IOException {
         // Mon Apr 30 07:29:52 PDT 2012
         final long days = 3;
@@ -50,7 +52,7 @@ public class IngressBlackbox extends IntegrationTestBase {
             final AtomicLong time = new AtomicLong(START_DATE);
             final int MAX_METRIC = 10;
 
-            assertNotNull(System.getProperty("BLUEFLOOD_JMX_LIST"));
+            Assert.assertNotNull(System.getProperty("BLUEFLOOD_JMX_LIST"));
             Collection<RollupServiceMBean> mbeans = Blaster.buildMBeans();
 
             for (RollupServiceMBean bean : mbeans) {
@@ -182,12 +184,12 @@ public class IngressBlackbox extends IntegrationTestBase {
             }
 
             long expectedPoints = 2 * 60 * 24 * days; // twice a minute * the number of minutes in $days
-            assertEquals(expectedPoints, countFull);
-            assertEquals(expectedPoints, count5m);
-            assertEquals(expectedPoints, count20m);
-            assertEquals(expectedPoints, count60m);
-            assertEquals(expectedPoints, count4h);
-            assertEquals(expectedPoints, count1d);
+            Assert.assertEquals(expectedPoints, countFull);
+            Assert.assertEquals(expectedPoints, count5m);
+            Assert.assertEquals(expectedPoints, count20m);
+            Assert.assertEquals(expectedPoints, count60m);
+            Assert.assertEquals(expectedPoints, count4h);
+            Assert.assertEquals(expectedPoints, count1d);
         }
 
         // tell the whiskey process waiter that we are for sure done.

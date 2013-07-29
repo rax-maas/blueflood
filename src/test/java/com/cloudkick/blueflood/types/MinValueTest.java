@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.types;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class MinValueTest {
             min.handleFullResMetric(val);
         }
         Assert.assertTrue(min.isFloatingPoint());
-        Assert.assertEquals(0.0, min.toDouble());
+        Assert.assertEquals(0.0, min.toDouble(), 0);
     }
 
     @Test
@@ -85,7 +85,7 @@ public class MinValueTest {
 
         min = netRollup.getMinValue();
         Assert.assertTrue(min.isFloatingPoint());
-        Assert.assertEquals(1.14d, min.toDouble());
+        Assert.assertEquals(1.14d, min.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right min
         netRollup = new Rollup();

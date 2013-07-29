@@ -9,8 +9,9 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
-import junit.framework.Assert;
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class IntegrationTestBase extends TestCase {
+public class IntegrationTestBase {
 
     static {
         try {
@@ -77,8 +78,8 @@ public class IntegrationTestBase extends TestCase {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
     }
 
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         // really short lived connections for tests!
         final String[] columnFamilies = {"metrics_locator", "metrics_full", "metrics_5m", "metrics_20m", "metrics_60m",
                                          "metrics_240m", "metrics_1440m", "metrics_state", "metrics_string",
@@ -88,8 +89,8 @@ public class IntegrationTestBase extends TestCase {
             truncator.truncate(cf);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         // meh
     }
     

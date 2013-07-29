@@ -6,7 +6,8 @@ import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.utils.Util;
-import junit.framework.Assert;
+import org.junit.Assert;
+import org.junit.Test;
 import telescope.thrift.MetricInfo;
 import telescope.thrift.Telescope;
 
@@ -20,7 +21,7 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
     final String acctId2 = "otherAc" + IntegrationTestBase.randString(8);
     final Map<String, Set<String>> checkToMetricsMap = new HashMap<String, Set<String>>();
 
-
+    @Test
     public void testGetMetricsForCheck() throws Exception {
         final RollupHandler rh = new CloudMonitoringRollupHandler();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
