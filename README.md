@@ -15,7 +15,7 @@ Running
 -------
 Several settings are important to set at runtime:
 
-* __blueflood-config__: URL pointing to a valid Blueflood configuration file.
+* __blueflood.config__: URL pointing to a valid Blueflood configuration file.
   An [annotated config file](https://github.com/racker/ele/blob/rollups2/java/conf/bf-dev.conf)
   is stored in github.
 * __log4j.configuration__: Standard log4j configuration URL.
