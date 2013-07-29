@@ -9,6 +9,7 @@ import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
 import com.cloudkick.blueflood.types.Rollup;
 import org.junit.Assert;
+import org.junit.Test;
 import telescope.thrift.Resolution;
 import telescope.thrift.RollupMetric;
 
@@ -41,6 +42,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Test
     public void testGetRollupByPoints() throws Exception {
 
         // generate every level of rollup for the raw data
@@ -85,6 +87,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Test
     public void testGetRollupByResolution() throws Exception {
 
         // generate every level of rollup for the raw data
@@ -107,6 +110,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Test
     public void testGetMissingRollupsByResolution() throws Exception {
         final RollupHandler rh = new RollupHandler();
 
