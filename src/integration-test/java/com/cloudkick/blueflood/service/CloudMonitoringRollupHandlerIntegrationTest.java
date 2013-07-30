@@ -4,6 +4,7 @@ import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescopeTest;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
 import com.cloudkick.blueflood.io.IntegrationTestBase;
+import com.cloudkick.blueflood.outputs.handlers.CloudMonitoringRollupHandler;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.utils.Util;
 import org.junit.Assert;
@@ -23,7 +24,7 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
 
     @Test
     public void testGetMetricsForCheck() throws Exception {
-        final RollupHandler rh = new CloudMonitoringRollupHandler();
+        final CloudMonitoringRollupHandler rh = new CloudMonitoringRollupHandler();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         writer.insertFull(generateMetricsForTest());
 

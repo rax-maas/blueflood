@@ -9,8 +9,8 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
+import junit.framework.Assert;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
@@ -111,7 +111,7 @@ public class IntegrationTestBase {
         final long now = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
-            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met", randString(8));
+            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met." + randString(8));
             metrics.add(getRandomIntMetric(locator, now - 10000000));
         }
 

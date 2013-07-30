@@ -1,14 +1,12 @@
 package com.cloudkick.blueflood.io;
 
+import com.cloudkick.blueflood.outputs.formats.RollupData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.Range;
 import org.junit.Assert;
 import org.junit.Test;
-import telescope.thrift.RollupMetric;
-
-import java.util.List;
 
 public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     
@@ -18,15 +16,15 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
 
         final Locator locator = metric.getLocator();
-        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+        RollupData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
-        int numPoints = res.size();
+        int numPoints = res.getData().getPoints().size();
         Assert.assertTrue(numPoints > 0);
 
         // Test that the RangeBuilder is end-inclusive on the timestamp.
         res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime()), Granularity.FULL);
-        Assert.assertEquals(numPoints, res.size());
+        Assert.assertEquals(numPoints, res.getData().getPoints().size());
     }
 
     @Test
@@ -35,9 +33,9 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         final Locator locator = metric.getLocator();
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        List<RollupMetric> res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+        RollupData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
-        Assert.assertTrue(res.size() > 0);
+        Assert.assertTrue(res.getData().getPoints().size() > 0);
     }
 
     @Test

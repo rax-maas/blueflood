@@ -1,7 +1,8 @@
 package com.cloudkick.blueflood.io;
 
-import com.cloudkick.blueflood.exceptions.CacheException;
 import com.cloudkick.blueflood.cache.MetadataCache;
+import com.cloudkick.blueflood.exceptions.CacheException;
+import com.cloudkick.blueflood.outputs.formats.RollupData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.service.ShardStateManager;
 import com.cloudkick.blueflood.service.UpdateStamp;
@@ -21,13 +22,13 @@ import com.netflix.astyanax.util.RangeBuilder;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import telescope.thrift.Metric;
 import telescope.thrift.MetricInfo;
-import telescope.thrift.RollupMetric;
 import telescope.thrift.UnitEnum;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -236,7 +237,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public List<RollupMetric> getDatapointsForRange(Locator locator, Range range, Granularity gran) {
+    public RollupData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
             Object type = metaCache.get(locator, "type");
 
@@ -264,75 +265,53 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     // Used for both string and boolean metrics
-    private List<RollupMetric> getStringDatapointsForRange(Locator locator, Range range, Granularity gran, AbstractSerializer serializer) {
-        return transformDBValuesToRollupMetrics(
+    private RollupData getStringDatapointsForRange(Locator locator, Range range, Granularity gran, AbstractSerializer serializer) {
+        Points points =  transformDBValuesToPoints(
                 getStringPoints(locator, range.start, range.stop), gran, serializer);
+        return new RollupData(points, getUnitString(locator));
     }
 
-    private List<RollupMetric> getNumericDatapointsForRange(Locator locator, Range range, Granularity gran) {
-        return transformDBValuesToRollupMetrics(
+    private RollupData getNumericDatapointsForRange(Locator locator, Range range, Granularity gran) {
+        Points points = transformDBValuesToPoints(
                 getNumericRollups(locator, gran, range.start, range.stop), gran, NumericSerializer.get(gran));
+        return new RollupData(points, getUnitString(locator));
     }
 
-    private List<RollupMetric> scanAllColumnFamiliesForPoints(Locator locator, Range range, Granularity gran) {
+    private RollupData scanAllColumnFamiliesForPoints(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
-        List<RollupMetric> rollups;
         ColumnList<Long> results = getNumericRollups(locator, gran, range.getStart(), range.getStop());
-        rollups = transformDBValuesToRollupMetrics(results, gran, NumericSerializer.get(gran));
+        Points points = transformDBValuesToPoints(results, gran, NumericSerializer.get(gran));
 
-        if (rollups.size() > 0) {
-            return rollups;
+        if (points.getPoints().size() > 0) {
+            return new RollupData(points, getUnitString(locator));
         }
 
         results = getStringPoints(locator, range.start, range.stop);
-        rollups = transformDBValuesToRollupMetrics(results, gran, StringSerializer.get());
-
-        return rollups;
+        return new RollupData(transformDBValuesToPoints(results, gran, StringSerializer.get()), "");
     }
 
-    private List<RollupMetric> transformDBValuesToRollupMetrics(ColumnList<Long> results, Granularity gran, AbstractSerializer serializer) {
-        final List<RollupMetric> rollups = new ArrayList<RollupMetric>();
+    private Points transformDBValuesToPoints(ColumnList<Long> results, Granularity gran, AbstractSerializer serializer) {
+        Points points = Points.create(gran);
 
         for (Column<Long> column : results) {
             try {
-                rollups.add(rollupFromColumn(column, gran, serializer));
+                points.add(pointFromColumn(column, gran, serializer));
             } catch (RuntimeException ex) {
                 log.error("Problem deserializing rollup"); // TODO: update message?
                 log.error(ex.getMessage(), ex);
             }
         }
 
-        return rollups;
+        return points;
     }
 
-    private RollupMetric rollupFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
-        RollupMetric rm = new RollupMetric();
-        rm.setTimestamp(column.getName());
-
+    private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
         if (gran == Granularity.FULL) {
-            Metric m = Util.createMetric(column.getValue(serializer));
-            rm.setRawSample(m);
-            rm.setNumPoints(1);
-            return rm;
+            return new Points.Point<Object>(column.getName(), column.getValue(serializer));
         } else {
-            Rollup rollup = (Rollup)column.getValue(serializer);
-            return buildRollupThriftMetric(rm, rollup);
+            Rollup rollup = (Rollup) column.getValue(serializer);
+            return new Points.Point<Rollup>(column.getName(), rollup);
         }
-    }
-
-    public static RollupMetric buildRollupThriftMetric(RollupMetric rm, Rollup rollup) {
-        rm.setNumPoints(rollup.getCount());
-
-        Metric m = Util.createMetric(rollup.getAverage());
-        rm.setAverage(m);
-        m = Util.createMetric(rollup.getVariance());
-        rm.setVariance(m);
-        m = Util.createMetric(rollup.getMaxValue());
-        rm.setMax(m);
-        m = Util.createMetric(rollup.getMinValue());
-        rm.setMin(m);
-
-        return rm;
     }
 
     /**
