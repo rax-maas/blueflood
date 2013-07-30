@@ -4,7 +4,7 @@ import com.cloudkick.blueflood.outputs.formats.RollupData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Points;
 import com.cloudkick.blueflood.types.Rollup;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import telescope.thrift.RollupMetric;
 import telescope.thrift.RollupMetrics;
