@@ -1,6 +1,7 @@
 package com.cloudkick.blueflood.service;
 
 import com.cloudkick.blueflood.inputs.handlers.AlternateScribeHandler;
+import com.cloudkick.blueflood.inputs.handlers.HttpHandler;
 import com.cloudkick.blueflood.inputs.handlers.ScribeHandlerIface;
 import com.cloudkick.blueflood.thrift.ThriftRunnable;
 import com.cloudkick.blueflood.thrift.UnrecoverableException;
@@ -68,48 +69,58 @@ public class Main {
     private static void startIngestService(ScheduleContext context, String version) {
         // start up ingestion services.
         if (Configuration.getBooleanProperty("INGEST_MODE")) {
-            ScribeHandlerIface scribeHandler = new AlternateScribeHandler(context);
-            scribe.Processor processor = new scribe.Processor(scribeHandler.getScribe());
-        
-
-            final BlockingQueue<Runnable> thriftOverflowQueueScribe = new SynchronousQueue<Runnable>();
-            final ExecutorService executorServiceScribe = new ThreadPoolExecutor(Configuration.getIntegerProperty("MIN_THREADS"),
-                                                                           Configuration.getIntegerProperty("MAX_THREADS"),
-                                                                           60, TimeUnit.SECONDS,
-                                                                           thriftOverflowQueueScribe);
-            ThriftRunnable scribeRunnable = new ThriftRunnable(
-                Configuration.getStringProperty("SCRIBE_HOST"),
-                Configuration.getIntegerProperty("SCRIBE_PORT"),
-                "Blueflood",
-                processor,
-                Configuration.getIntegerProperty("THRIFT_RPC_TIMEOUT"),
-                Configuration.getIntegerProperty("THRIFT_LENGTH"),
-                executorServiceScribe);
-    
-            Thread scribeListeningThread = new Thread(scribeRunnable, "Scribe Threadpools") {
-                public void run() {
-                    try {
-                        super.run();
-                    } catch (UnrecoverableException ex) {
-                        log.error("Caught unrecoverable exception " + ex.getMessage(), ex);
-                    } catch (RuntimeException ex) {
-                        log.error("Caught runtime exception " + ex.getMessage(), ex);
-                    } catch (Exception ex) {
-                        log.error(ex.getMessage(), ex);
-                    } finally {
-                        System.exit(-1);
-                    }
-                }
-            };
-            
-            scribeListeningThread.start();
-            log.info("Listening for scribe clients to send telescopes");
-            
+          listenForScribeClients(context);
+          listenForHttpClients(context);
         } else {
             log.info("Scribe ingestion service not required");
         }
     }
-    
+
+    private static void listenForScribeClients(ScheduleContext context) {
+      ScribeHandlerIface scribeHandler = new AlternateScribeHandler(context);
+      scribe.Processor processor = new scribe.Processor(scribeHandler.getScribe());
+
+
+      final BlockingQueue<Runnable> thriftOverflowQueueScribe = new SynchronousQueue<Runnable>();
+      final ExecutorService executorServiceScribe = new ThreadPoolExecutor(Configuration.getIntegerProperty("MIN_THREADS"),
+                                                                     Configuration.getIntegerProperty("MAX_THREADS"),
+                                                                     60, TimeUnit.SECONDS,
+                                                                     thriftOverflowQueueScribe);
+      ThriftRunnable scribeRunnable = new ThriftRunnable(
+          Configuration.getStringProperty("SCRIBE_HOST"),
+          Configuration.getIntegerProperty("SCRIBE_PORT"),
+          "Blueflood",
+          processor,
+          Configuration.getIntegerProperty("THRIFT_RPC_TIMEOUT"),
+          Configuration.getIntegerProperty("THRIFT_LENGTH"),
+          executorServiceScribe);
+
+      Thread scribeListeningThread = new Thread(scribeRunnable, "Scribe Threadpools") {
+          public void run() {
+              try {
+                  super.run();
+              } catch (UnrecoverableException ex) {
+                  log.error("Caught unrecoverable exception " + ex.getMessage(), ex);
+              } catch (RuntimeException ex) {
+                  log.error("Caught runtime exception " + ex.getMessage(), ex);
+              } catch (Exception ex) {
+                  log.error(ex.getMessage(), ex);
+              } finally {
+                  System.exit(-1);
+              }
+          }
+      };
+
+      scribeListeningThread.start();
+      log.info("Listening for scribe clients to send telescopes");
+    }
+
+    private static void listenForHttpClients(ScheduleContext context) {
+      int httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
+      new HttpHandler(httpPort, context);
+
+    }
+
     private static void startQueryService() {
         // start up query services.
         if (Configuration.getBooleanProperty("QUERY_MODE")) {
