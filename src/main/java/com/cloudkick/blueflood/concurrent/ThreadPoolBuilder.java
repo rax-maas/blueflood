@@ -71,13 +71,13 @@ public class ThreadPoolBuilder {
         return this;
     }
     
-    public ListeningExecutorService build() {
-        return MoreExecutors.listeningDecorator(new ThreadPoolExecutor(
+    public ThreadPoolExecutor build() {
+        return new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,
                 30, TimeUnit.SECONDS, // hard code the timeout.
                 workQueue,
                 new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
-                rejectedHandler));
+                rejectedHandler);
     }
 }

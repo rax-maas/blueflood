@@ -42,8 +42,8 @@ public class ConcurrentStructuresTest {
 
     @Test
     public void testThreadPoolsWithSameNameIsNotBad() throws InterruptedException {
-        ListeningExecutorService svc1 = new ThreadPoolBuilder().withName("foo").build();
-        ListeningExecutorService svc2 = new ThreadPoolBuilder().withName("foo").build();
+        ThreadPoolExecutor svc1 = new ThreadPoolBuilder().withName("foo").build();
+        ThreadPoolExecutor svc2 = new ThreadPoolBuilder().withName("foo").build();
 
         final List<String> threadNames = new ArrayList<String>();
         final CountDownLatch latch = new CountDownLatch(2);

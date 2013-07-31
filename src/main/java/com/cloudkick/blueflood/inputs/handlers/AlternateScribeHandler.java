@@ -80,6 +80,9 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
     private AbstractScribeHandler scribeImpl;
     
     private final AsyncChain<List<LogEntry>, List<Boolean>> telescopeProcessor;
+    
+    private final BatchSplitter batchSplitter;
+    private final BatchWriter batchWriter;
 
     public AlternateScribeHandler(ScheduleContext context) {
         this.context = context;
@@ -90,6 +93,23 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 return AlternateScribeHandler.this.Log(messages);
             }
         };
+        
+        batchSplitter = new BatchSplitter(
+                new ThreadPoolBuilder().withName("Metric batching").build(),
+                WRITE_THREADS);
+        
+        batchWriter = new BatchWriter(
+                new ThreadPoolBuilder()
+                    .withName("Metric Batch Writing")
+                    .withCorePoolSize(WRITE_THREADS)
+                    .withMaxPoolSize(WRITE_THREADS)
+                    .withUnboundedQueue()
+                    .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                    .build(),
+                AstyanaxWriter.getInstance(),
+                scribeTimeout,
+                bufferedMetrics,
+                context);
         
         // set up the processor
         telescopeProcessor = new AsyncChain<List<LogEntry>, List<Boolean>>()
@@ -106,23 +126,8 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 new ThreadPoolBuilder().withName("TTL fixing").build(),
                 FULLRES_TTL_CACHE)
                 .withLogger(log))
-            .withFunction(new BatchSplitter(
-                new ThreadPoolBuilder().withName("Metric batching").build(),
-                    WRITE_THREADS)
-                .withLogger(log))
-            .withFunction(new BatchWriter(
-                new ThreadPoolBuilder()
-                    .withName("Metric Batch Writing")
-                    .withCorePoolSize(WRITE_THREADS)
-                    .withMaxPoolSize(WRITE_THREADS)
-                    .withUnboundedQueue()
-                    .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
-                    .build(),
-                AstyanaxWriter.getInstance(),
-                scribeTimeout,
-                bufferedMetrics,
-                context)
-                .withLogger(log));
+            .withFunction(batchSplitter.withLogger(log))
+            .withFunction(batchWriter.withLogger(log));
         
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -196,9 +201,22 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
     //
 
 
-    // todo: fix queue/concurrency methods.
+    // todo: fix queue methods.
     public synchronized int getQueuedWriteCount() { return 0; }
     public synchronized int getInFlightWriteCount() { return 0; }
-    public synchronized int getWriteConcurrency() { return 0; }
-    public synchronized void setWriteConcurrency(int i) { }
+    
+    public synchronized int getWriteConcurrency() {
+        return WRITE_THREADS; 
+    }
+    
+    public synchronized void setWriteConcurrency(int i) {
+        if (i < 0) {
+            log.error("Tried to set concurrency < 0");
+            return;
+        }
+        
+        WRITE_THREADS = i;
+        batchSplitter.setNumPartitions(i);
+        batchWriter.setPoolSize(i);
+    }
 }

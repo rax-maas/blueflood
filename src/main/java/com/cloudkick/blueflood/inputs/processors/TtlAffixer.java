@@ -6,15 +6,15 @@ import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class TtlAffixer extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
         
     private final TtlCache cache;
     
-    public TtlAffixer(ListeningExecutorService threadPool, TtlCache cache) {
+    public TtlAffixer(ThreadPoolExecutor threadPool, TtlCache cache) {
         super(threadPool);
         this.cache = cache;
     }
