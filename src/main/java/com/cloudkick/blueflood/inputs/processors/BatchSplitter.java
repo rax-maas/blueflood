@@ -11,7 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<Metric>>> {
     
-    private final int numPartitions;
+    private int numPartitions;
     
     public BatchSplitter(ThreadPoolExecutor threadPool, int numPartitions) {
         super(threadPool);
@@ -24,5 +24,9 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
                 return MetricsCollection.getMetricsAsBatches(input, numPartitions);
             }
         });    
+    }
+    
+    public void setNumPartitions(int i) {
+        this.numPartitions = i;
     }
 }

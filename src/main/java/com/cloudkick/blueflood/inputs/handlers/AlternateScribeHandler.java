@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
     private static final Logger log = LoggerFactory.getLogger(ScribeHandler.class);
     private static final TimeValue scribeTimeout = new TimeValue(4, TimeUnit.SECONDS);
-    private static final int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
+    private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
     
     private static TtlCache FULLRES_TTL_CACHE = new TtlCache(
             "Full Res TTL Cache",
@@ -81,6 +81,7 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
     
     private final AsyncChain<List<LogEntry>, List<Boolean>> telescopeProcessor;
     
+    private final BatchSplitter batchSplitter;
     private final BatchWriter batchWriter;
 
     public AlternateScribeHandler(ScheduleContext context) {
@@ -92,6 +93,10 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 return AlternateScribeHandler.this.Log(messages);
             }
         };
+        
+        batchSplitter = new BatchSplitter(
+                new ThreadPoolBuilder().withName("Metric batching").build(),
+                WRITE_THREADS);
         
         batchWriter = new BatchWriter(
                 new ThreadPoolBuilder()
@@ -121,10 +126,7 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 new ThreadPoolBuilder().withName("TTL fixing").build(),
                 FULLRES_TTL_CACHE)
                 .withLogger(log))
-            .withFunction(new BatchSplitter(
-                new ThreadPoolBuilder().withName("Metric batching").build(),
-                    WRITE_THREADS)
-                .withLogger(log))
+            .withFunction(batchSplitter.withLogger(log))
             .withFunction(batchWriter.withLogger(log));
         
         try {
@@ -204,10 +206,17 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
     public synchronized int getInFlightWriteCount() { return 0; }
     
     public synchronized int getWriteConcurrency() {
-        return batchWriter.getPoolSize(); 
+        return WRITE_THREADS; 
     }
     
     public synchronized void setWriteConcurrency(int i) {
+        if (i < 0) {
+            log.error("Tried to set concurrency < 0");
+            return;
+        }
+        
+        WRITE_THREADS = i;
+        batchSplitter.setNumPartitions(i);
         batchWriter.setPoolSize(i);
     }
 }
