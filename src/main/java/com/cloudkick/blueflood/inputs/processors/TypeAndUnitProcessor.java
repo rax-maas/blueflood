@@ -6,16 +6,16 @@ import com.cloudkick.blueflood.concurrent.NoOpFuture;
 import com.cloudkick.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.cloudkick.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
         
     final IncomingMetricMetadataAnalyzer metricMetadataAnalyzer;
     
-    public TypeAndUnitProcessor(ListeningExecutorService threadPool, IncomingMetricMetadataAnalyzer metricMetadataAnalyzer) {
+    public TypeAndUnitProcessor(ThreadPoolExecutor threadPool, IncomingMetricMetadataAnalyzer metricMetadataAnalyzer) {
         super(threadPool);
         this.metricMetadataAnalyzer = metricMetadataAnalyzer;
     }
