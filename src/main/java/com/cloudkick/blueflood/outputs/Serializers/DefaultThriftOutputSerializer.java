@@ -33,19 +33,21 @@ public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMet
     }
 
     public RollupMetric transforPointToRollupMetric(Points.Point point) {
-        RollupMetric rollupMetric = new RollupMetric();
-        rollupMetric.setTimestamp(point.getTimestamp());
+        RollupMetric rollupMetric;
 
         if (point.getData() instanceof Rollup) {
-            rollupMetric = buildRollupThriftMetricFromRollup(rollupMetric, (Rollup) point.getData());
+            rollupMetric = buildRollupThriftMetricFromRollup((Rollup) point.getData());
         } else {
-            rollupMetric = buildRollupThriftMetricFromObject(rollupMetric, point.getData());
+            rollupMetric = buildRollupThriftMetricFromObject(point.getData());
         }
+        rollupMetric.setTimestamp(point.getTimestamp());
+
 
         return rollupMetric;
     }
 
-    public static RollupMetric buildRollupThriftMetricFromRollup(RollupMetric rm, Rollup rollup) {
+    public static RollupMetric buildRollupThriftMetricFromRollup(Rollup rollup) {
+        RollupMetric rm = new RollupMetric();
         rm.setNumPoints(rollup.getCount());
 
         telescope.thrift.Metric m = Util.createMetric(rollup.getAverage());
@@ -60,7 +62,8 @@ public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMet
         return rm;
     }
 
-    public static RollupMetric buildRollupThriftMetricFromObject(RollupMetric rm, Object data) {
+    public static RollupMetric buildRollupThriftMetricFromObject(Object data) {
+        RollupMetric rm = new RollupMetric();
         telescope.thrift.Metric m = Util.createMetric(data);
         rm.setRawSample(m);
         rm.setNumPoints(1);
