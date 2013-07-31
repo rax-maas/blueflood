@@ -9,7 +9,6 @@ import com.cloudkick.blueflood.utils.Util;
 import com.cloudkick.blueflood.utils.TimeValue;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Meter;
@@ -20,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,7 +34,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>,
     
     private final AstyanaxWriter writer;
     
-    public BatchWriter(ListeningExecutorService threadPool, AstyanaxWriter writer, TimeValue scribeTimeout, Counter bufferedMetrics, IngestionContext context) {
+    public BatchWriter(ThreadPoolExecutor threadPool, AstyanaxWriter writer, TimeValue scribeTimeout, Counter bufferedMetrics, IngestionContext context) {
         super(threadPool);
         this.writer = writer;
         this.scribeTimeout = scribeTimeout;

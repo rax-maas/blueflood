@@ -7,7 +7,6 @@ import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.MetricsCollection;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.*;
 import org.apache.thrift.TException;
@@ -15,6 +14,7 @@ import scribe.thrift.LogEntry;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry>, MetricsCollection> {
@@ -33,7 +33,7 @@ public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry
     private final Ticker ticker;
     private final Counter bufferedMetrics;
     
-    public LogEntryConverter(ListeningExecutorService threadPool, Ticker ticker, Counter bufferedMetrics) {
+    public LogEntryConverter(ThreadPoolExecutor threadPool, Ticker ticker, Counter bufferedMetrics) {
         super(threadPool);
         this.ticker = ticker;
         this.bufferedMetrics = bufferedMetrics;
