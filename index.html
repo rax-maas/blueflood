@@ -64,17 +64,17 @@
 
 <p>After collecting the metric data, post them to Blueflood in the following json format to "/metrics". Blueflood will store them as raw data until specific time to live. </p>
 
-<pre><code>[
-    {
-        "collectionTime": 1375217024200,
-        "ttlInSeconds": 172800,
-        "metricValue": 57.969165995652595,
-        "accountId": "acDemo",
-        "unit": "seconds",
-        "metricName": "metricDemo"
-    }
-]
-</code></pre>
+<div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">"collectionTime"</span><span class="o">:</span> <span class="mi">1375217024200</span><span class="p">,</span>
+        <span class="s2">"ttlInSeconds"</span><span class="o">:</span> <span class="mi">172800</span><span class="p">,</span>
+        <span class="s2">"metricValue"</span><span class="o">:</span> <span class="mf">57.969165995652595</span><span class="p">,</span>
+        <span class="s2">"accountId"</span><span class="o">:</span> <span class="s2">"acDemo"</span><span class="p">,</span>
+        <span class="s2">"unit"</span><span class="o">:</span> <span class="s2">"seconds"</span><span class="p">,</span>
+        <span class="s2">"metricName"</span><span class="o">:</span> <span class="s2">"metricDemo"</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
 
 <h2>
 <a name="rollup-consolidation" class="anchor" href="#rollup-consolidation"><span class="octicon octicon-link"></span></a>Rollup Consolidation</h2>
@@ -88,28 +88,28 @@
 
 <p>The data retrieved through the API (To be documented futher) is like the following. Note how these two data points are the aggregation of 30 and 50 time series data, respectively.</p>
 
-<pre><code>[
-    {
-        "rawSample": null,
-        "min": 57.969165995652595,
-        "timestamp": 1375216800000,
-        "average": 57.969165995652595,
-        "numPoints": 30,
-        "max": 57.969165995652595,
-        "variance": 0.0,
-        "unit": "seconds"
-    },
-    {
-        "rawSample": null,
-        "min": -3.4548969891396766,
-        "timestamp": 1375222800000,
-        "average": 44.396379776671381,
-        "numPoints": 50,
-        "max": 98.44178907359634,
-        "variance": 649.09993657276527,
-        "unit": "seconds"
-    }
-</code></pre>
+<div class="highlight"><pre><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">"rawSample"</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="s2">"min"</span><span class="o">:</span> <span class="mf">57.969165995652595</span><span class="p">,</span>
+        <span class="s2">"timestamp"</span><span class="o">:</span> <span class="mi">1375216800000</span><span class="p">,</span>
+        <span class="s2">"average"</span><span class="o">:</span> <span class="mf">57.969165995652595</span><span class="p">,</span>
+        <span class="s2">"numPoints"</span><span class="o">:</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="s2">"max"</span><span class="o">:</span> <span class="mf">57.969165995652595</span><span class="p">,</span>
+        <span class="s2">"variance"</span><span class="o">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">"unit"</span><span class="o">:</span> <span class="s2">"seconds"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">"rawSample"</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="s2">"min"</span><span class="o">:</span> <span class="o">-</span><span class="mf">3.4548969891396766</span><span class="p">,</span>
+        <span class="s2">"timestamp"</span><span class="o">:</span> <span class="mi">1375222800000</span><span class="p">,</span>
+        <span class="s2">"average"</span><span class="o">:</span> <span class="mf">44.396379776671381</span><span class="p">,</span>
+        <span class="s2">"numPoints"</span><span class="o">:</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="s2">"max"</span><span class="o">:</span> <span class="mf">98.44178907359634</span><span class="p">,</span>
+        <span class="s2">"variance"</span><span class="o">:</span> <span class="mf">649.09993657276527</span><span class="p">,</span>
+        <span class="s2">"unit"</span><span class="o">:</span> <span class="s2">"seconds"</span>
+    <span class="p">}</span>
+</pre></div>
 
 <h1>
 <a name="external-links" class="anchor" href="#external-links"><span class="octicon octicon-link"></span></a>External Links</h1>
