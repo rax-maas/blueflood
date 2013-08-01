@@ -1,6 +1,6 @@
 package com.cloudkick.blueflood.io;
 
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Metric;
@@ -16,7 +16,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
 
         final Locator locator = metric.getLocator();
-        RollupData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+        MetricData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
         int numPoints = res.getData().getPoints().size();
         Assert.assertTrue(numPoints > 0);
@@ -33,7 +33,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         final Locator locator = metric.getLocator();
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        RollupData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
+        MetricData res = reader.getDatapointsForRange(locator, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
         Assert.assertTrue(res.getData().getPoints().size() > 0);
     }

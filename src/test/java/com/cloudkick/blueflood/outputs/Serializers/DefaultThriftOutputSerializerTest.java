@@ -1,6 +1,6 @@
-package com.cloudkick.blueflood.outputs.Serializers;
+package com.cloudkick.blueflood.outputs.serializers;
 
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Points;
 import com.cloudkick.blueflood.types.Rollup;
@@ -14,15 +14,15 @@ public class DefaultThriftOutputSerializerTest {
     @Test
     public void testTransformRollupDataAtFullRes() {
         final DefaultThriftOutputSerializer serializer = new DefaultThriftOutputSerializer();
-        final RollupData rollupData = new RollupData(generateFakeFullResPoints(), "unknown");
-        RollupMetrics metrics = serializer.transformRollupData(rollupData);
+        final MetricData metricData = new MetricData(generateFakeFullResPoints(), "unknown");
+        RollupMetrics metrics = serializer.transformRollupData(metricData);
 
         // Assert unit is same
-        Assert.assertEquals(rollupData.getUnit(), metrics.getUnit());
+        Assert.assertEquals(metricData.getUnit(), metrics.getUnit());
 
         // Assert that for each data point, the thrift value matches the value in Point
         for (RollupMetric rollupMetric : metrics.getMetrics()) {
-            final Points.Point point = (Points.Point) rollupData.getData().getPoints().get(rollupMetric.getTimestamp());
+            final Points.Point point = (Points.Point) metricData.getData().getPoints().get(rollupMetric.getTimestamp());
             Assert.assertEquals(point.getData(),
                     rollupMetric.getRawSample().getValueI64());
         }
@@ -32,16 +32,16 @@ public class DefaultThriftOutputSerializerTest {
     @Test
     public void testTransformRollupDataForCoarserGran() {
         final DefaultThriftOutputSerializer serializer = new DefaultThriftOutputSerializer();
-        final RollupData rollupData = new RollupData(generateFakeRollupPoints(), "unknown");
+        final MetricData metricData = new MetricData(generateFakeRollupPoints(), "unknown");
 
-        RollupMetrics metrics = serializer.transformRollupData(rollupData);
+        RollupMetrics metrics = serializer.transformRollupData(metricData);
 
         // Assert unit is same
-        Assert.assertEquals(rollupData.getUnit(), metrics.getUnit());
+        Assert.assertEquals(metricData.getUnit(), metrics.getUnit());
 
         // Assert that for each data point, the thrift value matches the value in Point
         for (RollupMetric rollupMetric : metrics.getMetrics()) {
-            final Points.Point point = (Points.Point) rollupData.getData().getPoints().get(rollupMetric.getTimestamp());
+            final Points.Point point = (Points.Point) metricData.getData().getPoints().get(rollupMetric.getTimestamp());
             final Rollup rollup = (Rollup) point.getData();
             Assert.assertEquals(((Rollup) point.getData()).getAverage().toLong(),
                     rollupMetric.getAverage().getValueI64());

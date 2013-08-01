@@ -1,7 +1,7 @@
 package com.cloudkick.blueflood.outputs.handlers;
 
 import com.cloudkick.blueflood.io.AstyanaxReader;
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Locator;
 import com.cloudkick.blueflood.types.Points;
@@ -30,7 +30,7 @@ public class RollupHandler {
     protected final Histogram numFullPointsReturned = Metrics.newHistogram(RollupHandler.class, "Full res points returned", true);
     protected final Histogram numRollupPointsReturned = Metrics.newHistogram(RollupHandler.class, "Rollup points returned", true);
 
-    protected RollupData getRollupByGranularity(
+    protected MetricData getRollupByGranularity(
             String accountId,
             String metricName,
             long from,
@@ -39,17 +39,17 @@ public class RollupHandler {
 
         final TimerContext ctx = metricsFetchTimer.time();
         final Locator locator = Locator.createLocatorFromPathComponents(accountId, metricName);
-        final RollupData rollupData = AstyanaxReader.getInstance().getDatapointsForRange(
+        final MetricData metricData = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
                 new Range(g.snapMillis(from), to),
                 g);
 
         // if Granularity is FULL, we are missing raw data - can't generate that
-        if (g != Granularity.FULL && rollupData != null) {
+        if (g != Granularity.FULL && metricData != null) {
             final TimerContext rollupsCalcCtx = rollupsCalcOnReadTimer.time();
 
             long latest = from;
-            Map<Long, Points.Point<Object>> points = rollupData.getData().getPoints();
+            Map<Long, Points.Point<Object>> points = metricData.getData().getPoints();
             for (Map.Entry<Long, Points.Point<Object>> point : points.entrySet()) {
                 if (point.getValue().getTimestamp() > latest) {
                     latest = point.getValue().getTimestamp();
@@ -67,7 +67,7 @@ public class RollupHandler {
                         // and cleans these up.
                         log.error("Errant string metric " + metricName);
                     } else if (rollup.getCount() > 0) {
-                        rollupData.getData().add(new Points.Point<Rollup>(r.getStart(), rollup));
+                        metricData.getData().add(new Points.Point<Rollup>(r.getStart(), rollup));
                     }
                 }
             }
@@ -76,11 +76,11 @@ public class RollupHandler {
         ctx.stop();
 
         if (g == Granularity.FULL) {
-            numFullPointsReturned.update(rollupData.getData().getPoints().size());
+            numFullPointsReturned.update(metricData.getData().getPoints().size());
         } else {
-            numRollupPointsReturned.update(rollupData.getData().getPoints().size());
+            numRollupPointsReturned.update(metricData.getData().getPoints().size());
         }
 
-        return rollupData;
+        return metricData;
     }
 }

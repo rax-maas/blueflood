@@ -1,7 +1,7 @@
-package com.cloudkick.blueflood.outputs.Serializers;
+package com.cloudkick.blueflood.outputs.serializers;
 
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 
 public interface OutputSerializer<T> {
-    public T transformRollupData(RollupData rollupData);
+    public T transformRollupData(MetricData metricData);
 }

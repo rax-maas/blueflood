@@ -1,6 +1,6 @@
-package com.cloudkick.blueflood.outputs.Serializers;
+package com.cloudkick.blueflood.outputs.serializers;
 
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.types.Points;
 import com.cloudkick.blueflood.types.Rollup;
 import com.cloudkick.blueflood.utils.Util;
@@ -15,9 +15,9 @@ import java.util.Set;
 public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMetrics> {
 
     @Override
-    public RollupMetrics transformRollupData(RollupData rollupData) {
-        final Points points = rollupData.getData();
-        return new RollupMetrics(transformPoints(points), rollupData.getUnit());
+    public RollupMetrics transformRollupData(MetricData metricData) {
+        final Points points = metricData.getData();
+        return new RollupMetrics(transformPoints(points), metricData.getUnit());
     }
 
     public List<RollupMetric> transformPoints(Points points) {
@@ -25,14 +25,14 @@ public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMet
 
         final Set<Map.Entry<Long, Points.Point>> data = points.getPoints().entrySet();
         for (Map.Entry<Long, Points.Point> item : data) {
-            final RollupMetric rollupMetric = transforPointToRollupMetric(item.getValue());
+            final RollupMetric rollupMetric = transformPointToRollupMetric(item.getValue());
             rollupMetricsList.add(rollupMetric);
         }
 
         return rollupMetricsList;
     }
 
-    public RollupMetric transforPointToRollupMetric(Points.Point point) {
+    public RollupMetric transformPointToRollupMetric(Points.Point point) {
         RollupMetric rollupMetric;
 
         if (point.getData() instanceof Rollup) {

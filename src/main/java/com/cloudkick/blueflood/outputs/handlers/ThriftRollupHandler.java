@@ -1,8 +1,8 @@
 package com.cloudkick.blueflood.outputs.handlers;
 
-import com.cloudkick.blueflood.outputs.Serializers.DefaultThriftOutputSerializer;
-import com.cloudkick.blueflood.outputs.Serializers.OutputSerializer;
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.serializers.DefaultThriftOutputSerializer;
+import com.cloudkick.blueflood.outputs.serializers.OutputSerializer;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ import telescope.thrift.RollupServer;
 import java.util.List;
 
 public class ThriftRollupHandler extends RollupHandler
-        implements RollupServer.Iface, RollupsQueryInterface<RollupMetrics> {
+        implements RollupServer.Iface, MetricDataQueryInterface<RollupMetrics> {
     private static final Logger log = LoggerFactory.getLogger(ThriftRollupHandler.class);
     private final OutputSerializer<RollupMetrics> outputSerializer;
 
@@ -59,8 +59,8 @@ public class ThriftRollupHandler extends RollupHandler
             long from,
             long to,
             Granularity g) throws TException {
-        RollupData rollupData = getRollupByGranularity(accountId, metricName, from, to, g);
-        return outputSerializer.transformRollupData(rollupData);
+        MetricData metricData = getRollupByGranularity(accountId, metricName, from, to, g);
+        return outputSerializer.transformRollupData(metricData);
     }
 
     @Override

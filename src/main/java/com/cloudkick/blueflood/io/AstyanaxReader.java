@@ -2,7 +2,7 @@ package com.cloudkick.blueflood.io;
 
 import com.cloudkick.blueflood.cache.MetadataCache;
 import com.cloudkick.blueflood.exceptions.CacheException;
-import com.cloudkick.blueflood.outputs.formats.RollupData;
+import com.cloudkick.blueflood.outputs.formats.MetricData;
 import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.service.ShardStateManager;
 import com.cloudkick.blueflood.service.UpdateStamp;
@@ -237,57 +237,57 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public RollupData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
+    public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
             Object type = metaCache.get(locator, "type");
 
             if (type == null) {
-                return scanAllColumnFamiliesForPoints(locator, range, gran);
+                return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
             com.cloudkick.blueflood.types.Metric.Type metricType = new com.cloudkick.blueflood.types.Metric.Type((String) type);
             if (!com.cloudkick.blueflood.types.Metric.Type.isKnownMetricType(metricType)) {
-                return scanAllColumnFamiliesForPoints(locator, range, gran);
+                return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
             if (metricType.equals(com.cloudkick.blueflood.types.Metric.Type.STRING)) {
-                return getStringDatapointsForRange(locator, range, gran, StringSerializer.get());
+                return getStringMetricDataForRange(locator, range, gran, StringSerializer.get());
             } else if (metricType.equals(com.cloudkick.blueflood.types.Metric.Type.BOOLEAN)) {
-                return getStringDatapointsForRange(locator, range, gran, BooleanSerializer.get());
+                return getStringMetricDataForRange(locator, range, gran, BooleanSerializer.get());
             } else {
-                return getNumericDatapointsForRange(locator, range, gran);
+                return getNumericMetricDataForRange(locator, range, gran);
             }
 
         } catch (CacheException e) {
             log.warn("Caught exception trying to find metric type from meta cache for locator " + locator.toString(), e);
-            return scanAllColumnFamiliesForPoints(locator, range, gran);
+            return getNumericOrStringRollupDataForRange(locator, range, gran);
         }
     }
 
     // Used for both string and boolean metrics
-    private RollupData getStringDatapointsForRange(Locator locator, Range range, Granularity gran, AbstractSerializer serializer) {
+    private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran, AbstractSerializer serializer) {
         Points points =  transformDBValuesToPoints(
                 getStringPoints(locator, range.start, range.stop), gran, serializer);
-        return new RollupData(points, getUnitString(locator));
+        return new MetricData(points, getUnitString(locator));
     }
 
-    private RollupData getNumericDatapointsForRange(Locator locator, Range range, Granularity gran) {
+    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points points = transformDBValuesToPoints(
                 getNumericRollups(locator, gran, range.start, range.stop), gran, NumericSerializer.get(gran));
-        return new RollupData(points, getUnitString(locator));
+        return new MetricData(points, getUnitString(locator));
     }
 
-    private RollupData scanAllColumnFamiliesForPoints(Locator locator, Range range, Granularity gran) {
+    private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
         ColumnList<Long> results = getNumericRollups(locator, gran, range.getStart(), range.getStop());
         Points points = transformDBValuesToPoints(results, gran, NumericSerializer.get(gran));
 
         if (points.getPoints().size() > 0) {
-            return new RollupData(points, getUnitString(locator));
+            return new MetricData(points, getUnitString(locator));
         }
 
         results = getStringPoints(locator, range.start, range.stop);
-        return new RollupData(transformDBValuesToPoints(results, gran, StringSerializer.get()), "");
+        return new MetricData(transformDBValuesToPoints(results, gran, StringSerializer.get()), "");
     }
 
     private Points transformDBValuesToPoints(ColumnList<Long> results, Granularity gran, AbstractSerializer serializer) {
