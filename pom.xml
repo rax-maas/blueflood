@@ -32,7 +32,7 @@
           <skip.integration.tests>false</skip.integration.tests>
           <skip.unit.tests>true</skip.unit.tests>
           <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
-          <cassandra.rpcPort>19170</cassandra.rpcPort>
+          <cassandra.rpcPort>19180</cassandra.rpcPort>
         </properties>
       </profile>
       <profile>

@@ -13,8 +13,8 @@ public class Configuration {
     private static final Properties props = new Properties();
 
     static {
-        props.put("CASSANDRA_HOSTS", "127.0.0.1:19170");
-        props.put("DEFAULT_CASSANDRA_PORT", "19170");
+        props.put("CASSANDRA_HOSTS", "127.0.0.1:19180");
+        props.put("DEFAULT_CASSANDRA_PORT", "19180");
         // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
         props.put("MAX_CASSANDRA_CONNECTIONS", "70");
 
@@ -126,4 +126,3 @@ public class Configuration {
         return getStringProperty(name).equalsIgnoreCase("true");
     }
 }
-
