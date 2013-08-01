@@ -61,7 +61,7 @@ public class AstyanaxReader extends AstyanaxIO {
             return null;
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             throw e;
         } finally {
             ctx.stop();
@@ -132,7 +132,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             }
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.error("Error getting all shard states", e);
             throw e;
         } finally {
@@ -162,7 +162,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (NotFoundException e) {
             return new EmptyColumnList<String>();
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.error("Error getting metrics list", e);
             throw new RuntimeException("Error getting metrics list", e);
         } finally {
@@ -186,7 +186,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (NotFoundException e) {
             return new EmptyColumnList<Long>();
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.error("Error getting numeric rollups", e);
             throw new RuntimeException("Error reading numeric rollups", e);
         } finally {
@@ -211,7 +211,7 @@ public class AstyanaxReader extends AstyanaxIO {
             Instrumentation.markStringsNotFound();
             return new EmptyColumnList<Long>();
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.error("Error reading string points", e);
             throw new RuntimeException("Error reading string points", e);
         } finally {
@@ -229,7 +229,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (NotFoundException e) {
             return new EmptyColumnList<Locator>();
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.error("Error reading locators", e);
             throw new RuntimeException("Error reading locators", e);
         } finally {
@@ -337,7 +337,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 metric = query.getColumnByIndex(0);
             }
         } catch (ConnectionException e) {
-            Instrumentation.markReadError();
+            Instrumentation.markReadError(e);
             log.warn("Cannot get previous string metric value for locator " +
                     locator, e);
             throw e;

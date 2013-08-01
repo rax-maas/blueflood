@@ -8,6 +8,8 @@ import com.cloudkick.blueflood.types.Rollup;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Histogram;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,6 +23,8 @@ public class NumericSerializer extends AbstractSerializer<Object> {
     private static NumericSerializer fullInstance = new NumericSerializer(true);
     private static NumericSerializer rollupInstance = new NumericSerializer(false);
     private boolean fullResolution;
+    private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
+    private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
 
     static class Type {
         static final byte B_ROLLUP_V1 = (byte)'r';
@@ -68,6 +72,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
 
     private void serializeRollup(Rollup rollup, byte[] buf) throws IOException {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
+        rollupSize.update(sizeOf(rollup, Type.B_ROLLUP_V1));
         protobufOut.writeRawByte(Constants.VERSION_1_ROLLUP);
         protobufOut.writeRawVarint64(rollup.getCount());          // stat count
 
@@ -93,6 +98,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
     private void serializeFullResMetric(Object o, byte[] buf) throws IOException {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         byte type = typeOf(o);
+        fullResSize.update(sizeOf(o, type));
         protobufOut.writeRawByte(Constants.VERSION_1_FULL_RES);
 
         switch (type) {
