@@ -3,7 +3,7 @@ package com.cloudkick.blueflood.types;
 
 import com.cloudkick.blueflood.utils.TimeValue;
 
-public class Metric{
+public class Metric {
     private final Locator locator;
     private final Object metricValue;
     private final long collectionTime;
