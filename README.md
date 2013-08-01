@@ -1,7 +1,6 @@
 Blueflood - Metrics Ingestor and Rollup Coordinator
 ===================================================
 
-
 # Introduction
 
 # Getting Started
