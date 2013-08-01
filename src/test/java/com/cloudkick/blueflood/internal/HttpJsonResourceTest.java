@@ -1,23 +1,19 @@
 package com.cloudkick.blueflood.internal;
 
+import junit.framework.Assert;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
 public class HttpJsonResourceTest extends HttpServerFixture {
-    private static final String BASE_PATH = "/test_base";
+    private static final String BASE_PATH = InternalAPIFactory.BASE_PATH;
 
     JsonResource resource;
-
-    public HttpJsonResourceTest() {
-        super(BASE_PATH);
-    }
 
     @Before
     public void setUpResource() {
