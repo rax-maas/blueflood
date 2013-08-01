@@ -4,25 +4,35 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.io.IOException;
 
-public class HttpJsonResourceTest extends HttpServerFixture {
+public class HttpJsonResourceTest {
     private static final String BASE_PATH = "/test_base";
 
+    ClientConnectionManager connectionManager;
     JsonResource resource;
-
-    public HttpJsonResourceTest() {
-        super(BASE_PATH);
-    }
+    HttpServerFixture server;
 
     @Before
-    public void setUpResource() {
-        ClientConnectionManager connectionManager = InternalAPIFactory.buildConnectionManager(2);
-        resource = new HttpJsonResource(connectionManager, getClusterString(), BASE_PATH);
+    public void setUpResource() throws IOException {
+        server = new HttpServerFixture(BASE_PATH, 9800);
+        server.serverUp();
+        connectionManager = InternalAPIFactory.buildConnectionManager(2);
+        resource = new HttpJsonResource(connectionManager, server.getClusterString(), BASE_PATH);
+    }
+    
+    @After
+    public void serverDown() {
+        server.serverDown();
+        if (connectionManager != null)
+            connectionManager.shutdown();
     }
 
     @Test
@@ -63,6 +73,8 @@ public class HttpJsonResourceTest extends HttpServerFixture {
             Assert.assertTrue(ex.getException("127.0.0.1:3232") instanceof HttpHostConnectException);
             Assert.assertTrue(ex.getException("192.0.2.1:3232") instanceof ConnectTimeoutException);
             Assert.assertTrue(ex.getException("192.0.2.2:3232") instanceof ConnectTimeoutException);
+        } finally {
+            connectionManager.shutdown();
         }
     }
 
