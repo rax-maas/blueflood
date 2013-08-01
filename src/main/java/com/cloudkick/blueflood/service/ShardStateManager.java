@@ -25,7 +25,7 @@ public class ShardStateManager {
     private static final Histogram timeSinceUpdate = Metrics.newHistogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan", true);
     private static final Meter updateStampMeter = Metrics.newMeter(ScribeHandler.class, "Shard Slot Update Meter", "Updated", TimeUnit.SECONDS);
     private final Meter parentBeforeChild = Metrics.newMeter(RollupService.class, "Parent slot executed before child", "OutOfOrderSchedule", TimeUnit.SECONDS);
-
+    private static final Meter reRollupData = Metrics.newMeter(RollupService.class, "Re-rolling up a slot because of new data", "Slot", TimeUnit.SECONDS);
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
@@ -160,6 +160,9 @@ public class ShardStateManager {
             if (slotToUpdateStampMap.containsKey(slot)) {
                 UpdateStamp stamp = slotToUpdateStampMap.get(slot);
                 stamp.setTimestamp(millis);
+                if (stamp.getState().equals(UpdateStamp.State.Rolled)) {
+                    reRollupData.mark();
+                }
                 stamp.setState(UpdateStamp.State.Active);
                 stamp.setDirty(true);
             } else {

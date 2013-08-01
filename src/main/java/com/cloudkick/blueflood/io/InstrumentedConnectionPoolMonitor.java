@@ -6,6 +6,7 @@ import com.netflix.astyanax.connectionpool.HostConnectionPool;
 import com.netflix.astyanax.connectionpool.HostStats;
 import com.netflix.astyanax.connectionpool.exceptions.*;
 import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class InstrumentedConnectionPoolMonitor implements ConnectionPoolMonitor 
     private Meter hostDownMeter          = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Host Down", "Down", TimeUnit.SECONDS);
     private Meter hostReactivatedMeter   = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Host Reactivated", "Reactivated", TimeUnit.SECONDS);
 
-    private Meter poolExhastedMeter      = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Pool Exhausted", "Pool Exhasted", TimeUnit.SECONDS);
+    private Meter poolExhaustedMeter = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Pool Exhausted", "Pool Exhasted", TimeUnit.SECONDS);
     private Meter operationTimeoutMeter  = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Operation Timeout", "Operation Timeout", TimeUnit.SECONDS);
     private Meter socketTimeoutMeter     = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Socket Timeout", "Socket Timeout", TimeUnit.SECONDS);
     private Meter noHostsMeter           = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions No Hosts", "No Hosts", TimeUnit.SECONDS);
@@ -41,9 +42,17 @@ public class InstrumentedConnectionPoolMonitor implements ConnectionPoolMonitor 
     private Meter interruptedMeter       = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Interrupted", "Interrupted", TimeUnit.SECONDS);
     private Meter transportErrorMeter    = Metrics.newMeter(InstrumentedConnectionPoolMonitor.class, "Exceptions Transport Error", "Transport Error", TimeUnit.SECONDS);
 
+    private Gauge<Long> busyConnections = Metrics.newGauge(InstrumentedConnectionPoolMonitor.class, "Busy Connections", new Gauge<Long>() {
+        @Override
+        public Long value() {
+            return getNumBusyConnections();
+        }
+    });
+
+
     private void trackError(Host host, Exception reason) {
         if (reason instanceof PoolTimeoutException) {
-            this.poolExhastedMeter.mark();
+            this.poolExhaustedMeter.mark();
         }
         else if (reason instanceof TimeoutException) {
             this.socketTimeoutMeter.mark();
@@ -142,7 +151,7 @@ public class InstrumentedConnectionPoolMonitor implements ConnectionPoolMonitor 
     }
 
     public long getPoolExhaustedTimeoutCount() {
-        return this.poolExhastedMeter.count();
+        return this.poolExhaustedMeter.count();
     }
 
     @Override
@@ -265,24 +274,24 @@ public class InstrumentedConnectionPoolMonitor implements ConnectionPoolMonitor 
                 .append(",close="      ).append(connectionClosedMeter.count())
                 .append(",failed="     ).append(connectionCreateFailureMeter.count())
                 .append(",borrow="     ).append(connectionBorrowMeter.count())
-                .append(",return="     ).append(connectionReturnMeter.count())
+                .append(",return=").append(connectionReturnMeter.count())
                 .append("], Operations[")
-                .append( "success="    ).append(operationSuccessMeter.count())
-                .append(",failure="    ).append(operationFailureMeter.count())
-                .append(",optimeout="  ).append(operationTimeoutMeter.count())
-                .append(",timeout="    ).append(socketTimeoutMeter.count())
-                .append(",failover="   ).append(operationFailoverMeter.count())
-                .append(",nohosts="    ).append(noHostsMeter.count())
-                .append(",unknown="    ).append(unknownErrorMeter.count())
+                .append("success=").append(operationSuccessMeter.count())
+                .append(",failure=").append(operationFailureMeter.count())
+                .append(",optimeout=").append(operationTimeoutMeter.count())
+                .append(",timeout=").append(socketTimeoutMeter.count())
+                .append(",failover=").append(operationFailoverMeter.count())
+                .append(",nohosts=").append(noHostsMeter.count())
+                .append(",unknown=").append(unknownErrorMeter.count())
                 .append(",interrupted=").append(interruptedMeter.count())
-                .append(",exhausted="  ).append(poolExhastedMeter.count())
+                .append(",exhausted="  ).append(poolExhaustedMeter.count())
                 .append(",transport="  ).append(transportErrorMeter.count())
                 .append("], Hosts[")
-                .append( "add="        ).append(hostAddedMeter.count())
-                .append(",remove="     ).append(hostRemovedMeter.count())
-                .append(",down="       ).append(hostDownMeter.count())
-                .append(",reactivate=" ).append(hostReactivatedMeter.count())
-                .append(",active="     ).append(getHostActiveCount())
+                .append("add=").append(hostAddedMeter.count())
+                .append(",remove=").append(hostRemovedMeter.count())
+                .append(",down=").append(hostDownMeter.count())
+                .append(",reactivate=").append(hostReactivatedMeter.count())
+                .append(",active=").append(getHostActiveCount())
                 .append("])").toString();
     }
 

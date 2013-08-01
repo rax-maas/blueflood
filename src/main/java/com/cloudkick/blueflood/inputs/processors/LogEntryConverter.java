@@ -3,6 +3,7 @@ package com.cloudkick.blueflood.inputs.processors;
 import com.cloudkick.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.cloudkick.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.cloudkick.blueflood.inputs.handlers.ScribeHandler;
+import com.cloudkick.blueflood.rollup.Granularity;
 import com.cloudkick.blueflood.types.Metric;
 import com.cloudkick.blueflood.types.MetricsCollection;
 import com.google.common.base.Ticker;
@@ -28,7 +29,9 @@ public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry
     private final Counter logEntryCount = Metrics.newCounter(ScribeHandler.class, "Log Entry Count");
     private final Histogram metricsPerBundle = Metrics.newHistogram(ScribeHandler.class, "Metrics Per Bundle", true);
     private final Meter corruptedTelescopes = Metrics.newMeter(ScribeHandler.class, "Corrupted Telescopes", "Rollups", TimeUnit.SECONDS);
-    
+    private final Meter telescopeSlotNotCurrent = Metrics.newMeter(ScribeHandler.class, "Incoming Telescope Slot Not Current", "Telescopes", TimeUnit.SECONDS);
+    private final Histogram telescopeOldnessWhenSlotsMisalign = Metrics.newHistogram(ScribeHandler.class, "Incoming Misaligned Slot Telescope Oldness", true);
+
     // todo: if the interface on ScheduleContext coulc be pared down, all this class needs is getCurrentTimeMillis().
     private final Ticker ticker;
     private final Counter bufferedMetrics;
@@ -88,6 +91,15 @@ public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry
             } else if (cmTelescope.getTelescope() == null) {
                 getLogger().error("Unexpected NULL telescope");
                 continue;
+            }
+
+            if (cmTelescope.getTelescope().getTimestamp() < System.currentTimeMillis()) {
+                int slotTelescope = Granularity.MIN_5.slot(cmTelescope.getTelescope().getTimestamp());
+                int slotCurrent = Granularity.MIN_5.slot(System.currentTimeMillis());
+                if (slotCurrent != slotTelescope) {
+                    telescopeSlotNotCurrent.mark();
+                    telescopeOldnessWhenSlotsMisalign.update(System.currentTimeMillis() - cmTelescope.getTelescope().getTimestamp());
+                }
             }
 
             if (cmTelescope.getTelescope().getTimestamp() - ticker.read() > HOURS_24_IN_MILLIS) {

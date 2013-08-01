@@ -120,7 +120,7 @@ public class AstyanaxWriter extends AstyanaxIO {
             try {
                 mutationBatch.execute();
             } catch (ConnectionException e) {
-                Instrumentation.markWriteError();
+                Instrumentation.markWriteError(e);
                 log.error("Connection exception during insertFull", e);
                 throw e;
             }
@@ -181,7 +181,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                     .putValue(metaValue, MetadataSerializer.get(), null)
                     .execute();
         } catch (ConnectionException e) {
-            Instrumentation.markWriteError();
+            Instrumentation.markWriteError(e);
             log.error("Error writing Metadata Value", e);
             throw e;
         } finally {
@@ -221,7 +221,7 @@ public class AstyanaxWriter extends AstyanaxIO {
             try {
                 mutationBatch.execute();
             } catch (ConnectionException e) {
-                Instrumentation.markWriteError();
+                Instrumentation.markWriteError(e);
                 log.error("Connection Exception persisting data", e);
                 throw e;
             }
@@ -254,7 +254,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 try {
                     mutationBatch.execute();
                 } catch (ConnectionException e) {
-                    Instrumentation.markWriteError();
+                    Instrumentation.markWriteError(e);
                     log.error("Error persisting shard state", e);
                     throw e;
                 }

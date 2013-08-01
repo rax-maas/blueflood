@@ -1,5 +1,7 @@
 package com.cloudkick.blueflood.io;
 
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.Timer;
@@ -22,6 +24,7 @@ public class Instrumentation implements InstrumentationMBean {
     // One-off meters
     private static Meter readStringsNotFound = Metrics.newMeter(Instrumentation.class, "String Metrics Not Found", "Operations", TimeUnit.MINUTES);
     private static Meter scanAllColumnFamiliesMeter = Metrics.newMeter(Instrumentation.class, "Scan all ColumnFamilies", "Scans", TimeUnit.MINUTES);
+    private static Meter allPoolsExhaustedException = Metrics.newMeter(Instrumentation.class, "All Pools Exhausted", "Exceptions", TimeUnit.SECONDS);
 
     static {
             try {
@@ -40,12 +43,32 @@ public class Instrumentation implements InstrumentationMBean {
         return timers.getTimerContext(query);
     }
 
-    public static void markReadError() {
+    // Most error tracking is done in InstrumentedConnectionPoolMonitor
+    // However, some issues can't be properly tracked using that alone.
+    // For example, there is no good way to differentiate (in the connectionpoolmonitor)
+    // a PoolTimeoutException indicating that Astyanax has to look in another host-specific-pool
+    // to find a connection from one indicating Astyanax already looked in every pool and is
+    // going to bubble up the exception to our reader/writer
+    private static void markReadError() {
         readErrMeter.mark();
     }
 
-    public static void markWriteError() {
+    public static void markReadError(ConnectionException e) {
+        markReadError();
+        if (e instanceof PoolTimeoutException) {
+            allPoolsExhaustedException.mark();
+        }
+    }
+
+    private static void markWriteError() {
         writeErrMeter.mark();
+    }
+
+    public static void markWriteError(ConnectionException e) {
+        markWriteError();
+        if (e instanceof PoolTimeoutException) {
+            allPoolsExhaustedException.mark();
+        }
     }
 
     private static class QueryTimers {
