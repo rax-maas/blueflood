@@ -1,5 +1,7 @@
 package com.cloudkick.blueflood.internal;
 
+import com.cloudkick.blueflood.service.Configuration;
+import junit.framework.Assert;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.ClientConnectionManager;
@@ -8,26 +10,32 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Date;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InternalApiTest extends HttpServerFixture {
     private InternalAPI api;
-
-    public InternalApiTest() {
-        super(InternalAPIFactory.BASE_PATH);
+    
+    @BeforeClass
+    public static void setUpStub() {
+    	numUsingServer++;
+    	virLog("beforeclass internalapitest");
     }
 
     @Before
     public void setupApi() {
+        virLog("starting internalapitest test");
         api = InternalAPIFactory.create(2, getClusterString());
     }
 
@@ -123,5 +131,11 @@ public class InternalApiTest extends HttpServerFixture {
         } finally {
             httpExecutor.shutdownNow(); // stop waiting.
         }
+    }
+    
+    @AfterClass 
+    public static void teardownStub() {
+    	numUsingServer--;
+    	virLog("afterclass internalapitest");
     }
 }

@@ -1,18 +1,22 @@
 package com.cloudkick.blueflood.internal;
 
+import com.cloudkick.blueflood.service.Configuration;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Date;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpServerFixture {
     private static final String SAMPLE_ACCOUNT = "{\n" +
@@ -50,19 +54,22 @@ public class HttpServerFixture {
         "}\n" +
         "}";
     
-    private HttpServer server;
-    private HttpHandler ackVCKg1rkHandler;
-    private HttpHandler notFoundHandler;
-    private HttpHandler interalErrorHandler;
-    private final String basePath;
-    protected ExecutorService httpExecutor;
-
-    public HttpServerFixture(String basePath) {
-        this.basePath = basePath;
-    }
-
-    @Before
-    public void serverUp() throws IOException {
+    private static HttpServer server;
+    private static HttpHandler ackVCKg1rkHandler;
+    private static HttpHandler notFoundHandler;
+    private static HttpHandler interalErrorHandler;
+    protected static ExecutorService httpExecutor;
+    private static Boolean isServerUp = false;
+    protected static int numUsingServer = 0;
+    
+    @BeforeClass
+    public synchronized static void serverUp() throws IOException {
+        if (isServerUp) { 
+            virLog("server is already up");
+            return; //return since other thread has already spun up the server.
+        }
+        virLog("spinning up server");
+        
         notFoundHandler = new HttpHandler() {
             public void handle(HttpExchange httpExchange) throws IOException {
                 sendResponse(404, "{ \"error\": \"404 Not Found\"}", httpExchange);
@@ -78,34 +85,48 @@ public class HttpServerFixture {
                 sendResponse(500, "{ \"error\": \"500 Internal error\"}", httpExchange);
             }
         };
-
+        
         server = HttpServer.create(new InetSocketAddress(9800), 2); // small backlog.
-        server.createContext(basePath + "/accounts/ackVCKg1rk", ackVCKg1rkHandler);
-        server.createContext(basePath + "/accounts/notFound", notFoundHandler);
-        server.createContext(basePath + "/accounts/internalError", interalErrorHandler);
-        server.createContext(basePath + "/test200", ackVCKg1rkHandler);
-        server.createContext(basePath + "/test404", notFoundHandler);
-        server.createContext(basePath + "/test500", interalErrorHandler);
+        isServerUp = true;
+
+        server.createContext(InternalAPIFactory.BASE_PATH + "/accounts/ackVCKg1rk", ackVCKg1rkHandler);
+        server.createContext(InternalAPIFactory.BASE_PATH + "/accounts/notFound", notFoundHandler);
+        server.createContext(InternalAPIFactory.BASE_PATH + "/accounts/internalError", interalErrorHandler);
+        server.createContext(InternalAPIFactory.BASE_PATH + "/test200", ackVCKg1rkHandler);
+        server.createContext(InternalAPIFactory.BASE_PATH + "/test404", notFoundHandler);
+        server.createContext(InternalAPIFactory.BASE_PATH + "/test500", interalErrorHandler);
 
         httpExecutor = Executors.newFixedThreadPool(1);
         server.setExecutor(httpExecutor);
         server.start();
     }
-    
+
     protected static void sendResponse(int code, String body, HttpExchange httpExchange) throws IOException {
         httpExchange.sendResponseHeaders(code, body.length());
         OutputStream out = httpExchange.getResponseBody();
         out.write(body.getBytes());
         out.close();
     }
-    
-    @After
-    public void serverDown() {
+
+    @AfterClass
+    public synchronized static void serverDown() {
+        if (!isServerUp || numUsingServer != 0) {
+            virLog("server is already down");
+            return; // return since other thread has already stopped the server.
+        }
+        virLog("powering down");
+
         server.stop(1);
+        isServerUp = false;
         ackVCKg1rkHandler = null;
         server = null;
     }
 
+    protected static void virLog(String s) {
+    	System.out.println(String.valueOf(new Date().getTime()) + ", " + s + ", Thread= " + 
+    			String.valueOf(Thread.currentThread().getId()));
+    }
+    
     protected String getClusterString() {
         // Simply using server.getAddress().toString() breaks with some IPv6 issue
         try {

@@ -1,26 +1,32 @@
 package com.cloudkick.blueflood.internal;
 
+import junit.framework.Assert;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
-import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Date;
 
 public class HttpJsonResourceTest extends HttpServerFixture {
-    private static final String BASE_PATH = "/test_base";
+    private static final String BASE_PATH = InternalAPIFactory.BASE_PATH;
 
     JsonResource resource;
-
-    public HttpJsonResourceTest() {
-        super(BASE_PATH);
+    
+    @BeforeClass 
+    public static void setupStub() {
+    	numUsingServer++;
+    	virLog("beforeclass httpjsonresourcetest");
     }
-
+    
     @Before
     public void setUpResource() {
+    	virLog("starting httpjsonresourcetest test");
         ClientConnectionManager connectionManager = InternalAPIFactory.buildConnectionManager(2);
         resource = new HttpJsonResource(connectionManager, getClusterString(), BASE_PATH);
     }
@@ -73,5 +79,11 @@ public class HttpJsonResourceTest extends HttpServerFixture {
         for (String host : cluster)
             sb = sb.append(host);
         Assert.assertEquals("cdbaz", sb.toString());
+    }
+    
+    @AfterClass 
+    public static void teardownStub() {
+    	numUsingServer--;
+    	virLog("afterclass httpjsonresourcetest");
     }
 }
