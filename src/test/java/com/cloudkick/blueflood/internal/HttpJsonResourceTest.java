@@ -6,17 +6,27 @@ import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Date;
 
 public class HttpJsonResourceTest extends HttpServerFixture {
     private static final String BASE_PATH = InternalAPIFactory.BASE_PATH;
 
     JsonResource resource;
-
+    
+    @BeforeClass 
+    public static void setupStub() {
+    	numUsingServer++;
+    	virLog("beforeclass httpjsonresourcetest");
+    }
+    
     @Before
     public void setUpResource() {
+    	virLog("starting httpjsonresourcetest test");
         ClientConnectionManager connectionManager = InternalAPIFactory.buildConnectionManager(2);
         resource = new HttpJsonResource(connectionManager, getClusterString(), BASE_PATH);
     }
@@ -69,5 +79,11 @@ public class HttpJsonResourceTest extends HttpServerFixture {
         for (String host : cluster)
             sb = sb.append(host);
         Assert.assertEquals("cdbaz", sb.toString());
+    }
+    
+    @AfterClass 
+    public static void teardownStub() {
+    	numUsingServer--;
+    	virLog("afterclass httpjsonresourcetest");
     }
 }

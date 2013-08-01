@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,12 +60,15 @@ public class HttpServerFixture {
     private static HttpHandler interalErrorHandler;
     protected static ExecutorService httpExecutor;
     private static Boolean isServerUp = false;
-
+    protected static int numUsingServer = 0;
+    
     @BeforeClass
     public synchronized static void serverUp() throws IOException {
         if (isServerUp) { 
+            virLog("server is already up");
             return; //return since other thread has already spun up the server.
         }
+        virLog("spinning up server");
         
         notFoundHandler = new HttpHandler() {
             public void handle(HttpExchange httpExchange) throws IOException {
@@ -106,15 +110,23 @@ public class HttpServerFixture {
 
     @AfterClass
     public synchronized static void serverDown() {
-        if (!isServerUp) {
+        if (!isServerUp || numUsingServer != 0) {
+            virLog("server is already down");
             return; // return since other thread has already stopped the server.
         }
+        virLog("powering down");
+
         server.stop(1);
         isServerUp = false;
         ackVCKg1rkHandler = null;
         server = null;
     }
 
+    protected static void virLog(String s) {
+    	System.out.println(String.valueOf(new Date().getTime()) + ", " + s + ", Thread= " + 
+    			String.valueOf(Thread.currentThread().getId()));
+    }
+    
     protected String getClusterString() {
         // Simply using server.getAddress().toString() breaks with some IPv6 issue
         try {
