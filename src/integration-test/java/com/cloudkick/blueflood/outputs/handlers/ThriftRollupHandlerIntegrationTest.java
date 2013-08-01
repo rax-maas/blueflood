@@ -1,4 +1,4 @@
-package com.cloudkick.blueflood.service;
+package com.cloudkick.blueflood.outputs.handlers;
 
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.cloudkick.blueflood.io.AstyanaxWriter;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RollupHandlerIntegrationTest extends IntegrationTestBase {
+public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
     final long baseMillis = 1335820166000L;
     final String acctId = "ac" + IntegrationTestBase.randString(8);
     final String metricName = "met_" + IntegrationTestBase.randString(8);
@@ -53,7 +53,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-        final RollupHandler rh = new RollupHandler();
+        final ThriftRollupHandler rh = new ThriftRollupHandler();
 
         final Map<String, Integer> answers = new HashMap<String, Integer>();
         answers.put("all of them", 1440);
@@ -98,7 +98,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-        final RollupHandler rh = new RollupHandler();
+        final ThriftRollupHandler rh = new ThriftRollupHandler();
 
         for (Locator locator : locators) {
             Assert.assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
@@ -112,7 +112,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testGetMissingRollupsByResolution() throws Exception {
-        final RollupHandler rh = new RollupHandler();
+        final ThriftRollupHandler rh = new ThriftRollupHandler();
 
         for (Locator locator : locators) {
             Assert.assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());

@@ -111,7 +111,7 @@ public class IntegrationTestBase {
         final long now = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
-            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met", randString(8));
+            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met" + randString(8));
             metrics.add(getRandomIntMetric(locator, now - 10000000));
         }
 

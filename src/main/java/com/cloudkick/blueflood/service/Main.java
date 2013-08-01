@@ -2,6 +2,7 @@ package com.cloudkick.blueflood.service;
 
 import com.cloudkick.blueflood.inputs.handlers.AlternateScribeHandler;
 import com.cloudkick.blueflood.inputs.handlers.ScribeHandlerIface;
+import com.cloudkick.blueflood.outputs.handlers.CloudMonitoringRollupHandler;
 import com.cloudkick.blueflood.thrift.ThriftRunnable;
 import com.cloudkick.blueflood.thrift.UnrecoverableException;
 import com.cloudkick.blueflood.utils.RestartGauge;

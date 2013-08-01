@@ -1,4 +1,4 @@
-package com.cloudkick.blueflood.service;
+package com.cloudkick.blueflood.outputs.handlers;
 
 import com.cloudkick.blueflood.io.AstyanaxReader;
 import com.yammer.metrics.core.TimerContext;
@@ -7,7 +7,7 @@ import telescope.thrift.MetricInfo;
 
 import java.util.List;
 
-public class CloudMonitoringRollupHandler extends RollupHandler {
+public class CloudMonitoringRollupHandler extends ThriftRollupHandler {
 
     public List<MetricInfo> GetMetricsForCheck(String accountId, String entityId, String checkId) throws TException {
         final TimerContext ctx = metricsForCheckTimer.time();
