@@ -16,25 +16,30 @@ import org.mockito.internal.util.reflection.Whitebox;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class InternalApiTest extends HttpServerFixture {
+public class InternalApiTest {
     private InternalAPI api;
+    private HttpServerFixture server;
 
     public InternalApiTest() {
-        super(InternalAPIFactory.BASE_PATH);
     }
 
     @Before
-    public void setupApi() {
-        api = InternalAPIFactory.create(2, getClusterString());
+    public void setupApi() throws Exception {
+        server = new HttpServerFixture((InternalAPIFactory.BASE_PATH), 9801);
+        server.serverUp();
+        api = InternalAPIFactory.create(2, server.getClusterString());
     }
 
     @After
     public void cleanUpApi() {
+        server.serverDown();
         ClientConnectionManager connectionManager = (ClientConnectionManager)Whitebox.getInternalState(api, "connectionManager");
-        connectionManager.shutdown();
+        if (connectionManager != null)
+            connectionManager.shutdown();
     }
     
     @Test
@@ -100,9 +105,13 @@ public class InternalApiTest extends HttpServerFixture {
     
     @Test(expected = SocketTimeoutException.class)
     public void testConnectionTimeout() throws Throwable {
+        final CountDownLatch waitLatch = new CountDownLatch(1);
+        ExecutorService httpExecutor = (ExecutorService)Whitebox.getInternalState(server, "httpExecutor");
         httpExecutor.submit(new Runnable() {
             public void run() {
-                try { Thread.sleep(5000); } catch (InterruptedException ex) { }
+                try {
+                    waitLatch.await(5000, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException ex) { }
             }
         });
         
@@ -121,7 +130,8 @@ public class InternalApiTest extends HttpServerFixture {
             Assert.assertEquals(1, ex.size());
             throw ex.getExceptions().iterator().next();
         } finally {
-            httpExecutor.shutdownNow(); // stop waiting.
+            waitLatch.countDown();
+            Thread.sleep(500);
         }
     }
 }

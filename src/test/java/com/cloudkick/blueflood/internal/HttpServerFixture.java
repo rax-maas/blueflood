@@ -3,8 +3,6 @@ package com.cloudkick.blueflood.internal;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.junit.After;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,13 +53,14 @@ public class HttpServerFixture {
     private HttpHandler notFoundHandler;
     private HttpHandler interalErrorHandler;
     private final String basePath;
+    private final int port;
     protected ExecutorService httpExecutor;
 
-    public HttpServerFixture(String basePath) {
+    public HttpServerFixture(String basePath, int port) {
         this.basePath = basePath;
+        this.port = port;
     }
 
-    @Before
     public void serverUp() throws IOException {
         notFoundHandler = new HttpHandler() {
             public void handle(HttpExchange httpExchange) throws IOException {
@@ -79,7 +78,7 @@ public class HttpServerFixture {
             }
         };
 
-        server = HttpServer.create(new InetSocketAddress(9800), 2); // small backlog.
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getLocalHost().getHostAddress(), port), 2); // small backlog.
         server.createContext(basePath + "/accounts/ackVCKg1rk", ackVCKg1rkHandler);
         server.createContext(basePath + "/accounts/notFound", notFoundHandler);
         server.createContext(basePath + "/accounts/internalError", interalErrorHandler);
@@ -99,9 +98,9 @@ public class HttpServerFixture {
         out.close();
     }
     
-    @After
     public void serverDown() {
-        server.stop(1);
+        if (server != null)
+            server.stop(0);
         ackVCKg1rkHandler = null;
         server = null;
     }
@@ -109,7 +108,7 @@ public class HttpServerFixture {
     protected String getClusterString() {
         // Simply using server.getAddress().toString() breaks with some IPv6 issue
         try {
-            return InetAddress.getLocalHost().getHostAddress() + ":" + server.getAddress().getPort();
+            return InetAddress.getLocalHost().getHostAddress() + ":" + port;
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
