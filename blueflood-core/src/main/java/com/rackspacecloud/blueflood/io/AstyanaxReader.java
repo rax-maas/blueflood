@@ -22,13 +22,9 @@ import com.netflix.astyanax.util.RangeBuilder;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import telescope.thrift.MetricInfo;
-import telescope.thrift.UnitEnum;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -44,6 +40,7 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
 
     private static final Keyspace keyspace = getKeyspace();
+    private static final String UNKNOWN_UNIT = "unknown";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -105,7 +102,7 @@ public class AstyanaxReader extends AstyanaxIO {
             log.warn("Cache exception reading unitString from MetadataCache: ", ex);
         }
         if (unitString == null) {
-            unitString = UnitEnum.UNKNOWN.toString().toLowerCase();
+            unitString = UNKNOWN_UNIT;
         }
         return unitString;
     }
@@ -140,19 +137,8 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public List<MetricInfo> getMetricsForCheck(String accountId, String entityId, String checkId) {
-        final List<MetricInfo> results = new ArrayList<MetricInfo>();
-
-        final String dBKey = Util.generateMetricsDiscoveryDBKey(accountId, entityId, checkId);
-        for (Column<String> col : getMetricsList(dBKey)) {
-            String metric = col.getName();
-            String unitString = getUnitString(Locator.createLocatorFromPathComponents(accountId, entityId, checkId, metric));
-            results.add(new MetricInfo(col.getName(), unitString));
-        }
-        return results;
-    }
-
-    private ColumnList<String> getMetricsList(final String dBKey) {
+    // todo: would rather not expose this.
+    public ColumnList<String> getMetricsList(final String dBKey) {
         TimerContext ctx = Instrumentation.getTimerContext(GET_METRICS_FOR_CHECK);
         try {
             RowQuery<String, String> query = keyspace
