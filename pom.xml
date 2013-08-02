@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
- 
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
- 
+
   <groupId>com.rackspacecloud</groupId>
   <artifactId>blueflood</artifactId>
   <name>blueflood</name>
@@ -12,11 +12,11 @@
   <version>1.0.0-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
-    
+
     <!-- this one will eventually be removed and live in a private rackspace repository. -->
     <module>ele-blueflood</module>
   </modules>
-  
+
   <properties>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
@@ -25,7 +25,7 @@
     <skip.integration.tests>true</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>
- 
+
   <profiles>
     <profile>
       <id>dev</id>
@@ -42,13 +42,6 @@
         <cassandra.rpcPort>19180</cassandra.rpcPort>
       </properties>
     </profile>
-    <profile>
-      <id>ele</id>
-      <properties>
-        <build.profile.id>ele</build.profile.id>
-        <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
-      </properties>
-    </profile>
   </profiles>
- 
+
 </project>
