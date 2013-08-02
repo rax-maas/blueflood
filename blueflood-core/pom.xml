@@ -67,6 +67,8 @@
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
+          <parallel>classes</parallel>
+          <threadCount>5</threadCount>
         </configuration>
       </plugin>
  
