@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
@@ -13,21 +14,17 @@ import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.http.DefaultHandler;
-import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.google.gson.JsonParseException;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -45,11 +42,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.jboss.netty.channel.Channels.pipeline;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpHandler.class);
-    private static  TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
+    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
 
     private int port;
@@ -59,6 +55,7 @@ public class HttpHandler {
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
     private ScheduleContext context;
     private final Counter bufferedMetrics = Metrics.newCounter(HttpHandler.class, "Buffered Metrics");
+    private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
     // Metrics
     private static final Timer handlerTimer = Metrics.newTimer(HttpHandler.class, "HTTP metrics ingestion timer",
@@ -78,8 +75,8 @@ public class HttpHandler {
         }
 
         RouteMatcher router = new RouteMatcher();
-        router.get("/", new DefaultHandler());
-        router.post("/metrics", new MetricsIngestor(this.processorChain, timeout));
+        router.get("/v1.0", new DefaultHandler());
+        router.post("/v1.0/:tenantId/experimental/metrics", new MetricsIngestor(this.processorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", port);
         ServerBootstrap server = new ServerBootstrap(
@@ -130,7 +127,8 @@ public class HttpHandler {
 
             pipeline.addLast("decoder", new HttpRequestDecoder());
             pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("handler", router);
+            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
+            pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;
         }
@@ -165,30 +163,30 @@ public class HttpHandler {
                 jsonMetricsContainer = new JSONMetricsContainer(jsonMetrics);
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
-                sendResponse(ctx.getChannel(), "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (JsonMappingException e) {
                 log.warn("Exception parsing content", e);
-                sendResponse(ctx.getChannel(), "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (IOException e) {
                 log.warn("IO Exception parsing content", e);
-                sendResponse(ctx.getChannel(), "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (Exception e) {
                 log.warn("Other exception while trying to parse content", e);
-                sendResponse(ctx.getChannel(), "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 return;
             }
 
             if (jsonMetricsContainer == null) {
-                sendResponse(ctx.getChannel(), null, HttpResponseStatus.OK);
+                sendResponse(ctx, request, null, HttpResponseStatus.OK);
                 return;
             }
 
             List<Metric> metrics =  jsonMetricsContainer.toMetrics();
             if (metrics == null || metrics.isEmpty()) {
-                sendResponse(ctx.getChannel(), null, HttpResponseStatus.OK);
+                sendResponse(ctx, request, null, HttpResponseStatus.OK);
                 return;
             }
 
@@ -197,24 +195,24 @@ public class HttpHandler {
 
             try {
                 processorChain.apply(collection).get(timeout.getValue(), timeout.getUnit());
-                sendResponse(ctx.getChannel(), null, HttpResponseStatus.OK);
+                sendResponse(ctx, request, null, HttpResponseStatus.OK);
             } catch (TimeoutException e) {
-                sendResponse(ctx.getChannel(), "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+                sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {
                 log.error("Exception persisting metrics", e);
-                sendResponse(ctx.getChannel(), "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
             } finally {
                 timerContext.stop();
             }
         }
 
-        public void sendResponse(Channel channel, String messageBody, HttpResponseStatus status) {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
+        public void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
             if (messageBody != null && !messageBody.isEmpty()) {
                 response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
-            channel.write(response);
+            HttpResponder.respond(channel, request, response);
         }
     }
 }

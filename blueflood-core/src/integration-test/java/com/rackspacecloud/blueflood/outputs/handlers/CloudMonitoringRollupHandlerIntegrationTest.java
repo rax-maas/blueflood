@@ -1,10 +1,9 @@
-package com.rackspacecloud.blueflood.service;
+package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescopeTest;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.outputs.handlers.CloudMonitoringRollupHandler;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;

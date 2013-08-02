@@ -28,6 +28,9 @@ public class Configuration {
         // blueflood can receive metric over HTTP
         props.put("HTTP_INGESTION_PORT", "19000");
 
+        // blueflood can output metrics over HTTP
+        props.put("HTTP_METRIC_DATA_QUERY_PORT", "20000");
+
         // blueflood answers queries over the telescope interface.
         props.put("TELESCOPE_HOST", "127.0.0.1");
         props.put("TELESCOPE_PORT", "2467");
