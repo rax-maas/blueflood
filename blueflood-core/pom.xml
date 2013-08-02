@@ -95,6 +95,18 @@
             </configuration>
           </execution>
           <execution>
+            <id>load-schema</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>load</goal>
+            </goals>
+            <configuration>
+              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
+              <listenAddress>${cassandra.listenAddress}</listenAddress>
+              <rpcPort>${cassandra.rpcPort}</rpcPort>
+            </configuration>
+          </execution>
+          <execution>
             <id>stop-cassandra</id>
             <goals>
               <goal>stop</goal>
@@ -122,7 +134,7 @@
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
-              <argLine>-Dlog4j.configuration=file://${basedir}/blueflood-core/src/test/resources/log4j-test.properties</argLine>
+              <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
