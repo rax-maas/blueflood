@@ -198,7 +198,7 @@ public class ConcurrentStructuresTest {
         }).start();
         
         // wait for sync tasks to compleate 200ms * 4 = about 800 ms.
-        incrementLatch.await(1, TimeUnit.SECONDS);
+        incrementLatch.await(2, TimeUnit.SECONDS);
         
         // result should be n1 + 4 + m1 + 4;
         Assert.assertEquals(n1 + m1 + 4 + 4, result.get());
