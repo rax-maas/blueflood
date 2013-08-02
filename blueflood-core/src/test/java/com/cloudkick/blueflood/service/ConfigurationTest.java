@@ -31,7 +31,7 @@ public class ConfigurationTest {
         Assert.assertFalse(properties.containsKey("TEST_PROPERTY"));
         Assert.assertEquals("ALL", properties.get("SHARDS").toString());
 
-        String configPath = new File("tests/test-data/bf-override-config.properties").getAbsolutePath();
+        String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
         System.setProperty("blueflood.config", "file://" + configPath);
         Configuration.init();
 

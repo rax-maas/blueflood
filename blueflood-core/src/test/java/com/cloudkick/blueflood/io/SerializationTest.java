@@ -84,7 +84,7 @@ public class SerializationTest {
     public void testFullResSerializationAndDeserialization() throws IOException {
         // if the GENERATE_SERIALIZATION flag is set, save everything.
         if (System.getProperty("GENERATE_FULL_RES_SERIALIZATION") != null) {
-            OutputStream os = new FileOutputStream("tests/test-data/serializations/full_version_" + Constants.VERSION_1_FULL_RES + ".bin", false);
+            OutputStream os = new FileOutputStream("src/test/resources/serializations/full_version_" + Constants.VERSION_1_FULL_RES + ".bin", false);
             for (Object o : toSerializeFull) {
                 // encode as base64 to make reading the file easier.
 
@@ -94,13 +94,13 @@ public class SerializationTest {
             os.close();
         }
         
-        Assert.assertTrue(new File("tests/test-data/serializations").exists());
+        Assert.assertTrue(new File("src/test/resources/serializations").exists());
         
         // ensure we can read historical serializations.
         int version = 0; // versions before this are illegal.
         int maxVersion = Constants.VERSION_1_FULL_RES;
         while (version <= maxVersion) {
-            BufferedReader reader = new BufferedReader(new FileReader("tests/test-data/serializations/full_version_" + version + ".bin"));
+            BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/full_version_" + version + ".bin"));
             for (int i = 0; i < toSerializeFull.length; i++)
                 try {
                     // we used to allow deserializing strings, but we don't anymore.
@@ -132,7 +132,7 @@ public class SerializationTest {
         // works the same way as testFullResSerializationAndDeserialization
         
         if (System.getProperty("GENERATE_ROLLUP_SERIALIZATION") != null) {
-            OutputStream os = new FileOutputStream("tests/test-data/serializations/rollup_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
+            OutputStream os = new FileOutputStream("src/test/resources/serializations/rollup_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
             for (Rollup rollup : toSerializeRollup) {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = NumericSerializer.get(g).toByteBuffer(rollup);
@@ -143,13 +143,13 @@ public class SerializationTest {
             os.close();
         }
         
-        Assert.assertTrue(new File("tests/test-data/serializations").exists());
+        Assert.assertTrue(new File("src/test/resources/serializations").exists());
         
         // ensure we can read historical serializations.
         int version = 0;
         int maxVersion = Constants.VERSION_1_ROLLUP;
         while (version <= maxVersion) {
-            BufferedReader reader = new BufferedReader(new FileReader("tests/test-data/serializations/rollup_version_" + version + ".bin"));
+            BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/rollup_version_" + version + ".bin"));
             for (int i = 0; i < toSerializeRollup.length; i++) {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
