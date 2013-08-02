@@ -11,7 +11,6 @@ import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.ServerMetricLocator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.cache.Cache;
@@ -39,7 +38,6 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 172800;  // in seconds (2 days)
-    private static final int METRICS_DISCOVERY_TTL = 31536000; // in seconds (365 days)
 
     private static final String INSERT_METADATA = "Metadata Insert".intern();
     private static final String INSERT_FULL = "Full Insert".intern();
@@ -109,7 +107,6 @@ public class AstyanaxWriter extends AstyanaxIO {
                 if (!AstyanaxWriter.isLocatorCurrent(locator)) {
                     if (!isString && !isBoolean)
                         insertLocator(locator, mutationBatch);
-                    insertDiscovery(locator, mutationBatch);
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
@@ -134,17 +131,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
         mutationBatch.withRow(CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
                 .putColumn(locator, "", LOCATOR_TTL);
-    }
-
-    private final void insertDiscovery(Locator locator, MutationBatch mutationBatch) {
-        if (locator instanceof ServerMetricLocator) {
-            ServerMetricLocator serverMetricLocator = (ServerMetricLocator) locator;
-            String rowKey = Util.generateMetricsDiscoveryDBKey(serverMetricLocator.getAccountId(),
-                    serverMetricLocator.getEntityId(), serverMetricLocator.getCheckId());
-            String colKey = serverMetricLocator.getMetric();
-            mutationBatch.withRow(CF_METRICS_DISCOVERY, rowKey)
-                    .putColumn(colKey, "", METRICS_DISCOVERY_TTL);
-        }
     }
 
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
@@ -263,7 +249,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    private static boolean isLocatorCurrent(Locator loc) {
+    protected static boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc) != null;
     }
 

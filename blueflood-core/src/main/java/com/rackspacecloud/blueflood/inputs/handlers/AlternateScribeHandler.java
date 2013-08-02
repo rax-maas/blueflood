@@ -6,10 +6,12 @@ import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.LogEntryConverter;
 import com.rackspacecloud.blueflood.inputs.processors.TtlAffixer;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -127,7 +129,16 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 FULLRES_TTL_CACHE)
                 .withLogger(log))
             .withFunction(batchSplitter.withLogger(log))
-            .withFunction(batchWriter.withLogger(log));
+            .withFunction(batchWriter.withLogger(log))
+            // todo: next part is CM_SPECIFIC
+            .withFunction(new DiscoveryWriter(new ThreadPoolBuilder()
+                .withName("Metric Discovery Writing")
+                .withCorePoolSize(WRITE_THREADS)
+                .withMaxPoolSize(WRITE_THREADS)
+                .withUnboundedQueue()
+                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                .build(),
+               RackIO.getInstance()));
         
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();

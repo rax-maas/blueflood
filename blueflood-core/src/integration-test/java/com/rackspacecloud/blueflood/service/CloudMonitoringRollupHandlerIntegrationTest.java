@@ -4,6 +4,7 @@ import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescopeTest;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.outputs.handlers.CloudMonitoringRollupHandler;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -14,6 +15,7 @@ import telescope.thrift.Telescope;
 
 import java.util.*;
 
+// todo: CM_SPECIFIC
 public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTestBase {
     final String agentCheckName = "test_rollup_handler_agent";
     final String externalCheckName = "test_rollup_handler_external";
@@ -26,7 +28,10 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
     public void testGetMetricsForCheck() throws Exception {
         final CloudMonitoringRollupHandler rh = new CloudMonitoringRollupHandler();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        writer.insertFull(generateMetricsForTest());
+        RackIO rackIO = RackIO.getInstance();
+        List<Metric> metrics = generateMetricsForTest();
+        writer.insertFull(metrics);
+        rackIO.insertDiscovery(metrics);
 
         // test agent metrics list
         List<MetricInfo> metricsList  = rh.GetMetricsForCheck(acctId2, agentEntityId, agentCheckName);

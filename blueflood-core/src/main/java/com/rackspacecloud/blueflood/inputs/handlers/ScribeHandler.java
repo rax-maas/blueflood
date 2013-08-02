@@ -4,6 +4,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -29,6 +30,9 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+// todo: CM_SPECIFIC
+// todo: We need to get rid of this. I think it's safe.
+@Deprecated
 public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
     private static final Logger log = LoggerFactory.getLogger(ScribeHandler.class);
     private static final long HOURS_24_IN_MILLIS = 1000 * 60 * 60 * 24;
@@ -247,8 +251,9 @@ public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {
             writeExecutors.execute(new Runnable() {
                 public void run() {
                     try {
-                        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-                        writer.insertFull(batch);
+                        AstyanaxWriter.getInstance().insertFull(batch);
+                        // todo: CM_SPECIFIC
+                        RackIO.getInstance().insertDiscovery(batch);
                     } catch (Exception ex) {
                         log.error(ex.getMessage(), ex);
                         successfullyPersisted.set(false);

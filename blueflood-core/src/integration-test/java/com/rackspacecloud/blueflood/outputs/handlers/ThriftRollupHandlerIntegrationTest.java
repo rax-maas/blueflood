@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// todo: CM_SPECIFIC
 public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
     final long baseMillis = 1335820166000L;
     final String acctId = "ac" + IntegrationTestBase.randString(8);
@@ -30,8 +32,10 @@ public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
     public void setUp() throws Exception {
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        RackIO rackIO = RackIO.getInstance();
 
         // insert something every 1m for 24h
+        // simulates what goes on during ingestion.
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + i * 60000;
             final List<Metric> metrics = new ArrayList<Metric>();
@@ -39,6 +43,7 @@ public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
             metrics.add(metric);
 
             writer.insertFull(metrics);
+            rackIO.insertDiscovery(metrics);
         }
     }
 

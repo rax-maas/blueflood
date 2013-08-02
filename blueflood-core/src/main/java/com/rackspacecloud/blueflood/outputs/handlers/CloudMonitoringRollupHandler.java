@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.netflix.astyanax.model.Column;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.yammer.metrics.core.TimerContext;
@@ -17,7 +18,7 @@ public class CloudMonitoringRollupHandler extends ThriftRollupHandler {
     public List<MetricInfo> GetMetricsForCheck(String accountId, String entityId, String checkId) throws TException {
         final TimerContext ctx = metricsForCheckTimer.time();
         List<MetricInfo> metrics = CloudMonitoringRollupHandler.getMetricsForCheck(
-                AstyanaxReader.getInstance(),
+                RackIO.getInstance(),
                 accountId,
                 entityId,
                 checkId);
@@ -26,7 +27,7 @@ public class CloudMonitoringRollupHandler extends ThriftRollupHandler {
         return metrics;
     }
     
-    public static List<MetricInfo> getMetricsForCheck(AstyanaxReader reader, String accountId, String entityId, String checkId) {
+    public static List<MetricInfo> getMetricsForCheck(RackIO reader, String accountId, String entityId, String checkId) {
         final List<MetricInfo> results = new ArrayList<MetricInfo>();
     
         final String dBKey = Util.generateMetricsDiscoveryDBKey(accountId, entityId, checkId);

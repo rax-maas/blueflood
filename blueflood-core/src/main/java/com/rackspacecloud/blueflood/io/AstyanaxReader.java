@@ -34,7 +34,6 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final String GET_STRING_METRICS = "Get String Rollup Iterator";
     private static final String LOCATOR_ITERATOR = "Get Locators Iterator";
     private static final String GET_LAST_METRICS_VALUE = "Get last metric value";
-    private static final String GET_METRICS_FOR_CHECK = "Get list of metrics for check";
     private static final String GET_METADATA = "Get Metadata col";
     private static final MetadataCache metaCache = MetadataCache.getInstance();
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
@@ -132,25 +131,6 @@ public class AstyanaxReader extends AstyanaxIO {
             Instrumentation.markReadError(e);
             log.error("Error getting all shard states", e);
             throw e;
-        } finally {
-            ctx.stop();
-        }
-    }
-
-    // todo: would rather not expose this.
-    public ColumnList<String> getMetricsList(final String dBKey) {
-        TimerContext ctx = Instrumentation.getTimerContext(GET_METRICS_FOR_CHECK);
-        try {
-            RowQuery<String, String> query = keyspace
-                    .prepareQuery(CF_METRICS_DISCOVERY)
-                    .getKey(dBKey);
-            return query.execute().getResult();
-        } catch (NotFoundException e) {
-            return new EmptyColumnList<String>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting metrics list", e);
-            throw new RuntimeException("Error getting metrics list", e);
         } finally {
             ctx.stop();
         }
