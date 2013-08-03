@@ -284,23 +284,6 @@
       <version>2.0.0</version>
     </dependency>
 
-    <!-- will change in the future to this:
-    <dependency>
-      <groupId>com.bealetech</groupId>
-      <artifactId>metrics-statsd</artifactId>
-      <version>2.3.1</version>
-    </dependency>
-    -->
-    <dependency>
-      <!-- get this by doing:
-      mvn install:install-file -DgroupId=studyblue -DartifactId=metrics-statsd -Dversion=2.1.3.0 -Dpackaging=jar -Dfile=/data/ele/java/lib/metrics-statsd-2.1.3.0-fixed.jar
-      in the future, the groupId will change to com.bealeteach
-      -->
-      <groupId>studyblue</groupId>
-      <artifactId>metrics-statsd</artifactId>
-      <version>2.1.3.0</version>
-    </dependency>
-
     <!-- todo: get off alpha version! -->
     <dependency>
       <groupId>com.google.protobuf</groupId>
