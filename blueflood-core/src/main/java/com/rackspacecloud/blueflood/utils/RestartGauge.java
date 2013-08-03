@@ -1,9 +1,10 @@
 package com.rackspacecloud.blueflood.utils;
 
+import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricsRegistry;
 
-public class RestartGauge extends Gauge {
+public class RestartGauge extends Gauge<Integer> {
     boolean sentVal = false;
 
     @Override
@@ -18,6 +19,10 @@ public class RestartGauge extends Gauge {
 
     public RestartGauge(MetricsRegistry registry, Class klass) {
         registry.newGauge(klass, "Restart", this);
+    }
+
+    public RestartGauge(Class klass) {
+        this(Metrics.defaultRegistry(), klass);
     }
 
 }
