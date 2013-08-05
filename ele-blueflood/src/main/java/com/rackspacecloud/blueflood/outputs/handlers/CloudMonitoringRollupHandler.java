@@ -30,6 +30,7 @@ public class CloudMonitoringRollupHandler extends ThriftRollupHandler {
     public static List<MetricInfo> getMetricsForCheck(RackIO reader, String accountId, String entityId, String checkId) {
         final List<MetricInfo> results = new ArrayList<MetricInfo>();
     
+        // todo: relying on Astyanax internals is kind of leaky here.  This should get pushed down into RackIO.
         final String dBKey = Util.generateMetricsDiscoveryDBKey(accountId, entityId, checkId);
         for (Column<String> col : reader.getMetricsList(dBKey)) {
             String metric = col.getName();

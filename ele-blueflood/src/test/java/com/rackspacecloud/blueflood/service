@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+// todo: CM_SPECIFIC.  But it shouldn't be. We ought to formulate a new test that operates on List<com.rackspacecloud.blueflood.types.Metric>.
 public class IncomingMetricMetadataAnalyzerTest {
     private IncomingMetricMetadataAnalyzer metadataAnalyzer;
     private CloudMonitoringTelescope cmTelescope;

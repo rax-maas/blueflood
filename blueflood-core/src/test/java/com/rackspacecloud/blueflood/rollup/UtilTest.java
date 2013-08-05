@@ -1,13 +1,9 @@
 package com.rackspacecloud.blueflood.rollup;
 
-import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.types.Average;
-import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Test;
-import telescope.thrift.Metric;
 
 import java.util.Random;
 
@@ -60,80 +56,6 @@ public class UtilTest {
         }
 
         Assert.assertEquals(true, exception);
-    }
-
-    @Test
-    public void testGetMetricValue() {
-        Metric m1 = new Metric((byte) MetricHelper.Type.DOUBLE);
-        Metric m2 = new Metric((byte)MetricHelper.Type.STRING);
-        Metric m3 = new Metric((byte)MetricHelper.Type.INT32);
-        Metric m4 = new Metric((byte)MetricHelper.Type.INT64);
-        Metric m5 = new Metric((byte)MetricHelper.Type.UINT32);
-        Metric m6 = new Metric((byte)'z');
-        m1.setValueDbl(100.0);
-        m2.setValueStr("a");
-        m3.setValueI32(7);
-        m4.setValueI64(23);
-        m5.setValueI32(1991);
-
-        Assert.assertEquals(100.0, CloudMonitoringTelescope.getMetricValue(m1));
-        Assert.assertEquals("a", CloudMonitoringTelescope.getMetricValue(m2));
-        Assert.assertEquals(7, CloudMonitoringTelescope.getMetricValue(m3));
-        Assert.assertEquals(new Long(23), (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
-        Assert.assertEquals((Long)23L, (Long)(CloudMonitoringTelescope.getMetricValue(m4)));
-
-        boolean failed = false;
-
-        try {
-            CloudMonitoringTelescope.getMetricValue(m6);
-        }
-        catch (RuntimeException e) {
-            failed = true;
-            Assert.assertEquals("Unexpected metric type: " + (char)m6.getMetricType(), e.getMessage());
-        }
-
-        Assert.assertEquals(true, failed);
-    }
-
-    @Test
-    public void testCreateMetric() {
-        Double myDouble = new Double(66.6);
-        Long myLong = new Long(4578);
-        Integer myInteger = new Integer(1224);
-        Average myAverage1 = new Average(1, myDouble);
-        Average myAverage2 = new Average(1, myLong);
-        Metric myMetric = new Metric((byte) MetricHelper.Type.DOUBLE);
-
-        Metric m;
-
-        m = Util.createMetric(myDouble);
-        Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
-
-        m = Util.createMetric(myLong);
-        Assert.assertEquals(new Long(4578), (Long) m.getValueI64());
-        Assert.assertEquals((Long) 4578L, (Long) m.getValueI64());
-
-        m = Util.createMetric(myInteger);
-        Assert.assertEquals(1224, CloudMonitoringTelescope.getMetricValue(m));
-
-        m = Util.createMetric(myAverage1);
-        Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
-
-        m = Util.createMetric(myAverage2);
-        Assert.assertEquals(new Long(4578), (Long) CloudMonitoringTelescope.getMetricValue(m));
-        Assert.assertEquals((Long)4578L, (Long) CloudMonitoringTelescope.getMetricValue(m));
-
-        boolean failed = false;
-
-        try {
-            m = Util.createMetric(myMetric);
-        }
-        catch (RuntimeException e) {
-            failed = true;
-            Assert.assertEquals("Unexpected type for rollup: telescope.thrift.Metric", e.getMessage());
-        }
-
-        Assert.assertEquals(true, failed);
     }
 
     @Test
