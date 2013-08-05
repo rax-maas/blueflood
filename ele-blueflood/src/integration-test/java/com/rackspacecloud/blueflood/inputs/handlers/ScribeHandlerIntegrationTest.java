@@ -95,7 +95,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         List<LogEntry> entries;
         int checkId = 50;
         ResultCode myResultCode;
-        Metric metric = Util.createMetric(42);
+        Metric metric = com.rackspacecloud.blueflood.utils.Util.createMetric(42);
         metric.setUnitEnum(UnitEnum.BYTES);
         TelescopeOrRemove tor = createTelescopeOrRemove(checkId, metric);
         Telescope tscope = tor.getTelescope();
@@ -120,7 +120,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertNull(e);
         }
 
-        metric = Util.createMetric("testString");
+        metric = com.rackspacecloud.blueflood.utils.Util.createMetric("testString");
         metric.setUnitEnum(UnitEnum.OTHER);
         metric.setUnitOtherStr("responses");
         tor = createTelescopeOrRemove(checkId, metric);

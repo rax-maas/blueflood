@@ -4,6 +4,8 @@ import com.netflix.astyanax.model.Row;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+// todo: This belongs in the test code. IntegrationTestBase depends on it though. So we have to wait until
+// IntegrationTestBase is moved back into the test section of the repository.
 /**
  * Simple function to counter the number of rows
  *
