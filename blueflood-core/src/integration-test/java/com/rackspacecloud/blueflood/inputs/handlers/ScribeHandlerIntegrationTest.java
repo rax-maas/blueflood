@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+// todo: CM_SPECIFIC
 public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
     private ScheduleContext context;
     private Collection<Integer> manageShards = new HashSet<Integer>();

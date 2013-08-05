@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.types.Metric;
 
@@ -12,7 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
 // CM_SPECIFIC
-public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<Boolean>> {
+public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
     
     private final RackIO rackIO;
     
@@ -22,7 +23,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
     }
 
     @Override
-    public ListenableFuture<List<Boolean>> apply(List<List<Metric>> input) throws Exception {
+    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) throws Exception {
         
         final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
         
@@ -44,6 +45,6 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
             resultFutures.add(futureBatchResult);
         }
         
-        return Futures.allAsList(resultFutures);
+        return new NoOpFuture<List<List<Metric>>>(input);
     }
 }

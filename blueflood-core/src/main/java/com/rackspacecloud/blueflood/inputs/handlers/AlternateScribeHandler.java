@@ -129,8 +129,6 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 FULLRES_TTL_CACHE)
                 .withLogger(log))
             .withFunction(batchSplitter.withLogger(log))
-            .withFunction(batchWriter.withLogger(log))
-            // todo: next part is CM_SPECIFIC
             .withFunction(new DiscoveryWriter(new ThreadPoolBuilder()
                 .withName("Metric Discovery Writing")
                 .withCorePoolSize(WRITE_THREADS)
@@ -138,7 +136,9 @@ public class AlternateScribeHandler implements ScribeHandlerMBean, ScribeHandler
                 .withUnboundedQueue()
                 .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
                 .build(),
-               RackIO.getInstance()));
+               RackIO.getInstance()))
+            // todo: next part is CM_SPECIFIC
+            .withFunction(batchWriter.withLogger(log));
         
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
