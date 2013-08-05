@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

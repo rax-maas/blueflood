@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.junit.Assert;

@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import org.junit.Assert;
 import org.junit.Test;
 

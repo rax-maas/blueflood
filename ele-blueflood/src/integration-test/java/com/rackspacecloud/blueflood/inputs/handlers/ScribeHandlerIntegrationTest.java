@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;

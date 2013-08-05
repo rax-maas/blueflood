@@ -12,8 +12,13 @@
   <artifactId>ele-blueflood</artifactId>
   <name>ele-blueflood</name>
   
+  <properties>
+    <thriftbin>/usr/bin/thrift</thriftbin>
+  </properties>
+  
   <build>
     <plugins>
+      
       <!-- compile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -24,6 +29,67 @@
         </configuration>
         <version>3.1</version>
       </plugin>
+      
+      <!-- generate thrift code -->
+      <plugin>
+        <groupId>org.apache.thrift.tools</groupId>
+        <artifactId>maven-thrift-plugin</artifactId>
+        <version>0.1.10</version>
+        <configuration>
+          <thriftExecutable>${thriftbin}</thriftExecutable>
+        </configuration>
+        <executions>
+          <execution>
+            <id>thrift-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <!-- Used for unit tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.14.1</version>
+        <configuration>
+          <!-- Skips unit tests if the value of skip.unit.tests property is true -->
+          <skipTests>${skip.unit.tests}</skipTests>
+          <!-- Excludes integration tests when unit tests are run. ß-->
+          <excludes>
+            <exclude>**/*Integration*.java</exclude>
+          </excludes>
+          <parallel>classes</parallel>
+          <threadCount>5</threadCount>
+        </configuration>
+      </plugin>
+      
+      <!-- Used to add source directories to our build. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <!-- States that the plugin's add-test-source goal is executed at generate-test-sources phase. -->
+          <execution>
+            <id>add-integration-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <!-- Configures the source directory of integration tests. -->
+              <sources>
+                <source>src/integration-test/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      
     </plugins>
   </build>
   
@@ -39,6 +105,8 @@
       <artifactId>blueflood-core</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>1.0.0-SNAPSHOT</version>
+      <type>test-jar</type>
+      <scope>compile</scope>
     </dependency>
     
     <dependency>
@@ -79,5 +147,15 @@
     </dependency>
     
   </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>ele</id>
+      <properties>
+        <build.profile.id>ele</build.profile.id>
+        <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

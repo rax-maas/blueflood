@@ -1,9 +1,10 @@
 package com.rackspacecloud.blueflood.thrift;
 
+import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.Average;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;

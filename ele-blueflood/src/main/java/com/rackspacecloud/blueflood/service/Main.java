@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.thrift.ThriftRunnable;
 import com.rackspacecloud.blueflood.thrift.UnrecoverableException;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.StatsEmitter;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.utils.Version;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricsRegistry;

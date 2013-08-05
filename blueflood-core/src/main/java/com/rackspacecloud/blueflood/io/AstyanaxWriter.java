@@ -12,7 +12,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.netflix.astyanax.ColumnListMutation;

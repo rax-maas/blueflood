@@ -10,7 +10,7 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
