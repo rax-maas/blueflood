@@ -83,7 +83,7 @@ public class IngressBlackbox extends IntegrationTestBase {
                 int batchSize = 0;
                 while (batchSize < maxBatchSize) {
                     long now = time.get();
-                    value = (value + 1)%MAX_METRIC;
+                    value = (value + 1) % MAX_METRIC;
                     agentMetrics.put(agentMetricName, value);
                     externalMetrics.put(externalMetricName, value);
                     strMetrics.put(strMetricName, String.valueOf(now));

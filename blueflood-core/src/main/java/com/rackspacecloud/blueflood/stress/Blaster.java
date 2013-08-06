@@ -216,7 +216,7 @@ public class Blaster {
             return metrics;
         }
         for (Map.Entry<String, V> entry : map.entrySet()) {
-            Object obj = entry.getValue();
+            V obj = entry.getValue();
             metrics.put(entry.getKey(), Util.createMetric(obj));
         }
 
