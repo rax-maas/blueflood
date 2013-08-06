@@ -12,9 +12,6 @@
   <version>1.0.0-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
-
-    <!-- this one will eventually be removed and live in a private rackspace repository. -->
-    <module>ele-blueflood</module>
   </modules>
 
   <properties>

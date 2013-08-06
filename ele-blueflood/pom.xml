@@ -2,18 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>blueflood</artifactId>
-    <groupId>com.rackspacecloud</groupId>
-    <version>1.0.0-SNAPSHOT</version>
-  </parent>
+ 
   <modelVersion>4.0.0</modelVersion>
  
-  <artifactId>ele-blueflood</artifactId>
   <name>ele-blueflood</name>
+  <artifactId>ele-blueflood</artifactId>
+  <groupId>com.rackspacecloud</groupId>
+  <packaging>jar</packaging>
+  <version>1.0.0-SNAPSHOT</version>
   
   <properties>
     <thriftbin>/usr/bin/thrift</thriftbin>
+    <!-- Used to locate the profile specific configuration file. -->
+    <build.profile.id>dev</build.profile.id>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Only unit tests are run by default. -->
+    <skip.integration.tests>true</skip.integration.tests>
+    <skip.unit.tests>false</skip.unit.tests>
   </properties>
   
   <build>
@@ -57,7 +62,7 @@
         <configuration>
           <!-- Skips unit tests if the value of skip.unit.tests property is true -->
           <skipTests>${skip.unit.tests}</skipTests>
-          <!-- Excludes integration tests when unit tests are run. ß-->
+          <!-- Excludes integration tests when unit tests are run. -->
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
@@ -84,6 +89,89 @@
               <sources>
                 <source>src/integration-test/java</source>
               </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <!-- Used for integration tests -->
+      <!-- Spin up Cassandra -->
+      <plugin>
+        <!-- Install using:
+        mkdir -p ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1
+        cp lib/cassandra-maven* ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1/
+        -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cassandra-maven-plugin</artifactId>
+        <version>1.0.8-1</version>
+        <configuration>
+          <listenAddress>${cassandra.listenAddress}</listenAddress>
+          <rpcPort>${cassandra.rpcPort}</rpcPort>
+          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+          <cassandraDir>/tmp/bf-cassandra/</cassandraDir>
+        </configuration>
+        <executions>
+          <execution>
+            <id>delete-cassandra</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>delete</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>start-cassandra</id>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>load-schema</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>load</goal>
+            </goals>
+            <configuration>
+              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-cassandra</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.15</version>
+        <executions>
+          <!-- States that both integration-test and verify goals of the Failsafe Maven plugin are executed. -->
+          <execution>
+            <id>integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <testSourceDirectory>src/integration-test/java</testSourceDirectory>
+              <!-- do not require zookeeper for these tests. -->
+              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
+              <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties</argLine>
+              <!-- Skips integration tests if the value of skip.integration.tests property is true -->
+              <skipTests>${skip.ele.tests}</skipTests>
+              <includes>
+                <include>**/*Integration*.java</include>
+              </includes>
+              <excludes>
+                <!-- requires an API service -->
+                <exclude>**/InternalApiIntegrationTest.java</exclude>
+                <!-- this one requires a live zookeeper -->
+                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
+              </excludes>
             </configuration>
           </execution>
         </executions>
@@ -150,10 +238,23 @@
     <profile>
       <id>ele</id>
       <properties>
-        <build.profile.id>ele</build.profile.id>
-        <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
+        <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>  
       </properties>
     </profile>
+    
+    <profile>
+      <id>integration-test</id>
+      <properties>
+        <!-- Used to locate the profile specific configuration file. -->
+        <build.profile.id>integration-test</build.profile.id>
+        <!-- Only integration tests are run. -->
+        <skip.integration.tests>false</skip.integration.tests>
+        <skip.unit.tests>true</skip.unit.tests>
+        <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+        <cassandra.rpcPort>19180</cassandra.rpcPort>
+      </properties>
+    </profile>
+    
   </profiles>
 
 </project>

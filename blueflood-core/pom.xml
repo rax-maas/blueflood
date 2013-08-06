@@ -59,7 +59,7 @@
         <configuration>
           <!-- Skips unit tests if the value of skip.unit.tests property is true -->
           <skipTests>${skip.unit.tests}</skipTests>
-          <!-- Excludes integration tests when unit tests are run. ß-->
+          <!-- Excludes integration tests when unit tests are run. -->
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
