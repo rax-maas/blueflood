@@ -18,7 +18,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-// todo: CM_SPECIFIC
 public class LogEntryConverter extends AsyncFunctionWithThreadPool<List<LogEntry>, MetricsCollection> {
 
     private static final long HOURS_24_IN_MILLIS = 1000 * 60 * 60 * 24;

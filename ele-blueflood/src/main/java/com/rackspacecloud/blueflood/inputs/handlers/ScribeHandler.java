@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// todo: CM_SPECIFIC
 // todo: We need to get rid of this. I think it's safe.
 @Deprecated
 public class ScribeHandler implements ScribeHandlerMBean, ScribeHandlerIface {

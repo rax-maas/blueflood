@@ -15,7 +15,6 @@ import telescope.thrift.Telescope;
 
 import java.util.*;
 
-// todo: CM_SPECIFIC
 public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTestBase {
     final String agentCheckName = "test_rollup_handler_agent";
     final String externalCheckName = "test_rollup_handler_external";

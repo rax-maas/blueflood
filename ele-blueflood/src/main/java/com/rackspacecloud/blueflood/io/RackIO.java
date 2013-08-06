@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-// todo: CM_SPECIFIC
 public class RackIO extends AstyanaxIO {
     // intentional: use the same logger as AstyanaxReader.
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);

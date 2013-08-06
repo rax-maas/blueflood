@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.types;
 
-// todo: CM_SPECIFIC
 public class ServerMetricLocator extends Locator {
     private static final String expectedDelim = ",";
     private static final String persistDelim = "_";

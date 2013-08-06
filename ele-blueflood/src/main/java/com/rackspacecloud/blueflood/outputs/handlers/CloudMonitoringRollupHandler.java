@@ -12,7 +12,6 @@ import telescope.thrift.MetricInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-// todo: CM_SPECIFIC
 public class CloudMonitoringRollupHandler extends ThriftRollupHandler {
 
     public List<MetricInfo> GetMetricsForCheck(String accountId, String entityId, String checkId) throws TException {
