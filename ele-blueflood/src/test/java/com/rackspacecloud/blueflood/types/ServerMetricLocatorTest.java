@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

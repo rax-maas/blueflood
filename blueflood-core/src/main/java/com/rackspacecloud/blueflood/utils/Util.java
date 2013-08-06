@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.cm;
+package com.rackspacecloud.blueflood.utils;
 
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -50,6 +50,7 @@ public class Util {
     public static int slotFromStateCol(String s) { return Integer.parseInt(s.split(",", -1)[1]); }
     public static String stateFromStateCol(String s) { return s.split(",", -1)[2]; }
 
+    // todo: CM_SPECIFIC.
     public static String generateMetricName(String metricBase, String monitoringZone) {
         if (monitoringZone == null) {
             return metricBase;
@@ -58,6 +59,7 @@ public class Util {
         }
     }
 
+    // todo: CM_SPECIFIC. This belongs in the CM class.
     public static String generateMetricsDiscoveryDBKey(String accountId, String entityId, String checkId) {
         return String.format("%s,%s,%s", accountId, entityId, checkId);
     }

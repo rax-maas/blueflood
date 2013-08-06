@@ -1,6 +1,7 @@
-package com.rackspacecloud.blueflood.utils;
+package com.rackspacecloud.blueflood.cm;
 
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
+import com.rackspacecloud.blueflood.utils.MetricHelper;
 import telescope.thrift.Metric;
 
 public class Util {
@@ -8,7 +9,7 @@ public class Util {
         Metric m = new Metric();
         if (o instanceof Double) {
             m.setValueDbl((Double) o);
-            m.setMetricType((byte)MetricHelper.Type.DOUBLE);
+            m.setMetricType((byte) MetricHelper.Type.DOUBLE);
         } else if (o instanceof Long) {
             m.setValueI64((Long)o);
             m.setMetricType((byte)MetricHelper.Type.UINT64);

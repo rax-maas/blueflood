@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.ShardStateManager;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;

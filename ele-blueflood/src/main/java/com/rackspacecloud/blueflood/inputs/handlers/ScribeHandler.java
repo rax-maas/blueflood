@@ -10,7 +10,7 @@ import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.*;

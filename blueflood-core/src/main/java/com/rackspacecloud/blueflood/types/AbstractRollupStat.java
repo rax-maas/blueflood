@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 
 public abstract class AbstractRollupStat {
     private long longValue;

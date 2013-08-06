@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.inputs.formats;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.ServerMetricLocator;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.base.Strings;

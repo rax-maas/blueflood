@@ -4,7 +4,7 @@ import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;

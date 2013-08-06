@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.inputs.formats;
 
 import com.rackspacecloud.blueflood.types.ServerMetricLocator;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Test;
 import telescope.thrift.Metric;

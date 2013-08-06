@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import telescope.thrift.RollupMetric;
 import telescope.thrift.RollupMetrics;
 

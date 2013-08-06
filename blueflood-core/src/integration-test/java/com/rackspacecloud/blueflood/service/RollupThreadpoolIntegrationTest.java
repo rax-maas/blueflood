@@ -4,7 +4,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.utils.Util;
 import com.netflix.astyanax.model.Column;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricName;

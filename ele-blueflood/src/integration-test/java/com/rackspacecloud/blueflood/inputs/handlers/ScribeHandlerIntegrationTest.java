@@ -95,7 +95,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         List<LogEntry> entries;
         int checkId = 50;
         ResultCode myResultCode;
-        Metric metric = com.rackspacecloud.blueflood.utils.Util.createMetric(42);
+        Metric metric = Util.createMetric(42);
         metric.setUnitEnum(UnitEnum.BYTES);
         TelescopeOrRemove tor = createTelescopeOrRemove(checkId, metric);
         Telescope tscope = tor.getTelescope();
@@ -109,7 +109,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         Thread.sleep(20000); // Unit and type processing occurs in a thread. No guarantee of completion before return of Log()
 
         Locator loc = Locator.createLocatorFromPathComponents(tscope.getAcctId(), tscope.getEntityId(),
-                tscope.getCheckId(), Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
+                tscope.getCheckId(), com.rackspacecloud.blueflood.utils.Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
         try {
             Object u = cache.get(loc, "unit");
             Object t = cache.get(loc, "type");
@@ -120,7 +120,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertNull(e);
         }
 
-        metric = com.rackspacecloud.blueflood.utils.Util.createMetric("testString");
+        metric = Util.createMetric("testString");
         metric.setUnitEnum(UnitEnum.OTHER);
         metric.setUnitOtherStr("responses");
         tor = createTelescopeOrRemove(checkId, metric);
