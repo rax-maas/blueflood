@@ -127,7 +127,6 @@
             <id>integration-tests</id>
             <goals>
               <goal>integration-test</goal>
-              <goal>verify</goal>
             </goals>
             <configuration>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
@@ -176,7 +175,7 @@
         </configuration>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>verify</phase>
             <goals>
               <goal>cobertura</goal>
             </goals>

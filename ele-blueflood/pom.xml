@@ -16,8 +16,10 @@
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+    <cassandra.rpcPort>19180</cassandra.rpcPort>
     <!-- Only unit tests are run by default. -->
-    <skip.integration.tests>true</skip.integration.tests>
+    <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>
   
@@ -153,7 +155,6 @@
             <id>integration-tests</id>
             <goals>
               <goal>integration-test</goal>
-              <goal>verify</goal>
             </goals>
             <configuration>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
@@ -161,7 +162,7 @@
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
-              <skipTests>${skip.ele.tests}</skipTests>
+              <skipTests>${skip.integration.tests}</skipTests>
               <includes>
                 <include>**/*Integration*.java</include>
               </includes>
@@ -173,6 +174,27 @@
                 <exclude>**/ScheduleContextIntegrationTest.java</exclude>
               </excludes>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <version>2.5.2</version>
+        <configuration>
+          <check/>
+          <formats>
+            <format>xml</format>
+            <format>html</format>
+          </formats>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>cobertura</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -243,15 +265,15 @@
     </profile>
     
     <profile>
-      <id>integration-test</id>
+      <id>skip-integration-tests</id>
       <properties>
-        <!-- Used to locate the profile specific configuration file. -->
-        <build.profile.id>integration-test</build.profile.id>
-        <!-- Only integration tests are run. -->
-        <skip.integration.tests>false</skip.integration.tests>
+        <skip.integration.tests>true</skip.integration.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>skip-unit-tests</id>
+      <properties>
         <skip.unit.tests>true</skip.unit.tests>
-        <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
-        <cassandra.rpcPort>19180</cassandra.rpcPort>
       </properties>
     </profile>
     

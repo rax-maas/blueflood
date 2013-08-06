@@ -18,8 +18,9 @@
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Only unit tests are run by default. -->
-    <skip.integration.tests>true</skip.integration.tests>
+    <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+    <cassandra.rpcPort>19180</cassandra.rpcPort>
+    <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>
 
@@ -28,15 +29,15 @@
       <id>dev</id>
     </profile>
     <profile>
-      <id>integration-test</id>
+      <id>skip-integration-tests</id>
       <properties>
-        <!-- Used to locate the profile specific configuration file. -->
-        <build.profile.id>integration-test</build.profile.id>
-        <!-- Only integration tests are run. -->
-        <skip.integration.tests>false</skip.integration.tests>
+        <skip.integration.tests>true</skip.integration.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>skip-unit-tests</id>
+      <properties>
         <skip.unit.tests>true</skip.unit.tests>
-        <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
-        <cassandra.rpcPort>19180</cassandra.rpcPort>
       </properties>
     </profile>
   </profiles>
