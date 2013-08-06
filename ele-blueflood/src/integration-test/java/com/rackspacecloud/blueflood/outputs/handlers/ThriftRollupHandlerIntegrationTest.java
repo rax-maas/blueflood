@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// todo: CM_SPECIFIC
 public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
     final long baseMillis = 1335820166000L;
     final String acctId = "ac" + IntegrationTestBase.randString(8);
