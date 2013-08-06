@@ -7,7 +7,7 @@ import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.outputs.handlers.CloudMonitoringRollupHandler;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import org.junit.Assert;
 import org.junit.Test;
 import telescope.thrift.MetricInfo;

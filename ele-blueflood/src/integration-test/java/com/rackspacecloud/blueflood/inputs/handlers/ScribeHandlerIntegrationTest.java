@@ -109,7 +109,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         Thread.sleep(20000); // Unit and type processing occurs in a thread. No guarantee of completion before return of Log()
 
         Locator loc = Locator.createLocatorFromPathComponents(tscope.getAcctId(), tscope.getEntityId(),
-                tscope.getCheckId(), com.rackspacecloud.blueflood.utils.Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
+                tscope.getCheckId(), Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
         try {
             Object u = cache.get(loc, "unit");
             Object t = cache.get(loc, "type");

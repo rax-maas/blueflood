@@ -84,12 +84,6 @@ public class UtilTest {
     }
 
     @Test
-    public void testIsExternalMetric() {
-        Assert.assertEquals(true, Util.isExternalMetric("mzORD.blah"));
-        Assert.assertEquals(false, Util.isExternalMetric("dim0.blah"));
-    }
-
-    @Test
     public void testGetDimensionFromKey() {
         Assert.assertEquals("mzORD", Util.getDimensionFromKey("mzORD.blah"));
         Assert.assertEquals("dim0", Util.getDimensionFromKey("dim0.blah"));

@@ -35,4 +35,16 @@ public class Util {
         else throw new RuntimeException("Unexpected type for rollup: " + o.getClass().getName());
         return m;
     }
+    
+    public static String generateMetricName(String metricBase, String monitoringZone) {
+        if (monitoringZone == null) {
+            return metricBase;
+        } else {
+            return String.format("%s.%s", monitoringZone, metricBase);
+        }
+    }
+    
+    public static String generateMetricsDiscoveryDBKey(String accountId, String entityId, String checkId) {
+        return String.format("%s,%s,%s", accountId, entityId, checkId);
+    }
 }

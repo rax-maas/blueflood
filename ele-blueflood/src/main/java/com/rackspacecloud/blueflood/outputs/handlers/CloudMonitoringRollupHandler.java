@@ -4,7 +4,7 @@ import com.netflix.astyanax.model.Column;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.RackIO;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.yammer.metrics.core.TimerContext;
 import org.apache.thrift.TException;
 import telescope.thrift.MetricInfo;

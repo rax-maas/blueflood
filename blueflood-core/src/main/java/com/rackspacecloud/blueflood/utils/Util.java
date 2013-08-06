@@ -50,23 +50,6 @@ public class Util {
     public static int slotFromStateCol(String s) { return Integer.parseInt(s.split(",", -1)[1]); }
     public static String stateFromStateCol(String s) { return s.split(",", -1)[2]; }
 
-    // todo: CM_SPECIFIC.
-    public static String generateMetricName(String metricBase, String monitoringZone) {
-        if (monitoringZone == null) {
-            return metricBase;
-        } else {
-            return String.format("%s.%s", monitoringZone, metricBase);
-        }
-    }
-
-    // todo: CM_SPECIFIC. This belongs in the CM class.
-    public static String generateMetricsDiscoveryDBKey(String accountId, String entityId, String checkId) {
-        return String.format("%s,%s,%s", accountId, entityId, checkId);
-    }
-
-    public static boolean isExternalMetric(String persistedMetric) {
-       return persistedMetric.startsWith(Constants.monitoringZonePrefix);
-    }
 
     public static String getDimensionFromKey(String persistedMetric) {
        return persistedMetric.split("\\.", -1)[0];
