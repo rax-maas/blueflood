@@ -42,9 +42,6 @@ class AstyanaxIO {
     protected static final ColumnFamily<Locator, Long> CF_METRICS_STRING = new ColumnFamily<Locator, Long>("metrics_string",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<String, String> CF_METRICS_DISCOVERY = new ColumnFamily<String, String>("metrics_discovery",
-            StringSerializer.get(),
-            StringSerializer.get());
     protected static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
