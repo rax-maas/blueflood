@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
-import com.rackspacecloud.blueflood.CloudMonitoringUtils;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
@@ -50,13 +50,13 @@ public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMet
         RollupMetric rm = new RollupMetric();
         rm.setNumPoints(rollup.getCount());
 
-        telescope.thrift.Metric m = CloudMonitoringUtils.createMetric(rollup.getAverage());
+        telescope.thrift.Metric m = Util.createMetric(rollup.getAverage());
         rm.setAverage(m);
-        m = CloudMonitoringUtils.createMetric(rollup.getVariance());
+        m = Util.createMetric(rollup.getVariance());
         rm.setVariance(m);
-        m = CloudMonitoringUtils.createMetric(rollup.getMaxValue());
+        m = Util.createMetric(rollup.getMaxValue());
         rm.setMax(m);
-        m = CloudMonitoringUtils.createMetric(rollup.getMinValue());
+        m = Util.createMetric(rollup.getMinValue());
         rm.setMin(m);
 
         return rm;
@@ -64,7 +64,7 @@ public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMet
 
     public static RollupMetric buildRollupThriftMetricFromObject(Object data) {
         RollupMetric rm = new RollupMetric();
-        telescope.thrift.Metric m = CloudMonitoringUtils.createMetric(data);
+        telescope.thrift.Metric m = Util.createMetric(data);
         rm.setRawSample(m);
         rm.setNumPoints(1);
 

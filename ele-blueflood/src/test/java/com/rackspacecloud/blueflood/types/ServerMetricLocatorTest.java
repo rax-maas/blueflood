@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.CloudMonitoringUtils;
+import com.rackspacecloud.blueflood.cm.Util;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +22,7 @@ public class ServerMetricLocatorTest {
         Assert.assertEquals("someAccount,someEntity,someCheck,someDim.someMetric", locator.toString());
         
         locator = ServerMetricLocator.createFromTelescopePrimitives("someAccount", "someEntity", "someCheck",
-                CloudMonitoringUtils.generateMetricName("someMetric", "mzSomeMonitoringZone"));
+                Util.generateMetricName("someMetric", "mzSomeMonitoringZone"));
         Assert.assertEquals("someAccount,someEntity,someCheck,mzSomeMonitoringZone.someMetric", locator.toString());
     }
 
@@ -33,7 +33,7 @@ public class ServerMetricLocatorTest {
         Assert.assertEquals("someAccount,someEntity,someCheck_testingComma,someDim.someMetric", locator.toString());
         
         locator = ServerMetricLocator.createFromTelescopePrimitives("someAccount", "someEntity", "someCheck,testingComma",
-                CloudMonitoringUtils.generateMetricName("someMetric", "mzSomeMonitoringZone"));
+                Util.generateMetricName("someMetric", "mzSomeMonitoringZone"));
         Assert.assertEquals("someAccount,someEntity,someCheck_testingComma,mzSomeMonitoringZone.someMetric", locator.toString());
     }
 

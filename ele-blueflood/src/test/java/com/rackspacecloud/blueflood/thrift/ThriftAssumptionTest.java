@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.thrift;
 
-import com.rackspacecloud.blueflood.CloudMonitoringUtils;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.Average;
@@ -67,27 +67,27 @@ public class ThriftAssumptionTest {
 
         Metric m;
 
-        m = CloudMonitoringUtils.createMetric(myDouble);
+        m = Util.createMetric(myDouble);
         org.junit.Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
 
-        m = CloudMonitoringUtils.createMetric(myLong);
+        m = Util.createMetric(myLong);
         org.junit.Assert.assertEquals(new Long(4578), (Long) m.getValueI64());
         org.junit.Assert.assertEquals((Long) 4578L, (Long) m.getValueI64());
 
-        m = CloudMonitoringUtils.createMetric(myInteger);
+        m = Util.createMetric(myInteger);
         org.junit.Assert.assertEquals(1224, CloudMonitoringTelescope.getMetricValue(m));
 
-        m = CloudMonitoringUtils.createMetric(myAverage1);
+        m = Util.createMetric(myAverage1);
         org.junit.Assert.assertEquals(66.6, CloudMonitoringTelescope.getMetricValue(m));
 
-        m = CloudMonitoringUtils.createMetric(myAverage2);
+        m = Util.createMetric(myAverage2);
         org.junit.Assert.assertEquals(new Long(4578), (Long) CloudMonitoringTelescope.getMetricValue(m));
         org.junit.Assert.assertEquals((Long) 4578L, (Long) CloudMonitoringTelescope.getMetricValue(m));
 
         boolean failed = false;
 
         try {
-            m = CloudMonitoringUtils.createMetric(myMetric);
+            m = Util.createMetric(myMetric);
         }
         catch (RuntimeException e) {
             failed = true;

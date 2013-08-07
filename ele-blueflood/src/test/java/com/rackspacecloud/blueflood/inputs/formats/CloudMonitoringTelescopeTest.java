@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.inputs.formats;
 
-import com.rackspacecloud.blueflood.CloudMonitoringUtils;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.types.ServerMetricLocator;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class CloudMonitoringTelescopeTest {
         for (Map.Entry<String, telescope.thrift.Metric> entry : tel.getMetrics().entrySet()){
             com.rackspacecloud.blueflood.types.Metric bfMetric = bfMetrics.get(count++);
             ServerMetricLocator locator = ServerMetricLocator.createFromTelescopePrimitives(tel.getAcctId(),
-                    tel.getEntityId(), tel.getCheckId(),  CloudMonitoringUtils.generateMetricName(entry.getKey(), tel.getMonitoringZoneId()));
+                    tel.getEntityId(), tel.getCheckId(),  Util.generateMetricName(entry.getKey(), tel.getMonitoringZoneId()));
             Assert.assertTrue(bfMetric.getLocator().equals(locator));
             Assert.assertEquals(tel.getTimestamp(), bfMetric.getCollectionTime());
             Assert.assertEquals(CloudMonitoringTelescope.getMetricUnitString(entry.getValue()), bfMetric.getUnit());

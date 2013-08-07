@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.CloudMonitoringUtils;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescopeTest;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -34,7 +34,7 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
 
         // test agent metrics list
         List<MetricInfo> metricsList  = rh.GetMetricsForCheck(acctId2, agentEntityId, agentCheckName);
-        Set<String> expectedMetricNames = checkToMetricsMap.get(CloudMonitoringUtils.generateMetricsDiscoveryDBKey(acctId2, agentEntityId,
+        Set<String> expectedMetricNames = checkToMetricsMap.get(Util.generateMetricsDiscoveryDBKey(acctId2, agentEntityId,
                 agentCheckName));
         String temp = null;
         for (MetricInfo metric : metricsList) {
@@ -51,7 +51,7 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
         temp = null;
         // test noit metrics list
         metricsList  = rh.GetMetricsForCheck(acctId2, externalEntityId, externalCheckName);
-        expectedMetricNames = checkToMetricsMap.get(CloudMonitoringUtils.generateMetricsDiscoveryDBKey(acctId2, externalEntityId,
+        expectedMetricNames = checkToMetricsMap.get(Util.generateMetricsDiscoveryDBKey(acctId2, externalEntityId,
                 externalCheckName));
         for (MetricInfo metric : metricsList) {
             Assert.assertTrue(expectedMetricNames.contains(metric.getName()));
@@ -107,8 +107,8 @@ public class CloudMonitoringRollupHandlerIntegrationTest extends IntegrationTest
                 null));
         agentMetrics.add("intmetric");
 
-        checkToMetricsMap.put(CloudMonitoringUtils.generateMetricsDiscoveryDBKey(acctId2, agentEntityId, agentCheckName), agentMetrics);
-        checkToMetricsMap.put(CloudMonitoringUtils.generateMetricsDiscoveryDBKey(acctId2, externalEntityId, externalCheckName), noitMetrics);
+        checkToMetricsMap.put(Util.generateMetricsDiscoveryDBKey(acctId2, agentEntityId, agentCheckName), agentMetrics);
+        checkToMetricsMap.put(Util.generateMetricsDiscoveryDBKey(acctId2, externalEntityId, externalCheckName), noitMetrics);
 
         return telescopes;
     }
