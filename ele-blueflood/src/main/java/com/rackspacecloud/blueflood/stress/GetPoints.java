@@ -1,10 +1,10 @@
 package com.rackspacecloud.blueflood.stress;
 
+import com.rackspacecloud.blueflood.CloudMonitoringUtils;
 import com.rackspacecloud.blueflood.io.NumericSerializer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.cm.Util;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.serializers.StringSerializer;
@@ -32,7 +32,7 @@ public class GetPoints {
                 (String)options.get("acctId"), 
                 (String)options.get("entityId"), 
                 (String)options.get("checkId"),
-                Util.generateMetricName((String)options.get("metricName"), (String)options.get("monitoringZone")));
+                CloudMonitoringUtils.generateMetricName((String) options.get("metricName"), (String) options.get("monitoringZone")));
 
         AstyanaxReader reader = AstyanaxReader.getInstance();
 

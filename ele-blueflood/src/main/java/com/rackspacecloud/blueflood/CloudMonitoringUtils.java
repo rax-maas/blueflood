@@ -1,10 +1,10 @@
-package com.rackspacecloud.blueflood.cm;
+package com.rackspacecloud.blueflood;
 
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import telescope.thrift.Metric;
 
-public class Util {
+public class CloudMonitoringUtils {
     public static Metric createMetric(Object o) {
         Metric m = new Metric();
         if (o instanceof Double) {

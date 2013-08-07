@@ -1,9 +1,9 @@
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.CloudMonitoringUtils;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.ServerMetricLocator;
-import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.base.Strings;
@@ -72,7 +72,7 @@ public class CloudMonitoringTelescope extends MetricsContainer {
         final List<com.rackspacecloud.blueflood.types.Metric> metrics = new ArrayList<Metric>();
         for (Map.Entry<String, telescope.thrift.Metric> telMetric : telMetrics.entrySet()) {
             final Locator locator = ServerMetricLocator.createFromTelescopePrimitives(accountId, entityId,
-                    checkId, Util.generateMetricName(telMetric.getKey(), telescope.getMonitoringZoneId()));
+                    checkId, CloudMonitoringUtils.generateMetricName(telMetric.getKey(), telescope.getMonitoringZoneId()));
             final com.rackspacecloud.blueflood.types.Metric metric = new com.rackspacecloud.blueflood.types.Metric(locator,
                     getMetricValue(telMetric.getValue()), telescope.getTimestamp(), DEFAULT_TTL,
                     getMetricUnitString(telMetric.getValue()));

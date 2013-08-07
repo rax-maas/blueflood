@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.stress;
 
+import com.rackspacecloud.blueflood.CloudMonitoringUtils;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.NumericSerializer;
@@ -11,7 +12,6 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.RollupServiceMBean;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.cm.Util;
 import com.netflix.astyanax.model.Column;
 import org.junit.Assert;
 import org.junit.Test;
@@ -136,7 +136,7 @@ public class IngressBlackbox extends IntegrationTestBase {
         // let's get those points now.
         Locator[] locators = new Locator[] {
             Locator.createLocatorFromPathComponents(account, entity, agentCheckName, agentMetricName),
-            Locator.createLocatorFromPathComponents(account, entity, externalCheckName, Util.generateMetricName(externalMetricName, mzId))
+            Locator.createLocatorFromPathComponents(account, entity, externalCheckName, CloudMonitoringUtils.generateMetricName(externalMetricName, mzId))
         };
         for (Locator locator : locators) {
             AstyanaxReader reader = AstyanaxReader.getInstance();

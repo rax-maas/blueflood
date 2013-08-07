@@ -9,10 +9,10 @@ import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.shallows.EmptyColumnList;
+import com.rackspacecloud.blueflood.CloudMonitoringUtils;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.ServerMetricLocator;
-import com.rackspacecloud.blueflood.cm.Util;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public class RackIO extends AstyanaxIO {
     private void insertDiscovery(Locator locator, MutationBatch mutationBatch) {
         if (locator instanceof ServerMetricLocator) {
             ServerMetricLocator serverMetricLocator = (ServerMetricLocator) locator;
-            String rowKey = Util.generateMetricsDiscoveryDBKey(serverMetricLocator.getAccountId(),
+            String rowKey = CloudMonitoringUtils.generateMetricsDiscoveryDBKey(serverMetricLocator.getAccountId(),
                     serverMetricLocator.getEntityId(), serverMetricLocator.getCheckId());
             String colKey = serverMetricLocator.getMetric();
             mutationBatch.withRow(CF_METRICS_DISCOVERY, rowKey)

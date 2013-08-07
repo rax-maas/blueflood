@@ -1,13 +1,13 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.CloudMonitoringUtils;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.inputs.formats.CloudMonitoringTelescope;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.cm.Util;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
@@ -94,7 +94,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         List<LogEntry> entries;
         int checkId = 50;
         ResultCode myResultCode;
-        Metric metric = Util.createMetric(42);
+        Metric metric = CloudMonitoringUtils.createMetric(42);
         metric.setUnitEnum(UnitEnum.BYTES);
         TelescopeOrRemove tor = createTelescopeOrRemove(checkId, metric);
         Telescope tscope = tor.getTelescope();
@@ -108,7 +108,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
         Thread.sleep(20000); // Unit and type processing occurs in a thread. No guarantee of completion before return of Log()
 
         Locator loc = Locator.createLocatorFromPathComponents(tscope.getAcctId(), tscope.getEntityId(),
-                tscope.getCheckId(), Util.generateMetricName("metricName", tscope.getMonitoringZoneId()));
+                tscope.getCheckId(), CloudMonitoringUtils.generateMetricName("metricName", tscope.getMonitoringZoneId()));
         try {
             Object u = cache.get(loc, "unit");
             Object t = cache.get(loc, "type");
@@ -119,7 +119,7 @@ public class ScribeHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertNull(e);
         }
 
-        metric = Util.createMetric("testString");
+        metric = CloudMonitoringUtils.createMetric("testString");
         metric.setUnitEnum(UnitEnum.OTHER);
         metric.setUnitOtherStr("responses");
         tor = createTelescopeOrRemove(checkId, metric);
