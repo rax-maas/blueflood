@@ -224,7 +224,7 @@ public class Blaster {
         if (value instanceof Number) {
             metrics.put(dimension + ".constint", Util.createMetric(new Integer(2932)));
             metrics.put(dimension + ".constdbl", Util.createMetric(new Double(1.21d)));
-        } else if (value instanceof String){
+        } else if (value instanceof String) {
             metrics.put(dimension + ".conststr0", Util.createMetric(new String("meh")));
             metrics.put(dimension + ".conststr1", Util.createMetric(new String("meow")));
         }
