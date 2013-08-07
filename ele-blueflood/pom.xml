@@ -199,6 +199,17 @@
         </executions>
       </plugin>
       
+      <!-- bundle. not strictly necessary, but included so RAX buildbot is happy. todo: That builder needs to be changed. -->
+      <!-- mvn assembly:assembly -->
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+      </plugin>
       
     </plugins>
   </build>
