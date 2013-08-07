@@ -42,7 +42,6 @@ public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
             metrics.add(metric);
 
             writer.insertFull(metrics);
-            rackIO.insertDiscovery(metrics);
         }
     }
 
