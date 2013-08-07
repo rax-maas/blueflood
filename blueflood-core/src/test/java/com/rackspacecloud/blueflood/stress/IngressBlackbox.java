@@ -41,11 +41,13 @@ public class IngressBlackbox extends IntegrationTestBase {
         // them there too.
         final String account = "acDUSBABEK"; // external_id==123456
         final String entity = "enIntTest";
-        // for future use, here are some numbers that map to shard 0:  327, 345, 444, 467.
-        final String agentCheckName = "327"; // maps to shard 0.
+        final String strEntity = "enStrTest";
+        final String agentCheckName = "chS4OpkESn";
         final String agentMetricName = "dim0.sawtooth10";
-        final String externalCheckName = "345";
+        final String externalCheckName = "ch7djqA5Cq";
         final String externalMetricName = "sawtooth10";
+        final String strCheckName = "chWhatttt";
+        final String strMetricName = "dim5.granite1";
         final String mzId = "mzGRD";
 
         if (WRITING) {
@@ -71,9 +73,12 @@ public class IngressBlackbox extends IntegrationTestBase {
             ScribeClient client = buildScribeClient(scribeHost, scribePort);
             Map<String, Number> agentMetrics = new HashMap<String, Number>();
             Map<String, Number> externalMetrics = new HashMap<String, Number>();
+            Map<String, String> strMetrics = new HashMap<String, String>();
             List<LogEntry> entries = new ArrayList<LogEntry>();
             int value = 0;
-            int maxBatchSize = 40;
+            // maxBatchSize has to be divisible by entries.size(). 
+            // Also maxBatchSize/entries.size() has to divide endDate-START_DATE.
+            int maxBatchSize = 60;
             while (time.get() < endDate) {
                 int batchSize = 0;
                 while (batchSize < maxBatchSize) {
@@ -81,12 +86,18 @@ public class IngressBlackbox extends IntegrationTestBase {
                     value = (value + 1) % MAX_METRIC;
                     agentMetrics.put(agentMetricName, value);
                     externalMetrics.put(externalMetricName, value);
-                    entries.add(new LogEntry("CATEGARY", Blaster.makeStringTelescope(now, account, entity, agentCheckName, null, agentMetrics)));
-                    entries.add(new LogEntry("CATEGARY", Blaster.makeStringTelescope(now, account, entity, externalCheckName, mzId, externalMetrics)));
+                    strMetrics.put(strMetricName, String.valueOf(now));
+                    entries.add(new LogEntry("CATEGARY", Blaster.makeStringTelescope(now, account, entity, 
+                            agentCheckName, null, agentMetrics)));
+                    entries.add(new LogEntry("CATEGARY", Blaster.makeStringTelescope(now, account, entity, 
+                            externalCheckName, mzId, externalMetrics)));
+                    entries.add(new LogEntry("CATEGARY", Blaster.makeStringTelescope(now, account, strEntity, 
+                            strCheckName, null, strMetrics)));
                     agentMetrics.clear(); // not strictly necessary.
                     externalMetrics.clear();
+                    strMetrics.clear();
                     time.set(now + 30000); // add 30s
-                    batchSize += 2;
+                    batchSize += 3;
                 }
                 try {
                     boolean ok = client.log(entries);

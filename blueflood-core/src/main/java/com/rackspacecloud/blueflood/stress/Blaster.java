@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.stress;
 
+import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.scribe.ConnectionException;
 import com.rackspacecloud.blueflood.scribe.LogException;
 import com.rackspacecloud.blueflood.scribe.ScribeClient;
@@ -185,11 +186,11 @@ public class Blaster {
         JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + hostAndPort + "/jmxrmi");
         JMXConnector jmxc = JMXConnectorFactory.connect(url);
         MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
-        ObjectName objectName = new ObjectName("com.rackspacecloud.blueflood.service:type=RollupService");
+        ObjectName objectName = new ObjectName("com.cloudkick.blueflood.service:type=RollupService");
         return JMX.newMBeanProxy(mbsc, objectName, RollupServiceMBean.class);
     }
     
-    static String makeStringTelescope(long timeMillis, String account, String entity, String check, String monitoringZone, Map<String, Number> metrics) {
+    static <V> String makeStringTelescope(long timeMillis, String account, String entity, String check, String monitoringZone, Map<String, V> metrics) {
         Telescope t = makeTelescope("te12345678", check, account, "http", entity, "www.dusbabek.org", timeMillis, metrics);
         if (monitoringZone != null && !monitoringZone.isEmpty())
             t.setMonitoringZoneId(monitoringZone);
@@ -203,35 +204,31 @@ public class Blaster {
         }
     }
     
-    private static Telescope makeTelescope(String id, String checkId, String acctId, String checkModule, String entityId, String target, long timestamp, Map<String, Number> metrics) {
+    private static <V> Telescope makeTelescope(String id, String checkId, String acctId, String checkModule, String entityId, String target, long timestamp, Map<String, V> metrics) {
         Telescope tel = new Telescope(id, checkId, acctId, checkModule, entityId, target, timestamp, 1, VerificationModel.ONE);
-        tel.setMetrics(makeIntMetrics("dim0", metrics));
+        tel.setMetrics(makeMetrics("dim0", metrics));
         return tel;
     }
     
-    private static Map<String, Metric> makeIntMetrics(String dimension, Map<String, Number> map) {
+    private static <V> Map<String, Metric> makeMetrics(String dimension, Map<String, V> map) {
         Map<String, Metric> metrics = new HashMap<String, Metric>();
-        
-        for (Map.Entry<String, Number> entry : map.entrySet()) {
-            Metric metric = null;
-            if (entry.getValue() instanceof Integer) {
-                metric = new Metric((byte)'i');
-                metric.setValueI32((Integer)entry.getValue());
-            } else if (entry.getValue() instanceof Double) {
-                metric = new Metric((byte)'n');
-                metric.setValueDbl((Double)entry.getValue());
-            }
-            if (metric != null)
-                metrics.put(entry.getKey(), metric);
+        if (map.isEmpty()) {
+            return metrics;
         }
-        Metric constint = new Metric((byte)'i');
-        constint.setValueI32(2932);
-        metrics.put(dimension + ".constint", constint);
-        
-        Metric consdble = new Metric((byte)'n');
-        consdble.setValueDbl(1.21d);
-        metrics.put(dimension + ".constdbl", consdble);
-        
+        for (Map.Entry<String, V> entry : map.entrySet()) {
+            V obj = entry.getValue();
+            metrics.put(entry.getKey(), Util.createMetric(obj));
+        }
+
+        V value = map.entrySet().iterator().next().getValue();
+        if (value instanceof Number) {
+            metrics.put(dimension + ".constint", Util.createMetric(new Integer(2932)));
+            metrics.put(dimension + ".constdbl", Util.createMetric(new Double(1.21d)));
+        } else if (value instanceof String) {
+            metrics.put(dimension + ".conststr0", Util.createMetric(new String("meh")));
+            metrics.put(dimension + ".conststr1", Util.createMetric(new String("meow")));
+        }
+
         return metrics;
     }
 }
