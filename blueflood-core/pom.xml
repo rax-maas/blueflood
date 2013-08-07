@@ -12,10 +12,6 @@
   <name>blueflood-core</name>
   <artifactId>blueflood-core</artifactId>
 
-  <properties>
-    <thriftbin>/usr/bin/thrift</thriftbin>
-  </properties>
-
   <build>
     <plugins>
 
@@ -63,7 +59,7 @@
         <configuration>
           <!-- Skips unit tests if the value of skip.unit.tests property is true -->
           <skipTests>${skip.unit.tests}</skipTests>
-          <!-- Excludes integration tests when unit tests are run. ß-->
+          <!-- Excludes integration tests when unit tests are run. -->
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
@@ -131,7 +127,6 @@
             <id>integration-tests</id>
             <goals>
               <goal>integration-test</goal>
-              <goal>verify</goal>
             </goals>
             <configuration>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
@@ -168,24 +163,6 @@
       </plugin>
 
       <plugin>
-        <groupId>org.apache.thrift.tools</groupId>
-        <artifactId>maven-thrift-plugin</artifactId>
-        <version>0.1.10</version>
-        <configuration>
-          <thriftExecutable>${thriftbin}</thriftExecutable>
-        </configuration>
-        <executions>
-          <execution>
-            <id>thrift-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cobertura-maven-plugin</artifactId>
         <version>2.5.2</version>
@@ -198,9 +175,23 @@
         </configuration>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>verify</phase>
             <goals>
               <goal>cobertura</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <!-- packages up the test files. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
             </goals>
           </execution>
         </executions>
@@ -314,12 +305,6 @@
       <version>1.6.4</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.thrift</groupId>
-      <artifactId>libthrift</artifactId>
-      <version>0.9.0</version>
-    </dependency>
-
     <!-- testing dependencies -->
     <dependency>
       <groupId>junit</groupId>
@@ -343,15 +328,5 @@
       <layout>default</layout>
     </pluginRepository>
   </pluginRepositories>
-
-  <profiles>
-    <profile>
-      <id>ele</id>
-      <properties>
-        <build.profile.id>ele</build.profile.id>
-        <thriftbin>/opt/thrift-ele/bin/thrift</thriftbin>
-      </properties>
-    </profile>
-  </profiles>
 
 </project>

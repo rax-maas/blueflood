@@ -22,13 +22,9 @@ import com.netflix.astyanax.util.RangeBuilder;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import telescope.thrift.MetricInfo;
-import telescope.thrift.UnitEnum;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -38,12 +34,12 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final String GET_STRING_METRICS = "Get String Rollup Iterator";
     private static final String LOCATOR_ITERATOR = "Get Locators Iterator";
     private static final String GET_LAST_METRICS_VALUE = "Get last metric value";
-    private static final String GET_METRICS_FOR_CHECK = "Get list of metrics for check";
     private static final String GET_METADATA = "Get Metadata col";
     private static final MetadataCache metaCache = MetadataCache.getInstance();
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
 
     private static final Keyspace keyspace = getKeyspace();
+    private static final String UNKNOWN_UNIT = "unknown";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -105,7 +101,7 @@ public class AstyanaxReader extends AstyanaxIO {
             log.warn("Cache exception reading unitString from MetadataCache: ", ex);
         }
         if (unitString == null) {
-            unitString = UnitEnum.UNKNOWN.toString().toLowerCase();
+            unitString = UNKNOWN_UNIT;
         }
         return unitString;
     }
@@ -135,36 +131,6 @@ public class AstyanaxReader extends AstyanaxIO {
             Instrumentation.markReadError(e);
             log.error("Error getting all shard states", e);
             throw e;
-        } finally {
-            ctx.stop();
-        }
-    }
-
-    public List<MetricInfo> getMetricsForCheck(String accountId, String entityId, String checkId) {
-        final List<MetricInfo> results = new ArrayList<MetricInfo>();
-
-        final String dBKey = Util.generateMetricsDiscoveryDBKey(accountId, entityId, checkId);
-        for (Column<String> col : getMetricsList(dBKey)) {
-            String metric = col.getName();
-            String unitString = getUnitString(Locator.createLocatorFromPathComponents(accountId, entityId, checkId, metric));
-            results.add(new MetricInfo(col.getName(), unitString));
-        }
-        return results;
-    }
-
-    private ColumnList<String> getMetricsList(final String dBKey) {
-        TimerContext ctx = Instrumentation.getTimerContext(GET_METRICS_FOR_CHECK);
-        try {
-            RowQuery<String, String> query = keyspace
-                    .prepareQuery(CF_METRICS_DISCOVERY)
-                    .getKey(dBKey);
-            return query.execute().getResult();
-        } catch (NotFoundException e) {
-            return new EmptyColumnList<String>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting metrics list", e);
-            throw new RuntimeException("Error getting metrics list", e);
         } finally {
             ctx.stop();
         }

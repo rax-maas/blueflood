@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.inputs.handlers.ScribeHandler;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.base.Ticker;
@@ -23,7 +22,8 @@ public class ShardStateManager {
     private final Ticker serverTimeMillisecondTicker;
 
     private static final Histogram timeSinceUpdate = Metrics.newHistogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan", true);
-    private static final Meter updateStampMeter = Metrics.newMeter(ScribeHandler.class, "Shard Slot Update Meter", "Updated", TimeUnit.SECONDS);
+    // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
+    private static final Meter updateStampMeter = Metrics.newMeter(ShardStateManager.class, "Shard Slot Update Meter", "Updated", TimeUnit.SECONDS);
     private final Meter parentBeforeChild = Metrics.newMeter(RollupService.class, "Parent slot executed before child", "OutOfOrderSchedule", TimeUnit.SECONDS);
     private static final Meter reRollupData = Metrics.newMeter(RollupService.class, "Re-rolling up a slot because of new data", "Slot", TimeUnit.SECONDS);
 

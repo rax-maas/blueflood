@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RollupHandler {
-    private static final Logger log = LoggerFactory.getLogger(ThriftRollupHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
 
     protected final Meter rollupsByPointsMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by points", "BF-API", TimeUnit.SECONDS);
     protected final Meter rollupsByGranularityMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by gran", "BF-API", TimeUnit.SECONDS);

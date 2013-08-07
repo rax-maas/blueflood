@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.inputs.handlers.ScribeHandler;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -26,8 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<Boolean>> {
         
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
-    private final Timer writeDurationTimer = Metrics.newTimer(ScribeHandler.class, "Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private final Meter exceededScribeProcessingTime = Metrics.newMeter(ScribeHandler.class, "Write Duration Exceeded Timeout", "Rollups", TimeUnit.SECONDS);
+    // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
+    private final Timer writeDurationTimer = Metrics.newTimer(BatchWriter.class, "Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private final Meter exceededScribeProcessingTime = Metrics.newMeter(BatchWriter.class, "Write Duration Exceeded Timeout", "Rollups", TimeUnit.SECONDS);
     private final TimeValue scribeTimeout;
     private final Counter bufferedMetrics;
     private final IngestionContext context;
