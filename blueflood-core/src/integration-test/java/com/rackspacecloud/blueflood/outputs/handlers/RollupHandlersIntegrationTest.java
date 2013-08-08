@@ -36,7 +36,7 @@ public class RollupHandlersIntegrationTest extends IntegrationTestBase {
     private static DefaultHttpClient client;
 
     private ThriftRollupHandler thriftRollupHandler;
-    private HTTPMetricDataQueryServer.HTTPRollupsQueryHandler httpHandler;
+    private HttpRollupsQueryHandler httpHandler;
 
     @BeforeClass
     public static void setUpHttp() {
@@ -62,7 +62,7 @@ public class RollupHandlersIntegrationTest extends IntegrationTestBase {
         }
 
         thriftRollupHandler = new ThriftRollupHandler();
-        httpHandler = new HTTPMetricDataQueryServer.HTTPRollupsQueryHandler();
+        httpHandler = new HttpRollupsQueryHandler();
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;
@@ -159,7 +159,7 @@ public class RollupHandlersIntegrationTest extends IntegrationTestBase {
                 from, to, resolution).getMetrics().size();
     }
 
-    private int getNumberOfPointsViaHTTPHandler(HTTPMetricDataQueryServer.HTTPRollupsQueryHandler handler,
+    private int getNumberOfPointsViaHTTPHandler(HttpRollupsQueryHandler handler,
                                                Locator locator, long from, long to, Resolution resolution)
             throws Exception {
         final JSONArray values =  (JSONArray) handler.GetDataByResolution(locator.getAccountId(),

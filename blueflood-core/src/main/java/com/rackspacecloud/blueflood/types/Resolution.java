@@ -17,4 +17,8 @@ public enum Resolution {
     public int getValue() {
         return value;
     }
+
+    public static Resolution fromString(String name) {
+        return Resolution.valueOf(name.toUpperCase());
+    }
 }
