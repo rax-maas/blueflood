@@ -40,6 +40,12 @@
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
+    <profile>
+      <id>ele</id>
+      <modules>
+        <module>ele-blueflood</module>
+      </modules>
+    </profile>
   </profiles>
 
   <repositories>
