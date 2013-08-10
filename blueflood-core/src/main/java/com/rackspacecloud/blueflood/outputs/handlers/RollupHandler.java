@@ -12,7 +12,6 @@ import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
-import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,7 @@ public class RollupHandler {
             String metricName,
             long from,
             long to,
-            Granularity g) throws TException {
+            Granularity g) {
 
         final TimerContext ctx = metricsFetchTimer.time();
         final Locator locator = Locator.createLocatorFromPathComponents(accountId, metricName);
