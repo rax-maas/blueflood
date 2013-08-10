@@ -41,7 +41,7 @@
       </properties>
     </profile>
     <profile>
-      <id>ele-bf</id>
+      <id>ele</id>
       <modules>
         <module>ele-blueflood</module>
       </modules>
