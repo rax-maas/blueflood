@@ -320,15 +320,6 @@
 
   </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>dtrotts</id>
-      <name>Repository for maven thrift plugin</name>
-      <url>http://maven.davidtrott.com/repository</url>
-      <layout>default</layout>
-    </pluginRepository>
-  </pluginRepositories>
-
   <repositories>
     <repository>
       <id>local-project-libraries</id>
