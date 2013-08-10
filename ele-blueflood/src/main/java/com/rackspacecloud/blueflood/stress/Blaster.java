@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.stress;
 
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.cm.Util;
 import com.rackspacecloud.blueflood.scribe.ConnectionException;
 import com.rackspacecloud.blueflood.scribe.LogException;
 import com.rackspacecloud.blueflood.scribe.ScribeClient;
