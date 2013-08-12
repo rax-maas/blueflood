@@ -320,6 +320,15 @@
 
   </dependencies>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>local-project-libraries</id>
+      <name>Local project libraries</name>
+      <url>file://${project.basedir}/../lib</url>
+      <layout>default</layout>
+    </pluginRepository>
+  </pluginRepositories>
+
   <repositories>
     <repository>
       <id>local-project-libraries</id>
