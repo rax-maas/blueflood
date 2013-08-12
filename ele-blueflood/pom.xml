@@ -303,6 +303,12 @@
       <url>http://maven.davidtrott.com/repository</url>
       <layout>default</layout>
     </pluginRepository>
+    <pluginRepository>
+      <id>local-project-libraries</id>
+      <name>Local project libraries</name>
+      <url>file://${project.basedir}/../lib</url>
+      <layout>default</layout>
+    </pluginRepository>
   </pluginRepositories>
 
   <repositories>
