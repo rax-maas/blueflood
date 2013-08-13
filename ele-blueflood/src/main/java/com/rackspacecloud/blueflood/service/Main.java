@@ -6,11 +6,9 @@ import com.rackspacecloud.blueflood.outputs.handlers.CloudMonitoringRollupHandle
 import com.rackspacecloud.blueflood.thrift.ThriftRunnable;
 import com.rackspacecloud.blueflood.thrift.UnrecoverableException;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
-import com.rackspacecloud.blueflood.utils.StatsEmitter;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.Version;
 import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.GraphiteReporter;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
@@ -218,13 +216,10 @@ public class Main {
         // check that we have cassandra hosts
         validateCassandraHosts();
 
-        //statsd
-        StatsEmitter stats = StatsEmitter.create(Configuration.getStringProperty("STATSD_HOST"), Configuration.getIntegerProperty("STATSD_PORT"));
+        //instrumentation
         if (!Configuration.getStringProperty("GRAPHITE_HOST").equals("")) {
-            // this IF is a hack around the fact that we don't have graphite running in dev or staging environments
-            final MetricsRegistry restartRegistry = new MetricsRegistry();
-            final Gauge restartGauge = new RestartGauge(restartRegistry, RollupService.class);
-            GraphiteReporter.enable(restartRegistry, 60, TimeUnit.SECONDS, Configuration.getStringProperty("GRAPHITE_HOST"), Configuration.getIntegerProperty("GRAPHITE_PORT"), Configuration.getStringProperty("GRAPHITE_PREFIX"));
+            GraphiteReporter.enable(60, TimeUnit.SECONDS, Configuration.getStringProperty("GRAPHITE_HOST"), Configuration.getIntegerProperty("GRAPHITE_PORT"), Configuration.getStringProperty("GRAPHITE_PREFIX"));
+            Gauge restartGauge = new RestartGauge(RollupService.class);
         }
         
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards(Configuration.getStringProperty("SHARDS")));
