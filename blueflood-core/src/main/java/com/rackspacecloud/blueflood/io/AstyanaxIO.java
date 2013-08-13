@@ -1,7 +1,5 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.types.Locator;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
@@ -9,9 +7,12 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.retry.RetryNTimes;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.types.Locator;
 
 import java.util.*;
 
@@ -83,9 +84,16 @@ class AstyanaxIO {
     }
 
     private static AstyanaxConfigurationImpl createPreferredAstyanaxConfiguration() {
-        return new AstyanaxConfigurationImpl()
+        AstyanaxConfigurationImpl config = new AstyanaxConfigurationImpl()
                 .setDiscoveryType(NodeDiscoveryType.NONE)
                 .setConnectionPoolType(ConnectionPoolType.ROUND_ROBIN);
+
+        int numRetries = Configuration.getIntegerProperty("CASSANDRA_MAX_RETRIES");
+        if (numRetries > 0) {
+            config.setRetryPolicy(new RetryNTimes(numRetries));
+        }
+
+        return config;
     }
 
     private static ConnectionPoolConfigurationImpl createPreferredConnectionPoolConfiguration() {
