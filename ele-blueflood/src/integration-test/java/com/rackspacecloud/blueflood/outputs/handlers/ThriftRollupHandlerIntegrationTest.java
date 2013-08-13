@@ -113,21 +113,6 @@ public class ThriftRollupHandlerIntegrationTest extends IntegrationTestBase {
         }
     }
 
-    @Test
-    public void testGetMissingRollupsByResolution() throws Exception {
-        final ThriftRollupHandler rh = new ThriftRollupHandler();
-
-        for (Locator locator : locators) {
-            Assert.assertEquals(1440, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.FULL).getMetrics().size());
-            Assert.assertEquals(288, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN5).getMetrics().size());
-            Assert.assertEquals(72, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN20).getMetrics().size());
-            Assert.assertEquals(24, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN60).getMetrics().size());
-            Assert.assertEquals(6, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN240).getMetrics().size());
-            Assert.assertEquals(1, rh.GetDataByResolution(locator.getAccountId(), locator.getMetricName(), baseMillis, baseMillis + 86400000, Resolution.MIN1440).getMetrics().size());
-        }
-    }
-
-
     private void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
         if (destGranularity == Granularity.FULL) {
             throw new Exception("Can't roll up to FULL");

@@ -1,12 +1,13 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.netflix.astyanax.model.ColumnList;
+import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.netflix.astyanax.model.ColumnList;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -15,7 +16,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
@@ -25,16 +28,19 @@ import java.util.HashSet;
 
 public class HttpHandlerIntegrationTest {
     private static HttpHandler httpHandler;
-    private static Collection<Integer> manageShards = new HashSet<Integer>();
+    private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
+    private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
 
-    static {
+    @BeforeClass
+    public static void setUp() {
         httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), manageShards);
         httpHandler = new HttpHandler(httpPort, context);
-        client = new DefaultHttpClient();
+        vendor = new HttpClientVendor();
+        client = vendor.getClient();
     }
 
     @Test
@@ -69,7 +75,12 @@ public class HttpHandlerIntegrationTest {
 
     private URI getMetricsURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                                             .setPort(httpPort).setPath("/metrics");
+                                             .setPort(httpPort).setPath("/v1.0/acTEST/experimental/metrics");
         return builder.build();
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        vendor.shutdown();
     }
 }

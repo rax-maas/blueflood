@@ -1,8 +1,6 @@
 package com.rackspacecloud.blueflood.http;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.slf4j.Logger;
@@ -12,7 +10,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RouteMatcher extends SimpleChannelUpstreamHandler {
+public class RouteMatcher {
     private final Map<Pattern, PatternRouteBinding> getBindings;
     private final Map<Pattern, PatternRouteBinding> putBindings;
     private final Map<Pattern, PatternRouteBinding> postBindings;
@@ -55,20 +53,9 @@ public class RouteMatcher extends SimpleChannelUpstreamHandler {
         return this;
     }
 
-    @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        Object msg = e.getMessage();
-        if (msg instanceof HttpRequest) {
-            route(ctx, (HttpRequest) msg);
-        } else {
-            log.error("Ignoring non HTTP message {}, from {}", e.getMessage(), e.getRemoteAddress());
-            throw new Exception("Non-HTTP message from " + e.getRemoteAddress());
-        }
-    }
-
-    private void route(ChannelHandlerContext context, HttpRequest request) {
+    public void route(ChannelHandlerContext context, HttpRequest request) {
         final String method = request.getMethod().getName();
-        String URL = request.getUri();
+        final String URI = request.getUri();
 
         // Method not implemented for any resource. So return 501.
         if (method == null || !implementedVerbs.contains(method)) {
@@ -76,7 +63,7 @@ public class RouteMatcher extends SimpleChannelUpstreamHandler {
             return;
         }
 
-        final Pattern pattern = getMatchingPatternForURL(URL);
+        final Pattern pattern = getMatchingPatternForURL(URI);
 
         // No methods registered for this pattern i.e. URL isn't registered. Return 404.
         if (pattern == null) {
@@ -122,7 +109,7 @@ public class RouteMatcher extends SimpleChannelUpstreamHandler {
             request = updateRequestHeaders(request, binding);
             route(context, request, binding.handler);
         } else {
-            throw new RuntimeException("Cannot find a valid binding for URL " + URL);
+            throw new RuntimeException("Cannot find a valid binding for URL " + URI);
         }
     }
 
