@@ -75,8 +75,6 @@ public class Configuration {
         props.put("SERVICE_REGISTRY_API_KEY", "");
         props.put("SERVICE_REGISTRY_ENABLED", "false");
 
-        props.put("STATSD_HOST", "127.0.0.1");
-        props.put("STATSD_PORT", "8125");
         props.put("GRAPHITE_HOST", "");
         props.put("GRAPHITE_PORT", "2003");
         props.put("GRAPHITE_PREFIX", "unconfiguredNode.ele.gauges.");
