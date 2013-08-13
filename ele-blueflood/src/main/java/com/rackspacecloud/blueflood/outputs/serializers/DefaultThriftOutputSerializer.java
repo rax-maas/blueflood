@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.cm.Util;
+import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
@@ -15,7 +16,9 @@ import java.util.Set;
 public class DefaultThriftOutputSerializer implements OutputSerializer<RollupMetrics> {
 
     @Override
-    public RollupMetrics transformRollupData(MetricData metricData) {
+    public RollupMetrics transformRollupData(MetricData metricData, Set<String> filterStats)
+            throws SerializationException {
+        // TODO: filterStats for thrift is currently unused. We basically send out everything.
         final Points points = metricData.getData();
         return new RollupMetrics(transformPoints(points), metricData.getUnit());
     }

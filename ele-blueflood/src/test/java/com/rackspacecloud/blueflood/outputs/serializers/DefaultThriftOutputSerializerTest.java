@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import org.junit.Assert;
@@ -9,13 +8,25 @@ import org.junit.Test;
 import telescope.thrift.RollupMetric;
 import telescope.thrift.RollupMetrics;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class DefaultThriftOutputSerializerTest {
+    private static final Set<String> defaultStats;
+
+    static {
+        defaultStats = new HashSet<String>();
+        defaultStats.add("average");
+        defaultStats.add("variance");
+        defaultStats.add("min");
+        defaultStats.add("max");
+    }
 
     @Test
-    public void testTransformRollupDataAtFullRes() {
+    public void testTransformRollupDataAtFullRes() throws Exception {
         final DefaultThriftOutputSerializer serializer = new DefaultThriftOutputSerializer();
-        final MetricData metricData = new MetricData(generateFakeFullResPoints(), "unknown");
-        RollupMetrics metrics = serializer.transformRollupData(metricData);
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown");
+        RollupMetrics metrics = serializer.transformRollupData(metricData, defaultStats);
 
         // Assert unit is same
         Assert.assertEquals(metricData.getUnit(), metrics.getUnit());
@@ -28,13 +39,12 @@ public class DefaultThriftOutputSerializerTest {
         }
     }
 
-
     @Test
-    public void testTransformRollupDataForCoarserGran() {
+    public void testTransformRollupDataForCoarserGran() throws Exception {
         final DefaultThriftOutputSerializer serializer = new DefaultThriftOutputSerializer();
-        final MetricData metricData = new MetricData(generateFakeRollupPoints(), "unknown");
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown");
 
-        RollupMetrics metrics = serializer.transformRollupData(metricData);
+        RollupMetrics metrics = serializer.transformRollupData(metricData, defaultStats);
 
         // Assert unit is same
         Assert.assertEquals(metricData.getUnit(), metrics.getUnit());
@@ -48,32 +58,5 @@ public class DefaultThriftOutputSerializerTest {
             Assert.assertEquals(((Rollup) point.getData()).getCount(),
                     rollupMetric.getNumPoints());
         }
-    }
-
-    private Points<Long> generateFakeFullResPoints() {
-        Points<Long> points = Points.create(Granularity.FULL);
-
-        long baseTime = 1234567L;
-        for (int count = 0; count < 5; count++) {
-            Points.Point<Long> point = new Points.Point<Long>(baseTime + (count*1000), (long) count);
-            points.add(point);
-        }
-
-        return points;
-    }
-
-    private Points<Rollup> generateFakeRollupPoints() {
-        Points<Rollup> points = Points.create(Granularity.MIN_5);
-
-        long baseTime = 1234567L;
-        for (int count = 0; count < 5; count++) {
-            final Rollup rollup = new Rollup();
-            rollup.setCount(count * 100);
-            rollup.getAverage().setLongValue(count);
-            Points.Point<Rollup> point = new Points.Point<Rollup>(baseTime + (count*1000), rollup);
-            points.add(point);
-        }
-
-        return points;
     }
 }
