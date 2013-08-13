@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import telescope.thrift.Resolution;
+import com.rackspacecloud.blueflood.types.Resolution;
 
 public interface MetricDataQueryInterface<T> {
     public T GetDataByPoints(String accountId, String metric, long from, long to, int points) throws Exception;

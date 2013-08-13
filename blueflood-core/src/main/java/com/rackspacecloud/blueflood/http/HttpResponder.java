@@ -1,11 +1,12 @@
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
-import org.jboss.netty.util.CharsetUtil;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
@@ -22,17 +23,13 @@ public class HttpResponder {
     }
 
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
-        // Generate an error page if response status code is not OK (200).
-        if (res.getStatus().getCode() != 200) {
-            res.setContent(
-                    ChannelBuffers.copiedBuffer(
-                            res.getStatus().toString(), CharsetUtil.UTF_8));
+        if (res.getContent() != null) {
             setContentLength(res, res.getContent().readableBytes());
         }
 
         // Send the response and close the connection if necessary.
         ChannelFuture f = ctx.getChannel().write(res);
-        if (!isKeepAlive(req) || res.getStatus().getCode() != 200) {
+        if (!isKeepAlive(req)) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
     }

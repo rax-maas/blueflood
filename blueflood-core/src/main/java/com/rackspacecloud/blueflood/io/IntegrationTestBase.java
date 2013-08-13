@@ -1,14 +1,14 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -95,7 +95,7 @@ public class IntegrationTestBase {
     public void tearDown() throws Exception {
         // meh
     }
-    
+
     protected Metric writeMetric(String name, Object value) throws Exception {
         final List<Metric> metrics = new ArrayList<Metric>();
         final Locator locator = Locator.createLocatorFromPathComponents("acctId", name);
