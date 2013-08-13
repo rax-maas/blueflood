@@ -82,6 +82,8 @@ public class Configuration {
         props.put("INGEST_MODE", "true");
         props.put("ROLLUP_MODE", "true");
         props.put("QUERY_MODE", "true");
+
+        props.put("CASSANDRA_MAX_RETRIES", "5"); // set <= 0 to not retry
     }
 
     public static void init() throws IOException {
