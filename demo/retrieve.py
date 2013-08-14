@@ -85,6 +85,8 @@ def main():
             print(r.content)
         else:
             print('Failed fetching metrics. HTTP status: %s' % r.status_code)
+            if r.content is not None:
+                print(r.content)
     except Exception, ex:
         print(ex)
         raise Exception('Cannot retrieve metrics from bluflood')
