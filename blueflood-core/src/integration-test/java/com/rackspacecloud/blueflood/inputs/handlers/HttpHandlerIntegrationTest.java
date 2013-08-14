@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 public class HttpHandlerIntegrationTest {
-    private static HttpHandler httpHandler;
+    private static HttpMetricsIngestionServer httpMetricsIngestorServer;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
@@ -38,7 +38,7 @@ public class HttpHandlerIntegrationTest {
         httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), manageShards);
-        httpHandler = new HttpHandler(httpPort, context);
+        httpMetricsIngestorServer = new HttpMetricsIngestionServer(httpPort, context);
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
