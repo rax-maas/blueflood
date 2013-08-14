@@ -27,7 +27,7 @@ public class JSONMetricsContainerTest {
                                 JSONMetricsContainer.JSONMetric.class)
                 );
         // Construct the JSONMetricsContainter from JSON metric objects
-        JSONMetricsContainer jsonMetricsContainer = new JSONMetricsContainer(jsonMetrics);
+        JSONMetricsContainer jsonMetricsContainer = new JSONMetricsContainer("ac1", jsonMetrics);
 
         List<Metric> metricsCollection = jsonMetricsContainer.toMetrics();
         Assert.assertEquals("ac1,mzord.duration", metricsCollection.get(0).getLocator().toString());
@@ -37,7 +37,7 @@ public class JSONMetricsContainerTest {
         Assert.assertEquals("milliseconds", metricsCollection.get(0).getUnit());
         Assert.assertEquals("L", metricsCollection.get(0).getType().toString());
 
-        Assert.assertEquals("ac2,mzord.status", metricsCollection.get(1).getLocator().toString());
+        Assert.assertEquals("ac1,mzord.status", metricsCollection.get(1).getLocator().toString());
         Assert.assertEquals("Website is up", metricsCollection.get(1).getValue());
         Assert.assertEquals("unknown", metricsCollection.get(1).getUnit());
         Assert.assertEquals("S", metricsCollection.get(1).getType().toString());
@@ -48,7 +48,6 @@ public class JSONMetricsContainerTest {
 
         // Long metric value
         Map<String, Object> testMetric = new TreeMap<String, Object>();
-        testMetric.put("accountId", "ac1");
         testMetric.put("metricName", "mzord.duration");
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
@@ -58,7 +57,6 @@ public class JSONMetricsContainerTest {
 
         // String metric value
         testMetric = new TreeMap<String, Object>();
-        testMetric.put("accountId", "ac2");
         testMetric.put("metricName", "mzord.status");
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");

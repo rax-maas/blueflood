@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class JSONMetricsContainer extends MetricsContainer {
-    private List<JSONMetric> jsonMetrics;
+    private final String tenantId;
+    private final List<JSONMetric> jsonMetrics;
 
-    public JSONMetricsContainer(List<JSONMetric> metrics) {
+    public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
+        this.tenantId = tenantId;
         this.jsonMetrics = metrics;
     }
 
@@ -23,8 +25,7 @@ public class JSONMetricsContainer extends MetricsContainer {
 
         final List<Metric> metrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
-            final Locator locator = Locator.createLocatorFromPathComponents(jsonMetric.getAccountId(),
-                    jsonMetric.getMetricName());
+            final Locator locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
             final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                     new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
             metrics.add(metric);
@@ -35,20 +36,11 @@ public class JSONMetricsContainer extends MetricsContainer {
 
     // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.
     public static class JSONMetric {
-        private String accountId;
         private String metricName;
         private Object metricValue;
         private long collectionTime;
         private int ttlInSeconds;
         private String unit;
-
-        public String getAccountId() {
-            return accountId;
-        }
-
-        public void setAccountId(String accountId) {
-            this.accountId = accountId;
-        }
 
         public String getMetricName() {
             return metricName;
