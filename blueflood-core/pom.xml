@@ -304,6 +304,8 @@
   </dependencies>
   
   <profiles>
+    <!-- We cannot override the script value from the command line, so the only way to run 'cassandra:run' is by
+         specifying it in a profile. -->
     <profile>
       <id>cassandra-only</id>
       <properties>
