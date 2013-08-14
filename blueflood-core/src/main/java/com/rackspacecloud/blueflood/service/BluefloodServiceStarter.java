@@ -18,8 +18,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-public class Main {
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
+public class BluefloodServiceStarter {
+    private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
     public static void validateCassandraHosts() {
         String hosts = Configuration.getStringProperty("CASSANDRA_HOSTS");
