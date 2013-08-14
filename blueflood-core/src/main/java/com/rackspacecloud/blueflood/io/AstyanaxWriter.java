@@ -37,7 +37,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final int INTERNAL_API_CONCURRENCY = CACHE_CONCURRENCY;
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
-    private static final int LOCATOR_TTL = 172800;  // in seconds (2 days)
+    private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
 
     private static final String INSERT_METADATA = "Metadata Insert".intern();
     private static final String INSERT_FULL = "Full Insert".intern();
