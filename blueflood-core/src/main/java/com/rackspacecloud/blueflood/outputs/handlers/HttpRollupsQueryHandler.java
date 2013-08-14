@@ -141,7 +141,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         long fromTime = Long.parseLong(from.get(0));
         long toTime = Long.parseLong(to.get(0));
 
-        if (toTime < fromTime) {
+        if (toTime <= fromTime) {
             throw new InvalidRequestException("paramter 'to' must be greater than 'from'");
         }
 

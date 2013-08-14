@@ -18,19 +18,19 @@ import java.util.concurrent.Executors;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
-public class HTTPMetricDataQueryServer {
-    private static final Logger log = LoggerFactory.getLogger(HTTPMetricDataQueryServer.class);
+public class HttpMetricDataQueryServer {
+    private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private AstyanaxReader reader = AstyanaxReader.getInstance();
 
-    public HTTPMetricDataQueryServer(Integer portToListen) {
+    public HttpMetricDataQueryServer(Integer portToListen) {
         this.httpQueryPort = portToListen;
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
 
-        log.info("Starting metrics listener HTTP server on port {}", this.httpQueryPort);
+        log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
