@@ -198,10 +198,6 @@ public class AstyanaxWriter extends AstyanaxIO {
                                 rollupEntry.getKey(),
                                 NumericSerializer.get(gran).toByteBuffer(rollupEntry.getValue()),
                                 ttl);
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
-                    insertLocator(locator, mutationBatch);
-                    AstyanaxWriter.setLocatorCurrent(locator);
-                }
             }
             // send it.
             try {
