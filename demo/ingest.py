@@ -40,7 +40,6 @@ def _generate_metrics_data(tenantId, metricName):
     for i in range(100):
         metric = {}
         metric['collectionTime'] = startTimestamp
-        metric['accountId'] = tenantId
         metric['metricName'] = metricName
         metric['metricValue'] = random.randint(1, 100)
         metric['ttlInSeconds'] = 2 * 24 * 60 * 60  # 2 days

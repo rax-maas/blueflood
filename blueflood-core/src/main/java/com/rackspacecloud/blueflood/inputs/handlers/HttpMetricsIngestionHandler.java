@@ -47,6 +47,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+        final String tenantId = request.getHeader("tenantId");
         JSONMetricsContainer jsonMetricsContainer = null;
 
         final TimerContext timerContext = handlerTimer.time();
@@ -58,7 +59,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                             typeFactory.constructCollectionType(List.class,
                                     JSONMetricsContainer.JSONMetric.class)
                     );
-            jsonMetricsContainer = new JSONMetricsContainer(jsonMetrics);
+            jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
         } catch (JsonParseException e) {
             log.warn("Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
