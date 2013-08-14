@@ -302,6 +302,43 @@
     </dependency>
 
   </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>cassandra-only</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+        <skip.integration.tests>true</skip.integration.tests>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>cassandra-maven-plugin</artifactId>
+            <version>1.0.8-1</version>
+            <configuration>
+              <listenAddress>${cassandra.listenAddress}</listenAddress>
+              <rpcPort>${cassandra.rpcPort}</rpcPort>
+              <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+              <cassandraDir>/tmp/bf-cassandra/</cassandraDir>
+              <loadAfterFirstStart>true</loadAfterFirstStart>
+              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
+            </configuration>
+            <executions>
+              <execution>
+                <id>default-cli</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>delete</goal>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <pluginRepositories>
     <pluginRepository>
