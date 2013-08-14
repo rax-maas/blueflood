@@ -38,9 +38,9 @@ def main():
             '--port=<blueflood HTTP metrics query port> \n' + \
             '--tenant=<blueflood tenant id> \n' + \
             '--metric=<name of the metric to fetch data for> \n' + \
-            '--from=<start timestamp (millis sinch epoch) \n' + \
-            '--to=<end timestamp (millis sinch epoch) \n' + \
-            '--points=<number of points to fetch'
+            '--from=<start timestamp (millis sinch epoch)> \n' + \
+            '--to=<end timestamp (millis sinch epoch)> \n' + \
+            '--points=<number of points to fetch>'
 
     parser = OptionParser(usage=usage)
     parser.add_option('--host', dest='host', help='Blueflood host')
