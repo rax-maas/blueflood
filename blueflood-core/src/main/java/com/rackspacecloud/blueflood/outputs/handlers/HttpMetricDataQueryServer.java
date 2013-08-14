@@ -30,7 +30,7 @@ public class HttpMetricDataQueryServer {
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
 
-        log.info("Starting metrics listener HTTP server on port {}", this.httpQueryPort);
+        log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
