@@ -7,7 +7,6 @@ import com.rackspacecloud.blueflood.thrift.ThriftRunnable;
 import com.rackspacecloud.blueflood.thrift.UnrecoverableException;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.rackspacecloud.blueflood.utils.Version;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.reporting.GraphiteReporter;
 import org.apache.log4j.PropertyConfigurator;
@@ -64,7 +63,7 @@ public class Main {
         }
     }
     
-    private static void startIngestService(ScheduleContext context, String version) {
+    private static void startIngestService(ScheduleContext context) {
         // start up ingestion services.
         if (Configuration.getBooleanProperty("INGEST_MODE")) {
             ScribeHandlerIface scribeHandler = new AlternateScribeHandler(context);
@@ -204,15 +203,6 @@ public class Main {
         if (log4jConfig != null && log4jConfig.startsWith("file:"))
             PropertyConfigurator.configureAndWatch(log4jConfig.substring("file:".length()), 5000);
 
-        String version = "development";
-        try {
-            version = Version.getHashVersion();
-            if (version == null)
-                version = "development";
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-
         // check that we have cassandra hosts
         validateCassandraHosts();
 
@@ -236,7 +226,7 @@ public class Main {
         
         startShardStateServices(rollupContext);
         // todo: version dependency can be remove by a simple refactor of how AlternateScribeHandler exports the scribe interface.
-        startIngestService(rollupContext, version);
+        startIngestService(rollupContext);
         startQueryService();
         startRollupService(rollupContext);
     }

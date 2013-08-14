@@ -30,7 +30,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             Locator.createLocatorFromPathComponents(tenantId, metricName)
     };
     private static int queryPort = 20000;
-    private static HTTPMetricDataQueryServer httpMetricDataQueryServer;
+    private static HttpMetricDataQueryServer httpMetricDataQueryServer;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
 
@@ -39,7 +39,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @BeforeClass
     public static void setUpHttp() {
         queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
-        httpMetricDataQueryServer = new HTTPMetricDataQueryServer(queryPort);
+        httpMetricDataQueryServer = new HttpMetricDataQueryServer(queryPort);
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }

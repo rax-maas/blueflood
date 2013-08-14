@@ -18,12 +18,12 @@ import java.util.concurrent.Executors;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
-public class HTTPMetricDataQueryServer {
-    private static final Logger log = LoggerFactory.getLogger(HTTPMetricDataQueryServer.class);
+public class HttpMetricDataQueryServer {
+    private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private AstyanaxReader reader = AstyanaxReader.getInstance();
 
-    public HTTPMetricDataQueryServer(Integer portToListen) {
+    public HttpMetricDataQueryServer(Integer portToListen) {
         this.httpQueryPort = portToListen;
 
         RouteMatcher router = new RouteMatcher();
