@@ -44,7 +44,7 @@ public class Granularity {
     // name of column family where rollups are kept.
     private final String cf;
     
-    // like cf, but shorter.  same as the key used in ele/lib/db/models/account.js
+    // like cf, but shorter.
     private final String shortName;
     
     // number of milliseconds in one slot of this rollup.
@@ -54,7 +54,7 @@ public class Granularity {
     // minutes indicated by a single slot increases as the number of slots goes down.
     private final int numSlots;
 
-    // Default TTL to use if Telescope doesn't contain one
+    // Default TTL to use if not provided
     private TimeValue defaultTTL = null;
     
     private Granularity(String cf, int milliseconds, int numSlots, TimeValue ttl, String shortName) {
