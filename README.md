@@ -1,4 +1,6 @@
-![Blueflood](http://i.imgur.com/fM087yS.gif)
+<p align="center">
+ <img src="http://i.imgur.com/dJwsM5z.gif" width="500" height="350" align=center>
+</p>
 
 # Blueflood
 
