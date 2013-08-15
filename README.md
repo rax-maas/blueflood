@@ -1,6 +1,8 @@
 # Blueflood
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
+![Blueflood](http://i.imgur.com/fM087yS.gif)
+
 ## Introduction
 
 Blueflood is a multi-tenant distributed metric processing system created by engineers at 
