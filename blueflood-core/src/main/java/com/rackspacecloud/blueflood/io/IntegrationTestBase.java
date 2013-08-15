@@ -108,12 +108,12 @@ public class IntegrationTestBase {
     }
 
     protected List<Metric> makeRandomIntMetrics(int count) {
-        final String accountId = "ac" + randString(8);
+        final String tenantId = "ac" + randString(8);
         List<Metric> metrics = new ArrayList<Metric>();
         final long now = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
-            final Locator locator = Locator.createLocatorFromPathComponents(accountId, "met" + randString(8));
+            final Locator locator = Locator.createLocatorFromPathComponents(tenantId, "met" + randString(8));
             metrics.add(getRandomIntMetric(locator, now - 10000000));
         }
 

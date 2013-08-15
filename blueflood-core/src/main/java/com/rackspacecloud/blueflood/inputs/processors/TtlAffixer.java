@@ -23,7 +23,7 @@ public class TtlAffixer extends AsyncFunctionWithThreadPool<MetricsCollection, M
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
                 for (Metric metric : metrics.getMetrics()) {
-                    metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getAccountId(), Granularity.FULL).toSeconds());
+                    metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getTenantId(), Granularity.FULL).toSeconds());
                 }
                 return metrics;
             }

@@ -116,7 +116,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         for (Locator locator : locators) {
             for (Granularity g2 : Granularity.granularities()) {
                 JSONArray data = (JSONArray) httpHandler.GetDataByPoints(
-                        locator.getAccountId(),
+                        locator.getTenantId(),
                         locator.getMetricName(),
                         baseMillis,
                         baseMillis + 86400000,
@@ -135,7 +135,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private int getNumberOfPointsViaHTTPHandler(HttpRollupsQueryHandler handler,
                                                Locator locator, long from, long to, Resolution resolution)
             throws Exception {
-        final JSONArray values =  (JSONArray) handler.GetDataByResolution(locator.getAccountId(),
+        final JSONArray values =  (JSONArray) handler.GetDataByResolution(locator.getTenantId(),
                 locator.getMetricName(), from, to, resolution).get("values");
         return values.size();
     }

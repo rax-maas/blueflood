@@ -67,7 +67,7 @@ public class InternalApiTest {
     public void testConnectionRefused() throws IOException {
         try {
             InternalAPI badApi = InternalAPIFactory.create(5, "127.0.0.1:3232,127.0.0.1:3232,192.0.2.1:3232,192.0.2.2:3232");
-            badApi.fetchAccount("bogus-account-id");
+            badApi.fetchAccount("bogus-tenant-id");
             Assert.fail("fetchAccount should have failed");
         } catch (ClusterException ex) {
             Assert.assertEquals(3, ex.size());

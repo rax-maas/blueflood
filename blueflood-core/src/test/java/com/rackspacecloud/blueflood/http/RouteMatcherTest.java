@@ -57,18 +57,18 @@ public class RouteMatcherTest {
         Assert.assertEquals("foo", modifiedReq.getHeaders().get(0).getValue());
         testRouteHandlerCalled = false;
 
-        modifiedReq = testPattern("/accounts/:accountId/entities/:entityId", "/accounts/acFoo/entities/enBar");
+        modifiedReq = testPattern("/tenants/:tenantId/entities/:entityId", "/tenants/acFoo/entities/enBar");
         Assert.assertTrue(testRouteHandlerCalled);
         Assert.assertEquals(2, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("accountId").equals("acFoo"));
+        Assert.assertTrue(modifiedReq.getHeader("tenantId").equals("acFoo"));
         Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
         testRouteHandlerCalled = false;
 
-        modifiedReq = testPattern("/accounts/:accountId/entities/:entityId/checks/:checkId/metrics/:metricId/plot",
-                "/accounts/acFoo/entities/enBar/checks/chFoo/metrics/myMetric/plot");
+        modifiedReq = testPattern("/tenants/:tenantId/entities/:entityId/checks/:checkId/metrics/:metricId/plot",
+                "/tenants/acFoo/entities/enBar/checks/chFoo/metrics/myMetric/plot");
         Assert.assertTrue(testRouteHandlerCalled);
         Assert.assertEquals(4, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("accountId").equals("acFoo"));
+        Assert.assertTrue(modifiedReq.getHeader("tenantId").equals("acFoo"));
         Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
         Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
         Assert.assertTrue(modifiedReq.getHeader("checkId").equals("chFoo"));

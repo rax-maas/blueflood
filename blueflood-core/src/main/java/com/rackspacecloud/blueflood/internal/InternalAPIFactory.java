@@ -41,8 +41,8 @@ public class InternalAPIFactory {
             final ClientConnectionManager connectionManager = buildConnectionManager(concurrency);  
             final JsonResource jsonResource = new HttpJsonResource(connectionManager, clusterString, BASE_PATH);
             
-            public Account fetchAccount(String accountId) throws IOException {
-                return Account.fromJSON(jsonResource.getResource("/accounts/" + accountId));
+            public Account fetchAccount(String tenantId) throws IOException {
+                return Account.fromJSON(jsonResource.getResource("/accounts/" + tenantId));
             }
 
             public List<AccountMapEntry> listAccountMapEntries() throws IOException {
@@ -69,7 +69,7 @@ public class InternalAPIFactory {
 
     public static InternalAPI createDefaultTTLProvider() {
         return new InternalAPI() {
-            public Account fetchAccount(String accountId) throws IOException {
+            public Account fetchAccount(String tenantId) throws IOException {
                 return DEFAULT_ACCOUNT;
             }
 

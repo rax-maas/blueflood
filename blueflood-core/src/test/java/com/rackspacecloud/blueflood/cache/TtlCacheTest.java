@@ -36,14 +36,14 @@ public class TtlCacheTest {
         loadCount = new AtomicLong(0);
         buildCount = new AtomicLong(0);
         twoSecondCache = new TtlCache("Test", new TimeValue(2, TimeUnit.SECONDS), 5, new InternalAPI() {
-            public Account fetchAccount(String accountId) throws IOException {
+            public Account fetchAccount(String tenantId) throws IOException {
                 loadCount.incrementAndGet();
-                if (IOException.class.getName().equals(accountId))
+                if (IOException.class.getName().equals(tenantId))
                     throw new IOException("Error retrieving account from internal API");
-                else if (HttpResponseException.class.getName().equals(accountId))
+                else if (HttpResponseException.class.getName().equals(tenantId))
                     throw new HttpResponseException(404, "That account does not exist");
                 else
-                    return Account.fromJSON(AccountTest.JSON_ACCOUNTS.get(accountId));
+                    return Account.fromJSON(AccountTest.JSON_ACCOUNTS.get(tenantId));
             }
 
             @Override
