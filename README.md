@@ -70,7 +70,8 @@ Thankfully, querying is easier than ingestion.  Whatever query service you creat
 
 ## Operations
 
-Blueflood exposes a great deal of metrics over [JMX](https://blogs.oracle.com/jmxetc/entry/what_is_jmx).
+Blueflood exposes a great deal of internal performance metrics over
+[JMX](https://blogs.oracle.com/jmxetc/entry/what_is_jmx).
 Blueflood respects the standard JMX JVM settings:
 
     com.sun.management.jmxremote.authenticate
@@ -78,9 +79,9 @@ Blueflood respects the standard JMX JVM settings:
     java.rmi.server.hostname
     com.sun.management.jmxremote.port
     
-You can use any tool that supports JMX to get metrics out of Blueflood.
+You can use any tool that supports JMX to get internal performance metrics out of Blueflood.
 
-Additionally, metrics can be pushed directly to a [Graphite](http://graphite.wikidot.com/) 
+Additionally, internal performance metrics can be pushed directly to a [Graphite](http://graphite.wikidot.com/) 
 service by specifying the following in your Blueflood
 configuration:
 
