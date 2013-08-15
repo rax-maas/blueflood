@@ -78,7 +78,7 @@ public class BluefloodServiceStarter {
             int queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
             final HttpMetricDataQueryServer queryServer = new HttpMetricDataQueryServer(queryPort);
         } else {
-            log.info("Telescope query service not required");
+            log.info("Query service not required");
         }
     }
 

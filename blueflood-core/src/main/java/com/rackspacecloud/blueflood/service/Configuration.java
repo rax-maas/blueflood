@@ -31,9 +31,9 @@ public class Configuration {
         // blueflood can output metrics over HTTP
         props.put("HTTP_METRIC_DATA_QUERY_PORT", "20000");
 
-        // blueflood answers queries over the telescope interface.
-        props.put("TELESCOPE_HOST", "127.0.0.1");
-        props.put("TELESCOPE_PORT", "2467");
+        // blueflood answers queries over the thrift interface.
+        props.put("THRIFT_QUERY_HOST", "127.0.0.1");
+        props.put("THRIFT_QUERY_PORT", "2467");
 
         // these settings apply to both thrift listeners that are created.
         props.put("THRIFT_RPC_TIMEOUT", "600000");
@@ -69,7 +69,7 @@ public class Configuration {
         props.put("SHARD_LOCK_SCAVENGE_INTERVAL_MS", "120000"); // 2 min
         props.put("MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE", "1");
 
-        props.put("INTERNAL_ELE_API_CLUSTER", "127.0.0.1:50020,127.0.0.1:50020");
+        props.put("INTERNAL_API_CLUSTER", "127.0.0.1:50020,127.0.0.1:50020");
 
         props.put("SERVICE_REGISTRY_USER", "");
         props.put("SERVICE_REGISTRY_API_KEY", "");
@@ -77,7 +77,7 @@ public class Configuration {
 
         props.put("GRAPHITE_HOST", "");
         props.put("GRAPHITE_PORT", "2003");
-        props.put("GRAPHITE_PREFIX", "unconfiguredNode.ele.gauges.");
+        props.put("GRAPHITE_PREFIX", "unconfiguredNode.metrics.");
         
         props.put("INGEST_MODE", "true");
         props.put("ROLLUP_MODE", "true");
