@@ -48,19 +48,19 @@ public class HttpRollupsQueryHandler extends RollupHandler
     }
 
     @Override
-    public JSONObject GetDataByPoints(String accountId,
+    public JSONObject GetDataByPoints(String tenantId,
                                       String metric,
                                       long from,
                                       long to,
                                       int points) throws SerializationException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        MetricData data = getRollupByGranularity(accountId, metric, from, to, g);
+        MetricData data = getRollupByGranularity(tenantId, metric, from, to, g);
         return serializer.transformRollupData(data, defaultStats);
     }
 
     @Override
-    public JSONObject GetDataByResolution(String accountId,
+    public JSONObject GetDataByResolution(String tenantId,
                                           String metric,
                                           long from,
                                           long to,
@@ -70,13 +70,13 @@ public class HttpRollupsQueryHandler extends RollupHandler
             resolution = Resolution.FULL;
         }
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        MetricData data = getRollupByGranularity(accountId, metric, from, to, g);
+        MetricData data = getRollupByGranularity(tenantId, metric, from, to, g);
         return serializer.transformRollupData(data, defaultStats);
     }
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String accountId = request.getHeader("tenantId");
+        final String tenantId = request.getHeader("tenantId");
         final String metricName = request.getHeader("metricName");
 
         if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
@@ -93,9 +93,9 @@ public class HttpRollupsQueryHandler extends RollupHandler
 
             JSONObject metricData;
             if (params.isPoints) {
-                metricData = GetDataByPoints(accountId, metricName, params.from, params.to, params.points);
+                metricData = GetDataByPoints(tenantId, metricName, params.from, params.to, params.points);
             } else if (params.isResolution) {
-                metricData = GetDataByResolution(accountId, metricName, params.from, params.to, params.resolution);
+                metricData = GetDataByResolution(tenantId, metricName, params.from, params.to, params.resolution);
             } else {
                 throw new InvalidRequestException("Invalid rollups query. Neither points nor resolution specified.");
             }

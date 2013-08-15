@@ -30,14 +30,14 @@ public class RollupHandler {
     protected final Histogram numRollupPointsReturned = Metrics.newHistogram(RollupHandler.class, "Rollup points returned", true);
 
     protected MetricData getRollupByGranularity(
-            String accountId,
+            String tenantId,
             String metricName,
             long from,
             long to,
             Granularity g) {
 
         final TimerContext ctx = metricsFetchTimer.time();
-        final Locator locator = Locator.createLocatorFromPathComponents(accountId, metricName);
+        final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
         final MetricData metricData = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
                 new Range(g.snapMillis(from), to),
