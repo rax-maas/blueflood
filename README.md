@@ -92,12 +92,14 @@ configuration:
     GRAPHITE_PORT
     GRAPHITE_PREFIX
 
-## Learn More
+## Contributing
 
-First, we welcome bug reports and contributions.  We use a Github workflow for dealing with these, so if you are
-familiar with that process, you know what to do.
+First, we welcome bug reports and contributions.
+If you would like to contribute code, just fork this project and send us a pull request.
+If you would like to contribute documentation, you should get familiar with
+[our wiki](https://github.com/rackerlabs/blueflood/wiki)
 
-We've set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
+Also, we have set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
 If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode.
 
 ## License
