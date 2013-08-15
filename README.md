@@ -1,7 +1,5 @@
 # Blueflood
-[Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss)
-- [Code](http://github.com/rackerlabs/blueflood)
-- [Site](http://blueflood.io)
+[Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
 ## Introduction
 
@@ -51,7 +49,7 @@ We anticipate different use cases for Blueflood.  For example, at Rackspace it m
 [Thrift](http://thrift.apache.org) layer for ingestion and query.  We have chosen not to release that layer because
 it contains a lot of code that is specific to our infrastructure and other backend systems.
 
-We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
+  We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
 code that works better with your enterprise.
 
 ### Custom Ingestion
