@@ -22,7 +22,7 @@ You can run the entire suite of tests using Maven:
 
 ### Building
 
-Build an 'uber jar' using maven:
+Build an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar) using maven:
 
     mvn package
 
@@ -38,7 +38,7 @@ In a nutshell, you must do this:
     -Dblueflood.config=file:///path/to/blueflood.conf \
     -Dlog4j.configuration=file:///path/to/log4j.properties
     
-Each configuration option can be found in Configuration.java.  Each of those can be overriden on the command line by
+Each configuration option can be found in Configuration.java.  Each of those can be overridden on the command line by
 doing:
 
     -DCONFIG_OPTION=NEW_VALUE
@@ -49,7 +49,7 @@ We anticipate different use cases for Blueflood.  For example, at Rackspace it m
 [Thrift](http://thrift.apache.org) layer for ingestion and query.  We have chosen not to release that layer because
 it contains a lot of code that is specific to our infrastructure and other backend systems.
 
-  We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
+We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
 code that works better with your enterprise.
 
 ### Custom Ingestion
@@ -70,7 +70,8 @@ Thankfully, querying is easier than ingestion.  Whatever query service you creat
 
 ## Operations
 
-Blueflood exposes a great deal of metrics over JMX.  Blueflood respects the standard JMX JVM settings:
+Blueflood exposes a great deal of metrics over [JMX](https://blogs.oracle.com/jmxetc/entry/what_is_jmx).
+Blueflood respects the standard JMX JVM settings:
 
     com.sun.management.jmxremote.authenticate
     com.sun.management.jmxremote.ssl
@@ -79,7 +80,8 @@ Blueflood exposes a great deal of metrics over JMX.  Blueflood respects the stan
     
 You can use any tool that supports JMX to get metrics out of Blueflood.
 
-Additionally, metrics can be pushed directly to a Graphite service by specifying the following in your Blueflood
+Additionally, metrics can be pushed directly to a [Graphite](http://graphite.wikidot.com/) 
+service by specifying the following in your Blueflood
 configuration:
 
     GRAPHITE_HOST
