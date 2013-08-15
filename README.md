@@ -54,7 +54,7 @@ code that works better with your enterprise.
 
 ### Custom Ingestion
 
-Two things must be done to properly ingest data:
+Several things must be done to properly ingest data:
 1. Full resolution data must be written via `AstyanaxWriter.insertFull()`.
 2. A `ScheduleContext` object must be `update()`d regarding that metrics shard and collection time.
 3. Shard state must be periodically pushed to the database for each shard that metrics have been collected for.  This
