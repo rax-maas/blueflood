@@ -45,7 +45,7 @@ doing:
 
     -DCONFIG_OPTION=NEW_VALUE
 
-### Development
+## Development
 
 We anticipate different use cases for Blueflood.  For example, at Rackspace it made more sense to create a
 [Thrift](http://thrift.apache.org) layer for ingestion and query.  We have chosen not to release that layer because
@@ -54,7 +54,7 @@ it contains a lot of code that is specific to our infrastructure and other backe
 We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
 code that works better with your enterprise.
 
-#### Custom Ingestion
+### Custom Ingestion
 
 Two things must be done to properly ingest data:
 1. Full resolution data must be written via `AstyanaxWriter.insertFull()`.
@@ -65,12 +65,12 @@ Two things must be done to properly ingest data:
 
 `HttpMetricsIngestionServer` is an example of how to set up a multi-threaded staged ingestion pipeline.
 
-#### Custom Querying
+### Custom Querying
 
 Thankfully, querying is easier than ingestion.  Whatever query service you create should have a handler that extends
 `RollupHandler`, which provides a basic wrapping of low level read operations provided by `AstyanaxReader`.
 
-### Operations
+## Operations
 
 Blueflood exposes a great deal of metrics over JMX.  Blueflood respects the standard JMX JVM settings:
 
