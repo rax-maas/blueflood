@@ -57,7 +57,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         
         CacheLoader<String, Map<String, TimeValue>> loader = new CacheLoader<String, Map<String, TimeValue>>() {
             
-            // values from the default account are used to build a ttl map for accounts that do not exist in the 
+            // values from the default account are used to build a ttl map for tenants that do not exist in the
             // internal API.  These values are put into the cache, meaning subsequent cache requests do not incur a
             // miss and hit the internal API.
             private final Account DEFAULT_ACCOUNT = new Account() {

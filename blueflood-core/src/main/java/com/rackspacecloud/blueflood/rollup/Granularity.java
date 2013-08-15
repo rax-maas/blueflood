@@ -69,7 +69,7 @@ public class Granularity {
     // name->column_family
     public String name() { return cf; }
     
-    // name->account ttl key.
+    // name->tenant ttl key.
     public String shortName() { return shortName; }
     
     /** @return the number of seconds in one slot range. */

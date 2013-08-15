@@ -6,7 +6,7 @@ public class Locator {
     private static String metricTokenSeparator = ",";
 
     private String stringRep = null;
-    private String accountId = null;
+    private String tenantId = null;
     private String metricName = null;
 
     public Locator() {
@@ -19,7 +19,7 @@ public class Locator {
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
         this.stringRep = rep;
-        accountId = this.stringRep.split(metricTokenSeparator)[0];
+        tenantId = this.stringRep.split(metricTokenSeparator)[0];
         metricName = this.stringRep.substring(this.stringRep.indexOf(metricTokenSeparator)+1);
     }
 
@@ -31,8 +31,8 @@ public class Locator {
         return stringRep;
     }
 
-    public String getAccountId() {
-        return this.accountId;
+    public String getTenantId() {
+        return this.tenantId;
     }
     
     public String getMetricName() {
@@ -43,8 +43,8 @@ public class Locator {
         return stringRep.equals(other.toString());
     }
 
-    public static Locator createLocatorFromPathComponents(String accountId, String... parts) throws IllegalArgumentException {
-        return new Locator(accountId + metricTokenSeparator + StringUtils.join(parts, metricTokenSeparator));
+    public static Locator createLocatorFromPathComponents(String tenantId, String... parts) throws IllegalArgumentException {
+        return new Locator(tenantId + metricTokenSeparator + StringUtils.join(parts, metricTokenSeparator));
     }
 
     public static Locator createLocatorFromDbKey(String fullyQualifiedMetricName) throws IllegalArgumentException {

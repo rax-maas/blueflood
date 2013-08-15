@@ -189,7 +189,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     public void insertRollups(Locator locator, Map<Long, Rollup> rollups,
                                           Granularity gran) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
-        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getAccountId(), gran).toSeconds();
+        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), gran).toSeconds();
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
             ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(CF_NAME_TO_CF.get(gran.name()), locator);

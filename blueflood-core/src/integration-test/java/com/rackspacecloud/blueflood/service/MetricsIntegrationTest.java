@@ -31,10 +31,10 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     // this was a lot cooler back when the slot changed with time.
     private Collection<Locator> writeLocatorsOnly(int hours) throws Exception {
         // duplicate the logic from Writer.writeFull() that inserts locator rows.
-        final String accountId = "ac" + randString(8);
+        final String tenantId = "ac" + randString(8);
         final List<Locator> locators = new ArrayList<Locator>();
         for (int i = 0; i < hours; i++) {
-            locators.add(Locator.createLocatorFromPathComponents(accountId, "test:locator:inserts:" + i));
+            locators.add(Locator.createLocatorFromPathComponents(tenantId, "test:locator:inserts:" + i));
         }
 
         AstyanaxTester at = new AstyanaxTester();

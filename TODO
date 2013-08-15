@@ -1,7 +1,0 @@
-Removed the stress folder as we were not using it. (Should we put it back?)
-Internal API dependencies 
-MetricHelper is being used only for rollup serialization (Should we make it uniform w.r.t metric types?)
-Maven modules
-  -- HTTP
-  -- ScribeHandler
-  -- Thrift

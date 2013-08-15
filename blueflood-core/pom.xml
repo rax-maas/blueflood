@@ -71,10 +71,6 @@
       <!-- Used for integration tests -->
       <!-- Spin up Cassandra -->
       <plugin>
-        <!-- Install using:
-        mkdir -p ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1
-        cp lib/cassandra-maven* ~/.m2/repository/org/codehaus/mojo/cassandra-maven-plugin/1.0.8-1/
-        -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
         <version>1.0.8-1</version>
@@ -182,7 +178,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <!-- packages up the test files. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -302,7 +298,7 @@
     </dependency>
 
   </dependencies>
-  
+
   <profiles>
     <!-- We cannot override the script value from the command line, so the only way to run 'cassandra:run' is by
          specifying it in a profile. -->
