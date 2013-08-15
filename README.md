@@ -1,6 +1,6 @@
-# Blueflood
-
 ![Blueflood](http://i.imgur.com/fM087yS.gif)
+
+# Blueflood
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
