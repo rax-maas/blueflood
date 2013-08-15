@@ -52,9 +52,43 @@ We anticipate different use cases for Blueflood.  For example, at Rackspace it m
 it contains a lot of code that is specific to our infrastructure and other backend systems.
 
 We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
-code that works better with your enterprise.  Examples are forthcoming.
+code that works better with your enterprise.
 
-## Learning More
+#### Custom Ingestion
+
+Two things must be done to properly ingest data:
+1. Full resolution data must be written via `AstyanaxWriter.insertFull()`.
+2. A `ScheduleContext` object must be `update()`d regarding that metrics shard and collection time.
+3. Shard state must be periodically pushed to the database for each shard that metrics have been collected for.  This
+   can be done by getting the dirty slot information from the `ShardStateManager` associated with a particular
+   `ScheduleContext` object.
+
+`HttpMetricsIngestionServer` is an example of how to set up a multi-threaded staged ingestion pipeline.
+
+#### Custom Querying
+
+Thankfully, querying is easier than ingestion.  Whatever query service you create should have a handler that extends
+`RollupHandler`, which provides a basic wrapping of low level read operations provided by `AstyanaxReader`.
+
+### Operations
+
+Blueflood exposes a great deal of metrics over JMX.  Blueflood respects the standard JMX JVM settings:
+
+    com.sun.management.jmxremote.authenticate
+    com.sun.management.jmxremote.ssl
+    java.rmi.server.hostname
+    com.sun.management.jmxremote.port
+    
+You can use any tool that supports JMX to get metrics out of Blueflood.
+
+Additionally, metrics can be pushed directly to a Graphite service by specifying the following in your Blueflood
+configuration:
+
+    GRAPHITE_HOST
+    GRAPHITE_PORT
+    GRAPHITE_PREFIX
+
+## Learn More
 
 First, we welcome bug reports and contributions.  We use a Github workflow for dealing with these, so if you are
 familiar with that process, you know what to do.
