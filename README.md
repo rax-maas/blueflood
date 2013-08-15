@@ -52,20 +52,7 @@ We anticipate different use cases for Blueflood.  For example, at Rackspace it m
 it contains a lot of code that is specific to our infrastructure and other backend systems.
 
 We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
-code that works better with your enterprise.
-
-TODO: describe what classes to extend, etc.
-
-If you end up writing general purpose ingestion or query layers that you think should be included in Blueflood, please
-send us a pull request!
-
-## Operations
-
-TODO:
-
-## Concepts
-
-TODO: this probably belongs on the wiki.
+code that works better with your enterprise.  Examples are forthcoming.
 
 ## Learning More
 
