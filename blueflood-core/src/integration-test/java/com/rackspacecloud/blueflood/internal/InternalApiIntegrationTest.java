@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InternalApiIntegrationTest {
-    private final String clusterString = Configuration.getStringProperty("INTERNAL_ELE_API_CLUSTER");
+    private final String clusterString = Configuration.getStringProperty("INTERNAL_API_CLUSTER");
 
     @Test
     public void testRegularWorks() throws IOException {
