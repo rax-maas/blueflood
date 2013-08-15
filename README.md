@@ -47,7 +47,17 @@ doing:
 
 ### Development
 
-TODO:
+We anticipate different use cases for Blueflood.  For example, at Rackspace it made more sense to create a
+[Thrift](http://thrift.apache.org) layer for ingestion and query.  We have chosen not to release that layer because
+it contains a lot of code that is specific to our infrastructure and other backend systems.
+
+We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
+code that works better with your enterprise.
+
+TODO: describe what classes to extend, etc.
+
+If you end up writing general purpose ingestion or query layers that you think should be included in Blueflood, please
+send us a pull request!
 
 ## Operations
 
@@ -65,6 +75,3 @@ familiar with that process, you know what to do.
 We've set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
 If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode.
 
-## Future
-
-TODO:
