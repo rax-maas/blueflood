@@ -3,7 +3,7 @@ FROM ubuntu:12.04
 RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
 RUN apt-get update
 
-# install curl, git
+# install curl
 RUN apt-get -y -f install curl
 
 # add cassandra PPA
