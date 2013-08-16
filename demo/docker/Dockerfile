@@ -3,8 +3,8 @@ FROM ubuntu:12.04
 RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
 RUN apt-get update
 
-# install curl
-RUN apt-get -y -f install curl
+# install tools
+RUN apt-get -y -f install curl net-tools
 
 # add cassandra PPA
 RUN curl -L http://debian.datastax.com/debian/repo_key | apt-key add -
@@ -20,7 +20,14 @@ RUN echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true 
 RUN apt-get install -y oracle-java7-installer
 
 # Set oracle java as the default java
-update-java-alternatives -s java-7-oracle
+RUN update-java-alternatives -s java-7-oracle
 
 # install cassandra
 RUN apt-get install cassandra -y
+
+# start Cassandra
+ADD . /src
+RUN chmod +x /src/start.sh
+expose 9160
+expose 7199
+# CMD ["/src/start.sh"]
