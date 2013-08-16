@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.rollup.GranularityTest;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 
