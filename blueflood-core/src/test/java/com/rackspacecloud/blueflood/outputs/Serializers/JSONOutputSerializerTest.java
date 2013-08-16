@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.Assert;
@@ -92,6 +93,29 @@ public class JSONOutputSerializerTest {
             Assert.assertEquals(metricData.getUnit(), dataJSON.get("unit"));
 
             // Assert that variance isn't present
+            Assert.assertNull(dataJSON.get("variance"));
+        }
+    }
+    
+    @Test
+    public void testTransformRollupDataString() throws SerializationException{
+        final JSONOutputSerializer serializer = new JSONOutputSerializer();
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown");
+        
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
+        final JSONArray data = (JSONArray) metricDataJSON.get("values");
+        for (int i = 0; i < data.size(); i++ ) {
+            final JSONObject dataJSON = (JSONObject) data.get(i);
+            final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
+
+            Assert.assertEquals(point.getData(), dataJSON.get("value"));
+            Assert.assertEquals(1L, dataJSON.get("numPoints"));
+
+            Assert.assertEquals(metricData.getUnit(), dataJSON.get("unit"));
+
+            Assert.assertNull(dataJSON.get("average"));
+            Assert.assertNull(dataJSON.get("min"));
+            Assert.assertNull(dataJSON.get("max"));
             Assert.assertNull(dataJSON.get("variance"));
         }
     }

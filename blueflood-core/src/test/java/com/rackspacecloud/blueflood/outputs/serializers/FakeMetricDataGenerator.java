@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.GranularityTest;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 
@@ -45,6 +46,16 @@ public class FakeMetricDataGenerator {
             points.add(point);
         }
 
+        return points;
+    }
+    
+    public static Points<String> generateFakeStringPoints() {
+        Points<String> points = Points.create(Granularity.FULL);
+        long startTime = 1234567L;
+        for (int i =0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<String> point = new Points.Point<String>(timeNow, String.valueOf(timeNow));
+        }
         return points;
     }
 }
