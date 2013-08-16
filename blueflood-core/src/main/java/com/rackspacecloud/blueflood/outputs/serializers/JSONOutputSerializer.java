@@ -109,19 +109,22 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
 
     private JSONObject getFilteredStatsForFullRes(Object rawSample, Set<String> filterStats) {
         final JSONObject filteredObject = new JSONObject();
-        for (String stat : filterStats) {
-            String lowerCaseStat = stat.toLowerCase();
-            if (lowerCaseStat.equals("average")) {
-                filteredObject.put(lowerCaseStat, rawSample);
-            } else if (lowerCaseStat.equals("min")) {
-                filteredObject.put(lowerCaseStat, rawSample);
-            } else if (lowerCaseStat.equals("max")) {
-                filteredObject.put(lowerCaseStat, rawSample);
-            } else if (lowerCaseStat.equals("variance")) {
-                filteredObject.put(lowerCaseStat, 0);
+        if (rawSample instanceof String || rawSample instanceof Boolean) {
+            filteredObject.put("value", rawSample);
+        } else {
+            for (String stat : filterStats) {
+                String lowerCaseStat = stat.toLowerCase();
+                if (lowerCaseStat.equals("average")) {
+                    filteredObject.put(lowerCaseStat, rawSample);
+                } else if (lowerCaseStat.equals("min")) {
+                    filteredObject.put(lowerCaseStat, rawSample);
+                } else if (lowerCaseStat.equals("max")) {
+                    filteredObject.put(lowerCaseStat, rawSample);
+                } else if (lowerCaseStat.equals("variance")) {
+                    filteredObject.put(lowerCaseStat, 0);
+                }
             }
         }
-
         return filteredObject;
     }
 }
