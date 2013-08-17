@@ -28,6 +28,6 @@ RUN apt-get install cassandra -y
 # start Cassandra
 ADD . /src
 RUN chmod +x /src/start.sh
-expose 9160
-expose 7199
+EXPOSE 9160
+EXPOSE 7199
 # CMD ["/src/start.sh"]
