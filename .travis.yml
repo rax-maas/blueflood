@@ -3,10 +3,6 @@ jdk:
   - oraclejdk6
   - openjdk6
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq thrift-compiler
-
 script: mvn verify
 
 notifications:
