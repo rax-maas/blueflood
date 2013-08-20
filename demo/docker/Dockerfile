@@ -3,8 +3,14 @@ FROM ubuntu:12.04
 RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
 RUN apt-get update
 
-# install tools
+# install net tools
 RUN apt-get -y -f install curl net-tools
+
+# install git
+RUN apt-get -y install git
+
+# install maven (building blueflood jar)
+RUN apt-get -y install maven
 
 # add cassandra PPA
 RUN curl -L http://debian.datastax.com/debian/repo_key | apt-key add -
@@ -24,6 +30,9 @@ RUN update-java-alternatives -s java-7-oracle
 
 # install cassandra
 RUN apt-get install cassandra -y
+
+# git clone blueflood repo
+RUN git clone http://github.com/rackerlabs/blueflood.git /src/blueflood
 
 # start Cassandra
 ADD . /src
