@@ -3,9 +3,6 @@ jdk:
   - oraclejdk6
   - openjdk6
 
-before_install:
-  - echo "127.0.0.1    travistest.loc" | sudo tee -a /etc/hosts
-
 script: mvn verify
 
 notifications:

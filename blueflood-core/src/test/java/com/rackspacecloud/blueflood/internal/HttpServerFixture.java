@@ -94,7 +94,7 @@ public class HttpServerFixture {
             }
         };
 
-        server = HttpServer.create(new InetSocketAddress(InetAddress.getLocalHost().getHostAddress(), port), 2); // small backlog.
+        server = HttpServer.create(new InetSocketAddress("localhost", port), 2); // small backlog.
         server.createContext(basePath + "/accounts/ackVCKg1rk", ackVCKg1rkHandler);
         server.createContext(basePath + "/accounts/notFound", notFoundHandler);
         server.createContext(basePath + "/accounts/internalError", interalErrorHandler);
@@ -122,11 +122,6 @@ public class HttpServerFixture {
     }
 
     protected String getClusterString() {
-        // Simply using server.getAddress().toString() breaks with some IPv6 issue
-        try {
-            return InetAddress.getLocalHost().getHostAddress() + ":" + port;
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
+        return server.getAddress().getHostName() + ":" + server.getAddress().getPort();
     }
 }
