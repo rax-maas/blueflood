@@ -27,6 +27,10 @@
 
   <name>blueflood-core</name>
   <artifactId>blueflood-core</artifactId>
+  
+  <properties>
+    <cassandra.plugin.version>1.0.8-1</cassandra.plugin.version>
+  </properties>
 
   <build>
     <plugins>
@@ -89,12 +93,12 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
-        <version>1.0.8-1</version>
+        <version>${cassandra.plugin.version}</version>
         <configuration>
           <listenAddress>${cassandra.listenAddress}</listenAddress>
           <rpcPort>${cassandra.rpcPort}</rpcPort>
           <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
-          <cassandraDir>/tmp/bf-cassandra/</cassandraDir>
+          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
         </configuration>
         <executions>
           <execution>
@@ -322,6 +326,18 @@
   </dependencies>
 
   <profiles>
+    <profile>
+      <id>cassandra-1.1</id>
+      <properties>
+        <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>cassandra-1.2</id>
+      <properties>
+        <cassandra.plugin.version>1.2.1-1</cassandra.plugin.version>
+      </properties>
+    </profile>
     <!-- We cannot override the script value from the command line, so the only way to run 'cassandra:run' is by
          specifying it in a profile. -->
     <profile>
@@ -335,12 +351,12 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>cassandra-maven-plugin</artifactId>
-            <version>1.0.8-1</version>
+            <version>${cassandra.plugin.version}</version>
             <configuration>
               <listenAddress>${cassandra.listenAddress}</listenAddress>
               <rpcPort>${cassandra.rpcPort}</rpcPort>
               <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
-              <cassandraDir>/tmp/bf-cassandra/</cassandraDir>
+              <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
               <loadAfterFirstStart>true</loadAfterFirstStart>
               <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
             </configuration>
