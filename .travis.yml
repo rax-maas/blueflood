@@ -3,7 +3,10 @@ jdk:
   - oraclejdk6
   - openjdk6
 
-script: mvn verify
+script: 
+  - mvn verify
+  - mvn integration-test -Pcassandra-1.1,skip-unit-tests
+  - mvn integration-test -Pcassandra-1.2,skip-unit-tests
 
 notifications:
   email:
