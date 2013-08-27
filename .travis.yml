@@ -3,11 +3,16 @@ jdk:
   - oraclejdk6
   - openjdk6
 
+before_script:
+  - mvn install -Pskip-unit-tests,skip-integration-tests
+
 script: 
-  - mvn verify
+  - mvn verify # runs integration tests against cassandra 1.0.8
   - mvn integration-test -Pcassandra-1.1,skip-unit-tests
   - mvn integration-test -Pcassandra-1.2,skip-unit-tests
 
 notifications:
+  irc: "irc.freenode.net#blueflood"
   email:
-    - blueflood-build-notifications@lists.rackspace.com
+    recepients:
+      - blueflood-discuss@googlegroups.com
