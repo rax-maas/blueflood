@@ -55,7 +55,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     // allowable errors per minute.
     private double safetyThreshold = 10d;
     
-    private volatile long lastFetchError = 0;
+    private volatile long lastFetchError = System.currentTimeMillis();
 
     public TtlCache(String label, TimeValue expiration, int cacheConcurrency, final InternalAPI internalAPI) {
         try {
@@ -96,7 +96,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
                     // time a TTL is requested.
                     if (ex.getStatusCode() == 404) {
                         httpErrorMeter.mark();
-                        log.error(ex.getMessage());
+                        log.warn(ex.getMessage());
                         return buildTtlMap(DEFAULT_ACCOUNT);
                     } else
                         throw ex;
