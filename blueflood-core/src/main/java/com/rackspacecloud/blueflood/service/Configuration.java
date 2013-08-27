@@ -100,6 +100,9 @@ public class Configuration {
         props.put("QUERY_MODE", "true");
 
         props.put("CASSANDRA_MAX_RETRIES", "5"); // set <= 0 to not retry
+        
+        props.put("ELASTIC_HOST", "localhost");
+        props.put("ELASTIC_PORT", "9300");
     }
 
     public static void init() throws IOException {
