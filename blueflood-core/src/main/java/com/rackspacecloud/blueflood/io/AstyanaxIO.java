@@ -129,6 +129,7 @@ class AstyanaxIO {
                 .setMaxConnsPerHost(connsPerHost)
                 .setMaxBlockedThreadsPerHost(5)
                 .setMaxTimeoutWhenExhausted(timeoutWhenExhausted)
+                .setInitConnsPerHost(connsPerHost / 2)
                 .setSeeds(Configuration.getStringProperty("CASSANDRA_HOSTS"));
         return connectionPoolConfiguration;
     }
