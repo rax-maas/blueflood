@@ -23,13 +23,19 @@
 
   <groupId>com.rackspacecloud</groupId>
   <artifactId>blueflood</artifactId>
-  <name>blueflood</name>
+  <name>Blueflood</name>
   <packaging>pom</packaging>
   <version>1.0.0-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-all</module>
   </modules>
+
+  <description>
+    Blueflood is a multi-tenant distributed metric processing system.
+    Blueflood is capable of ingesting, rolling up and serving metrics at a massive scale.
+  </description>
+  <url>http://blueflood.io</url>
 
   <properties>
     <!-- Used to locate the profile specific configuration file. -->
@@ -67,5 +73,47 @@
       <layout>default</layout>
     </repository>
   </repositories>
+  
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
+  <scm>
+    <connection>scm:git@github.com:rackerlabs/blueflood.git</connection>
+    <developerConnection>scm:git:git@github.com:rackerlabs/blueflood.git</developerConnection>
+    <url>git@github.com:rackerlabs/blueflood.git</url>
+  </scm>
+  
+  <developers>
+    <developer>
+      <id>fourk</id>
+      <name>James Burkhart</name>
+      <email>j+github@hip.st</email>
+    </developer>
+    <developer>
+      <id>wolfdancer</id>
+      <name>Shane Duan</name>
+      <email>shane.duan@rackspace.com</email>
+    </developer>
+    <developer>
+      <id>gdusbabek</id>
+      <name>Gary Dusbabek</name>
+      <email>gdusbabek@gmail.com</email>
+    </developer>
+    <developer>
+      <id>lakshmi-kannan</id>
+      <name>Lakshmi Kannan</name>
+      <email>lakshmi.kannan@rackspace.com</email>
+    </developer>
+    <developer>
+      <id>dlobue</id>
+      <name>Dominic LoBue</name>
+      <email>dominic.lobue@rackspace.com</email>
+    </developer>
+  </developers>
+  
 </project>
