@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
@@ -102,6 +103,14 @@ public class HttpMetricsIngestionServer {
                         new ThreadPoolBuilder().withName("Metric batching").build(),
                         WRITE_THREADS)
                         .withLogger(log))
+                .withFunction(new DiscoveryWriter(
+                        new ThreadPoolBuilder()
+                                .withName("Discovery Writer")
+                                .withCorePoolSize(WRITE_THREADS)
+                                .withMaxPoolSize(WRITE_THREADS)
+                                .withUnboundedQueue()
+                                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                                .build()))
                 .withFunction(new BatchWriter(
                         new ThreadPoolBuilder()
                                 .withName("Metric Batch Writing")
