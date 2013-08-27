@@ -84,9 +84,15 @@ def main():
         print('Writing metrics for tenant: %s, metric name: %s,\
             start: %d, end: %d' % (tenantId, metricName, start, end))
         r = requests.post(url, data=json.dumps(payload))
-        print(r)
+        print('Response from server %s' % (r))
+        print('To retrive the generated data with retrieve.py script, use the following command (assuming port number 20000):')
+        print('')
+        print('./retrieve.py --host %s --port 20000 --metric %s --tenant %s --from %s --to %s --points 100' \
+            % (options.host, metricName, tenantId, start - 100000000, end + 100000000))
+        print('')
     except Exception, ex:
         print(ex)
         raise Exception('Cannot ingest metrics into bluflood')
 
 main()
+
