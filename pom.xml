@@ -110,6 +110,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+  
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
 
   <scm>
     <connection>scm:git@github.com:rackerlabs/blueflood.git</connection>
