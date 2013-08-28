@@ -3,8 +3,8 @@ jdk:
   - oraclejdk6
   - openjdk6
 
-before_script:
-  - mvn install -Pskip-unit-tests,skip-integration-tests
+install:
+  - mvn install -Dmaven.test.skip
 
 script: 
   - mvn verify # runs integration tests against cassandra 1.0.8
