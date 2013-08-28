@@ -94,12 +94,16 @@ public class Configuration {
         props.put("GRAPHITE_HOST", "");
         props.put("GRAPHITE_PORT", "2003");
         props.put("GRAPHITE_PREFIX", "unconfiguredNode.metrics.");
-        
+
         props.put("INGEST_MODE", "true");
         props.put("ROLLUP_MODE", "true");
         props.put("QUERY_MODE", "true");
 
         props.put("CASSANDRA_MAX_RETRIES", "5"); // set <= 0 to not retry
+
+        props.put("ELASTIC_HOST", "localhost");
+        props.put("ELASTIC_HOST", "9300");
+        props.put("USE_ELASTICSEARCH", "true");
     }
 
     public static void init() throws IOException {
