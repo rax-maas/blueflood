@@ -85,7 +85,6 @@
     </plugins>
   </build>
 
-
   <profiles>
     <profile>
       <id>dev</id>
@@ -103,15 +102,6 @@
       </properties>
     </profile>
   </profiles>
-
-  <repositories>
-    <repository>
-      <id>local-project-libraries</id>
-      <name>Local project libraries</name>
-      <url>file://${project.basedir}/lib</url>
-      <layout>default</layout>
-    </repository>
-  </repositories>
   
   <licenses>
     <license>
