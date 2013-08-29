@@ -28,7 +28,6 @@
   <version>1.0.0-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
-    <module>blueflood-all</module>
   </modules>
 
   <description>
@@ -100,6 +99,13 @@
       <properties>
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
+    </profile>
+    <profile>
+      <id>all-modules</id>
+      <modules>
+        <module>blueflood-core</module>
+        <module>blueflood-all</module>
+      </modules>
     </profile>
   </profiles>
   
