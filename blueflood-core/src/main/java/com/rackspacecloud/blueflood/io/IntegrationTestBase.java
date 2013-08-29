@@ -147,7 +147,15 @@ public class IntegrationTestBase {
         return rand.nextInt();
     }
 
+    protected String getRandomStringMetricValue() {
+        return "str" + String.valueOf(getRandomIntMetricValue());
+    }
+
     protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
         return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
+        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 }
