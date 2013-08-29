@@ -233,6 +233,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
 
             if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.STRING)) {
+                gran = Granularity.FULL;
                 return getStringMetricDataForRange(locator, range, gran, StringSerializer.get());
             } else if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.BOOLEAN)) {
                 return getStringMetricDataForRange(locator, range, gran, BooleanSerializer.get());
