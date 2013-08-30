@@ -16,12 +16,14 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -42,8 +44,10 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private final long baseMillis = 1335820166000L;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
+    private final String strMetricName = "strMet_" + IntegrationTestBase.randString(8);
     final Locator[] locators = new Locator[] {
-            Locator.createLocatorFromPathComponents(tenantId, metricName)
+            Locator.createLocatorFromPathComponents(tenantId, metricName),
+            Locator.createLocatorFromPathComponents(tenantId, strMetricName)
     };
     private static int queryPort = 20000;
     private static HttpMetricDataQueryServer httpMetricDataQueryServer;
@@ -51,6 +55,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private static DefaultHttpClient client;
 
     private HttpRollupsQueryHandler httpHandler;
+    private final Map<Locator, Map<Granularity, Integer>> answers = new HashMap<Locator, Map<Granularity,Integer>>();
 
     @BeforeClass
     public static void setUpHttp() {
@@ -64,15 +69,20 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     public void setUp() throws Exception {
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
 
         // insert something every 1m for 24h
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + i * 60000;
             final List<Metric> metrics = new ArrayList<Metric>();
             final Metric metric = getRandomIntMetric(locators[0], curMillis);
+            final Metric stringMetric = getRandomStringmetric(locators[1], curMillis);
             metrics.add(metric);
+            metrics.add(stringMetric);
 
+            analyzer.scanMetrics(metrics);
             writer.insertFull(metrics);
+
         }
 
         httpHandler = new HttpRollupsQueryHandler();
@@ -85,6 +95,25 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                 generateRollups(locator, baseMillis, baseMillis + 86400000, g);
             }
         }
+
+        final Map<Granularity, Integer> answerForNumericMetric = new HashMap<Granularity, Integer>();
+        answerForNumericMetric.put(Granularity.FULL, 1440);
+        answerForNumericMetric.put(Granularity.MIN_5, 289);
+        answerForNumericMetric.put(Granularity.MIN_20, 73);
+        answerForNumericMetric.put(Granularity.MIN_60, 25);
+        answerForNumericMetric.put(Granularity.MIN_240, 7);
+        answerForNumericMetric.put(Granularity.MIN_1440, 2);
+
+        final Map<Granularity, Integer> answerForStringMetric = new HashMap<Granularity, Integer>();
+        answerForStringMetric.put(Granularity.FULL, 1440);
+        answerForStringMetric.put(Granularity.MIN_5, 1440);
+        answerForStringMetric.put(Granularity.MIN_20, 1440);
+        answerForStringMetric.put(Granularity.MIN_60, 1440);
+        answerForStringMetric.put(Granularity.MIN_240, 1440);
+        answerForStringMetric.put(Granularity.MIN_1440, 1440);
+
+        answers.put(locators[0], answerForNumericMetric);
+        answers.put(locators[1], answerForStringMetric);
     }
 
     @Test
@@ -95,39 +124,28 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     }
 
     private void testGetRollupByPoints() throws Exception {
-        final Map<String, Integer> answers = new HashMap<String, Integer>();
-        answers.put("all of them", 1440);
-        answers.put(Granularity.FULL.name(), 289);
-        answers.put(Granularity.MIN_5.name(), 289);
-        answers.put(Granularity.MIN_20.name(), 73);
-        answers.put(Granularity.MIN_60.name(), 25);
-        answers.put(Granularity.MIN_240.name(), 7);
-        answers.put(Granularity.MIN_1440.name(), 2);
-
-        final Map<String, Integer> points = new HashMap<String, Integer>();
-        points.put("all of them", 1700);
-        points.put(Granularity.FULL.name(), 800);
-        points.put(Granularity.MIN_5.name(), 287);
-        points.put(Granularity.MIN_20.name(), 71);
-        points.put(Granularity.MIN_60.name(), 23);
-        points.put(Granularity.MIN_240.name(), 5);
-        points.put(Granularity.MIN_1440.name(), 1);
+        final Map<Granularity, Integer> points = new HashMap<Granularity, Integer>();
+        points.put(Granularity.FULL, 1600);
+        points.put(Granularity.MIN_5, 287);
+        points.put(Granularity.MIN_20, 71);
+        points.put(Granularity.MIN_60, 23);
+        points.put(Granularity.MIN_240, 5);
+        points.put(Granularity.MIN_1440, 1);
 
         testHTTPRollupHandlerGetByPoints(answers, points, baseMillis, baseMillis + 86400000);
     }
 
     private void testGetRollupByResolution() throws Exception {
         for (Locator locator : locators) {
-            testHTTPHandlersGetByResolution(locator, Resolution.FULL, baseMillis, baseMillis + 86400000, 1440);
-            testHTTPHandlersGetByResolution(locator, Resolution.MIN5, baseMillis, baseMillis + 86400000, 289);
-            testHTTPHandlersGetByResolution(locator, Resolution.MIN20, baseMillis, baseMillis + 86400000, 73);
-            testHTTPHandlersGetByResolution(locator, Resolution.MIN60, baseMillis, baseMillis + 86400000, 25);
-            testHTTPHandlersGetByResolution(locator, Resolution.MIN240, baseMillis, baseMillis + 86400000, 7);
-            testHTTPHandlersGetByResolution(locator, Resolution.MIN1440, baseMillis, baseMillis + 86400000, 2);
+            for (Resolution resolution : Resolution.values()) {
+                Granularity g = Granularity.granularities()[resolution.getValue()];
+                testHTTPHandlersGetByResolution(locator, resolution, baseMillis, baseMillis + 86400000,
+                        answers.get(locator).get(g));
+            }
         }
     }
 
-    private void testHTTPRollupHandlerGetByPoints(Map<String, Integer> answers, Map<String, Integer> points,
+    private void testHTTPRollupHandlerGetByPoints(Map<Locator, Map<Granularity, Integer>> answers, Map<Granularity, Integer> points,
                                                    long from, long to) throws Exception {
         for (Locator locator : locators) {
             for (Granularity g2 : Granularity.granularities()) {
@@ -136,8 +154,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         locator.getMetricName(),
                         baseMillis,
                         baseMillis + 86400000,
-                        points.get(g2.name())).get("values");
-                Assert.assertEquals((int) answers.get(g2.name()), data.size());
+                        points.get(g2)).get("values");
+                Assert.assertEquals((int) answers.get(locator).get(g2), data.size());
             }
         }
     }
