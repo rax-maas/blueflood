@@ -96,7 +96,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
                     // time a TTL is requested.
                     if (ex.getStatusCode() == 404) {
                         httpErrorMeter.mark();
-                        log.error(ex.getMessage());
+                        log.warn(ex.getMessage());
                         return buildTtlMap(DEFAULT_ACCOUNT);
                     } else
                         throw ex;
