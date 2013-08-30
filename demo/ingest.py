@@ -37,17 +37,17 @@ def _generate_metrics_data(tenantId, metricName):
     now = long(time.time() * 1000)
     # Publish metrics with older timestamps (2 hrs before current time)
     startTimestamp = now - 2 * 60 * 60 * 1000
+    endTimestamp = startTimestamp
     for i in range(100):
         metric = {}
-        metric['collectionTime'] = startTimestamp
+        metric['collectionTime'] = endTimestamp
         metric['metricName'] = metricName
         metric['metricValue'] = random.randint(1, 100)
         metric['ttlInSeconds'] = 2 * 24 * 60 * 60  # 2 days
         metric['unit'] = 'seconds'
         data.append(metric)
-        startTimestamp += 30 * 1000  # 30s spaced metric samples
+        endTimestamp += 30 * 1000  # 30s spaced metric samples
 
-    endTimestamp = startTimestamp
     return data, startTimestamp, endTimestamp
 
 
