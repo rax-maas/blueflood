@@ -55,7 +55,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     // allowable errors per minute.
     private double safetyThreshold = 10d;
     
-    private volatile long lastFetchError = System.currentTimeMillis();
+    private volatile long lastFetchError = 0;
 
     public TtlCache(String label, TimeValue expiration, int cacheConcurrency, final InternalAPI internalAPI) {
         try {
