@@ -233,6 +233,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
 
             if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.STRING)) {
+                // cannot compute rollups for non-numeric metrics. classcastexception will be thrown at pointFromColumn().
                 gran = Granularity.FULL;
                 return getStringMetricDataForRange(locator, range, gran, StringSerializer.get());
             } else if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.BOOLEAN)) {
