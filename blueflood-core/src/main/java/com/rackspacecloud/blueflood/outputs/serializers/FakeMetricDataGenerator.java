@@ -47,4 +47,14 @@ public class FakeMetricDataGenerator {
 
         return points;
     }
+
+    public static Points<String> generateFakeStringPoints() {
+        Points<String> points = Points.create(Granularity.FULL);
+        long startTime = 1234567L;
+        for (int i =0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<String> point = new Points.Point<String>(timeNow, String.valueOf(timeNow));
+        }
+        return points;
+    }
 }

@@ -96,12 +96,12 @@ public class JSONOutputSerializerTest {
             Assert.assertNull(dataJSON.get("variance"));
         }
     }
-    
+
     @Test
     public void testTransformRollupDataString() throws SerializationException{
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown");
-        
+
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
         for (int i = 0; i < data.size(); i++ ) {
@@ -120,3 +120,4 @@ public class JSONOutputSerializerTest {
         }
     }
 }
+
