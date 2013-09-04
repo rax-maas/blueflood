@@ -39,14 +39,11 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class HttpRollupsQueryHandler extends RollupHandler
-            implements MetricDataQueryInterface<JSONObject>, HttpRequestHandler {
+            implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
     private final OutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
@@ -61,22 +58,40 @@ public class HttpRollupsQueryHandler extends RollupHandler
         parser = new JsonParser();
         defaultStats = new HashSet<String>();
         defaultStats.add("average");
+        defaultStats.add("numPoints");
+    }
+
+    private JSONObject GetDataByPoints(String tenantId,
+                                      String metric,
+                                      long from,
+                                      long to,
+                                      int points,
+                                      Set<String> stats) throws SerializationException {
+        return serializer.transformRollupData(GetDataByPoints(tenantId, metric, from, to, points), stats);
+    }
+
+    private JSONObject GetDataByResolution(String tenantId,
+                                      String metric,
+                                      long from,
+                                      long to,
+                                      Resolution resolution,
+                                      Set<String> stats) throws SerializationException {
+        return serializer.transformRollupData(GetDataByResolution(tenantId, metric, from, to, resolution), stats);
     }
 
     @Override
-    public JSONObject GetDataByPoints(String tenantId,
+    public MetricData GetDataByPoints(String tenantId,
                                       String metric,
                                       long from,
                                       long to,
                                       int points) throws SerializationException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        MetricData data = getRollupByGranularity(tenantId, metric, from, to, g);
-        return serializer.transformRollupData(data, defaultStats);
+        return getRollupByGranularity(tenantId, metric, from, to, g);
     }
 
     @Override
-    public JSONObject GetDataByResolution(String tenantId,
+    public MetricData GetDataByResolution(String tenantId,
                                           String metric,
                                           long from,
                                           long to,
@@ -86,8 +101,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             resolution = Resolution.FULL;
         }
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        MetricData data = getRollupByGranularity(tenantId, metric, from, to, g);
-        return serializer.transformRollupData(data, defaultStats);
+        return getRollupByGranularity(tenantId, metric, from, to, g);
     }
 
     @Override
@@ -109,9 +123,10 @@ public class HttpRollupsQueryHandler extends RollupHandler
 
             JSONObject metricData;
             if (params.isPoints) {
-                metricData = GetDataByPoints(tenantId, metricName, params.from, params.to, params.points);
+                metricData = GetDataByPoints(tenantId, metricName, params.from, params.to, params.points, params.stats);
             } else if (params.isResolution) {
-                metricData = GetDataByResolution(tenantId, metricName, params.from, params.to, params.resolution);
+                metricData = GetDataByResolution(tenantId, metricName, params.from, params.to, params.resolution,
+                        params.stats);
             } else {
                 throw new InvalidRequestException("Invalid rollups query. Neither points nor resolution specified.");
             }
@@ -139,6 +154,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         List<String> res = params.get("resolution");
         List<String> from = params.get("from");
         List<String> to = params.get("to");
+        List<String> select = params.get("select");
 
         if (points == null && res == null) {
             throw new InvalidRequestException("Either 'points' or 'resolution' is required.");
@@ -161,10 +177,12 @@ public class HttpRollupsQueryHandler extends RollupHandler
             throw new InvalidRequestException("paramter 'to' must be greater than 'from'");
         }
 
+        Set<String> stats = getStatsToFilter(select);
+
         if (points != null) {
-            return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)));
+            return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
         } else {
-            return new RollupsQueryParams(fromTime, toTime, Resolution.fromString(res.get(0)));
+            return new RollupsQueryParams(fromTime, toTime, Resolution.fromString(res.get(0)), stats);
         }
     }
 
@@ -178,25 +196,46 @@ public class HttpRollupsQueryHandler extends RollupHandler
         HttpResponder.respond(channel, request, response);
     }
 
+    private Set<String> getStatsToFilter(List<String> select) {
+        if (select == null || select.isEmpty()) {
+            return defaultStats;
+        } else {
+            Set<String> filters = new HashSet<String>();
+            // handle case when someone does select=average,min instead of select=average&select=min
+            for (String stat : select) {
+                if (stat.contains(",")) {
+                    List<String> nestedStats = Arrays.asList(stat.split(","));
+                    filters.addAll(nestedStats);
+                }
+            }
+            return filters;
+        }
+    }
+
     private class RollupsQueryParams {
         public int points;
         public Resolution resolution;
-        public long from;
-        public long to;
+        public final long from;
+        public final long to;
+        private final Set<String> stats;
         public boolean isPoints = true;
         public boolean isResolution = false;
 
-        public RollupsQueryParams(long from, long to, int points) {
+        private RollupsQueryParams(long from, long to, Set<String> stats) {
+            this.stats = stats;
             this.from = from;
             this.to = to;
-            this.points = points;
-            this.isResolution = false;
-            this.isPoints = true;
         }
 
-        public RollupsQueryParams(long from, long to, Resolution resolution) {
-            this.from = from;
-            this.to = to;
+        public RollupsQueryParams(long from, long to, int points, Set<String> stats) {
+            this(from, to, stats);
+            this.isResolution = false;
+            this.isPoints = true;
+            this.points = points;
+        }
+
+        public RollupsQueryParams(long from, long to, Resolution resolution, Set<String> stats) {
+            this(from, to, stats);
             this.resolution = resolution;
             this.isPoints = false;
             this.isResolution = true;

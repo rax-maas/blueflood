@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
@@ -30,7 +31,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.simple.JSONArray;
 import org.junit.*;
 
 import java.net.URI;
@@ -149,13 +149,13 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                                                    long from, long to) throws Exception {
         for (Locator locator : locators) {
             for (Granularity g2 : Granularity.granularities()) {
-                JSONArray data = (JSONArray) httpHandler.GetDataByPoints(
+                MetricData data = httpHandler.GetDataByPoints(
                         locator.getTenantId(),
                         locator.getMetricName(),
                         baseMillis,
                         baseMillis + 86400000,
-                        points.get(g2)).get("values");
-                Assert.assertEquals((int) answers.get(locator).get(g2), data.size());
+                        points.get(g2));
+                Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
             }
         }
     }
@@ -169,9 +169,9 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private int getNumberOfPointsViaHTTPHandler(HttpRollupsQueryHandler handler,
                                                Locator locator, long from, long to, Resolution resolution)
             throws Exception {
-        final JSONArray values =  (JSONArray) handler.GetDataByResolution(locator.getTenantId(),
-                locator.getMetricName(), from, to, resolution).get("values");
-        return values.size();
+        final MetricData values = handler.GetDataByResolution(locator.getTenantId(),
+                locator.getMetricName(), from, to, resolution);
+        return values.getData().getPoints().size();
     }
 
     private void testHttpRequestForPoints() throws Exception {

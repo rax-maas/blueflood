@@ -53,13 +53,15 @@ public class JSONOutputSerializerTest {
             Assert.assertEquals(point.getData(), dataJSON.get("average"));
             Assert.assertEquals(point.getData(), dataJSON.get("min"));
             Assert.assertEquals(point.getData(), dataJSON.get("max"));
-            Assert.assertEquals(1L, dataJSON.get("numPoints"));
 
             // Assert unit is same
             Assert.assertEquals(metricData.getUnit(), dataJSON.get("unit"));
 
             // Assert that variance isn't present
             Assert.assertNull(dataJSON.get("variance"));
+
+            // Assert numPoints isn't present
+            Assert.assertNull(dataJSON.get("numPoints"));
         }
     }
 
@@ -68,8 +70,13 @@ public class JSONOutputSerializerTest {
     public void testTransformRollupDataForCoarserGran() throws Exception {
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown");
+        Set<String> filters = new HashSet<String>();
+        filters.add("average");
+        filters.add("min");
+        filters.add("max");
+        filters.add("numPoints");
 
-        JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, filters);
 
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
         for (int i = 0; i < data.size(); i++) {

@@ -63,20 +63,23 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         object.put("unit", unit);
 
         JSONObject filterStatsObject;
+        long numPoints;
         if (point.getData() instanceof Rollup) {
-            object.put("numPoints", ((Rollup) point.getData()).getCount());
+            numPoints = ((Rollup) point.getData()).getCount();
             filterStatsObject = getFilteredStatsForRollup((Rollup) point.getData(), filterStats);
         } else {
-            object.put("numPoints", 1L);
+            numPoints = 1;
             filterStatsObject = getFilteredStatsForFullRes(point.getData(), filterStats);
         }
 
         // Set all filtered stats to null if numPoints is 0
-        if ((Long) object.get("numPoints") == 0) {
+        if (numPoints == 0) {
             final Set<Map.Entry<String, Object>> statsSet = filterStatsObject.entrySet();
 
             for (Map.Entry<String, Object> stat : statsSet) {
-                stat.setValue(null);
+                if (!stat.getKey().equals("numPoints")) {
+                    stat.setValue(null);
+                }
             }
         }
 
@@ -94,13 +97,15 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
             for (String stat : filterStats) {
             String lowerCaseStat = stat.toLowerCase();
             if (lowerCaseStat.equals("average")) {
-                filteredObject.put(lowerCaseStat, rollup.getAverage());
+                filteredObject.put("average", rollup.getAverage());
             } else if (lowerCaseStat.equals("min")) {
-                filteredObject.put(lowerCaseStat, rollup.getMinValue());
+                filteredObject.put("min", rollup.getMinValue());
             } else if (lowerCaseStat.equals("max")) {
-                filteredObject.put(lowerCaseStat, rollup.getMaxValue());
+                filteredObject.put("max", rollup.getMaxValue());
             } else if (lowerCaseStat.equals("variance")) {
-                filteredObject.put(lowerCaseStat, rollup.getVariance());
+                filteredObject.put("variance", rollup.getVariance());
+            } else if (lowerCaseStat.equals("numpoints")) {
+                filteredObject.put("numPoints", rollup.getCount());
             }
         }
 
@@ -115,13 +120,15 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
             for (String stat : filterStats) {
                 String lowerCaseStat = stat.toLowerCase();
                 if (lowerCaseStat.equals("average")) {
-                    filteredObject.put(lowerCaseStat, rawSample);
+                    filteredObject.put("average", rawSample);
                 } else if (lowerCaseStat.equals("min")) {
-                    filteredObject.put(lowerCaseStat, rawSample);
+                    filteredObject.put("min", rawSample);
                 } else if (lowerCaseStat.equals("max")) {
-                    filteredObject.put(lowerCaseStat, rawSample);
+                    filteredObject.put("max", rawSample);
                 } else if (lowerCaseStat.equals("variance")) {
-                    filteredObject.put(lowerCaseStat, 0);
+                    filteredObject.put("variance", 0);
+                } else if (lowerCaseStat.equals("numpoints")) {
+                    filteredObject.put("numPoints", 1);
                 }
             }
         }
