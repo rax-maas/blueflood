@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
@@ -72,8 +73,8 @@ public class AstyanaxWriter extends AstyanaxIO {
             InternalAPIFactory.createDefaultTTLProvider()) {
         // we do not care about caching full res values.
         @Override
-        protected Map<String, TimeValue> buildTtlMap(Account acct) {
-            Map<String, TimeValue> map = super.buildTtlMap(acct);
+        protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
+            Map<ColumnFamily<Locator, Long>, TimeValue> map = super.buildTtlMap(acct);
             map.remove("full");
             return map;
         }
@@ -168,7 +169,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 mutationBatch.withRow(CF_METRICS_FULL, metric.getLocator())
                         .putColumn(metric.getCollectionTime(),
                                 metric.getValue(),
-                                NumericSerializer.get(Granularity.FULL),
+                                NumericSerializer.get(AstyanaxIO.CF_METRICS_FULL),
                                 metric.getTtlInSeconds());
             } catch (RuntimeException e) {
                 log.error("Error serializing full resolution data", e);
@@ -192,27 +193,27 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void insertRollup(Locator locator, final long timestamp, final Rollup rollup,
-                             Granularity destGran) throws ConnectionException {
-        if (destGran.equals(Granularity.FULL)) {
+                             ColumnFamily<Locator, Long> destCF) throws ConnectionException {
+        if (destCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
             throw new IllegalArgumentException("Invalid granularity FULL for Rollup insertion");
         }
         insertRollups(locator, new HashMap<Long, Rollup>() {{
             put(timestamp, rollup);
-        }}, destGran);
+        }}, destCF);
     }
 
 
     public void insertRollups(Locator locator, Map<Long, Rollup> rollups,
-                                          Granularity gran) throws ConnectionException {
+                                          ColumnFamily<Locator, Long> destCF) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
-        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), gran).toSeconds();
+        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(CF_NAME_TO_CF.get(gran.name()), locator);
+            ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
             for (Map.Entry<Long, Rollup> rollupEntry : rollups.entrySet()) {
                         mutationBatchWithRow.putColumn(
                                 rollupEntry.getKey(),
-                                NumericSerializer.get(gran).toByteBuffer(rollupEntry.getValue()),
+                                NumericSerializer.get(destCF).toByteBuffer(rollupEntry.getValue()),
                                 ttl);
             }
             // send it.

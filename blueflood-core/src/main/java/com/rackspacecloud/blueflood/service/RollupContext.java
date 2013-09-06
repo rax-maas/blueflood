@@ -16,8 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Timer;
@@ -32,31 +34,41 @@ import java.util.concurrent.atomic.AtomicInteger;
  * metric is finished so that the metric service can be signaled/
  */
 class RollupContext {
-    private final Granularity srcGran; // this is the source granularity (finer).
+    private final Locator locator;
     private final Range range;
-    private final AtomicInteger counter = new AtomicInteger(0);
-    private final Thread owner;
+    private final ColumnFamily<Locator, Long> srcCF; // this is the source column family to read from.
+    private final ColumnFamily<Locator, Long> destCF; // this is the dest column family to write to.
     private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
-    
-    RollupContext(Range range, Granularity srcGran, Thread owner) {
-        this.range = range;
-        this.srcGran = srcGran;
-        this.owner = owner;
-    }
-    
-    void decrement() { 
-        counter.decrementAndGet();
-        owner.interrupt(); // this is what interrupts that long sleep in LocatorFetchRunnable.
-    }
-    
-    void increment() { counter.incrementAndGet(); }
-    boolean done() { return counter.get() == 0; }
 
-    // dumb getters.
+    RollupContext(Locator locator, Range rangeToRead, ColumnFamily srcColumnFamily, ColumnFamily destColumnFamily) {
+        this.locator = locator;
+        this.range = rangeToRead;
+        this.srcCF = srcColumnFamily;
+        this.destCF = destColumnFamily;
+    }
     
-    Timer getExecuteTimer() { return executeTimer; }
-    Histogram getWaitHist() { return waitHist; }
-    Granularity getSourceGranularity() { return srcGran; }
-    Range getRange() { return range; }
+    Timer getExecuteTimer() {
+        return executeTimer;
+    }
+
+    Histogram getWaitHist() {
+        return waitHist;
+    }
+
+    public ColumnFamily<Locator, Long> getSourceColumnFamily() {
+        return this.srcCF;
+    }
+
+    public ColumnFamily<Locator, Long> getDestinationColumnFamily() {
+        return this.destCF;
+    }
+
+    Range getRange() {
+        return this.range;
+    }
+
+    Locator getLocator() {
+        return this.locator;
+    }
 }

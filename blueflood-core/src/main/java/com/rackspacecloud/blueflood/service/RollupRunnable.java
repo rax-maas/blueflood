@@ -16,10 +16,8 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
@@ -37,54 +35,52 @@ class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private static final Meter rollupHasNoDataMeter = Metrics.newMeter(RollupRunnable.class, "Read and Calculate Rollup Zero Points", "Read Zero Points", TimeUnit.SECONDS);
-    private final Locator locator;
-    private final RollupContext ctx;
+    private final RollupContext rollupContext;
+    private final RollupExecutionContext executionContext;
     private final long startWait;
     
-    RollupRunnable(RollupContext ctx, Locator locator) {
-        this.locator = locator;
-        this.ctx = ctx;
+    RollupRunnable(RollupExecutionContext executionContext, RollupContext rollupContext) {
+        this.executionContext = executionContext;
+        this.rollupContext = rollupContext;
         startWait = System.currentTimeMillis();
     }
     
     public void run() {
-        if (log.isDebugEnabled()) {
-            try {
-                log.debug("Executing rollup {}->{} for {} {}", new Object[] {ctx.getSourceGranularity().name(),
-                        ctx.getSourceGranularity().coarser().name(), ctx.getRange().toString(), locator});
-            } catch (GranularityException ex) {
-                log.error("Don't have any granularity coarser than " + ctx.getSourceGranularity());
-                return;
-            }
-        }
 
-        ctx.getWaitHist().update(System.currentTimeMillis() - startWait);
-        TimerContext timerContext = ctx.getExecuteTimer().time();
+        log.debug("Executing rollup {}->{} for {} {}", new Object[] {rollupContext.getSourceColumnFamily().getName(),
+                rollupContext.getDestinationColumnFamily().getName(), rollupContext.getRange().toString(),
+                rollupContext.getLocator()});
+
+        rollupContext.getWaitHist().update(System.currentTimeMillis() - startWait);
+        TimerContext timerContext = rollupContext.getExecuteTimer().time();
         try {
-            TimerContext calcCtx = calcTimer.time();
+            TimerContext calcrollupContext = calcTimer.time();
             Rollup rollup;
             try {
-                rollup = AstyanaxReader.getInstance().readAndCalculate(locator, ctx.getRange(),
-                        ctx.getSourceGranularity());
+                rollup = AstyanaxReader.getInstance().readAndCalculate(rollupContext.getLocator(),
+                        rollupContext.getRange(),
+                        rollupContext.getSourceColumnFamily());
                 if (rollup.getCount() == 0) { rollupHasNoDataMeter.mark(); }
             } finally {
-                calcCtx.stop();
+                calcrollupContext.stop();
             }
 
-            TimerContext writeCtx = writeTimer.time();
+            TimerContext writerollupContext = writeTimer.time();
             try {
-                AstyanaxWriter.getInstance().insertRollup(locator, ctx.getRange().getStart(), rollup,
-                        ctx.getSourceGranularity().coarser());
+                AstyanaxWriter.getInstance().insertRollup(rollupContext.getLocator(),
+                        rollupContext.getRange().getStart(), rollup,
+                        rollupContext.getDestinationColumnFamily());
             } finally {
-                writeCtx.stop();
+                writerollupContext.stop();
             }
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
         } catch (Throwable th) {
-            log.error("rollup failed locator: {}", locator);
-            log.error("Something unexpected happened", th);  
+            log.error("Rollup failed; Locator : ", rollupContext.getLocator()
+                    + ", Source CF: " + rollupContext.getSourceColumnFamily()
+                    + ", Dest CF: " + rollupContext.getDestinationColumnFamily());
         } finally {
-            ctx.decrement();
+            executionContext.decrement();
             timerContext.stop();
         }
     }

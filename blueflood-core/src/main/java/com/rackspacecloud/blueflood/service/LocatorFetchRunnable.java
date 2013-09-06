@@ -16,11 +16,14 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.netflix.astyanax.model.Column;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
@@ -54,19 +57,18 @@ class LocatorFetchRunnable implements Runnable {
     
     public void run() {
         final TimerContext timerCtx = rollupLocatorExecuteTimer.time();
-        final Granularity parentGran = Granularity.granularityFromKey(parentSlotKey);
+        final Granularity gran = Granularity.granularityFromKey(parentSlotKey);
         final int parentSlot = Granularity.slotFromKey(parentSlotKey);
         final int shard = Granularity.shardFromKey(parentSlotKey);
-        final Range parentRange = parentGran.deriveRange(parentSlot, serverTime);
+        final Range parentRange = gran.deriveRange(parentSlot, serverTime);
         Granularity finerGran;
 
         try {
-            finerGran = parentGran.finer();
+            finerGran = gran.finer();
         } catch (Exception ex) {
-            log.error("No finer granularity available than " + parentGran);
+            log.error("No finer granularity available than " + gran);
             return;
         }
-        final RollupContext ctx = new RollupContext(parentRange, finerGran, Thread.currentThread());
 
         if (log.isTraceEnabled())
             log.trace("Getting locators for {} {} @ {}", new Object[]{parentSlotKey, parentRange.toString(), scheduleCtx.getCurrentTimeMillis()});
@@ -75,16 +77,22 @@ class LocatorFetchRunnable implements Runnable {
         long waitStart = System.currentTimeMillis();
         int rollCount = 0;
 
+        final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         for (Column<Locator> locatorCol : AstyanaxReader.getInstance().getAllLocators(shard)) {
+            final Locator locator = locatorCol.getName();
+            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran.name());
+            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
             try {
-                ctx.increment();
-                rollupExecutor.execute(new RollupRunnable(ctx, locatorCol.getName()));
+                executionContext.increment();
+                final RollupContext rollupContext = new RollupContext(locator, parentRange, srcCF, destCF);
+                rollupExecutor.execute(new RollupRunnable(executionContext, rollupContext));
                 rollCount += 1;
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
-                ctx.decrement();
+                executionContext.decrement();
                 log.error(any.getMessage(), any);
                 log.error("Rollup failed for {} at {}", parentSlotKey, serverTime);
             }
@@ -93,7 +101,7 @@ class LocatorFetchRunnable implements Runnable {
         if (success) {
             // now wait until ctx is drained. someone needs to be notified.
             log.debug("Waiting for rollups to finish for " + parentSlotKey);
-            while (!ctx.done()) {
+            while (!executionContext.done()) {
                 try { 
                     Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS); 
                 } catch (InterruptedException ex) {
@@ -107,7 +115,7 @@ class LocatorFetchRunnable implements Runnable {
                 log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
             this.scheduleCtx.clearFromRunning(parentSlotKey);
         } else {
-            log.warn("Rollup execution of {} failed.", parentGran);
+            log.warn("Rollup execution of {} failed.", gran);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey);
         }
 
