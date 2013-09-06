@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.netflix.astyanax.model.ColumnList;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -69,7 +70,9 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
-        ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator, Granularity.FULL, 1234567878, 1234567900);
+        ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator,
+                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()),
+                1234567878, 1234567900);
         Assert.assertEquals(1, rollups.size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }

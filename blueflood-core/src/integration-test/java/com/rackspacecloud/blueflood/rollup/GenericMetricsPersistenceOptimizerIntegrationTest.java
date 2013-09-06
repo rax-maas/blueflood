@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.NumericSerializer;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -52,12 +53,12 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
         MutationBatch mb = at.createMutationBatch();
         mb.withRow(at.getFullCF(), locator)
                 .putColumn(collectionTimeInSecs,
-                        NumericSerializer.get(Granularity.FULL).toByteBuffer(123));
+                        NumericSerializer.get(at.getFullCF()).toByteBuffer(123));
 
         // add another metric
         mb.withRow(at.getFullCF(), locator)
                 .putColumn(collectionTimeInSecs + 1,
-                        NumericSerializer.get(Granularity.FULL).toByteBuffer(456));
+                        NumericSerializer.get(at.getFullCF()).toByteBuffer(456));
 
         mb.execute();
     }
