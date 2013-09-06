@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
@@ -29,13 +30,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class JSONOutputSerializerTest {
-    private final Set<String> filterStats;
+    private final Set<MetricStat> filterStats;
 
     public JSONOutputSerializerTest() {
-        filterStats = new HashSet<String>();
-        filterStats.add("average");
-        filterStats.add("min");
-        filterStats.add("max");
+        filterStats = new HashSet<MetricStat>();
+        filterStats.add(MetricStat.AVERAGE);
+        filterStats.add(MetricStat.MIN);
+        filterStats.add(MetricStat.MAX);
     }
 
     @Test
@@ -70,11 +71,11 @@ public class JSONOutputSerializerTest {
     public void testTransformRollupDataForCoarserGran() throws Exception {
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown");
-        Set<String> filters = new HashSet<String>();
-        filters.add("average");
-        filters.add("min");
-        filters.add("max");
-        filters.add("numPoints");
+        Set<MetricStat> filters = new HashSet<MetricStat>();
+        filters.add(MetricStat.AVERAGE);
+        filters.add(MetricStat.MIN);
+        filters.add(MetricStat.MAX);
+        filters.add(MetricStat.NUM_POINTS);
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filters);
 
