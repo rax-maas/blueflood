@@ -29,7 +29,7 @@ import java.util.Set;
 public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
 
     @Override
-    public JSONObject transformRollupData(MetricData metricData, Set<String> filterStats)
+    public JSONObject transformRollupData(MetricData metricData, Set<MetricStat> filterStats)
             throws SerializationException {
         final JSONObject globalJSON = new JSONObject();
         final JSONObject metaObject = new JSONObject();
@@ -46,7 +46,7 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return globalJSON;
     }
 
-    private JSONArray transformDataToJSONArray(MetricData metricData, Set<String> filterStats) {
+    private JSONArray transformDataToJSONArray(MetricData metricData, Set<MetricStat> filterStats) {
         Points points = metricData.getData();
         final JSONArray data = new JSONArray();
         final Set<Map.Entry<Long, Points.Point>> dataPoints = points.getPoints().entrySet();
@@ -57,7 +57,7 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return data;
     }
 
-    private JSONObject toJSON(long timestamp, Points.Point point, String unit, Set<String> filterStats) {
+    private JSONObject toJSON(long timestamp, Points.Point point, String unit, Set<MetricStat> filterStats) {
         final JSONObject  object = new JSONObject();
         object.put("timestamp", timestamp);
         object.put("unit", unit);
@@ -92,44 +92,21 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return object;
     }
 
-    private JSONObject getFilteredStatsForRollup(Rollup rollup, Set<String> filterStats) {
+    private JSONObject getFilteredStatsForRollup(Rollup rollup, Set<MetricStat> filterStats) {
         final JSONObject filteredObject = new JSONObject();
-            for (String stat : filterStats) {
-            String lowerCaseStat = stat.toLowerCase();
-            if (lowerCaseStat.equals("average")) {
-                filteredObject.put("average", rollup.getAverage());
-            } else if (lowerCaseStat.equals("min")) {
-                filteredObject.put("min", rollup.getMinValue());
-            } else if (lowerCaseStat.equals("max")) {
-                filteredObject.put("max", rollup.getMaxValue());
-            } else if (lowerCaseStat.equals("variance")) {
-                filteredObject.put("variance", rollup.getVariance());
-            } else if (lowerCaseStat.equals("numpoints")) {
-                filteredObject.put("numPoints", rollup.getCount());
-            }
+        for (MetricStat stat : filterStats) {
+            filteredObject.put(stat.toString(), stat.convertRollupToObject(rollup));
         }
-
         return filteredObject;
     }
 
-    private JSONObject getFilteredStatsForFullRes(Object rawSample, Set<String> filterStats) {
+    private JSONObject getFilteredStatsForFullRes(Object rawSample, Set<MetricStat> filterStats) {
         final JSONObject filteredObject = new JSONObject();
         if (rawSample instanceof String || rawSample instanceof Boolean) {
             filteredObject.put("value", rawSample);
         } else {
-            for (String stat : filterStats) {
-                String lowerCaseStat = stat.toLowerCase();
-                if (lowerCaseStat.equals("average")) {
-                    filteredObject.put("average", rawSample);
-                } else if (lowerCaseStat.equals("min")) {
-                    filteredObject.put("min", rawSample);
-                } else if (lowerCaseStat.equals("max")) {
-                    filteredObject.put("max", rawSample);
-                } else if (lowerCaseStat.equals("variance")) {
-                    filteredObject.put("variance", 0);
-                } else if (lowerCaseStat.equals("numpoints")) {
-                    filteredObject.put("numPoints", 1);
-                }
+            for (MetricStat stat : filterStats) {
+                filteredObject.put(stat.toString(), stat.convertRawSampleToObject(rawSample));
             }
         }
         return filteredObject;
