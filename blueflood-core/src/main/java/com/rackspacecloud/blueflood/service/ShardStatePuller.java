@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class ShardStatePuller extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePuller.class);
 
-    ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager) {
+    public ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager) {
         super(allShards, stateManager, new TimeValue(Configuration.getIntegerProperty("SHARD_PULL_PERIOD"), TimeUnit.MILLISECONDS));
     }
 

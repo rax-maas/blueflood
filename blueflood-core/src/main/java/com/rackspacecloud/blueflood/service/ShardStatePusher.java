@@ -28,10 +28,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-class ShardStatePusher extends ShardStateWorker {
+public class ShardStatePusher extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePusher.class);
 
-    ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager) {
+    public ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager) {
         super(allShards, stateManager, new TimeValue(Configuration.getIntegerProperty("SHARD_PUSH_PERIOD"), TimeUnit.MILLISECONDS));
     }
     
