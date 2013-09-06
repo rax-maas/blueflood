@@ -123,7 +123,8 @@ public class Configuration {
 
     public static String getStringProperty(String name) {
         if (System.getProperty(name) != null && !props.containsKey("original." + name)) {
-            props.put("original." + name, props.get(name));
+            if (props.containsKey(name))
+                props.put("original." + name, props.get(name));
             props.put(name, System.getProperty(name));
         }
         return props.getProperty(name);
