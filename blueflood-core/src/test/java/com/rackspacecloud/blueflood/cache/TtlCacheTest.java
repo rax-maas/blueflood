@@ -16,11 +16,14 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.AccountMapEntry;
 import com.rackspacecloud.blueflood.internal.AccountTest;
 import com.rackspacecloud.blueflood.internal.InternalAPI;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import org.apache.http.client.HttpResponseException;
@@ -68,7 +71,7 @@ public class TtlCacheTest {
             }
         }) {
             @Override
-            protected Map<String, TimeValue> buildTtlMap(Account acct) {
+            protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
                 buildCount.incrementAndGet();
                 return super.buildTtlMap(acct);
             }
@@ -90,8 +93,8 @@ public class TtlCacheTest {
     private void warmCache() {
         for (int i = 0; i < 100; i++) {
             for (Granularity gran : Granularity.granularities()) {
-                twoSecondCache.getTtl("ackVCKg1rk", gran);
-                twoSecondCache.getTtl("acAAAAAAAA", gran);
+                twoSecondCache.getTtl("ackVCKg1rk", AstyanaxIO.getColumnFamilyMapper().get(gran.name()));
+                twoSecondCache.getTtl("acAAAAAAAA", AstyanaxIO.getColumnFamilyMapper().get(gran.name()));
             }
         }
     }
@@ -122,29 +125,34 @@ public class TtlCacheTest {
     public void testDefaultsAreNotNormallyUsed() {
         warmCache();
         for (String acctId : new String[] {"ackVCKg1rk", "acAAAAAAAA"})
-            for (Granularity gran : Granularity.granularities())
-                Assert.assertFalse(TtlCache.SAFETY_TTLS.get(gran).toSeconds() == twoSecondCache.getTtl(acctId, gran).toSeconds());
+            for (Granularity gran : Granularity.granularities()) {
+                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+                Assert.assertFalse(TtlCache.SAFETY_TTLS.get(CF).toSeconds() == twoSecondCache.getTtl(acctId, CF).toSeconds());
+            }
     }
     
     @Test
     public void testDefaultsUsedOnAPIError() {
         warmCache();
-        for (Map.Entry<Granularity, TimeValue> entry : TtlCache.SAFETY_TTLS.entrySet())
+        for (Map.Entry<ColumnFamily<Locator, Long>, TimeValue> entry : TtlCache.SAFETY_TTLS.entrySet()) {
             Assert.assertEquals(entry.getValue(), twoSecondCache.getTtl(IOException.class.getName(), entry.getKey()));
+        }
     }
     
     @Test
     public void testDefaultUsedOnHttpError() {
         warmCache();
-        for (Map.Entry<Granularity, TimeValue> entry : TtlCache.SAFETY_TTLS.entrySet())
+        for (Map.Entry<ColumnFamily<Locator, Long>, TimeValue> entry : TtlCache.SAFETY_TTLS.entrySet()) {
             Assert.assertEquals(entry.getValue(), twoSecondCache.getTtl(HttpResponseException.class.getName(), entry.getKey()));
+        }
     }
     
     @Test
     public void testIOErrorTriggersSafetyMode() {
         warmCache();
-        for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 10; i++)
-            twoSecondCache.getTtl(IOException.class.getName(), Granularity.FULL);
+        for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 10; i++) {
+            twoSecondCache.getTtl(IOException.class.getName(), AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+        }
         forceMeterTick("generalErrorMeter");
         Assert.assertTrue(twoSecondCache.isSafetyMode());
     }
@@ -152,8 +160,10 @@ public class TtlCacheTest {
     @Test
     public void testHttpErrorDoesNotTriggerSafetyMode() {
         warmCache();
-        for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 1; i++)
-            twoSecondCache.getTtl(HttpResponseException.class.getName(), Granularity.FULL);
+        for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 1; i++) {
+            twoSecondCache.getTtl(HttpResponseException.class.getName(),
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+        }
         forceMeterTick("generalErrorMeter");
         Assert.assertFalse(twoSecondCache.isSafetyMode());
     }
