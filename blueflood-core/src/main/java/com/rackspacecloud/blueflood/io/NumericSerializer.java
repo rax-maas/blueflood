@@ -16,10 +16,12 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
@@ -52,11 +54,12 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         this.fullResolution = fullResolution;
     }
 
-    public static NumericSerializer get(Granularity granularity) {
-        if (granularity == null) {
-            throw new RuntimeException("Granularity cannot be null", new SerializationException("Granularity cannot be null"));
+    public static NumericSerializer get(ColumnFamily<Locator, Long> columnFamily) {
+        if (columnFamily == null) {
+            throw new RuntimeException("ColumnFamily cannot be null",
+                    new SerializationException("ColumnFamily cannot be null"));
         }
-        if (granularity.equals(Granularity.FULL)) {
+        if (columnFamily    .equals(AstyanaxIO.CF_METRICS_FULL)) {
             return fullInstance;
         }
         return rollupInstance;

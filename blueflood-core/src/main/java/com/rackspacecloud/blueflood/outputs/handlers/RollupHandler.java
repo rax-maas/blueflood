@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -76,7 +77,8 @@ public class RollupHandler {
 
                 // missing some rollups, generate more
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
-                    Rollup rollup = AstyanaxReader.getInstance().readAndCalculate(locator, r, Granularity.FULL);
+                    Rollup rollup = AstyanaxReader.getInstance().readAndCalculate(locator, r,
+                            AstyanaxIO.getColumnFamilyMapper().get(g.name()));
                     if (rollup == null) {
                         // errant string metric, already logged during deserialization. log at error so someone goes
                         // and cleans these up.

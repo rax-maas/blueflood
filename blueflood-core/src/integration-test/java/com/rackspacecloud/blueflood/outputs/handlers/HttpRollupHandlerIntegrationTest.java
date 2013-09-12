@@ -16,8 +16,10 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
@@ -205,11 +207,13 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
         Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            Rollup rollup = AstyanaxReader.getInstance().readAndCalculate(locator, range, Granularity.FULL);
+            Rollup rollup = AstyanaxReader.getInstance().readAndCalculate(locator, range,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()));
             rollups.put(range.getStart(), rollup);
         }
 
-        AstyanaxWriter.getInstance().insertRollups(locator, rollups, destGranularity);
+        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity.name());
+        AstyanaxWriter.getInstance().insertRollups(locator, rollups, destCF);
     }
 
     private URI getMetricsQueryURI() throws URISyntaxException {

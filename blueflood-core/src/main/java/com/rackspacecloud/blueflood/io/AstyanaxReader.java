@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -85,23 +86,23 @@ public class AstyanaxReader extends AstyanaxIO {
      * specified is over a single slot.
      * @param locator
      * @param range
-     * @param gran
+     * @param srcCF
      * @return
      */
-    public Rollup readAndCalculate(Locator locator, Range range, Granularity gran) {
+    public Rollup readAndCalculate(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) {
         Rollup rollup = new Rollup();
 
-        NumericSerializer serializer = NumericSerializer.get(gran);
-        ColumnList<Long> cols = getNumericRollups(locator, gran, range.start, range.stop);
+        NumericSerializer serializer = NumericSerializer.get(srcCF);
+        ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
         for (Column col : cols) {
             try {
-                if (gran == Granularity.FULL) {
+                if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
                     rollup.handleFullResMetric(col.getValue(serializer));
                 } else {
                     rollup.handleRollupMetric((Rollup)col.getValue(serializer));
                 }
             } catch (IOException ex) {
-                log.error("Problem deserializing data at granularity: " + gran.name() + ".");
+                log.error("Problem deserializing data for CF: " + srcCF + ".");
                 log.error(ex.getMessage(), ex);
             }
         }
@@ -152,7 +153,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public ColumnList<Long> getNumericRollups(Locator locator, Granularity granularity, long from, long to) {
+    public ColumnList<Long> getNumericRollups(Locator locator, ColumnFamily<Locator, Long> srcCF, long from, long to) {
         if (from > to) throw new RuntimeException(String.format("Invalid rollup period %d->%d", from, to));
 
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
@@ -160,7 +161,7 @@ public class AstyanaxReader extends AstyanaxIO {
         TimerContext ctx = Instrumentation.getTimerContext(GET_NUMERIC_ROLLUPS);
         try {
             RowQuery<Locator, Long> query = keyspace
-                    .prepareQuery(CF_NAME_TO_CF.get(granularity.name()))
+                    .prepareQuery(srcCF)
                     .getKey(locator)
                     .withColumnRange(rangeBuilder.build());
             columns = query.execute().getResult();
@@ -255,15 +256,18 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
+        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
         Points points = transformDBValuesToPoints(
-                getNumericRollups(locator, gran, range.start, range.stop), gran, NumericSerializer.get(gran));
+                getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran.name()), range.start, range.stop), gran,
+                NumericSerializer.get(CF));
         return new MetricData(points, getUnitString(locator));
     }
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
-        ColumnList<Long> results = getNumericRollups(locator, gran, range.getStart(), range.getStop());
-        Points points = transformDBValuesToPoints(results, gran, NumericSerializer.get(gran));
+        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+        ColumnList<Long> results = getNumericRollups(locator, CF, range.getStart(), range.getStop());
+        Points points = transformDBValuesToPoints(results, gran, NumericSerializer.get(CF));
 
         if (points.getPoints().size() > 0) {
             return new MetricData(points, getUnitString(locator));
