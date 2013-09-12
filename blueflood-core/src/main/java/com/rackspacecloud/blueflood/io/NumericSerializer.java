@@ -54,12 +54,12 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         this.fullResolution = fullResolution;
     }
 
-    public static NumericSerializer get(ColumnFamily<Locator, Long> srcCF) {
-        if (srcCF == null) {
+    public static NumericSerializer get(ColumnFamily<Locator, Long> columnFamily) {
+        if (columnFamily == null) {
             throw new RuntimeException("ColumnFamily cannot be null",
                     new SerializationException("ColumnFamily cannot be null"));
         }
-        if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
+        if (columnFamily    .equals(AstyanaxIO.CF_METRICS_FULL)) {
             return fullInstance;
         }
         return rollupInstance;
