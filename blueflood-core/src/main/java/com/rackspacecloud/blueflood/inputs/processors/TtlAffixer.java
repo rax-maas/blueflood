@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -39,7 +40,8 @@ public class TtlAffixer extends AsyncFunctionWithThreadPool<MetricsCollection, M
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
                 for (Metric metric : metrics.getMetrics()) {
-                    metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getTenantId(), Granularity.FULL).toSeconds());
+                    metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getTenantId(),
+                            AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name())).toSeconds());
                 }
                 return metrics;
             }

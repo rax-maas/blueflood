@@ -32,7 +32,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 
 import java.util.*;
 
-class AstyanaxIO {
+public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
     protected static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
@@ -136,5 +136,9 @@ class AstyanaxIO {
 
     protected static Keyspace getKeyspace() {
         return keyspace;
+    }
+
+    public static Map<String, ColumnFamily<Locator, Long>> getColumnFamilyMapper() {
+        return CF_NAME_TO_CF;
     }
 }
