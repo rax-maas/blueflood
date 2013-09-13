@@ -18,8 +18,8 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer.MetricStat;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -84,7 +84,7 @@ public class JSONOutputSerializerTest {
             final JSONObject dataJSON = (JSONObject) data.get(i);
             final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
 
-            long numPoints = ((Rollup) point.getData()).getCount();
+            long numPoints = ((BasicRollup) point.getData()).getCount();
             Assert.assertEquals(numPoints, dataJSON.get("numPoints"));
 
             if (numPoints == 0) {
@@ -92,9 +92,9 @@ public class JSONOutputSerializerTest {
                 Assert.assertNull(dataJSON.get("min"));
                 Assert.assertNull(dataJSON.get("max"));
             } else {
-                Assert.assertEquals(((Rollup) point.getData()).getAverage(), dataJSON.get("average"));
-                Assert.assertEquals(((Rollup) point.getData()).getMaxValue(), dataJSON.get("max"));
-                Assert.assertEquals(((Rollup) point.getData()).getMinValue(), dataJSON.get("min"));
+                Assert.assertEquals(((BasicRollup) point.getData()).getAverage(), dataJSON.get("average"));
+                Assert.assertEquals(((BasicRollup) point.getData()).getMaxValue(), dataJSON.get("max"));
+                Assert.assertEquals(((BasicRollup) point.getData()).getMinValue(), dataJSON.get("min"));
             }
 
             // Assert unit is same
@@ -128,4 +128,3 @@ public class JSONOutputSerializerTest {
         }
     }
 }
-

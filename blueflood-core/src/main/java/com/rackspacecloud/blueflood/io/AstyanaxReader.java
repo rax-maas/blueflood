@@ -40,8 +40,9 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -89,25 +90,16 @@ public class AstyanaxReader extends AstyanaxIO {
      * @param srcCF
      * @return
      */
-    public Rollup readAndCalculate(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) {
-        Rollup rollup = new Rollup();
-
+    public List<Object> getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) {
         NumericSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
+
+        List<Object> input = new ArrayList<Object>();
         for (Column col : cols) {
-            try {
-                if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
-                    rollup.handleFullResMetric(col.getValue(serializer));
-                } else {
-                    rollup.handleRollupMetric((Rollup)col.getValue(serializer));
-                }
-            } catch (IOException ex) {
-                log.error("Problem deserializing data for CF: " + srcCF + ".");
-                log.error(ex.getMessage(), ex);
-            }
+            input.add(col.getValue(serializer));
         }
 
-        return rollup;
+        return input;
     }
 
     public static String getUnitString(Locator locator) {
@@ -296,8 +288,8 @@ public class AstyanaxReader extends AstyanaxIO {
         if (gran == Granularity.FULL) {
             return new Points.Point<Object>(column.getName(), column.getValue(serializer));
         } else {
-            Rollup rollup = (Rollup) column.getValue(serializer);
-            return new Points.Point<Rollup>(column.getName(), rollup);
+            BasicRollup basicRollup = (BasicRollup) column.getValue(serializer);
+            return new Points.Point<BasicRollup>(column.getName(), basicRollup);
         }
     }
 
