@@ -21,6 +21,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MinValueTest {
     private MinValue min;
@@ -63,52 +65,56 @@ public class MinValueTest {
 
     @Test
     public void testRollupMin() throws IOException {
-        Rollup rollup1 = new Rollup();
-        Rollup rollup2 = new Rollup();
-        Rollup rollup3 = new Rollup();
-        Rollup rollup4 = new Rollup();
+        BasicRollup basicRollup1 = new BasicRollup();
+        BasicRollup basicRollup2 = new BasicRollup();
+        BasicRollup basicRollup3 = new BasicRollup();
+        BasicRollup basicRollup4 = new BasicRollup();
 
-        Rollup netRollup = new Rollup();
+        BasicRollup netBasicRollup = new BasicRollup();
 
-        rollup1.handleFullResMetric(5L);
-        rollup1.handleFullResMetric(1L);
-        rollup1.handleFullResMetric(7L);
+        List<Object> input = new ArrayList<Object>();
+        input.add(5L); input.add(1L); input.add(7L);
+        basicRollup1.compute(input);
 
-        rollup2.handleFullResMetric(9L);
-        rollup2.handleFullResMetric(0L);
-        rollup2.handleFullResMetric(1L);
+        input = new ArrayList<Object>();
+        input.add(9L); input.add(0L); input.add(1L);
+        basicRollup2.compute(input);
 
-        rollup3.handleFullResMetric(2.14d);
-        rollup3.handleFullResMetric(1.14d);
+        input = new ArrayList<Object>();
+        input.add(2.14d); input.add(1.14d);
+        basicRollup3.compute(input);
 
-        rollup4.handleFullResMetric(3.14d);
-        rollup4.handleFullResMetric(5.67d);
+        input = new ArrayList<Object>();
+        input.add(3.14d); input.add(5.67d);
+        basicRollup4.compute(input);
 
         // handle homegenous metric types and see if we get the right min
 
         // type long
-        netRollup.handleRollupMetric(rollup1);
-        netRollup.handleRollupMetric(rollup2);
+        input = new ArrayList<Object>();
+        input.add(basicRollup1); input.add(basicRollup2);
+        netBasicRollup.compute(input);
 
-        MinValue min = netRollup.getMinValue();
+        MinValue min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
 
         // type double
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup3);
-        netRollup.handleRollupMetric(rollup4);
+        netBasicRollup = new BasicRollup();
+        input = new ArrayList<Object>();
+        input.add(basicRollup3); input.add(basicRollup4);
+        netBasicRollup.compute(input);
 
-        min = netRollup.getMinValue();
+        min = netBasicRollup.getMinValue();
         Assert.assertTrue(min.isFloatingPoint());
         Assert.assertEquals(1.14d, min.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right min
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup2);
-        netRollup.handleRollupMetric(rollup3);
+        netBasicRollup = new BasicRollup();
+        input = new ArrayList<Object>();
+        input.add(basicRollup2); input.add(basicRollup3);
 
-        min = netRollup.getMinValue();
+        min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
     }

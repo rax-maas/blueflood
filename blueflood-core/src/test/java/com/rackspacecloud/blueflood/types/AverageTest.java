@@ -20,6 +20,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AverageTest {
     private static final double UNACCEPTABLE_DIFFERENCE = 0.000000001d;
@@ -141,21 +143,23 @@ public class AverageTest {
     @Test
     public void testAddRollup() throws IOException{
         Average avg = new Average(1, new Double(3.0));
-        Rollup rollup = new Rollup();
-
-        rollup.handleFullResMetric(0.0);
-        rollup.handleFullResMetric(0.0);
+        BasicRollup basicRollup = new BasicRollup();
+        List<Object> input = new ArrayList<Object>();
+        input.add(0.0);
+        input.add(0.0);
+        basicRollup.compute(input);
 
         Assert.assertEquals(3.0, avg.toDouble(), 0);
-        avg.handleRollupMetric(rollup);
+        avg.handleRollupMetric(basicRollup);
         Assert.assertEquals(1.0, avg.toDouble(), 0);
 
         avg = new Average(1, new Long(3));
         Assert.assertEquals(3, avg.toLong());
-        rollup = new Rollup();
-        rollup.handleFullResMetric(0);
-        rollup.handleFullResMetric(0);
-        avg.handleRollupMetric(rollup);
+        basicRollup = new BasicRollup();
+        List<Object> data = new ArrayList<Object>();
+        data.add(0); data.add(0);
+        basicRollup.compute(data);
+        avg.handleRollupMetric(basicRollup);
         Assert.assertEquals(1, avg.toLong());
     }
 
