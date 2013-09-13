@@ -67,7 +67,7 @@ class RollupService implements Runnable, RollupServiceMBean {
     private Gauge managedShardGauge;
 
     protected static final AtomicLong lastRollupTime = new AtomicLong(System.currentTimeMillis());
-    private static final Gauge<Long> timeSinceLastRollupGauge = Metrics.newGauge(RollupService.class, "Milliseconds Since Last Rollup", new Gauge<Long>() {
+    private static final Gauge<Long> timeSinceLastRollupGauge = Metrics.newGauge(RollupService.class, "Milliseconds Since Last BasicRollup", new Gauge<Long>() {
         @Override
         public Long value() {
             return System.currentTimeMillis() - lastRollupTime.get();
@@ -84,13 +84,13 @@ class RollupService implements Runnable, RollupServiceMBean {
             mbs.registerMBean(this, nameObj);
             activeGauge = Metrics.newGauge(RollupService.class, "Active",
                     new JmxBooleanGauge(nameObj, "Active"));
-            inflightRollupGauge = Metrics.newGauge(RollupService.class, "In Flight Rollup Count",
+            inflightRollupGauge = Metrics.newGauge(RollupService.class, "In Flight BasicRollup Count",
                     new JmxGauge(nameObj, "InFlightRollupCount"));
             pollerPeriodGauge = Metrics.newGauge(RollupService.class, "Poller Period",
                     new JmxGauge(nameObj, "PollerPeriod"));
-            queuedRollupGauge = Metrics.newGauge(RollupService.class, "Queued Rollup Count",
+            queuedRollupGauge = Metrics.newGauge(RollupService.class, "Queued BasicRollup Count",
                     new JmxGauge(nameObj, "QueuedRollupCount"));
-            rollupConcurrencyGauge = Metrics.newGauge(RollupService.class, "Rollup Concurrency",
+            rollupConcurrencyGauge = Metrics.newGauge(RollupService.class, "BasicRollup Concurrency",
                     new JmxGauge(nameObj, "RollupConcurrency"));
             scheduledSlotCheckGauge = Metrics.newGauge(RollupService.class, "Scheduled Slot Check",
                     new JmxGauge(nameObj, "ScheduledSlotCheckCount"));

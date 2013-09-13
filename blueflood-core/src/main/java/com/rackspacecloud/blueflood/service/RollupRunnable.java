@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
@@ -26,15 +27,15 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
 class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
-    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Meter rollupHasNoDataMeter = Metrics.newMeter(RollupRunnable.class, "Read and Calculate Rollup Zero Points", "Read Zero Points", TimeUnit.SECONDS);
+    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate BasicRollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write BasicRollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final RollupContext rollupContext;
     private final RollupExecutionContext executionContext;
     private final long startWait;
@@ -55,12 +56,14 @@ class RollupRunnable implements Runnable {
         TimerContext timerContext = rollupContext.getExecuteTimer().time();
         try {
             TimerContext calcrollupContext = calcTimer.time();
+
+            // Read data and compute rollup
             Rollup rollup;
             try {
-                rollup = AstyanaxReader.getInstance().readAndCalculate(rollupContext.getLocator(),
+                List<Object> input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
                         rollupContext.getRange(),
                         rollupContext.getSourceColumnFamily());
-                if (rollup.getCount() == 0) { rollupHasNoDataMeter.mark(); }
+                rollup = Rollup.buildRollupFromInputData(input, rollupContext.getRollupTypeToCompute());
             } finally {
                 calcrollupContext.stop();
             }
@@ -76,7 +79,7 @@ class RollupRunnable implements Runnable {
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
         } catch (Throwable th) {
-            log.error("Rollup failed; Locator : ", rollupContext.getLocator()
+            log.error("BasicRollup failed; Locator : ", rollupContext.getLocator()
                     + ", Source CF: " + rollupContext.getSourceColumnFamily()
                     + ", Dest CF: " + rollupContext.getDestinationColumnFamily());
         } finally {

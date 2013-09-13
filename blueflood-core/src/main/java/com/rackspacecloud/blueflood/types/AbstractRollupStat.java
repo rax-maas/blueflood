@@ -71,7 +71,7 @@ public abstract class AbstractRollupStat {
     }
     
     abstract void handleFullResMetric(Object o) throws RuntimeException;
-    abstract void handleRollupMetric(Rollup rollup) throws RuntimeException;
+    abstract void handleRollupMetric(BasicRollup basicRollup) throws RuntimeException;
     abstract public byte getStatType();
     
     public String toString() {

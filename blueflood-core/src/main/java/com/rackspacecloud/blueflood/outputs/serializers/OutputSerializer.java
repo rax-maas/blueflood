@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Rollup;
 
 import java.util.HashMap;
@@ -32,7 +33,7 @@ public interface OutputSerializer<T> {
     public static enum MetricStat {
         AVERAGE("average") {
             @Override
-            Object convertRollupToObject(Rollup rollup) {
+            Object convertBasicRollupToObject(BasicRollup rollup) {
                 return rollup.getAverage();
             }
 
@@ -43,7 +44,7 @@ public interface OutputSerializer<T> {
         },
         VARIANCE("variance") {
             @Override
-            Object convertRollupToObject(Rollup rollup) {
+            Object convertBasicRollupToObject(BasicRollup rollup) {
                 return rollup.getVariance();
             }
 
@@ -54,7 +55,7 @@ public interface OutputSerializer<T> {
         },
         MIN("min") {
             @Override
-            Object convertRollupToObject(Rollup rollup) {
+            Object convertBasicRollupToObject(BasicRollup rollup) {
                 return rollup.getMinValue();
             }
 
@@ -65,7 +66,7 @@ public interface OutputSerializer<T> {
         },
         MAX("max") {
             @Override
-            Object convertRollupToObject(Rollup rollup) {
+            Object convertBasicRollupToObject(BasicRollup rollup) {
                 return rollup.getMaxValue();
             }
 
@@ -76,7 +77,7 @@ public interface OutputSerializer<T> {
         },
         NUM_POINTS("numPoints") {
             @Override
-            Object convertRollupToObject(Rollup rollup) {
+            Object convertBasicRollupToObject(BasicRollup rollup) {
                 return rollup.getCount();
             }
 
@@ -112,7 +113,7 @@ public interface OutputSerializer<T> {
         public String toString() {
             return this.stringRep;
         }
-        abstract Object convertRollupToObject(Rollup rollup);
+        abstract Object convertBasicRollupToObject(BasicRollup rollup);
         abstract Object convertRawSampleToObject(Object rawSample);
     }
 }
