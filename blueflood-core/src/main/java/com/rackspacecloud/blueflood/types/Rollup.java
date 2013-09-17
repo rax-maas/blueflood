@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
-import java.util.List;
 
 abstract public class Rollup {
     public static enum Type {
@@ -33,9 +32,9 @@ abstract public class Rollup {
 
     abstract public void compute(Points input) throws IOException;
 
-    public static Rollup buildRollupFromInputData(Points input, Type rollupType) throws IOException {
+    public static Rollup buildRollupFromConstituentData(Points input, Type rollupType) throws IOException {
         if (rollupType.equals(Type.BASIC_STATS)) {
-            return BasicRollup.buildRollupFromInputData(input);
+            return BasicRollup.buildRollupFromConstituentData(input);
         } else {
             throw new IOException("No other rollup type implemented");
         }

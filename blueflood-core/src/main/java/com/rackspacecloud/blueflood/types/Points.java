@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import org.apache.cassandra.db.ColumnFamily;
 
 import java.util.Map;
 import java.util.TreeMap;

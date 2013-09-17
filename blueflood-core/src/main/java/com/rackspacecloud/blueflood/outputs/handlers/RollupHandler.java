@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -78,7 +77,7 @@ public class RollupHandler {
                     try {
                         Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
                                 AstyanaxIO.getColumnFamilyMapper().get(g.name()));
-                        BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromInputData(dataToRoll,
+                        BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromConstituentData(dataToRoll,
                                 Rollup.Type.BASIC_STATS);
                         if (basicRollup.getCount() > 0) {
                             metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), basicRollup));

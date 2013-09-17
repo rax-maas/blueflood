@@ -18,17 +18,14 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -64,7 +61,7 @@ class RollupRunnable implements Runnable {
                 Points input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
                         rollupContext.getRange(),
                         rollupContext.getSourceColumnFamily());
-                rollup = Rollup.buildRollupFromInputData(input, rollupContext.getRollupTypeToCompute());
+                rollup = Rollup.buildRollupFromConstituentData(input, rollupContext.getRollupTypeToCompute());
             } finally {
                 calcrollupContext.stop();
             }
