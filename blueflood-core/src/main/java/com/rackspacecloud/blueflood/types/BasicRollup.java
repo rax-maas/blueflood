@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class BasicRollup extends Rollup {
     private static final Logger log = LoggerFactory.getLogger(BasicRollup.class);
@@ -82,7 +83,7 @@ public class BasicRollup extends Rollup {
     }
 
     @Override
-    public void compute(List<Object> input) throws IOException {
+    public void compute(Points input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -91,29 +92,28 @@ public class BasicRollup extends Rollup {
             return;
         }
 
-        validateInputsAreSame(input);
+        Map<Long, Points.Point<Object>> points = input.getPoints();
 
-        if (input.get(0) instanceof Rollup) {
-            for (Object rollup : input) {
-                BasicRollup basicRollup = (BasicRollup) rollup;
+        for (Map.Entry<Long, Points.Point<Object>> item : points.entrySet()) {
+            Object value = item.getValue().getData();
+            if (value instanceof Rollup) {
+                BasicRollup basicRollup = (BasicRollup) value;
                 this.count += basicRollup.getCount();
                 average.handleRollupMetric(basicRollup);
                 variance.handleRollupMetric(basicRollup);
                 minValue.handleRollupMetric(basicRollup);
                 maxValue.handleRollupMetric(basicRollup);
-            }
-        } else {
-            for (Object raw : input) {
-                this.count++;
-                average.handleFullResMetric(raw);
-                variance.handleFullResMetric(raw);
-                minValue.handleFullResMetric(raw);
-                maxValue.handleFullResMetric(raw);
+            } else {
+                this.count += 1;
+                average.handleFullResMetric(value);
+                variance.handleFullResMetric(value);
+                minValue.handleFullResMetric(value);
+                maxValue.handleFullResMetric(value);
             }
         }
     }
 
-    public static BasicRollup buildRollupFromInputData(List<Object> input) throws IOException {
+    public static BasicRollup buildRollupFromInputData(Points input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.compute(input);
 

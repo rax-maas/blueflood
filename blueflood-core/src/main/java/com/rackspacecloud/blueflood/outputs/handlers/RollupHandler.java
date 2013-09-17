@@ -73,12 +73,11 @@ public class RollupHandler {
 
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
-
                 // missing some rollups, generate more
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
-                    List<Object> dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
-                            AstyanaxIO.getColumnFamilyMapper().get(g.name()));
                     try {
+                        Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
+                                AstyanaxIO.getColumnFamilyMapper().get(g.name()));
                         BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromInputData(dataToRoll,
                                 Rollup.Type.BASIC_STATS);
                         if (basicRollup.getCount() > 0) {

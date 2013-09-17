@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import org.apache.cassandra.db.ColumnFamily;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -36,6 +37,9 @@ public class Points<T> {
         return points;
     }
 
+    public boolean isEmpty() {
+        return points.isEmpty();
+    }
 
     private static Points<Object> newFullResolutionPoints() {
         return new Points<Object>();

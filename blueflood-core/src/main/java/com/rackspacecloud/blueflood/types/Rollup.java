@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
@@ -15,18 +31,9 @@ abstract public class Rollup {
         }
     }
 
-    abstract public void compute(List<Object> input) throws IOException;
+    abstract public void compute(Points input) throws IOException;
 
-    protected void validateInputsAreSame(List<Object> input) throws IOException {
-        Class klass = input.get(0).getClass();
-        for (Object item : input) {
-            if (!item.getClass().equals(klass)) {
-                throw new IOException("Not all inputs are of same type");
-            }
-        }
-    }
-
-    public static Rollup buildRollupFromInputData(List<Object> input, Type rollupType) throws IOException {
+    public static Rollup buildRollupFromInputData(Points input, Type rollupType) throws IOException {
         if (rollupType.equals(Type.BASIC_STATS)) {
             return BasicRollup.buildRollupFromInputData(input);
         } else {

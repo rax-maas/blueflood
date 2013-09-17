@@ -40,6 +40,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -90,13 +91,19 @@ public class AstyanaxReader extends AstyanaxIO {
      * @param srcCF
      * @return
      */
-    public List<Object> getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) {
+    public Points getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
         NumericSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
 
-        List<Object> input = new ArrayList<Object>();
-        for (Column col : cols) {
-            input.add(col.getValue(serializer));
+        Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(srcCF);
+        Points input = Points.create(gran);
+        try {
+            for (Column col : cols) {
+                input.add(pointFromColumn(col, gran, serializer));
+            }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data", ex);
+            throw new IOException(ex);
         }
 
         return input;
