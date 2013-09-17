@@ -38,8 +38,8 @@ class RollupContext {
     private final ColumnFamily<Locator, Long> srcCF; // this is the source column family to read from.
     private final ColumnFamily<Locator, Long> destCF; // this is the dest column family to write to.
     private Rollup.Type rollupType;
-    private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "BasicRollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "BasicRollup Wait Histogram", true);
+    private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
 
     RollupContext(Locator locator, Range rangeToRead, ColumnFamily srcColumnFamily, ColumnFamily destColumnFamily) {
         this.locator = locator;

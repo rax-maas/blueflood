@@ -35,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
-    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate BasicRollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write BasicRollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final RollupContext rollupContext;
     private final RollupExecutionContext executionContext;
     private final long startWait;
