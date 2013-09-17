@@ -96,17 +96,17 @@ public class AstyanaxReader extends AstyanaxIO {
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
 
         Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(srcCF);
-        Points input = Points.create(gran);
+        Points points = Points.create(gran);
         try {
             for (Column col : cols) {
-                input.add(pointFromColumn(col, gran, serializer));
+                points.add(pointFromColumn(col, gran, serializer));
             }
         } catch (RuntimeException ex) {
             log.error("Problem deserializing data", ex);
             throw new IOException(ex);
         }
 
-        return input;
+        return points;
     }
 
     public static String getUnitString(Locator locator) {
