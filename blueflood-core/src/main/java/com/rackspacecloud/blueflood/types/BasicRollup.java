@@ -113,7 +113,7 @@ public class BasicRollup extends Rollup {
         }
     }
 
-    public static BasicRollup buildRollupFromConstituentData    (Points input) throws IOException {
+    public static BasicRollup buildRollupFromConstituentData(Points input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.compute(input);
 
