@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -137,9 +138,10 @@ public class VarianceTest {
             BasicRollup basicRollup = new BasicRollup();
             Results r = new Results();
 
-            List<Object> inputSlice = new ArrayList<Object>();
+            Points inputSlice = Points.create(Granularity.FULL);
+            int timeOffset = 0;
             for (double val : input[i]) {
-                inputSlice.add(val);
+                inputSlice.add(new Points.Point<Object>(123456789L + timeOffset++, val));
             }
 
             basicRollup.compute(inputSlice);
@@ -163,9 +165,9 @@ public class VarianceTest {
 
         // Now compute net variance using rollup versions [simulate 10 min rollups by aggregating two 5 min rollups]
         BasicRollup basicRollup10min_0 = new BasicRollup();
-        List<Object> inputData = new ArrayList<Object>();
-        inputData.add(basicRollups.get(0));
-        inputData.add(basicRollups.get(1));
+        Points inputData = Points.create(Granularity.MIN_20);
+        inputData.add(new Points.Point<Rollup>(123456789L, basicRollups.get(0)));
+        inputData.add(new Points.Point<Rollup>(123456790L, basicRollups.get(1)));
         basicRollup10min_0.compute(inputData);
         assertWithinErrorPercent(basicRollup10min_0.getAverage().toDouble(),
                 computeRawAverage(ArrayUtils.addAll(input[0], input[1])));
@@ -173,9 +175,9 @@ public class VarianceTest {
                 computeRawVariance(ArrayUtils.addAll(input[0], input[1])));
 
         BasicRollup basicRollup10min_1 = new BasicRollup();
-        inputData = new ArrayList<Object>();
-        inputData.add(basicRollups.get(2));
-        inputData.add(basicRollups.get(3));
+        inputData = Points.create(Granularity.MIN_20);
+        inputData.add(new Points.Point<Rollup>(123456789L, basicRollups.get(2)));
+        inputData.add(new Points.Point<Rollup>(123456790L, basicRollups.get(3)));
         basicRollup10min_1.compute(inputData);
         assertWithinErrorPercent(basicRollup10min_1.getAverage().toDouble(),
                 computeRawAverage(ArrayUtils.addAll(input[2], input[3])));
@@ -184,9 +186,9 @@ public class VarianceTest {
 
         // Simulate 20 min rollups by aggregating two 10 min rollups
         BasicRollup basicRollup20min_0 = new BasicRollup();
-        inputData = new ArrayList<Object>();
-        inputData.add(basicRollup10min_0);
-        inputData.add(basicRollup10min_1);
+        inputData = Points.create(Granularity.MIN_20);
+        inputData.add(new Points.Point<Rollup>(123456789L, basicRollup10min_0));
+        inputData.add(new Points.Point<Rollup>(123456790L, basicRollup10min_1));
         basicRollup20min_0.compute(inputData);
 
         assertWithinErrorPercent(basicRollup20min_0.getAverage().toDouble(),

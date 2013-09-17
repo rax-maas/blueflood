@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationExce
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.binary.Base64;
@@ -52,9 +53,10 @@ public class SerializationTest {
         // double
         for (int i = 0; i < 2; i++) {
             basicRollup = new BasicRollup();
-            List<Object> input = new ArrayList<Object>();
+            Points input = Points.create(Granularity.FULL);
+            int timeOffset = 0;
             for (double val = 0.0; val < 10.0; val++) {
-                input.add(val * (i+1));
+                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
             }
 
             try {
@@ -68,9 +70,10 @@ public class SerializationTest {
         // long
         for (int i = 0; i < 2; i++) {
             basicRollup = new BasicRollup();
-            List<Object> input = new ArrayList<Object>();
+            Points input = Points.create(Granularity.FULL);
+            int timeOffset = 0;
             for (long val = 0; val < 10; val++) {
-                input.add(val * (i+1));
+                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
             }
             try {
                 basicRollup.compute(input);
@@ -360,13 +363,13 @@ public class SerializationTest {
         r.setCount(500);
         for (int rollupCount = 0; rollupCount < 500; rollupCount++) {
             BasicRollup basicRollup = new BasicRollup();
-            List<Object> input = new ArrayList<Object>();
+            Points input = Points.create(Granularity.FULL);
             for (int fullResCount = 0; fullResCount < 500; fullResCount++) {
-                input.add(fullResCount + fullResCount * 3);
+                input.add(new Points.Point<Object>(123456789L + fullResCount, fullResCount + fullResCount * 3));
             }
             basicRollup.compute(input);
-            input = new ArrayList<Object>();
-            input.add(basicRollup);
+            input = Points.create(Granularity.MIN_20);
+            input.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
             r.compute(input);
         }
         ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
