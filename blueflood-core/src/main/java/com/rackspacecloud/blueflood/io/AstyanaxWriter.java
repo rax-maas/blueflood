@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
@@ -192,13 +193,13 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    public void insertRollup(Locator locator, final long timestamp, final Rollup rollup,
+    public void insertRollup(Locator locator, final long timestamp, final Rollup basicRollup,
                              ColumnFamily<Locator, Long> destCF) throws ConnectionException {
         if (destCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
-            throw new IllegalArgumentException("Invalid granularity FULL for Rollup insertion");
+            throw new IllegalArgumentException("Invalid granularity FULL for BasicRollup insertion");
         }
         insertRollups(locator, new HashMap<Long, Rollup>() {{
-            put(timestamp, rollup);
+            put(timestamp, basicRollup);
         }}, destCF);
     }
 

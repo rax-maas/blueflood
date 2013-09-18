@@ -27,6 +27,7 @@ import com.netflix.astyanax.retry.RetryNTimes;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.Locator;
 
@@ -66,6 +67,7 @@ public class AstyanaxIO {
             LongSerializer.get(),
             StringSerializer.get());
     protected static final Map<String, ColumnFamily<Locator, Long>> CF_NAME_TO_CF;
+    protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
 
     static {
         context = createPreferredHostContext();
@@ -78,7 +80,18 @@ public class AstyanaxIO {
         tempMap.put("metrics_60m", CF_METRICS_60M);
         tempMap.put("metrics_240m", CF_METRICS_240M);
         tempMap.put("metrics_1440m", CF_METRICS_1440M);
+
+        Map<ColumnFamily<Locator, Long>, Granularity> cfToGranMap = new HashMap<ColumnFamily<Locator, Long>, Granularity>();
+        cfToGranMap.put(CF_METRICS_FULL, Granularity.FULL);
+        cfToGranMap.put(CF_METRICS_STRING, Granularity.FULL);
+        cfToGranMap.put(CF_METRICS_5M, Granularity.MIN_5);
+        cfToGranMap.put(CF_METRICS_20M, Granularity.MIN_20);
+        cfToGranMap.put(CF_METRICS_60M, Granularity.MIN_60);
+        cfToGranMap.put(CF_METRICS_240M, Granularity.MIN_240);
+        cfToGranMap.put(CF_METRICS_1440M, Granularity.MIN_1440);
+
         CF_NAME_TO_CF = Collections.unmodifiableMap(tempMap);
+        CF_TO_GRAN = Collections.unmodifiableMap(cfToGranMap);
     }
 
     protected AstyanaxIO() {
@@ -140,5 +153,9 @@ public class AstyanaxIO {
 
     public static Map<String, ColumnFamily<Locator, Long>> getColumnFamilyMapper() {
         return CF_NAME_TO_CF;
+    }
+
+    public static Map<ColumnFamily<Locator, Long>, Granularity> getCFToGranularityMapper() {
+        return CF_TO_GRAN;
     }
 }

@@ -36,13 +36,16 @@ public class Points<T> {
         return points;
     }
 
+    public boolean isEmpty() {
+        return points.isEmpty();
+    }
 
     private static Points<Object> newFullResolutionPoints() {
         return new Points<Object>();
     }
 
-    private static Points<Rollup> newRollupPoints() {
-        return new Points<Rollup>();
+    private static Points<BasicRollup> newRollupPoints() {
+        return new Points<BasicRollup>();
     }
 
     public static Points create(Granularity gran) {

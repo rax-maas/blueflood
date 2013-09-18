@@ -105,7 +105,7 @@ public class BluefloodServiceStarter {
             // configure the rollup service. this is a daemonish thread that decides when to rollup ranges of data on
             // in the data cluster.
             final RollupService rollupService = new RollupService(context);
-            Thread rollupThread = new Thread(rollupService, "Rollup conductor");
+            Thread rollupThread = new Thread(rollupService, "BasicRollup conductor");
 
             // todo: this happens no matter what.
             // todo: at some point, it makes sense to extract the keeping-server-time and setting-server-time methods

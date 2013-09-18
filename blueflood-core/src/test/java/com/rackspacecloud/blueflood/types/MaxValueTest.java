@@ -16,11 +16,14 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MaxValueTest {
     private MaxValue max;
@@ -63,53 +66,67 @@ public class MaxValueTest {
 
     @Test
     public void testRollupMax() throws IOException {
-        Rollup rollup1 = new Rollup();
-        Rollup rollup2 = new Rollup();
-        Rollup rollup3 = new Rollup();
-        Rollup rollup4 = new Rollup();
+        BasicRollup basicRollup1 = new BasicRollup();
+        BasicRollup basicRollup2 = new BasicRollup();
+        BasicRollup basicRollup3 = new BasicRollup();
+        BasicRollup basicRollup4 = new BasicRollup();
 
-        Rollup netRollup = new Rollup();
+        BasicRollup netBasicRollup;
 
-        rollup1.handleFullResMetric(5L);
-        rollup1.handleFullResMetric(1L);
-        rollup1.handleFullResMetric(7L);
+        Points input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 5L));
+        input.add(new Points.Point<Object>(123456790L, 1L));
+        input.add(new Points.Point<Object>(123456791L, 7L));
+        basicRollup1.compute(input);
 
-        rollup2.handleFullResMetric(9L);
-        rollup2.handleFullResMetric(0L);
-        rollup2.handleFullResMetric(1L);
+        input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 9L));
+        input.add(new Points.Point<Object>(123456790L, 0L));
+        input.add(new Points.Point<Object>(123456791L, 1L));
+        basicRollup2.compute(input);
 
-        rollup3.handleFullResMetric(2.14d);
-        rollup3.handleFullResMetric(1.14d);
+        input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 2.14d));
+        input.add(new Points.Point<Object>(123456790L, 1.14d));
+        basicRollup3.compute(input);
 
-        rollup4.handleFullResMetric(3.14d);
-        rollup4.handleFullResMetric(5.67d);
+        input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 3.14d));
+        input.add(new Points.Point<Object>(123456790L, 5.67d));
+        basicRollup4.compute(input);
 
         // handle homegenous metric types and see if we get the right max
 
         // type long
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup1);
-        netRollup.handleRollupMetric(rollup2);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        netBasicRollup.compute(input);
 
-        MaxValue max = netRollup.getMaxValue();
+        MaxValue max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
         Assert.assertEquals(9L, max.toLong());
 
         // type double
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup3);
-        netRollup.handleRollupMetric(rollup4);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        netBasicRollup.compute(input);
 
-        max = netRollup.getMaxValue();
+        max = netBasicRollup.getMaxValue();
         Assert.assertTrue(max.isFloatingPoint());
         Assert.assertEquals(5.67d, max.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right max
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup2);
-        netRollup.handleRollupMetric(rollup3);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        netBasicRollup.compute(input);
 
-        max = (MaxValue) netRollup.getMaxValue();
+        max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
         Assert.assertEquals(9L, max.toLong());
     }

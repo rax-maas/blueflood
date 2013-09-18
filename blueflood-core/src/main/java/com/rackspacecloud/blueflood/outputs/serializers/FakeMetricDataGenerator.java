@@ -17,8 +17,8 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
 
 public class FakeMetricDataGenerator {
     public static Points<Long> generateFakeFullResPoints() {
@@ -33,15 +33,15 @@ public class FakeMetricDataGenerator {
         return points;
     }
 
-    public static Points<Rollup> generateFakeRollupPoints() {
-        Points<Rollup> points = Points.create(Granularity.MIN_5);
+    public static Points<BasicRollup> generateFakeRollupPoints() {
+        Points<BasicRollup> points = Points.create(Granularity.MIN_5);
 
         long baseTime = 1234567L;
         for (int count = 0; count < 5; count++) {
-            final Rollup rollup = new Rollup();
-            rollup.setCount(count * 100);
-            rollup.getAverage().setLongValue(count);
-            Points.Point<Rollup> point = new Points.Point<Rollup>(baseTime + (count*1000), rollup);
+            final BasicRollup basicRollup = new BasicRollup();
+            basicRollup.setCount(count * 100);
+            basicRollup.getAverage().setLongValue(count);
+            Points.Point<BasicRollup> point = new Points.Point<BasicRollup>(baseTime + (count*1000), basicRollup);
             points.add(point);
         }
 

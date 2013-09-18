@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,9 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.binary.Base64;
@@ -31,7 +32,9 @@ import org.junit.Test;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class SerializationTest {
@@ -43,34 +46,41 @@ public class SerializationTest {
         "This is a test string."
     };
     
-    private final static Rollup[] toSerializeRollup = new Rollup[4];
+    private final static BasicRollup[] TO_SERIALIZE_BASIC_ROLLUP = new BasicRollup[4];
 
     static {
-        Rollup rollup;
+        BasicRollup basicRollup;
         // double
         for (int i = 0; i < 2; i++) {
-            rollup = new Rollup();
+            basicRollup = new BasicRollup();
+            Points input = Points.create(Granularity.FULL);
+            int timeOffset = 0;
             for (double val = 0.0; val < 10.0; val++) {
-                try {
-                    rollup.handleFullResMetric(val * (i+1));
-                } catch (Exception e) {
-                    Assert.fail("Test data generation failed");
-                }
+                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
             }
-            toSerializeRollup[i] = rollup;
+
+            try {
+                basicRollup.compute(input);
+            } catch (IOException ex) {
+                Assert.fail("Test data generation failed");
+            }
+            TO_SERIALIZE_BASIC_ROLLUP[i] = basicRollup;
         }
 
         // long
         for (int i = 0; i < 2; i++) {
-            rollup = new Rollup();
+            basicRollup = new BasicRollup();
+            Points input = Points.create(Granularity.FULL);
+            int timeOffset = 0;
             for (long val = 0; val < 10; val++) {
-                try {
-                    rollup.handleFullResMetric(val * (i+1));
-                } catch (Exception e) {
-                    Assert.fail("Test data generation failed");
-                }
+                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
             }
-            toSerializeRollup[2 + i] = rollup;
+            try {
+                basicRollup.compute(input);
+            } catch (Exception e) {
+                Assert.fail("Test data generation failed");
+            }
+            TO_SERIALIZE_BASIC_ROLLUP[2 + i] = basicRollup;
         }
     }
 
@@ -158,10 +168,10 @@ public class SerializationTest {
         
         if (System.getProperty("GENERATE_ROLLUP_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/rollup_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
-            for (Rollup rollup : toSerializeRollup) {
+            for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g.name());
-                    ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(rollup);
+                    ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(basicRollup);
                     os.write(Base64.encodeBase64(bb.array()));
                     os.write("\n".getBytes());
                 }
@@ -176,24 +186,24 @@ public class SerializationTest {
         int maxVersion = Constants.VERSION_1_ROLLUP;
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/rollup_version_" + version + ".bin"));
-            for (int i = 0; i < toSerializeRollup.length; i++) {
+            for (int i = 0; i < TO_SERIALIZE_BASIC_ROLLUP.length; i++) {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-                    Rollup rollup = (Rollup) NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper()
+                    BasicRollup basicRollup = (BasicRollup) NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper()
                             .get(g.name())).fromByteBuffer(bb);
                     Assert.assertTrue(String.format("Deserialization for rollup broken at %d", version),
-                            toSerializeRollup[i].equals(rollup));
+                            TO_SERIALIZE_BASIC_ROLLUP[i].equals(basicRollup));
                 }
                 version += 1;
             }
         }
         
         // current round tripping.
-        for (Rollup rollup : toSerializeRollup) {
+        for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
             for (Granularity g : Granularity.rollupGranularities()) {
                 ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g.name());
-                ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(rollup);
-                Assert.assertTrue(rollup.equals(NumericSerializer.get(CF).fromByteBuffer(bb)));
+                ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(basicRollup);
+                Assert.assertTrue(basicRollup.equals(NumericSerializer.get(CF).fromByteBuffer(bb)));
             }
         }
     }
@@ -206,10 +216,10 @@ public class SerializationTest {
             323234234235223321L,
             213432.53323d,
             42332.0234375f,
-            toSerializeRollup[0],
-            toSerializeRollup[1],
-            toSerializeRollup[2],
-            toSerializeRollup[3]
+            TO_SERIALIZE_BASIC_ROLLUP[0],
+            TO_SERIALIZE_BASIC_ROLLUP[1],
+            TO_SERIALIZE_BASIC_ROLLUP[2],
+            TO_SERIALIZE_BASIC_ROLLUP[3]
         };
         
         Object[] expected = {
@@ -217,10 +227,10 @@ public class SerializationTest {
             323234234235223321L,
             213432.53323d,
             42332.0234375d, // notice that serialization converts to a double.
-            toSerializeRollup[0],
-            toSerializeRollup[1],
-            toSerializeRollup[2],
-            toSerializeRollup[3]
+            TO_SERIALIZE_BASIC_ROLLUP[0],
+            TO_SERIALIZE_BASIC_ROLLUP[1],
+            TO_SERIALIZE_BASIC_ROLLUP[2],
+            TO_SERIALIZE_BASIC_ROLLUP[3]
         };
         
         for (Granularity gran : Granularity.granularities()) {
@@ -235,9 +245,9 @@ public class SerializationTest {
                 } catch (RuntimeException ex) {
                     Assert.assertTrue(ex.getCause() instanceof SerializationException);
                     if (gran == Granularity.FULL)
-                        Assert.assertTrue(inputs[i] instanceof Rollup);
+                        Assert.assertTrue(inputs[i] instanceof BasicRollup);
                     else
-                        Assert.assertFalse(inputs[i] instanceof Rollup);
+                        Assert.assertFalse(inputs[i] instanceof BasicRollup);
                 } catch (Throwable unexpected) {
                     unexpected.printStackTrace();
                     Assert.fail(String.format("Unexpected error at %s %d", gran.name(), i));
@@ -349,14 +359,18 @@ public class SerializationTest {
   
     @Test
     public void testRollupSerializationLargeCounts() throws IOException {
-        Rollup r = new Rollup();
+        BasicRollup r = new BasicRollup();
         r.setCount(500);
         for (int rollupCount = 0; rollupCount < 500; rollupCount++) {
-            Rollup rollup = new Rollup();
+            BasicRollup basicRollup = new BasicRollup();
+            Points input = Points.create(Granularity.FULL);
             for (int fullResCount = 0; fullResCount < 500; fullResCount++) {
-                rollup.handleFullResMetric(fullResCount + fullResCount * 3);
+                input.add(new Points.Point<Object>(123456789L + fullResCount, fullResCount + fullResCount * 3));
             }
-            r.handleRollupMetric(rollup);
+            basicRollup.compute(input);
+            input = Points.create(Granularity.MIN_20);
+            input.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
+            r.compute(input);
         }
         ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
 
