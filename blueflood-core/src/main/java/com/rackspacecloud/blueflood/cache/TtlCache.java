@@ -16,10 +16,13 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.ClusterException;
 import com.rackspacecloud.blueflood.internal.InternalAPI;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -43,12 +46,15 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     private static final Logger log = LoggerFactory.getLogger(TtlCache.class);
     
     // these values get used in the absence of a ttl (internal API failure, etc.).
-    static final Map<Granularity, TimeValue> SAFETY_TTLS = new HashMap<Granularity, TimeValue>() {{
-        for (Granularity gran : Granularity.granularities())
-            put(gran, new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
-    }};
+    static final Map<ColumnFamily<Locator, Long>, TimeValue> SAFETY_TTLS =
+            new HashMap<ColumnFamily<Locator, Long>, TimeValue>() {{
+                /// FIX: TTLs should be specified at CF level
+                for (Granularity gran : Granularity.granularities())
+                    put(AstyanaxIO.getColumnFamilyMapper().get(gran.name()),
+                        new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
+            }};
     
-    private final com.google.common.cache.LoadingCache<String, Map<String, TimeValue>> cache;
+    private final com.google.common.cache.LoadingCache<String, Map<ColumnFamily<Locator, Long>, TimeValue>> cache;
     private final Meter generalErrorMeter;
     private final Meter httpErrorMeter;
     
@@ -71,39 +77,41 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         httpErrorMeter = Metrics.newMeter(TtlCache.class, "Http Errors", label, "Rollups", TimeUnit.MINUTES);
         
         
-        CacheLoader<String, Map<String, TimeValue>> loader = new CacheLoader<String, Map<String, TimeValue>>() {
+        CacheLoader<String, Map<ColumnFamily<Locator, Long>, TimeValue>> loader =
+                new CacheLoader<String, Map<ColumnFamily<Locator, Long>, TimeValue>>() {
             
-            // values from the default account are used to build a ttl map for tenants that do not exist in the
-            // internal API.  These values are put into the cache, meaning subsequent cache requests do not incur a
-            // miss and hit the internal API.
-            private final Account DEFAULT_ACCOUNT = new Account() {
-                @Override
-                public TimeValue getMetricTtl(String resolution) {
-                    return SAFETY_TTLS.get(Granularity.fromString(resolution));
-                }
-            };
-            
-            @Override
-            public Map<String, TimeValue> load(final String key) throws Exception {
-                // load account, build ttl map.
-                try {
-                    Account acct = internalAPI.fetchAccount(key);
-                    return buildTtlMap(acct);
-                } catch (HttpResponseException ex) {
-                    // cache the default value on a 404. this means that we will not be hammering the API for values
-                    // that are constantly not there.  The other option was to let the Http error bubble out, use a
-                    // and value from SAFETY_TTLS.  But the same thing (an HTTP round trip) would happen the very next
-                    // time a TTL is requested.
-                    if (ex.getStatusCode() == 404) {
-                        httpErrorMeter.mark();
-                        log.warn(ex.getMessage());
-                        return buildTtlMap(DEFAULT_ACCOUNT);
-                    } else
-                        throw ex;
-                }
-                
-            }
-        };
+                    // values from the default account are used to build a ttl map for tenants that do not exist in the
+                    // internal API.  These values are put into the cache, meaning subsequent cache requests do not
+                    // incur a miss and hit the internal API.
+                    private final Account DEFAULT_ACCOUNT = new Account() {
+                        @Override
+                        public TimeValue getMetricTtl(String resolution) {
+                            return SAFETY_TTLS.get(AstyanaxIO.getColumnFamilyMapper()
+                                    .get(Granularity.fromString(resolution).name()));
+                        }
+                    };
+
+                    @Override
+                    public Map<ColumnFamily<Locator, Long>, TimeValue> load(final String key) throws Exception {
+                        // load account, build ttl map.
+                        try {
+                            Account acct = internalAPI.fetchAccount(key);
+                            return buildTtlMap(acct);
+                        } catch (HttpResponseException ex) {
+                            // cache the default value on a 404. this means that we will not be hammering the API for values
+                            // that are constantly not there.  The other option was to let the Http error bubble out, use a
+                            // and value from SAFETY_TTLS.  But the same thing (an HTTP round trip) would happen the very next
+                            // time a TTL is requested.
+                            if (ex.getStatusCode() == 404) {
+                                httpErrorMeter.mark();
+                                log.warn(ex.getMessage());
+                                return buildTtlMap(DEFAULT_ACCOUNT);
+                            } else
+                                throw ex;
+                        }
+
+                    }
+                };
         cache = CacheBuilder.newBuilder()
                 .expireAfterWrite(expiration.getValue(), expiration.getUnit())
                 .concurrencyLevel(cacheConcurrency)
@@ -112,22 +120,22 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     }
     
     // override this if you're not interested in caching the entire ttl map.
-    protected Map<String, TimeValue> buildTtlMap(Account acct) {
-        Map<String, TimeValue> map = new HashMap<String, TimeValue>();
+    protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
+        Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
         for (Granularity gran : Granularity.granularities())
-            map.put(gran.shortName(), acct.getMetricTtl(gran.shortName()));
+            map.put(AstyanaxIO.getColumnFamilyMapper().get(gran.name()), acct.getMetricTtl(gran.shortName()));
         return map;
     }
     
     // may return null (e.g.: if the granularity isn't in the build-map.
-    public TimeValue getTtl(String acctId, Granularity gran) {
+    public TimeValue getTtl(String acctId, ColumnFamily<Locator, Long> CF) {
         // if error rate exceeds a threshold return SAFETY_TTL.  Otherwise, we spend a non-trivial amount of time stuck
         // in blocking calls into whatever obtains the account.
         if (isSafetyMode())
-            return SAFETY_TTLS.get(gran);
+            return SAFETY_TTLS.get(CF);
         
         try {
-            return cache.get(acctId).get(gran.shortName());
+            return cache.get(acctId).get(CF);
         } catch (ExecutionException ex) {
             if (ex.getCause() instanceof HttpResponseException) {
                 httpErrorMeter.mark();
@@ -146,7 +154,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
                     lastFetchError = now; // I don't care about races here.
                 }
             }
-            return SAFETY_TTLS.get(gran);
+            return SAFETY_TTLS.get(CF);
         }
     }
     

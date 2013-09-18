@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.yammer.metrics.Metrics;
@@ -47,7 +48,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
     private final OutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
-    private final Set<String> defaultStats;
+    private final Set<MetricStat> defaultStats;
 
     private final Timer httpMetricsFetchTimer = Metrics.newTimer(HttpRollupsQueryHandler.class,
             "Handle HTTP request for metrics", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
@@ -56,9 +57,9 @@ public class HttpRollupsQueryHandler extends RollupHandler
         this.serializer = new JSONOutputSerializer();
         gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         parser = new JsonParser();
-        defaultStats = new HashSet<String>();
-        defaultStats.add("average");
-        defaultStats.add("numPoints");
+        defaultStats = new HashSet<MetricStat>();
+        defaultStats.add(MetricStat.AVERAGE);
+        defaultStats.add(MetricStat.NUM_POINTS);
     }
 
     private JSONObject GetDataByPoints(String tenantId,
@@ -66,7 +67,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
                                       long from,
                                       long to,
                                       int points,
-                                      Set<String> stats) throws SerializationException {
+                                      Set<MetricStat> stats) throws SerializationException {
         return serializer.transformRollupData(GetDataByPoints(tenantId, metric, from, to, points), stats);
     }
 
@@ -75,7 +76,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
                                       long from,
                                       long to,
                                       Resolution resolution,
-                                      Set<String> stats) throws SerializationException {
+                                      Set<MetricStat> stats) throws SerializationException {
         return serializer.transformRollupData(GetDataByResolution(tenantId, metric, from, to, resolution), stats);
     }
 
@@ -177,7 +178,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             throw new InvalidRequestException("paramter 'to' must be greater than 'from'");
         }
 
-        Set<String> stats = getStatsToFilter(select);
+        Set<MetricStat> stats = getStatsToFilter(select);
 
         if (points != null) {
             return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
@@ -196,16 +197,16 @@ public class HttpRollupsQueryHandler extends RollupHandler
         HttpResponder.respond(channel, request, response);
     }
 
-    private Set<String> getStatsToFilter(List<String> select) {
+    private Set<MetricStat> getStatsToFilter(List<String> select) {
         if (select == null || select.isEmpty()) {
             return defaultStats;
         } else {
-            Set<String> filters = new HashSet<String>();
+            Set<MetricStat> filters = new HashSet<MetricStat>();
             // handle case when someone does select=average,min instead of select=average&select=min
             for (String stat : select) {
                 if (stat.contains(",")) {
                     List<String> nestedStats = Arrays.asList(stat.split(","));
-                    filters.addAll(nestedStats);
+                    filters.addAll(MetricStat.fromStringList(nestedStats));
                 }
             }
             return filters;
@@ -217,24 +218,24 @@ public class HttpRollupsQueryHandler extends RollupHandler
         public Resolution resolution;
         public final long from;
         public final long to;
-        private final Set<String> stats;
+        private final Set<MetricStat> stats;
         public boolean isPoints = true;
         public boolean isResolution = false;
 
-        private RollupsQueryParams(long from, long to, Set<String> stats) {
+        private RollupsQueryParams(long from, long to, Set<MetricStat> stats) {
             this.stats = stats;
             this.from = from;
             this.to = to;
         }
 
-        public RollupsQueryParams(long from, long to, int points, Set<String> stats) {
+        public RollupsQueryParams(long from, long to, int points, Set<MetricStat> stats) {
             this(from, to, stats);
             this.isResolution = false;
             this.isPoints = true;
             this.points = points;
         }
 
-        public RollupsQueryParams(long from, long to, Resolution resolution, Set<String> stats) {
+        public RollupsQueryParams(long from, long to, Resolution resolution, Set<MetricStat> stats) {
             this(from, to, stats);
             this.resolution = resolution;
             this.isPoints = false;
