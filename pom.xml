@@ -52,14 +52,14 @@
         <artifactId>maven-source-plugin</artifactId>
         <version>2.2.1</version>
         <configuration>
-          <attach>false</attach>
+          <attach>true</attach>
         </configuration>
         <executions>
           <execution>
             <id>attach-sources</id>
             <phase>package</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>jar-no-fork</goal>
             </goals>
           </execution>
         </executions>
