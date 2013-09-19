@@ -61,7 +61,7 @@ public class MainIngestor {
         AsyncChain<DatagramPacket, Object> processor = new AsyncChain<DatagramPacket, Object>()
                 
                 // this stage deserializes the UDP datagrams. since the serialization is at our discretion (and 
-                // your's too), it just matters that you are able to end up with an instance of 
+                // your's too), it just matters that you are able to end up with a collection of 
                 // com.rackspacecloud.blueflood.types.Metric.
                 .withFunction(new DeserializeAndReleaseFunc(new ThreadPoolBuilder().withName("Packet Deserializer").build()))
                 

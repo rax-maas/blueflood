@@ -15,6 +15,9 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -62,7 +65,7 @@ public class Broadcaster {
                 public void run() {
                     try {
                         ch.writeAndFlush(
-                            new DatagramPacket(Unpooled.copiedBuffer(UDPMetricSerialization.toBytes(nextMetric(locator))), addr)
+                            new DatagramPacket(Unpooled.copiedBuffer(UDPMetricSerialization.toBytes(nextMetrics(locator, rand.nextInt(20) + 1))), addr)
                         ).sync();
                     } catch (Exception ex) {
                         ex.printStackTrace(System.err);
@@ -86,8 +89,12 @@ public class Broadcaster {
     }
     
     // create a random int metric.
-    private static Metric nextMetric(Locator locator) {
-        return new Metric(locator, rand.nextInt(1024), System.currentTimeMillis(), TTL, "gigawatts");
+    private static Collection<Metric> nextMetrics(Locator locator, int count) {
+        List<Metric> metrics = new ArrayList<Metric>(count);
+        for (int i = 0; i < count; i++) {
+            metrics.add(new Metric(locator, rand.nextInt(1024), System.currentTimeMillis(), TTL, "gigawatts"));
+        }
+        return metrics;
     }
     
     // for testing I'm using localhost:2525.
