@@ -68,4 +68,9 @@
     </repository>
   </repositories>
 
+  <scm>
+    <connection>scm:git:git://github.com/rackerlabs/blueflood.git</connection>
+    <developerConnection>scm:git:git://github.com/rackerlabs/blueflood.git</developerConnection>
+    <url>scm:git:git://github.com/rackerlabs/blueflood</url>
+  </scm>
 </project>
