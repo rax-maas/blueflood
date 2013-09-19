@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.kafka.KafkaProducer;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
@@ -70,6 +71,9 @@ class RollupRunnable implements Runnable {
                 AstyanaxWriter.getInstance().insertRollup(rollupContext.getLocator(),
                         rollupContext.getRange().getStart(), rollup,
                         rollupContext.getDestinationColumnFamily());
+
+                //Push roll-up to Kafka cluster
+                KafkaProducer.getInstance().pushRollup(rollupContext.getLocator(),rollupContext.getRange(),rollup);
             } finally {
                 writerollupContext.stop();
             }
