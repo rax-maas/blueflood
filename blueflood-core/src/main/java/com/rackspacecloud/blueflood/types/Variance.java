@@ -30,7 +30,7 @@ public class Variance extends AbstractRollupStat {
     private double populationVariance; // variance we are actually interested in
 
     // These are requied for rollup variance calculation
-    private List<Rollup> rollupList;
+    private List<BasicRollup> basicRollupList;
 
     private boolean isRollup;
     
@@ -42,7 +42,7 @@ public class Variance extends AbstractRollupStat {
         this.mean = 0;
         this.M2 = 0;
         this.populationVariance = 0;
-        this.rollupList = new ArrayList<Rollup>();
+        this.basicRollupList = new ArrayList<BasicRollup>();
         this.isRollup = false;
     }
 
@@ -64,10 +64,10 @@ public class Variance extends AbstractRollupStat {
     }
 
     @Override
-    void handleRollupMetric(Rollup rollup) throws RuntimeException {
+    void handleRollupMetric(BasicRollup basicRollup) throws RuntimeException {
         this.needsCompute = true;
         this.isRollup = true;
-        rollupList.add(rollup); // we need all the rollup metrics before computing the final variance.
+        basicRollupList.add(basicRollup); // we need all the rollup metrics before computing the final variance.
     }
 
     private synchronized void compute() {
@@ -82,9 +82,9 @@ public class Variance extends AbstractRollupStat {
             double sum2 = 0;
 
             // first pass to compute grand mean over all windows
-            for (Rollup rollup : rollupList) {
-                Average avg = rollup.getAverage();
-                totalSampleSize += rollup.getCount();
+            for (BasicRollup basicRollup : basicRollupList) {
+                Average avg = basicRollup.getAverage();
+                totalSampleSize += basicRollup.getCount();
 
                 double avgVal;
                 if (!avg.isFloatingPoint()) {
@@ -93,7 +93,7 @@ public class Variance extends AbstractRollupStat {
                     avgVal = avg.toDouble();
                 }
 
-                grandMean += rollup.getCount() * avgVal;
+                grandMean += basicRollup.getCount() * avgVal;
             }
 
             if (totalSampleSize != 0) {
@@ -108,10 +108,10 @@ public class Variance extends AbstractRollupStat {
             // The formula is exact and its precision depends on variance over a single window
             // which is computed using Welford. Except for numerical instability problems, Welford
             // is almost exact.
-            for (Rollup rollup : rollupList) {
-                Variance var = rollup.getVariance();
-                Average avg = rollup.getAverage();
-                sum1 += rollup.getCount() * var.toDouble();
+            for (BasicRollup basicRollup : basicRollupList) {
+                Variance var = basicRollup.getVariance();
+                Average avg = basicRollup.getAverage();
+                sum1 += basicRollup.getCount() * var.toDouble();
 
                 double avgVal;
                 if (!avg.isFloatingPoint()) {
@@ -120,7 +120,7 @@ public class Variance extends AbstractRollupStat {
                     avgVal = avg.toDouble();
                 }
 
-                sum2 += rollup.getCount() * Math.pow((avgVal - grandMean), 2);
+                sum2 += basicRollup.getCount() * Math.pow((avgVal - grandMean), 2);
             }
 
             this.setDoubleValue((sum1 + sum2) / totalSampleSize);

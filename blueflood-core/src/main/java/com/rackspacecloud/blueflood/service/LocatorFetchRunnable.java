@@ -23,7 +23,6 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.netflix.astyanax.model.Column;
-import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
@@ -94,7 +93,7 @@ class LocatorFetchRunnable implements Runnable {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.decrement();
                 log.error(any.getMessage(), any);
-                log.error("Rollup failed for {} at {}", parentSlotKey, serverTime);
+                log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
             }
         }
         
@@ -115,7 +114,7 @@ class LocatorFetchRunnable implements Runnable {
                 log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
             this.scheduleCtx.clearFromRunning(parentSlotKey);
         } else {
-            log.warn("Rollup execution of {} failed.", gran);
+            log.warn("BasicRollup execution of {} failed.", gran);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey);
         }
 

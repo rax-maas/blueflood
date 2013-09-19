@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import org.json.simple.JSONArray;
@@ -64,9 +65,9 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
 
         JSONObject filterStatsObject;
         long numPoints;
-        if (point.getData() instanceof Rollup) {
-            numPoints = ((Rollup) point.getData()).getCount();
-            filterStatsObject = getFilteredStatsForRollup((Rollup) point.getData(), filterStats);
+        if (point.getData() instanceof BasicRollup) {
+            numPoints = ((BasicRollup) point.getData()).getCount();
+            filterStatsObject = getFilteredStatsForRollup((BasicRollup) point.getData(), filterStats);
         } else {
             numPoints = 1;
             filterStatsObject = getFilteredStatsForFullRes(point.getData(), filterStats);
@@ -92,10 +93,10 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return object;
     }
 
-    private JSONObject getFilteredStatsForRollup(Rollup rollup, Set<MetricStat> filterStats) {
+    private JSONObject getFilteredStatsForRollup(BasicRollup rollup, Set<MetricStat> filterStats) {
         final JSONObject filteredObject = new JSONObject();
         for (MetricStat stat : filterStats) {
-            filteredObject.put(stat.toString(), stat.convertRollupToObject(rollup));
+            filteredObject.put(stat.toString(), stat.convertBasicRollupToObject(rollup));
         }
         return filteredObject;
     }

@@ -20,10 +20,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Meter;
@@ -32,6 +29,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -74,17 +72,19 @@ public class RollupHandler {
 
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
-
                 // missing some rollups, generate more
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
-                    Rollup rollup = AstyanaxReader.getInstance().readAndCalculate(locator, r,
-                            AstyanaxIO.getColumnFamilyMapper().get(g.name()));
-                    if (rollup == null) {
-                        // errant string metric, already logged during deserialization. log at error so someone goes
-                        // and cleans these up.
-                        log.error("Errant string metric " + metricName);
-                    } else if (rollup.getCount() > 0) {
-                        metricData.getData().add(new Points.Point<Rollup>(r.getStart(), rollup));
+                    try {
+                        Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
+                                AstyanaxIO.getColumnFamilyMapper().get(g.name()));
+                        BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromConstituentData(dataToRoll,
+                                Rollup.Type.BASIC_STATS);
+                        if (basicRollup.getCount() > 0) {
+                            metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), basicRollup));
+                        }
+
+                    } catch (IOException ex) {
+                        log.error("Exception computing rollups during read: ", ex);
                     }
                 }
             }

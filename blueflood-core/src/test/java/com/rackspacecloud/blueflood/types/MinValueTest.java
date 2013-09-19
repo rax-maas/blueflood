@@ -16,11 +16,14 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MinValueTest {
     private MinValue min;
@@ -63,52 +66,73 @@ public class MinValueTest {
 
     @Test
     public void testRollupMin() throws IOException {
-        Rollup rollup1 = new Rollup();
-        Rollup rollup2 = new Rollup();
-        Rollup rollup3 = new Rollup();
-        Rollup rollup4 = new Rollup();
+        BasicRollup basicRollup1 = new BasicRollup();
+        BasicRollup basicRollup2 = new BasicRollup();
+        BasicRollup basicRollup3 = new BasicRollup();
+        BasicRollup basicRollup4 = new BasicRollup();
 
-        Rollup netRollup = new Rollup();
+        BasicRollup netBasicRollup;
 
-        rollup1.handleFullResMetric(5L);
-        rollup1.handleFullResMetric(1L);
-        rollup1.handleFullResMetric(7L);
+        Points input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 5L));
+        input.add(new Points.Point<Object>(123456790L, 1L));
+        input.add(new Points.Point<Object>(123456791L, 7L));
+        basicRollup1.compute(input);
 
-        rollup2.handleFullResMetric(9L);
-        rollup2.handleFullResMetric(0L);
-        rollup2.handleFullResMetric(1L);
+        input = Points.create(Granularity.FULL);
+        input.add(new Points.Point<Object>(123456789L, 9L));
+        input.add(new Points.Point<Object>(123456790L, 0L));
+        input.add(new Points.Point<Object>(123456791L, 1L));
+        basicRollup2.compute(input);
 
-        rollup3.handleFullResMetric(2.14d);
-        rollup3.handleFullResMetric(1.14d);
+        input = Points.create(Granularity.MIN_5);
+        BasicRollup temp = new BasicRollup();
+        temp.getMinValue().setDoubleValue(2.14);
+        input.add(new Points.Point<BasicRollup>(123456789L, temp));
+        temp.getMinValue().setDoubleValue(1.14);
+        input.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup3.compute(input);
 
-        rollup4.handleFullResMetric(3.14d);
-        rollup4.handleFullResMetric(5.67d);
+        input = Points.create(Granularity.MIN_5);
+        temp = new BasicRollup();
+        temp.getMinValue().setDoubleValue(3.14);
+        input.add(new Points.Point<BasicRollup>(123456789L, temp));
+        temp.getMinValue().setDoubleValue(5.67);
+        input.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup4.compute(input);
 
         // handle homegenous metric types and see if we get the right min
 
         // type long
-        netRollup.handleRollupMetric(rollup1);
-        netRollup.handleRollupMetric(rollup2);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        netBasicRollup.compute(input);
 
-        MinValue min = netRollup.getMinValue();
+        MinValue min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
 
         // type double
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup3);
-        netRollup.handleRollupMetric(rollup4);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        netBasicRollup.compute(input);
 
-        min = netRollup.getMinValue();
+        min = netBasicRollup.getMinValue();
         Assert.assertTrue(min.isFloatingPoint());
         Assert.assertEquals(1.14d, min.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right min
-        netRollup = new Rollup();
-        netRollup.handleRollupMetric(rollup2);
-        netRollup.handleRollupMetric(rollup3);
+        netBasicRollup = new BasicRollup();
+        input = Points.create(Granularity.MIN_20);
+        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
+        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        netBasicRollup.compute(input);
 
-        min = netRollup.getMinValue();
+        min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
     }

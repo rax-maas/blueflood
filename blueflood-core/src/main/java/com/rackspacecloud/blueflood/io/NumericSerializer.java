@@ -19,10 +19,9 @@ package com.rackspacecloud.blueflood.io;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
@@ -74,9 +73,9 @@ public class NumericSerializer extends AbstractSerializer<Object> {
             if (this.fullResolution) {
                 serializeFullResMetric(o, buf);
             } else {  // dealing with rollup metrics
-                if (o instanceof Rollup) {
-                    Rollup rollup = (Rollup)o;
-                    serializeRollup(rollup, buf);
+                if (o instanceof BasicRollup) {
+                    BasicRollup basicRollup = (BasicRollup)o;
+                    serializeRollup(basicRollup, buf);
                 } else {
                     throw new SerializationException(String.format("Unexpected data type: %s", o.getClass().getName()));
                 }
@@ -89,17 +88,17 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         }
     }
 
-    private void serializeRollup(Rollup rollup, byte[] buf) throws IOException {
+    private void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
-        rollupSize.update(sizeOf(rollup, Type.B_ROLLUP_V1));
+        rollupSize.update(sizeOf(basicRollup, Type.B_ROLLUP_V1));
         protobufOut.writeRawByte(Constants.VERSION_1_ROLLUP);
-        protobufOut.writeRawVarint64(rollup.getCount());          // stat count
+        protobufOut.writeRawVarint64(basicRollup.getCount());          // stat count
 
-        if (rollup.getCount() > 0) {
-            putRollupStat(rollup.getAverage(), protobufOut);
-            putRollupStat(rollup.getVariance(), protobufOut);
-            putRollupStat(rollup.getMinValue(), protobufOut);
-            putRollupStat(rollup.getMaxValue(), protobufOut);
+        if (basicRollup.getCount() > 0) {
+            putRollupStat(basicRollup.getAverage(), protobufOut);
+            putRollupStat(basicRollup.getVariance(), protobufOut);
+            putRollupStat(basicRollup.getMinValue(), protobufOut);
+            putRollupStat(basicRollup.getMaxValue(), protobufOut);
         }
     }
 
@@ -163,13 +162,13 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                 break;
             case Type.B_ROLLUP_V1:
                 sz += 1; // version
-                Rollup rollup = (Rollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
-                if (rollup.getCount() > 0) {
-                    sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                BasicRollup basicRollup = (BasicRollup)o;
+                sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
+                if (basicRollup.getCount() > 0) {
+                    sz += sizeOf(basicRollup.getAverage(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT);
                 }
                 break;
             case Type.B_ROLLUP_STAT:
@@ -197,7 +196,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
             return Type.B_FLOAT_AS_DOUBLE;
         else if (o instanceof AbstractRollupStat)
             return Type.B_ROLLUP_STAT;
-        else if (o instanceof Rollup)
+        else if (o instanceof BasicRollup)
             return Type.B_ROLLUP_V1;
         else
             throw new SerializationException("Unexpected type: " + o.getClass().getName());
@@ -224,20 +223,20 @@ public class NumericSerializer extends AbstractSerializer<Object> {
     }
 
     private Object deserializeV1Rollup(CodedInputStream in) throws IOException {
-        final Rollup rollup = new Rollup();
+        final BasicRollup basicRollup = new BasicRollup();
         final long count = in.readRawVarint64();
-        rollup.setCount(count);
+        basicRollup.setCount(count);
 
         if (count <= 0) {
-            return rollup;
+            return basicRollup;
         }
 
         while (!in.isAtEnd()) {
             byte statType = in.readRawByte();
-            AbstractRollupStat stat = getStatFromRollup(statType, rollup);
+            AbstractRollupStat stat = getStatFromRollup(statType, basicRollup);
 
             if (stat == null) {
-                throw new IOException("V1 Rollup: Unable to determine stat of type " + (int)statType);
+                throw new IOException("V1 BasicRollup: Unable to determine stat of type " + (int)statType);
             }
 
             byte metricValueType = in.readRawByte();
@@ -253,7 +252,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                     throw new IOException("Unsupported metric value type " + (int)metricValueType);
             }
         }
-        return rollup;
+        return basicRollup;
     }
 
     private Object deserializeSimpleMetric(CodedInputStream in) throws IOException {
@@ -272,16 +271,16 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         }
     }
 
-    private AbstractRollupStat getStatFromRollup(byte statType, Rollup rollup) {
+    private AbstractRollupStat getStatFromRollup(byte statType, BasicRollup basicRollup) {
         switch (statType) {
             case Constants.AVERAGE:
-                return rollup.getAverage();
+                return basicRollup.getAverage();
             case Constants.VARIANCE:
-                return rollup.getVariance();
+                return basicRollup.getVariance();
             case Constants.MIN:
-                return rollup.getMinValue();
+                return basicRollup.getMinValue();
             case Constants.MAX:
-                return rollup.getMaxValue();
+                return basicRollup.getMaxValue();
             default:
                 return null;
         }
