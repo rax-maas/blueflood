@@ -37,6 +37,10 @@ public class UdpListenerService extends SimpleChannelInboundHandler<DatagramPack
     }
     
     private void run() {
+        if (running.get())
+            return;
+        running.set(true);
+        
         Thread thread = new Thread("UDP Network Listener") {
             public void run() {
                 try {
@@ -65,14 +69,12 @@ public class UdpListenerService extends SimpleChannelInboundHandler<DatagramPack
         thread.start();
     }
     
-    public void start() {
-        synchronized (running) {
-            if (running.get())
-                return;
-            else {
-                running.set(true);
-                run();
-            }
+    public synchronized void start() {
+        if (running.get())
+            return;
+        else {
+            run();
+            // running.get == true now.
         }
     }
     
