@@ -12,27 +12,31 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * todo: There is currently no way to shut the threads down once they start.  This will need to be done by modifying
- * ShardStateWorker to support start/stop.
+ * Aggregates the ShardStateServices.
+ * todo: consider moving this to blueflood-core.
  */
 public class ShardStateServices {
     private static final Logger log = LoggerFactory.getLogger(ShardStateServices.class);
     
     private final ScheduleContext context;
+    private final ShardStatePusher pusher;
+    private final ShardStatePuller puller;
     
     public ShardStateServices(ScheduleContext context) {
         this.context = context;
-    }
-    
-    public void start() {
+        
+        // these threads are responsible for sending/receiving schedule context state to/from the database.
+        final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
+        pusher = new ShardStatePusher(allShards, context.getShardStateManager());
+        puller = new ShardStatePuller(allShards, context.getShardStateManager());
+        
+        pusher.setActive(false);
+        puller.setActive(false);
+        
         if (Configuration.getBooleanProperty("INGEST_MODE") || Configuration.getBooleanProperty("ROLLUP_MODE")) {
-            
-            // these threads are responsible for sending/receiving schedule context state to/from the database.
-            final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-            
             try {
-                final Thread shardPush = new Thread(new ShardStatePusher(allShards, context.getShardStateManager()), "Shard state writer");
-                final Thread shardPull = new Thread(new ShardStatePuller(allShards, context.getShardStateManager()), "Shard state reader");
+                final Thread shardPush = new Thread(pusher, "Shard state writer");
+                final Thread shardPull = new Thread(puller, "Shard state reader");
                 
                 shardPull.start();
                 shardPush.start();
@@ -44,5 +48,17 @@ public class ShardStateServices {
         } else {
             log.info("Shard push and pull services not required");
         }
+        
+        // if things were enabled, threads are actually running at this point, but are blocked until enabled.
+    }
+    
+    public void start() {
+        pusher.setActive(true);
+        pusher.setActive(false);
+    }
+    
+    public void stop() {
+        pusher.setActive(false);
+        puller.setActive(false);
     }
 }
