@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.concurrent;
 
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -285,6 +285,74 @@ public class ConcurrentStructuresTest {
         // Just for funsies, make sure we can actually get something.
         String result = chain.apply("baz").get(2500, TimeUnit.MILLISECONDS);
         Assert.assertEquals("baz,f1,f1,f2", result);
+    }
+    
+    // verifies that the AsyncChain interface works with a mixture of simple AsyncFunctions (google) and 
+    // AsyncFunctionWithThreadPool (our own concoction).
+    @Test
+    public void testMixingNoThreadpools() throws Exception {
+        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder().withCorePoolSize(5).withMaxPoolSize(5);
+        
+        AsyncFunctionWithThreadPool<String, String> concat = new AsyncFunctionWithThreadPool<String, String>(poolBuilder.withName("concat").build()) {
+            @Override
+            public ListenableFuture<String> apply(final String input) throws Exception {
+                return getThreadPool().submit(new Callable<String>() {
+                    @Override
+                    public String call() throws Exception {
+                        return input + input;
+                    }
+                });
+            }
+        };
+        
+        AsyncFunction<String, String> plusOne = new AsyncFunction<String, String>() {
+            @Override
+            public ListenableFuture<String> apply(String input) throws Exception {
+                return new NoOpFuture<String>(Integer.toString(Integer.parseInt(input) + 1));
+            }
+        };
+        
+        AsyncChain<String, String> chain = new AsyncChain<String, String>()
+                .withFunction(concat)
+                .withFunction(plusOne)
+                .withFunction(concat) 
+                .withFunction(plusOne);
+        
+        // 1 -> 11 -> 12 -> 1212 -> 1213
+        String result = chain.apply("1").get(1000, TimeUnit.SECONDS);
+        Assert.assertEquals("1213", result);
+    }
+    
+    // Demonstrates a weakness in the chaining interface. We have no way to verify that inputs and outputs match
+    // their parameterized types.
+    @Test(expected = ClassCastException.class)
+    public void testMismatchedTypes() throws Exception {
+        
+        // String -> Integer.
+        AsyncFunction<String, Integer> stringToInt = new AsyncFunction<String, Integer>() {
+            @Override
+            public ListenableFuture<Integer> apply(String input) throws Exception {
+                return new NoOpFuture<Integer>(Integer.parseInt(input));
+            }
+        };
+        
+        // Integer -> String
+        AsyncFunction<Integer, String> intToString = new AsyncFunction<Integer, String>() {
+            @Override
+            public ListenableFuture<String> apply(Integer input) throws Exception {
+                return new NoOpFuture<String>(Integer.toString(input));
+            }
+        };
+        
+        // String -> Integer plus Integer -> String means outputs are String.  But this instance declares that outputs 
+        // are Integer.
+        AsyncChain<String, Integer> chain = new AsyncChain<String, Integer>()
+                .withFunction(stringToInt)
+                .withFunction(intToString);
+        
+        ListenableFuture<Integer> future = chain.apply("1");
+        // exception gets thrown on next line.
+        Integer wrongTypeResult = future.get(1, TimeUnit.SECONDS);
     }
     
 }
