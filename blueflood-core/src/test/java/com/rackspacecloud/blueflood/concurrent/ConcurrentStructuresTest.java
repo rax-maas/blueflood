@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.concurrent;
 
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -285,6 +285,42 @@ public class ConcurrentStructuresTest {
         // Just for funsies, make sure we can actually get something.
         String result = chain.apply("baz").get(2500, TimeUnit.MILLISECONDS);
         Assert.assertEquals("baz,f1,f1,f2", result);
+    }
+    
+    // verifies that the AsyncChain interface works with a mixture of simple AsyncFunctions (google) and 
+    // AsyncFunctionWithThreadPool (our own concoction).
+    @Test
+    public void testMixingNoThreadpools() throws Exception {
+        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder().withCorePoolSize(5).withMaxPoolSize(5);
+        
+        AsyncFunctionWithThreadPool<String, String> concat = new AsyncFunctionWithThreadPool<String, String>(poolBuilder.withName("concat").build()) {
+            @Override
+            public ListenableFuture<String> apply(final String input) throws Exception {
+                return getThreadPool().submit(new Callable<String>() {
+                    @Override
+                    public String call() throws Exception {
+                        return input + input;
+                    }
+                });
+            }
+        };
+        
+        AsyncFunction<String, String> plusOne = new AsyncFunction<String, String>() {
+            @Override
+            public ListenableFuture<String> apply(String input) throws Exception {
+                return new NoOpFuture<String>(Integer.toString(Integer.parseInt(input) + 1));
+            }
+        };
+        
+        AsyncChain<String, String> chain = new AsyncChain<String, String>()
+                .withFunction(concat)
+                .withFunction(plusOne)
+                .withFunction(concat) 
+                .withFunction(plusOne);
+        
+        // 1 -> 11 -> 12 -> 1212 -> 1213
+        String result = chain.apply("1").get(1000, TimeUnit.SECONDS);
+        Assert.assertEquals("1213", result);
     }
     
 }
