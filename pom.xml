@@ -26,6 +26,7 @@
   <version>1.0.4-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
+    <module>blueflood-udp</module>
   </modules>
 
   <description>
@@ -46,6 +47,17 @@
   
   <build>
     <plugins>
+      
+      <!-- compile -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+        <version>3.1</version>
+      </plugin>
       
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
