@@ -72,7 +72,7 @@ public class ScheduleContext implements IngestionContext {
         this.lockManager = new NoOpShardLockManager();
     }
 
-    ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
+    public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
         this(currentTimeMillis, managedShards);
         this.lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
     }
@@ -80,7 +80,7 @@ public class ScheduleContext implements IngestionContext {
     void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
     public long getCurrentTimeMillis() { return scheduleTime; }
 
-    protected ShardStateManager getShardStateManager() {
+    public ShardStateManager getShardStateManager() {
         return this.shardStateManager;
     }
     

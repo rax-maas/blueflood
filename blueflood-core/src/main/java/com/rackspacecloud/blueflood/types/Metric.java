@@ -103,6 +103,7 @@ public class Metric {
     public static class Type {
         private final String type;
 
+        // todo: we need to get rid of this and have a static method that returns the singleton instances below.
         public Type(String type) {
             this.type = type;
         }
