@@ -323,4 +323,36 @@ public class ConcurrentStructuresTest {
         Assert.assertEquals("1213", result);
     }
     
+    // Demonstrates a weakness in the chaining interface. We have no way to verify that inputs and outputs match
+    // their parameterized types.
+    @Test(expected = ClassCastException.class)
+    public void testMismatchedTypes() throws Exception {
+        
+        // String -> Integer.
+        AsyncFunction<String, Integer> stringToInt = new AsyncFunction<String, Integer>() {
+            @Override
+            public ListenableFuture<Integer> apply(String input) throws Exception {
+                return new NoOpFuture<Integer>(Integer.parseInt(input));
+            }
+        };
+        
+        // Integer -> String
+        AsyncFunction<Integer, String> intToString = new AsyncFunction<Integer, String>() {
+            @Override
+            public ListenableFuture<String> apply(Integer input) throws Exception {
+                return new NoOpFuture<String>(Integer.toString(input));
+            }
+        };
+        
+        // String -> Integer plus Integer -> String means outputs are String.  But this instance declares that outputs 
+        // are Integer.
+        AsyncChain<String, Integer> chain = new AsyncChain<String, Integer>()
+                .withFunction(stringToInt)
+                .withFunction(intToString);
+        
+        ListenableFuture<Integer> future = chain.apply("1");
+        // exception gets thrown on next line.
+        Integer wrongTypeResult = future.get(1, TimeUnit.SECONDS);
+    }
+    
 }
