@@ -67,6 +67,8 @@ public class ShardStateWorkerTest {
             }
         };
         
+        int lastCount;
+        
         // initially do nothing.
         stopper.run();
         
@@ -76,22 +78,28 @@ public class ShardStateWorkerTest {
         // verify that it doesn't start out of the gate.
         Thread.sleep(1000);
         Assert.assertEquals(0, counter.get());
+        lastCount = counter.get();
         
         starter.run();
         Thread.sleep(1000);
         stopper.run();
         
-        // lower and upper bounds.
-        Assert.assertTrue(Integer.toString(counter.get()), counter.get() >= 7);
-        Assert.assertTrue(Integer.toString(counter.get()), counter.get() <= 10);
+        // ensure count grew. it should have been hit several times.
+        Assert.assertTrue(counter.get() > lastCount);
+        lastCount = counter.get();
+        
+        Thread.sleep(1000);
+        
+        // counter should not have grown.
+        Assert.assertEquals(lastCount, counter.get());
+        
         
         starter.run();
         Thread.sleep(1000);
         stopper.run();
         
-        // lower and upper bounds.
-        Assert.assertTrue(Integer.toString(counter.get()), counter.get() >= 14);
-        Assert.assertTrue(Integer.toString(counter.get()), counter.get() <= 20);
+        // ensure count grew.
+        Assert.assertTrue(counter.get() > lastCount);
     }
     
     
