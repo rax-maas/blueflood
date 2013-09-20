@@ -48,9 +48,8 @@ public abstract class AsyncFunctionWithThreadPool<I, O> implements AsyncFunction
         return (AsyncFunctionWithThreadPool<I,O>) this;
     }
     
-    // todo: this method could be made uneeded if apply where implemented to always send work to this threadpool.
-    // there would also need to be an abstract function that actually did the work asked for (transform I->O).
     public ListeningExecutorService getThreadPool() { return listeningExecutor; }
+    
     public Logger getLogger() { return log; }
 
     public abstract ListenableFuture<O> apply(I input) throws Exception;
