@@ -207,6 +207,8 @@ public class HttpRollupsQueryHandler extends RollupHandler
                 if (stat.contains(",")) {
                     List<String> nestedStats = Arrays.asList(stat.split(","));
                     filters.addAll(MetricStat.fromStringList(nestedStats));
+                } else {
+                    filters.add(MetricStat.fromString(stat));
                 }
             }
             return filters;
