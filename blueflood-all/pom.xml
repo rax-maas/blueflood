@@ -48,6 +48,18 @@
       <groupId>com.rackspacecloud</groupId>
       <version>1.0.4-SNAPSHOT</version>
     </dependency>
+    
+    <dependency>
+      <artifactId>blueflood-udp</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>1.0.4-SNAPSHOT</version>
+    </dependency>
+    
+    <dependency>
+      <artifactId>blueflood-statsd</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>1.0.4-SNAPSHOT</version>
+    </dependency>
 
   </dependencies>
 

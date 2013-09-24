@@ -27,6 +27,7 @@
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
+    <module>blueflood-statsd</module>
   </modules>
 
   <description>
@@ -116,6 +117,7 @@
         <module>blueflood-core</module>
         <module>blueflood-all</module>
         <module>blueflood-udp</module>
+        <module>blueflood-statsd</module>
       </modules>
     </profile>
     <profile>
