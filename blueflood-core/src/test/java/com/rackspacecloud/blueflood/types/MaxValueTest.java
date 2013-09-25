@@ -22,8 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class MaxValueTest {
     private MaxValue max;
@@ -73,36 +71,36 @@ public class MaxValueTest {
 
         BasicRollup netBasicRollup;
 
-        Points input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 5L));
-        input.add(new Points.Point<Object>(123456790L, 1L));
-        input.add(new Points.Point<Object>(123456791L, 7L));
-        basicRollup1.compute(input);
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(5L)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1L)));
+        input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(7L)));
+        basicRollup1.computeFromSimpleMetrics(input);
 
-        input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 9L));
-        input.add(new Points.Point<Object>(123456790L, 0L));
-        input.add(new Points.Point<Object>(123456791L, 1L));
-        basicRollup2.compute(input);
+        input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(9L)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(0L)));
+        input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(1L)));
+        basicRollup2.computeFromSimpleMetrics(input);
 
-        input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 2.14d));
-        input.add(new Points.Point<Object>(123456790L, 1.14d));
-        basicRollup3.compute(input);
+        input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(2.14d)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1.14d)));
+        basicRollup3.computeFromSimpleMetrics(input);
 
-        input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 3.14d));
-        input.add(new Points.Point<Object>(123456790L, 5.67d));
-        basicRollup4.compute(input);
+        input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(3.14d)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(5.67d)));
+        basicRollup4.computeFromSimpleMetrics(input);
 
         // handle homegenous metric types and see if we get the right max
 
         // type long
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
-        netBasicRollup.compute(input);
+        Points<BasicRollup> rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        netBasicRollup.computeFromRollups(rollups);
 
         MaxValue max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
@@ -110,10 +108,10 @@ public class MaxValueTest {
 
         // type double
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
-        netBasicRollup.compute(input);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        netBasicRollup.computeFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();
         Assert.assertTrue(max.isFloatingPoint());
@@ -121,10 +119,10 @@ public class MaxValueTest {
 
         // handle heterogenous metric types and see if we get the right max
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
-        netBasicRollup.compute(input);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        netBasicRollup.computeFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
