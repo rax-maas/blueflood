@@ -13,6 +13,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -30,6 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * setting up the sockets.
  */
 public class Broadcaster {
+
+    private static final Logger log = LoggerFactory.getLogger(MainIngestor.class);
+
     private static final TimeValue TTL = new TimeValue(30, TimeUnit.DAYS);
     private static final AtomicInteger counter = new AtomicInteger(0);
     private static final Random rand = new Random(75323);
@@ -43,6 +48,7 @@ public class Broadcaster {
         
         // My locator will be tentant_${id},udp_int_metric.
         final Locator locator = Locator.createLocatorFromPathComponents("tenant_" + id, "udp_int_metric");
+        log.info("Sending metrics for {} starting {}", locator, System.currentTimeMillis());
         
         try {
             
@@ -94,6 +100,7 @@ public class Broadcaster {
         for (int i = 0; i < count; i++) {
             metrics.add(new Metric(locator, rand.nextInt(1024), System.currentTimeMillis(), TTL, "gigawatts"));
         }
+        log.info("Generating metrics for {} until {}", locator, System.currentTimeMillis());
         return metrics;
     }
     
