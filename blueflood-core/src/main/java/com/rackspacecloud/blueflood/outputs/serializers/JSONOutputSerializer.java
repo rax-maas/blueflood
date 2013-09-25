@@ -81,7 +81,6 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
             numPoints = 1;
             filterStatsObject = getFilteredStatsForBoolean((Boolean) point.getData());
         } else {
-            System.out.println("Type received " + point.getData().getClass().getName());
             throw new SerializationException("Unsupported data type for Point");
         }
 
