@@ -41,9 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -95,11 +93,18 @@ public class AstyanaxReader extends AstyanaxIO {
         NumericSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
 
-        Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(srcCF);
-        Points points = Points.create(gran);
+        Points points;
         try {
-            for (Column col : cols) {
-                points.add(pointFromColumn(col, gran, serializer));
+            if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
+                points = new Points<SimpleNumber>();
+                for (Column<Long> col : cols) {
+                    points.add(new Points.Point<SimpleNumber>(col.getName(), new SimpleNumber(col.getValue(serializer))));
+                }
+            } else {
+                points = new Points<BasicRollup>();
+                for (Column<Long> col : cols) {
+                    points.add(new Points.Point<BasicRollup>(col.getName(), (BasicRollup) col.getValue(serializer)));
+                }
             }
         } catch (RuntimeException ex) {
             log.error("Problem deserializing data", ex);
@@ -227,16 +232,17 @@ public class AstyanaxReader extends AstyanaxIO {
                 return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
-            com.rackspacecloud.blueflood.types.Metric.Type metricType = new com.rackspacecloud.blueflood.types.Metric.Type((String) type);
+            Metric.Type metricType = new Metric.Type((String) type);
             if (!com.rackspacecloud.blueflood.types.Metric.Type.isKnownMetricType(metricType)) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
             if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.STRING)) {
                 gran = Granularity.FULL;
-                return getStringMetricDataForRange(locator, range, gran, StringSerializer.get());
+                return getStringMetricDataForRange(locator, range, gran);
             } else if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.BOOLEAN)) {
-                return getStringMetricDataForRange(locator, range, gran, BooleanSerializer.get());
+                gran = Granularity.FULL;
+                return getBooleanMetricDataForRange(locator, range, gran);
             } else {
                 return getNumericMetricDataForRange(locator, range, gran);
             }
@@ -247,53 +253,74 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    // Used for both string and boolean metrics
-    private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran, AbstractSerializer serializer) {
-        Points points =  transformDBValuesToPoints(
-                getStringPoints(locator, range.start, range.stop), gran, serializer);
-        return new MetricData(points, getUnitString(locator));
-    }
-
-    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
-        Points points = transformDBValuesToPoints(
-                getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran.name()), range.start, range.stop), gran,
-                NumericSerializer.get(CF));
-        return new MetricData(points, getUnitString(locator));
-    }
-
-    private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
-        Instrumentation.markScanAllColumnFamilies();
-        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
-        ColumnList<Long> results = getNumericRollups(locator, CF, range.getStart(), range.getStop());
-        Points points = transformDBValuesToPoints(results, gran, NumericSerializer.get(CF));
-
-        if (points.getPoints().size() > 0) {
-            return new MetricData(points, getUnitString(locator));
-        }
-
-        results = getStringPoints(locator, range.start, range.stop);
-        return new MetricData(transformDBValuesToPoints(results, gran, StringSerializer.get()), "");
-    }
-
-    private Points transformDBValuesToPoints(ColumnList<Long> results, Granularity gran, AbstractSerializer serializer) {
-        Points points = Points.create(gran);
+    // Used for string metrics
+    private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
+        Points<String> points = new Points<String>();
+        ColumnList<Long> results = getStringPoints(locator, range.start, range.stop);
 
         for (Column<Long> column : results) {
             try {
-                points.add(pointFromColumn(column, gran, serializer));
+                points.add(new Points.Point<String>(column.getName(), column.getValue(StringSerializer.get())));
             } catch (RuntimeException ex) {
                 log.error("Problem deserializing rollup"); // TODO: update message?
                 log.error(ex.getMessage(), ex);
             }
         }
 
-        return points;
+        return new MetricData(points, getUnitString(locator));
     }
 
-    private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
+    private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
+        Points<Boolean> points = new Points<Boolean>();
+        ColumnList<Long> results = getStringPoints(locator, range.start, range.stop);
+
+        for (Column<Long> column : results) {
+            try {
+                points.add(new Points.Point<Boolean>(column.getName(), column.getValue(BooleanSerializer.get())));
+            } catch (RuntimeException ex) {
+                log.error("Problem deserializing rollup"); // TODO: update message?
+                log.error(ex.getMessage(), ex);
+            }
+        }
+
+        return new MetricData(points, getUnitString(locator));
+    }
+
+    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
+        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+
+        Points<SimpleNumber> points = new Points<SimpleNumber>();
+        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran.name()),
+                range.start, range.stop);
+
+        for (Column<Long> column : results) {
+            try {
+                points.add(pointFromColumn(column, gran, NumericSerializer.get(CF)));
+            } catch (RuntimeException ex) {
+                log.error("Problem deserializing rollup"); // TODO: update message?
+                log.error(ex.getMessage(), ex);
+            }
+        }
+
+        return new MetricData(points, getUnitString(locator));
+    }
+
+    private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
+        Instrumentation.markScanAllColumnFamilies();
+        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+
+        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran);
+
+        if (metricData.getData().getPoints().size() > 0) {
+            return metricData;
+        }
+
+        return getStringMetricDataForRange(locator, range, gran);
+    }
+
+     private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
         if (gran == Granularity.FULL) {
-            return new Points.Point<Object>(column.getName(), column.getValue(serializer));
+            return new Points.Point<SimpleNumber>(column.getName(), new SimpleNumber(column.getValue(serializer)));
         } else {
             BasicRollup basicRollup = (BasicRollup) column.getValue(serializer);
             return new Points.Point<BasicRollup>(column.getName(), basicRollup);

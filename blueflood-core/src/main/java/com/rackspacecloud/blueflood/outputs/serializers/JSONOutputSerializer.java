@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -47,7 +48,8 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return globalJSON;
     }
 
-    private JSONArray transformDataToJSONArray(MetricData metricData, Set<MetricStat> filterStats) {
+    private JSONArray transformDataToJSONArray(MetricData metricData, Set<MetricStat> filterStats)
+            throws SerializationException {
         Points points = metricData.getData();
         final JSONArray data = new JSONArray();
         final Set<Map.Entry<Long, Points.Point>> dataPoints = points.getPoints().entrySet();
@@ -58,19 +60,29 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return data;
     }
 
-    private JSONObject toJSON(long timestamp, Points.Point point, String unit, Set<MetricStat> filterStats) {
+    private JSONObject toJSON(long timestamp, Points.Point point, String unit, Set<MetricStat> filterStats)
+            throws SerializationException {
         final JSONObject  object = new JSONObject();
         object.put("timestamp", timestamp);
         object.put("unit", unit);
 
-        JSONObject filterStatsObject;
-        long numPoints;
+        JSONObject filterStatsObject = null;
+        long numPoints = 1;
         if (point.getData() instanceof BasicRollup) {
             numPoints = ((BasicRollup) point.getData()).getCount();
             filterStatsObject = getFilteredStatsForRollup((BasicRollup) point.getData(), filterStats);
-        } else {
+        } else if (point.getData() instanceof SimpleNumber) {
             numPoints = 1;
             filterStatsObject = getFilteredStatsForFullRes(point.getData(), filterStats);
+        } else if (point.getData() instanceof String) {
+            numPoints = 1;
+            filterStatsObject = getFilteredStatsForString((String) point.getData());
+        } else if (point.getData() instanceof Boolean) {
+            numPoints = 1;
+            filterStatsObject = getFilteredStatsForBoolean((Boolean) point.getData());
+        } else {
+            System.out.println("Type received " + point.getData().getClass().getName());
+            throw new SerializationException("Unsupported data type for Point");
         }
 
         // Set all filtered stats to null if numPoints is 0
@@ -107,9 +119,23 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
             filteredObject.put("value", rawSample);
         } else {
             for (MetricStat stat : filterStats) {
-                filteredObject.put(stat.toString(), stat.convertRawSampleToObject(rawSample));
+                filteredObject.put(stat.toString(), stat.convertRawSampleToObject(((SimpleNumber) rawSample).getValue()));
             }
         }
+        return filteredObject;
+    }
+
+    private JSONObject getFilteredStatsForString(String value) {
+        final JSONObject filteredObject = new JSONObject();
+        filteredObject.put("value", value);
+
+        return filteredObject;
+    }
+
+    private JSONObject getFilteredStatsForBoolean(Boolean value) {
+        final JSONObject filteredObject = new JSONObject();
+        filteredObject.put("value", value);
+
         return filteredObject;
     }
 }
