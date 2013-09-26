@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.bigml.histogram.Bin;
+import com.bigml.histogram.SimpleTarget;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -23,6 +25,9 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class HistogramSerializationTest {
     private static HistogramRollup histogramRollup;
@@ -62,7 +67,7 @@ public class HistogramSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/histogram_version_" + version + ".bin"));
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
             HistogramRollup histogramRollupDes = HistogramSerializer.get().fromByteBuffer(bb);
-            Assert.assertArrayEquals(histogramRollup.getBins().toArray(), histogramRollupDes.getBins().toArray());
+            Assert.assertTrue(areHistogramsEqual(histogramRollup, histogramRollupDes));
             version++;
         }
     }
@@ -76,5 +81,32 @@ public class HistogramSerializationTest {
         } catch (RuntimeException ex) {
             Assert.assertTrue(ex.getCause().getMessage().startsWith("Unexpected serialization version"));
         }
+    }
+
+    private boolean areHistogramsEqual(HistogramRollup first, HistogramRollup second) {
+        final TreeMap<Double, Double> firstBinsAsOrderedMap = getNonZeroBinsAsMap(first);
+        final TreeMap<Double, Double> secondBinsAsOrderedMap = getNonZeroBinsAsMap(second);
+
+        for (Map.Entry<Double, Double> firstBin: firstBinsAsOrderedMap.entrySet()) {
+            Double val = secondBinsAsOrderedMap.get(firstBin.getKey());
+            if (val == null || !firstBin.getValue().equals(val)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private TreeMap<Double, Double> getNonZeroBinsAsMap(HistogramRollup histogramRollup) {
+        Collection<Bin<SimpleTarget>> bins = histogramRollup.getBins();
+
+        final TreeMap<Double, Double> binsMap = new TreeMap<Double, Double>();
+        for (Bin<SimpleTarget> bin : bins) {
+            if (bin.getCount() > 0) {
+                binsMap.put(bin.getMean(), bin.getCount());
+            }
+        }
+
+        return binsMap;
     }
 }
