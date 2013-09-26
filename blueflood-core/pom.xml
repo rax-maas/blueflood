@@ -296,6 +296,12 @@
       <version>1.8.4</version>
     </dependency>
 
+    <dependency>
+      <groupId>bigml</groupId>
+      <artifactId>histogram</artifactId>
+      <version>3.2.1</version>
+    </dependency>
+
   </dependencies>
 
   <profiles>
@@ -348,5 +354,12 @@
       </build>
     </profile>
   </profiles>
+
+  <repositories>
+    <repository>
+      <id>clojars.org</id>
+      <url>http://clojars.org/repo</url>
+    </repository>
+  </repositories>
 
 </project>
