@@ -33,6 +33,11 @@ public class SimpleNumberTest {
         testValue = new Long(5L);
         simpleNumber = new SimpleNumber(testValue);
         Assert.assertEquals(testValue, simpleNumber.getValue());
+
+        // make sure primitives work too
+        testValue = 4;
+        simpleNumber = new SimpleNumber(testValue);
+        Assert.assertEquals(testValue, simpleNumber.getValue());
     }
 
 }

@@ -318,7 +318,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return getStringMetricDataForRange(locator, range, gran);
     }
 
-     private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
+    private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
         if (gran == Granularity.FULL) {
             return new Points.Point<SimpleNumber>(column.getName(), new SimpleNumber(column.getValue(serializer)));
         } else {
