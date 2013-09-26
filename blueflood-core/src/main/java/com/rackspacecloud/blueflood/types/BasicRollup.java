@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public class BasicRollup extends Rollup {
@@ -83,7 +82,7 @@ public class BasicRollup extends Rollup {
     }
 
     @Override
-    public void compute(Points input) throws IOException {
+    public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -92,30 +91,49 @@ public class BasicRollup extends Rollup {
             return;
         }
 
-        Map<Long, Points.Point<Object>> points = input.getPoints();
-
-        for (Map.Entry<Long, Points.Point<Object>> item : points.entrySet()) {
-            Object value = item.getValue().getData();
-            if (value instanceof Rollup) {
-                BasicRollup basicRollup = (BasicRollup) value;
-                this.count += basicRollup.getCount();
-                average.handleRollupMetric(basicRollup);
-                variance.handleRollupMetric(basicRollup);
-                minValue.handleRollupMetric(basicRollup);
-                maxValue.handleRollupMetric(basicRollup);
-            } else {
-                this.count += 1;
-                average.handleFullResMetric(value);
-                variance.handleFullResMetric(value);
-                minValue.handleFullResMetric(value);
-                maxValue.handleFullResMetric(value);
-            }
+        Map<Long, Points.Point<SimpleNumber>> points = input.getPoints();
+        for (Map.Entry<Long, Points.Point<SimpleNumber>> item : points.entrySet()) {
+            this.count += 1;
+            SimpleNumber numericMetric = item.getValue().getData();
+            average.handleFullResMetric(numericMetric.getValue());
+            variance.handleFullResMetric(numericMetric.getValue());
+            minValue.handleFullResMetric(numericMetric.getValue());
+            maxValue.handleFullResMetric(numericMetric.getValue());
         }
     }
 
-    public static BasicRollup buildRollupFromConstituentData(Points input) throws IOException {
+    @Override
+    public void computeFromRollups(Points<BasicRollup> input) throws IOException {
+        if (input == null) {
+            throw new IOException("Null input to create rollup from");
+        }
+
+        if (input.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Points.Point<BasicRollup>> points = input.getPoints();
+
+        for (Map.Entry<Long, Points.Point<BasicRollup>> item : points.entrySet()) {
+            BasicRollup basicRollup = item.getValue().getData();
+            this.count += basicRollup.getCount();
+            average.handleRollupMetric(basicRollup);
+            variance.handleRollupMetric(basicRollup);
+            minValue.handleRollupMetric(basicRollup);
+            maxValue.handleRollupMetric(basicRollup);
+        }
+    }
+
+    public static BasicRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
-        basicRollup.compute(input);
+        basicRollup.computeFromSimpleMetrics(input);
+
+        return basicRollup;
+    }
+
+    public static BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
+        final BasicRollup basicRollup = new BasicRollup();
+        basicRollup.computeFromRollups(input);
 
         return basicRollup;
     }

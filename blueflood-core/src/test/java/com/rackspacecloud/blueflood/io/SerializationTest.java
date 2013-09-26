@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.binary.Base64;
@@ -32,9 +33,7 @@ import org.junit.Test;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class SerializationTest {
@@ -53,14 +52,14 @@ public class SerializationTest {
         // double
         for (int i = 0; i < 2; i++) {
             basicRollup = new BasicRollup();
-            Points input = Points.create(Granularity.FULL);
+            Points<SimpleNumber> input = new Points<SimpleNumber>();
             int timeOffset = 0;
             for (double val = 0.0; val < 10.0; val++) {
-                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
+                input.add(new Points.Point<SimpleNumber>(123456789L + timeOffset++, new SimpleNumber(val * (i+1))));
             }
 
             try {
-                basicRollup.compute(input);
+                basicRollup.computeFromSimpleMetrics(input);
             } catch (IOException ex) {
                 Assert.fail("Test data generation failed");
             }
@@ -70,13 +69,13 @@ public class SerializationTest {
         // long
         for (int i = 0; i < 2; i++) {
             basicRollup = new BasicRollup();
-            Points input = Points.create(Granularity.FULL);
+            Points<SimpleNumber> input = new Points<SimpleNumber>();
             int timeOffset = 0;
             for (long val = 0; val < 10; val++) {
-                input.add(new Points.Point<Object>(123456789L + timeOffset++, val * (i+1)));
+                input.add(new Points.Point<SimpleNumber>(123456789L + timeOffset++, new SimpleNumber(val * (i+1))));
             }
             try {
-                basicRollup.compute(input);
+                basicRollup.computeFromSimpleMetrics(input);
             } catch (Exception e) {
                 Assert.fail("Test data generation failed");
             }
@@ -363,14 +362,14 @@ public class SerializationTest {
         r.setCount(500);
         for (int rollupCount = 0; rollupCount < 500; rollupCount++) {
             BasicRollup basicRollup = new BasicRollup();
-            Points input = Points.create(Granularity.FULL);
+            Points<SimpleNumber> input = new Points<SimpleNumber>();
             for (int fullResCount = 0; fullResCount < 500; fullResCount++) {
-                input.add(new Points.Point<Object>(123456789L + fullResCount, fullResCount + fullResCount * 3));
+                input.add(new Points.Point<SimpleNumber>(123456789L + fullResCount, new SimpleNumber(fullResCount + fullResCount * 3)));
             }
-            basicRollup.compute(input);
-            input = Points.create(Granularity.MIN_20);
-            input.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
-            r.compute(input);
+            basicRollup.computeFromSimpleMetrics(input);
+            Points<BasicRollup> rollups = new Points<BasicRollup>();
+            rollups.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
+            r.computeFromRollups(rollups);
         }
         ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
 

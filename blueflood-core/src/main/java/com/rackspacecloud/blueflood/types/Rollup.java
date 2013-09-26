@@ -30,11 +30,21 @@ abstract public class Rollup {
         }
     }
 
-    abstract public void compute(Points input) throws IOException;
+    abstract public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException;
 
-    public static Rollup buildRollupFromConstituentData(Points input, Type rollupType) throws IOException {
+    abstract public void computeFromRollups(Points<BasicRollup> input) throws IOException;
+
+    public static Rollup buildRollupFromRawSamples(Points<SimpleNumber> input, Type rollupType) throws IOException {
         if (rollupType.equals(Type.BASIC_STATS)) {
-            return BasicRollup.buildRollupFromConstituentData(input);
+            return BasicRollup.buildRollupFromRawSamples(input);
+        } else {
+            throw new IOException("No other rollup type implemented");
+        }
+    }
+
+    public static Rollup buildRollupFromRollups(Points<BasicRollup> input, Type rollupType) throws IOException {
+        if (rollupType.equals(Type.BASIC_STATS)) {
+            return BasicRollup.buildRollupFromRollups(input);
         } else {
             throw new IOException("No other rollup type implemented");
         }

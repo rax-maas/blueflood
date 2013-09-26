@@ -16,8 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.yammer.metrics.Metrics;
@@ -61,7 +63,13 @@ class RollupRunnable implements Runnable {
                 Points input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
                         rollupContext.getRange(),
                         rollupContext.getSourceColumnFamily());
-                rollup = Rollup.buildRollupFromConstituentData(input, rollupContext.getRollupTypeToCompute());
+                Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
+
+                if (gran == Granularity.FULL) {
+                    rollup = Rollup.buildRollupFromRawSamples(input, rollupContext.getRollupTypeToCompute());
+                } else {
+                    rollup = Rollup.buildRollupFromRollups(input, rollupContext.getRollupTypeToCompute());
+                }
             } finally {
                 calcrollupContext.stop();
             }

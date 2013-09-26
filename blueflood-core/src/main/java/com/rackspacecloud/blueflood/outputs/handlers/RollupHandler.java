@@ -63,8 +63,8 @@ public class RollupHandler {
             final TimerContext rollupsCalcCtx = rollupsCalcOnReadTimer.time();
 
             long latest = from;
-            Map<Long, Points.Point<Object>> points = metricData.getData().getPoints();
-            for (Map.Entry<Long, Points.Point<Object>> point : points.entrySet()) {
+            Map<Long, Points.Point> points = metricData.getData().getPoints();
+            for (Map.Entry<Long, Points.Point> point : points.entrySet()) {
                 if (point.getValue().getTimestamp() > latest) {
                     latest = point.getValue().getTimestamp();
                 }
@@ -72,12 +72,12 @@ public class RollupHandler {
 
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
-                // missing some rollups, generate more
+                // missing some rollups, generate more (5 MIN rollups only)
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
                     try {
-                        Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
-                                AstyanaxIO.getColumnFamilyMapper().get(g.name()));
-                        BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromConstituentData(dataToRoll,
+                        Points<SimpleNumber> dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r,
+                                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()));
+                        BasicRollup basicRollup = (BasicRollup) Rollup.buildRollupFromRawSamples(dataToRoll,
                                 Rollup.Type.BASIC_STATS);
                         if (basicRollup.getCount() > 0) {
                             metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), basicRollup));
