@@ -16,44 +16,26 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.rollup.Granularity;
-
 import java.util.Map;
 import java.util.TreeMap;
 
 public class Points<T> {
-    private Map<Long, Point> points; // Map of timestamp to Point
+    private Map<Long, Point<T>> points; // Map of timestamp to Point
 
-    private Points() {
-        this.points = new TreeMap<Long, Point>();
+    public Points() {
+        this.points = new TreeMap<Long, Point<T>>();
     }
 
     public void add(Point<T> point) {
         points.put(point.getTimestamp(), point);
     }
 
-    public Map<Long, Point> getPoints() {
+    public Map<Long, Point<T>> getPoints() {
         return points;
     }
 
     public boolean isEmpty() {
         return points.isEmpty();
-    }
-
-    private static Points<Object> newFullResolutionPoints() {
-        return new Points<Object>();
-    }
-
-    private static Points<BasicRollup> newRollupPoints() {
-        return new Points<BasicRollup>();
-    }
-
-    public static Points create(Granularity gran) {
-        if (gran == Granularity.FULL) {
-            return newFullResolutionPoints();
-        }
-
-        return newRollupPoints();
     }
 
     public static class Point<T> {
