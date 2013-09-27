@@ -34,7 +34,7 @@ public class HistogramRollupTest {
 
         HistogramRollup histogramRollup = (HistogramRollup) Rollup.buildRollupFromRawSamples(
                 points, Rollup.Type.HISTOGRAM);
-        Assert.assertTrue(histogramRollup.getNumberOfBins() <= histogramRollup.getMaxBins());
+        Assert.assertTrue(histogramRollup.getNumberOfBins() <= HistogramRollup.MAX_BIN_SIZE);
 
         double count = 0;
         for (Bin<SimpleTarget> bin :histogramRollup.getBins()) {
