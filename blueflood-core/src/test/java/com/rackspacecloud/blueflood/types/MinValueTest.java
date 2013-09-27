@@ -74,60 +74,57 @@ public class MinValueTest {
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(5L)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1L)));
         input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(7L)));
-        basicRollup1.computeFromSimpleMetrics(input);
+        basicRollup1 = BasicRollup.buildRollupFromRawSamples(input);
 
         input = new Points<SimpleNumber>();
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(9L)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(0L)));
         input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(1L)));
-        basicRollup2.computeFromSimpleMetrics(input);
+        basicRollup2 = BasicRollup.buildRollupFromRawSamples(input);
 
-        Points<Rollup> rollups = new Points<Rollup>();
+        Points<BasicRollup> rollups = new Points<BasicRollup>();
         BasicRollup temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(2.14);
-        rollups.add(new Points.Point<Rollup>(123456789L, temp));
+        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(1.14);
-        rollups.add(new Points.Point<Rollup>(123456790L, temp));
-        basicRollup3.computeFromRollups(rollups);
+        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup3 = BasicRollup.buildRollupFromRollups(rollups);
 
-        rollups = new Points<Rollup>();
+        rollups = new Points<BasicRollup>();
         temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(3.14);
-        rollups.add(new Points.Point<Rollup>(123456789L, temp));
+        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(5.67);
-        rollups.add(new Points.Point<Rollup>(123456790L, temp));
-        basicRollup4.computeFromRollups(rollups);
+        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup4 = BasicRollup.buildRollupFromRollups(rollups);
 
         // handle homegenous metric types and see if we get the right min
 
         // type long
-        netBasicRollup = new BasicRollup();
-        rollups = new Points<Rollup>();
-        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup1));
-        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup2));
-        netBasicRollup.computeFromRollups(rollups);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         MinValue min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
 
         // type double
-        netBasicRollup = new BasicRollup();
-        rollups = new Points<Rollup>();
-        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup3));
-        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup4));
-        netBasicRollup.computeFromRollups(rollups);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();
         Assert.assertTrue(min.isFloatingPoint());
         Assert.assertEquals(1.14d, min.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right min
-        netBasicRollup = new BasicRollup();
-        rollups = new Points<Rollup>();
-        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup2));
-        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup3));
-        netBasicRollup.computeFromRollups(rollups);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());

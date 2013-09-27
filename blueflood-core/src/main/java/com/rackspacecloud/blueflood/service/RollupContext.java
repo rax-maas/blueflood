@@ -46,7 +46,7 @@ class RollupContext {
         this.range = rangeToRead;
         this.srcCF = srcColumnFamily;
         this.destCF = destColumnFamily;
-        this.rollupType = Rollup.Type.BASIC_STATS;
+        this.rollupType = Rollup.BasicType;
     }
 
     RollupContext(Locator locator, Range rangeToRead, ColumnFamily srcColumnFamily, ColumnFamily destColumnFamily,

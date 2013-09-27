@@ -141,11 +141,10 @@ public class AverageTest {
     @Test
     public void testAddRollup() throws IOException{
         Average avg = new Average(1, new Double(3.0));
-        BasicRollup basicRollup = new BasicRollup();
         Points<SimpleNumber> data = new Points<SimpleNumber>();
         data.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(0.0)));
         data.add(new Points.Point<SimpleNumber>(123456770L, new SimpleNumber(0.0)));
-        basicRollup.computeFromSimpleMetrics(data);
+        BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(data);
 
         Assert.assertEquals(3.0, avg.toDouble(), 0);
         avg.handleRollupMetric(basicRollup);
@@ -153,11 +152,10 @@ public class AverageTest {
 
         avg = new Average(1, new Long(3));
         Assert.assertEquals(3, avg.toLong());
-        basicRollup = new BasicRollup();
         data =  new Points<SimpleNumber>();
         data.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(0)));
         data.add(new Points.Point<SimpleNumber>(123456770L, new SimpleNumber(0)));
-        basicRollup.computeFromSimpleMetrics(data);
+        basicRollup = BasicRollup.buildRollupFromRawSamples(data);
         avg.handleRollupMetric(basicRollup);
         Assert.assertEquals(1, avg.toLong());
     }

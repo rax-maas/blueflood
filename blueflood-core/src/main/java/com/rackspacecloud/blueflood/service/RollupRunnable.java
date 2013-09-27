@@ -66,9 +66,9 @@ class RollupRunnable implements Runnable {
                 Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
 
                 if (gran == Granularity.FULL) {
-                    rollup = Rollup.buildRollupFromRawSamples(input, rollupContext.getRollupTypeToCompute());
+                    rollup = rollupContext.getRollupTypeToCompute().buildRollupFromRawSamples(input);
                 } else {
-                    rollup = Rollup.buildRollupFromRollups(input, rollupContext.getRollupTypeToCompute());
+                    rollup = rollupContext.getRollupTypeToCompute().buildRollupFromRollups(input);
                 }
             } finally {
                 calcrollupContext.stop();

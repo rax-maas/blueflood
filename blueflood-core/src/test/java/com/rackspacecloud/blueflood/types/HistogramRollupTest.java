@@ -32,8 +32,7 @@ public class HistogramRollupTest {
             points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(val)));
         }
 
-        HistogramRollup histogramRollup = (HistogramRollup) Rollup.buildRollupFromRawSamples(
-                points, Rollup.Type.HISTOGRAM);
+        HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(points);
         Assert.assertTrue(histogramRollup.getNumberOfBins() <= histogramRollup.getMaxBins());
 
         double count = 0;

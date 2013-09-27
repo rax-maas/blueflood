@@ -209,7 +209,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()));
-            Rollup basicRollup = Rollup.buildRollupFromRawSamples(input, Rollup.Type.BASIC_STATS);
+            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             rollups.put(range.getStart(), basicRollup);
         }
 

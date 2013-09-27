@@ -81,8 +81,8 @@ public class BasicRollup extends Rollup {
         return String.format("cnt:%d, avg:%s, var:%s, min:%s, max:%s", count, average, variance, minValue, maxValue);
     }
 
-    @Override
-    public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
+    // todo move into static method
+    private void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -102,8 +102,8 @@ public class BasicRollup extends Rollup {
         }
     }
 
-    @Override
-    public void computeFromRollups(Points<Rollup> input) throws IOException {
+    // todo: move into static method.
+    private void computeFromRollups(Points<BasicRollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -137,7 +137,7 @@ public class BasicRollup extends Rollup {
         return basicRollup;
     }
 
-    public static BasicRollup buildRollupFromRollups(Points<Rollup> input) throws IOException {
+    public static BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.computeFromRollups(input);
 
