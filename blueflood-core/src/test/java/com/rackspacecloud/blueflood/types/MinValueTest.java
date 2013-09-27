@@ -82,29 +82,29 @@ public class MinValueTest {
         input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(1L)));
         basicRollup2.computeFromSimpleMetrics(input);
 
-        Points<BasicRollup> rollups = new Points<BasicRollup>();
+        Points<Rollup> rollups = new Points<Rollup>();
         BasicRollup temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(2.14);
-        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
+        rollups.add(new Points.Point<Rollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(1.14);
-        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        rollups.add(new Points.Point<Rollup>(123456790L, temp));
         basicRollup3.computeFromRollups(rollups);
 
-        rollups = new Points<BasicRollup>();
+        rollups = new Points<Rollup>();
         temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(3.14);
-        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
+        rollups.add(new Points.Point<Rollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(5.67);
-        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        rollups.add(new Points.Point<Rollup>(123456790L, temp));
         basicRollup4.computeFromRollups(rollups);
 
         // handle homegenous metric types and see if we get the right min
 
         // type long
         netBasicRollup = new BasicRollup();
-        rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup1));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup2));
         netBasicRollup.computeFromRollups(rollups);
 
         MinValue min = netBasicRollup.getMinValue();
@@ -113,9 +113,9 @@ public class MinValueTest {
 
         // type double
         netBasicRollup = new BasicRollup();
-        rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup3));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup4));
         netBasicRollup.computeFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();
@@ -124,9 +124,9 @@ public class MinValueTest {
 
         // handle heterogenous metric types and see if we get the right min
         netBasicRollup = new BasicRollup();
-        rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup2));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup3));
         netBasicRollup.computeFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();

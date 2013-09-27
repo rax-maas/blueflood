@@ -97,9 +97,9 @@ public class MaxValueTest {
 
         // type long
         netBasicRollup = new BasicRollup();
-        Points<BasicRollup> rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        Points<Rollup> rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup1));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup2));
         netBasicRollup.computeFromRollups(rollups);
 
         MaxValue max = netBasicRollup.getMaxValue();
@@ -108,9 +108,9 @@ public class MaxValueTest {
 
         // type double
         netBasicRollup = new BasicRollup();
-        rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup3));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup4));
         netBasicRollup.computeFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();
@@ -119,9 +119,9 @@ public class MaxValueTest {
 
         // handle heterogenous metric types and see if we get the right max
         netBasicRollup = new BasicRollup();
-        rollups = new Points<BasicRollup>();
-        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
-        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        rollups = new Points<Rollup>();
+        rollups.add(new Points.Point<Rollup>(123456789L, basicRollup2));
+        rollups.add(new Points.Point<Rollup>(123456790L, basicRollup3));
         netBasicRollup.computeFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();

@@ -103,7 +103,7 @@ public class BasicRollup extends Rollup {
     }
 
     @Override
-    public void computeFromRollups(Points<? extends Rollup> input) throws IOException {
+    public void computeFromRollups(Points<Rollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -137,7 +137,7 @@ public class BasicRollup extends Rollup {
         return basicRollup;
     }
 
-    public static BasicRollup buildRollupFromRollups(Points<? extends Rollup> input) throws IOException {
+    public static BasicRollup buildRollupFromRollups(Points<Rollup> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.computeFromRollups(input);
 

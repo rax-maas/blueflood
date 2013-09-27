@@ -42,7 +42,7 @@ public class HistogramRollup extends Rollup {
     }
 
     @Override
-    public void computeFromRollups(Points<? extends Rollup> input) throws IOException {
+    public void computeFromRollups(Points<Rollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -51,9 +51,9 @@ public class HistogramRollup extends Rollup {
             return;
         }
 
-        Map<Long, ? extends Points.Point<? extends Rollup>> points = input.getPoints();
+        Map<Long, Points.Point<Rollup>> points = input.getPoints();
 
-        for (Map.Entry<Long, ? extends Points.Point<? extends Rollup>> item : points.entrySet()) {
+        for (Map.Entry<Long, Points.Point<Rollup>> item : points.entrySet()) {
             Rollup rollup = item.getValue().getData();
             if (!(rollup instanceof HistogramRollup)) {
                 throw new IOException("Cannot create HistogramRollup from type " + rollup.getClass().getName());
@@ -86,7 +86,7 @@ public class HistogramRollup extends Rollup {
         return histogramRollup;
     }
 
-    public static HistogramRollup buildRollupFromRollups(Points<? extends Rollup> input) throws IOException {
+    public static HistogramRollup buildRollupFromRollups(Points<Rollup> input) throws IOException {
         final HistogramRollup histogramRollup = new HistogramRollup(MAX_BIN_SIZE);
         histogramRollup.computeFromRollups(input);
 

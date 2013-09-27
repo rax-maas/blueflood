@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
@@ -367,8 +368,8 @@ public class SerializationTest {
                 input.add(new Points.Point<SimpleNumber>(123456789L + fullResCount, new SimpleNumber(fullResCount + fullResCount * 3)));
             }
             basicRollup.computeFromSimpleMetrics(input);
-            Points<BasicRollup> rollups = new Points<BasicRollup>();
-            rollups.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
+            Points<Rollup> rollups = new Points<Rollup>();
+            rollups.add(new Points.Point<Rollup>(123456789L , basicRollup));
             r.computeFromRollups(rollups);
         }
         ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
