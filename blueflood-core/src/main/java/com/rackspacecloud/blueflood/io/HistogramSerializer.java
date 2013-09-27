@@ -93,8 +93,8 @@ public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
         int size = 1; // for version
 
         for (Bin<SimpleTarget> bin : bins) {
-            size += CodedOutputStream.computeDoubleSizeNoTag((Double) bin.getMean());
-            size += CodedOutputStream.computeRawVarint64Size((Long) (long) bin.getCount());
+            size += CodedOutputStream.computeDoubleSizeNoTag((bin.getMean()));
+            size += CodedOutputStream.computeRawVarint64Size((long) bin.getCount());
         }
 
         return size;
