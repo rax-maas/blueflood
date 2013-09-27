@@ -18,7 +18,7 @@ Blueflood is capable of ingesting, rolling up and serving metrics at a massive s
 
 The latest code will always be here on Github.
 
-    git clone git@github.com:rackerlabs/blueflood.git
+    git clone https://github.com/rackerlabs/blueflood.git
     cd blueflood
     
 You can run the entire suite of tests using Maven:
