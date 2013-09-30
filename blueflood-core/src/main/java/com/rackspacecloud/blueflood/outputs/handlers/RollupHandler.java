@@ -76,10 +76,10 @@ public class RollupHandler {
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
                     try {
                         
-                        Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r, AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()));
-                        Rollup rollup = Rollup.BasicFromRaw.compute(dataToRoll);
+                        Points<SimpleNumber> dataToRoll = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, r);
+                        BasicRollup rollup = Rollup.BasicFromRaw.compute(dataToRoll);
                         if (rollup.getCount() > 0) {
-                            metricData.getData().add(new Points.Point<Rollup>(r.getStart(), rollup));
+                            metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), rollup));
                         }
 
                     } catch (IOException ex) {

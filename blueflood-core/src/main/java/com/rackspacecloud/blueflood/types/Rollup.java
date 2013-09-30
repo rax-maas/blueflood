@@ -26,28 +26,28 @@ abstract public class Rollup {
         public abstract O compute(Points<I> input) throws IOException;
     }
     
-    public static final Type BasicFromRaw = new Type<SimpleNumber, BasicRollup>() {
+    public static final Type<SimpleNumber, BasicRollup> BasicFromRaw = new Type<SimpleNumber, BasicRollup>() {
         @Override
         public BasicRollup compute(Points<SimpleNumber> input) throws IOException {
             return BasicRollup.buildRollupFromRawSamples(input);
         }
     };
     
-    public static final Type BasicFromBasic = new Type<BasicRollup, BasicRollup>() {
+    public static final Type<BasicRollup, BasicRollup> BasicFromBasic = new Type<BasicRollup, BasicRollup>() {
         @Override
         public BasicRollup compute(Points<BasicRollup> input) throws IOException {
             return BasicRollup.buildRollupFromRollups(input);
         }
     };
     
-    public static final Type HistogramFromRaw = new Type<SimpleNumber, HistogramRollup>() {
+    public static final Type<SimpleNumber, HistogramRollup> HistogramFromRaw = new Type<SimpleNumber, HistogramRollup>() {
         @Override
         public HistogramRollup compute(Points<SimpleNumber> input) throws IOException {
             return HistogramRollup.buildRollupFromRawSamples(input);
         }
     };
     
-    public static final Type HistogramFromHistogram = new Type<HistogramRollup, HistogramRollup>() {
+    public static final Type<HistogramRollup, HistogramRollup> HistogramFromHistogram = new Type<HistogramRollup, HistogramRollup>() {
         @Override
         public HistogramRollup compute(Points<HistogramRollup> input) throws IOException {
             return HistogramRollup.buildRollupFromRollups(input);
