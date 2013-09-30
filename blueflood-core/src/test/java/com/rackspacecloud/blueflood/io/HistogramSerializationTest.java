@@ -86,6 +86,10 @@ public class HistogramSerializationTest {
         final TreeMap<Double, Double> firstBinsAsOrderedMap = getNonZeroBinsAsMap(first);
         final TreeMap<Double, Double> secondBinsAsOrderedMap = getNonZeroBinsAsMap(second);
 
+        if (firstBinsAsOrderedMap.size() != secondBinsAsOrderedMap.size()) {
+            return false;
+        }
+
         for (Map.Entry<Double, Double> firstBin: firstBinsAsOrderedMap.entrySet()) {
             Double val = secondBinsAsOrderedMap.get(firstBin.getKey());
             if (val == null || !firstBin.getValue().equals(val)) {

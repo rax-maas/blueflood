@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class HistogramRollup extends Rollup {
     private final Histogram<SimpleTarget> histogram;
-    private static Integer MAX_BIN_SIZE = 64;
+    public static Integer MAX_BIN_SIZE = 64;
 
     private HistogramRollup(int bins) {
         if (bins > MAX_BIN_SIZE) {
@@ -98,10 +98,6 @@ public class HistogramRollup extends Rollup {
 
     public Collection<Bin<SimpleTarget>> getBins() {
         return histogram.getBins();
-    }
-
-    public int getMaxBins() {
-        return MAX_BIN_SIZE;
     }
 
     public HashMap<Double, Double> getPercentile(Double... percentileLimit) {
