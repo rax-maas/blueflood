@@ -101,6 +101,11 @@ public class BasicRollup extends Rollup {
             maxValue.handleFullResMetric(numericMetric.getValue());
         }
     }
+    
+    // allows incrementally updating this rollup. This isn't part of the public API, so is declared unsafe.
+    public void computeFromSimpleMetricsUnsafe(Points<SimpleNumber> input) throws IOException {
+        computeFromSimpleMetrics(input);
+    }
 
     // todo: move into static method.
     private void computeFromRollups(Points<BasicRollup> input) throws IOException {
@@ -128,6 +133,12 @@ public class BasicRollup extends Rollup {
             minValue.handleRollupMetric(basicRollup);
             maxValue.handleRollupMetric(basicRollup);
         }
+    }
+    
+    // allows merging with this rollup with another rollup. This is declared unsafe because it isn't part of the 
+    // rollup API.
+    public void computeFromRollupsUnsafe(Points<BasicRollup> input) throws IOException {
+        computeFromRollups(input);
     }
 
     public static BasicRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {

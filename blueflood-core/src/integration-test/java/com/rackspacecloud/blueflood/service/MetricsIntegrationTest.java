@@ -125,25 +125,26 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     macroRange.stop)) {
                 cols.put(col.getName(), col.getValue(NumericSerializer.get(CF)));
             }
-            BasicRollup basicRollup = null;
+            BasicRollup basicRollup = new BasicRollup();
             Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
             for (Map.Entry<Long, Object> col : cols.entrySet()) {
-                
-                if (gran == Granularity.FULL) {
-                    Points<SimpleNumber> input = new Points<SimpleNumber>();
-                    Object longOrDouble = col.getValue();
-                    input.add(new Points.Point<SimpleNumber>(col.getKey(), new SimpleNumber(col.getValue())));
-                    basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-                } else {
-                    Points<BasicRollup> input = new Points<BasicRollup>();
-                    BasicRollup desBasicRollup = (BasicRollup)col.getValue();
-                    input.add(new Points.Point<BasicRollup>(col.getKey(), desBasicRollup));
-                    basicRollup = BasicRollup.buildRollupFromRollups(input);
-                }
-                
                 while (col.getKey() > curRange.stop) {
                     rollups.put(curRange.start, basicRollup);
+                    basicRollup = new BasicRollup();
                     curRange = ranges.remove(0);
+                }
+
+                Points input;
+                if (gran == Granularity.FULL) {
+                    input = new Points<SimpleNumber>();
+                    Object longOrDouble = col.getValue();
+                    input.add(new Points.Point<SimpleNumber>(col.getKey(), new SimpleNumber(col.getValue())));
+                    basicRollup.computeFromSimpleMetricsUnsafe(input);
+                } else {
+                    input = new Points<BasicRollup>();
+                    BasicRollup desBasicRollup = (BasicRollup)col.getValue();
+                    input.add(new Points.Point<BasicRollup>(col.getKey(), desBasicRollup));
+                    basicRollup.computeFromRollupsUnsafe(input);
                 }
             }
 
