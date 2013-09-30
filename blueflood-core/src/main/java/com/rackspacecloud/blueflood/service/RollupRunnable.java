@@ -20,8 +20,10 @@ import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
@@ -60,15 +62,18 @@ class RollupRunnable implements Runnable {
             // Read data and compute rollup
             Rollup rollup;
             try {
-                Points input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
-                        rollupContext.getRange(),
-                        rollupContext.getSourceColumnFamily());
                 Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
-
                 if (gran == Granularity.FULL) {
-                    rollup = Rollup.buildRollupFromRawSamples(input, rollupContext.getRollupTypeToCompute());
+                    Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(
+                            rollupContext.getLocator(),
+                            rollupContext.getRange());
+                    rollup = Rollup.BasicFromRaw.compute(input);
                 } else {
-                    rollup = Rollup.buildRollupFromRollups(input, rollupContext.getRollupTypeToCompute());
+                    Points<BasicRollup> input = AstyanaxReader.getInstance().getBasicDataToRoll(
+                            rollupContext.getLocator(),
+                            rollupContext.getRange(),
+                            rollupContext.getSourceColumnFamily());
+                    rollup = Rollup.BasicFromBasic.compute(input);
                 }
             } finally {
                 calcrollupContext.stop();
