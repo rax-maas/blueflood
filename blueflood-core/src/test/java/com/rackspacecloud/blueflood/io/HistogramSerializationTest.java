@@ -46,7 +46,7 @@ public class HistogramSerializationTest {
         }
     }
 
-//    @Test (disabled until the file is generated).
+    @Test
     public void testSerializationDeserializationVersion1() throws Exception {
         if (System.getProperty("GENERATE_HIST_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/histogram_version_" +
