@@ -89,21 +89,19 @@ public class AstyanaxReader extends AstyanaxIO {
      * @param srcCF
      * @return
      */
-    public Points getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
+    public Points<Rollup> getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
         NumericSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
 
-        Points points;
+        Points<Rollup> points = new Points<Rollup>();
         try {
             if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
-                points = new Points<SimpleNumber>();
                 for (Column<Long> col : cols) {
-                    points.add(new Points.Point<SimpleNumber>(col.getName(), new SimpleNumber(col.getValue(serializer))));
+                    points.add(new Points.Point<Rollup>(col.getName(), new SimpleNumber(col.getValue(serializer))));
                 }
             } else {
-                points = new Points<BasicRollup>();
                 for (Column<Long> col : cols) {
-                    points.add(new Points.Point<BasicRollup>(col.getName(), (BasicRollup) col.getValue(serializer)));
+                    points.add(new Points.Point<Rollup>(col.getName(), (BasicRollup) col.getValue(serializer)));
                 }
             }
         } catch (RuntimeException ex) {

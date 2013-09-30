@@ -60,7 +60,7 @@ class RollupRunnable implements Runnable {
             // Read data and compute rollup
             Rollup rollup;
             try {
-                Points input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
+                Points<Rollup> input = AstyanaxReader.getInstance().getDataToRoll(rollupContext.getLocator(),
                         rollupContext.getRange(),
                         rollupContext.getSourceColumnFamily());
                 Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
