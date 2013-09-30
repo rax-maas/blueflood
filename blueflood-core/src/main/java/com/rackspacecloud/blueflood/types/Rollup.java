@@ -22,33 +22,34 @@ abstract public class Rollup {
     
     // todo: these classes and instance can be moved into a static Computations holder.
     
-    public abstract static class Type<T extends Rollup> {
-        public abstract T buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException;
-        public abstract T buildRollupFromRollups(Points<T> input) throws IOException;
+    public abstract static class Type<I extends Rollup, O extends Rollup> {
+        public abstract O compute(Points<I> input) throws IOException;
     }
     
-    public static final Type BasicType = new Type<BasicRollup>() {
-        
+    public static final Type BasicFromRaw = new Type<SimpleNumber, BasicRollup>() {
         @Override
-        public BasicRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
+        public BasicRollup compute(Points<SimpleNumber> input) throws IOException {
             return BasicRollup.buildRollupFromRawSamples(input);
         }
-
+    };
+    
+    public static final Type BasicFromBasic = new Type<BasicRollup, BasicRollup>() {
         @Override
-        public BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
+        public BasicRollup compute(Points<BasicRollup> input) throws IOException {
             return BasicRollup.buildRollupFromRollups(input);
         }
     };
     
-    public static final Type HistogramType = new Type<HistogramRollup>() {
-        
+    public static final Type HistogramFromRaw = new Type<SimpleNumber, HistogramRollup>() {
         @Override
-        public HistogramRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
+        public HistogramRollup compute(Points<SimpleNumber> input) throws IOException {
             return HistogramRollup.buildRollupFromRawSamples(input);
         }
-
+    };
+    
+    public static final Type HistogramFromHistogram = new Type<HistogramRollup, HistogramRollup>() {
         @Override
-        public HistogramRollup buildRollupFromRollups(Points<HistogramRollup> input) throws IOException {
+        public HistogramRollup compute(Points<HistogramRollup> input) throws IOException {
             return HistogramRollup.buildRollupFromRollups(input);
         }
     };

@@ -77,7 +77,7 @@ public class RollupHandler {
                     try {
                         
                         Points dataToRoll = AstyanaxReader.getInstance().getDataToRoll(locator, r, AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()));
-                        Rollup rollup = Rollup.BasicType.buildRollupFromRawSamples(dataToRoll);
+                        Rollup rollup = Rollup.BasicFromRaw.compute(dataToRoll);
                         if (rollup.getCount() > 0) {
                             metricData.getData().add(new Points.Point<Rollup>(r.getStart(), rollup));
                         }
