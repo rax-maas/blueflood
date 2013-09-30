@@ -103,7 +103,7 @@ public class BasicRollup extends Rollup {
     }
 
     @Override
-    public void computeFromRollups(Points<BasicRollup> input) throws IOException {
+    public void computeFromRollups(Points<? extends Rollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -112,10 +112,16 @@ public class BasicRollup extends Rollup {
             return;
         }
 
-        Map<Long, Points.Point<BasicRollup>> points = input.getPoints();
+        // See this and get mind blown:
+        // http://stackoverflow.com/questions/18907262/bounded-wildcard-related-compiler-error
+        Map<Long, ? extends Points.Point<? extends Rollup>> points = input.getPoints();
 
-        for (Map.Entry<Long, Points.Point<BasicRollup>> item : points.entrySet()) {
-            BasicRollup basicRollup = item.getValue().getData();
+        for (Map.Entry<Long, ? extends Points.Point<? extends Rollup>> item : points.entrySet()) {
+            Rollup rollup = item.getValue().getData();
+            if (!(rollup instanceof BasicRollup)) {
+                throw new IOException("Cannot create BasicRollup from type " + rollup.getClass().getName());
+            }
+            BasicRollup basicRollup = (BasicRollup) rollup;
             this.count += basicRollup.getCount();
             average.handleRollupMetric(basicRollup);
             variance.handleRollupMetric(basicRollup);
@@ -131,7 +137,7 @@ public class BasicRollup extends Rollup {
         return basicRollup;
     }
 
-    public static BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
+    public static BasicRollup buildRollupFromRollups(Points<? extends Rollup> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.computeFromRollups(input);
 

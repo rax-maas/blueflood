@@ -58,7 +58,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
             throw new RuntimeException("ColumnFamily cannot be null",
                     new SerializationException("ColumnFamily cannot be null"));
         }
-        if (columnFamily    .equals(AstyanaxIO.CF_METRICS_FULL)) {
+        if (columnFamily.equals(AstyanaxIO.CF_METRICS_FULL)) {
             return fullInstance;
         }
         return rollupInstance;
