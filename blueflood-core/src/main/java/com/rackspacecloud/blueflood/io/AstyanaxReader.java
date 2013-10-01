@@ -82,35 +82,47 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
-     * reads a column slice and calculates an average. this method doesn't do any checking to ensure that the range
+     * reads a column slice and returns data points. this method doesn't do any checking to ensure that the range
      * specified is over a single slot.
      * @param locator
      * @param range
      * @param srcCF
      * @return
      */
-    public Points getDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
+    public Points<BasicRollup> getBasicDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
+        if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL))
+            throw new IOException("This method should not be used for full resolution data");
+        
         NumericSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
-
-        Points points;
+        Points<BasicRollup> points = new Points<BasicRollup>();
+        
         try {
-            if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
-                points = new Points<SimpleNumber>();
-                for (Column<Long> col : cols) {
-                    points.add(new Points.Point<SimpleNumber>(col.getName(), new SimpleNumber(col.getValue(serializer))));
-                }
-            } else {
-                points = new Points<BasicRollup>();
-                for (Column<Long> col : cols) {
-                    points.add(new Points.Point<BasicRollup>(col.getName(), (BasicRollup) col.getValue(serializer)));
-                }
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<BasicRollup>(col.getName(), (BasicRollup) col.getValue(serializer)));
             }
         } catch (RuntimeException ex) {
             log.error("Problem deserializing data", ex);
             throw new IOException(ex);
         }
 
+        return points;    
+    }
+    
+    public Points<SimpleNumber> getSimpleDataToRoll(Locator locator, Range range) throws IOException {
+        NumericSerializer serializer = NumericSerializer.get(AstyanaxIO.CF_METRICS_FULL);
+        ColumnList<Long> cols = getNumericRollups(locator, AstyanaxIO.CF_METRICS_FULL, range.start, range.stop);
+        Points<SimpleNumber> points =new Points<SimpleNumber>();
+        
+        try {
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<SimpleNumber>(col.getName(), new SimpleNumber(col.getValue(serializer))));
+            }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data", ex);
+            throw new IOException(ex);
+        }
+        
         return points;
     }
 
