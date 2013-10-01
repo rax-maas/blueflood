@@ -1,8 +1,18 @@
 package com.rackspacecloud.blueflood.statsd;
 
+import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.inputs.processors.TtlAffixer;
+import com.rackspacecloud.blueflood.internal.Account;
+import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -20,7 +30,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main entry point for a graphite ingestion point.  This thing receives bundles from statsd.
@@ -116,7 +130,23 @@ public class GraphiteIngest {
         
         String bindAddr = getListenAddress();
         int bindPort = getListenPort();
-        
+
+        MetadataCache typeCache = MetadataCache.createLoadingCacheInstance(new TimeValue(24, TimeUnit.HOURS), 5);
+        // uncomment if you want to use a TTL cache.
+//        TtlCache ttlCache = new TtlCache(
+//                "statsd ttl cache",
+//                new TimeValue(120, TimeUnit.HOURS),
+//                5,
+//                InternalAPIFactory.createDefaultTTLProvider()) {
+//            // we only care about caching full res values.
+//            @Override
+//            protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
+//                Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
+//                map.put(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()), acct.getMetricTtl("full"));
+//                return map;
+//            }
+//        };
+//        
         try {
             // set up an async chain to group messages.
             AsyncChain<List<ByteBuf>, Object> processor = new AsyncChain<List<ByteBuf>, Object>()
@@ -132,6 +162,25 @@ public class GraphiteIngest {
                         .withUnboundedQueue()
                         .withName("Stat Parser")
                         .build()))
+                    .withFunction(new TypeCacher(new ThreadPoolBuilder()
+                        .withCorePoolSize(5)
+                        .withMaxPoolSize(5)
+                        .withUnboundedQueue()
+                        .withName("Cache Metric Type")
+                        .build(), typeCache))
+                    .withFunction(new MetricConverter(new ThreadPoolBuilder()
+                        .withCorePoolSize(5)
+                        .withMaxPoolSize(5)
+                        .withUnboundedQueue()
+                        .withName("stat->metric converter")
+                        .build()))
+                    // uncomment if you want to use a TTL cache.
+//                    .withFunction(new TtlAffixer(new ThreadPoolBuilder()
+//                        .withCorePoolSize(5)
+//                        .withMaxPoolSize(5)
+//                        .withUnboundedQueue()
+//                        .withName("TTL affixer")
+//                        .build(), ttlCache));
                     ;
             
             new GraphiteIngest(new InetSocketAddress(bindAddr, bindPort)).run(processor);
