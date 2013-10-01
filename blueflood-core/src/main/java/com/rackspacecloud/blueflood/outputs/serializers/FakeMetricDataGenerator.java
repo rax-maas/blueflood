@@ -16,17 +16,17 @@
 
 package com.rackspacecloud.blueflood.outputs.serializers;
 
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 
 public class FakeMetricDataGenerator {
-    public static Points<Long> generateFakeFullResPoints() {
-        Points<Long> points = Points.create(Granularity.FULL);
+    public static Points<SimpleNumber> generateFakeFullResPoints() {
+        Points<SimpleNumber> points = new Points<SimpleNumber>();
 
         long baseTime = 1234567L;
         for (int count = 0; count < 5; count++) {
-            Points.Point<Long> point = new Points.Point<Long>(baseTime + (count*1000), (long) count);
+            Points.Point<SimpleNumber> point = new Points.Point<SimpleNumber>(baseTime + (count*1000), new SimpleNumber((long) count));
             points.add(point);
         }
 
@@ -34,7 +34,7 @@ public class FakeMetricDataGenerator {
     }
 
     public static Points<BasicRollup> generateFakeRollupPoints() {
-        Points<BasicRollup> points = Points.create(Granularity.MIN_5);
+        Points<BasicRollup> points = new Points<BasicRollup>();
 
         long baseTime = 1234567L;
         for (int count = 0; count < 5; count++) {
@@ -49,7 +49,7 @@ public class FakeMetricDataGenerator {
     }
 
     public static Points<String> generateFakeStringPoints() {
-        Points<String> points = Points.create(Granularity.FULL);
+        Points<String> points = new Points<String>();
         long startTime = 1234567L;
         for (int i =0; i < 5; i++) {
             long timeNow = startTime + i*1000;

@@ -16,13 +16,10 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AverageTest {
     private static final double UNACCEPTABLE_DIFFERENCE = 0.000000001d;
@@ -145,10 +142,10 @@ public class AverageTest {
     public void testAddRollup() throws IOException{
         Average avg = new Average(1, new Double(3.0));
         BasicRollup basicRollup = new BasicRollup();
-        Points data = Points.create(Granularity.FULL);
-        data.add(new Points.Point<Object>(123456789L, 0.0));
-        data.add(new Points.Point<Object>(123456770L, 0.0));
-        basicRollup.compute(data);
+        Points<SimpleNumber> data = new Points<SimpleNumber>();
+        data.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(0.0)));
+        data.add(new Points.Point<SimpleNumber>(123456770L, new SimpleNumber(0.0)));
+        basicRollup.computeFromSimpleMetrics(data);
 
         Assert.assertEquals(3.0, avg.toDouble(), 0);
         avg.handleRollupMetric(basicRollup);
@@ -157,10 +154,10 @@ public class AverageTest {
         avg = new Average(1, new Long(3));
         Assert.assertEquals(3, avg.toLong());
         basicRollup = new BasicRollup();
-        data = Points.create(Granularity.FULL);
-        data.add(new Points.Point<Object>(123456789L, 0));
-        data.add(new Points.Point<Object>(123456790L, 0));
-        basicRollup.compute(data);
+        data =  new Points<SimpleNumber>();
+        data.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(0)));
+        data.add(new Points.Point<SimpleNumber>(123456770L, new SimpleNumber(0)));
+        basicRollup.computeFromSimpleMetrics(data);
         avg.handleRollupMetric(basicRollup);
         Assert.assertEquals(1, avg.toLong());
     }

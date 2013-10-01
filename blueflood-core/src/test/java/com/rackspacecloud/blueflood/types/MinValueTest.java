@@ -16,14 +16,11 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class MinValueTest {
     private MinValue min;
@@ -73,42 +70,42 @@ public class MinValueTest {
 
         BasicRollup netBasicRollup;
 
-        Points input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 5L));
-        input.add(new Points.Point<Object>(123456790L, 1L));
-        input.add(new Points.Point<Object>(123456791L, 7L));
-        basicRollup1.compute(input);
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(5L)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1L)));
+        input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(7L)));
+        basicRollup1.computeFromSimpleMetrics(input);
 
-        input = Points.create(Granularity.FULL);
-        input.add(new Points.Point<Object>(123456789L, 9L));
-        input.add(new Points.Point<Object>(123456790L, 0L));
-        input.add(new Points.Point<Object>(123456791L, 1L));
-        basicRollup2.compute(input);
+        input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(9L)));
+        input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(0L)));
+        input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(1L)));
+        basicRollup2.computeFromSimpleMetrics(input);
 
-        input = Points.create(Granularity.MIN_5);
+        Points<BasicRollup> rollups = new Points<BasicRollup>();
         BasicRollup temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(2.14);
-        input.add(new Points.Point<BasicRollup>(123456789L, temp));
+        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(1.14);
-        input.add(new Points.Point<BasicRollup>(123456790L, temp));
-        basicRollup3.compute(input);
+        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup3.computeFromRollups(rollups);
 
-        input = Points.create(Granularity.MIN_5);
+        rollups = new Points<BasicRollup>();
         temp = new BasicRollup();
         temp.getMinValue().setDoubleValue(3.14);
-        input.add(new Points.Point<BasicRollup>(123456789L, temp));
+        rollups.add(new Points.Point<BasicRollup>(123456789L, temp));
         temp.getMinValue().setDoubleValue(5.67);
-        input.add(new Points.Point<BasicRollup>(123456790L, temp));
-        basicRollup4.compute(input);
+        rollups.add(new Points.Point<BasicRollup>(123456790L, temp));
+        basicRollup4.computeFromRollups(rollups);
 
         // handle homegenous metric types and see if we get the right min
 
         // type long
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
-        netBasicRollup.compute(input);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
+        netBasicRollup.computeFromRollups(rollups);
 
         MinValue min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
@@ -116,10 +113,10 @@ public class MinValueTest {
 
         // type double
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
-        netBasicRollup.compute(input);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
+        netBasicRollup.computeFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();
         Assert.assertTrue(min.isFloatingPoint());
@@ -127,10 +124,10 @@ public class MinValueTest {
 
         // handle heterogenous metric types and see if we get the right min
         netBasicRollup = new BasicRollup();
-        input = Points.create(Granularity.MIN_20);
-        input.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
-        input.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
-        netBasicRollup.compute(input);
+        rollups = new Points<BasicRollup>();
+        rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
+        rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
+        netBasicRollup.computeFromRollups(rollups);
 
         min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
