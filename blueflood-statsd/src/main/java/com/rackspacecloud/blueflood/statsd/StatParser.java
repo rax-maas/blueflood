@@ -27,8 +27,14 @@ public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSeque
             @Override
             public Collection<Stat> call() throws Exception {
                 Collection<Stat> stats = new ArrayList<Stat>(input.size());
-                for (CharSequence seq : input)
-                    stats.add(Stat.fromLine(seq));
+                for (CharSequence seq : input) {
+                    Stat stat = Stat.fromLine(seq);
+                    if (stat.isValid()) {
+                        stats.add(stat);
+                    } else {
+                        log.debug("Invalid stat line: {}", seq.toString());
+                    }
+                }
                 return stats;
             }
         });
