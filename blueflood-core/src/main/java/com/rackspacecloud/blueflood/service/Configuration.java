@@ -100,6 +100,11 @@ public class Configuration {
         props.put("QUERY_MODE", "true");
 
         props.put("CASSANDRA_MAX_RETRIES", "5"); // set <= 0 to not retry
+        
+        props.put("ELASTICSEARCH_HOST", "127.0.0.1");
+        props.put("ELASTICSEARCH_PORT", "9300");
+        props.put("USE_ELASTICSEARCH", "false");
+        props.put("ELASTICSEARCH_NUM_INDICES", "1");
     }
 
     public static void init() throws IOException {
