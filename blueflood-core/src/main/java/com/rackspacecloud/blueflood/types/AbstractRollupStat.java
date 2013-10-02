@@ -80,4 +80,17 @@ public abstract class AbstractRollupStat {
         else
             return Long.toString(longValue);
     }
+    
+    public static void set(AbstractRollupStat stat, Number value) {
+        if (value instanceof Long)
+            stat.setLongValue(value.longValue());
+        else if (value instanceof Double)
+            stat.setDoubleValue(value.doubleValue());
+        else if (value instanceof Integer)
+            stat.setLongValue(value.longValue());
+        else if (value instanceof Float)
+            stat.setDoubleValue(value.doubleValue());
+        else
+            throw new ClassCastException(String.format("%s cannot be set to AbstractRollupState.value", value.getClass().getName()));
+    }
 }
