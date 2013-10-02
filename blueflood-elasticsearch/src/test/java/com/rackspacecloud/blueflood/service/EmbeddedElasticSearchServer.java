@@ -5,12 +5,16 @@ import org.elasticsearch.node.NodeBuilder;
 
 import com.rackspacecloud.blueflood.io.ElasticIO;
 
-public enum EmbeddedElasticSearchServer implements ElasticClientManager{
-    INSTANCE;
+public class EmbeddedElasticSearchServer implements ElasticClientManager{
+    private static final EmbeddedElasticSearchServer INSTANCE = new EmbeddedElasticSearchServer();
+
+    public static EmbeddedElasticSearchServer getInstance() {
+        return INSTANCE;
+    }
 
     private Client client;
 
-    private EmbeddedElasticSearchServer() {
+    protected EmbeddedElasticSearchServer() {
         client = NodeBuilder.nodeBuilder().node().client();
         // should we perform cleanup and/or initialization here?
         deleteIndices();

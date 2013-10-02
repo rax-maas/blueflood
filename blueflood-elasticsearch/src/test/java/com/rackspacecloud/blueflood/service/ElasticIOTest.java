@@ -22,11 +22,11 @@ public class ElasticIOTest {
     private static final int NUM_DOCS = 100;
     private static final String TENANT = "ratanasv";
     private static final String UNIT = "horse length";
-    private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.INSTANCE);
+    private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException{
-//        EmbeddedElasticSearchServer.INSTANCE.getClient().prepareDeleteByQuery()
+//        EmbeddedElasticSearchServer.getInstance().getClient().prepareDeleteByQuery()
 //            .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
         List<Metric> listOfMetrics = new ArrayList<Metric>();
         for (int i=0; i<NUM_DOCS; i++) {
@@ -37,7 +37,7 @@ public class ElasticIOTest {
         }
         elasticIO.insertDiscovery(listOfMetrics);
         TimeUnit.SECONDS.sleep(1);
-        EmbeddedElasticSearchServer.INSTANCE.getClient().admin().indices().prepareRefresh().execute().actionGet();
+        EmbeddedElasticSearchServer.getInstance().getClient().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test

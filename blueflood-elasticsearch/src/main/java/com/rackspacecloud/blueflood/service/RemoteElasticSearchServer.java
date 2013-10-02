@@ -8,12 +8,16 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.NodeBuilder;
 
 
-public enum RemoteElasticSearchServer implements ElasticClientManager {
-    INSTANCE;
+public class RemoteElasticSearchServer implements ElasticClientManager {
+    private static final RemoteElasticSearchServer INSTANCE = new RemoteElasticSearchServer();
+
+    public static RemoteElasticSearchServer getInstance() {
+        return INSTANCE;
+    }
 
     private Client client;
 
-    private RemoteElasticSearchServer() {
+    protected RemoteElasticSearchServer() {
         if (Configuration.getBooleanProperty("USE_ELASTICSEARCH")) {
             String host = Configuration.getStringProperty("ELASTICSEARCH_HOST");
             Integer port = Configuration.getIntegerProperty("ELASTICSEARCH_PORT");
