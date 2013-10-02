@@ -41,8 +41,7 @@ public class HistogramRollup extends Rollup {
         }
     }
 
-    @Override
-    public void computeFromRollups(Points<? extends Rollup> input) throws IOException {
+    private void computeFromRollups(Points<HistogramRollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -51,24 +50,19 @@ public class HistogramRollup extends Rollup {
             return;
         }
 
-        Map<Long, ? extends Points.Point<? extends Rollup>> points = input.getPoints();
+        Map<Long, Points.Point<HistogramRollup>> points = input.getPoints();
 
-        for (Map.Entry<Long, ? extends Points.Point<? extends Rollup>> item : points.entrySet()) {
-            Rollup rollup = item.getValue().getData();
-            if (!(rollup instanceof HistogramRollup)) {
-                throw new IOException("Cannot create HistogramRollup from type " + rollup.getClass().getName());
-            }
-            HistogramRollup otherHistogram = (HistogramRollup) rollup;
+        for (Map.Entry<Long, Points.Point<HistogramRollup>> item : points.entrySet()) {
+            HistogramRollup rollup = item.getValue().getData();
             try {
-                histogram.merge(otherHistogram.histogram);
+                histogram.merge(rollup.histogram);
             } catch (MixedInsertException ex) {
                 throw new IOException(ex);
             }
         }
     }
 
-    @Override
-    public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
+    private void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
         try {
             for (Map.Entry<Long, Points.Point<SimpleNumber>> item : input.getPoints().entrySet()) {
                 histogram.insert(toDouble(item.getValue().getData().getValue()));
@@ -86,7 +80,7 @@ public class HistogramRollup extends Rollup {
         return histogramRollup;
     }
 
-    public static HistogramRollup buildRollupFromRollups(Points<? extends Rollup> input) throws IOException {
+    public static HistogramRollup buildRollupFromRollups(Points<HistogramRollup> input) throws IOException {
         final HistogramRollup histogramRollup = new HistogramRollup(MAX_BIN_SIZE);
         histogramRollup.computeFromRollups(input);
 
@@ -95,6 +89,11 @@ public class HistogramRollup extends Rollup {
 
     public int getNumberOfBins() {
         return histogram.getMaxBins();
+    }
+
+    @Override
+    public long getCount() {
+        return (long)histogram.getBins().size();
     }
 
     public Collection<Bin<SimpleTarget>> getBins() {

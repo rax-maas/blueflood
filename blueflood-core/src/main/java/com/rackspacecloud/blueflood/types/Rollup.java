@@ -19,38 +19,40 @@ package com.rackspacecloud.blueflood.types;
 import java.io.IOException;
 
 abstract public class Rollup {
-    public static enum Type {
-        HISTOGRAM("HISTOGRAM"),
-        BASIC_STATS("BASIC_STATS");
-
-        private String name;
-
-        private Type(String name) {
-            this.name = name;
-        }
+    
+    // todo: these classes and instance can be moved into a static Computations holder.
+    
+    public abstract static class Type<I extends Rollup, O extends Rollup> {
+        public abstract O compute(Points<I> input) throws IOException;
     }
-
-    abstract public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException;
-
-    abstract public void computeFromRollups(Points<? extends Rollup> input) throws IOException;
-
-    public static Rollup buildRollupFromRawSamples(Points<SimpleNumber> input, Type rollupType) throws IOException {
-        if (rollupType.equals(Type.BASIC_STATS)) {
+    
+    public static final Type<SimpleNumber, BasicRollup> BasicFromRaw = new Type<SimpleNumber, BasicRollup>() {
+        @Override
+        public BasicRollup compute(Points<SimpleNumber> input) throws IOException {
             return BasicRollup.buildRollupFromRawSamples(input);
-        } else if (rollupType.equals(Type.HISTOGRAM)) {
-            return HistogramRollup.buildRollupFromRawSamples(input);
-        } else {
-            throw new IOException("No other rollup type implemented");
         }
-    }
-
-    public static Rollup buildRollupFromRollups(Points<? extends Rollup> input, Type rollupType) throws IOException {
-        if (rollupType.equals(Type.BASIC_STATS)) {
+    };
+    
+    public static final Type<BasicRollup, BasicRollup> BasicFromBasic = new Type<BasicRollup, BasicRollup>() {
+        @Override
+        public BasicRollup compute(Points<BasicRollup> input) throws IOException {
             return BasicRollup.buildRollupFromRollups(input);
-        } else if (rollupType.equals(Type.HISTOGRAM)) {
-            return HistogramRollup.buildRollupFromRollups(input);
-        } else {
-            throw new IOException("No other rollup type implemented");
         }
-    }
+    };
+    
+    public static final Type<SimpleNumber, HistogramRollup> HistogramFromRaw = new Type<SimpleNumber, HistogramRollup>() {
+        @Override
+        public HistogramRollup compute(Points<SimpleNumber> input) throws IOException {
+            return HistogramRollup.buildRollupFromRawSamples(input);
+        }
+    };
+    
+    public static final Type<HistogramRollup, HistogramRollup> HistogramFromHistogram = new Type<HistogramRollup, HistogramRollup>() {
+        @Override
+        public HistogramRollup compute(Points<HistogramRollup> input) throws IOException {
+            return HistogramRollup.buildRollupFromRollups(input);
+        }
+    };
+    
+    abstract public long getCount();
 }

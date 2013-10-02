@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
-public class SimpleNumber {
+public class SimpleNumber extends Rollup {
     private int intValue;
     private double doubleValue;
     private long longValue;
@@ -61,5 +61,10 @@ public class SimpleNumber {
         } else {
             return doubleValue;
         }
+    }
+
+    @Override
+    public long getCount() {
+        return 1;
     }
 }

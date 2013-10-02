@@ -40,8 +40,7 @@ public class HistogramSerializationTest {
         }
 
         try {
-             histogramRollup = (HistogramRollup) Rollup.buildRollupFromRawSamples(
-                points, Rollup.Type.HISTOGRAM);
+             histogramRollup = HistogramRollup.buildRollupFromRawSamples(points);
         } catch (Exception ex) {
             Assert.fail("Test data generation failed");
         }

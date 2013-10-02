@@ -81,8 +81,8 @@ public class BasicRollup extends Rollup {
         return String.format("cnt:%d, avg:%s, var:%s, min:%s, max:%s", count, average, variance, minValue, maxValue);
     }
 
-    @Override
-    public void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
+    // todo move into static method
+    private void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -101,9 +101,14 @@ public class BasicRollup extends Rollup {
             maxValue.handleFullResMetric(numericMetric.getValue());
         }
     }
+    
+    // allows incrementally updating this rollup. This isn't part of the public API, so is declared unsafe.
+    public void computeFromSimpleMetricsUnsafe(Points<SimpleNumber> input) throws IOException {
+        computeFromSimpleMetrics(input);
+    }
 
-    @Override
-    public void computeFromRollups(Points<? extends Rollup> input) throws IOException {
+    // todo: move into static method.
+    private void computeFromRollups(Points<BasicRollup> input) throws IOException {
         if (input == null) {
             throw new IOException("Null input to create rollup from");
         }
@@ -129,6 +134,12 @@ public class BasicRollup extends Rollup {
             maxValue.handleRollupMetric(basicRollup);
         }
     }
+    
+    // allows merging with this rollup with another rollup. This is declared unsafe because it isn't part of the 
+    // rollup API.
+    public void computeFromRollupsUnsafe(Points<BasicRollup> input) throws IOException {
+        computeFromRollups(input);
+    }
 
     public static BasicRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
@@ -137,7 +148,7 @@ public class BasicRollup extends Rollup {
         return basicRollup;
     }
 
-    public static BasicRollup buildRollupFromRollups(Points<? extends Rollup> input) throws IOException {
+    public static BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         basicRollup.computeFromRollups(input);
 
