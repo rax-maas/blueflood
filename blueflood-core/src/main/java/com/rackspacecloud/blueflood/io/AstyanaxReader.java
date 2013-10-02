@@ -89,7 +89,7 @@ public class AstyanaxReader extends AstyanaxIO {
      * @param srcCF
      * @return
      */
-    public Points<BasicRollup> getBasicDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
+    public Points<BasicRollup> getBasicRollupDataToRoll(Locator locator, Range range, ColumnFamily<Locator, Long> srcCF) throws IOException {
         if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL))
             throw new IOException("This method should not be used for full resolution data");
         

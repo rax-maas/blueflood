@@ -69,7 +69,7 @@ class RollupRunnable implements Runnable {
                             rollupContext.getRange());
                     rollup = Rollup.BasicFromRaw.compute(input);
                 } else {
-                    Points<BasicRollup> input = AstyanaxReader.getInstance().getBasicDataToRoll(
+                    Points<BasicRollup> input = AstyanaxReader.getInstance().getBasicRollupDataToRoll(
                             rollupContext.getLocator(),
                             rollupContext.getRange(),
                             rollupContext.getSourceColumnFamily());
