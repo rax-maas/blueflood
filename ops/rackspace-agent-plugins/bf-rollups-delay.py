@@ -55,8 +55,13 @@ def get_metrics_state_for_shard(shard, cf):
     return states
 
 
-def get_metrics_state_for_shards(shards, server):
-    pool = pycassa.ConnectionPool('DATA', server_list=[server])
+def _get_server_list(servers_string):
+    return [x.strip() for x in servers_string.split(',')]
+
+
+def get_metrics_state_for_shards(shards, servers):
+    pool = pycassa.ConnectionPool('DATA',
+                                  server_list=_get_server_list(servers))
     cf = pycassa.ColumnFamily(pool, 'metrics_state')
     metrics_state_for_shards = {}
 
@@ -113,13 +118,14 @@ def print_stats_for_metrics_state(metrics_state_for_shards):
         print 'metric %s float %f slots' % ('_'.join([resol, 'delay']), delay)
 
 
-def main(server):
+def main(servers):
     try:
         logging.basicConfig(format='%(asctime)s %(message)s',
                             filename='/tmp/bf-rollup.log', level=logging.DEBUG)
         shards = range(128)
         logging.debug('getting metrics state for shards')
-        metrics_state_for_shards = get_metrics_state_for_shards(shards, server)
+        metrics_state_for_shards = get_metrics_state_for_shards(shards,
+                                                                servers)
         print 'status ok bf_health_check'
         logging.debug('printing stats for metrics state')
         print_stats_for_metrics_state(metrics_state_for_shards)
@@ -128,5 +134,6 @@ def main(server):
         logging.exception(ex)
         print "status error", ex
         raise ex
+
 if __name__ == "__main__":
     main(sys.argv[1])
