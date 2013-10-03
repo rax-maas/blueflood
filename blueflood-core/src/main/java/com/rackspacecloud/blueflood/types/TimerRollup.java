@@ -40,8 +40,8 @@ public class TimerRollup extends BasicRollup {
     public double getCountPS() { return count_ps; }
     
     public String toString() {
-        return String.format("%s, sum:%s, count_ps:%s, %s", super.toString(), sum, count_ps, 
-                             Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
+        return String.format("%s, sum:%s, count_ps:%s, %s", super.toString(), sum, count_ps,
+                Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
     
     private static double safeDiv(double numerator, double denominator) {
@@ -106,7 +106,7 @@ public class TimerRollup extends BasicRollup {
         return Collections.unmodifiableMap(percentiles);
     }
     
-    public static TimerRollup buildRollupFromRollups(Points<TimerRollup> input) throws IOException {
+    public static TimerRollup buildRollupFromTimerRollups(Points<TimerRollup> input) throws IOException {
         TimerRollup rollup = new TimerRollup();
         rollup.computeFromRollups(input);
         return rollup;
