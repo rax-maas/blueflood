@@ -7,12 +7,12 @@ public class StatParserTest {
     
     @Test
     public void testDoubleGrok() {
-        Assert.assertEquals(21.3456d, Stat.grokValue("21.3456"));
+        Assert.assertEquals(21.3456d, Stat.Parser.grokValue("21.3456"));
     }
     
     @Test
     public void testLongGrok() {
-        Assert.assertEquals(12345l, Stat.grokValue("12345"));
+        Assert.assertEquals(12345l, Stat.Parser.grokValue("12345"));
     }
     
     @Test
@@ -32,7 +32,7 @@ public class StatParserTest {
         };
         
         for (String internal : internalLabels)
-            Assert.assertTrue(internal, Stat.isInternal(internal));
+            Assert.assertTrue(internal, Stat.Parser.isInternal(internal));
         
         String externalLabels[] = new String[] {
                 "stats.timers.this.is_my.timer.name.mean_90",
@@ -43,6 +43,6 @@ public class StatParserTest {
         };
         
         for (String external : externalLabels)
-            Assert.assertFalse(external, Stat.isInternal(external));
+            Assert.assertFalse(external, Stat.Parser.isInternal(external));
     }
 }
