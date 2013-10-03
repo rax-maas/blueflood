@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.concurrent;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,8 @@ public class ThreadPoolBuilder {
     
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
-    private BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>();
+    private int queueSize = 0;
+    
     private RejectedExecutionHandler rejectedHandler = new ThreadPoolExecutor.CallerRunsPolicy();
     private Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread t, Throwable e) {
@@ -58,12 +57,12 @@ public class ThreadPoolBuilder {
     }
     
     public ThreadPoolBuilder withUnboundedQueue() {
-        this.workQueue = new LinkedBlockingQueue<Runnable>();
+        this.queueSize = 0;
         return this;
     }
     
     public ThreadPoolBuilder withBoundedQueue(int size) {
-        this.workQueue = new ArrayBlockingQueue<Runnable>(size);
+        this.queueSize = size;
         return this;
     }
     
@@ -88,6 +87,8 @@ public class ThreadPoolBuilder {
     }
     
     public ThreadPoolExecutor build() {
+        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
+                new LinkedBlockingQueue<Runnable>();
         return new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,
