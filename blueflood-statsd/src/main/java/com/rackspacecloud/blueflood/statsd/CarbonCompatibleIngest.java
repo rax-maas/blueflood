@@ -1,17 +1,9 @@
 package com.rackspacecloud.blueflood.statsd;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.inputs.processors.TtlAffixer;
-import com.rackspacecloud.blueflood.internal.Account;
-import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -30,21 +22,18 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Main entry point for a graphite ingestion point.  This thing receives bundles from statsd.
  */
-public class GraphiteIngest {
-    private static final Logger log = LoggerFactory.getLogger(GraphiteIngest.class);
+public class CarbonCompatibleIngest {
+    private static final Logger log = LoggerFactory.getLogger(CarbonCompatibleIngest.class);
     
     private final InetSocketAddress iface;
     
-    public GraphiteIngest(InetSocketAddress iface) {
+    public CarbonCompatibleIngest(InetSocketAddress iface) {
         this.iface = iface;
     }
     
@@ -183,7 +172,7 @@ public class GraphiteIngest {
 //                        .build(), ttlCache));
                     ;
             
-            new GraphiteIngest(new InetSocketAddress(bindAddr, bindPort)).run(processor);
+            new CarbonCompatibleIngest(new InetSocketAddress(bindAddr, bindPort)).run(processor);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
             System.exit(-1);
