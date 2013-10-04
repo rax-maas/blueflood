@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -321,7 +322,7 @@ public class SerializationTest {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
             ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
-            NumericSerializer ser = NumericSerializer.get(CF_metrics_full);
+            AbstractSerializer ser = NumericSerializer.get(CF_metrics_full);
             byte[] actual = (byte[])ser.fromByteBuffer(ser.toByteBuffer(expected));
             Assert.assertArrayEquals(expected, actual);
         } catch (RuntimeException ex) {
