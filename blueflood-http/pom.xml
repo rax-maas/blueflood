@@ -17,6 +17,46 @@
 
   <build>
     <plugins>
+      <!-- Used to add source directories to our build. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <!-- States that the plugin's add-test-source goal is executed at generate-test-sources phase. -->
+          <execution>
+            <id>add-integration-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <!-- Configures the source directory of integration tests. -->
+              <sources>
+                <source>src/integration-test/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Used for unit tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.14.1</version>
+        <configuration>
+          <!-- Skips unit tests if the value of skip.unit.tests property is true -->
+          <skipTests>${skip.unit.tests}</skipTests>
+          <!-- Excludes integration tests when unit tests are run. -->
+          <excludes>
+            <exclude>**/*Integration*.java</exclude>
+          </excludes>
+          <parallel>classes</parallel>
+          <threadCount>5</threadCount>
+        </configuration>
+      </plugin>
+
 
     </plugins>
   </build>
@@ -64,6 +104,12 @@
       <groupId>com.yammer.metrics</groupId>
       <artifactId>metrics-graphite</artifactId>
       <version>2.0.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.2.1</version>
     </dependency>
     
   </dependencies>

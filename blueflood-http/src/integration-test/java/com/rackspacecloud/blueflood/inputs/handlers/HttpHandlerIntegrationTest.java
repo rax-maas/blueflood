@@ -55,7 +55,8 @@ public class HttpHandlerIntegrationTest {
         httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), manageShards);
-        httpMetricsIngestorServer = new HttpMetricsIngestionServer(httpPort, context);
+        httpMetricsIngestorServer = new HttpMetricsIngestionServer();
+        httpMetricsIngestorServer.startService(context);
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }

@@ -62,7 +62,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @BeforeClass
     public static void setUpHttp() {
         queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
-        httpMetricDataQueryServer = new HttpMetricDataQueryServer(queryPort);
+        httpMetricDataQueryServer = new HttpMetricDataQueryServer();
+        httpMetricDataQueryServer.startService();
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
