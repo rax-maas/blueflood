@@ -21,6 +21,8 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
@@ -46,6 +48,10 @@ public class Configuration {
 
         // blueflood can output metrics over HTTP
         props.put("HTTP_METRIC_DATA_QUERY_PORT", "20000");
+
+        props.put("INGESTION_MODULES", "");
+        props.put("QUERY_MODULES", "");
+        props.put("DISCOVERY_MODULES", "");
 
         // blueflood answers queries over the thrift interface.
         props.put("THRIFT_QUERY_HOST", "127.0.0.1");
@@ -144,5 +150,9 @@ public class Configuration {
 
     public static boolean getBooleanProperty(String name) {
         return getStringProperty(name).equalsIgnoreCase("true");
+    }
+
+    public static List<String> getListProperty(String name) {
+        return Arrays.asList(getStringProperty(name).split("\\*,\\*"));
     }
 }

@@ -28,6 +28,8 @@ import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.IngestionService;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -51,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
-public class HttpMetricsIngestionServer {
+public class HttpMetricsIngestionServer implements IngestionService {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
@@ -65,18 +67,16 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.newCounter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
-    public HttpMetricsIngestionServer(Integer portToListen, ScheduleContext context) {
-        this(portToListen, context, null, DEFAULT_TIMEOUT);
+
+    public HttpMetricsIngestionServer() {
+        this.port = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
+        this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
+
+        this.processorChain = createDefaultProcessorChain();
     }
 
-    public HttpMetricsIngestionServer(Integer portToListen, ScheduleContext context, AsyncChain<List<Metric>, Boolean> processorChain, TimeValue timeout) {
-        this.port = portToListen;
-        this.timeout = timeout;
+    public void startService(ScheduleContext context) {
         this.context = context;
-
-        if (processorChain == null) {
-            this.processorChain = createDefaultProcessorChain();
-        }
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());

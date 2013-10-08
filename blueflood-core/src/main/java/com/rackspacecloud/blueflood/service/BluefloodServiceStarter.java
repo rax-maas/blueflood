@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
-import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.yammer.metrics.core.Gauge;
@@ -33,6 +31,8 @@ import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
 
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
@@ -80,9 +80,29 @@ public class BluefloodServiceStarter {
     private static void startIngestService(ScheduleContext context) {
         // start up ingestion services.
         if (Configuration.getBooleanProperty("INGEST_MODE")) {
-            int ingestionPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
-            final HttpMetricsIngestionServer httpIngestionHandler = new HttpMetricsIngestionServer(ingestionPort,
-                                                                                                   context);
+            List<String> modules = Configuration.getListProperty("INGESTION_MODULES");
+            if (modules.isEmpty()) {
+                log.error("Query mode is enabled, however no ingestion modules are enabled!");
+            }
+            ClassLoader classLoader = IngestionService.class.getClassLoader();
+            final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
+            for (String module : modules) {
+                try {
+                    Class serviceClass = classLoader.loadClass(module);
+                    IngestionService service = (IngestionService) serviceClass.newInstance();
+                    ingestionServices.add(service);
+                    service.startService(context);
+                } catch (InstantiationException e) {
+                    log.error("Unable to create instance of ingestion service class for: " + module, e);
+                    // crash?
+                } catch (IllegalAccessException e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    // crash?
+                } catch (ClassNotFoundException e) {
+                    log.error("Unable to locate ingestion service module: " + module, e);
+                    // crash?
+                }
+            }
         } else {
             log.info("HTTP ingestion service not required");
         }
@@ -91,8 +111,29 @@ public class BluefloodServiceStarter {
     private static void startQueryService() {
         // start up query services.
         if (Configuration.getBooleanProperty("QUERY_MODE")) {
-            int queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
-            final HttpMetricDataQueryServer queryServer = new HttpMetricDataQueryServer(queryPort);
+            List<String> modules = Configuration.getListProperty("QUERY_MODULES");
+            if (modules.isEmpty()) {
+                log.error("Query mode is enabled, however no query modules are enabled!");
+            }
+            ClassLoader classLoader = QueryService.class.getClassLoader();
+            final List<QueryService> queryServices = new ArrayList<QueryService>();
+            for (String module : modules) {
+                try {
+                    Class serviceClass = classLoader.loadClass(module);
+                    QueryService service = (QueryService) serviceClass.newInstance();
+                    queryServices.add(service);
+                    service.startService();
+                } catch (InstantiationException e) {
+                    log.error("Unable to create instance of query service class for: " + module, e);
+                    // crash?
+                } catch (IllegalAccessException e) {
+                    log.error("Error starting query service: " + module, e);
+                    // crash?
+                } catch (ClassNotFoundException e) {
+                    log.error("Unable to locate query service module: " + module, e);
+                    // crash?
+                }
+            }
         } else {
             log.info("Query service not required");
         }
