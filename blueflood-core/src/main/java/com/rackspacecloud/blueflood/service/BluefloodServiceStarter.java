@@ -83,6 +83,7 @@ public class BluefloodServiceStarter {
             List<String> modules = Configuration.getListProperty("INGESTION_MODULES");
             if (modules.isEmpty()) {
                 log.error("Query mode is enabled, however no ingestion modules are enabled!");
+                System.exit(1);
             }
             ClassLoader classLoader = IngestionService.class.getClassLoader();
             final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
@@ -94,13 +95,13 @@ public class BluefloodServiceStarter {
                     service.startService(context);
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of ingestion service class for: " + module, e);
-                    // crash?
+                    System.exit(1);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    // crash?
+                    System.exit(1);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate ingestion service module: " + module, e);
-                    // crash?
+                    System.exit(1);
                 }
             }
         } else {
@@ -114,6 +115,7 @@ public class BluefloodServiceStarter {
             List<String> modules = Configuration.getListProperty("QUERY_MODULES");
             if (modules.isEmpty()) {
                 log.error("Query mode is enabled, however no query modules are enabled!");
+                System.exit(1);
             }
             ClassLoader classLoader = QueryService.class.getClassLoader();
             final List<QueryService> queryServices = new ArrayList<QueryService>();
@@ -125,13 +127,13 @@ public class BluefloodServiceStarter {
                     service.startService();
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of query service class for: " + module, e);
-                    // crash?
+                    System.exit(1);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting query service: " + module, e);
-                    // crash?
+                    System.exit(1);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate query service module: " + module, e);
-                    // crash?
+                    System.exit(1);
                 }
             }
         } else {
