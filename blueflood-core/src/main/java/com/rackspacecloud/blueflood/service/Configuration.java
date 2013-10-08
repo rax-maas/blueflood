@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
@@ -153,6 +154,8 @@ public class Configuration {
     }
 
     public static List<String> getListProperty(String name) {
-        return Arrays.asList(getStringProperty(name).split("\\*,\\*"));
+        List<String> list = new ArrayList<String>(Arrays.asList(getStringProperty(name).split("\\s*,\\s*")));
+        list.removeAll(Arrays.asList("", null));
+        return list;
     }
 }
