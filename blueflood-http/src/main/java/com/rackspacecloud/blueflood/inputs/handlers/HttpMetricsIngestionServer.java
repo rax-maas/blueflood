@@ -71,12 +71,11 @@ public class HttpMetricsIngestionServer implements IngestionService {
     public HttpMetricsIngestionServer() {
         this.port = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
-
-        this.processorChain = createDefaultProcessorChain();
     }
 
     public void startService(ScheduleContext context) {
         this.context = context;
+        this.processorChain = createDefaultProcessorChain();
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
