@@ -37,6 +37,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.mockito.Mockito.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,12 +50,13 @@ public class HttpHandlerIntegrationTest {
     private static DefaultHttpClient client;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
+    private static ScheduleContext context;
 
     @BeforeClass
     public static void setUp() {
         httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), manageShards);
+        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
         httpMetricsIngestorServer = new HttpMetricsIngestionServer();
         httpMetricsIngestorServer.startService(context);
         vendor = new HttpClientVendor();
@@ -69,6 +71,8 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+        // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
         ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator,
