@@ -36,7 +36,10 @@ import java.util.*;
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
+    protected static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
+            LocatorSerializer.get(),
+            LongSerializer.get());
+    public static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
             LocatorSerializer.get(),
             LongSerializer.get());
     protected static final ColumnFamily<Locator, Long> CF_METRICS_5M = new ColumnFamily<Locator, Long>("metrics_5m",

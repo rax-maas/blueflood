@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
@@ -119,14 +120,18 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     
             SortedMap<Long, Object> cols = new TreeMap<Long, Object>();
             ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+            // todo: use serializer specific method when available.
+            AbstractSerializer serializer = CF.equals(AstyanaxIO.CF_METRICS_FULL) 
+                    ? NumericSerializer.serializerFor(SimpleNumber.class) 
+                    : NumericSerializer.serializerFor(BasicRollup.class);
             for (Column<Long> col : reader.getNumericRollups(locator,
                     CF,
                     macroRange.start,
                     macroRange.stop)) {
-                cols.put(col.getName(), col.getValue(NumericSerializer.get(CF)));
+                cols.put(col.getName(), col.getValue(serializer));
             }
             BasicRollup basicRollup = new BasicRollup();
-            Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
+            Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
             for (Map.Entry<Long, Object> col : cols.entrySet()) {
                 while (col.getKey() > curRange.stop) {
                     rollups.put(curRange.start, basicRollup);
@@ -173,7 +178,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writeFullData(locator, baseMillis, hours, writer);
 
         // FULL -> 5m
-        Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
+        Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);
@@ -287,7 +292,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         int count = 0;
         ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
         for (Column<Long> col : reader.getNumericRollups(locator, CF_metrics_full, baseMillis, baseMillis + 500000)) {
-            int v = (Integer)col.getValue(NumericSerializer.get(CF_metrics_full));
+            int v = col.getValue(NumericSerializer.serializerFor(Integer.class));
             Assert.assertEquals(count, v);
             count++;
         }

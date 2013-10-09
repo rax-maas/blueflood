@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-public class BasicRollup extends Rollup {
+public class BasicRollup extends Rollup implements IBasicRollup {
     private static final Logger log = LoggerFactory.getLogger(BasicRollup.class);
     private Average average;
     private Variance variance;

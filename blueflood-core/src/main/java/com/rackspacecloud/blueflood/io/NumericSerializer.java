@@ -16,81 +16,98 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.HistogramRollup;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_FULL_RES;
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
+import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_TIMER;
 
-public class NumericSerializer extends AbstractSerializer<Object> {
+public class NumericSerializer {
     // NumericSerializer can be used with Rollup and full resolution metrics.
+    
+    private static final boolean DUMP_BAD_BUFFERS = System.getProperty("DUMP_BAD_BUFFERS") != null;
 
-    private static NumericSerializer fullInstance = new NumericSerializer(true);
-    private static NumericSerializer rollupInstance = new NumericSerializer(false);
-    private boolean fullResolution;
+    private static AbstractSerializer<Object> fullInstance = new RawSerializer();
+    private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
+    private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    
     private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
 
     static class Type {
-        static final byte B_ROLLUP_V1 = (byte)'r';
+        static final byte B_ROLLUP = (byte)'r';
         static final byte B_FLOAT_AS_DOUBLE = (byte)'f';
         static final byte B_ROLLUP_STAT = (byte)'t';
+        static final byte B_COUNTER = (byte)'C';
+        static final byte B_TIMER = (byte)'T';
+        static final byte B_SET = (byte)'S';
+        static final byte B_GAUGE = (byte)'G';
+    }
+    
+    /** return a serializer for a specific type */
+    public static <T> AbstractSerializer<T> serializerFor(Class<T> type) {
+        if (type == null)
+            throw new RuntimeException("serializable type cannot be null",
+                    new SerializationException("serializable type cannot be null"));
+        else if (type.equals(String.class))
+            throw new RuntimeException("We don't serialize strings anymore",
+                    new SerializationException("We don't serialize strings anymore"));
+        
+        if (type.equals(BasicRollup.class))
+            return (AbstractSerializer<T>) basicRollupInstance;
+        else if (type.equals(TimerRollup.class))
+            return (AbstractSerializer<T>)timerRollupInstance;
+        else if (type.equals(HistogramRollup.class))
+            throw new RuntimeException("Not implemented yet");
+        else if (type.equals(CounterRollup.class))
+            throw new RuntimeException("Not implemented yet");
+        else if (type.equals(SimpleNumber.class))
+            return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(Integer.class))
+            return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(Long.class))
+            return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(Double.class))
+            return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(Float.class))
+                return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(byte[].class))
+            return (AbstractSerializer<T>)fullInstance;
+        else if (type.equals(Object.class))
+            return (AbstractSerializer<T>)fullInstance;
+        else
+            return (AbstractSerializer<T>)fullInstance;
+        
     }
 
-    private NumericSerializer(Boolean fullResolution) {
-        this.fullResolution = fullResolution;
-    }
-
-    public static NumericSerializer get(ColumnFamily<Locator, Long> columnFamily) {
-        if (columnFamily == null) {
-            throw new RuntimeException("ColumnFamily cannot be null",
-                    new SerializationException("ColumnFamily cannot be null"));
-        }
-        if (columnFamily.equals(AstyanaxIO.CF_METRICS_FULL)) {
-            return fullInstance;
-        }
-        return rollupInstance;
-    }
-
-    @Override
-    public ByteBuffer toByteBuffer(Object o) {
-        try {
-            byte type = typeOf(o);
-            byte[] buf = new byte[sizeOf(o, type)];
-
-            if (this.fullResolution) {
-                serializeFullResMetric(o, buf);
-            } else {  // dealing with rollup metrics
-                if (o instanceof BasicRollup) {
-                    BasicRollup basicRollup = (BasicRollup)o;
-                    serializeRollup(basicRollup, buf);
-                } else {
-                    throw new SerializationException(String.format("Unexpected data type: %s", o.getClass().getName()));
-                }
-            }
-            ByteBuffer out = ByteBuffer.wrap(buf);
-            return out;
-
-        } catch(IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
+    private static void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
+        // todo: simplify: rollupSize.update(buf.length); right?
+        rollupSize.update(sizeOf(basicRollup, Type.B_ROLLUP));
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
-        rollupSize.update(sizeOf(basicRollup, Type.B_ROLLUP_V1));
+        serializeRollup(basicRollup, protobufOut);
+    }
+    
+    private static void serializeRollup(BasicRollup basicRollup, CodedOutputStream protobufOut) throws IOException {
         protobufOut.writeRawByte(Constants.VERSION_1_ROLLUP);
         protobufOut.writeRawVarint64(basicRollup.getCount());          // stat count
 
@@ -102,7 +119,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         }
     }
 
-    private void putRollupStat(AbstractRollupStat stat, CodedOutputStream protobufOut) throws IOException {
+    private static void putRollupStat(AbstractRollupStat stat, CodedOutputStream protobufOut) throws IOException {
         protobufOut.writeRawByte(stat.getStatType());   // stat type
         protobufOut.writeRawByte(stat.isFloatingPoint() ? Constants.B_DOUBLE : Constants.B_I64);
 
@@ -112,8 +129,28 @@ public class NumericSerializer extends AbstractSerializer<Object> {
             protobufOut.writeRawVarint64(stat.toLong());
         }
     }
+    
+    // write out a number prefaced only by a type.
+    private static void putUnversionedDoubleOrLong(Number number, CodedOutputStream out) throws IOException {
+        if (number instanceof Double) {
+            out.writeRawByte(Constants.B_DOUBLE);
+            out.writeDoubleNoTag(number.doubleValue());
+        } else {
+            out.writeRawByte(Constants.B_I64);
+            out.writeRawVarint64(number.longValue());
+        }
+    }
+    
+    // read out a type-specified number.
+    public static Number getUnversionedDoubleOrLong(CodedInputStream in) throws IOException {
+        byte type = in.readRawByte();
+        if (type == Constants.B_DOUBLE)
+            return in.readDouble();
+        else
+            return in.readRawVarint64();
+    }
 
-    private void serializeFullResMetric(Object o, byte[] buf) throws IOException {
+    private static void serializeFullResMetric(Object o, byte[] buf) throws IOException {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         byte type = typeOf(o);
         fullResSize.update(sizeOf(o, type));
@@ -160,7 +197,7 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                 sz += 1 + 1; // version + type.
                 sz += CodedOutputStream.computeDoubleSizeNoTag(((Float)o).doubleValue());
                 break;
-            case Type.B_ROLLUP_V1:
+            case Type.B_ROLLUP:
                 sz += 1; // version
                 BasicRollup basicRollup = (BasicRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
@@ -178,10 +215,120 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                         CodedOutputStream.computeDoubleSizeNoTag(stat.toDouble()) :
                         CodedOutputStream.computeRawVarint64Size(stat.toLong());
                 return sz;
+            case Type.B_TIMER: // TimerRollup ... NOT PreaggregatedRollup.
+                sz += 1; // version
+                TimerRollup rollup = (TimerRollup)o;
+                sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
+                sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getCountPS());
+                sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
+                
+                Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+                sz += CodedOutputStream.computeRawVarint32Size(rollup.getPercentiles().size());
+                for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+                    sz += CodedOutputStream.computeStringSizeNoTag(entry.getKey());
+                    Number[] pctComponents = new Number[] {
+                            entry.getValue().getSum(),
+                            entry.getValue().getUpper(),
+                            entry.getValue().getMean(),
+                    };
+                    for (Number num : pctComponents) {
+                        sz += 1; // type.
+                        if (num instanceof Long || num instanceof Integer) {
+                            sz += CodedOutputStream.computeRawVarint64Size(num.longValue());
+                        } else if (num instanceof Double || num instanceof Float) {
+                            sz += CodedOutputStream.computeDoubleSizeNoTag(num.doubleValue());
+                        }
+                    }
+                }
+                return sz;
+                
+            
+            case Type.B_GAUGE:
+            case Type.B_SET:
+            case Type.B_COUNTER:
             default:
                 throw new IOException("Unexpected type: " + type);
         }
         return sz;
+    }
+    
+    private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        rollupSize.update(buf.length);
+//        out.writeRawByte(Type.B_TIMER);
+        out.writeRawByte(Constants.VERSION_1_TIMER);
+        
+        // sum, count, countps, avg, max, min, var
+        out.writeRawVarint64(rollup.getSum());
+        out.writeRawVarint64(rollup.getCount());
+        out.writeDoubleNoTag(rollup.getCountPS());
+        putRollupStat(rollup.getAverage(), out);
+        putRollupStat(rollup.getMaxValue(), out);
+        putRollupStat(rollup.getMinValue(), out);
+        putRollupStat(rollup.getVariance(), out);
+        
+        // percentiles.
+        Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+        out.writeRawVarint32(percentiles.size());
+        for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+            out.writeStringNoTag(entry.getKey());
+            putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
+            putUnversionedDoubleOrLong(entry.getValue().getUpper(), out);
+            putUnversionedDoubleOrLong(entry.getValue().getSum(), out);
+        }
+    }
+    
+    private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
+        // note: type and version have already been read.
+        final long sum = in.readRawVarint64();
+        final long count = in.readRawVarint64();
+        final double countPs = in.readDouble();
+        
+        BasicRollup statBucket = new BasicRollup();
+        
+        byte statType;
+        AbstractRollupStat stat;
+        
+        // average
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // max
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // min
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // var
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        
+        TimerRollup rollup = new TimerRollup()
+                .withSum(sum)
+                .withCount(count)
+                .withCountPS(countPs)
+                .withAverage(statBucket.getAverage())
+                .withMaxValue(statBucket.getMaxValue())
+                .withMinValue(statBucket.getMinValue())
+                .withVariance(statBucket.getVariance());
+        
+        int numPercentiles = in.readRawVarint32();
+        for (int i = 0; i < numPercentiles; i++) {
+            String name = in.readString();
+            Number mean = getUnversionedDoubleOrLong(in);
+            Number upper = getUnversionedDoubleOrLong(in);
+            Number pctSum = getUnversionedDoubleOrLong(in);
+            rollup.setPercentile(name, mean, pctSum, upper);
+        }
+        
+        return rollup;
     }
 
 
@@ -196,33 +343,15 @@ public class NumericSerializer extends AbstractSerializer<Object> {
             return Type.B_FLOAT_AS_DOUBLE;
         else if (o instanceof AbstractRollupStat)
             return Type.B_ROLLUP_STAT;
+        else if (o instanceof TimerRollup)
+            return Type.B_TIMER;
         else if (o instanceof BasicRollup)
-            return Type.B_ROLLUP_V1;
+            return Type.B_ROLLUP;
         else
             throw new SerializationException("Unexpected type: " + o.getClass().getName());
     }
 
-
-    @Override
-    public Object fromByteBuffer(ByteBuffer byteBuffer) {
-        CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
-        try {
-            byte version = in.readRawByte();
-            if (version != VERSION_1_FULL_RES && version != VERSION_1_ROLLUP) {
-                throw new SerializationException(String.format("Unexpected serialization version: %d",
-                        (int)version));
-            }
-            if (this.fullResolution) {
-                return deserializeSimpleMetric(in);
-            } else {
-                return deserializeV1Rollup(in);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Deserialization Failure", e);
-        }
-    }
-
-    private Object deserializeV1Rollup(CodedInputStream in) throws IOException {
+    private static BasicRollup deserializeV1Rollup(CodedInputStream in) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
         final long count = in.readRawVarint64();
         basicRollup.setCount(count);
@@ -234,28 +363,31 @@ public class NumericSerializer extends AbstractSerializer<Object> {
         while (!in.isAtEnd()) {
             byte statType = in.readRawByte();
             AbstractRollupStat stat = getStatFromRollup(statType, basicRollup);
-
             if (stat == null) {
                 throw new IOException("V1 BasicRollup: Unable to determine stat of type " + (int)statType);
             }
-
-            byte metricValueType = in.readRawByte();
-
-            switch (metricValueType) {
-                case Constants.I64:
-                    stat.setLongValue(in.readRawVarint64());
-                    break;
-                case Constants.B_DOUBLE:
-                    stat.setDoubleValue(in.readDouble());
-                    break;
-                default:
-                    throw new IOException("Unsupported metric value type " + (int)metricValueType);
-            }
+            setStat(stat, in);
         }
         return basicRollup;
     }
-
-    private Object deserializeSimpleMetric(CodedInputStream in) throws IOException {
+    
+    // todo: this should return an instance instead of populate one, but will require some refatoring of 
+    // deserializeV1Rollup().
+    private static void setStat(AbstractRollupStat stat, CodedInputStream in) throws IOException {
+        byte metricValueType = in.readRawByte();
+        switch (metricValueType) {
+            case Constants.I64:
+                stat.setLongValue(in.readRawVarint64());
+                break;
+            case Constants.B_DOUBLE:
+                stat.setDoubleValue(in.readDouble());
+                break;
+            default:
+                throw new IOException("Unsupported metric value type " + (int)metricValueType);
+        }
+    }
+    
+    private static Object deserializeSimpleMetric(CodedInputStream in) throws IOException {
         byte metricValueType = in.readRawByte() /* type field */;
         switch (metricValueType) {
             case Constants.I32:
@@ -266,12 +398,29 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                 return in.readDouble();
             case Constants.STR:
                 throw new UnexpectedStringSerializationException("We don't rollup strings");
-            default: throw new SerializationException(String.format("Unexpected raw metric type=%s for full res " +
+            default:
+                throw new SerializationException(String.format("Unexpected raw metric type=%s for full res " +
                     "metric", (char)metricValueType));
         }
     }
+    
+    // handy utility to dump bad buffers when they are encountered. e.g. during serialization debugging.
+    private static void dumpBuffer(CodedInputStream in) {
+        if (DUMP_BAD_BUFFERS) {
+            try {
+                Field bufferField = in.getClass().getDeclaredField("buffer");
+                bufferField.setAccessible(true);
+                byte[] buffer = (byte[])bufferField.get(in);
+                OutputStream out = new FileOutputStream(File.createTempFile(String.format("bf_bad_buffer_%d_%d", System.currentTimeMillis(), System.nanoTime()), ".bin"));
+                out.write(buffer);
+                out.close();
+            } catch (Throwable th) {
+                // ignore.
+            }
+        }
+    }
 
-    private AbstractRollupStat getStatFromRollup(byte statType, BasicRollup basicRollup) {
+    private static AbstractRollupStat getStatFromRollup(byte statType, BasicRollup basicRollup) {
         switch (statType) {
             case Constants.AVERAGE:
                 return basicRollup.getAverage();
@@ -283,6 +432,95 @@ public class NumericSerializer extends AbstractSerializer<Object> {
                 return basicRollup.getMaxValue();
             default:
                 return null;
+        }
+    }
+    
+    private static class RawSerializer extends AbstractSerializer<Object> {
+        @Override
+        public ByteBuffer toByteBuffer(Object o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOf(o, type)];
+    
+                serializeFullResMetric(o, buf);
+                
+                ByteBuffer out = ByteBuffer.wrap(buf);
+                return out;
+    
+            } catch(IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Object fromByteBuffer(ByteBuffer byteBuffer) {
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_FULL_RES && version != VERSION_1_ROLLUP) {
+                    throw new SerializationException(String.format("Unexpected serialization version: %d",
+                            (int)version));
+                }
+                return deserializeSimpleMetric(in);
+            } catch (Exception e) {
+                throw new RuntimeException("Deserialization Failure", e);
+            }
+        }
+    }
+    
+    private static class BasicRollupSerializer extends AbstractSerializer<BasicRollup> {
+        @Override
+        public ByteBuffer toByteBuffer(BasicRollup o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOf(o, type)];
+                serializeRollup(o, buf);
+                return ByteBuffer.wrap(buf);
+            } catch(IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public BasicRollup fromByteBuffer(ByteBuffer byteBuffer) {
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_FULL_RES && version != VERSION_1_ROLLUP) {
+                    throw new SerializationException(String.format("Unexpected serialization version: %d",
+                            (int)version));
+                }
+                return deserializeV1Rollup(in);
+            } catch (Exception e) {
+                throw new RuntimeException("Deserialization Failure", e);
+            }
+        }
+    }
+    
+    public static class TimerRollupSerializer extends AbstractSerializer<TimerRollup> {
+        @Override
+        public ByteBuffer toByteBuffer(TimerRollup o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOf(o, type)];
+                serializeTimer(o, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @Override
+        public TimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_TIMER)
+                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
+                return deserializeV1Timer(in);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }

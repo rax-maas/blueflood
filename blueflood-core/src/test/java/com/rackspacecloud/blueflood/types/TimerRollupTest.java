@@ -1,9 +1,14 @@
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import junit.framework.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class TimerRollupTest {
     
@@ -21,13 +26,34 @@ public class TimerRollupTest {
         }};
     } 
     
+    private static void assertRollupsAreClose(IBasicRollup expected, IBasicRollup actual) {
+        Assert.assertEquals("average", expected.getAverage(), actual.getAverage());
+        Assert.assertEquals("count", expected.getCount(), actual.getCount());
+        Assert.assertEquals("min", expected.getMinValue(), actual.getMinValue());
+        Assert.assertEquals("max", expected.getMaxValue(), actual.getMaxValue());
+        Assert.assertEquals("variance", expected.getVariance(), actual.getVariance());
+    }
+    
     @Test
     public void testConstantTimerRollup() throws IOException {
         // 40 samples, one per milli, each sample increments by one.  Now divide those into four parts.
-        TimerRollup tr0 = new TimerRollup(45, 4.5d, 4, 8.25d, 0, 9, 10);
-        TimerRollup tr1 = new TimerRollup(145, 4.5d, 14, 8.25d, 10, 19, 10);
-        TimerRollup tr2 = new TimerRollup(245, 4.5d, 24, 8.25d, 20, 29, 10);
-        TimerRollup tr3 = new TimerRollup(345, 4.5d, 34, 8.25d, 30, 39, 10);
+        TimerRollup tr0 = new TimerRollup().withSum(45).withCountPS(4.5d).withAverage(4).withVariance(8.25d).withMinValue(0).withMaxValue(9).withCount(10);
+        TimerRollup tr1 = new TimerRollup().withSum(145).withCountPS(4.5d).withAverage(14).withVariance(8.25d).withMinValue(10).withMaxValue(19).withCount(10);
+        TimerRollup tr2 = new TimerRollup().withSum(245).withCountPS(4.5d).withAverage(24).withVariance(8.25d).withMinValue(20).withMaxValue(29).withCount(10);
+        TimerRollup tr3 = new TimerRollup().withSum(345).withCountPS(4.5d).withAverage(34).withVariance(8.25d).withMinValue(30).withMaxValue(39).withCount(10);
+        BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(0, 0, 10, 1, 1));
+        BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(10, 10, 10, 1, 1));
+        BasicRollup br2 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(20, 20, 10, 1, 1));
+        BasicRollup br3 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(30, 30, 10, 1, 1));
+        
+        // first, make sure that the self-proclaimed timers match the basic rollups generated from raw samples.
+        // this establishes a baseline.
+        assertRollupsAreClose(br0, tr0);
+        assertRollupsAreClose(br1, tr1);
+        assertRollupsAreClose(br2, tr2);
+        assertRollupsAreClose(br3, tr3);
+        
+        // create a cumulative timer from the timer rollups.
         Points<TimerRollup> timerPoints = new Points<TimerRollup>();
         timerPoints.add(new Points.Point<TimerRollup>(0, tr0));
         timerPoints.add(new Points.Point<TimerRollup>(10, tr1));
@@ -35,14 +61,24 @@ public class TimerRollupTest {
         timerPoints.add(new Points.Point<TimerRollup>(30, tr3));
         TimerRollup cumulativeTimer = TimerRollup.buildRollupFromTimerRollups(timerPoints);
         
-        Points<SimpleNumber> simplePoints = TimerRollupTest.createPoints(0, 0, 40, 1, 1);
-        BasicRollup cumulativeBasic = BasicRollup.buildRollupFromRawSamples(simplePoints);
+        // create a cumulative basic from the basic rollups
+        Points<BasicRollup> rollupPoints = new Points<BasicRollup>();
+        rollupPoints.add(new Points.Point<BasicRollup>(0, br0));
+        rollupPoints.add(new Points.Point<BasicRollup>(10, br1));
+        rollupPoints.add(new Points.Point<BasicRollup>(20, br2));
+        rollupPoints.add(new Points.Point<BasicRollup>(30, br3));
+        BasicRollup cumulativeBasicFromRollups = BasicRollup.buildRollupFromRollups(rollupPoints);
         
-        Assert.assertEquals(cumulativeBasic.getAverage(), cumulativeTimer.getAverage());
-        Assert.assertEquals(cumulativeBasic.getCount(), cumulativeTimer.getCount());
-        Assert.assertEquals(cumulativeBasic.getMinValue(), cumulativeTimer.getMinValue());
-        Assert.assertEquals(cumulativeBasic.getMaxValue(), cumulativeTimer.getMaxValue());
-        Assert.assertEquals(cumulativeBasic.getVariance(), cumulativeTimer.getVariance());
+        // also create a cumulative basic from raw data.
+        Points<SimpleNumber> simplePoints = TimerRollupTest.createPoints(0, 0, 40, 1, 1);
+        BasicRollup cumulativeBasicFromRaw = BasicRollup.buildRollupFromRawSamples(simplePoints);
+        
+        // ensure the baseline holds: cumulative basic from raw should be the same as cumulative basic from basic.
+        assertRollupsAreClose(cumulativeBasicFromRaw, cumulativeBasicFromRollups);
+        
+        // now the real test: cumulative timer from timers should be the same as cumulative basic from {basic | raw}
+        assertRollupsAreClose(cumulativeBasicFromRaw, cumulativeTimer);
+        assertRollupsAreClose(cumulativeBasicFromRollups, cumulativeTimer);
         
         Assert.assertEquals(4.5d, cumulativeTimer.getCountPS());
     }
@@ -53,13 +89,27 @@ public class TimerRollupTest {
         Points<SimpleNumber> p0 = createPoints(0, 0, 100, 2, 2);
         // count_ps for this will be 200 time units / 100 samples = 2.0
         BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(p0);
-        final TimerRollup tr0 = new TimerRollup(9900, 2.0, 99, 3333.0d, 0, 198, 100);
+        final TimerRollup tr0 = new TimerRollup()
+                .withSum(9900)
+                .withCountPS(2.0)
+                .withAverage(99)
+                .withVariance(3333.0d)
+                .withMinValue(0)
+                .withMaxValue(198)
+                .withCount(100);
         
         // 100 time units worth of data gathered from 200 samples.
         Points<SimpleNumber> p1 = createPoints(200, 200, 200, 1, 2);
         // count_ps for this will be 200 time units / 200 samples = 1.0
         BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(p1);
-        final TimerRollup tr1 = new TimerRollup(39900, 1.0, 399, 13333.0d, 200, 598, 100);
+        final TimerRollup tr1 = new TimerRollup()
+                .withSum(39900)
+                .withCountPS(1.0)
+                .withAverage(399)
+                .withVariance(13333.0d)
+                .withMinValue(200)
+                .withMaxValue(598)
+                .withCount(100);
         
         // count_ps should end up being 400 time units / 300 samples = 1.33
         TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
@@ -70,19 +120,58 @@ public class TimerRollupTest {
         Assert.assertEquals(4d/3d, cumulative.getCountPS());
     }
     
+    private static final Collection<Number> longs = new ArrayList<Number>() {{
+        add(1L); add(2L); add(3L); // sum=6L
+    }};
+    private static final Collection<Number> doubles = new ArrayList<Number>() {{
+        add(1.0d); add(2.0d); add(3.0d); // sum=6.0d
+    }};
+    private static Collection<Number> mixed = new ArrayList<Number>() {{
+        add(1L); add(2.0d); add(3L); // sum=6.0d
+    }};
+    Collection<Number> alsoMixed = new ArrayList<Number>() {{
+        add(1.0d); add(2L); add(3.0d); // 6.0d
+    }};
+    
+    @Test
+    public void testSum() {
+        Assert.assertEquals(6L, TimerRollup.sum(longs));
+        Assert.assertEquals(6.0d, TimerRollup.sum(doubles));
+        Assert.assertEquals(6.0d, TimerRollup.sum(mixed));
+        Assert.assertEquals(6.0d, TimerRollup.sum(alsoMixed));
+    }
+    
+    @Test
+    public void testAverage() {
+        Assert.assertEquals(2L, TimerRollup.avg(longs));
+        Assert.assertEquals(2.0d, TimerRollup.avg(doubles));
+        Assert.assertEquals(2.0d, TimerRollup.avg(mixed));
+        Assert.assertEquals(2.0d, TimerRollup.avg(alsoMixed));
+    }
+    
+    @Test
+    public void testMax() {
+        Assert.assertEquals(3L, TimerRollup.max(longs));
+        Assert.assertEquals(3.0d, TimerRollup.max(doubles));
+        Assert.assertEquals(3.0d, TimerRollup.max(mixed));
+        Assert.assertEquals(3.0d, TimerRollup.max(alsoMixed));
+    }
+    
     @Test
     public void testPercentiles() throws IOException {
-        final TimerRollup tr0 = new TimerRollup(0, 0, 0, 0, 0, 0, 0);
-        final TimerRollup tr1 = new TimerRollup(0, 0, 0, 0, 0, 0, 0);
+        final TimerRollup tr0 = new TimerRollup().withSum(0).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
+        final TimerRollup tr1 = new TimerRollup().withSum(0).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
         
         // populate percentiles (these are nonsensical)
-        tr0.setPercentile("75", 0.1d, 100, 0.2d, 0.3d);
-        tr1.setPercentile("75", 0.2d, 200, 0.3d, 0.4d);
-        double expectedMean75 = ((0.1d * 100d) + (0.2d * 200d)) / (100d + 200d);
+        tr0.setPercentile("75", 0.1d, 100, 0.2d);
+        tr1.setPercentile("75", 0.2d, 200, 0.3d);
+        // todo: do we want weighted means? e.g.: ((0.1d * 100d) + (0.2d * 200d)) / (100d + 200d)
+        double expectedMean75 = (0.1d + 0.2d) / 2.0d;
         
-        tr0.setPercentile("98", 0.3d, 300, 0.4d, 0.5d);
-        tr1.setPercentile("98", 0.4d, 400, 0.5d, 0.6d);
-        double expectedMean98 = ((0.3d * 300d) + (0.4d * 400d)) / (300d + 400d);
+        tr0.setPercentile("98", 0.3d, 300, 0.4d);
+        tr1.setPercentile("98", 0.4d, 400, 0.5d);
+        // weighted would be: ((0.3d * 300d) + (0.4d * 400d)) / (300d + 400d);
+        double expectedMean98 = (0.3d + 0.4d) / 2.0d;
         
         TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
             add(new Point<TimerRollup>(0, tr0));
@@ -90,8 +179,19 @@ public class TimerRollupTest {
         }});
 
         Assert.assertEquals(2, cumulative.getPercentiles().size());
-        Assert.assertTrue(Math.abs(expectedMean75 - cumulative.getPercentiles().get("75").getAverage().toDouble()) < ACCEPTABLE_SKEW);
-        Assert.assertTrue(Math.abs(expectedMean98 - cumulative.getPercentiles().get("98").getAverage().toDouble()) < ACCEPTABLE_SKEW);
+        Assert.assertTrue(Math.abs(expectedMean75 - cumulative.getPercentiles().get("75").getMean().doubleValue()) < ACCEPTABLE_SKEW);
+        Assert.assertTrue(Math.abs(expectedMean98 - cumulative.getPercentiles().get("98").getMean().doubleValue()) < ACCEPTABLE_SKEW);
+    }
+    
+    @Test
+    public void tesLinedListMultimapAllowsDuplicates() {
+        // NOTE: HashMultimap behaves differently. duplicates are not allowed.
+        Multimap<String, Number> lmap = LinkedListMultimap.create();
+        lmap.put("foo", 1);
+        lmap.put("foo", 2);
+        lmap.put("foo", 1);
+        Assert.assertEquals(3, lmap.size());
+        Assert.assertEquals(3, lmap.get("foo").size());
     }
     
 }

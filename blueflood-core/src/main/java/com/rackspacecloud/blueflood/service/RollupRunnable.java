@@ -60,7 +60,7 @@ class RollupRunnable implements Runnable {
             TimerContext calcrollupContext = calcTimer.time();
 
             // Read data and compute rollup
-            Rollup rollup;
+            BasicRollup rollup;
             try {
                 Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
                 if (gran == Granularity.FULL) {
