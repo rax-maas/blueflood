@@ -14,6 +14,10 @@
   <artifactId>blueflood-http</artifactId>
   <packaging>jar</packaging>
 
+  
+  <properties>
+    <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
+  </properties>
 
   <build>
     <plugins>
@@ -57,6 +61,89 @@
         </configuration>
       </plugin>
 
+      <!-- Used for integration tests -->
+      <!-- Spin up Cassandra -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cassandra-maven-plugin</artifactId>
+        <version>${cassandra.plugin.version}</version>
+        <configuration>
+          <listenAddress>${cassandra.listenAddress}</listenAddress>
+          <rpcPort>${cassandra.rpcPort}</rpcPort>
+          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
+        </configuration>
+        <executions>
+          <execution>
+            <id>delete-cassandra</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>delete</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>start-cassandra</id>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>load-schema</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>load</goal>
+            </goals>
+            <configuration>
+              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-cassandra</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.15</version>
+        <executions>
+          <!-- States that both integration-test and verify goals of the Failsafe Maven plugin are executed. -->
+          <execution>
+            <id>integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+            <configuration>
+              <testSourceDirectory>src/integration-test/java</testSourceDirectory>
+              <!-- do not require zookeeper for these tests. -->
+              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
+              <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties</argLine>
+              <!-- Skips integration tests if the value of skip.integration.tests property is true -->
+              <skipTests>${skip.integration.tests}</skipTests>
+              <includes>
+                <include>**/*Integration*.java</include>
+              </includes>
+              <excludes>
+                <!-- requires an API service -->
+                <exclude>**/InternalApiIntegrationTest.java</exclude>
+                <!-- this one requires a live zookeeper -->
+                <exclude>**/ZKBasedShardLockManagerIntegrationTest.java</exclude>
+                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
     </plugins>
   </build>
