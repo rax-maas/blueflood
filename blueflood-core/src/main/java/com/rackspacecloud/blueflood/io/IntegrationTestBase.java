@@ -99,9 +99,10 @@ public class IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         // really short lived connections for tests!
+        // todo: why not iterate over somethign in AstyanaxIO?
         final String[] columnFamilies = {"metrics_locator", "metrics_full", "metrics_5m", "metrics_20m", "metrics_60m",
                                          "metrics_240m", "metrics_1440m", "metrics_state", "metrics_string",
-                                         "metrics_metadata"};
+                                         "metrics_metadata", "metrics_preaggregated"};
         AstyanaxTester truncator = new AstyanaxTester();
         for (String cf : columnFamilies)
             truncator.truncate(cf);
