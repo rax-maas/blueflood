@@ -61,17 +61,17 @@ public interface Rollup {
         }
     };
     
-    public static final Type<SimpleNumber, CounterRollup> CounterFromRaw = new Type<SimpleNumber, CounterRollup>() {
-        @Override
-        public CounterRollup compute(Points<SimpleNumber> input) throws IOException {
-            return CounterRollup.buildRollupFromRawSamples(input);
-        }
-    };
-    
     public static final Type<CounterRollup, CounterRollup> CounterFromCounter = new Type<CounterRollup, CounterRollup>() {
         @Override
         public CounterRollup compute(Points<CounterRollup> input) throws IOException {
             return CounterRollup.buildRollupFromCounterRollups(input);
+        }
+    };
+    
+    public static final Type<GaugeRollup, GaugeRollup> GaugeFromGauge = new Type<GaugeRollup, GaugeRollup>() {
+        @Override
+        public GaugeRollup compute(Points<GaugeRollup> input) throws IOException {
+            return GaugeRollup.buildFromGaugeRollups(input);
         }
     };
 }
