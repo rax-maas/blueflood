@@ -140,7 +140,8 @@ public class TimerRollup extends Rollup implements IBasicRollup {
     public long getCount() { return count; };
     
     public String toString() {
-        return String.format("%s, sum:%s, count_ps:%s, %s", super.toString(), sum, count_ps,
+        return String.format("sum:%s, count_ps:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, %s", 
+                sum, count_ps, count, min, max, average, variance,
                 Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
     
