@@ -12,7 +12,6 @@ public class CounterRollup extends Rollup {
         this.numSamples = numSamples;
     }
     
-    @Override
     public long getCount() {
         return count;
     }

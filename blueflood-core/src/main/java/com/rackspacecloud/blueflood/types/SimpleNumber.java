@@ -62,9 +62,4 @@ public class SimpleNumber extends Rollup {
             return doubleValue;
         }
     }
-
-    @Override
-    public long getCount() {
-        return 1;
-    }
 }

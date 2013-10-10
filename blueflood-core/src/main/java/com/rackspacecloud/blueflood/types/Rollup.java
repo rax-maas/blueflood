@@ -74,7 +74,4 @@ abstract public class Rollup {
             return CounterRollup.buildRollupFromCounterRollups(input);
         }
     };
-    
-    // todo: remove this method, convert class to an interface.
-    abstract public long getCount();
 }

@@ -91,7 +91,6 @@ public class HistogramRollup extends Rollup {
         return histogram.getMaxBins();
     }
 
-    @Override
     public long getCount() {
         return (long)histogram.getBins().size();
     }
