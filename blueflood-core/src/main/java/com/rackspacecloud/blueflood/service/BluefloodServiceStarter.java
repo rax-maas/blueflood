@@ -77,12 +77,12 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startIngestService(ScheduleContext context) {
+    private static void startIngestServices(ScheduleContext context) {
         // start up ingestion services.
         if (Configuration.getBooleanProperty("INGEST_MODE")) {
             List<String> modules = Configuration.getListProperty("INGESTION_MODULES");
             if (modules.isEmpty()) {
-                log.error("Query mode is enabled, however no ingestion modules are enabled!");
+                log.error("Ingestion mode is enabled, however no ingestion modules are enabled!");
                 System.exit(1);
             }
             ClassLoader classLoader = IngestionService.class.getClassLoader();
@@ -109,7 +109,7 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startQueryService() {
+    private static void startQueryServices() {
         // start up query services.
         if (Configuration.getBooleanProperty("QUERY_MODE")) {
             List<String> modules = Configuration.getListProperty("QUERY_MODULES");
@@ -211,8 +211,8 @@ public class BluefloodServiceStarter {
 
         log.info("Starting blueflood services");
         startShardStateServices(rollupContext);
-        startIngestService(rollupContext);
-        startQueryService();
+        startIngestServices(rollupContext);
+        startQueryServices();
         startRollupService(rollupContext);
     }
 }
