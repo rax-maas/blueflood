@@ -16,7 +16,10 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
@@ -26,9 +29,9 @@ import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.cache.Cache;
@@ -41,6 +44,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +63,6 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private static final String INSERT_METADATA = "Metadata Insert".intern();
     private static final String INSERT_FULL = "Full Insert".intern();
-    private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
@@ -145,37 +148,6 @@ public class AstyanaxWriter extends AstyanaxIO {
             ctx.stop();
         }
     }
-    
-    // todo: needs integration tests.
-    public void insertPreaggregate(List<PreaggregatedMetric> metrics) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_PREAGGREGATED);
-        try {
-            MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            for (PreaggregatedMetric metric : metrics) {
-                final Locator locator = metric.getLocator();
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
-                    insertLocator(locator, mutationBatch);
-                    AstyanaxWriter.setLocatorCurrent(locator);
-                }
-                
-                mutationBatch.withRow(CF_METRICS_PREAGGREGATED, locator)
-                        .putColumn(metric.getCollectionTime(),
-                                metric, // note: this is a departure.
-                                NumericSerializer.serializerFor(PreaggregatedMetric.class),
-                                metric.getTtlInSeconds());
-            }
-            
-            try {
-                mutationBatch.execute();
-            } catch (ConnectionException e) {
-                Instrumentation.markWriteError(e);
-                log.error("Connection exception during insertFull", e);
-                throw e;
-            }
-        } finally {
-            ctx.stop();
-        }
-    }
 
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
@@ -224,6 +196,41 @@ public class AstyanaxWriter extends AstyanaxIO {
             ctx.stop();
         }
     }
+    
+    private static Multimap<Locator, IMetric> asMultimap(Collection<IMetric> metrics) {
+        Multimap<Locator, IMetric> map = LinkedListMultimap.create();
+        for (IMetric metric: metrics)
+            map.put(metric.getLocator(), metric);
+        return map;
+    }
+    
+    // generic IMetric insertion. All other metric insertion methods could use this one.
+    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
+        // todo: need a way of using an interned string.
+        TimerContext ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
+        Multimap<Locator, IMetric> map = asMultimap(metrics);
+        MutationBatch batch = keyspace.prepareMutationBatch();
+        try {
+            for (Locator locator : map.keySet()) {
+                ColumnListMutation<Long> mutation = batch.withRow(cf, locator);
+                for (IMetric metric : map.get(locator)) {
+                    mutation.putColumn(metric.getCollectionTime(),
+                            ((AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass()))).toByteBuffer(metric.getValue()),
+                            metric.getTtlInSeconds());
+                }
+            }
+            try {
+                batch.execute();
+            } catch (ConnectionException e) {
+                Instrumentation.markWriteError(e);
+                log.error("Connection exception persisting data", e);
+                throw e;
+            }
+        } finally {
+            ctx.stop();
+        }
+    }
+    
 
     // todo: rename to insertBasicRollup.
     public void insertRollup(Locator locator, final long timestamp, final BasicRollup basicRollup,

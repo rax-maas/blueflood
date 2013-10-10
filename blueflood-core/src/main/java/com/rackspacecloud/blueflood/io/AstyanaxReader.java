@@ -125,6 +125,28 @@ public class AstyanaxReader extends AstyanaxIO {
         
         return points;
     }
+    
+    public Points<TimerRollup> getTimerDataToRoll(Locator locator, Range range, Granularity gran) throws IOException {
+        // I hate doing it like this.
+        ColumnFamily<Locator, Long> cf = gran == Granularity.FULL ? AstyanaxIO.CF_METRICS_PREAGGREGATED : AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+        return getDataToRoll(TimerRollup.class, locator, range, cf);
+    }
+    
+    // todo: this could be the basis for every rollup read method.
+    public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
+        AbstractSerializer serializer = NumericSerializer.serializerFor(type);
+        ColumnList<Long> cols = getNumericRollups(locator, cf, range.start, range.stop);
+        Points<T> points = new Points<T>();
+        try {
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
+            }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data");
+            throw new IOException(ex);
+        }
+        return points;
+    }
 
     public static String getUnitString(Locator locator) {
         String unitString = null;

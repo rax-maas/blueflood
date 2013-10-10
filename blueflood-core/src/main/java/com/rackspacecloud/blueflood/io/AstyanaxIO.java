@@ -36,37 +36,37 @@ import java.util.*;
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
             LocatorSerializer.get(),
             LongSerializer.get());
     public static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_5M = new ColumnFamily<Locator, Long>("metrics_5m",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_5M = new ColumnFamily<Locator, Long>("metrics_5m",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_20M = new ColumnFamily<Locator, Long>("metrics_20m",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_20M = new ColumnFamily<Locator, Long>("metrics_20m",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_60M = new ColumnFamily<Locator, Long>("metrics_60m",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_60M = new ColumnFamily<Locator, Long>("metrics_60m",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_240M = new ColumnFamily<Locator, Long>("metrics_240m",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_240M = new ColumnFamily<Locator, Long>("metrics_240m",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_1440M = new ColumnFamily<Locator, Long>("metrics_1440m",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_1440M = new ColumnFamily<Locator, Long>("metrics_1440m",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
+    public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_STRING = new ColumnFamily<Locator, Long>("metrics_string",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_STRING = new ColumnFamily<Locator, Long>("metrics_string",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
+    public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
-    protected static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
+    public static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
             LongSerializer.get(),
             StringSerializer.get());
     protected static final Map<String, ColumnFamily<Locator, Long>> CF_NAME_TO_CF;
