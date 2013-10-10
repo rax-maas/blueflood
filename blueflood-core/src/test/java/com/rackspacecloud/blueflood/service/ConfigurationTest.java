@@ -31,8 +31,9 @@ public class ConfigurationTest {
         Map<Object, Object> properties = Configuration.getProperties();
 
         Assert.assertNotNull(properties);
-        Assert.assertTrue(properties.size() > 0);
+        //Assert.assertTrue(properties.size() > 0);
 
+        Assert.assertEquals("127.0.0.1", Configuration.getStringProperty("SCRIBE_HOST"));
         System.setProperty("SCRIBE_HOST", "127.0.0.2");
         Assert.assertEquals("127.0.0.2", Configuration.getStringProperty("SCRIBE_HOST"));
 
@@ -43,15 +44,15 @@ public class ConfigurationTest {
     @Test
     public void testInitWithBluefloodConfig() throws IOException {
         Configuration.init();
-        Map<Object, Object> properties = Configuration.getProperties();
-        Assert.assertFalse(properties.containsKey("TEST_PROPERTY"));
-        Assert.assertEquals("ALL", properties.get("SHARDS").toString());
+        //Map<Object, Object> properties = Configuration.getProperties();
+        Assert.assertNull(Configuration.getStringProperty("TEST_PROPERTY"));
+        Assert.assertEquals("ALL", Configuration.getStringProperty("SHARDS"));
 
         String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
         System.setProperty("blueflood.config", "file://" + configPath);
         Configuration.init();
 
-        Assert.assertEquals("foo", properties.get("TEST_PROPERTY"));
-        Assert.assertEquals("NONE", properties.get("SHARDS"));
+        Assert.assertEquals("foo", Configuration.getStringProperty("TEST_PROPERTY"));
+        Assert.assertEquals("NONE", Configuration.getStringProperty("SHARDS"));
     }
 }
