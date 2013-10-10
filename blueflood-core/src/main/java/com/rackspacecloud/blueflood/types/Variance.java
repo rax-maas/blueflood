@@ -47,6 +47,12 @@ public class Variance extends AbstractRollupStat {
     }
 
     @Override
+    public boolean equals(Object otherObject) {
+        compute();
+        return super.equals(otherObject);
+    }
+
+    @Override
     public boolean isFloatingPoint() {
         return true;
     }
