@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class CounterRollup extends SingleValueRollup {
     
-    CounterRollup(int numSamples) {
+    public CounterRollup(int numSamples) {
         this.numSamples = numSamples;
     }
     
