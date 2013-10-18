@@ -132,7 +132,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 }
 
                 insertMetric(metric, mutationBatch);
-                if (count % METRIC_SUB_BATCH_SIZE == 0 || metrics.size() == count + 1) {
+                if (count % METRIC_SUB_BATCH_SIZE == 0 || metrics.size() == count) {
                     // insert it
                     try {
                         mutationBatch.execute();
