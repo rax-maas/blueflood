@@ -131,6 +131,8 @@ public class AstyanaxIO {
         Collections.addAll(uniqueHosts, Configuration.getStringProperty("CASSANDRA_HOSTS").split(","));
         int numHosts = uniqueHosts.size();
         int maxConns = Configuration.getIntegerProperty("MAX_CASSANDRA_CONNECTIONS");
+        int timeout = Configuration.getIntegerProperty("CASSANDRA_REQUEST_TIMEOUT");
+
         int connsPerHost = maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
         // This timeout effectively results in waiting a maximum of (timeoutWhenExhausted / numHosts) on each Host
         int timeoutWhenExhausted = Configuration.getIntegerProperty("MAX_TIMEOUT_WHEN_EXHAUSTED");
@@ -138,6 +140,7 @@ public class AstyanaxIO {
 
         final ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl("MyConnectionPool")
                 .setPort(port)
+                .setSocketTimeout(timeout)
                 .setInitConnsPerHost(connsPerHost)
                 .setMaxConnsPerHost(connsPerHost)
                 .setMaxBlockedThreadsPerHost(5)

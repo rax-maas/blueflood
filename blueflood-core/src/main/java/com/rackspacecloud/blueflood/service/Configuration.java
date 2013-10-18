@@ -36,6 +36,7 @@ public class Configuration {
 
         props.put("ROLLUP_KEYSPACE", "DATA");
         props.put("CLUSTER_NAME", "Test Cluster");
+        props.put("CASSANDRA_REQUEST_TIMEOUT", "10000");
 
         // blueflood receives metrics over the scribe interface.
         props.put("SCRIBE_HOST", "127.0.0.1");
@@ -57,6 +58,9 @@ public class Configuration {
         props.put("MAX_THREADS", "10");
         props.put("MIN_THREADS", "2");
         props.put("MAX_THRIFT_OVERFLOW_QUEUE_SIZE", "50");
+
+        // make all writes this # or smaller of full-res metrics
+        props.put("METRIC_SUB_BATCH_SIZE", "100");
 
         props.put("MAX_ROLLUP_THREADS", "20");
         // Maximum timeout waiting on exhausted connection pools in milliseconds.
