@@ -36,6 +36,8 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +65,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
     private static final Integer METRIC_SUB_BATCH_SIZE = Configuration.getIntegerProperty("METRIC_SUB_BATCH_SIZE");
+    private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -143,6 +146,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                     }
                     mutationBatch = keyspace.prepareMutationBatch();
                 }
+                metricsWritten.mark();
             }
         } finally {
             ctx.stop();
