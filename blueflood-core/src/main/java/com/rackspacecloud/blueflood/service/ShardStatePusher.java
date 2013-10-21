@@ -32,9 +32,9 @@ public class ShardStatePusher extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePusher.class);
 
     public ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager) {
-        super(allShards, stateManager, new TimeValue(Configuration.getIntegerProperty("SHARD_PUSH_PERIOD"), TimeUnit.MILLISECONDS));
+        super(allShards, stateManager, new TimeValue(CoreConfiguration.getInstance().getIntegerProperty("SHARD_PUSH_PERIOD"), TimeUnit.MILLISECONDS));
     }
-    
+
     public void performOperation() {
         TimerContext ctx = timer.time();
         try {

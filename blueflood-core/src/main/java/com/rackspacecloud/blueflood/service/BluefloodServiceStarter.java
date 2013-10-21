@@ -38,7 +38,7 @@ public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
     public static void validateCassandraHosts() {
-        String hosts = Configuration.getStringProperty("CASSANDRA_HOSTS");
+        String hosts = CoreConfiguration.getInstance().getStringProperty("CASSANDRA_HOSTS");
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
             System.exit(-1);
@@ -52,7 +52,8 @@ public class BluefloodServiceStarter {
     }
 
     private static void startShardStateServices(ScheduleContext context) {
-        if (Configuration.getBooleanProperty("INGEST_MODE") || Configuration.getBooleanProperty("ROLLUP_MODE")) {
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        if (config.getBooleanProperty("INGEST_MODE") || config.getBooleanProperty("ROLLUP_MODE")) {
             // these threads are responsible for sending/receiving schedule context state to/from the database.
             final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
 
@@ -79,8 +80,9 @@ public class BluefloodServiceStarter {
 
     private static void startIngestServices(ScheduleContext context) {
         // start up ingestion services.
-        if (Configuration.getBooleanProperty("INGEST_MODE")) {
-            List<String> modules = Configuration.getListProperty("INGESTION_MODULES");
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        if (config.getBooleanProperty("INGEST_MODE")) {
+            List<String> modules = config.getListProperty("INGESTION_MODULES");
             if (modules.isEmpty()) {
                 log.error("Ingestion mode is enabled, however no ingestion modules are enabled!");
                 System.exit(1);
@@ -111,8 +113,9 @@ public class BluefloodServiceStarter {
 
     private static void startQueryServices() {
         // start up query services.
-        if (Configuration.getBooleanProperty("QUERY_MODE")) {
-            List<String> modules = Configuration.getListProperty("QUERY_MODULES");
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        if (config.getBooleanProperty("QUERY_MODE")) {
+            List<String> modules = config.getListProperty("QUERY_MODULES");
             if (modules.isEmpty()) {
                 log.error("Query mode is enabled, however no query modules are enabled!");
                 System.exit(1);
@@ -144,7 +147,7 @@ public class BluefloodServiceStarter {
     private static void startRollupService(final ScheduleContext context) {
         Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
 
-        if (Configuration.getBooleanProperty("ROLLUP_MODE")) {
+        if (CoreConfiguration.getInstance().getBooleanProperty("ROLLUP_MODE")) {
             // configure the rollup service. this is a daemonish thread that decides when to rollup ranges of data on
             // in the data cluster.
             final RollupService rollupService = new RollupService(context);
@@ -177,11 +180,7 @@ public class BluefloodServiceStarter {
 
     public static void main(String args[]) {
         // load configuration.
-        try {
-            Configuration.init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        CoreConfiguration config = CoreConfiguration.getInstance();
 
         // if log4j configuration references an actual file, periodically reload it to catch changes.
         String log4jConfig = System.getProperty("log4j.configuration");
@@ -192,19 +191,19 @@ public class BluefloodServiceStarter {
         // check that we have cassandra hosts
         validateCassandraHosts();
 
-        if (!Configuration.getStringProperty("GRAPHITE_HOST").equals("")) {
+        if (!config.getStringProperty("GRAPHITE_HOST").equals("")) {
             // this IF is a hack around the fact that we don't have graphite running in dev or staging environments
             final MetricsRegistry restartRegistry = new MetricsRegistry();
             final Gauge restartGauge = new RestartGauge(restartRegistry, RollupService.class);
             GraphiteReporter.enable(restartRegistry, 60, TimeUnit.SECONDS,
-                    Configuration.getStringProperty("GRAPHITE_HOST"),
-                    Configuration.getIntegerProperty("GRAPHITE_PORT"),
-                    Configuration.getStringProperty("GRAPHITE_PREFIX"));
+                    config.getStringProperty("GRAPHITE_HOST"),
+                    config.getIntegerProperty("GRAPHITE_PORT"),
+                    config.getStringProperty("GRAPHITE_PREFIX"));
         }
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
-                Util.parseShards(Configuration.getStringProperty("SHARDS")));
-        final String zkCluster = Configuration.getStringProperty("ZOOKEEPER_CLUSTER");
+                Util.parseShards(config.getStringProperty("SHARDS")));
+        final String zkCluster = config.getStringProperty("ZOOKEEPER_CLUSTER");
         final ScheduleContext rollupContext = "NONE".equals(zkCluster) ?
                 new ScheduleContext(System.currentTimeMillis(), shards) :
                 new ScheduleContext(System.currentTimeMillis(), shards, zkCluster);

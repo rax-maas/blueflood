@@ -28,19 +28,26 @@ import java.util.ArrayList;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
+ *
  */
-public class Configuration {
-    private static final String defaultPropFileName = "blueflood.properties";
+abstract class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
 
-
-    public static void init() throws IOException {
-        //InputStream is = Configuration.class.getResourceAsStream(defaultPropFileName);
-        InputStream is = Configuration.class.getResourceAsStream("/" + defaultPropFileName);
-        //InputStream is = Configuration.class.getClassLoader().getResourceAsStream("resources/" + defaultPropFileName);
+    protected Configuration(String defaultPropFileName) {
+        try {
+            init(defaultPropFileName);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+    public void init(String defaultPropFileName) throws IOException {
+        InputStream is = this.getClass().getResourceAsStream("/" + defaultPropFileName);
         defaultProps.load(is);
         is.close();
+        init();
+    }
+    public void init() throws IOException {
         props = new Properties(defaultProps);
         // load the configuration.
         String configStr = System.getProperty("blueflood.config");
@@ -50,11 +57,11 @@ public class Configuration {
         }
     }
 
-    public static Map<Object,Object> getProperties() {
+    public Map<Object,Object> getProperties() {
         return Collections.unmodifiableMap(props);
     }
 
-    public static String getStringProperty(String name) {
+    public String getStringProperty(String name) {
         if (System.getProperty(name) != null && !props.containsKey("original." + name)) {
             if (props.containsKey(name))
                 props.put("original." + name, props.get(name));
@@ -63,23 +70,23 @@ public class Configuration {
         return props.getProperty(name);
     }
 
-    public static int getIntegerProperty(String name) {
+    public int getIntegerProperty(String name) {
         return Integer.parseInt(getStringProperty(name));
     }
 
-    public static float getFloatProperty(String name) {
+    public float getFloatProperty(String name) {
         return Float.parseFloat(getStringProperty(name));
     }
 
-    public static long getLongProperty(String name) {
+    public long getLongProperty(String name) {
         return Long.parseLong(getStringProperty(name));
     }
 
-    public static boolean getBooleanProperty(String name) {
+    public boolean getBooleanProperty(String name) {
         return getStringProperty(name).equalsIgnoreCase("true");
     }
 
-    public static List<String> getListProperty(String name) {
+    public List<String> getListProperty(String name) {
         List<String> list = new ArrayList<String>(Arrays.asList(getStringProperty(name).split("\\s*,\\s*")));
         list.removeAll(Arrays.asList("", null));
         return list;

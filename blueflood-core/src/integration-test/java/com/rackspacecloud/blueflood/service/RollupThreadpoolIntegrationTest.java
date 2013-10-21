@@ -33,7 +33,7 @@ import org.junit.Test;
 // get executed.
 public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
     private static final Integer threadsInRollupPool = 2;
-    
+
     static {
         // run this test with a configuration so that threadpool queue size is artificially constrained smaller.
         System.setProperty("MAX_ROLLUP_THREADS", threadsInRollupPool.toString());
@@ -42,16 +42,16 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
     @Test
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
-        Assert.assertEquals(Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
+        Assert.assertEquals(CoreConfiguration.getInstance().getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
         int shardToTest = 0;
 
         // I want to see what happens when RollupService.rollupExecutors gets too much work. It should never reject
-        // work.  
+        // work.
         long time = 1234;
 
         // now we need to write data that will generate an enormous amount of locators.
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
-       
+
         final int NUM_LOCATORS = 5000;
         int locatorCount = 0;
         while (locatorCount < NUM_LOCATORS) {
@@ -75,25 +75,25 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctx = new ScheduleContext(time, Util.parseShards(String.valueOf(shardToTest)));
         RollupService rollupService = new RollupService(ctx);
         rollupService.setKeepingServerTime(false);
-        
+
         // indicate arrival (which we forced using Writer).
         ctx.update(time, shardToTest);
 
         // move time forward
         time += 500000;
         ctx.setCurrentTimeMillis(time);
-        
+
         // start the rollups.
         Thread rollupThread = new Thread(rollupService, "rollup service test");
         rollupThread.start();
 
         Class.forName("com.rackspacecloud.blueflood.service.RollupContext"); // Static initializer for the metric
-        
+
         MetricsRegistry registry = Metrics.defaultRegistry();
         Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.rackspacecloud.blueflood.service", "RollupService", "Rollup Execution Timer"));
-        
+
         Assert.assertNotNull(rollupsTimer);
-        
+
         // wait up to 120s for those rollups to finish.
         long start = System.currentTimeMillis();
         while (true) {
@@ -102,7 +102,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
                 break;
             Assert.assertTrue(String.format("rollups:%d", rollupsTimer.count()), System.currentTimeMillis() - start < 120000);
         }
-        
+
         // make sure there were some that were delayed. If not, we need to increase NUM_LOCATORS.
         Assert.assertTrue(rollupsTimer.count() > 0);
     }

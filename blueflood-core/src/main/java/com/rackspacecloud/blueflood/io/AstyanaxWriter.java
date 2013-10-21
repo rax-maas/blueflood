@@ -23,7 +23,6 @@ import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -50,8 +49,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
-    private static final int CACHE_CONCURRENCY = Integer.parseInt(
-            Configuration.getStringProperty("MAX_ROLLUP_THREADS"));
+    private static final int CACHE_CONCURRENCY = config.getIntegerProperty("MAX_ROLLUP_THREADS");
     private static final int INTERNAL_API_CONCURRENCY = CACHE_CONCURRENCY;
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years

@@ -38,22 +38,22 @@ import java.util.concurrent.atomic.AtomicLong;
 class RollupService implements Runnable, RollupServiceMBean {
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
     private static final long ROLLUP_DELAY_MILLIS = 1000 * 60 * 5; // 5 minutes.
-    
+
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
     private final Timer polltimer = Metrics.newTimer(RollupService.class, "Poll Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Meter rejectedSlotChecks = Metrics.newMeter(RollupService.class, "Rejected Slot Checks", "Rollups", TimeUnit.MINUTES);
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupExecutors;
-    private long pollerPeriod = Configuration.getIntegerProperty("SCHEDULE_POLL_PERIOD");
-    private final long configRefreshInterval = Configuration.getIntegerProperty("CONFIG_REFRESH_PERIOD");
+    private long pollerPeriod = CoreConfiguration.getInstance().getIntegerProperty("SCHEDULE_POLL_PERIOD");
+    private final long configRefreshInterval = CoreConfiguration.getInstance().getIntegerProperty("CONFIG_REFRESH_PERIOD");
     private transient Thread thread;
-    
+
     private long lastSlotCheckFinishedAt = 0L;
-    
+
     private boolean active = true;
     private boolean keepingServerTime = true;
-    
+
     private Gauge activeGauge;
     private Gauge inflightRollupGauge;
     private Gauge pollerPeriodGauge;
@@ -119,7 +119,7 @@ class RollupService implements Runnable, RollupServiceMBean {
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
-        
+
         // NOTE: higher locatorFetchConcurrency means that the queue used in rollupExecutors needs to be correspondingly
         // higher.
         final int locatorFetchConcurrency = 2;
@@ -142,47 +142,48 @@ class RollupService implements Runnable, RollupServiceMBean {
                 super.afterExecute(r, t);
             }
         };
-        
+
         // unbounded work queue.
         final BlockingQueue<Runnable> rollupQueue = new LinkedBlockingQueue<Runnable>();
-        rollupExecutors = new ThreadPoolExecutor ( 
-            Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), 
-            Configuration.getIntegerProperty("MAX_ROLLUP_THREADS"), 
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        rollupExecutors = new ThreadPoolExecutor (
+            config.getIntegerProperty("MAX_ROLLUP_THREADS"),
+            config.getIntegerProperty("MAX_ROLLUP_THREADS"),
             30, TimeUnit.SECONDS,
             rollupQueue,
             Executors.defaultThreadFactory(),
             new ThreadPoolExecutor.AbortPolicy()
         );
     }
-    
+
     public void forcePoll() {
         thread.interrupt();
     }
-    
+
     final void poll() {
         TimerContext timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
         context.scheduleSlotsOlderThan(ROLLUP_DELAY_MILLIS);
         timer.stop();
     }
-    
+
     public void run() {
         thread = Thread.currentThread();
 
         while (true) {
             long startRun = System.currentTimeMillis();
-            
+
             poll();
-            
+
             // if there are schedules slots, run what we can.
             boolean rejected = false;
             while (context.hasScheduled() && !rejected && active) {
-                final String slotKey = context.getNextScheduled(); 
+                final String slotKey = context.getNextScheduled();
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
                     locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupExecutors));
                 } catch (RejectedExecutionException ex) {
-                    // puts it back at the top of the list of scheduled slots.  When this happens it means that 
+                    // puts it back at the top of the list of scheduled slots.  When this happens it means that
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't
                     // have enough threads allocated to processing rollups or slot checks.
                     rejectedSlotChecks.mark();
@@ -194,7 +195,7 @@ class RollupService implements Runnable, RollupServiceMBean {
             if (endRun - startRun > pollerPeriod)
                 log.error("It took longer than {} to poll for rollups.", pollerPeriod);
             else
-                try { 
+                try {
                     thread.sleep(Math.max(0, pollerPeriod - endRun + startRun));
                 } catch (Exception ex) {
                     log.debug("RollupService poller woke up");
@@ -210,7 +211,7 @@ class RollupService implements Runnable, RollupServiceMBean {
     // set the server time in millis.
     public synchronized void setServerTime(long millis) {
         log.info("Manually setting server time to {}  {}", millis, new java.util.Date(millis));
-        context.setCurrentTimeMillis(millis); 
+        context.setCurrentTimeMillis(millis);
     }
 
     // get the server time in seconds.
@@ -219,17 +220,17 @@ class RollupService implements Runnable, RollupServiceMBean {
     public synchronized void setKeepingServerTime(boolean b) { keepingServerTime = b; }
 
     public synchronized boolean getKeepingServerTime() { return keepingServerTime; }
-    
+
     public synchronized void setPollerPeriod(long l) {
         // todo: alter the design so that you don't have to keep a thread reference around. one way to do this is to
         // override the function in the caller (where the thread is accessible).
-        pollerPeriod = l; 
+        pollerPeriod = l;
         if (thread != null)
             thread.interrupt();
     }
-    
+
     public synchronized long getPollerPeriod() { return pollerPeriod; }
-    
+
     public synchronized int getScheduledSlotCheckCount() { return context.getScheduledCount(); }
 
     public synchronized int getSecondsSinceLastSlotCheck() {
@@ -258,8 +259,8 @@ class RollupService implements Runnable, RollupServiceMBean {
     public synchronized int getInFlightRollupCount() { return rollupExecutors.getActiveCount(); }
 
     public synchronized boolean getActive() { return active; }
-    
-    public synchronized void setActive(boolean b) { 
+
+    public synchronized void setActive(boolean b) {
         active = b;
         if (active && thread != null)
             thread.interrupt();

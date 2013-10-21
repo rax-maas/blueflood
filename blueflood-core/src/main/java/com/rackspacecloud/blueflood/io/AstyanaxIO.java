@@ -28,7 +28,7 @@ import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfiguration;
 import com.rackspacecloud.blueflood.types.Locator;
 
 import java.util.*;
@@ -68,6 +68,7 @@ public class AstyanaxIO {
             StringSerializer.get());
     protected static final Map<String, ColumnFamily<Locator, Long>> CF_NAME_TO_CF;
     protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
+    protected static final CoreConfiguration config = CoreConfiguration.getInstance();
 
     static {
         context = createPreferredHostContext();
@@ -100,8 +101,8 @@ public class AstyanaxIO {
     private static AstyanaxContext<Keyspace> createCustomHostContext(AstyanaxConfigurationImpl configuration,
             ConnectionPoolConfigurationImpl connectionPoolConfiguration) {
         return new AstyanaxContext.Builder()
-                .forCluster(Configuration.getStringProperty("CLUSTER_NAME"))
-                .forKeyspace(Configuration.getStringProperty("ROLLUP_KEYSPACE"))
+                .forCluster(config.getStringProperty("CLUSTER_NAME"))
+                .forKeyspace(config.getStringProperty("ROLLUP_KEYSPACE"))
                 .withAstyanaxConfiguration(configuration)
                 .withConnectionPoolConfiguration(connectionPoolConfiguration)
                 .withConnectionPoolMonitor(new InstrumentedConnectionPoolMonitor())
@@ -113,27 +114,27 @@ public class AstyanaxIO {
     }
 
     private static AstyanaxConfigurationImpl createPreferredAstyanaxConfiguration() {
-        AstyanaxConfigurationImpl config = new AstyanaxConfigurationImpl()
+        AstyanaxConfigurationImpl astyconfig = new AstyanaxConfigurationImpl()
                 .setDiscoveryType(NodeDiscoveryType.NONE)
                 .setConnectionPoolType(ConnectionPoolType.ROUND_ROBIN);
 
-        int numRetries = Configuration.getIntegerProperty("CASSANDRA_MAX_RETRIES");
+        int numRetries = config.getIntegerProperty("CASSANDRA_MAX_RETRIES");
         if (numRetries > 0) {
-            config.setRetryPolicy(new RetryNTimes(numRetries));
+            astyconfig.setRetryPolicy(new RetryNTimes(numRetries));
         }
 
-        return config;
+        return astyconfig;
     }
 
     private static ConnectionPoolConfigurationImpl createPreferredConnectionPoolConfiguration() {
-        int port = Configuration.getIntegerProperty("DEFAULT_CASSANDRA_PORT");
+        int port = config.getIntegerProperty("DEFAULT_CASSANDRA_PORT");
         Set<String> uniqueHosts = new HashSet<String>();
-        Collections.addAll(uniqueHosts, Configuration.getStringProperty("CASSANDRA_HOSTS").split(","));
+        Collections.addAll(uniqueHosts, config.getStringProperty("CASSANDRA_HOSTS").split(","));
         int numHosts = uniqueHosts.size();
-        int maxConns = Configuration.getIntegerProperty("MAX_CASSANDRA_CONNECTIONS");
+        int maxConns = config.getIntegerProperty("MAX_CASSANDRA_CONNECTIONS");
         int connsPerHost = maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
         // This timeout effectively results in waiting a maximum of (timeoutWhenExhausted / numHosts) on each Host
-        int timeoutWhenExhausted = Configuration.getIntegerProperty("MAX_TIMEOUT_WHEN_EXHAUSTED");
+        int timeoutWhenExhausted = config.getIntegerProperty("MAX_TIMEOUT_WHEN_EXHAUSTED");
         timeoutWhenExhausted = Math.max(timeoutWhenExhausted, 1 * numHosts); // Minimum of 1ms per host
 
         final ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl("MyConnectionPool")
@@ -143,7 +144,7 @@ public class AstyanaxIO {
                 .setMaxBlockedThreadsPerHost(5)
                 .setMaxTimeoutWhenExhausted(timeoutWhenExhausted)
                 .setInitConnsPerHost(connsPerHost / 2)
-                .setSeeds(Configuration.getStringProperty("CASSANDRA_HOSTS"));
+                .setSeeds(config.getStringProperty("CASSANDRA_HOSTS"));
         return connectionPoolConfiguration;
     }
 

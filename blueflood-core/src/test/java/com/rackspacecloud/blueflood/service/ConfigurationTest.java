@@ -26,33 +26,33 @@ import java.util.Map;
 public class ConfigurationTest {
 
     @Test
-    public void testConfiguration() throws IOException {
-        Configuration.init();
-        Map<Object, Object> properties = Configuration.getProperties();
+    public void testConfiguration() {
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        Map<Object, Object> properties = config.getProperties();
 
         Assert.assertNotNull(properties);
         //Assert.assertTrue(properties.size() > 0);
 
-        Assert.assertEquals("127.0.0.1", Configuration.getStringProperty("SCRIBE_HOST"));
+        Assert.assertEquals("127.0.0.1", config.getStringProperty("SCRIBE_HOST"));
         System.setProperty("SCRIBE_HOST", "127.0.0.2");
-        Assert.assertEquals("127.0.0.2", Configuration.getStringProperty("SCRIBE_HOST"));
+        Assert.assertEquals("127.0.0.2", config.getStringProperty("SCRIBE_HOST"));
 
-        Assert.assertEquals(600000, Configuration.getIntegerProperty("THRIFT_RPC_TIMEOUT"));
+        Assert.assertEquals(600000, config.getIntegerProperty("THRIFT_RPC_TIMEOUT"));
 
     }
 
     @Test
     public void testInitWithBluefloodConfig() throws IOException {
-        Configuration.init();
+        CoreConfiguration config = CoreConfiguration.getInstance();
         //Map<Object, Object> properties = Configuration.getProperties();
-        Assert.assertNull(Configuration.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("ALL", Configuration.getStringProperty("SHARDS"));
+        Assert.assertNull(config.getStringProperty("TEST_PROPERTY"));
+        Assert.assertEquals("ALL", config.getStringProperty("SHARDS"));
 
         String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
         System.setProperty("blueflood.config", "file://" + configPath);
-        Configuration.init();
+        config.init();
 
-        Assert.assertEquals("foo", Configuration.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("NONE", Configuration.getStringProperty("SHARDS"));
+        Assert.assertEquals("foo", config.getStringProperty("TEST_PROPERTY"));
+        Assert.assertEquals("NONE", config.getStringProperty("SHARDS"));
     }
 }

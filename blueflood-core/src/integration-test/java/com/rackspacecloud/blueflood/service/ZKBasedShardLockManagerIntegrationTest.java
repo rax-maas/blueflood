@@ -38,22 +38,14 @@ public class ZKBasedShardLockManagerIntegrationTest {
     private Set<Integer> manageShards = null;
     private ZKBasedShardLockManager lockManager;
 
-    static {
-        try {
-            Configuration.init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     @Before
     public void setUp() throws Exception {
         manageShards = new HashSet<Integer>();
         manageShards.add(1);
-        lockManager = new ZKBasedShardLockManager(Configuration.getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
+        lockManager = new ZKBasedShardLockManager(CoreConfiguration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
         lockManager.waitForQuiesceUnsafe();
     }
-    
+
     @After
     public void tearDown() throws Exception {
         lockManager.shutdownUnsafe();
@@ -62,48 +54,48 @@ public class ZKBasedShardLockManagerIntegrationTest {
     @Test
     public void testAddShard() throws Exception {
         final int shard = 20;
-        
+
         // internal lock object should not be present.
         Map<Integer, InterProcessMutex> lockObjects = (Map<Integer, InterProcessMutex>) Whitebox.getInternalState
                 (lockManager, "locks");
         Assert.assertNull(lockObjects.get(shard));
-        
+
         // after adding, it should be present.
         lockManager.addShard(shard);
         Assert.assertNotNull(lockObjects.get(shard));  // assert that we have a lock object for shard "20"
-        
+
         // but we cannot do work until the lock is acquired.
-        Assert.assertFalse(lockManager.canWork(shard)); 
-        
+        Assert.assertFalse(lockManager.canWork(shard));
+
         // let the lock be acquired.
         lockManager.forceLockScavenge(); // lock will attempt.
         lockManager.waitForQuiesceUnsafe();
-        
+
         // verify can work and lock is held.
         Assert.assertTrue(lockManager.canWork(shard));
         Assert.assertTrue(lockManager.holdsLockUnsafe(shard));
-        
+
         lockManager.releaseLockUnsafe(shard);
     }
 
     @Test
     public void testRemoveShard() {
         final int shard = 1;
-        
+
         // make sure we have acquired the lock initially.
         Map<Integer, Object> lockObjects = (Map<Integer, Object>) Whitebox.getInternalState
                         (lockManager, "locks");
         Assert.assertTrue(lockObjects.get(shard) != null);  // assert that we have a lock object for shard "20"
         Assert.assertTrue(lockManager.canWork(shard));
         Assert.assertTrue(lockManager.holdsLockUnsafe(shard));
-        
+
         // remove the shard, should also remove the lock.
         lockManager.removeShard(1);
         lockManager.waitForQuiesceUnsafe();
-        
+
         Assert.assertFalse(lockManager.holdsLockUnsafe(shard));
         Assert.assertFalse(lockManager.canWork(shard));
-        
+
         Assert.assertNull(lockObjects.get(shard)); // assert that we don't have a lock object for shard "1"
     }
 
@@ -119,7 +111,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
         // Check we don't hold the lock
         Assert.assertFalse(lockManager.canWork(shard));
         Assert.assertFalse(lockManager.holdsLockUnsafe(shard));
-        
+
         lockManager.releaseLockUnsafe(shard);
     }
 
@@ -167,22 +159,22 @@ public class ZKBasedShardLockManagerIntegrationTest {
 
         lockManager.releaseLockUnsafe(shard);
     }
-    
+
     @Test
     public void testDuelingManagers() throws Exception {
         final int shard = 1;
-        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(Configuration.getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
-        
+        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(CoreConfiguration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
+
         // first manager.
         Assert.assertTrue(lockManager.canWork(shard));
         lockManager.waitForQuiesceUnsafe();
         Assert.assertTrue(lockManager.holdsLockUnsafe(shard));
-        
+
         // second manager could not acquire lock.
         Assert.assertFalse(otherManager.canWork(shard));
         Assert.assertFalse(otherManager.holdsLockUnsafe(shard));
         Assert.assertFalse(otherManager.canWork(shard));
-        
+
         // force first manager to give up the lock.
         lockManager.setMinLockHoldTimeMillis(0);
         lockManager.setLockDisinterestedTimeMillis(300000);
@@ -190,7 +182,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
         lockManager.waitForQuiesceUnsafe();
         Assert.assertFalse(lockManager.canWork(shard));
         Assert.assertFalse(lockManager.holdsLockUnsafe(shard));
-        
+
         // see if second manager picks it up.
         otherManager.setLockDisinterestedTimeMillis(0);
         otherManager.forceLockScavenge();
@@ -200,25 +192,25 @@ public class ZKBasedShardLockManagerIntegrationTest {
 
         otherManager.shutdownUnsafe();
     }
-    
+
     @Test
     public void testConviction() throws Exception {
         for (int shard : manageShards) {
             Assert.assertTrue(lockManager.canWork(shard));
             Assert.assertTrue(lockManager.holdsLockUnsafe(shard));
         }
-        
+
         // force locks to be dropped.
         lockManager.setMinLockHoldTimeMillis(0);
         lockManager.forceLockScavenge();
         lockManager.waitForQuiesceUnsafe();
-        
+
         // should not be able to work.
         for (int shard : manageShards) {
             Assert.assertFalse(lockManager.holdsLockUnsafe(shard));
             Assert.assertFalse(lockManager.canWork(shard));
         }
-        
+
         // see if locks are picked back up.
         lockManager.setMinLockHoldTimeMillis(10000);
         lockManager.setLockDisinterestedTimeMillis(0);
