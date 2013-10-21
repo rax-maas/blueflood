@@ -93,7 +93,7 @@ public class Metric implements IMetric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit.toString());
+        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {

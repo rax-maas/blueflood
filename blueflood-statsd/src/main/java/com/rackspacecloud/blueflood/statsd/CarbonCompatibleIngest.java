@@ -1,10 +1,31 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.statsd;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Counter;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -137,40 +158,22 @@ public class CarbonCompatibleIngest {
 //        };
 //        
         try {
+            ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
+            Counter bufferedMetrics = Metrics.newCounter(BatchWriter.class, "Buffered Metrics");
+            ThreadPoolBuilder tpBuilder = new ThreadPoolBuilder()
+                    .withCorePoolSize(5)
+                    .withMaxPoolSize(5)
+                    .withUnboundedQueue();
+            
+            
             // set up an async chain to group messages.
             AsyncChain<List<ByteBuf>, Object> processor = new AsyncChain<List<ByteBuf>, Object>()
-                    .withFunction(new StringListBuilder(new ThreadPoolBuilder()
-                        .withName("String Constructor")
-                        .withUnboundedQueue()
-                        .withCorePoolSize(5)
-                        .withMaxPoolSize(5)
-                        .build()))
-                    .withFunction(new StatParser(new ThreadPoolBuilder()
-                        .withCorePoolSize(5)
-                        .withMaxPoolSize(5)
-                        .withUnboundedQueue()
-                        .withName("Stat Parser")
-                        .build()))
-                    .withFunction(new TypeCacher(new ThreadPoolBuilder()
-                        .withCorePoolSize(5)
-                        .withMaxPoolSize(5)
-                        .withUnboundedQueue()
-                        .withName("Cache Metric Type")
-                        .build(), typeCache))
-                    .withFunction(new MetricConverter(new ThreadPoolBuilder()
-                        .withCorePoolSize(5)
-                        .withMaxPoolSize(5)
-                        .withUnboundedQueue()
-                        .withName("stat->metric converter")
-                        .build()))
-                    // uncomment if you want to use a TTL cache.
-//                    .withFunction(new TtlAffixer(new ThreadPoolBuilder()
-//                        .withCorePoolSize(5)
-//                        .withMaxPoolSize(5)
-//                        .withUnboundedQueue()
-//                        .withName("TTL affixer")
-//                        .build(), ttlCache));
-                    ;
+                    .withFunction(new StringListBuilder(tpBuilder.withName("String Constructor").build()))
+                    .withFunction(new StatParser(tpBuilder.withName("Stat Parser").build()))
+                    .withFunction(new TypeCacher(tpBuilder.withName("Cache Metric Type").build(), typeCache))
+                    .withFunction(new MetricsWriter(tpBuilder.withName("Metrics Writer").build()))
+            ;
+                    
             
             new CarbonCompatibleIngest(new InetSocketAddress(bindAddr, bindPort)).run(processor);
         } catch (Exception ex) {
