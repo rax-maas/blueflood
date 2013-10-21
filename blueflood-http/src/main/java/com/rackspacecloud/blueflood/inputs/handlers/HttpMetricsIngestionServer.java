@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
-public class HttpMetricsIngestionServer implements IngestionService {
+public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
@@ -68,12 +68,9 @@ public class HttpMetricsIngestionServer implements IngestionService {
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
 
-    public HttpMetricsIngestionServer() {
+    public HttpMetricsIngestionServer(ScheduleContext context) {
         this.port = HttpConfiguration.getInstance().getIntegerProperty("HTTP_INGESTION_PORT");
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
-    }
-
-    public void startService(ScheduleContext context) {
         this.context = context;
         this.processorChain = createDefaultProcessorChain();
 
