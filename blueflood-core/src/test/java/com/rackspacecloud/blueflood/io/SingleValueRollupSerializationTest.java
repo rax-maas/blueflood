@@ -59,11 +59,11 @@ public class SingleValueRollupSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/gauge_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup gg0 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup gg0 = NumericSerializer.serializerFor(GaugeRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(g0, gg0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup gg1 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup gg1 = NumericSerializer.serializerFor(GaugeRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(g1, gg1);
             
             Assert.assertFalse(gg0.equals(gg1));
@@ -97,11 +97,11 @@ public class SingleValueRollupSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup ss0 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup ss0 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s0, ss0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup ss1 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup ss1 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s1, ss1);
             
             Assert.assertFalse(ss0.equals(ss1));
@@ -135,11 +135,11 @@ public class SingleValueRollupSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/counter_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup cc0 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup cc0 = NumericSerializer.serializerFor(CounterRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(c0, cc0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup cc1 = new NumericSerializer.SingleValueRollupSerializer().fromByteBuffer(bb);
+            SingleValueRollup cc1 = NumericSerializer.serializerFor(CounterRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(c1, cc1);
             
             Assert.assertFalse(cc0.equals(cc1));
