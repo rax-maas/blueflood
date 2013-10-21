@@ -47,7 +47,12 @@ public class Locator {
     public int hashCode() {
         return stringRep.hashCode();
     }
-    
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Locator && obj.hashCode() == this.hashCode();
+    }
+
     public String toString() {
         return stringRep;
     }
