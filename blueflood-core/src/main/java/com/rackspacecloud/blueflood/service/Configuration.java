@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.collect.Lists;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -24,7 +26,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
@@ -87,7 +88,7 @@ abstract class Configuration {
     }
 
     public List<String> getListProperty(String name) {
-        List<String> list = new ArrayList<String>(Arrays.asList(getStringProperty(name).split("\\s*,\\s*")));
+        List<String> list = Lists.newArrayList(getStringProperty(name).split("\\s*,\\s*"));
         list.removeAll(Arrays.asList("", null));
         return list;
     }
