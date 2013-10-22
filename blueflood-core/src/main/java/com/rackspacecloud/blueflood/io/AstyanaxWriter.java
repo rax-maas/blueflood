@@ -218,6 +218,11 @@ public class AstyanaxWriter extends AstyanaxIO {
                             ((AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass()))).toByteBuffer(metric.getValue()),
                             metric.getTtlInSeconds());
                 }
+                
+                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+                    insertLocator(locator, batch);
+                    AstyanaxWriter.setLocatorCurrent(locator);
+                }
             }
             try {
                 batch.execute();

@@ -80,6 +80,20 @@ public class AstyanaxReader extends AstyanaxIO {
             ctx.stop();
         }
     }
+    
+    public ColumnList<String> getAllMetadata(Locator locator) {
+        try {
+            RowQuery<Locator, String> query = keyspace
+                    .prepareQuery(CF_METRIC_METADATA)
+                    .getKey(locator);
+            return query.execute().getResult();
+        } catch (NotFoundException ex) {
+            return new EmptyColumnList<String>();
+        } catch (ConnectionException ex) {
+            log.error(ex.getMessage(), ex);
+            return new EmptyColumnList<String>();
+        }
+    }
 
     /**
      * reads a column slice and returns data points. this method doesn't do any checking to ensure that the range
