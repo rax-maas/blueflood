@@ -26,8 +26,6 @@ public class ElasticIOTest {
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException{
-//        EmbeddedElasticSearchServer.getInstance().getClient().prepareDeleteByQuery()
-//            .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
         List<Metric> listOfMetrics = new ArrayList<Metric>();
         for (int i=0; i<NUM_DOCS; i++) {
             Locator locator = createTestLocator(i);
