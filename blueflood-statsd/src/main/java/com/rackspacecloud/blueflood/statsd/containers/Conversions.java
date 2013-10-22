@@ -168,8 +168,10 @@ public class Conversions {
         // build simple types.
         for (StatType type : StatType.SIMPLE_TYPES) {
             for (Stat stat : stats.getStats(type)) {
-                IMetric metric = Conversions.asMetric(stat);
-                group.addMetric(metric);
+                if (stat.isValid()) {
+                    IMetric metric = Conversions.asMetric(stat);
+                    group.addMetric(metric);
+                }
             }
         }
         
