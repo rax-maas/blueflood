@@ -62,4 +62,18 @@ public class SimpleNumber implements Rollup {
             return doubleValue;
         }
     }
+
+    @Override
+    public String toString() {
+        switch (type) {
+            case INTEGER:
+                return String.format("%d (int)", intValue);
+            case LONG:
+                return String.format("%d (long)", longValue);
+            case DOUBLE:
+                return String.format("%s (double)", doubleValue);
+            default:
+                return "ERROR";
+        }
+    }
 }
