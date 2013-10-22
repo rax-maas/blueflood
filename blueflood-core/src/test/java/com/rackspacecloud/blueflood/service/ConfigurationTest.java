@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 public class ConfigurationTest {
@@ -53,5 +54,16 @@ public class ConfigurationTest {
 
         Assert.assertEquals("foo", config.getStringProperty("TEST_PROPERTY"));
         Assert.assertEquals("NONE", config.getStringProperty("SHARDS"));
+    }
+
+    @Test
+    public void testGetListProperty() {
+        CoreConfiguration config = CoreConfiguration.getInstance();
+        Assert.assertEquals(config.getStringProperty("QUERY_MODULES"), "");
+        Assert.assertTrue(config.getListProperty("QUERY_MODULES").isEmpty());
+        System.setProperty("QUERY_MODULES", "a");
+        Assert.assertEquals(config.getListProperty("QUERY_MODULES").size(), 1);
+        System.setProperty("QUERY_MODULES", "a,b , c");
+        Assert.assertEquals(Arrays.asList("a","b","c"), config.getListProperty("QUERY_MODULES"));
     }
 }
