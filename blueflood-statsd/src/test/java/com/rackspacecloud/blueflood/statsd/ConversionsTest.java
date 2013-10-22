@@ -38,7 +38,7 @@ import java.util.Map;
 
 public class ConversionsTest {
     
-    private static final String[] statsMetrics = new String[] {
+    public static final String[] METRIC_LINES = new String[] {
             "stats.myprefix.bad_lines_seen 0 1380825845", // unk = 1
             "stats_counts.myprefix.bad_lines_seen 0 1380825845", // cnt = 1 
             "stats.myprefix.packets_received 0.5333333333333333 1380825845", // unk = 2
@@ -78,10 +78,36 @@ public class ConversionsTest {
             "stats.myprefix.graphiteStats.flush_length 2085 1380825845" // unk = 9
         };
     
+    public static final String[] TIMER_LINES = new String[] {
+            "stats.timers.gary.foo.bar.mean_99 47.97651006711409 1380825845",
+            "stats.timers.gary.foo.bar.upper_99 97 1380825845",
+            "stats.timers.gary.foo.bar.sum_99 14297 1380825845",
+            "stats.timers.gary.foo.bar.mean_75 36.469026548672566 1380825845",
+            "stats.timers.gary.foo.bar.upper_75 72 1380825845",
+            "stats.timers.gary.foo.bar.sum_75 8242 1380825845",
+            "stats.timers.gary.foo.bar.mean_50 24.112582781456954 1380825845",
+            "stats.timers.gary.foo.bar.upper_50 49 1380825845",
+            "stats.timers.gary.foo.bar.sum_50 3641 1380825845",
+            "stats.timers.gary.foo.bar.mean_25 12.16 1380825845",
+            "stats.timers.gary.foo.bar.upper_25 24 1380825845",
+            "stats.timers.gary.foo.bar.sum_25 912 1380825845",
+            "stats.timers.gary.foo.bar.mean_1 0.6666666666666666 1380825845",
+            "stats.timers.gary.foo.bar.upper_1 1 1380825845",
+            "stats.timers.gary.foo.bar.sum_1 2 1380825845",
+            "stats.timers.gary.foo.bar.std 28.133704832870738 1380825845",
+            "stats.timers.gary.foo.bar.upper 99 1380825845",
+            "stats.timers.gary.foo.bar.lower 0 1380825845",
+            "stats.timers.gary.foo.bar.count 301 1380825845",
+            "stats.timers.gary.foo.bar.count_ps 10.033333333333333 1380825845",
+            "stats.timers.gary.foo.bar.sum 14592 1380825845",
+            "stats.timers.gary.foo.bar.mean 48.478405315614616 1380825845",
+            "stats.timers.gary.foo.bar.median 49 1380825845"
+    };
+    
     @Test
     public void testTypes() {
         Multimap<StatType, Object> counts = LinkedListMultimap.create();
-        for (String line : statsMetrics) {
+        for (String line : METRIC_LINES) {
             Stat stat = Conversions.asStat(line);
             Assert.assertNotNull(stat);
             counts.get(stat.getType()).add(new Object());
@@ -91,7 +117,7 @@ public class ConversionsTest {
         int sum = 0;
         for (Map.Entry<StatType, Collection<Object>> entry : counts.asMap().entrySet())
             sum += entry.getValue().size();
-        Assert.assertEquals(statsMetrics.length, sum);
+        Assert.assertEquals(METRIC_LINES.length, sum);
         
         // ensure individual count is accurate.
         Assert.assertEquals(9, counts.get(StatType.UNKNOWN).size());
@@ -177,33 +203,7 @@ public class ConversionsTest {
     
     @Test
     public void testStatToMetricTimer() {
-        final String[] lines = new String[] {
-                "stats.timers.gary.foo.bar.mean_99 47.97651006711409 1380825845",
-                "stats.timers.gary.foo.bar.upper_99 97 1380825845",
-                "stats.timers.gary.foo.bar.sum_99 14297 1380825845",
-                "stats.timers.gary.foo.bar.mean_75 36.469026548672566 1380825845",
-                "stats.timers.gary.foo.bar.upper_75 72 1380825845",
-                "stats.timers.gary.foo.bar.sum_75 8242 1380825845",
-                "stats.timers.gary.foo.bar.mean_50 24.112582781456954 1380825845",
-                "stats.timers.gary.foo.bar.upper_50 49 1380825845",
-                "stats.timers.gary.foo.bar.sum_50 3641 1380825845",
-                "stats.timers.gary.foo.bar.mean_25 12.16 1380825845",
-                "stats.timers.gary.foo.bar.upper_25 24 1380825845",
-                "stats.timers.gary.foo.bar.sum_25 912 1380825845",
-                "stats.timers.gary.foo.bar.mean_1 0.6666666666666666 1380825845",
-                "stats.timers.gary.foo.bar.upper_1 1 1380825845",
-                "stats.timers.gary.foo.bar.sum_1 2 1380825845",
-                "stats.timers.gary.foo.bar.std 28.133704832870738 1380825845",
-                "stats.timers.gary.foo.bar.upper 99 1380825845",
-                "stats.timers.gary.foo.bar.lower 0 1380825845",
-                "stats.timers.gary.foo.bar.count 301 1380825845",
-                "stats.timers.gary.foo.bar.count_ps 10.033333333333333 1380825845",
-                "stats.timers.gary.foo.bar.sum 14592 1380825845",
-                "stats.timers.gary.foo.bar.mean 48.478405315614616 1380825845",
-                "stats.timers.gary.foo.bar.median 49 1380825845"
-        };
-        
-        StatsCollection stats = ConversionsTest.asStats(lines);
+        StatsCollection stats = ConversionsTest.asStats(TIMER_LINES);
         TypedMetricsCollection metrics = Conversions.asMetrics(stats);
         
         Assert.assertEquals(0, metrics.getNormalMetrics().size());
@@ -214,7 +214,7 @@ public class ConversionsTest {
     
     @Test
     public void testAllStatToMetric() {
-        StatsCollection stats = ConversionsTest.asStats(statsMetrics);
+        StatsCollection stats = ConversionsTest.asStats(METRIC_LINES);
 
         TypedMetricsCollection metrics = Conversions.asMetrics(stats);
         Assert.assertEquals(9, metrics.getNormalMetrics().size());
@@ -233,6 +233,15 @@ public class ConversionsTest {
         
         Assert.assertEquals(1, rollups.get(Double.class).size());
         Assert.assertEquals(8, rollups.get(Long.class).size());
+    }
+    
+    @Test
+    public void testInvalidCounterConversion() {
+        StatsCollection stats = new StatsCollection();
+        stats.add(new Stat("malformed_counter_name.counter_0", 32, System.currentTimeMillis() / 1000));
+        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        Assert.assertEquals(0, metrics.getNormalMetrics().size());
+        Assert.assertEquals(0, metrics.getPreaggregatedMetrics().size());
     }
     
     private static StatsCollection asStats(String[] lines) {
