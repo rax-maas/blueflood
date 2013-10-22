@@ -31,7 +31,6 @@ public class ConfigurationTest {
         Map<Object, Object> properties = config.getProperties();
 
         Assert.assertNotNull(properties);
-        //Assert.assertTrue(properties.size() > 0);
 
         Assert.assertEquals("127.0.0.1", config.getStringProperty("SCRIBE_HOST"));
         System.setProperty("SCRIBE_HOST", "127.0.0.2");
