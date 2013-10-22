@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.service.udp;
+package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
