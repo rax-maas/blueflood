@@ -104,6 +104,12 @@ public class BluefloodServiceStarter {
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate ingestion service module: " + module, e);
                     System.exit(1);
+                } catch (RuntimeException e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    System.exit(1);
+                } catch (Throwable e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    System.exit(1);
                 }
             }
         } else {
@@ -136,6 +142,12 @@ public class BluefloodServiceStarter {
                     System.exit(1);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate query service module: " + module, e);
+                    System.exit(1);
+                } catch (RuntimeException e) {
+                    log.error("Error starting query service: " + module, e);
+                    System.exit(1);
+                } catch (Throwable e) {
+                    log.error("Error starting query service: " + module, e);
                     System.exit(1);
                 }
             }
