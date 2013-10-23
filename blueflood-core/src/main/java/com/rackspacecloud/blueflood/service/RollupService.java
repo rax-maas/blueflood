@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-class RollupService implements Runnable, RollupServiceMBean {
+public class RollupService implements Runnable, RollupServiceMBean {
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
     private static final long ROLLUP_DELAY_MILLIS = 1000 * 60 * 5; // 5 minutes.
     
@@ -74,7 +74,7 @@ class RollupService implements Runnable, RollupServiceMBean {
         }
     });
 
-    RollupService(ScheduleContext context) {
+    public RollupService(ScheduleContext context) {
         this.context = context;
         this.shardStateManager = context.getShardStateManager();
         try {

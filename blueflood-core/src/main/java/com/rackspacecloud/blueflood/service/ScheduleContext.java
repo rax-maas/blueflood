@@ -77,7 +77,7 @@ public class ScheduleContext implements IngestionContext {
         this.lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
     }
 
-    void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
+    public void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
     public long getCurrentTimeMillis() { return scheduleTime; }
 
     public ShardStateManager getShardStateManager() {
