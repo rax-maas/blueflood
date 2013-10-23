@@ -147,7 +147,9 @@ public class ElasticIO implements DiscoveryIO{
 
     private static Map<String, Object> extractUsefulInformation(Metric metric) {
         Map<String, Object> info = new HashMap<String, Object>();
-        info.put(UNIT.toString(), metric.getUnit());
+        if (metric.getUnit() != null) { // metric units may be null
+            info.put(UNIT.toString(), metric.getUnit());
+        }
         return info;
     }
 
