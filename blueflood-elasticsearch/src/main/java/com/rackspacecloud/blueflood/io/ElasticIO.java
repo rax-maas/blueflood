@@ -100,7 +100,7 @@ public class ElasticIO implements DiscoveryIO{
             if (obj == null) {
                 return false;
             }
-            if (getClass() != obj.getClass()) {
+            if (!getClass().equals(obj.getClass())) {
                 return false;
             }
             Result other = (Result) obj;
@@ -177,7 +177,7 @@ public class ElasticIO implements DiscoveryIO{
         }
         bulk.execute();
     }
-    
+
     public void insertDiscovery(String tenantId, Discovery discovery) throws IOException {
         createSingleRequest(tenantId, discovery).execute();
     }
