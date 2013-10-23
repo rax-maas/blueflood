@@ -22,7 +22,7 @@ import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.StatsCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
-import com.rackspacecloud.blueflood.statsd.containers.StatType;
+import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.statsd.containers.TypedMetricsCollection;
 import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.GaugeRollup;

@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.statsd.containers;
+package com.rackspacecloud.blueflood.types;
 
 public enum StatType {
     COUNTER,

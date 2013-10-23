@@ -1,6 +1,6 @@
-package com.rackspacecloud.blueflood.statsd;
+package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.statsd.containers.StatType;
+import com.rackspacecloud.blueflood.types.StatType;
 import junit.framework.Assert;
 import org.junit.Test;
 

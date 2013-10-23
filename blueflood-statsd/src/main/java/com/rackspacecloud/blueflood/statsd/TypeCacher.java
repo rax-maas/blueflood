@@ -5,7 +5,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.statsd.containers.StatsCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
-import com.rackspacecloud.blueflood.statsd.containers.StatType;
+import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

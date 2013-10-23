@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.statsd.containers;
 
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.StatType;
 
 import java.util.regex.Pattern;
 

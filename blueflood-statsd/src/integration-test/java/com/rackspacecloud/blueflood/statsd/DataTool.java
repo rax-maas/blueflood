@@ -6,7 +6,7 @@ import com.netflix.astyanax.model.ColumnList;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.statsd.containers.StatType;
+import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.GaugeRollup;
