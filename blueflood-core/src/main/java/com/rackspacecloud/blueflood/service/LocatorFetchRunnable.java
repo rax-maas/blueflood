@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.astyanax.model.ColumnFamily;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -79,14 +77,12 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         for (Column<Locator> locatorCol : AstyanaxReader.getInstance().getAllLocators(shard)) {
             final Locator locator = locatorCol.getName();
-            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran.name());
-            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
 
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
             try {
                 executionContext.increment();
-                final RollupContext rollupContext = new RollupContext(locator, parentRange, srcCF, destCF);
+                final RollupContext rollupContext = new RollupContext(locator, parentRange, finerGran);
                 rollupExecutor.execute(new RollupRunnable(executionContext, rollupContext));
                 rollCount += 1;
             } catch (Throwable any) {
