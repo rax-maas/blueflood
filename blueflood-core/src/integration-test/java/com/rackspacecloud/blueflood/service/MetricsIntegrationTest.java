@@ -131,7 +131,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 cols.put(col.getName(), col.getValue(serializer));
             }
             BasicRollup basicRollup = new BasicRollup();
-            Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
+            Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
             for (Map.Entry<Long, Object> col : cols.entrySet()) {
                 while (col.getKey() > curRange.stop) {
                     rollups.put(curRange.start, basicRollup);
@@ -178,7 +178,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writeFullData(locator, baseMillis, hours, writer);
 
         // FULL -> 5m
-        Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
+        Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);

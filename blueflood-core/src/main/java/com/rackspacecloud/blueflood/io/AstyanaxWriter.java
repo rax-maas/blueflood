@@ -28,10 +28,10 @@ import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
-import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.cache.Cache;
@@ -44,6 +44,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -238,30 +239,29 @@ public class AstyanaxWriter extends AstyanaxIO {
     
 
     // todo: rename to insertBasicRollup.
-    public void insertRollup(Locator locator, final long timestamp, final BasicRollup basicRollup,
+    public void insertRollup(Locator locator, final long timestamp, final Rollup rollup,
                              ColumnFamily<Locator, Long> destCF) throws ConnectionException {
         if (destCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
             throw new IllegalArgumentException("Invalid granularity FULL for BasicRollup insertion");
         }
-        insertRollups(locator, new HashMap<Long, BasicRollup>() {{
-            put(timestamp, basicRollup);
+        insertRollups(locator, new HashMap<Long, Rollup>() {{
+            put(timestamp, rollup);
         }}, destCF);
     }
 
 
     // todo: this method should be made private. outside of this class, it is only used by tests.
-    public void insertRollups(Locator locator, Map<Long, BasicRollup> rollups,
+    public void insertRollups(Locator locator, Map<Long, Rollup> rollups,
                                           ColumnFamily<Locator, Long> destCF) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
         int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
             ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
-            for (Map.Entry<Long, BasicRollup> rollupEntry : rollups.entrySet()) {
-                        mutationBatchWithRow.putColumn(
-                                rollupEntry.getKey(),
-                                NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(rollupEntry.getValue()),
-                                ttl);
+            for (Map.Entry<Long, Rollup> rollupEntry : rollups.entrySet()) {
+                AbstractSerializer serializer = NumericSerializer.serializerFor(rollupEntry.getValue().getClass());
+                ByteBuffer buffer = serializer.toByteBuffer(rollupEntry.getValue());
+                mutationBatchWithRow.putColumn(rollupEntry.getKey(), buffer, ttl);
             }
             // send it.
             try {

@@ -205,7 +205,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
-        Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
+        Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, range);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
