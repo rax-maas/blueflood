@@ -19,13 +19,12 @@ package com.rackspacecloud.blueflood.statsd;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.RollupService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.service.ShardStateServices;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -44,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -140,26 +141,28 @@ public class CarbonCompatibleIngest {
         
         String bindAddr = getListenAddress();
         int bindPort = getListenPort();
+        final ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards(Configuration.getStringProperty("SHARDS")));
+        
+        // time synchronization.
+        Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
+        serverTimeUpdate.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                context.setCurrentTimeMillis(System.currentTimeMillis());
+            }
+        }, 100, 500);
 
+        if (Configuration.getBooleanProperty("INGEST_MODE"))
+            startIngestion(context, bindAddr, bindPort);
+        
+        if (Configuration.getBooleanProperty("ROLLUP_MODE"))
+            startRollups(context);
+    }
+    
+    private static void startIngestion(ScheduleContext context, String bindAddr, int bindPort) {
         MetadataCache typeCache = MetadataCache.createLoadingCacheInstance(new TimeValue(24, TimeUnit.HOURS), 5);
-        // uncomment if you want to use a TTL cache.
-//        TtlCache ttlCache = new TtlCache(
-//                "statsd ttl cache",
-//                new TimeValue(120, TimeUnit.HOURS),
-//                5,
-//                InternalAPIFactory.createDefaultTTLProvider()) {
-//            // we only care about caching full res values.
-//            @Override
-//            protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
-//                Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
-//                map.put(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()), acct.getMetricTtl("full"));
-//                return map;
-//            }
-//        };
-//        
         try {
-            ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
-            Counter bufferedMetrics = Metrics.newCounter(BatchWriter.class, "Buffered Metrics");
+            
             ThreadPoolBuilder tpBuilder = new ThreadPoolBuilder()
                     .withCorePoolSize(5)
                     .withMaxPoolSize(5)
@@ -172,8 +175,12 @@ public class CarbonCompatibleIngest {
                     .withFunction(new StatParser(tpBuilder.withName("Stat Parser").build()))
                     .withFunction(new TypeCacher(tpBuilder.withName("Cache Metric Type").build(), typeCache))
                     .withFunction(new MetricsWriter(tpBuilder.withName("Metrics Writer").build()))
+                    .withFunction(new ContextUpdater(context, tpBuilder.withName("Context Updater").build()))
             ;
                     
+            
+            // save shard state to/from the database.
+            new ShardStateServices(context).start();
             
             new CarbonCompatibleIngest(new InetSocketAddress(bindAddr, bindPort)).run(processor);
         } catch (Exception ex) {
@@ -181,6 +188,14 @@ public class CarbonCompatibleIngest {
             System.exit(-1);
         }
     }
+    
+    private static void startRollups(ScheduleContext context) {
+        new ShardStateServices(context).start();
+        RollupService rollupService = new RollupService(context);
+        Thread rollupThread = new Thread(rollupService, "BasicRollup conductor");
+        rollupThread.start();
+    }
+    
     
     // todo: these don't belong in Configuration.java, but they belong somewhere other than here. 
     
