@@ -45,8 +45,8 @@ class RollupService implements Runnable, RollupServiceMBean {
     private final Meter rejectedSlotChecks = Metrics.newMeter(RollupService.class, "Rejected Slot Checks", "Rollups", TimeUnit.MINUTES);
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupExecutors;
-    private long pollerPeriod = CoreConfiguration.getInstance().getIntegerProperty("SCHEDULE_POLL_PERIOD");
-    private final long configRefreshInterval = CoreConfiguration.getInstance().getIntegerProperty("CONFIG_REFRESH_PERIOD");
+    private long pollerPeriod = Configuration.getInstance().getIntegerProperty("SCHEDULE_POLL_PERIOD");
+    private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty("CONFIG_REFRESH_PERIOD");
     private transient Thread thread;
 
     private long lastSlotCheckFinishedAt = 0L;
@@ -145,7 +145,7 @@ class RollupService implements Runnable, RollupServiceMBean {
 
         // unbounded work queue.
         final BlockingQueue<Runnable> rollupQueue = new LinkedBlockingQueue<Runnable>();
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         rollupExecutors = new ThreadPoolExecutor (
             config.getIntegerProperty("MAX_ROLLUP_THREADS"),
             config.getIntegerProperty("MAX_ROLLUP_THREADS"),

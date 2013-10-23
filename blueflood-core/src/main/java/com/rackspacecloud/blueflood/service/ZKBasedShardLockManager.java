@@ -151,7 +151,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
             addShard(shard);
         this.client.start();
 
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         this.minLockHoldTime = new TimeValue(config.getLongProperty("SHARD_LOCK_HOLD_PERIOD_MS"), TimeUnit.MILLISECONDS);
         this.lockDisinterestedTime = new TimeValue(config.getLongProperty("SHARD_LOCK_DISINTERESTED_PERIOD_MS"), TimeUnit.MILLISECONDS);
         this.shardLockScavengeInterval = new TimeValue(config.getLongProperty("SHARD_LOCK_SCAVENGE_INTERVAL_MS"),

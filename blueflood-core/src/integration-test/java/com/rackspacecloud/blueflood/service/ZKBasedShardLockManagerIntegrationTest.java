@@ -42,7 +42,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
     public void setUp() throws Exception {
         manageShards = new HashSet<Integer>();
         manageShards.add(1);
-        lockManager = new ZKBasedShardLockManager(CoreConfiguration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
+        lockManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
         lockManager.waitForQuiesceUnsafe();
     }
 
@@ -163,7 +163,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
     @Test
     public void testDuelingManagers() throws Exception {
         final int shard = 1;
-        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(CoreConfiguration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
+        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty("ZOOKEEPER_CLUSTER"), manageShards);
 
         // first manager.
         Assert.assertTrue(lockManager.canWork(shard));

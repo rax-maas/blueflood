@@ -28,7 +28,7 @@ import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.CoreConfiguration;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.Locator;
 
 import java.util.*;
@@ -68,7 +68,7 @@ public class AstyanaxIO {
             StringSerializer.get());
     protected static final Map<String, ColumnFamily<Locator, Long>> CF_NAME_TO_CF;
     protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
-    protected static final CoreConfiguration config = CoreConfiguration.getInstance();
+    protected static final Configuration config = Configuration.getInstance();
 
     static {
         context = createPreferredHostContext();

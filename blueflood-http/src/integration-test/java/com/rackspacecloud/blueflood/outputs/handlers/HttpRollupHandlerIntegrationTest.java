@@ -25,7 +25,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.HttpConfiguration;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpQueryService;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
@@ -62,7 +62,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     @BeforeClass
     public static void setUpHttp() {
-        queryPort = HttpConfiguration.getInstance().getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
+        queryPort = Configuration.getInstance().getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
         httpQueryService = new HttpQueryService();
         httpQueryService.startService();
         vendor = new HttpClientVendor();

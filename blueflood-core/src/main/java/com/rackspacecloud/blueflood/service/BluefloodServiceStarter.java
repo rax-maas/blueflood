@@ -38,7 +38,7 @@ public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
     public static void validateCassandraHosts() {
-        String hosts = CoreConfiguration.getInstance().getStringProperty("CASSANDRA_HOSTS");
+        String hosts = Configuration.getInstance().getStringProperty("CASSANDRA_HOSTS");
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
             System.exit(-1);
@@ -52,7 +52,7 @@ public class BluefloodServiceStarter {
     }
 
     private static void startShardStateServices(ScheduleContext context) {
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty("INGEST_MODE") || config.getBooleanProperty("ROLLUP_MODE")) {
             // these threads are responsible for sending/receiving schedule context state to/from the database.
             final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
@@ -80,7 +80,7 @@ public class BluefloodServiceStarter {
 
     private static void startIngestServices(ScheduleContext context) {
         // start up ingestion services.
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty("INGEST_MODE")) {
             List<String> modules = config.getListProperty("INGESTION_MODULES");
             if (modules.isEmpty()) {
@@ -119,7 +119,7 @@ public class BluefloodServiceStarter {
 
     private static void startQueryServices() {
         // start up query services.
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty("QUERY_MODE")) {
             List<String> modules = config.getListProperty("QUERY_MODULES");
             if (modules.isEmpty()) {
@@ -159,7 +159,7 @@ public class BluefloodServiceStarter {
     private static void startRollupService(final ScheduleContext context) {
         Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
 
-        if (CoreConfiguration.getInstance().getBooleanProperty("ROLLUP_MODE")) {
+        if (Configuration.getInstance().getBooleanProperty("ROLLUP_MODE")) {
             // configure the rollup service. this is a daemonish thread that decides when to rollup ranges of data on
             // in the data cluster.
             final RollupService rollupService = new RollupService(context);
@@ -192,7 +192,7 @@ public class BluefloodServiceStarter {
 
     public static void main(String args[]) {
         // load configuration.
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
 
         // if log4j configuration references an actual file, periodically reload it to catch changes.
         String log4jConfig = System.getProperty("log4j.configuration");

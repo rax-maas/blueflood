@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.service.udp;
 
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.service.CoreConfiguration;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.udp.functions.ContextUpdater;
 import com.rackspacecloud.blueflood.service.udp.functions.DeserializeAndReleaseFunc;
@@ -27,7 +27,7 @@ import java.util.Collections;
 public class MainIngestor {
 
     private static final Logger log = LoggerFactory.getLogger(MainIngestor.class);
-    private static final CoreConfiguration config = CoreConfiguration.getInstance();
+    private static final Configuration config = Configuration.getInstance();
 
     public static void main(String args[]) {
 

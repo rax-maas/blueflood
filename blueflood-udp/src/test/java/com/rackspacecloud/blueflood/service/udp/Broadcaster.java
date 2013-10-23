@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.service.udp;
 
-import com.rackspacecloud.blueflood.service.CoreConfiguration;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -106,8 +106,8 @@ public class Broadcaster {
 
     // for testing I'm using localhost:2525.
     public static void main(String args[]) {
-        String host = CoreConfiguration.getInstance().getStringProperty("UDP_BIND_HOST");
-        int port = CoreConfiguration.getInstance().getIntegerProperty("UDP_BIND_PORT");
+        String host = Configuration.getInstance().getStringProperty("UDP_BIND_HOST");
+        int port = Configuration.getInstance().getIntegerProperty("UDP_BIND_PORT");
         InetSocketAddress destination = new InetSocketAddress(host, port);
         Broadcaster broadcaster = new Broadcaster();
 

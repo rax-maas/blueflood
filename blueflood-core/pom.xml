@@ -25,7 +25,7 @@
 
   <name>blueflood-core</name>
   <artifactId>blueflood-core</artifactId>
-  
+
   <properties>
     <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
   </properties>
@@ -281,6 +281,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.6.4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
+      <version>0.9.9-RC1</version>
     </dependency>
 
     <!-- testing dependencies -->

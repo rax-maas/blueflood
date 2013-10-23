@@ -28,7 +28,7 @@ public class ConfigurationTest {
 
     @Test
     public void testConfiguration() {
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         Map<Object, Object> properties = config.getProperties();
 
         Assert.assertNotNull(properties);
@@ -43,7 +43,7 @@ public class ConfigurationTest {
 
     @Test
     public void testInitWithBluefloodConfig() throws IOException {
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         //Map<Object, Object> properties = Configuration.getProperties();
         Assert.assertNull(config.getStringProperty("TEST_PROPERTY"));
         Assert.assertEquals("ALL", config.getStringProperty("SHARDS"));
@@ -58,7 +58,7 @@ public class ConfigurationTest {
 
     @Test
     public void testGetListProperty() {
-        CoreConfiguration config = CoreConfiguration.getInstance();
+        Configuration config = Configuration.getInstance();
         Assert.assertEquals(config.getStringProperty("QUERY_MODULES"), "");
         Assert.assertTrue(config.getListProperty("QUERY_MODULES").isEmpty());
         System.setProperty("QUERY_MODULES", "a");

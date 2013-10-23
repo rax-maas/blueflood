@@ -28,7 +28,7 @@ import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.service.HttpConfiguration;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.IngestionService;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -69,7 +69,7 @@ public class HttpMetricsIngestionServer {
 
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
-        this.port = HttpConfiguration.getInstance().getIntegerProperty("HTTP_INGESTION_PORT");
+        this.port = Configuration.getInstance().getIntegerProperty("HTTP_INGESTION_PORT");
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
         this.processorChain = createDefaultProcessorChain();

@@ -17,36 +17,49 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.collect.Lists;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
  *
  */
-abstract class Configuration {
+public class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
+    private static final Reflections reflections = new Reflections("configDefaults", new ResourcesScanner());
+    private static final Configuration INSTANCE = new Configuration();
 
-    protected Configuration(String defaultPropFileName) {
+    public static Configuration getInstance() {
+        return INSTANCE;
+    }
+
+    private Configuration() {
+        Set<String> defaultPropFiles = reflections.getResources(Pattern.compile(".*\\.properties"));
+        for (String propFile : defaultPropFiles) {
+            loadDefaultsFromResourceFile(propFile);
+        }
         try {
-            init(defaultPropFileName);
+            init();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
-    public void init(String defaultPropFileName) throws IOException {
-        InputStream is = this.getClass().getResourceAsStream("/" + defaultPropFileName);
-        defaultProps.load(is);
-        is.close();
-        init();
+    public void loadDefaultsFromResourceFile(String defaultPropFileName) {
+        System.out.println("loading defaults for: " + defaultPropFileName);
+        try {
+            InputStream is = this.getClass().getResourceAsStream("/" + defaultPropFileName);
+            defaultProps.load(is);
+            is.close();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
     public void init() throws IOException {
         props = new Properties(defaultProps);
