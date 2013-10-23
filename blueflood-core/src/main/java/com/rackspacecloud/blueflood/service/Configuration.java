@@ -52,7 +52,6 @@ public class Configuration {
         }
     }
     public void loadDefaultsFromResourceFile(String defaultPropFileName) {
-        System.out.println("loading defaults for: " + defaultPropFileName);
         try {
             InputStream is = this.getClass().getResourceAsStream("/" + defaultPropFileName);
             defaultProps.load(is);
