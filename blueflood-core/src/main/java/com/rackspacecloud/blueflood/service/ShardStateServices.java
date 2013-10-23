@@ -50,7 +50,7 @@ public class ShardStateServices {
 
     public void start() {
         pusher.setActive(true);
-        pusher.setActive(false);
+        puller.setActive(true);
     }
 
     public void stop() {
