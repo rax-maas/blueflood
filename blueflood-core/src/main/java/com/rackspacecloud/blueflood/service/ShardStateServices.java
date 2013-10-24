@@ -1,9 +1,5 @@
-package com.rackspacecloud.blueflood.service.udp;
+package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.service.ShardStatePuller;
-import com.rackspacecloud.blueflood.service.ShardStatePusher;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +50,7 @@ public class ShardStateServices {
     
     public void start() {
         pusher.setActive(true);
-        pusher.setActive(false);
+        puller.setActive(true);
     }
     
     public void stop() {
