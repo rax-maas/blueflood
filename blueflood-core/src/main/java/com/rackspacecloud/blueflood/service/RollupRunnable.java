@@ -79,9 +79,14 @@ class RollupRunnable implements Runnable {
             Points input;
             Rollup rollup = null;
             ColumnFamily<Locator, Long> srcCF;
-            ColumnFamily<Locator, Long> dstCF = AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser().name());;
-            StatType statType = StatType.fromString(rollupTypeCache.get(rollupContext.getLocator(), StatType.CACHE_KEY).toString());
+            ColumnFamily<Locator, Long> dstCF = AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser().name());
+            StatType statType = StatType.fromString((String)rollupTypeCache.get(rollupContext.getLocator(), StatType.CACHE_KEY));
             Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, rollupContext.getSourceGranularity());
+            
+            // short circuit for sets, which are not rolled up, since we don't want to waste time reading them from
+            // full res.
+            if (statType == StatType.SET)
+                return;
             
             try {
                 // first, get the points.
@@ -102,8 +107,6 @@ class RollupRunnable implements Runnable {
                 // next, compute the rollup.
                 rollup =  RollupRunnable.getRollupComputer(statType, rollupContext.getSourceGranularity()).compute(input);
                 
-            } catch (IllegalArgumentException ex) {
-                // todo: invalid types. log and get out.
             } finally {
                 calcrollupContext.stop();
             }
@@ -149,7 +152,6 @@ class RollupRunnable implements Runnable {
     }
     
     // dertmine which Type to use for serialization.
-    // dertmine which Type to use for serialization.
     public static Rollup.Type getRollupComputer(StatType srcType, Granularity srcGran) {
         switch (srcType) {
             case COUNTER:
@@ -161,6 +163,7 @@ class RollupRunnable implements Runnable {
             case UNKNOWN:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
+                // we do not roll sets up.
             default:
                 break;
         }
