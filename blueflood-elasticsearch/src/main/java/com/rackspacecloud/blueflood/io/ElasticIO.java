@@ -167,7 +167,6 @@ public class ElasticIO implements DiscoveryIO{
         this.client = manager.getClient();
     }
 
-    @Override
     public void insertDiscovery(List<Metric> batch) throws IOException {
         BulkRequestBuilder bulk = client.prepareBulk();
         for (Metric metric : batch) {
@@ -200,9 +199,9 @@ public class ElasticIO implements DiscoveryIO{
     private XContentBuilder createSourceContent(String tenantId, Discovery md) throws IOException {
         XContentBuilder json;
 
-        json = XContentFactory.jsonBuilder().startObject();
-        json = json.field(TENANT_ID.toString(), tenantId);
-        json = json.field(METRIC_NAME.toString(), md.getMetricName());
+        json = XContentFactory.jsonBuilder().startObject()
+                    .field(TENANT_ID.toString(), tenantId)
+                    .field(METRIC_NAME.toString(), md.getMetricName());
 
 
         for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
