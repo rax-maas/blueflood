@@ -16,11 +16,13 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
@@ -49,21 +51,26 @@ class RollupRunnable implements Runnable {
     }
     
     public void run() {
-
-        log.debug("Executing rollup {}->{} for {} {}", new Object[] {rollupContext.getSourceColumnFamily().getName(),
-                rollupContext.getDestinationColumnFamily().getName(), rollupContext.getRange().toString(),
-                rollupContext.getLocator()});
+        if (log.isDebugEnabled()) {
+            log.debug("Executing rollup from {} for {} {}", new Object[] {
+                    rollupContext.getSourceGranularity().shortName(),
+                    rollupContext.getRange().toString(),
+                    rollupContext.getLocator()});
+        }
 
         rollupContext.getWaitHist().update(System.currentTimeMillis() - startWait);
         TimerContext timerContext = rollupContext.getExecuteTimer().time();
         try {
             TimerContext calcrollupContext = calcTimer.time();
+            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(
+                    rollupContext.getSourceGranularity().name());
+            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(
+                    rollupContext.getSourceGranularity().coarser().name());
 
             // Read data and compute rollup
             Rollup rollup;
             try {
-                Granularity gran = AstyanaxIO.getCFToGranularityMapper().get(rollupContext.getSourceColumnFamily());
-                if (gran == Granularity.FULL) {
+                if (rollupContext.getSourceGranularity() == Granularity.FULL) {
                     Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(
                             rollupContext.getLocator(),
                             rollupContext.getRange());
@@ -72,7 +79,7 @@ class RollupRunnable implements Runnable {
                     Points<BasicRollup> input = AstyanaxReader.getInstance().getBasicRollupDataToRoll(
                             rollupContext.getLocator(),
                             rollupContext.getRange(),
-                            rollupContext.getSourceColumnFamily());
+                            srcCF);
                     rollup = Rollup.BasicFromBasic.compute(input);
                 }
             } finally {
@@ -81,18 +88,19 @@ class RollupRunnable implements Runnable {
 
             TimerContext writerollupContext = writeTimer.time();
             try {
-                AstyanaxWriter.getInstance().insertRollup(rollupContext.getLocator(),
-                        rollupContext.getRange().getStart(), rollup,
-                        rollupContext.getDestinationColumnFamily());
+                AstyanaxWriter.getInstance().insertRollup(
+                        rollupContext.getLocator(),
+                        rollupContext.getRange().getStart(),
+                        rollup,
+                        destCF);
             } finally {
                 writerollupContext.stop();
             }
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
         } catch (Throwable th) {
-            log.error("BasicRollup failed; Locator : ", rollupContext.getLocator()
-                    + ", Source CF: " + rollupContext.getSourceColumnFamily()
-                    + ", Dest CF: " + rollupContext.getDestinationColumnFamily());
+            log.error("Rollup failed; Locator : ", rollupContext.getLocator() 
+                    + ", Source Granularity: " + rollupContext.getSourceGranularity().name());
         } finally {
             executionContext.decrement();
             timerContext.stop();
