@@ -50,7 +50,17 @@ public class Locator {
     public String getTenantId() {
         return this.tenantId;
     }
-    
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Locator && obj.hashCode() == this.hashCode();
+    }
+
+    @Override
+    public int hashCode() {
+        return stringRep.hashCode();
+    }
+
     public String getMetricName() {
         return this.metricName;
     }
