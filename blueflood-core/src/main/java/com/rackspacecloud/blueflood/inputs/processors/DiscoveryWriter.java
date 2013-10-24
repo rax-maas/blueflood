@@ -23,19 +23,13 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         discoveryIOs.add(io);
     }
 
-    @Override
-    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) throws Exception {
-
-        final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
-
-        for (List<Metric> metrics : input) {
-            final List<Metric> batch = metrics;
-            ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
-                @Override
+    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
+        for (final List<Metric> metrics : input) {
+            getThreadPool().submit(new Callable<Boolean>() {
                 public Boolean call() throws Exception {
                     try {
                         for (DiscoveryIO io : discoveryIOs) {
-                            io.insertDiscovery(batch);
+                            io.insertDiscovery(metrics);
                         }
                         return true;
                     } catch (Exception ex) {
@@ -44,10 +38,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                     }
                 }
             });
-
-            resultFutures.add(futureBatchResult);
         }
-
         return new NoOpFuture<List<List<Metric>>>(input);
     }
 }
