@@ -17,14 +17,11 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.collect.Lists;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * java/conf/bf-dev.con has an exhaustive description of each configuration option.
@@ -33,7 +30,6 @@ import java.util.regex.Pattern;
 public class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
-    private static final Reflections reflections = new Reflections("configDefaults", new ResourcesScanner());
     private static final Configuration INSTANCE = new Configuration();
 
     public static Configuration getInstance() {
@@ -41,25 +37,19 @@ public class Configuration {
     }
 
     private Configuration() {
-        Set<String> defaultPropFiles = reflections.getResources(Pattern.compile(".*\\.properties"));
-        for (String propFile : defaultPropFiles) {
-            loadDefaultsFromResourceFile(propFile);
-        }
         try {
             init();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
-    public void loadDefaultsFromResourceFile(String defaultPropFileName) {
-        try {
-            InputStream is = this.getClass().getResourceAsStream("/" + defaultPropFileName);
-            defaultProps.load(is);
-            is.close();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+
+    public void loadDefaults(ConfigDefaults[] configDefaults) {
+        for (ConfigDefaults configDefault : configDefaults) {
+            defaultProps.setProperty(configDefault.toString(), configDefault.getDefaultValue());
         }
     }
+
     public void init() throws IOException {
         props = new Properties(defaultProps);
         // load the configuration.
@@ -74,6 +64,9 @@ public class Configuration {
         return Collections.unmodifiableMap(props);
     }
 
+    public String getStringProperty(Enum<? extends ConfigDefaults> name) {
+        return getStringProperty(name.toString());
+    }
     public String getStringProperty(String name) {
         if (System.getProperty(name) != null && !props.containsKey("original." + name)) {
             if (props.containsKey(name))
@@ -83,22 +76,37 @@ public class Configuration {
         return props.getProperty(name);
     }
 
+    public int getIntegerProperty(Enum<? extends ConfigDefaults> name) {
+        return getIntegerProperty(name.toString());
+    }
     public int getIntegerProperty(String name) {
         return Integer.parseInt(getStringProperty(name));
     }
 
+    public float getFloatProperty(Enum<? extends ConfigDefaults> name) {
+        return getFloatProperty(name.toString());
+    }
     public float getFloatProperty(String name) {
         return Float.parseFloat(getStringProperty(name));
     }
 
+    public long getLongProperty(Enum<? extends ConfigDefaults> name) {
+        return getLongProperty(name.toString());
+    }
     public long getLongProperty(String name) {
         return Long.parseLong(getStringProperty(name));
     }
 
+    public boolean getBooleanProperty(Enum<? extends ConfigDefaults> name) {
+        return getBooleanProperty(name.toString());
+    }
     public boolean getBooleanProperty(String name) {
         return getStringProperty(name).equalsIgnoreCase("true");
     }
 
+    public List<String> getListProperty(Enum<? extends ConfigDefaults> name) {
+        return getListProperty(name.toString());
+    }
     public List<String> getListProperty(String name) {
         List<String> list = Lists.newArrayList(getStringProperty(name).split("\\s*,\\s*"));
         list.removeAll(Arrays.asList("", null));

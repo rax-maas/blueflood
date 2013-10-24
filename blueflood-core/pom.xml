@@ -283,12 +283,6 @@
       <version>1.6.4</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.9.9-RC1</version>
-    </dependency>
-
     <!-- testing dependencies -->
     <dependency>
       <groupId>junit</groupId>
