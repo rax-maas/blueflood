@@ -22,9 +22,14 @@ import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.GaugeRollup;
+import com.rackspacecloud.blueflood.types.HistogramRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.binary.Base64;
@@ -52,10 +57,11 @@ public class SerializationTest {
             Object.class,
             Integer.class,
             Long.class,
-            // not yet...
-            //TimerRollup.class,
-            //HistogramRollup.class,
-            //CounterRollup.class,
+            TimerRollup.class,
+            //HistogramRollup.class, // not implemented yet.
+            CounterRollup.class,
+            SetRollup.class,
+            GaugeRollup.class
     };
     
     private final static BasicRollup[] TO_SERIALIZE_BASIC_ROLLUP = new BasicRollup[4];
@@ -296,8 +302,8 @@ public class SerializationTest {
         try {
             String expected = "this is a string";
             ColumnFamily<Locator, Long> CF = null;
-            ByteBuffer bb = NumericSerializer.serializerFor((Class)null).toByteBuffer(expected);
-            String actual = (String)NumericSerializer.serializerFor((Class)null).fromByteBuffer(bb);
+            ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
+            String actual = (String)NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertEquals(expected, actual);
         } catch (RuntimeException ex) {
             throw ex.getCause();
@@ -309,8 +315,8 @@ public class SerializationTest {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
             ColumnFamily<Locator, Long> CF = null;
-            ByteBuffer bb = NumericSerializer.serializerFor((Class)null).toByteBuffer(expected);
-            byte[] actual = (byte[])NumericSerializer.serializerFor((Class)null).fromByteBuffer(bb);
+            ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
+            byte[] actual = (byte[])NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertArrayEquals(expected, actual);
         } catch (RuntimeException ex) {
             throw ex.getCause();
