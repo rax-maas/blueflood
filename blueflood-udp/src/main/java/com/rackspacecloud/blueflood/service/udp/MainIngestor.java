@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.service.udp;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfigDefaults;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.udp.functions.ContextUpdater;
 import com.rackspacecloud.blueflood.service.udp.functions.DeserializeAndReleaseFunc;
@@ -35,7 +36,7 @@ public class MainIngestor {
         checkConfiguration();
 
         // establish a context. It will get used by the ingestor and shard state services.
-        final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards(config.getStringProperty("SHARDS")));
+        final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards(config.getStringProperty(CoreConfigDefaults.SHARDS)));
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), shards);
 
         String host = config.getStringProperty("UDP_BIND_HOST");
@@ -77,14 +78,14 @@ public class MainIngestor {
 
     // initialize the configuration and validate a few things.
     private static void checkConfiguration() {
-        if (!config.getBooleanProperty("INGEST_MODE")) {
+        if (!config.getBooleanProperty(CoreConfigDefaults.INGEST_MODE)) {
             log.error("Ingestion mode not enabled. Please check your configuration");
             System.exit(StopReasons.INCORRECT_CONFIGURATION);
         }
 
         log.info("Configuration is good");
 
-        boolean useZookeeper = !"NONE".equals(config.getStringProperty("ZOOKEEPER_CLUSTER"));
+        boolean useZookeeper = !"NONE".equals(config.getStringProperty(CoreConfigDefaults.ZOOKEEPER_CLUSTER));
         log.info("Using zookeeper? " + useZookeeper);
     }
 }

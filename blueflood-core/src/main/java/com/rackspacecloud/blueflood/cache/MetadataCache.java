@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfigDefaults;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.CacheBuilder;
@@ -43,7 +44,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     public static final Object EMPTY = new Object();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
-    private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty("MAX_SCRIBE_WRITE_THREADS");
+    private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfigDefaults.MAX_SCRIBE_WRITE_THREADS);
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
 
     private MetadataCache(TimeValue expiration, int concurrency) {

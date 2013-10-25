@@ -69,7 +69,7 @@ public class HttpMetricsIngestionServer {
 
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
-        this.port = Configuration.getInstance().getIntegerProperty("HTTP_INGESTION_PORT");
+        this.port = Configuration.getInstance().getIntegerProperty(HttpConfigDefaults.HTTP_INGESTION_PORT);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
         this.processorChain = createDefaultProcessorChain();

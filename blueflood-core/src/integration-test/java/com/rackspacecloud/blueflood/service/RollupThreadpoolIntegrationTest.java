@@ -42,7 +42,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
     @Test
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
-        Assert.assertEquals(Configuration.getInstance().getIntegerProperty("MAX_ROLLUP_THREADS"), threadsInRollupPool.intValue());
+        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(CoreConfigDefaults.MAX_ROLLUP_THREADS), threadsInRollupPool.intValue());
         int shardToTest = 0;
 
         // I want to see what happens when RollupService.rollupExecutors gets too much work. It should never reject

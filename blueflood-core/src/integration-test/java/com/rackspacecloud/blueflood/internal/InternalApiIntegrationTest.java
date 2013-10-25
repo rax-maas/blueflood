@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.internal;
 
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfigDefaults;
 import org.apache.http.client.HttpResponseException;
 
 import org.apache.http.conn.ClientConnectionManager;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InternalApiIntegrationTest {
-    private final String clusterString = Configuration.getInstance().getStringProperty("INTERNAL_API_CLUSTER");
+    private final String clusterString = Configuration.getInstance().getStringProperty(CoreConfigDefaults.INTERNAL_API_CLUSTER);
 
     @Test
     public void testRegularWorks() throws IOException {

@@ -55,7 +55,7 @@ public class HttpHandlerIntegrationTest {
 
     @BeforeClass
     public static void setUp() {
-        httpPort = Configuration.getInstance().getIntegerProperty("HTTP_INGESTION_PORT");
+        httpPort = Configuration.getInstance().getIntegerProperty(HttpConfigDefaults.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
         httpIngestionService = new HttpIngestionService();

@@ -33,37 +33,36 @@ public class ConfigurationTest {
 
         Assert.assertNotNull(properties);
 
-        Assert.assertEquals("127.0.0.1", config.getStringProperty("SCRIBE_HOST"));
-        System.setProperty("SCRIBE_HOST", "127.0.0.2");
-        Assert.assertEquals("127.0.0.2", config.getStringProperty("SCRIBE_HOST"));
+        Assert.assertEquals("127.0.0.1:19180", config.getStringProperty(CoreConfigDefaults.CASSANDRA_HOSTS));
+        System.setProperty("CASSANDRA_HOSTS", "127.0.0.2");
+        Assert.assertEquals("127.0.0.2", config.getStringProperty(CoreConfigDefaults.CASSANDRA_HOSTS));
 
-        Assert.assertEquals(600000, config.getIntegerProperty("THRIFT_RPC_TIMEOUT"));
+        Assert.assertEquals(60000, config.getIntegerProperty(CoreConfigDefaults.SCHEDULE_POLL_PERIOD));
 
     }
 
     @Test
     public void testInitWithBluefloodConfig() throws IOException {
         Configuration config = Configuration.getInstance();
-        //Map<Object, Object> properties = Configuration.getProperties();
         Assert.assertNull(config.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("ALL", config.getStringProperty("SHARDS"));
+        Assert.assertEquals("ALL", config.getStringProperty(CoreConfigDefaults.SHARDS));
 
         String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
         System.setProperty("blueflood.config", "file://" + configPath);
         config.init();
 
         Assert.assertEquals("foo", config.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("NONE", config.getStringProperty("SHARDS"));
+        Assert.assertEquals("NONE", config.getStringProperty(CoreConfigDefaults.SHARDS));
     }
 
     @Test
     public void testGetListProperty() {
         Configuration config = Configuration.getInstance();
-        Assert.assertEquals(config.getStringProperty("QUERY_MODULES"), "");
-        Assert.assertTrue(config.getListProperty("QUERY_MODULES").isEmpty());
+        Assert.assertEquals(config.getStringProperty(CoreConfigDefaults.QUERY_MODULES), "");
+        Assert.assertTrue(config.getListProperty(CoreConfigDefaults.QUERY_MODULES).isEmpty());
         System.setProperty("QUERY_MODULES", "a");
-        Assert.assertEquals(config.getListProperty("QUERY_MODULES").size(), 1);
+        Assert.assertEquals(config.getListProperty(CoreConfigDefaults.QUERY_MODULES).size(), 1);
         System.setProperty("QUERY_MODULES", "a,b , c");
-        Assert.assertEquals(Arrays.asList("a","b","c"), config.getListProperty("QUERY_MODULES"));
+        Assert.assertEquals(Arrays.asList("a","b","c"), config.getListProperty(CoreConfigDefaults.QUERY_MODULES));
     }
 }

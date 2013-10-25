@@ -41,7 +41,7 @@ public class HttpMetricDataQueryServer {
     private AstyanaxReader reader = AstyanaxReader.getInstance();
 
     public HttpMetricDataQueryServer() {
-        this.httpQueryPort = Configuration.getInstance().getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
+        this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfigDefaults.HTTP_METRIC_DATA_QUERY_PORT);
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
