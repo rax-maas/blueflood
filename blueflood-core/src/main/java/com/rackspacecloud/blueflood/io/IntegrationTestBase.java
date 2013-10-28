@@ -30,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -106,6 +107,30 @@ public class IntegrationTestBase {
         AstyanaxTester truncator = new AstyanaxTester();
         for (String cf : columnFamilies)
             truncator.truncate(cf);
+    }
+    
+    @After
+    public void clearInterruptedThreads() throws Exception {
+        // clear all interrupts! Why do we do this? The best I can come up with is that the test harness (junit) is
+        // interrupting threads. One test in particular is very bad about this: RollupRunnableIntegrationTest.
+        // Nothing in that test looks particularly condemnable other than the use of Metrics timers in the rollup
+        // itself.  Anyway... this should clear up the travis build failures.
+        //
+        // Debugging this was an exceptional pain in the neck.  It turns out that there can be a fair amount of time
+        // between when a thread is interrupted and an InterruptedException gets thrown. Minutes in our case. This is
+        // because the AstyanaxWriter singleton keeps its threadpools between test invocations.
+        //
+        // The semantics of Thread.interrupt() are such that calling it only sets an interrupt flag to true, but doesn't
+        // really interrupt the thread.  Subsequent calls to Thread.sleep() end up throwing the exception because the
+        // thread is in an interrupted state.
+        Method clearInterruptPrivate = Thread.class.getDeclaredMethod("isInterrupted", boolean.class);
+        clearInterruptPrivate.setAccessible(true);
+        for (Thread thread : Thread.getAllStackTraces().keySet()) {
+            if (thread.isInterrupted()) {
+                System.out.println(String.format("Clearing interrupted thread: " + thread.getName()));
+                clearInterruptPrivate.invoke(thread, true);
+            }
+        }
     }
 
     @After
