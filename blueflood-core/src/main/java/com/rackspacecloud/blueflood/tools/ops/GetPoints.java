@@ -30,6 +30,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Usage:
+ *
+ * $JAVA -cp $CLASSPATH GetPoints -tenantId ${tenantId} -metric ${metName} -from ${startTime} \
+ *  -to ${endTime} -resolution ${res}
+ *
+ * tenantId - Tenant ID
+ * metric - Name of the metric
+ * from - Start time for the range for which you want metrics (specified as milli-seconds since epoch)
+ * to - End time for the range for which you want metrics (specified as milli-seconds since epoch)
+ * resolution - Resolution of data at which you want the points (one of full, 5m, 20m, 60m, 240m, 1440m)
+ */
 public class GetPoints {
     private static final TimeValue DEFAULT_RANGE = new TimeValue(7, TimeUnit.DAYS);
     private static final Options cliOptions = new Options();
