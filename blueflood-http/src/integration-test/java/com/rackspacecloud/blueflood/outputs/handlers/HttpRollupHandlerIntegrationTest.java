@@ -26,6 +26,8 @@ import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.HttpConfig;
+import com.rackspacecloud.blueflood.service.HttpQueryService;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpResponse;
@@ -52,7 +54,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             Locator.createLocatorFromPathComponents(tenantId, strMetricName)
     };
     private static int queryPort = 20000;
-    private static HttpMetricDataQueryServer httpMetricDataQueryServer;
+    private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
 
@@ -61,8 +63,9 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     @BeforeClass
     public static void setUpHttp() {
-        queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
-        httpMetricDataQueryServer = new HttpMetricDataQueryServer(queryPort);
+        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
+        httpQueryService = new HttpQueryService();
+        httpQueryService.startService();
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }

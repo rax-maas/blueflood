@@ -27,6 +27,7 @@
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
+    <module>blueflood-http</module>
   </modules>
 
   <description>
@@ -150,6 +151,18 @@
             </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>cassandra-1.1</id>
+      <properties>
+        <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>cassandra-1.2</id>
+      <properties>
+        <cassandra.plugin.version>1.2.1-1</cassandra.plugin.version>
+      </properties>
     </profile>
   </profiles>
 

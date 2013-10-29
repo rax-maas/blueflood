@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.CacheBuilder;
@@ -38,14 +39,14 @@ import java.util.concurrent.TimeUnit;
 
 public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBean {
     // todo: give each cache a name.
-    
+
     private final com.google.common.cache.LoadingCache<CacheKey, Object> cache;
     public static final Object EMPTY = new Object();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
-    private static final int defaultConcurrency = Configuration.getIntegerProperty("MAX_SCRIBE_WRITE_THREADS");
+    private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
-    
+
     private MetadataCache(TimeValue expiration, int concurrency) {
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -102,7 +103,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     public boolean containsKey(Locator locator, String key) {
         return cache.getIfPresent(new CacheKey(locator, key)) != null;
     }
-    
+
     public Object get(Locator locator, String key) throws CacheException {
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
@@ -117,7 +118,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             throw new CacheException(ex);
         }
     }
-    
+
     public <T> T get(Locator locator, String key, Class<T> type) throws CacheException {
         try {
             return (T)get(locator, key);
@@ -125,7 +126,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             throw new CacheException(ex);
         }
     }
-    
+
     // todo: synchronization?
     // returns true if updated.
     public boolean put(Locator locator, String key, Object value) throws CacheException {
@@ -142,11 +143,11 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             return false;
         }
     }
-    
+
     public void invalidate(Locator locator, String key) {
         cache.invalidate(new CacheKey(locator, key));
     }
-    
+
     public void databasePut(Locator locator, String key, Object value) throws CacheException {
         try {
             AstyanaxWriter.getInstance().writeMetadataValue(locator, key, value);
@@ -156,7 +157,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             throw new CacheException(ex);
         }
     }
-    
+
     // implements the CacheLoader interface.
     public Object databaseLoad(Locator locator, String key) throws CacheException {
         try {
@@ -168,12 +169,12 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             throw new CacheException(ex);
         }
     }
-    
+
     private final class CacheKey {
         private final Locator locator;
         private final String keyString;
         private final int hashCode;
-        
+
         CacheKey(Locator locator, String keyString) {
             this.locator = locator;
             this.keyString = keyString;
