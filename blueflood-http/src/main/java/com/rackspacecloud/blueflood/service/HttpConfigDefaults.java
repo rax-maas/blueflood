@@ -21,7 +21,7 @@ package com.rackspacecloud.blueflood.service;
  */
 public enum HttpConfigDefaults implements ConfigDefaults {
     // blueflood can receive metric over HTTP
-   HTTP_INGESTION_PORT("19000"),
+    HTTP_INGESTION_PORT("19000"),
 
     // blueflood can output metrics over HTTP
     HTTP_METRIC_DATA_QUERY_PORT("20000");
