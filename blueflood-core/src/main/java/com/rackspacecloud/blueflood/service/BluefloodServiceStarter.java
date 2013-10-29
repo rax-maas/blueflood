@@ -88,12 +88,17 @@ public class BluefloodServiceStarter {
             }
             ClassLoader classLoader = IngestionService.class.getClassLoader();
             final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
+            Integer services_started = 0;
             for (String module : modules) {
+                log.info("Loading ingestion service module " + module);
                 try {
                     Class serviceClass = classLoader.loadClass(module);
                     IngestionService service = (IngestionService) serviceClass.newInstance();
+                    log.info("Starting ingestion service module " + module);
                     ingestionServices.add(service);
                     service.startService(context);
+                    log.info("Successfully started ingestion service module " + module);
+                    services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of ingestion service class for: " + module, e);
                     System.exit(1);
@@ -111,6 +116,7 @@ public class BluefloodServiceStarter {
                     System.exit(1);
                 }
             }
+            log.info("Started " + services_started + " ingestion services");
         } else {
             log.info("HTTP ingestion service not required");
         }
@@ -127,12 +133,17 @@ public class BluefloodServiceStarter {
             }
             ClassLoader classLoader = QueryService.class.getClassLoader();
             final List<QueryService> queryServices = new ArrayList<QueryService>();
+            Integer services_started = 0;
             for (String module : modules) {
+                log.info("Loading query service module " + module);
                 try {
                     Class serviceClass = classLoader.loadClass(module);
                     QueryService service = (QueryService) serviceClass.newInstance();
                     queryServices.add(service);
+                    log.info("Starting query service module " + module);
                     service.startService();
+                    log.info("Successfully started query service module " + module);
+                    services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of query service class for: " + module, e);
                     System.exit(1);
@@ -150,6 +161,7 @@ public class BluefloodServiceStarter {
                     System.exit(1);
                 }
             }
+            log.info("Started " + services_started + " query services");
         } else {
             log.info("Query service not required");
         }
@@ -224,5 +236,6 @@ public class BluefloodServiceStarter {
         startIngestServices(rollupContext);
         startQueryServices();
         startRollupService(rollupContext);
+        log.info("All blueflood services started");
     }
 }
