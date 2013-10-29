@@ -23,7 +23,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfigDefaults;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -56,7 +56,7 @@ public class HttpHandlerIntegrationTest {
 
     @BeforeClass
     public static void setUp() {
-        httpPort = Configuration.getInstance().getIntegerProperty(HttpConfigDefaults.HTTP_INGESTION_PORT);
+        httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
         httpIngestionService = new HttpIngestionService();

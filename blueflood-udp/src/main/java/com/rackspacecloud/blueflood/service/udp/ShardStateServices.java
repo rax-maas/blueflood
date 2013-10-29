@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.service.udp;
 
 import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfigDefaults;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.ShardStatePuller;
 import com.rackspacecloud.blueflood.service.ShardStatePusher;
@@ -35,7 +35,7 @@ public class ShardStateServices {
         puller.setActive(false);
 
        Configuration config = Configuration.getInstance();
-        if (config.getBooleanProperty(CoreConfigDefaults.INGEST_MODE) || config.getBooleanProperty(CoreConfigDefaults.ROLLUP_MODE)) {
+        if (config.getBooleanProperty(CoreConfig.INGEST_MODE) || config.getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
             try {
                 final Thread shardPush = new Thread(pusher, "Shard state writer");
                 final Thread shardPull = new Thread(puller, "Shard state reader");

@@ -30,7 +30,7 @@ public class ShardStatePuller extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePuller.class);
 
     public ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager) {
-        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfigDefaults.SHARD_PULL_PERIOD), TimeUnit.MILLISECONDS));
+        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PULL_PERIOD), TimeUnit.MILLISECONDS));
     }
 
     public void performOperation() {

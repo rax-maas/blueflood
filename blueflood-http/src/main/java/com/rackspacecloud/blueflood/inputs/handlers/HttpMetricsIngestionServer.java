@@ -26,10 +26,10 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfigDefaults;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
@@ -67,7 +67,7 @@ public class HttpMetricsIngestionServer {
 
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
-        this.port = Configuration.getInstance().getIntegerProperty(HttpConfigDefaults.HTTP_INGESTION_PORT);
+        this.port = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
         this.processorChain = createDefaultProcessorChain();

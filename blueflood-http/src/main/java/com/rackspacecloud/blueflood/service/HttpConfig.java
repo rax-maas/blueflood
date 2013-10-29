@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.service;
 /**
  * Default config values for blueflood-http. Also to be used for getting config key names.
  */
-public enum HttpConfigDefaults implements ConfigDefaults {
+public enum HttpConfig implements ConfigDefaults {
     // blueflood can receive metric over HTTP
     HTTP_INGESTION_PORT("19000"),
 
@@ -27,10 +27,10 @@ public enum HttpConfigDefaults implements ConfigDefaults {
     HTTP_METRIC_DATA_QUERY_PORT("20000");
 
     static {
-        Configuration.getInstance().loadDefaults(HttpConfigDefaults.values());
+        Configuration.getInstance().loadDefaults(HttpConfig.values());
     }
     private String defaultValue;
-    private HttpConfigDefaults(String value) {
+    private HttpConfig(String value) {
         this.defaultValue = value;
     }
     public String getDefaultValue() {

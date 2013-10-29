@@ -27,7 +27,6 @@ import org.mockito.internal.util.reflection.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,7 +41,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
     public void setUp() throws Exception {
         manageShards = new HashSet<Integer>();
         manageShards.add(1);
-        lockManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfigDefaults.ZOOKEEPER_CLUSTER), manageShards);
+        lockManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER), manageShards);
         lockManager.waitForQuiesceUnsafe();
     }
 
@@ -163,7 +162,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
     @Test
     public void testDuelingManagers() throws Exception {
         final int shard = 1;
-        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfigDefaults.ZOOKEEPER_CLUSTER), manageShards);
+        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER), manageShards);
 
         // first manager.
         Assert.assertTrue(lockManager.canWork(shard));

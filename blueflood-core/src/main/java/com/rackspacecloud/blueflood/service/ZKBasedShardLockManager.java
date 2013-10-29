@@ -152,12 +152,12 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         this.client.start();
 
         Configuration config = Configuration.getInstance();
-        this.minLockHoldTime = new TimeValue(config.getLongProperty(CoreConfigDefaults.SHARD_LOCK_HOLD_PERIOD_MS), TimeUnit.MILLISECONDS);
-        this.lockDisinterestedTime = new TimeValue(config.getLongProperty(CoreConfigDefaults.SHARD_LOCK_DISINTERESTED_PERIOD_MS), TimeUnit.MILLISECONDS);
-        this.shardLockScavengeInterval = new TimeValue(config.getLongProperty(CoreConfigDefaults.SHARD_LOCK_SCAVENGE_INTERVAL_MS),
+        this.minLockHoldTime = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_HOLD_PERIOD_MS), TimeUnit.MILLISECONDS);
+        this.lockDisinterestedTime = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_DISINTERESTED_PERIOD_MS), TimeUnit.MILLISECONDS);
+        this.shardLockScavengeInterval = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_SCAVENGE_INTERVAL_MS),
                 TimeUnit.MILLISECONDS);
         this.lockScavenger = new java.util.Timer("Lock scavenger " + (id != 0 ? id : ""), true);
-        this.defaultMaxLocksToAcquirePerCycle = config.getIntegerProperty(CoreConfigDefaults.MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE);
+        this.defaultMaxLocksToAcquirePerCycle = config.getIntegerProperty(CoreConfig.MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE);
 
         waitForZKConnections();
         // attempt all locks. needs to be called before the scavenger is instantiated.
