@@ -63,7 +63,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
-    private static final Integer METRIC_SUB_BATCH_SIZE = Configuration.getIntegerProperty("METRIC_SUB_BATCH_SIZE");
+    private static final Integer METRIC_SUB_BATCH_SIZE = config.getIntegerProperty(CoreConfig.METRIC_SUB_BATCH_SIZE);
     private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
