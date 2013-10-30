@@ -73,7 +73,7 @@ public class SimpleNumber implements Rollup {
             case DOUBLE:
                 return String.format("%s (double)", doubleValue);
             default:
-                return "ERROR";
+                return super.toString();
         }
     }
 }
