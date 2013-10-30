@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.io;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
@@ -25,7 +41,7 @@ import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 
-public class ElasticIO implements DiscoveryIO{
+public class ElasticIO implements DiscoveryIO {
     static enum ESFieldLabel {
         METRIC_NAME,
         TENANT_ID,
@@ -33,101 +49,16 @@ public class ElasticIO implements DiscoveryIO{
         UNIT;
     }
 
-    public static class Discovery{
-        private Map<String, Object> annotation = new HashMap<String, Object>();
-        private String metricName;
-
-        public Map<String, Object> getAnnotation() {
-            return annotation;
-        }
-
-        public String getMetricName() {
-            return metricName;
-        }
-
-        @Override
-        public String toString() {
-            return "ElasticMetricDiscovery [metricName=" + metricName + ", annotation="
-                    + annotation.toString() + "]";
-        }
-
-        public Discovery withAnnotation(Map<String, Object> annotation) {
-            this.annotation = annotation;
-            return this;
-        }
-
-        public Discovery withMetricName(String name){
-            this.metricName = name;
-            return this;
-        }
-    }
-
-    public static class Result {
-        private final String metricName;
-        private final String unit;
-
-        public Result(String name, String unit) {
-            this.metricName = name;
-            this.unit = unit;
-        }
-
-        public String getMetricName() {
-            return metricName;
-        }
-        public String getUnit() {
-            return unit;
-        }
-        @Override
-        public String toString() {
-            return "Result [metricName=" + metricName + ", unit=" + unit + "]";
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result
-                    + ((metricName == null) ? 0 : metricName.hashCode());
-            result = prime * result + ((unit == null) ? 0 : unit.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (!getClass().equals(obj.getClass())) {
-                return false;
-            }
-            Result other = (Result) obj;
-            if (metricName == null) {
-                if (other.metricName != null) {
-                    return false;
-                }
-            } else if (!metricName.equals(other.metricName)) {
-                return false;
-            }
-            if (unit == null) {
-                if (other.unit != null) {
-                    return false;
-                }
-            } else if (!unit.equals(other.unit)) {
-                return false;
-            }
-            return true;
-        }
-    }
-
     private final Client client;
     private static final String ES_TYPE = "metrics";
-    private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
+    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
 
-    private static final int NUM_INDICES = Configuration.getIntegerProperty("ELASTICSEARCH_NUM_INDICES");
+    private final int NUM_INDICES = Configuration.getIntegerProperty("ELASTICSEARCH_NUM_INDICES");
     public static final String INDEX_PREFIX = "test-index-";
+
+    public ElasticIO(ElasticClientManager manager) {
+        this.client = manager.getClient();
+    }
 
     private static String createQueryString(String tenantId, Discovery md) {
         StringBuilder builder = new StringBuilder();
@@ -161,10 +92,6 @@ public class ElasticIO implements DiscoveryIO{
         Result result = new Result(metricName, unit);
 
         return result;
-    }
-
-    public ElasticIO(ElasticClientManager manager) {
-        this.client = manager.getClient();
     }
 
     public void insertDiscovery(List<Metric> batch) throws IOException {
@@ -242,5 +169,74 @@ public class ElasticIO implements DiscoveryIO{
             result.add(entry);
         }
         return result;
+    }
+
+    public static class Discovery {
+        private Map<String, Object> annotation = new HashMap<String, Object>();
+        private String metricName;
+
+        public Map<String, Object> getAnnotation() {
+            return annotation;
+        }
+
+        public String getMetricName() {
+            return metricName;
+        }
+
+        @Override
+        public String toString() {
+            return "ElasticMetricDiscovery [metricName=" + metricName + ", annotation="
+                    + annotation.toString() + "]";
+        }
+
+        public Discovery withAnnotation(Map<String, Object> annotation) {
+            this.annotation = annotation;
+            return this;
+        }
+
+        public Discovery withMetricName(String name){
+            this.metricName = name;
+            return this;
+        }
+    }
+
+    public static class Result {
+        private final String metricName;
+        private final String unit;
+
+        public Result(String name, String unit) {
+            this.metricName = name;
+            this.unit = unit;
+        }
+
+        public String getMetricName() {
+            return metricName;
+        }
+        public String getUnit() {
+            return unit;
+        }
+        @Override
+        public String toString() {
+            return "Result [metricName=" + metricName + ", unit=" + unit + "]";
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result
+                    + ((metricName == null) ? 0 : metricName.hashCode());
+            result = prime * result + ((unit == null) ? 0 : unit.hashCode());
+            return result;
+        }
+
+        public boolean equals(Result other) {
+            if (!metricName.equals(other.metricName)) {
+                return false;
+            } else if (!unit.equals(other.unit)) {
+                return false;
+            }
+            return true;
+        }
     }
 }
