@@ -20,6 +20,8 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -39,9 +41,8 @@ public class HttpMetricDataQueryServer {
     private final int httpQueryPort;
     private AstyanaxReader reader = AstyanaxReader.getInstance();
 
-    public HttpMetricDataQueryServer(Integer portToListen) {
-        this.httpQueryPort = portToListen;
-
+    public HttpMetricDataQueryServer() {
+        this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());

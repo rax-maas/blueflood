@@ -38,20 +38,20 @@ public class Broadcaster {
     private static final TimeValue TTL = new TimeValue(30, TimeUnit.DAYS);
     private static final AtomicInteger counter = new AtomicInteger(0);
     private static final Random rand = new Random(75323);
-    
+
     public void sendHerd(final InetSocketAddress addr, final int numPerSecond) {
-        
+
         final int id = counter.incrementAndGet();
         final Timer timer = new Timer("UDP Broacast Timer " + id);
         final long period = 1000 / numPerSecond;
         final EventLoopGroup group = new NioEventLoopGroup();
-        
+
         // My locator will be tentant_${id},udp_int_metric.
         final Locator locator = Locator.createLocatorFromPathComponents("tenant_" + id, "udp_int_metric");
         log.info("Sending metrics for {} starting {}", locator, System.currentTimeMillis());
-        
+
         try {
-            
+
             // netty UDP boilerplate.
             Bootstrap bootstrap = new Bootstrap()
                     .group(group)
@@ -62,9 +62,9 @@ public class Broadcaster {
                             System.err.println("SHOULD NOT BE GETTING MESSAGES");
                         }
                     });
-            
+
             final Channel ch = bootstrap.bind(0).sync().channel();
-            
+
             // we'll send the datagrams using a timer.
             TimerTask task = new TimerTask() {
                 @Override
@@ -84,16 +84,16 @@ public class Broadcaster {
                     return true;
                 }
             };
-            
+
             // set things in motion.
             timer.schedule(task, 0, period);
-            
+
         } catch (Exception ex) {
             ex.printStackTrace(System.err);
             System.exit(-1);
         }
     }
-    
+
     // create a random int metric.
     private static Collection<Metric> nextMetrics(Locator locator, int count) {
         List<Metric> metrics = new ArrayList<Metric>(count);
@@ -103,22 +103,14 @@ public class Broadcaster {
         log.info("Generating metrics for {} until {}", locator, System.currentTimeMillis());
         return metrics;
     }
-    
+
     // for testing I'm using localhost:2525.
     public static void main(String args[]) {
-        try {
-            Configuration.init();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            System.exit(-1);
-            
-        }
-        
-        String host = Configuration.getStringProperty("UDP_BIND_HOST");
-        int port = Configuration.getIntegerProperty("UDP_BIND_PORT");
+        String host = Configuration.getInstance().getStringProperty("UDP_BIND_HOST");
+        int port = Configuration.getInstance().getIntegerProperty("UDP_BIND_PORT");
         InetSocketAddress destination = new InetSocketAddress(host, port);
         Broadcaster broadcaster = new Broadcaster();
-        
+
         broadcaster.sendHerd(destination, 1);
     }
 }

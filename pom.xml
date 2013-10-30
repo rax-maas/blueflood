@@ -28,6 +28,7 @@
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
     <module>blueflood-elasticsearch</module>
+    <module>blueflood-http</module>
   </modules>
 
   <description>
@@ -45,10 +46,10 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>
-  
+
   <build>
     <plugins>
-      
+
       <!-- compile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -59,7 +60,7 @@
         </configuration>
         <version>3.1</version>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -152,8 +153,20 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>cassandra-1.1</id>
+      <properties>
+        <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>cassandra-1.2</id>
+      <properties>
+        <cassandra.plugin.version>1.2.1-1</cassandra.plugin.version>
+      </properties>
+    </profile>
   </profiles>
-  
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -161,7 +174,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  
+
   <parent>
     <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
@@ -173,7 +186,7 @@
     <developerConnection>scm:git:git@github.com:rackerlabs/blueflood.git</developerConnection>
     <url>git@github.com:rackerlabs/blueflood.git</url>
   </scm>
-  
+
   <developers>
     <developer>
       <id>fourk</id>
@@ -201,5 +214,5 @@
       <email>dominic.lobue@rackspace.com</email>
     </developer>
   </developers>
-  
+
 </project>
