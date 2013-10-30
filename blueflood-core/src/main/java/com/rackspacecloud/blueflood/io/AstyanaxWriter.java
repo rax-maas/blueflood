@@ -16,6 +16,12 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.netflix.astyanax.ColumnListMutation;
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.internal.Account;
@@ -30,12 +36,8 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.netflix.astyanax.ColumnListMutation;
-import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
+
+    private static final Integer METRIC_SUB_BATCH_SIZE = Configuration.getIntegerProperty("METRIC_SUB_BATCH_SIZE");
+    private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -102,10 +107,12 @@ public class AstyanaxWriter extends AstyanaxIO {
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_FULL);
+
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-
+            Integer count = 0;
             for (Metric metric: metrics) {
+                count++;
                 final Locator locator = metric.getLocator();
 
                 final boolean isString = metric.isString();
@@ -121,23 +128,25 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // value = <nothing>
                 // do not do it for string or boolean metrics though.
                 if (!AstyanaxWriter.isLocatorCurrent(locator)) {
-                    if (!isString && !isBoolean)
+                    if (!isString && !isBoolean && mutationBatch != null)
                         insertLocator(locator, mutationBatch);
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
                 insertMetric(metric, mutationBatch);
+                if (count % METRIC_SUB_BATCH_SIZE == 0 || metrics.size() == count) {
+                    // insert it
+                    try {
+                        mutationBatch.execute();
+                    } catch (ConnectionException e) {
+                        Instrumentation.markWriteError(e);
+                        log.error("Connection exception during insertFull", e);
+                        throw e;
+                    }
+                    mutationBatch = keyspace.prepareMutationBatch();
+                }
+                metricsWritten.mark();
             }
-
-            // insert it
-            try {
-                mutationBatch.execute();
-            } catch (ConnectionException e) {
-                Instrumentation.markWriteError(e);
-                log.error("Connection exception during insertFull", e);
-                throw e;
-            }
-
         } finally {
             ctx.stop();
         }
