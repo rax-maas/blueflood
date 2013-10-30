@@ -21,7 +21,6 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -39,14 +38,6 @@ import java.util.concurrent.TimeUnit;
 // todo: This was moved into a source repo becuase tests in core and cm-specific depend on it.
 // We need to figure out the right maven codes to add blueflood-core test-jar stuff as a test dependency to cm-specific.
 public class IntegrationTestBase {
-
-    static {
-        try {
-            Configuration.init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
 
     public static class AstyanaxTester extends AstyanaxIO {
         // This is kind of gross and has serious room for improvement.

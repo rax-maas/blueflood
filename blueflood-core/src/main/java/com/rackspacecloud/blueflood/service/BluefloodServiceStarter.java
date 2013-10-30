@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
-import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.yammer.metrics.core.Gauge;
@@ -27,18 +25,19 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
 
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
     public static void validateCassandraHosts() {
-        String hosts = Configuration.getStringProperty("CASSANDRA_HOSTS");
+        String hosts = Configuration.getInstance().getStringProperty(CoreConfig.CASSANDRA_HOSTS);
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
             System.exit(-1);
@@ -52,7 +51,8 @@ public class BluefloodServiceStarter {
     }
 
     private static void startShardStateServices(ScheduleContext context) {
-        if (Configuration.getBooleanProperty("INGEST_MODE") || Configuration.getBooleanProperty("ROLLUP_MODE")) {
+        Configuration config = Configuration.getInstance();
+        if (config.getBooleanProperty(CoreConfig.INGEST_MODE) || config.getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
             // these threads are responsible for sending/receiving schedule context state to/from the database.
             final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
 
@@ -77,22 +77,91 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startIngestService(ScheduleContext context) {
+    private static void startIngestServices(ScheduleContext context) {
         // start up ingestion services.
-        if (Configuration.getBooleanProperty("INGEST_MODE")) {
-            int ingestionPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
-            final HttpMetricsIngestionServer httpIngestionHandler = new HttpMetricsIngestionServer(ingestionPort,
-                                                                                                   context);
+        Configuration config = Configuration.getInstance();
+        if (config.getBooleanProperty(CoreConfig.INGEST_MODE)) {
+            List<String> modules = config.getListProperty(CoreConfig.INGESTION_MODULES);
+            if (modules.isEmpty()) {
+                log.error("Ingestion mode is enabled, however no ingestion modules are enabled!");
+                System.exit(1);
+            }
+            ClassLoader classLoader = IngestionService.class.getClassLoader();
+            final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
+            Integer services_started = 0;
+            for (String module : modules) {
+                log.info("Loading ingestion service module " + module);
+                try {
+                    Class serviceClass = classLoader.loadClass(module);
+                    IngestionService service = (IngestionService) serviceClass.newInstance();
+                    log.info("Starting ingestion service module " + module);
+                    ingestionServices.add(service);
+                    service.startService(context);
+                    log.info("Successfully started ingestion service module " + module);
+                    services_started++;
+                } catch (InstantiationException e) {
+                    log.error("Unable to create instance of ingestion service class for: " + module, e);
+                    System.exit(1);
+                } catch (IllegalAccessException e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    System.exit(1);
+                } catch (ClassNotFoundException e) {
+                    log.error("Unable to locate ingestion service module: " + module, e);
+                    System.exit(1);
+                } catch (RuntimeException e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    System.exit(1);
+                } catch (Throwable e) {
+                    log.error("Error starting ingestion service: " + module, e);
+                    System.exit(1);
+                }
+            }
+            log.info("Started " + services_started + " ingestion services");
         } else {
             log.info("HTTP ingestion service not required");
         }
     }
 
-    private static void startQueryService() {
+    private static void startQueryServices() {
         // start up query services.
-        if (Configuration.getBooleanProperty("QUERY_MODE")) {
-            int queryPort = Configuration.getIntegerProperty("HTTP_METRIC_DATA_QUERY_PORT");
-            final HttpMetricDataQueryServer queryServer = new HttpMetricDataQueryServer(queryPort);
+        Configuration config = Configuration.getInstance();
+        if (config.getBooleanProperty(CoreConfig.QUERY_MODE)) {
+            List<String> modules = config.getListProperty(CoreConfig.QUERY_MODULES);
+            if (modules.isEmpty()) {
+                log.error("Query mode is enabled, however no query modules are enabled!");
+                System.exit(1);
+            }
+            ClassLoader classLoader = QueryService.class.getClassLoader();
+            final List<QueryService> queryServices = new ArrayList<QueryService>();
+            Integer services_started = 0;
+            for (String module : modules) {
+                log.info("Loading query service module " + module);
+                try {
+                    Class serviceClass = classLoader.loadClass(module);
+                    QueryService service = (QueryService) serviceClass.newInstance();
+                    queryServices.add(service);
+                    log.info("Starting query service module " + module);
+                    service.startService();
+                    log.info("Successfully started query service module " + module);
+                    services_started++;
+                } catch (InstantiationException e) {
+                    log.error("Unable to create instance of query service class for: " + module, e);
+                    System.exit(1);
+                } catch (IllegalAccessException e) {
+                    log.error("Error starting query service: " + module, e);
+                    System.exit(1);
+                } catch (ClassNotFoundException e) {
+                    log.error("Unable to locate query service module: " + module, e);
+                    System.exit(1);
+                } catch (RuntimeException e) {
+                    log.error("Error starting query service: " + module, e);
+                    System.exit(1);
+                } catch (Throwable e) {
+                    log.error("Error starting query service: " + module, e);
+                    System.exit(1);
+                }
+            }
+            log.info("Started " + services_started + " query services");
         } else {
             log.info("Query service not required");
         }
@@ -101,7 +170,7 @@ public class BluefloodServiceStarter {
     private static void startRollupService(final ScheduleContext context) {
         Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
 
-        if (Configuration.getBooleanProperty("ROLLUP_MODE")) {
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
             // configure the rollup service. this is a daemonish thread that decides when to rollup ranges of data on
             // in the data cluster.
             final RollupService rollupService = new RollupService(context);
@@ -134,11 +203,7 @@ public class BluefloodServiceStarter {
 
     public static void main(String args[]) {
         // load configuration.
-        try {
-            Configuration.init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        Configuration config = Configuration.getInstance();
 
         // if log4j configuration references an actual file, periodically reload it to catch changes.
         String log4jConfig = System.getProperty("log4j.configuration");
@@ -149,27 +214,28 @@ public class BluefloodServiceStarter {
         // check that we have cassandra hosts
         validateCassandraHosts();
 
-        if (!Configuration.getStringProperty("GRAPHITE_HOST").equals("")) {
+        if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
             // this IF is a hack around the fact that we don't have graphite running in dev or staging environments
             final MetricsRegistry restartRegistry = new MetricsRegistry();
             final Gauge restartGauge = new RestartGauge(restartRegistry, RollupService.class);
             GraphiteReporter.enable(restartRegistry, 60, TimeUnit.SECONDS,
-                    Configuration.getStringProperty("GRAPHITE_HOST"),
-                    Configuration.getIntegerProperty("GRAPHITE_PORT"),
-                    Configuration.getStringProperty("GRAPHITE_PREFIX"));
+                    config.getStringProperty(CoreConfig.GRAPHITE_HOST),
+                    config.getIntegerProperty(CoreConfig.GRAPHITE_PORT),
+                    config.getStringProperty(CoreConfig.GRAPHITE_PREFIX));
         }
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
-                Util.parseShards(Configuration.getStringProperty("SHARDS")));
-        final String zkCluster = Configuration.getStringProperty("ZOOKEEPER_CLUSTER");
+                Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
+        final String zkCluster = config.getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER);
         final ScheduleContext rollupContext = "NONE".equals(zkCluster) ?
                 new ScheduleContext(System.currentTimeMillis(), shards) :
                 new ScheduleContext(System.currentTimeMillis(), shards, zkCluster);
 
         log.info("Starting blueflood services");
         startShardStateServices(rollupContext);
-        startIngestService(rollupContext);
-        startQueryService();
+        startIngestServices(rollupContext);
+        startQueryServices();
         startRollupService(rollupContext);
+        log.info("All blueflood services started");
     }
 }

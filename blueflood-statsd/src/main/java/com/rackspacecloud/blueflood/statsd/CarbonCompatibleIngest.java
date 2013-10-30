@@ -132,8 +132,9 @@ public class CarbonCompatibleIngest {
     }
     
     public static void main(String args[]) {
+        // getInstance() can technically throw a RTE. Catch that here so we can deal with it in a controlled manner.
         try {
-            Configuration.init();
+            Configuration.getInstance();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
             System.exit(-1);
@@ -141,7 +142,7 @@ public class CarbonCompatibleIngest {
         
         String bindAddr = getListenAddress();
         int bindPort = getListenPort();
-        final ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards(Configuration.getStringProperty("SHARDS")));
+        final ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards(Configuration.getInstance().getStringProperty("SHARDS")));
         
         // time synchronization.
         Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
@@ -152,10 +153,10 @@ public class CarbonCompatibleIngest {
             }
         }, 100, 500);
 
-        if (Configuration.getBooleanProperty("INGEST_MODE"))
+        if (Configuration.getInstance().getBooleanProperty("INGEST_MODE"))
             startIngestion(context, bindAddr, bindPort);
         
-        if (Configuration.getBooleanProperty("ROLLUP_MODE"))
+        if (Configuration.getInstance().getBooleanProperty("ROLLUP_MODE"))
             startRollups(context);
     }
     
@@ -200,14 +201,14 @@ public class CarbonCompatibleIngest {
     // todo: these don't belong in Configuration.java, but they belong somewhere other than here. 
     
     private static String getListenAddress() {
-        String addr = Configuration.getStringProperty("GRAPHITE_INGEST_ADDRESS");
+        String addr = Configuration.getInstance().getStringProperty("GRAPHITE_INGEST_ADDRESS");
         if (addr == null)
             addr = "127.0.0.1"; // sorry, folks.
         return addr;
     }
     
     private static int getListenPort() {
-        String portStr = Configuration.getStringProperty("GRAPHITE_INGEST_PORT");
+        String portStr = Configuration.getInstance().getStringProperty("GRAPHITE_INGEST_PORT");
         if (portStr == null)
             portStr = "8126";
         return Integer.parseInt(portStr);

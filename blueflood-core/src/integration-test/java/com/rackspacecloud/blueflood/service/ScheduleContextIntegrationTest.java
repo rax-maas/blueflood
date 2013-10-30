@@ -24,7 +24,6 @@ import org.mockito.internal.util.reflection.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,21 +34,13 @@ public class ScheduleContextIntegrationTest {
     private ShardStateManager shardStateManager;
     private Collection<Integer> manageShards = new HashSet<Integer>();
 
-    static {
-        try {
-            Configuration.init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     @Before
     public void setUp() {
         manageShards.add(1);
         manageShards.add(5);
         manageShards.add(7);
         manageShards.add(11);
-        context = new ScheduleContext(1234, manageShards, Configuration.getStringProperty("ZOOKEEPER_CLUSTER"));
+        context = new ScheduleContext(1234, manageShards, Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER));
         shardStateManager = context.getShardStateManager();
     }
 

@@ -23,6 +23,8 @@ import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.HttpConfig;
+import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.apache.http.HttpEntity;
@@ -37,6 +39,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.mockito.Mockito.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,18 +47,20 @@ import java.util.Collection;
 import java.util.HashSet;
 
 public class HttpHandlerIntegrationTest {
-    private static HttpMetricsIngestionServer httpMetricsIngestorServer;
+    private static HttpIngestionService httpIngestionService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
+    private static ScheduleContext context;
 
     @BeforeClass
     public static void setUp() {
-        httpPort = Configuration.getIntegerProperty("HTTP_INGESTION_PORT");
+        httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), manageShards);
-        httpMetricsIngestorServer = new HttpMetricsIngestionServer(httpPort, context);
+        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
+        httpIngestionService = new HttpIngestionService();
+        httpIngestionService.startService(context);
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
@@ -68,6 +73,8 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+        // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
         ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator,

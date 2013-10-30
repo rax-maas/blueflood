@@ -26,9 +26,10 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
@@ -44,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -65,18 +65,12 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.newCounter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
-    public HttpMetricsIngestionServer(Integer portToListen, ScheduleContext context) {
-        this(portToListen, context, null, DEFAULT_TIMEOUT);
-    }
 
-    public HttpMetricsIngestionServer(Integer portToListen, ScheduleContext context, AsyncChain<List<Metric>, Boolean> processorChain, TimeValue timeout) {
-        this.port = portToListen;
-        this.timeout = timeout;
+    public HttpMetricsIngestionServer(ScheduleContext context) {
+        this.port = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
+        this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
-
-        if (processorChain == null) {
-            this.processorChain = createDefaultProcessorChain();
-        }
+        this.processorChain = createDefaultProcessorChain();
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
