@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Futures;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
@@ -53,9 +54,10 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 );
     }
 
-    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
+    public ListenableFuture<List<Boolean>> processMetrics(List<List<Metric>> input) {
+        final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
         for (final List<Metric> metrics : input) {
-            getThreadPool().submit(new Callable<Boolean>() {
+            ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
                 public Boolean call() throws Exception {
                     boolean success = true;
                         for (DiscoveryIO io : discoveryIOs) {
@@ -72,7 +74,15 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                         return success;
                 }
             });
+            resultFutures.add(futureBatchResult);
         }
+        return Futures.allAsList(resultFutures);
+    }
+
+    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
+        processMetrics(input);
+        // we don't need all metrics to finish being inserted into the discovery backend
+        // before moving onto the next step in the processing chain.
         return new NoOpFuture<List<List<Metric>>>(input);
     }
 }
