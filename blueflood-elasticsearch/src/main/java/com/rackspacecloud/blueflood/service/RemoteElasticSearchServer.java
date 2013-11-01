@@ -21,7 +21,8 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.node.NodeBuilder;
+
+import java.util.List;
 
 
 public class RemoteElasticSearchServer implements ElasticClientManager {
@@ -34,22 +35,23 @@ public class RemoteElasticSearchServer implements ElasticClientManager {
     private Client client;
 
     protected RemoteElasticSearchServer() {
-        if (Configuration.getBooleanProperty("USE_ELASTICSEARCH")) {
-            String host = Configuration.getStringProperty("ELASTICSEARCH_HOST");
-            Integer port = Configuration.getIntegerProperty("ELASTICSEARCH_PORT");
-            Settings settings = ImmutableSettings.settingsBuilder()
-                    .put("client.transport.ignore_cluster_name", true)
-                    .build();
-            client = new TransportClient(settings)
-                    .addTransportAddress(new InetSocketTransportAddress(host, port));
+        Configuration config = Configuration.getInstance();
+        List<String> hosts = config.getListProperty(ElasticIOConfig.ELASTICSEARCH_HOSTS);
+        String clusterName = config.getStringProperty(ElasticIOConfig.ELASTICSEARCH_CLUSTERNAME);
+        Settings settings = ImmutableSettings.settingsBuilder()
+                .put("cluster.name", clusterName)
+                .build();
+        TransportClient tc = new TransportClient(settings);
+        for (String host : hosts) {
+            String[] parts = host.split(":");
+            String address = parts[0];
+            Integer port = Integer.parseInt(parts[1]);
+            tc.addTransportAddress(new InetSocketTransportAddress(address, port));
         }
+        client = tc;
     }
 
-    @Override
     public Client getClient() {
-        if (!Configuration.getBooleanProperty("USE_ELASTICSEARCH")) {
-            throw new UnsupportedOperationException("Configured not to use ES.");
-        }
         return client;
     }
 }

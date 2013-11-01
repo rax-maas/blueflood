@@ -16,13 +16,11 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.ElasticClientManager;
+import com.rackspacecloud.blueflood.service.ElasticIOConfig;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -35,11 +33,13 @@ import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 
 public class ElasticIO implements DiscoveryIO {
     static enum ESFieldLabel {
@@ -53,7 +53,7 @@ public class ElasticIO implements DiscoveryIO {
     private static final String ES_TYPE = "metrics";
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
 
-    private final int NUM_INDICES = Configuration.getIntegerProperty("ELASTICSEARCH_NUM_INDICES");
+    private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
     public static final String INDEX_PREFIX = "test-index-";
 
     public ElasticIO(ElasticClientManager manager) {
