@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
 
 import com.yammer.metrics.Metrics;
@@ -28,6 +29,8 @@ import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.Configuration;
 import java.util.ArrayList;
@@ -42,9 +45,11 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Timer> writeDurationTimers= new HashMap<Class<? extends DiscoveryIO>, Timer>();
+    private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
 
     public DiscoveryWriter(ThreadPoolExecutor threadPool) {
         super(threadPool);
+        registerIOModules();
     }
 
     public void registerIO(DiscoveryIO io) {
@@ -52,6 +57,36 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         writeDurationTimers.put(io.getClass(),
                 Metrics.newTimer(io.getClass(), "DiscoveryWriter Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
                 );
+    }
+
+    public void registerIOModules() {
+        List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
+
+        ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
+        for (String module : modules) {
+            log.info("Loading metric discovery module " + module);
+            try {
+                Class discoveryClass = classLoader.loadClass(module);
+                DiscoveryIO discoveryIOModule = (DiscoveryIO) discoveryClass.newInstance();
+                log.info("Registering metric discovery module " + module);
+                registerIO(discoveryIOModule);
+            } catch (InstantiationException e) {
+                log.error("Unable to create instance of metric discovery class for: " + module, e);
+                System.exit(1); //something better
+            } catch (IllegalAccessException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+                System.exit(1); //something better
+            } catch (ClassNotFoundException e) {
+                log.error("Unable to locate metric discovery module: " + module, e);
+                System.exit(1); //something better
+            } catch (RuntimeException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+                System.exit(1); //something better
+            } catch (Throwable e) {
+                log.error("Error starting metric discovery module: " + module, e);
+                System.exit(1); //something better
+            }
+        }
     }
 
     public ListenableFuture<List<Boolean>> processMetrics(List<List<Metric>> input) {
