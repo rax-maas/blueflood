@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
 
@@ -32,7 +33,6 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.login.Configuration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
