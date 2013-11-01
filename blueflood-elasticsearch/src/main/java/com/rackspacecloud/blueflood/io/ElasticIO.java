@@ -230,13 +230,21 @@ public class ElasticIO implements DiscoveryIO {
             return result;
         }
 
-        public boolean equals(Result other) {
-            if (!metricName.equals(other.metricName)) {
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            } else if (obj == null) {
                 return false;
-            } else if (!unit.equals(other.unit)) {
+            } else if (!getClass().equals(obj.getClass())) {
                 return false;
             }
-            return true;
+            return equals((Result) obj);
+        }
+        public boolean equals(Result other) {
+            if (this == other) {
+                return true;
+            }
+            return metricName.equals(other.metricName) && unit.equals(other.unit);
         }
     }
 }

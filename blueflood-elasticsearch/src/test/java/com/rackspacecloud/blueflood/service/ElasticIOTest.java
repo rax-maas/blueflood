@@ -58,7 +58,6 @@ public class ElasticIOTest {
     public void testWildcard() throws InterruptedException {
         List<ElasticIO.Result> result = elasticIO.search(TENANT, new ElasticIO.Discovery().withMetricName("one,two,*"));
         Assert.assertEquals(NUM_DOCS, result.size());
-        System.out.println(result.toString());
         for (int i=0; i<NUM_DOCS; i++) {
             Locator locator = createTestLocator(i);
             ElasticIO.Result entry = new ElasticIO.Result(locator.getMetricName(), UNIT);
