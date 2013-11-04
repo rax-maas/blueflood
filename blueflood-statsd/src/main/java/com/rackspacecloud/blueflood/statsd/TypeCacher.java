@@ -33,10 +33,8 @@ public class TypeCacher extends AsyncFunctionWithThreadPool<StatsCollection, Sta
                 
                 for (StatType type : StatType.SIMPLE_TYPES) {
                     for (Stat stat : input.getStats(type)) {
-                        if (stat.getLocator() != null) {
-                            cache.put(stat.getLocator(), StatType.CACHE_KEY, type.toString());
-                            cached += 1;
-                        }
+                        cache.put(stat.getLocator(), StatType.CACHE_KEY, type.toString());
+                        cached += 1;
                     }
                 }
                 
