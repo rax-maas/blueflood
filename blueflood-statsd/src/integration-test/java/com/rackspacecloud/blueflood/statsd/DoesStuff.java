@@ -86,7 +86,7 @@ public class DoesStuff {
                 public void run() {
                     if (random.nextFloat() <= incChance)
                         System.out.println("incrementing " + name);
-                        client.increment(name, 1);
+                        client.counter(name, 1);
                 }
             }, 0, period);
         }

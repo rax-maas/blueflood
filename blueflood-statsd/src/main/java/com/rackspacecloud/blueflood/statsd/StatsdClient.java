@@ -36,7 +36,7 @@ public class StatsdClient {
         this.buf = ByteBuffer.allocate(bufferSize);
     }
     
-    public boolean increment(String key, int magnitude) {
+    public boolean counter(String key, int magnitude) {
         String stat = String.format(Locale.ENGLISH, "%s:%d|c", key, magnitude);
         return maybeAppend(stat);
     }
@@ -114,7 +114,7 @@ public class StatsdClient {
             while (true) {
                 
                 // statsd will take these metric names and append "stats.what." where "what" is one of { timers | gauges | sets | counters }
-                client.increment("gary.foo.bar.counter", 1);
+                client.counter("gary.foo.bar.counter", 1);
                 client.timer("gary.foo.bar.timer", rand.nextInt(100));
                 client.gauge("gary.foo.bar.gauge", (double)counter);
                 if (rand.nextDouble() < 0.05)
