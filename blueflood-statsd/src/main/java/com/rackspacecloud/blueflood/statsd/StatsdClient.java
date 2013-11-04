@@ -113,7 +113,7 @@ public class StatsdClient {
             
             while (true) {
                 
-                // statsd will take these metric names and append "stats.what." where "what" is one of { timers | gauges | 
+                // statsd will take these metric names and append "stats.what." where "what" is one of { timers | gauges | sets | counters }
                 client.increment("gary.foo.bar.counter", 1);
                 client.timer("gary.foo.bar.timer", rand.nextInt(100));
                 client.gauge("gary.foo.bar.gauge", (double)counter);
