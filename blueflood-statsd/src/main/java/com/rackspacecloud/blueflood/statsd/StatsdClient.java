@@ -60,17 +60,19 @@ public class StatsdClient {
     private boolean maybeAppend(String stat) {
         try {
             byte[] data = stat.getBytes(Charsets.UTF_8);
-            if (buf.remaining() < (data.length + 1))
-                if (!flush()) {
-                    log.error("Problem flushing buffer");
-                    return false;
-                }
-            
-            // if this is not the first metric, delineate.
-            if (buf.position() > 0)
-                buf.put(EOL);
-            
-            buf.put(data);    
+            synchronized (buf) {
+                if (buf.remaining() < (data.length + 1))
+                    if (!flush()) {
+                        log.error("Problem flushing buffer");
+                        return false;
+                    }
+                
+                // if this is not the first metric, delineate.
+                if (buf.position() > 0)
+                    buf.put(EOL);
+                
+                buf.put(data);
+            }
             return true;
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
@@ -79,25 +81,27 @@ public class StatsdClient {
     } 
     
     public synchronized boolean flush() {
-        int sz = buf.position();
-        log.info(String.format("flushing %d bytes", sz));
-        if (sz <= 0)
-            return false; // nothing to send.
-        
-        buf.flip();
-        int sent = 0;
-        try {
-            sent = chan.send(buf, addr);
-            buf.limit(buf.capacity());
-            buf.rewind();
-        } catch (IOException ex) {
-            log.error(String.format("Couldn't write to %s", addr.toString()));
-            return false;
+        synchronized (buf) {
+            int sz = buf.position();
+            log.info(String.format("flushing %d bytes", sz));
+            if (sz <= 0)
+                return false; // nothing to send.
+            
+            buf.flip();
+            int sent = 0;
+            try {
+                sent = chan.send(buf, addr);
+                buf.limit(buf.capacity());
+                buf.rewind();
+            } catch (IOException ex) {
+                log.error(String.format("Couldn't write to %s", addr.toString()));
+                return false;
+            }
+            if (sent == sz)
+                return true;
+            else
+                return false;
         }
-        if (sent == sz)
-            return true;
-        else
-            return false;
     }
     
     public static void main(String args[]) {
