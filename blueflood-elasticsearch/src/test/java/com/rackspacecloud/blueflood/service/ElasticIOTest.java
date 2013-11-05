@@ -17,11 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
@@ -35,54 +31,106 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 public class ElasticIOTest {
-    private static final int NUM_DOCS = 100;
-    private static final String TENANT = "ratanasv";
+    private static final int NUM_PARENT_ELEMENTS = 30;
+    private static final List<String> CHILD_ELEMENTS = Arrays.asList("A", "B", "C");
+    private static final int NUM_GRANDCHILD_ELEMENTS = 3;
+    private static final int NUM_DOCS = NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size() * NUM_GRANDCHILD_ELEMENTS;
+    private static final String TENANT_A = "ratanasv";
+    private static final String TENANT_B = "someotherguy";
     private static final String UNIT = "horse length";
-    private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
+    private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
+    //private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
+    private static ElasticIO elasticIO = new ElasticIO(RemoteElasticSearchServer.getInstance());
+
+    private static ElasticIO.Result createExpectedResult(String tenantId, int x, String y, int z) {
+        Locator locator = createTestLocator(tenantId, x, y, z);
+        return new ElasticIO.Result(tenantId, locator.getMetricName(), UNIT);
+    }
+    private static Locator createTestLocator(String tenantId, int x, String y, int z) {
+        String xs = (x < 10 ? "0" : "") + String.valueOf(x);
+        return Locator.createLocatorFromPathComponents(
+                tenantId, "one", "two", "three" + xs,
+                "four" + y,
+                "five" + String.valueOf(z));
+    }
+
+    private static List<Locator> createComplexTestLocators(String tenantId) {
+        Locator locator;
+        List<Locator> locators = new ArrayList<Locator>();
+        locatorMap.put(tenantId, locators);
+        for (int x=0; x<NUM_PARENT_ELEMENTS; x++) {
+            for (String y : CHILD_ELEMENTS) {
+                for (int z=0; z<NUM_GRANDCHILD_ELEMENTS; z++) {
+                    locator = createTestLocator(tenantId, x, y, z);
+                    locators.add(locator);
+                }
+            }
+        }
+        return locators;
+    }
+
+    private static List<Metric> createTestMetrics(String tenantId) {
+        Metric metric;
+        List<Metric> metrics = new ArrayList<Metric>();
+        List<Locator> locators = createComplexTestLocators(tenantId);
+        for (Locator locator : locators) {
+            //System.out.println(locator.getMetricName());
+            metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+            metrics.add(metric);
+        }
+        return metrics;
+    }
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException{
-        List<Metric> listOfMetrics = new ArrayList<Metric>();
-        for (int i=0; i<NUM_DOCS; i++) {
-            Locator locator = createTestLocator(i);
-            Metric metric = new Metric(locator, "lobloblow", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
-            listOfMetrics.add(metric);
+        createTestMetrics(TENANT_A);
+        createTestMetrics(TENANT_B);
 
-        }
-        elasticIO.insertDiscovery(listOfMetrics);
-        TimeUnit.SECONDS.sleep(1);
+        //elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
+        //elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+
+        //TimeUnit.SECONDS.sleep(1);
         EmbeddedElasticSearchServer.getInstance().getClient().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
-    public void testWildcard() throws InterruptedException {
-        List<ElasticIO.Result> result = elasticIO.search(TENANT, new ElasticIO.Discovery().withMetricName("one,two,*"));
-        Assert.assertEquals(NUM_DOCS, result.size());
-        for (int i=0; i<NUM_DOCS; i++) {
-            Locator locator = createTestLocator(i);
-            ElasticIO.Result entry = new ElasticIO.Result(locator.getMetricName(), UNIT);
-            Assert.assertTrue(result.contains(entry));
-        }
-
-        result = elasticIO.search(TENANT, new ElasticIO.Discovery().withMetricName("*,three,*"));
-        Assert.assertEquals(NUM_DOCS, result.size());
-        for (int i=0; i<NUM_DOCS; i++) {
-            Locator locator = createTestLocator(i);
-            ElasticIO.Result entry = new ElasticIO.Result(locator.getMetricName(), UNIT);
-            Assert.assertTrue(result.contains(entry));
-        }
-
-        for (int i=0; i<NUM_DOCS; i++) {
-            result = elasticIO.search(TENANT, new ElasticIO.Discovery().withMetricName("*" + i));
-            Locator locator = createTestLocator(i);
-            ElasticIO.Result entry = new ElasticIO.Result(locator.getMetricName(), UNIT);
-            Assert.assertEquals(result.get(0), entry);
+    public void testNoCrossTenantResults() {
+        List<ElasticIO.Result> results = elasticIO.search2(TENANT_A, new ElasticIO.Discovery().withMetricName("*"));
+        Assert.assertEquals(NUM_DOCS, results.size());
+        for (ElasticIO.Result result : results) {
+            Assert.assertNotNull(result.getTenantId());
+            Assert.assertNotSame(TENANT_B, result.getTenantId());
         }
     }
 
+    @Test
+    public void testWildcard() {
+        ElasticIO.Result entry;
+        List<ElasticIO.Result> results;
+        results = elasticIO.search(TENANT_A, new ElasticIO.Discovery().withMetricName("one,two,*"));
+        List<Locator> locators = locatorMap.get(TENANT_A);
+        Assert.assertEquals(locators.size(), results.size());
+        for (Locator locator : locators) {
+            entry =  new ElasticIO.Result(TENANT_A, locator.getMetricName(), UNIT);
+            Assert.assertTrue((results.contains(entry)));
+        }
 
-    private static Locator createTestLocator(int i) {
-        return Locator.createLocatorFromPathComponents(
-                TENANT, "one", "two", "three", "four", String.valueOf(i));
+        results = elasticIO.search(TENANT_A, new ElasticIO.Discovery().withMetricName("*,fourA,*"));
+        Assert.assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
+        for (int x=0; x<NUM_PARENT_ELEMENTS; x++) {
+            for (int z=0; z<NUM_GRANDCHILD_ELEMENTS; z++) {
+                entry = createExpectedResult(TENANT_A, x, "A", z);
+                Assert.assertTrue(results.contains(entry));
+            }
+        }
+
+        results = elasticIO.search(TENANT_A, new ElasticIO.Discovery().withMetricName("*,three1*,four*,five2"));
+        Assert.assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
+        for (int x=10; x<20; x++) {
+            for (String y : CHILD_ELEMENTS) {
+                entry = createExpectedResult(TENANT_A, x, y, 2);
+                Assert.assertTrue(results.contains(entry));
+            }
+        }
     }
 }
