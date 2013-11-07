@@ -23,6 +23,10 @@ import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Meter;
+import com.yammer.metrics.core.Timer;
+import com.yammer.metrics.core.TimerContext;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -40,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -58,6 +63,8 @@ public class ElasticIO implements DiscoveryIO {
     private static final String ES_TYPE = "metrics";
     private static final String INDEX_PREFIX = "blueflood-";
     private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
+    private final Meter searchMeter = Metrics.newMeter(ElasticIO.class, "Searches Performed", "Discovery", TimeUnit.SECONDS);
+    private final Timer searchTimer = Metrics.newTimer(ElasticIO.class, "Search Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -134,8 +141,10 @@ public class ElasticIO implements DiscoveryIO {
     }
 
     public List<Result> search(Discovery md) {
+        searchMeter.mark();
         List<Result> result = new ArrayList<Result>();
         QueryBuilder query = createQuery(md);
+        TimerContext searchTimerCtx = searchTimer.time();
         SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
                 .setSize(500)
                 .setRouting(md.getRouting())
@@ -143,6 +152,7 @@ public class ElasticIO implements DiscoveryIO {
                 .setQuery(query)
                 .execute()
                 .actionGet();
+        searchTimerCtx.stop();
         for (SearchHit hit : searchRes.getHits().getHits()) {
             Result entry = convertHitToMetricDiscoveryResult(hit);
             result.add(entry);
