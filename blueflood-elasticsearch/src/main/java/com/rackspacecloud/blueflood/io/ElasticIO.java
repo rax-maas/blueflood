@@ -28,7 +28,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,13 +41,15 @@ import java.util.List;
 import java.util.Map;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 
 public class ElasticIO implements DiscoveryIO {
     static enum ESFieldLabel {
         METRIC_NAME,
         TENANT_ID,
-        TYPE,
-        UNIT;
+        UNIT
     }
 
     private final Client client;
@@ -54,26 +57,14 @@ public class ElasticIO implements DiscoveryIO {
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
 
     private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
-    public static final String INDEX_PREFIX = "test-index-";
+    public static final String INDEX_PREFIX = "blueflood-";
 
-    public ElasticIO(ElasticClientManager manager) {
-        this.client = manager.getClient();
+    public ElasticIO(Client client) {
+        this.client = client;
     }
 
-    private static String createQueryString(String tenantId, Discovery md) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(TENANT_ID.toString() + ":" + tenantId);
-
-        if (md.getMetricName() != null) {
-            builder.append(" && ");
-            builder.append(METRIC_NAME.toString() + ":" + md.getMetricName());
-        }
-
-        for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
-            builder.append(" && ");
-            builder.append(entry.getKey() + ":" + entry.getValue());
-        }
-        return builder.toString();
+    public ElasticIO(ElasticClientManager manager) {
+        this(manager.getClient());
     }
 
     private static Map<String, Object> extractUsefulInformation(Metric metric) {
@@ -87,9 +78,9 @@ public class ElasticIO implements DiscoveryIO {
     private static Result convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
         String metricName = (String)source.get(METRIC_NAME.toString());
-
+        String tenantId = (String)source.get(TENANT_ID.toString());
         String unit = (String)source.get(UNIT.toString());
-        Result result = new Result(metricName, unit);
+        Result result = new Result(tenantId, metricName, unit);
 
         return result;
     }
@@ -98,72 +89,57 @@ public class ElasticIO implements DiscoveryIO {
         BulkRequestBuilder bulk = client.prepareBulk();
         for (Metric metric : batch) {
             Locator locator = metric.getLocator();
-            Discovery md = new Discovery()
-                .withMetricName(locator.getMetricName())
+            Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName())
                 .withAnnotation(extractUsefulInformation(metric));
-            bulk.add(createSingleRequest(locator.getTenantId(), md));
+            bulk.add(createSingleRequest(md));
         }
         bulk.execute();
     }
 
-    public void insertDiscovery(String tenantId, Discovery discovery) throws IOException {
-        createSingleRequest(tenantId, discovery).execute();
+    public void insertDiscovery(Discovery discovery) throws IOException {
+        createSingleRequest(discovery).execute();
     }
 
 
-    private IndexRequestBuilder createSingleRequest(String tenantId, Discovery md) throws IOException {
+    private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
-        XContentBuilder content;
-        content = createSourceContent(tenantId, md);
-        return client.prepareIndex(getIndex(tenantId), ES_TYPE)
-                .setId(getId(tenantId, md))
-                .setRouting(getRouting(tenantId))
-                .setSource(content);
-    }
-
-    private XContentBuilder createSourceContent(String tenantId, Discovery md) throws IOException {
-        XContentBuilder json;
-
-        json = XContentFactory.jsonBuilder().startObject()
-                    .field(TENANT_ID.toString(), tenantId)
-                    .field(METRIC_NAME.toString(), md.getMetricName());
-
-
-        for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
-            json = json.field(entry.getKey(), entry.getValue());
-        }
-        json = json.endObject();
-        return json;
-    }
-
-    private String getId(String tenantId, Discovery md) {
-        return tenantId + md.toString();
+        return client.prepareIndex(getIndex(md.getTenantId()), ES_TYPE)
+                .setId(md.getDocumentId()) // any point to this?
+                .setRouting(md.getRouting())
+                .setSource(md.createSourceContent());
     }
 
     private String getIndex(String tenantId) {
         return INDEX_PREFIX + String.valueOf(Math.abs(tenantId.hashCode() % NUM_INDICES));
     }
 
-    /** All requests from the same tenant should go to the same shard.
-     * @param tenantId
-     * @return
-     */
-    private String getRouting(String tenantId) {
-        return tenantId;
+    private static QueryBuilder createQuery(Discovery md) {
+        BoolQueryBuilder qb = boolQuery()
+                .must(termQuery(TENANT_ID.toString(), md.getTenantId()));
+        String metricName = md.getMetricName();
+        if (metricName.contains("*")) {
+            qb.must(wildcardQuery("RAW_" + METRIC_NAME.toString(), metricName));
+        } else {
+            qb.must(termQuery("RAW_" + METRIC_NAME.toString(), metricName));
+        }
+        for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
+            qb.should(termQuery(entry.getKey(), entry.getValue()));
+        }
+        return qb;
     }
 
-    public List<Result> search(String tenantId, Discovery md) {
+    public List<Result> search(Discovery md) {
         List<Result> result = new ArrayList<Result>();
-        String queryString = createQueryString(tenantId, md);
-        SearchResponse searchRes = client.prepareSearch(getIndex(tenantId))
-            .setSize(500)
-            .setRouting(getRouting(tenantId))
-            .setVersion(true)
-            .setQuery(QueryBuilders.queryString(queryString).analyzeWildcard(true))
-            .execute()
-            .actionGet();
+        QueryBuilder query = createQuery(md);
+        SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
+                .setSize(500)
+                .setRouting(md.getRouting())
+                .setVersion(true)
+                .setQuery(query)
+                .execute()
+                .actionGet();
         for (SearchHit hit : searchRes.getHits().getHits()) {
             Result entry = convertHitToMetricDiscoveryResult(hit);
             result.add(entry);
@@ -173,19 +149,37 @@ public class ElasticIO implements DiscoveryIO {
 
     public static class Discovery {
         private Map<String, Object> annotation = new HashMap<String, Object>();
-        private String metricName;
+        private final String metricName;
+        private final String tenantId;
 
+        public Discovery(String tenantId, String metricName) {
+            this.tenantId = tenantId;
+            this.metricName = metricName;
+        }
         public Map<String, Object> getAnnotation() {
             return annotation;
+        }
+
+        public String getTenantId() {
+            return tenantId;
         }
 
         public String getMetricName() {
             return metricName;
         }
 
+        public String getRouting() {
+            return tenantId;
+        }
+
+        public String getDocumentId() {
+            // use something more compact
+            return toString();
+        }
+
         @Override
         public String toString() {
-            return "ElasticMetricDiscovery [metricName=" + metricName + ", annotation="
+            return "ElasticMetricDiscovery [tenantId=" + tenantId + ", metricName=" + metricName + ", annotation="
                     + annotation.toString() + "]";
         }
 
@@ -194,21 +188,36 @@ public class ElasticIO implements DiscoveryIO {
             return this;
         }
 
-        public Discovery withMetricName(String name){
-            this.metricName = name;
-            return this;
+        private XContentBuilder createSourceContent() throws IOException {
+            XContentBuilder json;
+
+            json = XContentFactory.jsonBuilder().startObject()
+                    .field(TENANT_ID.toString(), tenantId)
+                    .field(METRIC_NAME.toString(), metricName);
+
+
+            for (Map.Entry<String, Object> entry : annotation.entrySet()) {
+                json = json.field(entry.getKey(), entry.getValue());
+            }
+            json = json.endObject();
+            return json;
         }
     }
 
     public static class Result {
         private final String metricName;
         private final String unit;
+        private final String tenantId;
 
-        public Result(String name, String unit) {
+        public Result(String tenantId, String name, String unit) {
+            this.tenantId = tenantId;
             this.metricName = name;
             this.unit = unit;
         }
 
+        public String getTenantId() {
+            return tenantId;
+        }
         public String getMetricName() {
             return metricName;
         }
@@ -217,7 +226,7 @@ public class ElasticIO implements DiscoveryIO {
         }
         @Override
         public String toString() {
-            return "Result [metricName=" + metricName + ", unit=" + unit + "]";
+            return "Result [tenantId=" + tenantId + ", metricName=" + metricName + ", unit=" + unit + "]";
         }
 
         @Override
@@ -244,7 +253,7 @@ public class ElasticIO implements DiscoveryIO {
             if (this == other) {
                 return true;
             }
-            return metricName.equals(other.metricName) && unit.equals(other.unit);
+            return metricName.equals(other.metricName) && unit.equals(other.unit) && tenantId.equals(other.tenantId);
         }
     }
 }
