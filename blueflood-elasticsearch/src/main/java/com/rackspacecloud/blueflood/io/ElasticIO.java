@@ -106,7 +106,6 @@ public class ElasticIO implements DiscoveryIO {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
         return client.prepareIndex(getIndex(md.getTenantId()), ES_TYPE)
-                .setId(md.getDocumentId()) // any point to this?
                 .setRouting(md.getRouting())
                 .setSource(md.createSourceContent());
     }
