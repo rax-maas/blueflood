@@ -22,6 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
+import org.elasticsearch.client.IndicesAdminClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,8 +43,7 @@ public class ElasticIOTest {
     private static final String TENANT_B = "someotherguy";
     private static final String UNIT = "horse length";
     private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
-    //private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
-    private static ElasticIO elasticIO = new ElasticIO(RemoteElasticSearchServer.getInstance());
+    private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
 
     private static ElasticIO.Result createExpectedResult(String tenantId, int x, String y, int z) {
         Locator locator = createTestLocator(tenantId, x, y, z);
@@ -83,14 +86,48 @@ public class ElasticIOTest {
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException{
-        createTestMetrics(TENANT_A);
-        createTestMetrics(TENANT_B);
+        IndicesAdminClient iac = EmbeddedElasticSearchServer.getInstance().getClient().admin().indices();
 
-        //elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
-        //elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+        XContentBuilder mapping =  XContentFactory.jsonBuilder().startObject()
+            .startObject("metrics")
+                .startObject("properties")
+                    .startObject("TENANT_ID")
+                        .field("type", "string")
+                        .field("index", "not_analyzed")
+                    .endObject()
+                    .startObject("UNIT")
+                        .field("type", "string")
+                        .field("index", "not_analyzed")
+                    .endObject()
+                    .startObject("METRIC_NAME")
+                        .field("type", "multi_field")
+                        .startObject("fields")
+                            .startObject("METRIC_NAME")
+                                .field("type", "string")
+                                .field("index", "analyzed")
+                            .endObject()
+                            .startObject("RAW_METRIC_NAME")
+                                .field("type", "string")
+                                .field("index", "not_analyzed")
+                            .endObject()
+                        .endObject()
+                    .endObject()
+                .endObject()
+            .endObject()
+        .endObject();
 
-        //TimeUnit.SECONDS.sleep(1);
-        EmbeddedElasticSearchServer.getInstance().getClient().admin().indices().prepareRefresh().execute().actionGet();
+
+        PutMappingRequestBuilder pmrb = new PutMappingRequestBuilder(iac);
+        pmrb.setType("metrics")
+                .setSource(mapping)
+                .execute()
+                .actionGet();
+
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+
+        TimeUnit.SECONDS.sleep(1);
+        iac.prepareRefresh().execute().actionGet();
     }
 
     @Test
