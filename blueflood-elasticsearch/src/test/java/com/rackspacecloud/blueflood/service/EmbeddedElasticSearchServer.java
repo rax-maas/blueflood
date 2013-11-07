@@ -21,7 +21,7 @@ import org.elasticsearch.node.NodeBuilder;
 
 import com.rackspacecloud.blueflood.io.ElasticIO;
 
-public class EmbeddedElasticSearchServer implements ElasticClientManager{
+public class EmbeddedElasticSearchServer implements ElasticClientManager {
     private static final EmbeddedElasticSearchServer INSTANCE = new EmbeddedElasticSearchServer();
 
     public static EmbeddedElasticSearchServer getInstance() {
