@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
+import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 
@@ -52,12 +53,15 @@ public class ElasticIO implements DiscoveryIO {
         UNIT
     }
 
+    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
     private final Client client;
     private static final String ES_TYPE = "metrics";
-    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
-
+    private static final String INDEX_PREFIX = "blueflood-";
     private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
-    public static final String INDEX_PREFIX = "blueflood-";
+
+    public ElasticIO() {
+        this(RemoteElasticSearchServer.getInstance());
+    }
 
     public ElasticIO(Client client) {
         this.client = client;
