@@ -127,9 +127,7 @@
     <profile>
       <id>all-modules</id>
       <modules>
-        <module>blueflood-core</module>
         <module>blueflood-all</module>
-        <module>blueflood-udp</module>
       </modules>
     </profile>
     <profile>

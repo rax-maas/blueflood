@@ -49,6 +49,12 @@
       <version>1.0.4-SNAPSHOT</version>
     </dependency>
 
+    <dependency>
+      <artifactId>blueflood-http</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>1.0.4-SNAPSHOT</version>
+    </dependency>
+
   </dependencies>
 
 </project>
