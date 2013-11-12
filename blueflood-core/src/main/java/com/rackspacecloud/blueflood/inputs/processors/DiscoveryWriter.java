@@ -102,9 +102,9 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                             } catch (Exception ex) {
                                 getLogger().error(ex.getMessage(), ex);
                                 success = false;
+                            } finally {
+                                actualWriteCtx.stop();
                             }
-                            // should we time failed attempts?
-                            actualWriteCtx.stop();
                         }
                         return success;
                 }
