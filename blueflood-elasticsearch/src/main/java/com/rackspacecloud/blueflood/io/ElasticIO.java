@@ -55,6 +55,7 @@ public class ElasticIO implements DiscoveryIO {
     static enum ESFieldLabel {
         METRIC_NAME,
         TENANT_ID,
+        TYPE,
         UNIT
     }
 
@@ -78,14 +79,6 @@ public class ElasticIO implements DiscoveryIO {
         this(manager.getClient());
     }
 
-    private static Map<String, Object> extractUsefulInformation(Metric metric) {
-        Map<String, Object> info = new HashMap<String, Object>();
-        if (metric.getUnit() != null) { // metric units may be null
-            info.put(UNIT.toString(), metric.getUnit());
-        }
-        return info;
-    }
-
     private static Result convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
         String metricName = (String)source.get(METRIC_NAME.toString());
@@ -100,8 +93,13 @@ public class ElasticIO implements DiscoveryIO {
         BulkRequestBuilder bulk = client.prepareBulk();
         for (Metric metric : batch) {
             Locator locator = metric.getLocator();
-            Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName())
-                .withAnnotation(extractUsefulInformation(metric));
+            Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+            Map<String, Object> info = new HashMap<String, Object>();
+            if (metric.getUnit() != null) { // metric units may be null
+                info.put(UNIT.toString(), metric.getUnit());
+            }
+            info.put(TYPE.toString(), metric.getType());
+            md.withAnnotation(info);
             bulk.add(createSingleRequest(md));
         }
         bulk.execute();
