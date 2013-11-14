@@ -107,11 +107,6 @@ public class ElasticIO implements DiscoveryIO {
         bulk.execute();
     }
 
-    public void insertDiscovery(Discovery discovery) throws IOException {
-        createSingleRequest(discovery).execute();
-    }
-
-
     private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");

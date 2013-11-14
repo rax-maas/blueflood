@@ -61,9 +61,9 @@ public class ElasticIOTest {
         Locator locator;
         List<Locator> locators = new ArrayList<Locator>();
         locatorMap.put(tenantId, locators);
-        for (int x=0; x<NUM_PARENT_ELEMENTS; x++) {
+        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (String y : CHILD_ELEMENTS) {
-                for (int z=0; z<NUM_GRANDCHILD_ELEMENTS; z++) {
+                for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
                     locator = createTestLocator(tenantId, x, y, z);
                     locators.add(locator);
                 }
@@ -77,7 +77,6 @@ public class ElasticIOTest {
         List<Metric> metrics = new ArrayList<Metric>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
-            //System.out.println(locator.getMetricName());
             metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
             metrics.add(metric);
         }
@@ -154,8 +153,8 @@ public class ElasticIOTest {
 
         results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*,fourA,*"));
         Assert.assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
-        for (int x=0; x<NUM_PARENT_ELEMENTS; x++) {
-            for (int z=0; z<NUM_GRANDCHILD_ELEMENTS; z++) {
+        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
+            for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
                 entry = createExpectedResult(TENANT_A, x, "A", z);
                 Assert.assertTrue(results.contains(entry));
             }
@@ -163,7 +162,7 @@ public class ElasticIOTest {
 
         results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*,three1*,four*,five2"));
         Assert.assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
-        for (int x=10; x<20; x++) {
+        for (int x = 10; x < 20; x++) {
             for (String y : CHILD_ELEMENTS) {
                 entry = createExpectedResult(TENANT_A, x, y, 2);
                 Assert.assertTrue(results.contains(entry));

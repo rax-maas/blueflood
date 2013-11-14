@@ -34,7 +34,7 @@ public class RemoteElasticSearchServer implements ElasticClientManager {
 
     private Client client;
 
-    protected RemoteElasticSearchServer() {
+    private RemoteElasticSearchServer() {
         Configuration config = Configuration.getInstance();
         List<String> hosts = config.getListProperty(ElasticIOConfig.ELASTICSEARCH_HOSTS);
         String clusterName = config.getStringProperty(ElasticIOConfig.ELASTICSEARCH_CLUSTERNAME);
