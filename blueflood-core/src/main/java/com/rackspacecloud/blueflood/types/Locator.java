@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +31,9 @@ public class Locator {
     private String metricName = null;
 
     static {
-        metricTokenSeparator = (Configuration.getBooleanProperty("USE_LEGACY_METRIC_SEPARATOR") ? "," : ".");
+        metricTokenSeparator = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : ".");
         // ugh.
-        metricTokenSeparatorRegex = (Configuration.getBooleanProperty("USE_LEGACY_METRIC_SEPARATOR") ? "," : "\\.");
+        metricTokenSeparatorRegex = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : "\\.");
         if (metricTokenSeparator.equals(",")) {
             log.warn("Deprecation warning! Use of 'USE_LEGACY_METRIC_SEPARATOR' is deprecated and will be removed in v3.0");
         }
