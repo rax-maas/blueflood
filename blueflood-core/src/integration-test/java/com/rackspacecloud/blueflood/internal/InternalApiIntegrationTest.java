@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.internal;
 
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.http.client.HttpResponseException;
 
 import org.apache.http.conn.ClientConnectionManager;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InternalApiIntegrationTest {
-    private final String clusterString = Configuration.getStringProperty("INTERNAL_API_CLUSTER");
+    private final String clusterString = Configuration.getInstance().getStringProperty(CoreConfig.INTERNAL_API_CLUSTER);
 
     @Test
     public void testRegularWorks() throws IOException {
@@ -50,14 +51,14 @@ public class InternalApiIntegrationTest {
             shutdown(api);
         }
     }
-    
+
     @Test(expected = HttpResponseException.class)
     public void testRegularHttpError() throws IOException {
         InternalAPI api = InternalAPIFactory.create(1, clusterString);
         Account acct = api.fetchAccount("acBOGUS___");
         shutdown(api);
     }
-    
+
     @Test
     public void testConcurrentRequests() throws InterruptedException {
         final int threads = 150;
@@ -84,7 +85,7 @@ public class InternalApiIntegrationTest {
         if (errors.get() > 0)
             Assert.fail("There were IOExceptions on some requests.");
     }
-    
+
     private static void shutdown(InternalAPI api) {
         ClientConnectionManager connectionManager = (ClientConnectionManager)Whitebox.getInternalState(api, "connectionManager");
         connectionManager.shutdown();

@@ -60,7 +60,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     private final ConcurrentHashMap<Integer, Lock> locks; // shard to lock objects
     private boolean connected = false;
     private final Ticker ticker = Ticker.systemTicker();
-    
+
     private TimeValue minLockHoldTime = new TimeValue(20, TimeUnit.MINUTES);
     private TimeValue lockDisinterestedTime = new TimeValue(1, TimeUnit.MINUTES);
     private TimeValue shardLockScavengeInterval = new TimeValue(2L, TimeUnit.MINUTES);
@@ -80,16 +80,16 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     // thread that does the lock work.
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, Long.MAX_VALUE, TimeUnit.DAYS, new ArrayBlockingQueue<Runnable>(1000), new ThreadFactory() {
         public Thread newThread(Runnable r) {
-            return new Thread(r, "ZK Lock Worker " + id);     
+            return new Thread(r, "ZK Lock Worker " + id);
         }
     });
-    
+
     private final Meter lockAcquisitionFailure = Metrics.newMeter(ZKBasedShardLockManager.class, "Lock acquisition failures", "ZK", TimeUnit.MINUTES);
     private final Timer lockAcquisitionTimer = Metrics.newTimer(ZKBasedShardLockManager.class, "Lock acquisition timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Meter lockErrors = Metrics.newMeter(ZKBasedShardLockManager.class, "Lock errors", "ZK", TimeUnit.MINUTES);
 
     ZKBasedShardLockManager(String zookeeperCluster, Set<Integer> managedShards) {
-        try { 
+        try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName() + (id == 0 ? "" : id));
             final ObjectName nameObj = new ObjectName(name);
@@ -135,7 +135,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
-        
+
         this.locks = new ConcurrentHashMap<Integer, Lock>();
         this.client = null;
         RetryPolicy policy = new ExponentialBackoffRetry((int)ZK_RETRY_INTERVAL, ZK_MAX_RETRIES);
@@ -151,12 +151,13 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
             addShard(shard);
         this.client.start();
 
-        this.minLockHoldTime = new TimeValue(Configuration.getLongProperty("SHARD_LOCK_HOLD_PERIOD_MS"), TimeUnit.MILLISECONDS);
-        this.lockDisinterestedTime = new TimeValue(Configuration.getLongProperty("SHARD_LOCK_DISINTERESTED_PERIOD_MS"), TimeUnit.MILLISECONDS);
-        this.shardLockScavengeInterval = new TimeValue(Configuration.getLongProperty("SHARD_LOCK_SCAVENGE_INTERVAL_MS"),
+        Configuration config = Configuration.getInstance();
+        this.minLockHoldTime = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_HOLD_PERIOD_MS), TimeUnit.MILLISECONDS);
+        this.lockDisinterestedTime = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_DISINTERESTED_PERIOD_MS), TimeUnit.MILLISECONDS);
+        this.shardLockScavengeInterval = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_SCAVENGE_INTERVAL_MS),
                 TimeUnit.MILLISECONDS);
         this.lockScavenger = new java.util.Timer("Lock scavenger " + (id != 0 ? id : ""), true);
-        this.defaultMaxLocksToAcquirePerCycle = Configuration.getIntegerProperty("MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE");
+        this.defaultMaxLocksToAcquirePerCycle = config.getIntegerProperty(CoreConfig.MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE);
 
         waitForZKConnections();
         // attempt all locks. needs to be called before the scavenger is instantiated.
@@ -229,7 +230,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     private String getLockId(int shard) {
         return  LOCK_QUALIFIER + "/" + shard;
     }
-    
+
     // This is called when connection to zookeeper is lost
     private void handleZookeeperConnectionFailed() {
         // It is okay for us to proceed with the work we already scheduled (either running or in scheduled queue)
@@ -238,7 +239,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         for (Lock lock : locks.values())
             lock.connectionLost();
     }
-    
+
     private void scavengeLocks() {
         locksAcquiredThisCycle.set(0);
         maxLocksToAcquirePerCycle = defaultMaxLocksToAcquirePerCycle;
@@ -297,11 +298,11 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     private boolean isCuratorStarted() {
         return client.getState() == CuratorFrameworkState.STARTED;
     }
-    
+
     //
     // unsafe methods for testing.
     //
-    
+
     public void waitForQuiesceUnsafe() {
         while (worker.getActiveCount() != 0 || worker.getQueue().size() != 0) {
             if (log.isTraceEnabled())
@@ -311,28 +312,28 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         // this time out nees to be longer than ZK_LOCK_TIMEOUT for valid tests.
         try { Thread.sleep(1500); } catch (InterruptedException ignore) {}
     }
-    
+
     public boolean holdsLockUnsafe(int shard) {
         return locks.containsKey(shard) && locks.get(shard).isHeldZk();
     }
-    
+
     public boolean releaseLockUnsafe(int shard) throws Exception {
         return worker.submit(locks.get(shard).releaser()).get();
     }
-    
+
     public void shutdownUnsafe() throws Exception {
         for (Lock lock : locks.values())
             worker.submit(lock.releaser()).get();
         client.close();
     }
-    
+
     private long nowMillis() { return ticker.read() / 1000000; }
-    
+
     //
     // JMX
-    // 
+    //
 
-    public synchronized Collection<Integer> getHeldShards() { 
+    public synchronized Collection<Integer> getHeldShards() {
         SortedSet<Integer> held = new TreeSet<Integer>();
         for (Lock lock : locks.values()) {
             if (lock.isHeld()) {
@@ -341,8 +342,8 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         }
         return held;
     }
-  
-    public synchronized Collection<Integer> getUnheldShards() { 
+
+    public synchronized Collection<Integer> getUnheldShards() {
         SortedSet<Integer> unheld = new TreeSet<Integer>();
         for (Lock lock : locks.values()) {
             if (lock.isUnheld()) {
@@ -416,8 +417,8 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     //
     // Helper classes
     //
-    
-    
+
+
     enum LockState {
         UNKNOWN,
         ACQUIRED,
@@ -425,7 +426,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         ERROR,
         DISINTERESTED;
     }
-    
+
     class Lock {
         private final int shard;
         private LockState state = LockState.UNKNOWN;
@@ -433,12 +434,12 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         private long stateChanged = ticker.read() / 1000000;
         private boolean isAcquiring = false;
         private boolean isReleasing = false;
-        
+
         Lock(int shard) {
             this.shard = shard;
             checkMutex();
         }
-        
+
         synchronized void checkMutex() {
             if (client == null) {
                 state = LockState.ERROR;
@@ -447,15 +448,15 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
                 mutex = new InterProcessMutex(client, getLockId(shard));
             }
         }
-        
+
         int getShard() { return shard; }
         boolean isHeld() { return mutex != null && state == LockState.ACQUIRED; }
         boolean isUnheld() { return mutex != null && state == LockState.ACQUIRE_FAILED; }
-        
-        boolean isHeldZk() { 
-            return mutex != null && mutex.isAcquiredInThisProcess(); 
+
+        boolean isHeldZk() {
+            return mutex != null && mutex.isAcquiredInThisProcess();
         }
-        
+
         void performMaintenance() {
             updateLockState();
 
@@ -505,14 +506,14 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         synchronized boolean canWork() {
             return state == LockState.ACQUIRED || state == LockState.ERROR;
         }
-        
+
         synchronized void connectionLost() {
             // assume client = null.
             state = LockState.ERROR;
             stateChanged = nowMillis();
             mutex = null;
         }
-        
+
         synchronized void acquire() {
             if (isAcquiring || isReleasing) return;
             isAcquiring = true;
@@ -523,7 +524,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
                 log.warn(String.format("Rejected lock execution: active:%d queue:%d shard:%d", worker.getActiveCount(), worker.getQueue().size(), shard));
             }
         }
-        
+
         synchronized void release() {
             if (isAcquiring || isReleasing) return;
             isReleasing = true;
@@ -532,9 +533,9 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
                 worker.execute(new FutureTask<Boolean>(releaser()));
             } catch (RejectedExecutionException ex) {
                 log.warn(String.format("Rejected lock execution: active:%d queue:%d shard:%d", worker.getActiveCount(), worker.getQueue().size(), shard));
-            }       
+            }
         }
-        
+
         synchronized Callable<Boolean> acquirer() {
             return new Callable<Boolean>() {
                 public Boolean call() throws Exception {
@@ -584,7 +585,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
                 }
             };
         }
-        
+
         synchronized Callable<Boolean> releaser() {
             return new Callable<Boolean>() {
                 public Boolean call() throws Exception {

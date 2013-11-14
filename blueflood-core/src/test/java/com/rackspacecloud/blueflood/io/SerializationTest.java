@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
@@ -48,10 +49,8 @@ public class SerializationTest {
     private final static BasicRollup[] TO_SERIALIZE_BASIC_ROLLUP = new BasicRollup[4];
 
     static {
-        BasicRollup basicRollup;
         // double
         for (int i = 0; i < 2; i++) {
-            basicRollup = new BasicRollup();
             Points<SimpleNumber> input = new Points<SimpleNumber>();
             int timeOffset = 0;
             for (double val = 0.0; val < 10.0; val++) {
@@ -59,27 +58,24 @@ public class SerializationTest {
             }
 
             try {
-                basicRollup.computeFromSimpleMetrics(input);
+                TO_SERIALIZE_BASIC_ROLLUP[i] = BasicRollup.buildRollupFromRawSamples(input);
             } catch (IOException ex) {
                 Assert.fail("Test data generation failed");
             }
-            TO_SERIALIZE_BASIC_ROLLUP[i] = basicRollup;
         }
 
         // long
         for (int i = 0; i < 2; i++) {
-            basicRollup = new BasicRollup();
             Points<SimpleNumber> input = new Points<SimpleNumber>();
             int timeOffset = 0;
             for (long val = 0; val < 10; val++) {
                 input.add(new Points.Point<SimpleNumber>(123456789L + timeOffset++, new SimpleNumber(val * (i+1))));
             }
             try {
-                basicRollup.computeFromSimpleMetrics(input);
+                TO_SERIALIZE_BASIC_ROLLUP[2 + i] = BasicRollup.buildRollupFromRawSamples(input);
             } catch (Exception e) {
                 Assert.fail("Test data generation failed");
             }
-            TO_SERIALIZE_BASIC_ROLLUP[2 + i] = basicRollup;
         }
     }
 
@@ -358,20 +354,26 @@ public class SerializationTest {
   
     @Test
     public void testRollupSerializationLargeCounts() throws IOException {
-        BasicRollup r = new BasicRollup();
-        r.setCount(500);
+        Points<BasicRollup> rollupGroup = new Points<BasicRollup>();
+        BasicRollup startingRollup = new BasicRollup();
+        startingRollup.setCount(500);
+        rollupGroup.add(new Points.Point<BasicRollup>(123456789L, startingRollup));
+        
         for (int rollupCount = 0; rollupCount < 500; rollupCount++) {
-            BasicRollup basicRollup = new BasicRollup();
             Points<SimpleNumber> input = new Points<SimpleNumber>();
             for (int fullResCount = 0; fullResCount < 500; fullResCount++) {
                 input.add(new Points.Point<SimpleNumber>(123456789L + fullResCount, new SimpleNumber(fullResCount + fullResCount * 3)));
             }
-            basicRollup.computeFromSimpleMetrics(input);
+            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             Points<BasicRollup> rollups = new Points<BasicRollup>();
             rollups.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
-            r.computeFromRollups(rollups);
+            BasicRollup groupRollup = BasicRollup.buildRollupFromRollups(rollups);
+            rollupGroup.add(new Points.Point<BasicRollup>(123456789L, groupRollup));
         }
+        
         ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
+        
+        BasicRollup r = BasicRollup.buildRollupFromRollups(rollupGroup);
 
         // serialization was broken.
         ByteBuffer bb = NumericSerializer.get(CF_metrics_240).toByteBuffer(r);

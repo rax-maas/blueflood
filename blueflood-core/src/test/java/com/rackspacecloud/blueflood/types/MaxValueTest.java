@@ -75,54 +75,51 @@ public class MaxValueTest {
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(5L)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1L)));
         input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(7L)));
-        basicRollup1.computeFromSimpleMetrics(input);
+        basicRollup1 = BasicRollup.buildRollupFromRawSamples(input);
 
         input = new Points<SimpleNumber>();
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(9L)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(0L)));
         input.add(new Points.Point<SimpleNumber>(123456791L, new SimpleNumber(1L)));
-        basicRollup2.computeFromSimpleMetrics(input);
+        basicRollup2 = BasicRollup.buildRollupFromRawSamples(input);
 
         input = new Points<SimpleNumber>();
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(2.14d)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(1.14d)));
-        basicRollup3.computeFromSimpleMetrics(input);
+        basicRollup3 = BasicRollup.buildRollupFromRawSamples(input);
 
         input = new Points<SimpleNumber>();
         input.add(new Points.Point<SimpleNumber>(123456789L, new SimpleNumber(3.14d)));
         input.add(new Points.Point<SimpleNumber>(123456790L, new SimpleNumber(5.67d)));
-        basicRollup4.computeFromSimpleMetrics(input);
+        basicRollup4 = BasicRollup.buildRollupFromRawSamples(input);
 
         // handle homegenous metric types and see if we get the right max
 
         // type long
-        netBasicRollup = new BasicRollup();
         Points<BasicRollup> rollups = new Points<BasicRollup>();
         rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup1));
         rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup2));
-        netBasicRollup.computeFromRollups(rollups);
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         MaxValue max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
         Assert.assertEquals(9L, max.toLong());
 
         // type double
-        netBasicRollup = new BasicRollup();
         rollups = new Points<BasicRollup>();
         rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup3));
         rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup4));
-        netBasicRollup.computeFromRollups(rollups);
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();
         Assert.assertTrue(max.isFloatingPoint());
         Assert.assertEquals(5.67d, max.toDouble(), 0);
 
         // handle heterogenous metric types and see if we get the right max
-        netBasicRollup = new BasicRollup();
         rollups = new Points<BasicRollup>();
         rollups.add(new Points.Point<BasicRollup>(123456789L, basicRollup2));
         rollups.add(new Points.Point<BasicRollup>(123456790L, basicRollup3));
-        netBasicRollup.computeFromRollups(rollups);
+        netBasicRollup = BasicRollup.buildRollupFromRollups(rollups);
 
         max = netBasicRollup.getMaxValue();
         Assert.assertTrue(!max.isFloatingPoint());
