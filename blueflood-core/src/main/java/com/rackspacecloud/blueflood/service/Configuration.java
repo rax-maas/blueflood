@@ -100,6 +100,10 @@ public class Configuration {
         props.put("QUERY_MODE", "true");
 
         props.put("CASSANDRA_MAX_RETRIES", "5"); // set <= 0 to not retry
+
+        // v1.0 defaults to ','. This configuration option provides backwards compatibility.
+        // Using legacy separators is deprecated as of 2.0 and will be removed in 3.0
+        props.put("USE_LEGACY_METRIC_SEPARATOR", "false");
     }
 
     public static void init() throws IOException {
