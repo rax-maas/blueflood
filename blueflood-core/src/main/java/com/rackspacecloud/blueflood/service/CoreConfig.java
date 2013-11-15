@@ -73,8 +73,11 @@ public enum CoreConfig implements ConfigDefaults {
     QUERY_MODE("true"),
 
     // set <= 0 to not retry
-    CASSANDRA_MAX_RETRIES("5");
+    CASSANDRA_MAX_RETRIES("5"),
 
+    // v1.0 defaults to ','. This configuration option provides backwards compatibility.
+    // Using legacy separators is deprecated as of 2.0 and will be removed in 3.0
+    USE_LEGACY_METRIC_SEPARATOR("false");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
