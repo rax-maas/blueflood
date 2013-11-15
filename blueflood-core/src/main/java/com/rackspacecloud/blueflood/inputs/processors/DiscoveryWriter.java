@@ -72,19 +72,14 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 registerIO(discoveryIOModule);
             } catch (InstantiationException e) {
                 log.error("Unable to create instance of metric discovery class for: " + module, e);
-                System.exit(1); //something better
             } catch (IllegalAccessException e) {
                 log.error("Error starting metric discovery module: " + module, e);
-                System.exit(1); //something better
             } catch (ClassNotFoundException e) {
                 log.error("Unable to locate metric discovery module: " + module, e);
-                System.exit(1); //something better
             } catch (RuntimeException e) {
                 log.error("Error starting metric discovery module: " + module, e);
-                System.exit(1); //something better
             } catch (Throwable e) {
                 log.error("Error starting metric discovery module: " + module, e);
-                System.exit(1); //something better
             }
         }
     }
