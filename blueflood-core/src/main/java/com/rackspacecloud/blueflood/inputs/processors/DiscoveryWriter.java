@@ -44,7 +44,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
-    private final Map<Class<? extends DiscoveryIO>, Timer> writeDurationTimers= new HashMap<Class<? extends DiscoveryIO>, Timer>();
+    private final Map<Class<? extends DiscoveryIO>, Timer> writeDurationTimers = new HashMap<Class<? extends DiscoveryIO>, Timer>();
+    private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
     private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
 
     public DiscoveryWriter(ThreadPoolExecutor threadPool) {
@@ -56,6 +57,9 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         discoveryIOs.add(io);
         writeDurationTimers.put(io.getClass(),
                 Metrics.newTimer(io.getClass(), "DiscoveryWriter Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+                );
+        writeErrorMeters.put(io.getClass(),
+                Metrics.newMeter(io.getClass(), "DiscoveryWriter Write Errors", "DiscoveryWriter", TimeUnit.SECONDS)
                 );
     }
 
@@ -96,6 +100,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                                 io.insertDiscovery(metrics);
                             } catch (Exception ex) {
                                 getLogger().error(ex.getMessage(), ex);
+                                writeErrorMeters.get(io.getClass()).mark();
                                 success = false;
                             } finally {
                                 actualWriteCtx.stop();
