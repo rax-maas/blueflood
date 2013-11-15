@@ -1,0 +1,7 @@
+
+path.data: /tmp/elasticsearch-for-bf/data
+
+path.work: /tmp/elasticsearch-for-bf/work
+
+path.logs: /tmp/elasticsearch-for-bf/logs
+
