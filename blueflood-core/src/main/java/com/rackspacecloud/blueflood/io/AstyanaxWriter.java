@@ -86,7 +86,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // written in the last 10 minutes, don't bother.
-    private static final Cache<String, String> insertedLocators = CacheBuilder.newBuilder().expireAfterWrite(10,
+    private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterWrite(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
 
@@ -155,7 +155,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
         mutationBatch.withRow(CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
-                .putColumn(locator, "", LOCATOR_TTL);
+                .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
@@ -275,7 +275,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     private static void setLocatorCurrent(Locator loc) {
-        insertedLocators.put(loc.toString(), "");
+        insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
 }

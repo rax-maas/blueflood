@@ -23,10 +23,11 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>1.0.4-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
+    <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
   </modules>
 
@@ -127,9 +128,7 @@
     <profile>
       <id>all-modules</id>
       <modules>
-        <module>blueflood-core</module>
         <module>blueflood-all</module>
-        <module>blueflood-udp</module>
       </modules>
     </profile>
     <profile>

@@ -16,14 +16,28 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Locator {
-    private static String metricTokenSeparator = ",";
-
+    private static final String metricTokenSeparator;
+    private static final String metricTokenSeparatorRegex;
+    private static final Logger log = LoggerFactory.getLogger(Locator.class);
     private String stringRep = null;
     private String tenantId = null;
     private String metricName = null;
+
+    static {
+        metricTokenSeparator = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : ".");
+        // ugh.
+        metricTokenSeparatorRegex = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : "\\.");
+        if (metricTokenSeparator.equals(",")) {
+            log.warn("Deprecation warning! Use of 'USE_LEGACY_METRIC_SEPARATOR' is deprecated and will be removed in v3.0");
+        }
+    }
 
     public Locator() {
         // Left empty
@@ -35,7 +49,7 @@ public class Locator {
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
         this.stringRep = rep;
-        tenantId = this.stringRep.split(metricTokenSeparator)[0];
+        tenantId = this.stringRep.split(metricTokenSeparatorRegex)[0];
         metricName = this.stringRep.substring(this.stringRep.indexOf(metricTokenSeparator)+1);
     }
 

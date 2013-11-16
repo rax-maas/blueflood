@@ -6,7 +6,7 @@
   <parent>
     <artifactId>blueflood</artifactId>
     <groupId>com.rackspacecloud</groupId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -46,7 +46,19 @@
     <dependency>
       <artifactId>blueflood-core</artifactId>
       <groupId>com.rackspacecloud</groupId>
-      <version>1.0.4-SNAPSHOT</version>
+      <version>2.0.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>blueflood-http</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>2.0.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>blueflood-udp</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>2.0.0-SNAPSHOT</version>
     </dependency>
 
   </dependencies>
