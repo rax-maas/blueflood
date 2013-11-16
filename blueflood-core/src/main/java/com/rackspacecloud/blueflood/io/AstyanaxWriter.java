@@ -63,7 +63,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
-    private static final Integer METRIC_SUB_BATCH_SIZE = config.getIntegerProperty(CoreConfig.METRIC_SUB_BATCH_SIZE);
     private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
@@ -110,9 +109,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            Integer count = 0;
             for (Metric metric: metrics) {
-                count++;
                 final Locator locator = metric.getLocator();
 
                 final boolean isString = metric.isString();
@@ -134,19 +131,16 @@ public class AstyanaxWriter extends AstyanaxIO {
                 }
 
                 insertMetric(metric, mutationBatch);
-                if (count % METRIC_SUB_BATCH_SIZE == 0 || metrics.size() == count) {
-                    // insert it
-                    try {
-                        mutationBatch.execute();
-                    } catch (ConnectionException e) {
-                        Instrumentation.markWriteError(e);
-                        log.error("Connection exception during insertFull", e);
-                        throw e;
-                    }
-                    mutationBatch = keyspace.prepareMutationBatch();
-                }
-                metricsWritten.mark();
             }
+            // insert it
+            try {
+                mutationBatch.execute();
+            } catch (ConnectionException e) {
+                Instrumentation.markWriteError(e);
+                log.error("Connection exception during insertFull", e);
+                throw e;
+            }
+            metricsWritten.mark();
         } finally {
             ctx.stop();
         }
