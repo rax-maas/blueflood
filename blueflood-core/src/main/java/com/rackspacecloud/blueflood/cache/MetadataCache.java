@@ -163,6 +163,10 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     public Object databaseLoad(Locator locator, String key) throws CacheException {
         try {
             Map<String, Object> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
+            if (metadata == null) {
+                return MetadataCache.EMPTY;
+            }
+
             for (Map.Entry<String, Object> meta : metadata.entrySet()) {
                 if (meta.getKey().equals(key)) continue;
                 CacheKey cacheKey = new CacheKey(locator, meta.getKey());
