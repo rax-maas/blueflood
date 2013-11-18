@@ -41,11 +41,17 @@ public class MetricsCollection {
     }
 
     public static List<List<Metric>> getMetricsAsBatches(MetricsCollection collection, int partitions) {
+        return getMetricsAsBatches(collection, partitions, 0);
+    }
+
+    public static List<List<Metric>> getMetricsAsBatches(MetricsCollection collection, int partitions, int sizePerBatch) {
         if (partitions <= 0) {
             partitions = 1;
         }
 
-        int sizePerBatch = collection.size()/partitions + 1;
+        if (sizePerBatch <= 0) {
+            sizePerBatch = collection.size()/partitions + 1;
+        }
 
         return Lists.partition(collection.getMetrics(), sizePerBatch);
     }

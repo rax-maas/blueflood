@@ -40,12 +40,12 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
     public ListenableFuture<List<List<Metric>>> apply(final MetricsCollection input) throws Exception {
         return getThreadPool().submit(new Callable<List<List<Metric>>>() {
             public List<List<Metric>> call() throws Exception {
-                return MetricsCollection.getMetricsAsBatches(input, numPartitions);
+                return MetricsCollection.getMetricsAsBatches(input, numPartitions, subBatchSize);
             }
         });
     }
 
     public void setNumPartitions(int i) {
-        this.numPartitions = i * subBatchSize;
+        this.numPartitions = i;
     }
 }
