@@ -79,6 +79,6 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
 //            );
 //        }
         writer.writeMetadataValue(loc1, "foo", "bar");
-        Assert.assertEquals("bar", reader.getMetadataValue(loc1, "foo").toString());
+        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
     }
 }
