@@ -30,7 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<Metric>>> {
 
     private int numPartitions;
-    private static int subBatchSize = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_SUB_BATCH_SIZE);
+    private static int batchSize = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
 
     public BatchSplitter(ThreadPoolExecutor threadPool, int numPartitions) {
         super(threadPool);
@@ -40,7 +40,7 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
     public ListenableFuture<List<List<Metric>>> apply(final MetricsCollection input) throws Exception {
         return getThreadPool().submit(new Callable<List<List<Metric>>>() {
             public List<List<Metric>> call() throws Exception {
-                return MetricsCollection.getMetricsAsBatches(input, numPartitions, subBatchSize);
+                return MetricsCollection.getMetricsAsBatches(input, numPartitions, batchSize);
             }
         });
     }
