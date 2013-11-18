@@ -93,8 +93,7 @@ public class HttpMetricsIngestionServer {
                         metricMetadataAnalyzer)
                         .withLogger(log))
                 .withFunction(new BatchSplitter(
-                        new ThreadPoolBuilder().withName("Metric batching").build(),
-                        WRITE_THREADS)
+                        new ThreadPoolBuilder().withName("Metric batching").build())
                         .withLogger(log))
                 .withFunction(new BatchWriter(
                         new ThreadPoolBuilder()
