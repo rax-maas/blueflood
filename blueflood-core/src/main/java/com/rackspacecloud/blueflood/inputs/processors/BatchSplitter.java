@@ -28,10 +28,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<Metric>>> {
-    private static int batchSize = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
+    private int batchSize;
 
-    public BatchSplitter(ThreadPoolExecutor threadPool) {
+    public BatchSplitter(ThreadPoolExecutor threadPool, int batchSize) {
         super(threadPool);
+        this.batchSize = batchSize;
     }
 
     public ListenableFuture<List<List<Metric>>> apply(final MetricsCollection input) throws Exception {

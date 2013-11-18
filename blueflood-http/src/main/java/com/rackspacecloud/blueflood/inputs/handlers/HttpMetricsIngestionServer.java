@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -64,6 +65,7 @@ public class HttpMetricsIngestionServer {
     private ScheduleContext context;
     private final Counter bufferedMetrics = Metrics.newCounter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
+    private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
 
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
@@ -93,7 +95,8 @@ public class HttpMetricsIngestionServer {
                         metricMetadataAnalyzer)
                         .withLogger(log))
                 .withFunction(new BatchSplitter(
-                        new ThreadPoolBuilder().withName("Metric batching").build())
+                        new ThreadPoolBuilder().withName("Metric batching").build(),
+                        BATCH_SIZE)
                         .withLogger(log))
                 .withFunction(new BatchWriter(
                         new ThreadPoolBuilder()
