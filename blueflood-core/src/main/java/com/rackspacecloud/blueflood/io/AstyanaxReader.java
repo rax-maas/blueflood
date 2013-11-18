@@ -76,7 +76,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             }};
         } catch (NotFoundException ex) {
-            return null;
+            return new HashMap<String, Object>(0);
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
             Instrumentation.markReadError(e);
