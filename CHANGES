@@ -3,3 +3,4 @@
     * Backwards compatibility provided via "USE_LEGACY_METRIC_SEPARATOR" configuration setting, to be removed in v3.0.0
  * Various instrumentation additions
  * Batch metadata reads
+ * Switch to using org.apache.curator instead of com.netflix.curator
