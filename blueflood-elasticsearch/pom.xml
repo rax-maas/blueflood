@@ -26,7 +26,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Blueflood Elasticsearch Discovery Backend</name>
+  <name>Blueflood Elasticsearch Indexer and Discovery</name>
   <artifactId>blueflood-elasticsearch</artifactId>
   <packaging>jar</packaging>
 
