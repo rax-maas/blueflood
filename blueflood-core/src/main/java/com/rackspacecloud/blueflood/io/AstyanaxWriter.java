@@ -131,6 +131,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 }
 
                 insertMetric(metric, mutationBatch);
+                metricsWritten.mark();
             }
             // insert it
             try {
@@ -140,7 +141,6 @@ public class AstyanaxWriter extends AstyanaxIO {
                 log.error("Connection exception during insertFull", e);
                 throw e;
             }
-            metricsWritten.mark();
         } finally {
             ctx.stop();
         }
