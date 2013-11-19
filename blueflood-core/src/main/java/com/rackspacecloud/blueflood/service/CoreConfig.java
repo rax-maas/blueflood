@@ -72,6 +72,9 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_MODE("true"),
     QUERY_MODE("true"),
 
+    METRIC_BATCH_SIZE("100"),
+
+    CASSANDRA_REQUEST_TIMEOUT("10000"),
     // set <= 0 to not retry
     CASSANDRA_MAX_RETRIES("5"),
 
