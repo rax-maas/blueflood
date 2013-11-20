@@ -78,8 +78,8 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         for (Column<Locator> locatorCol : AstyanaxReader.getInstance().getAllLocators(shard)) {
             final Locator locator = locatorCol.getName();
-            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran.name());
-            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran);
+            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran);
 
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);

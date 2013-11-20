@@ -78,7 +78,7 @@ public class HttpHandlerIntegrationTest {
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
         ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()),
+                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL),
                 1234567878, 1234567900);
         Assert.assertEquals(1, rollups.size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently

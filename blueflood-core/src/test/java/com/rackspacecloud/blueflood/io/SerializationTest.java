@@ -84,7 +84,7 @@ public class SerializationTest {
         byte[] buf = new byte[] {99, 99};  // hopefully we won't have 99 different serialization versions.
         for (Granularity g : Granularity.granularities()) {
             try {
-                NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(g.name()))
+                NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(g))
                                  .fromByteBuffer(ByteBuffer.wrap(buf));
                 Assert.fail(String.format("Should have errored out %s", g.name()));
             } catch (RuntimeException ex) {
@@ -97,7 +97,7 @@ public class SerializationTest {
     public void testVersion2FullDeserializeBadType() throws Throwable {
         byte[] buf = new byte[] { 0, 2 };
         try {
-            NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()))
+            NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL))
                              .fromByteBuffer(ByteBuffer.wrap(buf));
         } catch (RuntimeException e) {
             throw e.getCause();
@@ -113,7 +113,7 @@ public class SerializationTest {
                 // encode as base64 to make reading the file easier.
 
                 os.write(Base64.encodeBase64(
-                        NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()))
+                        NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL))
                                          .toByteBuffer(o).array()
                         )
                 );
@@ -136,7 +136,7 @@ public class SerializationTest {
                     ByteBuffer byteBuffer = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
                     Assert.assertEquals(
                             String.format("broken at version %d", version),
-                            NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name()))
+                            NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL))
                                     .fromByteBuffer(byteBuffer),
                             toSerializeFull[i]);
                 } catch (RuntimeException ex) {
@@ -151,7 +151,7 @@ public class SerializationTest {
         for (Object o : toSerializeFull) {
             // skip the string (we used to allow this).
             if (o instanceof String) continue; // we don't serialize those any more.
-            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
+            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
             ByteBuffer serialized = NumericSerializer.get(CF_metrics_full).toByteBuffer(o);
             Assert.assertEquals(o, NumericSerializer.get(CF_metrics_full).fromByteBuffer(serialized));
         }
@@ -165,7 +165,7 @@ public class SerializationTest {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/rollup_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
             for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
                 for (Granularity g : Granularity.rollupGranularities()) {
-                    ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g.name());
+                    ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g);
                     ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(basicRollup);
                     os.write(Base64.encodeBase64(bb.array()));
                     os.write("\n".getBytes());
@@ -185,7 +185,7 @@ public class SerializationTest {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
                     BasicRollup basicRollup = (BasicRollup) NumericSerializer.get(AstyanaxIO.getColumnFamilyMapper()
-                            .get(g.name())).fromByteBuffer(bb);
+                            .get(g)).fromByteBuffer(bb);
                     Assert.assertTrue(String.format("Deserialization for rollup broken at %d", version),
                             TO_SERIALIZE_BASIC_ROLLUP[i].equals(basicRollup));
                 }
@@ -196,7 +196,7 @@ public class SerializationTest {
         // current round tripping.
         for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
             for (Granularity g : Granularity.rollupGranularities()) {
-                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g.name());
+                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g);
                 ByteBuffer bb = NumericSerializer.get(CF).toByteBuffer(basicRollup);
                 Assert.assertTrue(basicRollup.equals(NumericSerializer.get(CF).fromByteBuffer(bb)));
             }
@@ -231,7 +231,7 @@ public class SerializationTest {
         for (Granularity gran : Granularity.granularities()) {
             for (int i = 0; i < inputs.length; i++) {
                 try {
-                    ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+                    ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran);
                     Object dst = NumericSerializer.get(CF).fromByteBuffer(NumericSerializer.get(CF).toByteBuffer(inputs[i]));
                     Assert.assertEquals(String.format("busted at %s %d", gran.name(), i), expected[i], dst);
                 } catch (ClassCastException ex) {
@@ -256,7 +256,7 @@ public class SerializationTest {
         byte[] buf;
         int expectedBufferSize = 0;
         for (int i = 0; i < 10000000; i++) {
-            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
+            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
             buf = NumericSerializer.get(CF_metrics_full).toByteBuffer(Long.MAX_VALUE).array();
             Assert.assertFalse(buf.length == 0);
             if (expectedBufferSize == 0)
@@ -269,7 +269,7 @@ public class SerializationTest {
     @Test(expected = SerializationException.class)
     public void testSerializeStringFails() throws Throwable {
         try {
-            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
+            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
             NumericSerializer.get(CF_metrics_full).toByteBuffer("words");
         } catch (RuntimeException e) {
             throw e.getCause();
@@ -280,7 +280,7 @@ public class SerializationTest {
     public void testDeserializeStringDoesNotFail() throws Throwable {
         // this is what a string looked like previously.
         try {
-            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
+            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
             String serialized = "AHMWVGhpcyBpcyBhIHRlc3Qgc3RyaW5nLg==";
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(serialized.getBytes()));
             NumericSerializer.get(CF_metrics_full).fromByteBuffer(bb);
@@ -320,7 +320,7 @@ public class SerializationTest {
     public void testCannotRoundtripBytes() throws Throwable {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
-            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.name());
+            ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
             NumericSerializer ser = NumericSerializer.get(CF_metrics_full);
             byte[] actual = (byte[])ser.fromByteBuffer(ser.toByteBuffer(expected));
             Assert.assertArrayEquals(expected, actual);
@@ -371,7 +371,7 @@ public class SerializationTest {
             rollupGroup.add(new Points.Point<BasicRollup>(123456789L, groupRollup));
         }
         
-        ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.name());
+        ColumnFamily<Locator, Long> CF_metrics_240 = AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240);
         
         BasicRollup r = BasicRollup.buildRollupFromRollups(rollupGroup);
 

@@ -93,8 +93,8 @@ public class TtlCacheTest {
     private void warmCache() {
         for (int i = 0; i < 100; i++) {
             for (Granularity gran : Granularity.granularities()) {
-                twoSecondCache.getTtl("ackVCKg1rk", AstyanaxIO.getColumnFamilyMapper().get(gran.name()));
-                twoSecondCache.getTtl("acAAAAAAAA", AstyanaxIO.getColumnFamilyMapper().get(gran.name()));
+                twoSecondCache.getTtl("ackVCKg1rk", AstyanaxIO.getColumnFamilyMapper().get(gran));
+                twoSecondCache.getTtl("acAAAAAAAA", AstyanaxIO.getColumnFamilyMapper().get(gran));
             }
         }
     }
@@ -126,7 +126,7 @@ public class TtlCacheTest {
         warmCache();
         for (String acctId : new String[] {"ackVCKg1rk", "acAAAAAAAA"})
             for (Granularity gran : Granularity.granularities()) {
-                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran);
                 Assert.assertFalse(TtlCache.SAFETY_TTLS.get(CF).toSeconds() == twoSecondCache.getTtl(acctId, CF).toSeconds());
             }
     }

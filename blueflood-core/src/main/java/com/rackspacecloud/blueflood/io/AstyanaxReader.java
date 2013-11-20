@@ -304,10 +304,10 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         Points<SimpleNumber> points = new Points<SimpleNumber>();
-        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran.name()),
+        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran),
                 range.start, range.stop);
 
         for (Column<Long> column : results) {
@@ -324,7 +324,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
-        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         final MetricData metricData = getNumericMetricDataForRange(locator, range, gran);
 
