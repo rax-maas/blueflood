@@ -26,6 +26,10 @@
   <name>Blueflood Core Engine</name>
   <artifactId>blueflood-core</artifactId>
 
+  <properties>
+    <cassandra.skip>false</cassandra.skip>
+  </properties>
+
   <build>
     <plugins>
 
@@ -83,6 +87,10 @@
               <goal>integration-test</goal>
             </goals>
             <configuration>
+              <systemPropertyVariables>
+                <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
+                <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
+              </systemPropertyVariables>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
