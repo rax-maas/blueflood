@@ -16,7 +16,18 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
+import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.query.RowQuery;
+import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.netflix.astyanax.serializers.BooleanSerializer;
+import com.netflix.astyanax.serializers.StringSerializer;
+import com.netflix.astyanax.shallows.EmptyColumnList;
+import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -25,23 +36,14 @@ import com.rackspacecloud.blueflood.service.ShardStateManager;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
-import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.query.RowQuery;
-import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.netflix.astyanax.serializers.BooleanSerializer;
-import com.netflix.astyanax.serializers.StringSerializer;
-import com.netflix.astyanax.shallows.EmptyColumnList;
-import com.netflix.astyanax.util.RangeBuilder;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -62,14 +64,17 @@ public class AstyanaxReader extends AstyanaxIO {
         return INSTANCE;
     }
 
-    public Object getMetadataValue(Locator locator, String metaKey) throws ConnectionException {
+    public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(GET_METADATA);
         try {
-            Column<String> result = keyspace.prepareQuery(CF_METRIC_METADATA)
+            final ColumnList<String> results = keyspace.prepareQuery(CF_METRIC_METADATA)
                     .getKey(locator)
-                    .getColumn(metaKey)
                     .execute().getResult();
-            return result.getValue(MetadataSerializer.get());
+            return new HashMap<String, Object>(){{
+                for (Column<String> result : results) {
+                    put(result.getName(), result.getValue(MetadataSerializer.get()));
+                }
+            }};
         } catch (NotFoundException ex) {
             return null;
         } catch (ConnectionException e) {

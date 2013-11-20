@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

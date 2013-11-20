@@ -18,6 +18,12 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.netflix.astyanax.ColumnListMutation;
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.TtlCache;
@@ -34,12 +40,8 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.netflix.astyanax.ColumnListMutation;
-import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,8 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
+    private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
+
     public static AstyanaxWriter getInstance() {
         return instance;
     }
@@ -87,7 +91,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // written in the last 10 minutes, don't bother.
-    private static final Cache<String, String> insertedLocators = CacheBuilder.newBuilder().expireAfterWrite(10,
+    private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterWrite(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
 
@@ -108,9 +112,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_FULL);
+
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-
             for (Metric metric: metrics) {
                 final Locator locator = metric.getLocator();
 
@@ -127,14 +131,14 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // value = <nothing>
                 // do not do it for string or boolean metrics though.
                 if (!AstyanaxWriter.isLocatorCurrent(locator)) {
-                    if (!isString && !isBoolean)
+                    if (!isString && !isBoolean && mutationBatch != null)
                         insertLocator(locator, mutationBatch);
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
                 insertMetric(metric, mutationBatch);
+                metricsWritten.mark();
             }
-
             // insert it
             try {
                 mutationBatch.execute();
@@ -143,7 +147,6 @@ public class AstyanaxWriter extends AstyanaxIO {
                 log.error("Connection exception during insertFull", e);
                 throw e;
             }
-
         } finally {
             ctx.stop();
         }
@@ -152,7 +155,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
         mutationBatch.withRow(CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
-                .putColumn(locator, "", LOCATOR_TTL);
+                .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
@@ -313,7 +316,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     private static void setLocatorCurrent(Locator loc) {
-        insertedLocators.put(loc.toString(), "");
+        insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
 }

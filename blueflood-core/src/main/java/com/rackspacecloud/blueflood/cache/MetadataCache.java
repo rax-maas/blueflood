@@ -16,6 +16,10 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -23,10 +27,6 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.CacheStats;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +34,7 @@ import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -161,7 +162,18 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // implements the CacheLoader interface.
     public Object databaseLoad(Locator locator, String key) throws CacheException {
         try {
-            Object value = AstyanaxReader.getInstance().getMetadataValue(locator, key);
+            Map<String, Object> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
+            if (metadata == null) {
+                return MetadataCache.EMPTY;
+            }
+
+            for (Map.Entry<String, Object> meta : metadata.entrySet()) {
+                if (meta.getKey().equals(key)) continue;
+                CacheKey cacheKey = new CacheKey(locator, meta.getKey());
+                cache.put(cacheKey, meta.getValue());
+            }
+
+            Object value = metadata.get(key);
             return value == null ? MetadataCache.EMPTY : value;
         } catch (ConnectionException ex) {
             throw new CacheException(ex);

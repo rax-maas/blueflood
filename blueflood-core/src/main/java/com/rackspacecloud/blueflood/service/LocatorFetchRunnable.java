@@ -70,7 +70,6 @@ class LocatorFetchRunnable implements Runnable {
         if (log.isTraceEnabled())
             log.trace("Getting locators for {} {} @ {}", new Object[]{parentSlotKey, parentRange.toString(), scheduleCtx.getCurrentTimeMillis()});
         // todo: I can see this set becoming a memory hog.  There might be a better way of doing this.
-        boolean success = true;
         long waitStart = System.currentTimeMillis();
         int rollCount = 0;
 
@@ -93,26 +92,21 @@ class LocatorFetchRunnable implements Runnable {
             }
         }
         
-        if (success) {
-            // now wait until ctx is drained. someone needs to be notified.
-            log.debug("Waiting for rollups to finish for " + parentSlotKey);
-            while (!executionContext.done()) {
-                try { 
-                    Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS); 
-                } catch (InterruptedException ex) {
-                    if (log.isTraceEnabled())
-                        log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
-                } finally {
-                    log.debug("Still waiting for rollups to finish for {} {}", parentSlotKey, System.currentTimeMillis() - waitStart);
-                }
+        // now wait until ctx is drained. someone needs to be notified.
+        log.debug("Waiting for rollups to finish for " + parentSlotKey);
+        while (!executionContext.done()) {
+            try {
+                Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS);
+            } catch (InterruptedException ex) {
+                if (log.isTraceEnabled())
+                    log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
+            } finally {
+                log.debug("Still waiting for rollups to finish for {} {}", parentSlotKey, System.currentTimeMillis() - waitStart);
             }
-            if (log.isDebugEnabled())
-                log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
-            this.scheduleCtx.clearFromRunning(parentSlotKey);
-        } else {
-            log.warn("BasicRollup execution of {} failed.", gran);
-            this.scheduleCtx.pushBackToScheduled(parentSlotKey);
         }
+        if (log.isDebugEnabled())
+            log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
+        this.scheduleCtx.clearFromRunning(parentSlotKey);
 
         timerCtx.stop();
     }
