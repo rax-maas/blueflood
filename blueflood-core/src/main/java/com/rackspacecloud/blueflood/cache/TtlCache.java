@@ -50,7 +50,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
             new HashMap<ColumnFamily<Locator, Long>, TimeValue>() {{
                 /// FIX: TTLs should be specified at CF level
                 for (Granularity gran : Granularity.granularities())
-                    put(AstyanaxIO.getColumnFamilyMapper().get(gran.name()),
+                    put(AstyanaxIO.getColumnFamilyMapper().get(gran),
                         new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
             }};
     
@@ -87,7 +87,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
                         @Override
                         public TimeValue getMetricTtl(String resolution) {
                             return SAFETY_TTLS.get(AstyanaxIO.getColumnFamilyMapper()
-                                    .get(Granularity.fromString(resolution).name()));
+                                    .get(Granularity.fromString(resolution)));
                         }
                     };
 
@@ -123,7 +123,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
         Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
         for (Granularity gran : Granularity.granularities())
-            map.put(AstyanaxIO.getColumnFamilyMapper().get(gran.name()), acct.getMetricTtl(gran.shortName()));
+            map.put(AstyanaxIO.getColumnFamilyMapper().get(gran), acct.getMetricTtl(gran.shortName()));
         return map;
     }
     
