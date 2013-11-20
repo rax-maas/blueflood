@@ -111,6 +111,7 @@
 
       <!-- Used for integration tests -->
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <version>1.8</version>
         <executions>
