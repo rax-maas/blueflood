@@ -75,13 +75,13 @@ public class AstyanaxIO {
         context = createPreferredHostContext();
         context.start();
         keyspace = context.getEntity();
-        final Map<Granularity, ColumnFamily<Locator, Long>> tempMap = new HashMap<Granularity, ColumnFamily<Locator, Long>>();
-        tempMap.put(Granularity.FULL, CF_METRICS_FULL);
-        tempMap.put(Granularity.MIN_5, CF_METRICS_5M);
-        tempMap.put(Granularity.MIN_20, CF_METRICS_20M);
-        tempMap.put(Granularity.MIN_60, CF_METRICS_60M);
-        tempMap.put(Granularity.MIN_240, CF_METRICS_240M);
-        tempMap.put(Granularity.MIN_1440, CF_METRICS_1440M);
+        final Map<Granularity, ColumnFamily<Locator, Long>> columnFamilyMap = new HashMap<Granularity, ColumnFamily<Locator, Long>>();
+        columnFamilyMap.put(Granularity.FULL, CF_METRICS_FULL);
+        columnFamilyMap.put(Granularity.MIN_5, CF_METRICS_5M);
+        columnFamilyMap.put(Granularity.MIN_20, CF_METRICS_20M);
+        columnFamilyMap.put(Granularity.MIN_60, CF_METRICS_60M);
+        columnFamilyMap.put(Granularity.MIN_240, CF_METRICS_240M);
+        columnFamilyMap.put(Granularity.MIN_1440, CF_METRICS_1440M);
 
         Map<ColumnFamily<Locator, Long>, Granularity> cfToGranMap = new HashMap<ColumnFamily<Locator, Long>, Granularity>();
         cfToGranMap.put(CF_METRICS_FULL, Granularity.FULL);
@@ -95,7 +95,7 @@ public class AstyanaxIO {
         CF_NAME_TO_CF = new ColumFamilyMapper() {
             @Override
             public ColumnFamily<Locator, Long> get(Granularity gran) {
-                return tempMap.get(gran);
+                return columnFamilyMap.get(gran);
             }
         };
         CF_TO_GRAN = Collections.unmodifiableMap(cfToGranMap);
