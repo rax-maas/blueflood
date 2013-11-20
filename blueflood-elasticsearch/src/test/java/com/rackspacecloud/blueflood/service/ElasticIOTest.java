@@ -129,7 +129,6 @@ public class ElasticIOTest {
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
 
-        TimeUnit.SECONDS.sleep(1);
         iac.prepareRefresh().execute().actionGet();
     }
 
