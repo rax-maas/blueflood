@@ -23,7 +23,7 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>${blueflood.version}</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
@@ -38,6 +38,7 @@
   <url>http://blueflood.io</url>
 
   <properties>
+    <blueflood.version>2.0.0-SNAPSHOT</blueflood.version>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
