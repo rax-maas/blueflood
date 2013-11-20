@@ -44,6 +44,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
+    <cassandra.skip>true</cassandra.skip>
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>

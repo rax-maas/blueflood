@@ -30,6 +30,10 @@
   <artifactId>blueflood-http</artifactId>
   <packaging>jar</packaging>
 
+  <properties>
+    <cassandra.skip>false</cassandra.skip>
+  </properties>
+
   <build>
     <plugins>
       <!-- Used to add source directories to our build. -->

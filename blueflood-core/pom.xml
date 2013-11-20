@@ -26,6 +26,10 @@
   <name>Blueflood Core Engine</name>
   <artifactId>blueflood-core</artifactId>
 
+  <properties>
+    <cassandra.skip>false</cassandra.skip>
+  </properties>
+
   <build>
     <plugins>
 
