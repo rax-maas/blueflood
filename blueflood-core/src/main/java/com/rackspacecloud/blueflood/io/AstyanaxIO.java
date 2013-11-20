@@ -37,9 +37,7 @@ import java.util.*;
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
-            LocatorSerializer.get(),
-            LongSerializer.get());
+    
     public static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
             LocatorSerializer.get(),
             LongSerializer.get());
@@ -58,6 +56,15 @@ public class AstyanaxIO {
     public static final ColumnFamily<Locator, Long> CF_METRICS_1440M = new ColumnFamily<Locator, Long>("metrics_1440m",
             LocatorSerializer.get(),
             LongSerializer.get());
+    
+    // todo: use the static constructor for all the CFs.
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_FULL = newMetricsCF("metrics_preaggregated_full");
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_5M = newMetricsCF("metrics_preaggregated_5m");
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_20M = newMetricsCF("metrics_preaggregated_20m");
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_60M = newMetricsCF("metrics_preaggregated_60m");
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_240M = newMetricsCF("metrics_preaggregated_240m");
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_1440M = newMetricsCF("metrics_preaggregated_1440m");
+    
     public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
@@ -158,12 +165,16 @@ public class AstyanaxIO {
     protected static Keyspace getKeyspace() {
         return keyspace;
     }
-
+    
     public static Map<String, ColumnFamily<Locator, Long>> getColumnFamilyMapper() {
         return CF_NAME_TO_CF;
     }
-
+    
     public static Map<ColumnFamily<Locator, Long>, Granularity> getCFToGranularityMapper() {
         return CF_TO_GRAN;
+    }
+    
+    private static ColumnFamily<Locator, Long> newMetricsCF(String name) {
+        return new ColumnFamily<Locator, Long>(name, LocatorSerializer.get(), LongSerializer.get());
     }
 }

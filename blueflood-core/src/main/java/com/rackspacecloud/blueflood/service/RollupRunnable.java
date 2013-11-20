@@ -93,7 +93,7 @@ class RollupRunnable implements Runnable {
                 if (rollupContext.getSourceGranularity() == Granularity.FULL) {    
                     srcCF = statType == StatType.UNKNOWN
                             ? AstyanaxIO.CF_METRICS_FULL
-                            : AstyanaxIO.CF_METRICS_PREAGGREGATED;
+                            : AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
                     input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
                             rollupContext.getLocator(), rollupContext.getRange(), srcCF);
                 } else {
