@@ -17,7 +17,7 @@
 
   <build>
     <plugins>
-      
+
       <!-- mvn assembly:assembly -->
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
