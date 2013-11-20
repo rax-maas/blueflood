@@ -30,11 +30,6 @@
   <artifactId>blueflood-http</artifactId>
   <packaging>jar</packaging>
 
-  
-  <properties>
-    <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
-  </properties>
-
   <build>
     <plugins>
       <!-- Used to add source directories to our build. -->
@@ -78,50 +73,6 @@
       </plugin>
 
       <!-- Used for integration tests -->
-      <!-- Spin up Cassandra -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>cassandra-maven-plugin</artifactId>
-        <version>${cassandra.plugin.version}</version>
-        <configuration>
-          <listenAddress>${cassandra.listenAddress}</listenAddress>
-          <rpcPort>${cassandra.rpcPort}</rpcPort>
-          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
-          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
-        </configuration>
-        <executions>
-          <execution>
-            <id>delete-cassandra</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>delete</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>start-cassandra</id>
-            <goals>
-              <goal>start</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>load-schema</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>load</goal>
-            </goals>
-            <configuration>
-              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
-            </configuration>
-          </execution>
-          <execution>
-            <id>stop-cassandra</id>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -165,7 +116,7 @@
       <!-- I wish I knew maven well enough to figure out how to not specify the version here. -->
       <version>2.0.0-SNAPSHOT</version>
     </dependency>
-    
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
@@ -220,7 +171,7 @@
       <artifactId>mockito-all</artifactId>
       <version>1.8.4</version>
     </dependency>
-    
+
   </dependencies>
 
 </project>

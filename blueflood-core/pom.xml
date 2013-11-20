@@ -26,10 +26,6 @@
   <name>Blueflood Core Engine</name>
   <artifactId>blueflood-core</artifactId>
 
-  <properties>
-    <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
-  </properties>
-
   <build>
     <plugins>
 
@@ -73,51 +69,6 @@
           <parallel>classes</parallel>
           <threadCount>5</threadCount>
         </configuration>
-      </plugin>
-
-      <!-- Used for integration tests -->
-      <!-- Spin up Cassandra -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>cassandra-maven-plugin</artifactId>
-        <version>${cassandra.plugin.version}</version>
-        <configuration>
-          <listenAddress>${cassandra.listenAddress}</listenAddress>
-          <rpcPort>${cassandra.rpcPort}</rpcPort>
-          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
-          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
-        </configuration>
-        <executions>
-          <execution>
-            <id>delete-cassandra</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>delete</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>start-cassandra</id>
-            <goals>
-              <goal>start</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>load-schema</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>load</goal>
-            </goals>
-            <configuration>
-              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
-            </configuration>
-          </execution>
-          <execution>
-            <id>stop-cassandra</id>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -309,45 +260,6 @@
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <!-- We cannot override the script value from the command line, so the only way to run 'cassandra:run' is by
-         specifying it in a profile. -->
-    <profile>
-      <id>cassandra-only</id>
-      <properties>
-        <skip.unit.tests>true</skip.unit.tests>
-        <skip.integration.tests>true</skip.integration.tests>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>cassandra-maven-plugin</artifactId>
-            <version>${cassandra.plugin.version}</version>
-            <configuration>
-              <listenAddress>${cassandra.listenAddress}</listenAddress>
-              <rpcPort>${cassandra.rpcPort}</rpcPort>
-              <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
-              <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
-              <loadAfterFirstStart>true</loadAfterFirstStart>
-              <script>${basedir}/src/test/resources/cassandra/cli/load.script</script>
-            </configuration>
-            <executions>
-              <execution>
-                <id>default-cli</id>
-                <phase>test</phase>
-                <goals>
-                  <goal>delete</goal>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
   <repositories>
     <repository>
