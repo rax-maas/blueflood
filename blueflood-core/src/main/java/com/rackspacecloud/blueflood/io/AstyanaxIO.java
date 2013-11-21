@@ -27,40 +27,36 @@ import com.netflix.astyanax.retry.RetryNTimes;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import com.netflix.astyanax.util.TimeUUIDUtils;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_FULL = new ColumnFamily<Locator, Long>("metrics_full",
-            LocatorSerializer.get(),
-            LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_5M = new ColumnFamily<Locator, Long>("metrics_5m",
-            LocatorSerializer.get(),
-            LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_20M = new ColumnFamily<Locator, Long>("metrics_20m",
-            LocatorSerializer.get(),
-            LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_60M = new ColumnFamily<Locator, Long>("metrics_60m",
-            LocatorSerializer.get(),
-            LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_240M = new ColumnFamily<Locator, Long>("metrics_240m",
-            LocatorSerializer.get(),
-            LongSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_1440M = new ColumnFamily<Locator, Long>("metrics_1440m",
-            LocatorSerializer.get(),
-            LongSerializer.get());
+    
+    protected static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily("metrics_full", new TimeValue(1, TimeUnit.DAYS));
+    protected static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily("metrics_5m", new TimeValue(2, TimeUnit.DAYS));
+    protected static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily("metrics_20m", new TimeValue(3, TimeUnit.DAYS));
+    protected static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily("metrics_60m", new TimeValue(31, TimeUnit.DAYS));
+    protected static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily("metrics_240m", new TimeValue(60, TimeUnit.DAYS));
+    protected static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily("metrics_1440m", new TimeValue(365, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily("metrics_string", new TimeValue(365 * 3, TimeUnit.DAYS));
+    
+    private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
+            CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
+            CF_METRICS_STRING
+    };
+    
     protected static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_STRING = new ColumnFamily<Locator, Long>("metrics_string",
-            LocatorSerializer.get(),
-            LongSerializer.get());
     protected static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
@@ -75,7 +71,7 @@ public class AstyanaxIO {
         context = createPreferredHostContext();
         context.start();
         keyspace = context.getEntity();
-        final Map<Granularity, ColumnFamily<Locator, Long>> columnFamilyMap = new HashMap<Granularity, ColumnFamily<Locator, Long>>();
+        final Map<Granularity, MetricColumnFamily> columnFamilyMap = new HashMap<Granularity, MetricColumnFamily>();
         columnFamilyMap.put(Granularity.FULL, CF_METRICS_FULL);
         columnFamilyMap.put(Granularity.MIN_5, CF_METRICS_5M);
         columnFamilyMap.put(Granularity.MIN_20, CF_METRICS_20M);
@@ -94,7 +90,7 @@ public class AstyanaxIO {
 
         CF_NAME_TO_CF = new ColumFamilyMapper() {
             @Override
-            public ColumnFamily<Locator, Long> get(Granularity gran) {
+            public MetricColumnFamily get(Granularity gran) {
                 return columnFamilyMap.get(gran);
             }
         };
@@ -172,6 +168,45 @@ public class AstyanaxIO {
     
     // future versions will have get(Granularity, StatType).
     public interface ColumFamilyMapper {
-        public ColumnFamily<Locator, Long> get(Granularity gran);
+        public MetricColumnFamily get(Granularity gran);
+    }
+    
+    // iterate over all column families that store metrics.
+    public static Iterable<MetricColumnFamily> getMetricColumnFamilies() {
+        return new Iterable<MetricColumnFamily>() {
+            @Override
+            public Iterator<MetricColumnFamily> iterator() {
+                return new Iterator<MetricColumnFamily>() {
+                    private int pos = 0;
+                    @Override
+                    public boolean hasNext() {
+                        return pos < METRIC_COLUMN_FAMILES.length;
+                    }
+
+                    @Override
+                    public MetricColumnFamily next() {
+                        return METRIC_COLUMN_FAMILES[pos++];
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new NoSuchMethodError("Not implemented");
+                    }
+                };
+            }
+        };
+    }
+    
+    public static class MetricColumnFamily extends ColumnFamily<Locator, Long>  {
+        private final TimeValue ttl;
+        
+        public MetricColumnFamily(String name, TimeValue ttl) {
+            super(name, LocatorSerializer.get(), LongSerializer.get());
+            this.ttl = ttl;
+        }
+        
+        public TimeValue getDefaultTTL() {
+            return ttl;
+        }
     }
 }

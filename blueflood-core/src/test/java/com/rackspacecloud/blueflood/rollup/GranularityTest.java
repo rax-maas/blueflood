@@ -271,16 +271,6 @@ public class GranularityTest {
     }
 
     @Test
-    public void testGetTTL() {
-        Granularity gran = Granularity.FULL;
-
-        TimeValue tv = gran.getTTL();
-        TimeValue tv2 = new TimeValue(1, TimeUnit.DAYS);
-        
-        Assert.assertEquals(tv2.toDays(), tv.toDays());
-    }
-
-    @Test
     public void testBadGranularityFromPointsInterval() {
         try {
             Granularity.granularityFromPointsInInterval(2, 1, 3);
