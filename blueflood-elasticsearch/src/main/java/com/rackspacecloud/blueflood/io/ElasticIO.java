@@ -62,10 +62,14 @@ public class ElasticIO implements DiscoveryIO {
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
     private final Client client;
     private static final String ES_TYPE = "metrics";
-    public static final String INDEX_PREFIX = "blueflood-";
+    private static final String INDEX_PREFIX = "blueflood-";
     private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
     private final Meter searchMeter = Metrics.newMeter(ElasticIO.class, "Searches Performed", "Discovery", TimeUnit.SECONDS);
     private final Timer searchTimer = Metrics.newTimer(ElasticIO.class, "Search Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+
+    public static String getIndexPrefix() {
+        return INDEX_PREFIX;
+    }
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());

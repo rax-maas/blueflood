@@ -48,7 +48,7 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>0.90.3</version>
+      <version>0.90.6</version>
     </dependency>
 
     <dependency>
@@ -62,8 +62,17 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.10</version>
+        <scope>test</scope>
+        <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.tlrx</groupId>
+      <artifactId>elasticsearch-test</artifactId>
+      <version>0.90.6</version>
+      <scope>test</scope>
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
 </project>

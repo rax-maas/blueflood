@@ -1,0 +1,31 @@
+{
+    "metrics": {
+        "properties": {
+            "TENANT_ID": {
+                "type": "string",
+                "index": "not_analyzed"
+            },
+            "TYPE": {
+                "type": "string",
+                "index": "not_analyzed"
+            },
+            "UNIT": {
+                "type": "string",
+                "index": "not_analyzed"
+            },
+            "METRIC_NAME": {
+                "type": "multi_field",
+                "fields": {
+                    "RAW_METRIC_NAME": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                    },
+                    "METRIC_NAME": {
+                        "type": "string",
+                        "index": "analyzed"
+                    }
+                }
+            }
+        }
+    }
+}

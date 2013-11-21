@@ -16,23 +16,23 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import junit.framework.Assert;
-
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
-import org.elasticsearch.client.IndicesAdminClient;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import junit.framework.Assert;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ElasticIOTest {
     private static final int NUM_PARENT_ELEMENTS = 30;
@@ -43,7 +43,8 @@ public class ElasticIOTest {
     private static final String TENANT_B = "someotherguy";
     private static final String UNIT = "horse length";
     private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
-    private static ElasticIO elasticIO = new ElasticIO(EmbeddedElasticSearchServer.getInstance());
+    private ElasticIO elasticIO;
+    private EsSetup esSetup;
 
     private static ElasticIO.Result createExpectedResult(String tenantId, int x, String y, int z) {
         Locator locator = createTestLocator(tenantId, x, y, z);
@@ -83,53 +84,27 @@ public class ElasticIOTest {
         return metrics;
     }
 
-    @BeforeClass
-    public static void setup() throws IOException, InterruptedException{
-        IndicesAdminClient iac = EmbeddedElasticSearchServer.getInstance().getClient().admin().indices();
+    @Before
+    public void setup() throws IOException {
+        System.setProperty("ELASTICSEARCH_NUM_INDICES", "1");
+        esSetup = new EsSetup();
 
-        XContentBuilder mapping =  XContentFactory.jsonBuilder().startObject()
-            .startObject("metrics")
-                .startObject("properties")
-                    .startObject("TENANT_ID")
-                        .field("type", "string")
-                        .field("index", "not_analyzed")
-                    .endObject()
-                    .startObject("TYPE")
-                    .field("type", "string")
-                    .field("index", "not_analyzed")
-                    .endObject()
-                    .startObject("UNIT")
-                        .field("type", "string")
-                        .field("index", "not_analyzed")
-                    .endObject()
-                    .startObject("METRIC_NAME")
-                        .field("type", "multi_field")
-                        .startObject("fields")
-                            .startObject("METRIC_NAME")
-                                .field("type", "string")
-                                .field("index", "analyzed")
-                            .endObject()
-                            .startObject("RAW_METRIC_NAME")
-                                .field("type", "string")
-                                .field("index", "not_analyzed")
-                            .endObject()
-                        .endObject()
-                    .endObject()
-                .endObject()
-            .endObject()
-        .endObject();
-
-
-        PutMappingRequestBuilder pmrb = new PutMappingRequestBuilder(iac);
-        pmrb.setType("metrics")
-                .setSource(mapping)
-                .execute()
-                .actionGet();
+        esSetup.execute(
+                EsSetup.deleteAll(),
+                EsSetup.createIndex(ElasticIO.getIndexPrefix() + "0")
+                    .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json"))
+        );
+        elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
 
-        iac.prepareRefresh().execute().actionGet();
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+    }
+
+    @After
+    public void tearDown() {
+        esSetup.terminate();
     }
 
     @Test
