@@ -191,7 +191,7 @@ public class SerializationTest {
             for (int i = 0; i < TO_SERIALIZE_BASIC_ROLLUP.length; i++) {
                 for (Granularity g : Granularity.rollupGranularities()) {
                     ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-                    BasicRollup basicRollup = (BasicRollup) NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb);
+                    BasicRollup basicRollup = NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb);
                     Assert.assertTrue(String.format("Deserialization for rollup broken at %d", version),
                             TO_SERIALIZE_BASIC_ROLLUP[i].equals(basicRollup));
                 }
@@ -202,7 +202,7 @@ public class SerializationTest {
         // current round tripping.
         for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
             for (Granularity g : Granularity.rollupGranularities()) {
-                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g.name());
+                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(g);
                 ByteBuffer bb = NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(basicRollup);
                 Assert.assertTrue(basicRollup.equals(NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb)));
             }

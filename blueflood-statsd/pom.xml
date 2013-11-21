@@ -6,7 +6,7 @@
   <parent>
     <artifactId>blueflood</artifactId>
     <groupId>com.rackspacecloud</groupId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>${blueflood.version}</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -26,7 +26,7 @@
     <dependency>
       <artifactId>blueflood-core</artifactId>
       <groupId>com.rackspacecloud</groupId>
-      <version>1.0.4-SNAPSHOT</version>
+      <version>${blueflood.version}</version>
     </dependency>
     
     <dependency>

@@ -103,7 +103,7 @@ public class ElasticIO implements DiscoveryIO {
             md.withAnnotation(info);
             bulk.add(createSingleRequest(md));
         }
-        bulk.execute();
+        bulk.execute().actionGet();
     }
 
     private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {

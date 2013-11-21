@@ -51,7 +51,7 @@ public class MetricsWriter extends AsyncFunctionWithThreadPool<StatsCollection, 
                 TypedMetricsCollection metrics = Conversions.asMetrics(input);
                 // there will be no string metrics, so we can get away with assuming CF_METRICS_FULL.
                 writer.insertMetrics(new ArrayList<IMetric>(metrics.getNormalMetrics()), AstyanaxIO.CF_METRICS_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.getPreaggregatedMetrics()), AstyanaxIO.CF_METRICS_PREAGGREGATED);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.getPreaggregatedMetrics()), AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
                 return metrics;
             }
         });

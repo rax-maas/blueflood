@@ -23,7 +23,7 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>${blueflood.version}</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
@@ -39,9 +39,11 @@
   <url>http://blueflood.io</url>
 
   <properties>
+    <blueflood.version>2.0.0-SNAPSHOT</blueflood.version>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
     <cassandra.rpcPort>19180</cassandra.rpcPort>
     <skip.integration.tests>false</skip.integration.tests>
@@ -107,6 +109,36 @@
           </execution>
         </executions>
       </plugin>
+
+      <!-- Used for integration tests -->
+      <!-- Spin up Cassandra -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cassandra-maven-plugin</artifactId>
+        <version>${cassandra.plugin.version}</version>
+        <configuration>
+          <listenAddress>${cassandra.listenAddress}</listenAddress>
+          <rpcPort>${cassandra.rpcPort}</rpcPort>
+          <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
+          <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
+          <loadFailureIgnore>false</loadFailureIgnore>
+        </configuration>
+        <executions>
+          <execution>
+            <id>delete-cassandra</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>delete</goal>
+            </goals>
+          </execution>
+          <execution>
+            <goals>
+              <goal>start</goal>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -137,18 +169,18 @@
       <build>
         <plugins>
           <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
       </build>
     </profile>

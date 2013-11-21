@@ -67,7 +67,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     
     private static Points<TimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {
         // I hate doing it like this.
-        ColumnFamily<Locator, Long> cf = gran == Granularity.FULL ? AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL : AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+        ColumnFamily<Locator, Long> cf = gran == Granularity.FULL ? AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL : AstyanaxIO.getColumnFamilyMapper().get(gran);
         return reader.getDataToRoll(TimerRollup.class, locator, range, cf);
     }
     

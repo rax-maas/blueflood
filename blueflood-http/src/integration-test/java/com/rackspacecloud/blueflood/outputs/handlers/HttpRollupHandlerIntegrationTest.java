@@ -215,7 +215,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             rollups.put(range.getStart(), basicRollup);
         }
 
-        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity.name());
+        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
         AstyanaxWriter.getInstance().insertRollups(locator, rollups, destCF);
     }
 

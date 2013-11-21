@@ -339,9 +339,11 @@ public class AstyanaxReader extends AstyanaxIO {
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        Points points = new Points();
-        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran.name()),
+
+        Points<SimpleNumber> points = new Points<SimpleNumber>();
+        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.getColumnFamilyMapper().get(gran),
                 range.start, range.stop);
+                
         
         // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
         // data we are asking for and use a specific reader method.
@@ -363,7 +365,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
-        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran.name());
+        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         final MetricData metricData = getNumericMetricDataForRange(locator, range, gran);
 
