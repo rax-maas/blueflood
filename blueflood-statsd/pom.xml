@@ -13,7 +13,10 @@
   <name>Blueflood statsd integration</name>
   <artifactId>blueflood-statsd</artifactId>
   <packaging>jar</packaging>
-
+  
+  <properties>
+    <cassandra.skip>false</cassandra.skip>
+  </properties>
 
   <build>
     <plugins>
