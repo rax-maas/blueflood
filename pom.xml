@@ -45,7 +45,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <cassandra.plugin.version>1.1.0-1</cassandra.plugin.version>
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
-    <cassandra.rpcPort>19180</cassandra.rpcPort>
+    <cassandra.skip>true</cassandra.skip>
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
   </properties>
@@ -111,14 +111,35 @@
       </plugin>
 
       <!-- Used for integration tests -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>reserve-network-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <portNames>
+                <portName>cassandra.rpcPort</portName>
+                <portName>cassandra.jmxPort</portName>
+                <portName>cassandra.storagePort</portName>
+                <portName>cassandra.stopPort</portName>
+              </portNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Spin up Cassandra -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cassandra-maven-plugin</artifactId>
         <version>${cassandra.plugin.version}</version>
         <configuration>
-          <listenAddress>${cassandra.listenAddress}</listenAddress>
-          <rpcPort>${cassandra.rpcPort}</rpcPort>
           <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
           <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
           <loadFailureIgnore>false</loadFailureIgnore>
