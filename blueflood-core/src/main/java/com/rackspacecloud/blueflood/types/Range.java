@@ -29,6 +29,9 @@ public class Range {
     public final long stop;
 
     public Range(long l, long r) {
+        if (l >= r) {
+            throw new IllegalArgumentException("start cannot be greater than end");
+        }
         start = l;
         stop = r;
     }
