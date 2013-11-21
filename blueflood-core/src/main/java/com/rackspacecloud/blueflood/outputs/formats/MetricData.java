@@ -21,10 +21,12 @@ import com.rackspacecloud.blueflood.types.Points;
 public class MetricData {
     private final Points data;
     private final String unit;
+    private final String type;
 
-    public MetricData(Points points, String unit) {
+    public MetricData(Points points, String unit, String type) {
         this.data = points;
         this.unit = unit;
+        this.type = type;
     }
 
     public Points getData() {
@@ -33,5 +35,9 @@ public class MetricData {
 
     public String getUnit() {
         return unit;
+    }
+
+    public String getType() {
+        return type;
     }
 }

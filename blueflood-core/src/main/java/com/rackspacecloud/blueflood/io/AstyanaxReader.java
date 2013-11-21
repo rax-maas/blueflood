@@ -284,7 +284,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator));
+        return new MetricData(points, getUnitString(locator), "string");
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -300,7 +300,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator));
+        return new MetricData(points, getUnitString(locator), "boolean");
     }
 
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -319,7 +319,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator));
+        return new MetricData(points, getUnitString(locator), "number");
     }
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
