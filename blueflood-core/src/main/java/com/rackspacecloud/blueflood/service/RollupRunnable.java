@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -28,6 +29,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 
 import java.util.concurrent.TimeUnit;
 
@@ -119,6 +121,8 @@ class RollupRunnable implements Runnable {
             rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
+            //Emit a rollup event to eventemitter
+            RollupEventEmitter.emitAsJSON(singleRollupReadContext.getRollupGranularity().coarser().name(), singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()));
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
