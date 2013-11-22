@@ -48,10 +48,9 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     // these values get used in the absence of a ttl (internal API failure, etc.).
     static final Map<ColumnFamily<Locator, Long>, TimeValue> SAFETY_TTLS =
             new HashMap<ColumnFamily<Locator, Long>, TimeValue>() {{
-                /// FIX: TTLs should be specified at CF level
-                for (Granularity gran : Granularity.granularities())
-                    put(AstyanaxIO.getColumnFamilyMapper().get(gran),
-                        new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
+                for (AstyanaxIO.MetricColumnFamily cf : AstyanaxIO.getMetricColumnFamilies()) {
+                    put(cf, new TimeValue(cf.getDefaultTTL().getValue() * 5, cf.getDefaultTTL().getUnit()));
+                }
             }};
     
     private final com.google.common.cache.LoadingCache<String, Map<ColumnFamily<Locator, Long>, TimeValue>> cache;
@@ -124,6 +123,9 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
         for (Granularity gran : Granularity.granularities())
             map.put(AstyanaxIO.getColumnFamilyMapper().get(gran), acct.getMetricTtl(gran.shortName()));
+        // todo: this is a temporary hack.  The Account API maps TTL to granularity, but everywhere else TTL is linked
+        // to column families.  Either way, the account api used at rackspace doesn't contain TTLs for the string CF.
+        map.put(AstyanaxIO.CF_METRICS_STRING, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_STRING));
         return map;
     }
     
