@@ -30,6 +30,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -42,7 +43,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -195,17 +196,14 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    // todo: rename to insertBasicRollup.
-    public void insertRollup(Locator locator, final long timestamp, final BasicRollup basicRollup,
-                             ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        if (destCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
+    public void insertBasicRollup(final SingleRollupWriteContext writeContext) throws ConnectionException {
+        if (writeContext.getDestinationCF().equals(AstyanaxIO.CF_METRICS_FULL)) {
             throw new IllegalArgumentException("Invalid granularity FULL for BasicRollup insertion");
         }
-        insertRollups(locator, new HashMap<Long, BasicRollup>() {{
-            put(timestamp, basicRollup);
-        }}, destCF);
+        insertBasicRollups(new ArrayList<SingleRollupWriteContext>() {{
+            add(writeContext);
+        }});
     }
-
 
     // todo: this method should be made private. outside of this class, it is only used by tests.
     public void insertRollups(Locator locator, Map<Long, BasicRollup> rollups,
@@ -275,4 +273,24 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
+    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) {
+        MutationBatch mb = keyspace.prepareMutationBatch();
+        for (SingleRollupWriteContext writeContext : writeContexts) {
+            BasicRollup rollup = writeContext.getRollup();
+            int ttl = (int) ROLLUP_TTL_CACHE.getTtl(
+                    writeContext.getLocator().getTenantId(),
+                    writeContext.getDestinationCF()).toSeconds();
+            mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
+                    .putColumn(writeContext.getTimestamp(),
+                            rollup,
+                            NumericSerializer.serializerFor(BasicRollup.class),
+                            ttl);
+        }
+        try {
+            mb.execute();
+        } catch (ConnectionException e) {
+            Instrumentation.markWriteError(e);
+            log.error("Error writing rollup batch", e);
+        }
+    }
 }

@@ -27,10 +27,10 @@ public class RollupExecutionContextTest {
 
         RollupExecutionContext myRollupContext = new RollupExecutionContext(myThread);
 
-        Assert.assertTrue(myRollupContext.done());
-        myRollupContext.increment();
-        Assert.assertFalse(myRollupContext.done());
-        myRollupContext.decrement();
-        Assert.assertTrue(myRollupContext.done());
+        Assert.assertTrue(myRollupContext.doneReading());
+        myRollupContext.incrementReadCounter();
+        Assert.assertFalse(myRollupContext.doneReading());
+        myRollupContext.decrementReadCounter();
+        Assert.assertTrue(myRollupContext.doneReading());
     }
 }

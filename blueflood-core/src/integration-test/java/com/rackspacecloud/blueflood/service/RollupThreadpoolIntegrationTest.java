@@ -87,7 +87,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         Thread rollupThread = new Thread(rollupService, "rollup service test");
         rollupThread.start();
 
-        Class.forName("com.rackspacecloud.blueflood.service.RollupContext"); // Static initializer for the metric
+        Class.forName("com.rackspacecloud.blueflood.service.SingleRollupReadContext"); // Static initializer for the metric
 
         MetricsRegistry registry = Metrics.defaultRegistry();
         Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.rackspacecloud.blueflood.service", "RollupService", "Rollup Execution Timer"));
