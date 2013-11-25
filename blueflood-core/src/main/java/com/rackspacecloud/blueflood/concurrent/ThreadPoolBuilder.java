@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.concurrent;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ public class ThreadPoolBuilder {
         }
     };
     private String name = "Thread";
+    private TimeValue keepAliveTime = new TimeValue(30, TimeUnit.SECONDS);
 
     public ThreadPoolBuilder() {
 
@@ -60,6 +62,11 @@ public class ThreadPoolBuilder {
 
     public ThreadPoolBuilder withBoundedQueue(int size) {
         this.queueSize = size;
+        return this;
+    }
+    
+    public ThreadPoolBuilder withKeepAliveTime(TimeValue time) {
+        this.keepAliveTime = time;
         return this;
     }
 
@@ -92,7 +99,8 @@ public class ThreadPoolBuilder {
                 metricName,
                 corePoolSize,
                 maxPoolSize,
-                30, TimeUnit.SECONDS, // hard code the timeout.
+                keepAliveTime.getValue(),
+                keepAliveTime.getUnit(),
                 workQueue,
                 new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
                 rejectedHandler);
