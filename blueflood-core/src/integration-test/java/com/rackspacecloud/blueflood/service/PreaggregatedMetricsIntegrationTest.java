@@ -127,7 +127,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, points.getPoints().size());
         
         // let it time out.
-        Thread.sleep(2000);
+        sleepPeacefully(2000);
         
         // ensure it is gone.
         points = reader.getTimerDataToRoll(locator, new Range(ts, ts+1), Granularity.FULL);
@@ -141,6 +141,18 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
             list.add(metric);
         }
         return list;
+    }
+    
+    private static void sleepPeacefully(long length) {
+        long wallTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - wallTime < length) {
+            try {
+                Thread.sleep(length - (System.currentTimeMillis() - wallTime));
+                break;
+            } catch (InterruptedException ex) {
+                System.out.println("thread interrupted. why?");
+            }
+        }
     }
     
 }
