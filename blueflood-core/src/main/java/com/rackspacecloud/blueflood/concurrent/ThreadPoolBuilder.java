@@ -97,26 +97,4 @@ public class ThreadPoolBuilder {
                 new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
                 rejectedHandler);
     }
-    
-    private class InstrumentedThreadPoolExecutor extends ThreadPoolExecutor {
-        private final Gauge<Integer> workQueueSize;
-        
-        public InstrumentedThreadPoolExecutor(String name,
-                                              int corePoolSize,
-                                              int maximumPoolSize,
-                                              long keepAliveTime,
-                                              TimeUnit unit,
-                                              final BlockingQueue<Runnable> workQueue,
-                                              ThreadFactory threadFactory,
-                                              RejectedExecutionHandler handler) {
-            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
-            
-            this.workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, name, new Gauge<Integer>() {
-                @Override
-                public Integer value() {
-                    return workQueue.size();
-                }
-            });
-        }
-    }
 }
