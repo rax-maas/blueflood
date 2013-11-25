@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.collect.Lists;
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -33,6 +34,7 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,6 +66,12 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         // todo: add a few percentiles.
     }
     
+    private static Points<TimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {
+        // I hate doing it like this.
+        ColumnFamily<Locator, Long> cf = gran == Granularity.FULL ? AstyanaxIO.CF_METRICS_PREAGGREGATED : AstyanaxIO.getColumnFamilyMapper().get(gran.name());
+        return reader.getDataToRoll(TimerRollup.class, locator, range, cf);
+    }
+    
     @Test
     public void testFullReadWrite() throws Exception {
         long ts = timestamp.incrementAndGet();
@@ -72,7 +80,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
 
         writer.insertMetrics(Lists.newArrayList(metric), AstyanaxIO.CF_METRICS_PREAGGREGATED);
         
-        Points<TimerRollup> points = reader.getTimerDataToRoll(locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
 
         Assert.assertEquals(1, points.getPoints().size());
         Assert.assertEquals(metric.getValue(), points.getPoints().get(ts).getData());
@@ -88,7 +96,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         writer.insertMetrics(Lists.newArrayList(metric), AstyanaxIO.CF_METRICS_PREAGGREGATED);
         
         // read the raw data.
-        Points<TimerRollup> points = reader.getTimerDataToRoll(locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
         Assert.assertEquals(1, points.getPoints().size());
         
         // create the rollup
@@ -123,14 +131,14 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         writer.insertMetrics(Lists.newArrayList(metric), AstyanaxIO.CF_METRICS_PREAGGREGATED);
         
         // read it quickly.
-        Points<TimerRollup> points = reader.getTimerDataToRoll(locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
         Assert.assertEquals(1, points.getPoints().size());
         
         // let it time out.
         Thread.sleep(2000);
         
         // ensure it is gone.
-        points = reader.getTimerDataToRoll(locator, new Range(ts, ts+1), Granularity.FULL);
+        points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
         Assert.assertEquals(0, points.getPoints().size());
     }
     
