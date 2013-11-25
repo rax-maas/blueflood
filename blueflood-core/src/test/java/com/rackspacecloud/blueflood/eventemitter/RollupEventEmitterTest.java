@@ -35,7 +35,7 @@ public class RollupEventEmitterTest {
 
     @Test
     public void testRollupEmit() {
-      RollupEventEmitter.emitAsJSON(testEventName, loc, roll, testUnitsString);
+      RollupEventEmitter.emit(testEventName, loc, roll, testUnitsString);
     }
 
     @Test
