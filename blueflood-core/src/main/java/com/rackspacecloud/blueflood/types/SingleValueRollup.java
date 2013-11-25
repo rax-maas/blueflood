@@ -12,11 +12,19 @@ public class SingleValueRollup implements Rollup {
     }
     
     public SingleValueRollup withValue(Number value) {
-        this.value = value;
+        this.value = promoteToDoubleOrLong(value);
         return this;
     }
     
     public Number getValue() { return value; }
     
     public int getNumSamplesUnsafe() { return numSamples; }
+    
+    private static Number promoteToDoubleOrLong(Number num) {
+        if (num instanceof Float)
+            return num.doubleValue();
+        else if (num instanceof Integer)
+            return num.longValue();
+        return num;
+    }
 }

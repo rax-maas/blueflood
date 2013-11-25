@@ -58,6 +58,23 @@ public class SingleValueRollupTests {
         Assert.assertEquals(gauges[gauges.length - 1], cumulative);
     }
     
+    @Test
+    public void testEqualitiesAreFalseAcrossTypes() {
+        // they hold the same number, but instances should not be identical to each other when their types differ.
+        SingleValueRollup set = new SetRollup().withCount(3L);
+        SingleValueRollup counter = new CounterRollup(32).withCount(3L);
+        SingleValueRollup gauge = new GaugeRollup().withGauge(3L);
+        
+        Assert.assertFalse(set.equals(counter));
+        Assert.assertFalse(counter.equals(set));
+        
+        Assert.assertFalse(counter.equals(gauge));
+        Assert.assertFalse(gauge.equals(counter));
+        
+        Assert.assertFalse(gauge.equals(set));
+        Assert.assertFalse(set.equals(gauge));
+    }
+    
     private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
         Points<T> points = new Points<T>();
         long time = initialTime;
