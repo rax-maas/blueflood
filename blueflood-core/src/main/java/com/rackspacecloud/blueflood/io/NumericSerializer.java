@@ -49,6 +49,7 @@ public class NumericSerializer {
     
     private static final boolean DUMP_BAD_BUFFERS = System.getProperty("DUMP_BAD_BUFFERS") != null;
 
+    public static final AbstractSerializer<SimpleNumber> simpleNumberSerializer = new SimpleNumberSerializer();
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
@@ -508,6 +509,21 @@ public class NumericSerializer {
             } catch (Exception e) {
                 throw new RuntimeException("Deserialization Failure", e);
             }
+        }
+    }
+    
+    // composes a raw serializer.
+    private static class SimpleNumberSerializer extends AbstractSerializer<SimpleNumber> {
+        private static final RawSerializer rawSerde = new RawSerializer();
+        
+        @Override
+        public ByteBuffer toByteBuffer(SimpleNumber obj) {
+            return rawSerde.toByteBuffer(obj);
+        }
+
+        @Override
+        public SimpleNumber fromByteBuffer(ByteBuffer byteBuffer) {
+            return new SimpleNumber(rawSerde.fromByteBuffer(byteBuffer));
         }
     }
     
