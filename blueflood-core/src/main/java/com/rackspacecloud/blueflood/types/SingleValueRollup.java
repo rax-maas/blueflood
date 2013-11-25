@@ -27,4 +27,9 @@ public class SingleValueRollup implements Rollup {
             return num.longValue();
         return num;
     }
+
+    @Override
+    public String toString() {
+        return String.format("value: %s, samples: %d", value.toString(), numSamples);
+    }
 }
