@@ -58,6 +58,14 @@ public class AstyanaxIO {
             LocatorSerializer.get(),
             LongSerializer.get());
     
+    // todo: use the static constructor for all the CFs.
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(3, TimeUnit.DAYS));
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily("metrics_preaggregated_60m", new TimeValue(31, TimeUnit.DAYS));
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
+    
     public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
@@ -165,11 +173,6 @@ public class AstyanaxIO {
         return CF_NAME_TO_CF;
     }
 
-    // todo: ensure this goes away
-    public static Map<ColumnFamily<Locator, Long>, Granularity> getCFToGranularityMapper() {
-        return CF_TO_GRAN;
-    }
-    
     // future versions will have get(Granularity, StatType).
     public interface ColumFamilyMapper {
         public MetricColumnFamily get(Granularity gran);

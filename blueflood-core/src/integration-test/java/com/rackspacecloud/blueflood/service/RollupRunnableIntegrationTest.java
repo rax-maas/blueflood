@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
@@ -93,7 +92,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             normalMetrics.add(metric);
         }
         
-        writer.insertMetrics(preaggregatedMetrics, AstyanaxIO.CF_METRICS_PREAGGREGATED);
+        writer.insertMetrics(preaggregatedMetrics, AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
         writer.insertMetrics(normalMetrics, AstyanaxIO.CF_METRICS_FULL);
          
     }
@@ -130,7 +129,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(5, reader.getDataToRoll(SetRollup.class,
                                                     setLocator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
         
         // assert nothing in 5m for this locator.
         Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
@@ -170,7 +169,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(5, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
         
         // assert nothing in 5m for this locator.
         Assert.assertEquals(0, reader.getDataToRoll(rollupClass,
