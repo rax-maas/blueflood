@@ -69,6 +69,11 @@ public class Variance extends AbstractRollupStat {
         this.isRollup = true;
         basicRollupList.add(basicRollup); // we need all the rollup metrics before computing the final variance.
     }
+    
+    public String toString() {
+        compute();
+        return super.toString();
+    }
 
     private synchronized void compute() {
         if (!needsCompute)
