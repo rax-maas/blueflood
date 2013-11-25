@@ -57,7 +57,7 @@ abstract public class Rollup {
     public static final Type<TimerRollup, TimerRollup> TimerFromTimer = new Type<TimerRollup, TimerRollup>() {
         @Override
         public TimerRollup compute(Points<TimerRollup> input) throws IOException {
-            return TimerRollup.buildRollupFromRollups(input);
+            return TimerRollup.buildRollupFromTimerRollups(input);
         }
     };
     
@@ -71,7 +71,7 @@ abstract public class Rollup {
     public static final Type<CounterRollup, CounterRollup> CounterFromCounter = new Type<CounterRollup, CounterRollup>() {
         @Override
         public CounterRollup compute(Points<CounterRollup> input) throws IOException {
-            return CounterRollup.buildRollupFromRollups(input);
+            return CounterRollup.buildRollupFromCounterRollups(input);
         }
     };
     

@@ -33,7 +33,7 @@ public class TimerRollupTest {
         timerPoints.add(new Points.Point<TimerRollup>(10, tr1));
         timerPoints.add(new Points.Point<TimerRollup>(20, tr2));
         timerPoints.add(new Points.Point<TimerRollup>(30, tr3));
-        TimerRollup cumulativeTimer = TimerRollup.buildRollupFromRollups(timerPoints);
+        TimerRollup cumulativeTimer = TimerRollup.buildRollupFromTimerRollups(timerPoints);
         
         Points<SimpleNumber> simplePoints = TimerRollupTest.createPoints(0, 0, 40, 1, 1);
         BasicRollup cumulativeBasic = BasicRollup.buildRollupFromRawSamples(simplePoints);
@@ -62,7 +62,7 @@ public class TimerRollupTest {
         final TimerRollup tr1 = new TimerRollup(39900, 1.0, 399, 13333.0d, 200, 598, 100);
         
         // count_ps should end up being 400 time units / 300 samples = 1.33
-        TimerRollup cumulative = TimerRollup.buildRollupFromRollups(new Points<TimerRollup>() {{
+        TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
             add(new Point<TimerRollup>(0, tr0));
             add(new Point<TimerRollup>(200, tr1));
         }});
@@ -84,7 +84,7 @@ public class TimerRollupTest {
         tr1.setPercentile("98", 0.4d, 400, 0.5d, 0.6d);
         double expectedMean98 = ((0.3d * 300d) + (0.4d * 400d)) / (300d + 400d);
         
-        TimerRollup cumulative = TimerRollup.buildRollupFromRollups(new Points<TimerRollup>() {{
+        TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
             add(new Point<TimerRollup>(0, tr0));
             add(new Point<TimerRollup>(100, tr1));
         }});

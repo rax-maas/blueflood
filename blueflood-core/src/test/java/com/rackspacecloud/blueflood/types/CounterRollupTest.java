@@ -31,7 +31,7 @@ public class CounterRollupTest {
         long expectedSum = sum(src0) + sum(src1);
         long expectedSamples = src0.length + src1.length;
         
-        CounterRollup cumulative = CounterRollup.buildRollupFromRollups(new Points<CounterRollup>() {{
+        CounterRollup cumulative = CounterRollup.buildRollupFromCounterRollups(new Points<CounterRollup>() {{
             add(new Point<CounterRollup>(0, cr0));
             add(new Point<CounterRollup>(src0.length, cr1));
         }});

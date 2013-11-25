@@ -29,7 +29,7 @@ public class CounterRollup extends Rollup {
         return new CounterRollup(count, numSamples);
     }
     
-    public static CounterRollup buildRollupFromRollups(Points<CounterRollup> input) throws IOException {
+    public static CounterRollup buildRollupFromCounterRollups(Points<CounterRollup> input) throws IOException {
         long count = 0;
         long numSamples = 0;
         for (Points.Point<CounterRollup> point : input.getPoints().values()) {
