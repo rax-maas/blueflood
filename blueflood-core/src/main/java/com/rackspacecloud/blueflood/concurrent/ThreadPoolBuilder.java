@@ -85,23 +85,38 @@ public class ThreadPoolBuilder {
 
     public ThreadPoolExecutor build() {
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
-        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
+        BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
                     new LinkedBlockingQueue<Runnable>();
         
-        // todo: needs to be included as a member in the ThreadPoolExecutor.
-        Gauge<Integer> workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, metricName, new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return workQueue.size();
-            }
-        });
-        
-        return new ThreadPoolExecutor(
+        return new InstrumentedThreadPoolExecutor(
+                metricName,
                 corePoolSize,
                 maxPoolSize,
                 30, TimeUnit.SECONDS, // hard code the timeout.
                 workQueue,
                 new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
                 rejectedHandler);
+    }
+    
+    private class InstrumentedThreadPoolExecutor extends ThreadPoolExecutor {
+        private final Gauge<Integer> workQueueSize;
+        
+        public InstrumentedThreadPoolExecutor(String name,
+                                              int corePoolSize,
+                                              int maximumPoolSize,
+                                              long keepAliveTime,
+                                              TimeUnit unit,
+                                              final BlockingQueue<Runnable> workQueue,
+                                              ThreadFactory threadFactory,
+                                              RejectedExecutionHandler handler) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+            
+            this.workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, name, new Gauge<Integer>() {
+                @Override
+                public Integer value() {
+                    return workQueue.size();
+                }
+            });
+        }
     }
 }
