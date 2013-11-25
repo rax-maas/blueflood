@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
-public class SimpleNumber extends Rollup {
+public class SimpleNumber implements Rollup {
     private int intValue;
     private double doubleValue;
     private long longValue;

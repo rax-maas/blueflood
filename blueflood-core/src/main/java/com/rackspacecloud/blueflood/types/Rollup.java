@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
 
-abstract public class Rollup {
+public interface Rollup {
     
     // todo: these classes and instance can be moved into a static Computations holder.
     

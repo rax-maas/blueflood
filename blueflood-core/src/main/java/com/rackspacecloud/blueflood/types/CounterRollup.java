@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
 
-public class CounterRollup extends Rollup {
+public class CounterRollup implements Rollup {
     
     private long numSamples = 0;
     private long count = 0;
