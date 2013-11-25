@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.service.udp;
+package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -14,7 +14,6 @@ import java.util.Collections;
 
 /**
  * Aggregates the ShardStateServices.
- * todo: consider moving this to blueflood-core.
  */
 public class ShardStateServices {
     private static final Logger log = LoggerFactory.getLogger(ShardStateServices.class);
@@ -56,7 +55,7 @@ public class ShardStateServices {
 
     public void start() {
         pusher.setActive(true);
-        pusher.setActive(false);
+        puller.setActive(true);
     }
 
     public void stop() {

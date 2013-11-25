@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-public class Metric {
+public class Metric implements IMetric {
     private final Locator locator;
     private final Object metricValue;
     private final long collectionTime;
@@ -93,7 +93,7 @@ public class Metric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit.toString());
+        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {

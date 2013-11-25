@@ -29,7 +29,8 @@ public class ThreadPoolBuilder {
 
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
-    private BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>();
+    private int queueSize = 0;
+    
     private RejectedExecutionHandler rejectedHandler = new ThreadPoolExecutor.CallerRunsPolicy();
     private Gauge<Integer> workQueueSize;
     private Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
@@ -54,12 +55,12 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolBuilder withUnboundedQueue() {
-        this.workQueue = new LinkedBlockingQueue<Runnable>();
+        this.queueSize = 0;
         return this;
     }
 
     public ThreadPoolBuilder withBoundedQueue(int size) {
-        this.workQueue = new ArrayBlockingQueue<Runnable>(size);
+        this.queueSize = size;
         return this;
     }
 
@@ -84,6 +85,8 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolExecutor build() {
+        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
+                new LinkedBlockingQueue<Runnable>();
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
         this.workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, metricName, new Gauge<Integer>() {
             @Override
@@ -91,6 +94,7 @@ public class ThreadPoolBuilder {
                 return workQueue.size();
             }
         });
+        
         return new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,

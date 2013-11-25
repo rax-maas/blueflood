@@ -85,6 +85,20 @@ public class AstyanaxReader extends AstyanaxIO {
             ctx.stop();
         }
     }
+    
+    public ColumnList<String> getAllMetadata(Locator locator) {
+        try {
+            RowQuery<Locator, String> query = keyspace
+                    .prepareQuery(CF_METRIC_METADATA)
+                    .getKey(locator);
+            return query.execute().getResult();
+        } catch (NotFoundException ex) {
+            return new EmptyColumnList<String>();
+        } catch (ConnectionException ex) {
+            log.error(ex.getMessage(), ex);
+            return new EmptyColumnList<String>();
+        }
+    }
 
     /**
      * reads a column slice and returns data points. this method doesn't do any checking to ensure that the range
@@ -98,7 +112,7 @@ public class AstyanaxReader extends AstyanaxIO {
         if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL))
             throw new IOException("This method should not be used for full resolution data");
         
-        NumericSerializer serializer = NumericSerializer.get(srcCF);
+        AbstractSerializer serializer = NumericSerializer.serializerFor(BasicRollup.class);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
         Points<BasicRollup> points = new Points<BasicRollup>();
         
@@ -115,7 +129,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
     
     public Points<SimpleNumber> getSimpleDataToRoll(Locator locator, Range range) throws IOException {
-        NumericSerializer serializer = NumericSerializer.get(AstyanaxIO.CF_METRICS_FULL);
+        AbstractSerializer<SimpleNumber> serializer = NumericSerializer.serializerFor(SimpleNumber.class);
         ColumnList<Long> cols = getNumericRollups(locator, AstyanaxIO.CF_METRICS_FULL, range.start, range.stop);
         Points<SimpleNumber> points =new Points<SimpleNumber>();
         
@@ -128,6 +142,26 @@ public class AstyanaxReader extends AstyanaxIO {
             throw new IOException(ex);
         }
         
+        return points;
+    }
+    
+    // todo: this could be the basis for every rollup read method.
+    public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
+        AbstractSerializer serializer = NumericSerializer.serializerFor(type);
+        // special cases. :( the problem here is that the normal full res serializer returns Number instances instead of
+        // SimpleNumber instances.
+        if (cf == AstyanaxIO.CF_METRICS_FULL)
+            serializer = NumericSerializer.simpleNumberSerializer;
+        ColumnList<Long> cols = getNumericRollups(locator, cf, range.start, range.stop);
+        Points<T> points = new Points<T>();
+        try {
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
+            }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data");
+            throw new IOException(ex);
+        }
         return points;
     }
 
@@ -303,16 +337,23 @@ public class AstyanaxReader extends AstyanaxIO {
         return new MetricData(points, getUnitString(locator));
     }
 
+    // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         Points<SimpleNumber> points = new Points<SimpleNumber>();
-        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran),
+        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.getColumnFamilyMapper().get(gran),
                 range.start, range.stop);
+                
+        
+        // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
+        // data we are asking for and use a specific reader method.
+        AbstractSerializer serializer = gran == Granularity.FULL
+                ? NumericSerializer.serializerFor(SimpleNumber.class)
+                : NumericSerializer.serializerFor(BasicRollup.class);
 
         for (Column<Long> column : results) {
             try {
-                points.add(pointFromColumn(column, gran, NumericSerializer.get(CF)));
+                points.add(pointFromColumn(column, gran, serializer));
             } catch (RuntimeException ex) {
                 log.error("Problem deserializing rollup"); // TODO: update message?
                 log.error(ex.getMessage(), ex);

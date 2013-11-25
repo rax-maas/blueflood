@@ -71,7 +71,7 @@ public abstract class AbstractRollupStat {
     }
     
     abstract void handleFullResMetric(Object o) throws RuntimeException;
-    abstract void handleRollupMetric(BasicRollup basicRollup) throws RuntimeException;
+    abstract void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException;
     abstract public byte getStatType();
     
     public String toString() {
@@ -79,5 +79,18 @@ public abstract class AbstractRollupStat {
             return Util.DECIMAL_FORMAT.format(doubleValue);
         else
             return Long.toString(longValue);
+    }
+    
+    public static void set(AbstractRollupStat stat, Number value) {
+        if (value instanceof Long)
+            stat.setLongValue(value.longValue());
+        else if (value instanceof Double)
+            stat.setDoubleValue(value.doubleValue());
+        else if (value instanceof Integer)
+            stat.setLongValue(value.longValue());
+        else if (value instanceof Float)
+            stat.setDoubleValue(value.doubleValue());
+        else
+            throw new ClassCastException(String.format("%s cannot be set to AbstractRollupState.value", value.getClass().getName()));
     }
 }

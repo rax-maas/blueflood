@@ -41,26 +41,39 @@ public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
     
-    protected static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily("metrics_full", new TimeValue(1, TimeUnit.DAYS));
-    protected static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily("metrics_5m", new TimeValue(2, TimeUnit.DAYS));
-    protected static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily("metrics_20m", new TimeValue(3, TimeUnit.DAYS));
-    protected static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily("metrics_60m", new TimeValue(31, TimeUnit.DAYS));
-    protected static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily("metrics_240m", new TimeValue(60, TimeUnit.DAYS));
-    protected static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily("metrics_1440m", new TimeValue(365, TimeUnit.DAYS));
+    
+    // todo: use the static constructor for all the CFs.
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(3, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily("metrics_preaggregated_60m", new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
+    
+    public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
+            LongSerializer.get(),
+            LocatorSerializer.get());
+
+    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily("metrics_full", new TimeValue(1, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily("metrics_5m", new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily("metrics_20m", new TimeValue(3, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily("metrics_60m", new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily("metrics_240m", new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily("metrics_1440m", new TimeValue(365, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily("metrics_string", new TimeValue(365 * 3, TimeUnit.DAYS));
     
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
+            CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
+            CF_METRICS_PREAGGREGATED_60M, CF_METRICS_PREAGGREGATED_240M, CF_METRICS_PREAGGREGATED_1440M,
             CF_METRICS_STRING
     };
     
     protected static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
-    protected static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
-            LongSerializer.get(),
-            LocatorSerializer.get());
-    protected static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
+            
+    public static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
             LongSerializer.get(),
             StringSerializer.get());
     protected static final ColumFamilyMapper CF_NAME_TO_CF;
@@ -159,11 +172,6 @@ public class AstyanaxIO {
 
     public static ColumFamilyMapper getColumnFamilyMapper() {
         return CF_NAME_TO_CF;
-    }
-
-    // todo: ensure this goes away
-    public static Map<ColumnFamily<Locator, Long>, Granularity> getCFToGranularityMapper() {
-        return CF_TO_GRAN;
     }
     
     // future versions will have get(Granularity, StatType).
