@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -123,7 +124,8 @@ class RollupService implements Runnable, RollupServiceMBean {
         // NOTE: higher locatorFetchConcurrency means that the queue used in rollupExecutors needs to be correspondingly
         // higher.
         final int locatorFetchConcurrency = 2;
-        locatorFetchExecutors = new ThreadPoolExecutor (
+        locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
+            "LocatorFetchThreadPool",
             locatorFetchConcurrency, locatorFetchConcurrency,
             30, TimeUnit.SECONDS,
             new ArrayBlockingQueue<Runnable>(locatorFetchConcurrency * 5),
@@ -146,7 +148,8 @@ class RollupService implements Runnable, RollupServiceMBean {
         // unbounded work queue.
         final BlockingQueue<Runnable> rollupQueue = new LinkedBlockingQueue<Runnable>();
         Configuration config = Configuration.getInstance();
-        rollupExecutors = new ThreadPoolExecutor (
+        rollupExecutors = new InstrumentedThreadPoolExecutor (
+            "RollupsThreadPool",
             config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
             config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
             30, TimeUnit.SECONDS,
