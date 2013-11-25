@@ -51,7 +51,7 @@ public class BatchMetricsQueryHandler {
     private static final Histogram failedQueriesHist = Metrics.newHistogram(Instrumentation.class,
             "Failed queries", true);
     private static final Histogram queriesSizeHist = Metrics.newHistogram(Instrumentation.class,
-            "Failed queries", true);
+            "Total queries", true);
 
     public BatchMetricsQueryHandler(ThreadPoolExecutor executor, AstyanaxReader reader) {
         this.executor = executor;

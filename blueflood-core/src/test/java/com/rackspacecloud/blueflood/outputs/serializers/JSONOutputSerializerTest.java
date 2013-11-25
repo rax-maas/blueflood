@@ -43,7 +43,8 @@ import java.util.Set;
     @Test
     public void testTransformRollupDataAtFullRes() throws Exception {
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown", "number");
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown",
+                MetricData.Type.NUMERIC);
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
 
@@ -68,7 +69,8 @@ import java.util.Set;
     @Test
     public void testTransformRollupDataForCoarserGran() throws Exception {
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown", "number");
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
+                MetricData.Type.NUMERIC);
         Set<MetricStat> filters = new HashSet<MetricStat>();
         filters.add(MetricStat.AVERAGE);
         filters.add(MetricStat.MIN);
@@ -103,7 +105,8 @@ import java.util.Set;
     @Test
     public void testTransformRollupDataString() throws SerializationException{
         final JSONOutputSerializer serializer = new JSONOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown", "string");
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown",
+                MetricData.Type.STRING);
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
