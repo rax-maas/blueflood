@@ -57,6 +57,11 @@ public class Locator {
         return dbKey.contains(delim);
     }
 
+    @Override
+    public int hashCode() {
+        return stringRep.hashCode();
+    }
+    
     public String toString() {
         return stringRep;
     }
