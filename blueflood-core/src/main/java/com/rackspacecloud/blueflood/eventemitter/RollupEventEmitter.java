@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.github.nkzawa.emitter.Emitter;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -9,54 +10,28 @@ import org.codehaus.jackson.node.JsonNodeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.concurrent.*;
+
 public class RollupEventEmitter {
+    private static Emitter emitterInstance = new Emitter();
+    private static ThreadPoolExecutor eventExecutors;
+    private static int numberOfWorkerThreads = 5;
 
-    private static Emitter instance = new Emitter();
-    private static final Logger log = LoggerFactory.getLogger(RollupEventEmitter.class);
-
+    static {
+        eventExecutors = new ThreadPoolBuilder()
+                         .withName("EventEmitter ThreadPool")
+                         .withCorePoolSize(numberOfWorkerThreads)
+                         .withMaxPoolSize(numberOfWorkerThreads)
+                         .withUnboundedQueue()
+                         .build();
+    }
 
     public static Emitter getEmitterInstance() {
-        return instance;
+        return emitterInstance;
     }
 
-
-    //TODO: Generalize this later
-    public static void emitAsJSON (String event, Locator loc, Rollup rollup, String unit) {
-      BasicRollup roll;
-      if(rollup instanceof BasicRollup) {
-        roll = (BasicRollup) rollup;
-      } else {
-        log.error("Expected basic rollup but received "+rollup);
-        return;
-      }
-      //Main container node
-      ObjectNode rootNode = JsonNodeFactory.instance.objectNode();
-      //Rollup node
-      ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
-      rollupNode.put("maxValue", roll.getMaxValue().toDouble());
-      rollupNode.put("minValue", roll.getMinValue().toDouble());
-      rollupNode.put("average", roll.getAverage().toDouble());
-      rollupNode.put("variance", roll.getVariance().toDouble());
-      rollupNode.put("count", roll.getCount());
-      //Metadata Node
-      ObjectNode metaNode = JsonNodeFactory.instance.objectNode();
-      //Units Node
-      ObjectNode unitsNode = JsonNodeFactory.instance.objectNode();
-      unitsNode.put("name", unit);
-      unitsNode.put("type", "numeric");
-      //Add units node to metadata node
-      metaNode.put("units",unitsNode);
-      //Fill up the root node
-      try {
-        rootNode.put("locator", loc.getTenantId() + "." + loc.getMetricName());
-        rootNode.put("rollup", rollupNode);
-        rootNode.put("metadata", metaNode);
-      } catch (Exception e) {
-        log.error("Error encountered while serializing rollup");
-        return;
-      }
-      //Emit an stringified JSON object
-      instance.emit(event, rootNode.toString());
+    public static void emit(Object... eventPayload) {
+        eventExecutors.execute(new EmissionWork(eventPayload));
     }
-
 }
