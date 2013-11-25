@@ -210,6 +210,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Test
     public void testShardOperationsConcurrency() {
         final long tryFor = 15000;
+        final long fuzzFactor = 20000; // really long.
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
         final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
@@ -223,6 +224,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             long startTime = System.currentTimeMillis();
             while (System.currentTimeMillis() - startTime < tryFor) {
                 try {
+                    // this test is screwed if these operations take longer than the fuzz factor. examine that if
+                    // failures start cropping up.
                     push.performOperation();
                     pull.performOperation();
                 } catch (Throwable th) {
@@ -257,7 +260,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // maven-failsafe enjoys interrupting this thread.  so we must tolerate it by using a wall clock to determine
         // how long to wait for.
         long wallStart = System.currentTimeMillis();
-        long maxWait = tryFor + 2000;
+        long maxWait = tryFor + fuzzFactor;
         while (System.currentTimeMillis() - wallStart < maxWait) {
             try {
                 Assert.assertTrue(latch.await(maxWait, TimeUnit.MILLISECONDS));
