@@ -54,5 +54,13 @@ abstract public class Rollup {
         }
     };
     
+    public static final Type<TimerRollup, TimerRollup> TimerFromTimer = new Type<TimerRollup, TimerRollup>() {
+        @Override
+        public TimerRollup compute(Points<TimerRollup> input) throws IOException {
+            return TimerRollup.buildRollupFromRollups(input);
+        }
+    };
+    
+    // todo: remove this method, convert class to an interface.
     abstract public long getCount();
 }
