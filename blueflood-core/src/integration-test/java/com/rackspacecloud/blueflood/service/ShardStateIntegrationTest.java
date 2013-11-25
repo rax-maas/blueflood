@@ -208,7 +208,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testShardOperationsConcurrency() throws InterruptedException {
+    public void testShardOperationsConcurrency() {
         final long tryFor = 15000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
@@ -253,7 +253,20 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         pushPull.start();
         updateIterator.start();
-        latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
+        
+        // maven-failsafe enjoys interrupting this thread.  so we must tolerate it by using a wall clock to determine
+        // how long to wait for.
+        long wallStart = System.currentTimeMillis();
+        long maxWait = tryFor + 2000;
+        while (System.currentTimeMillis() - wallStart < maxWait) {
+            try {
+                Assert.assertTrue(latch.await(maxWait, TimeUnit.MILLISECONDS));
+                break;
+            } catch (InterruptedException ex) {
+                System.out.println("that smarts " + (System.currentTimeMillis() - wallStart));
+            }
+        }
+            
         Assert.assertNull(errBucket[0]);
         Assert.assertNull(errBucket[1]);
     }
