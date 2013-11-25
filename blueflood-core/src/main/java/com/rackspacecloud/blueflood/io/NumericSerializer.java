@@ -222,7 +222,7 @@ public class NumericSerializer {
                         CodedOutputStream.computeDoubleSizeNoTag(stat.toDouble()) :
                         CodedOutputStream.computeRawVarint64Size(stat.toLong());
                 return sz;
-            case Type.B_TIMER: // TimerRollup ... NOT PreaggregatedRollup.
+            case Type.B_TIMER: // TimerRollup
                 sz += 1; // version
                 TimerRollup rollup = (TimerRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
