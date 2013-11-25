@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.statsd;
+package com.rackspacecloud.blueflood.statsd.containers;
 
 public enum StatType {
     COUNTER,
@@ -8,6 +8,8 @@ public enum StatType {
     UNKNOWN;
     
     public static final String CACHE_KEY = "statsd.type";
+    
+    public static final StatType[] SIMPLE_TYPES = new StatType[] { COUNTER, SET, GAUGE, UNKNOWN };
     
     public static StatType fromString(String s) {
         if (s == null)

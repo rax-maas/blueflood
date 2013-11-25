@@ -1,4 +1,20 @@
-package com.rackspacecloud.blueflood.statsd;
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package com.rackspacecloud.blueflood.statsd.containers;
 
 import com.rackspacecloud.blueflood.types.Locator;
 
@@ -50,7 +66,6 @@ import java.util.regex.Pattern;
  *  
  */
 public class Stat {
-    
     // internal metrics are speshul.
     private static final Pattern[] InternalMetrics = new Pattern[] {
             Pattern.compile("stats_counts\\.\\w+\\.bad_lines_seen"),
@@ -66,40 +81,28 @@ public class Stat {
     
     private final Label label; // lots of things encapsulated here.
     private final Number value;
-    private final long timestamp; // UNIX epoch time, bro.  (is in seconds).
+    private final long timestamp; // UNIX epoch time, bro. (is in seconds).
     
     
-    private Stat(String label, Number value, long timestamp) {
+    public Stat(String label, Number value, long timestamp) {
         this.label = new Label(label);
         this.value = value;
         this.timestamp = timestamp;
     }
     
-    public String getLabel() { return label.original; }
+    public String getName() { return label.name; }
     public Locator getLocator() { return label.locator; }
     public long getTimestamp() { return timestamp; }
     public Number getValue() { return value; }
     public StatType getType() { return label.type; }
-    
-    public <T extends Number> Number getValueAs(Class<T> type) {
-        return value;
-    }
+    public Label getLabel() { return label; }
     
     public boolean isValid() {
         return label.locator != null;
     }
     
     public String toString() {
-        return Stat.asLine(this);
-    }
-    
-    public static Stat fromLine(CharSequence str) {
-        String[] parts = str.toString().split(" ", -1);
-        return new Stat(parts[0], Stat.Parser.grokValue(parts[1]), Long.parseLong(parts[2]));
-    }
-    
-    public static String asLine(Stat stat) {
-        return String.format("%s %s %d", stat.label, stat.value, stat.timestamp);
+        return Conversions.asLine(this);
     }
     
     public static class Parser {
@@ -131,11 +134,12 @@ public class Stat {
                 return StatType.UNKNOWN;
         }
         
-        public static Locator computeLocator(String label, boolean isInternal, StatType type) {
+        public static NamedLocator computeLocator(String label, boolean isInternal, StatType type) {
             String[] parts = label.split("\\.", -1);
             
             String tenantId = null;
             String[] components;
+            String name = null;
             
             if (isInternal) {
                 if (parts.length == 2 && "numStats".equals(parts[1])) {
@@ -143,35 +147,62 @@ public class Stat {
                     components = new String[] { "numStats" };
                 } else {
                     tenantId = parts[1];
-                    components = Stat.Parser.shift(parts, 2);
+                    components = Stat.Parser.remove(parts, 1, 1);
                 }
             } else {
                 switch (type) {
                     case COUNTER:
                         tenantId = parts[1];
-                        components = Stat.Parser.shift(parts, 1);
+                        parts = Stat.Parser.remove(parts, 1, 1);
+                        components = Stat.Parser.shiftLeft(parts, 1);
                         break;
                     case UNKNOWN:
                         return null; // no idea how to handle this.
                     case TIMER:
+                        name = parts[parts.length - 1];
+                        parts = Stat.Parser.shiftRight(parts, 1);
                     case SET:
                     case GAUGE:
                     default:
                         tenantId = parts[2];
-                        components = Stat.Parser.shift(parts, 2);
+                        components = Stat.Parser.shiftLeft(parts, 3);
+                        
+                        
                         break;
                 }
             }
             
-            return Locator.createLocatorFromPathComponents(tenantId, components);
+            return new NamedLocator(Locator.createLocatorFromPathComponents(tenantId, components), name);
             
         }
         
         /** does a left shift of the array */
-        public static String[] shift(String[] s, int num) {
+        public static String[] shiftLeft(String[] s, int num) {
+            return Parser.shift(s, num, true);
+        }
+        
+        public static String[] shiftRight(String[] s, int num) {
+            return Parser.shift(s, num, false);
+        }
+        
+        private static String[] shift(String[] s, int num, boolean isLeft) {
             String[] n = new String[s.length - num];
             for (int i = 0; i < s.length - num; i++)
-                n[i] = s[num + i];
+                n[i] = s[i + (isLeft ? num : 0)];
+            return n;
+        }
+        
+        public static String[] remove(String[] s, int index, int length) {
+            String[] n = new String[s.length - length];
+            int npos = 0;
+            for (int i = 0; i < s.length; i++) {
+                if (i < index)
+                    n[npos++] = s[i];
+                else if (i < index + length)
+                    continue;
+                else
+                    n[npos++] = s[i];
+            }
             return n;
         }
     }
@@ -181,12 +212,35 @@ public class Stat {
         private final boolean internal;
         private final StatType type;
         private final Locator locator; // this might be null!
+        private final String name;
         
         Label(String s) {
             this.original = s;
             this.internal = Stat.Parser.isInternal(s);
             this.type = Stat.Parser.computeType(s);
-            this.locator = Stat.Parser.computeLocator(s, this.internal, this.type);
+            NamedLocator namedLocator = Stat.Parser.computeLocator(s, this.internal, this.type);
+            if (namedLocator != null) {
+                this.locator = namedLocator.locator;
+                this.name = namedLocator.name;
+            } else {
+                this.locator = null;
+                this.name = null;
+            }
+        }
+        
+        public String toString() {
+            return original;
+        }
+    }
+    
+    // aggregator.
+    private static class NamedLocator {
+        private final Locator locator;
+        private final String name;
+        
+        NamedLocator(Locator locator, String name) {
+            this.locator = locator;
+            this.name = name;
         }
     }
 }

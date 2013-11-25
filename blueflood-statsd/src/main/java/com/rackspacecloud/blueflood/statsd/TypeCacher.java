@@ -3,15 +3,17 @@ package com.rackspacecloud.blueflood.statsd;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.statsd.containers.StatsCollection;
+import com.rackspacecloud.blueflood.statsd.containers.Stat;
+import com.rackspacecloud.blueflood.statsd.containers.StatType;
+import com.rackspacecloud.blueflood.types.Locator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class TypeCacher extends AsyncFunctionWithThreadPool<Collection<Stat>, Collection<Stat>> {
+public class TypeCacher extends AsyncFunctionWithThreadPool<StatsCollection, StatsCollection> {
     private static final Logger log = LoggerFactory.getLogger(TypeCacher.class);
     
     private final MetadataCache cache; 
@@ -22,21 +24,28 @@ public class TypeCacher extends AsyncFunctionWithThreadPool<Collection<Stat>, Co
     }
 
     @Override
-    public ListenableFuture<Collection<Stat>> apply(final Collection<Stat> input) throws Exception {
+    public ListenableFuture<StatsCollection> apply(final StatsCollection input) throws Exception {
         
-        // this one is asyncrhonous.
-        getThreadPool().submit(new Callable<Collection<Stat>>() {
+        return getThreadPool().submit(new Callable<StatsCollection>() {
             @Override
-            public Collection<Stat> call() throws Exception {
-                for (Stat stat : input) {
-                    if (stat.getLocator() != null) {
-                        cache.put(stat.getLocator(), StatType.CACHE_KEY, stat.getType().toString());
+            public StatsCollection call() throws Exception {
+                int cached = 0;
+                
+                for (StatType type : StatType.SIMPLE_TYPES) {
+                    for (Stat stat : input.getStats(type)) {
+                        if (stat.getLocator() != null) {
+                            cache.put(stat.getLocator(), StatType.CACHE_KEY, type.toString());
+                            cached += 1;
+                        }
                     }
+                }
+                
+                for (Locator locator : input.getTimerStats().keySet()) {
+                    cache.put(locator, StatType.CACHE_KEY, StatType.TIMER.toString());
+                    cached += 1;
                 }
                 return input;
             }
         });
-        
-        return new NoOpFuture<Collection<Stat>>(input);
     }
 }
