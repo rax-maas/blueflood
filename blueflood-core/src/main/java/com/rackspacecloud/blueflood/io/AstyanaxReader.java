@@ -319,7 +319,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMERIC);
+        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
     }
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {

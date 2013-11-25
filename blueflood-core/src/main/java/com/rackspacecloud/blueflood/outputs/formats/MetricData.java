@@ -42,7 +42,7 @@ public class MetricData {
     }
 
     public enum Type {
-        NUMERIC("numeric"),
+        NUMBER("number"),
         BOOLEAN("boolean"),
         STRING("string");
 

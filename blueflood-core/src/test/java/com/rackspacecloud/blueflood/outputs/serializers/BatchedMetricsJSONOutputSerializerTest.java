@@ -44,7 +44,7 @@ public class BatchedMetricsJSONOutputSerializerTest {
         final Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
         for (int i = 0; i < 2; i++) {
             final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
-                    MetricData.Type.NUMERIC);
+                    MetricData.Type.NUMBER);
 
             metrics.put(Locator.createLocatorFromPathComponents(tenantId, String.valueOf(i)), metricData);
         }
