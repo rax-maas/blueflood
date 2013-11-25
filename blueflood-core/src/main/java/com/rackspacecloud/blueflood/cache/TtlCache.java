@@ -126,6 +126,12 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         // todo: this is a temporary hack.  The Account API maps TTL to granularity, but everywhere else TTL is linked
         // to column families.  Either way, the account api used at rackspace doesn't contain TTLs for the string CF.
         map.put(AstyanaxIO.CF_METRICS_STRING, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_STRING));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_5M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_5M));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_20M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_20M));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M));
+        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M));
         return map;
     }
     
