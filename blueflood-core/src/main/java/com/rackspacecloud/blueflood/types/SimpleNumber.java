@@ -63,11 +63,6 @@ public class SimpleNumber extends Rollup {
         }
     }
 
-    @Override
-    public long getCount() {
-        return 1;
-    }
-
     public String toString() {
         return getValue().toString();
     }
