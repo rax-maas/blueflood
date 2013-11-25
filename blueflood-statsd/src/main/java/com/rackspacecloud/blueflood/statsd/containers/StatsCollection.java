@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.statsd.containers;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.StatType;
 
 import java.util.Collection;
 import java.util.Collections;

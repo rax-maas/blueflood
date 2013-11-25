@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SetRollup;
+import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
