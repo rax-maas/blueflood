@@ -52,6 +52,8 @@ public class NumericSerializer {
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    private static AbstractSerializer<SingleValueRollup> singleValueRollup = new SingleValueRollupSerializer();
+    
     
     private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
@@ -82,7 +84,11 @@ public class NumericSerializer {
         else if (type.equals(HistogramRollup.class))
             throw new RuntimeException("Not implemented yet");
         else if (type.equals(CounterRollup.class))
-            throw new RuntimeException("Not implemented yet");
+            return (AbstractSerializer<T>)singleValueRollup;
+        else if (type.equals(GaugeRollup.class))
+            return (AbstractSerializer<T>)singleValueRollup;
+        else if (type.equals(SetRollup.class))
+            return (AbstractSerializer<T>)singleValueRollup;
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
         else if (type.equals(Integer.class))
