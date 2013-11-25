@@ -64,7 +64,7 @@ public class Locator {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Locator && obj.hashCode() == this.hashCode();
+        return obj != null && obj instanceof Locator && obj.hashCode() == this.hashCode();
     }
 
     public String toString() {
