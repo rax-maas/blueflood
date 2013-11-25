@@ -53,7 +53,6 @@ public class AstyanaxIO {
             CF_METRICS_STRING
     };
     
-    // todo: use the static constructor for all the CFs.
     public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
     public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
     public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(3, TimeUnit.DAYS));
@@ -61,6 +60,10 @@ public class AstyanaxIO {
     public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
     public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
     
+    
+    protected static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
+            LocatorSerializer.get(),
+            LongSerializer.get());
     public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());

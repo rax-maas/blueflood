@@ -73,8 +73,8 @@ public class MinValue extends AbstractRollupStat {
     }
 
     @Override
-    void handleRollupMetric(BasicRollup basicRollup) throws RuntimeException {
-        MinValue other = basicRollup.getMinValue();
+    void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException {
+        AbstractRollupStat other = basicRollup.getMinValue();
 
         if (init) {
             if (other.isFloatingPoint()) {

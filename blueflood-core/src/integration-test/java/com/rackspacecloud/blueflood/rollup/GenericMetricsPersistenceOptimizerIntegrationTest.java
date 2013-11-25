@@ -53,12 +53,12 @@ public class GenericMetricsPersistenceOptimizerIntegrationTest extends
         MutationBatch mb = at.createMutationBatch();
         mb.withRow(at.getFullCF(), locator)
                 .putColumn(collectionTimeInSecs,
-                        NumericSerializer.get(at.getFullCF()).toByteBuffer(123));
+                        NumericSerializer.serializerFor(Integer.class).toByteBuffer(123));
 
         // add another metric
         mb.withRow(at.getFullCF(), locator)
                 .putColumn(collectionTimeInSecs + 1,
-                        NumericSerializer.get(at.getFullCF()).toByteBuffer(456));
+                        NumericSerializer.serializerFor(Integer.class).toByteBuffer(456));
 
         mb.execute();
     }
