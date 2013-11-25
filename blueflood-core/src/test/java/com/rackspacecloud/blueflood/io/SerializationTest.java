@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.rollup.Granularity;

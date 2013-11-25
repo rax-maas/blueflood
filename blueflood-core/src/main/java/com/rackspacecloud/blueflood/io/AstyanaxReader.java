@@ -98,7 +98,7 @@ public class AstyanaxReader extends AstyanaxIO {
         if (srcCF.equals(AstyanaxIO.CF_METRICS_FULL))
             throw new IOException("This method should not be used for full resolution data");
         
-        NumericSerializer serializer = NumericSerializer.get(srcCF);
+        AbstractSerializer serializer = NumericSerializer.get(srcCF);
         ColumnList<Long> cols = getNumericRollups(locator, srcCF, range.start, range.stop);
         Points<BasicRollup> points = new Points<BasicRollup>();
         
@@ -115,7 +115,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
     
     public Points<SimpleNumber> getSimpleDataToRoll(Locator locator, Range range) throws IOException {
-        NumericSerializer serializer = NumericSerializer.get(AstyanaxIO.CF_METRICS_FULL);
+        AbstractSerializer serializer = NumericSerializer.get(AstyanaxIO.CF_METRICS_FULL);
         ColumnList<Long> cols = getNumericRollups(locator, AstyanaxIO.CF_METRICS_FULL, range.start, range.stop);
         Points<SimpleNumber> points =new Points<SimpleNumber>();
         
