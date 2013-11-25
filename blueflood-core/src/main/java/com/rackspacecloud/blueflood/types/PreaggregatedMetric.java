@@ -23,7 +23,7 @@ public class PreaggregatedMetric implements IMetric {
     private final long collectionTime;
     private final Locator locator;
     private final TimeValue ttl;
-    private final Rollup value; // todo: does this need to be a specific type?
+    private final Rollup value;
     
     public PreaggregatedMetric(long collectionTime, Locator locator, TimeValue ttl, Rollup value) {
         this.collectionTime = collectionTime;

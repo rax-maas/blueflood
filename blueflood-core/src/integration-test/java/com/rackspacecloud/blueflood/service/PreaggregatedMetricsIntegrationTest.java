@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+// todo: need an easy way to run this. It will require some plumbing changes to the project.
 public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     
     private TimerRollup simple;
