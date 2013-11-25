@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-public class Metric {
+public class Metric implements IMetric {
     private final Locator locator;
     private final Object metricValue;
     private final long collectionTime;

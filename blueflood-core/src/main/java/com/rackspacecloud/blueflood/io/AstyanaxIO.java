@@ -54,16 +54,17 @@ public class AstyanaxIO {
             CF_METRICS_STRING
     };
     
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
             LocatorSerializer.get(),
             LongSerializer.get());
-    protected static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
+    
+    public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
-    protected static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
+    public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
-    protected static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
+    public static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
             LongSerializer.get(),
             StringSerializer.get());
     protected static final ColumFamilyMapper CF_NAME_TO_CF;

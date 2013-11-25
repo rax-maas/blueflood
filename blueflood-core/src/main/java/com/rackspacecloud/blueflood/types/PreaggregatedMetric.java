@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.types;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 /** It's like a rollup already. */
-public class PreaggregatedMetric {
+public class PreaggregatedMetric implements IMetric {
     private final long collectionTime;
     private final Locator locator;
     private final TimeValue ttl;
@@ -32,10 +32,8 @@ public class PreaggregatedMetric {
         this.value = value;
     }
     
-    // todo: extract an interface and apply to this and Metric.java
-    
     public Locator getLocator() { return locator; }
     public long getCollectionTime() { return collectionTime; }
     public int getTtlInSeconds() { return (int)ttl.toSeconds(); }
-    public Object getValue() { return null; } // todo: address this.
+    public Object getValue() { return value; }
 }
