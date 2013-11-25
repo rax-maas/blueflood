@@ -103,7 +103,8 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
         }
 
         if (locators.size() > maxMetricsPerRequest) {
-            sendResponse(ctx, request, "Too many metrics fetch in a single call.", HttpResponseStatus.BAD_REQUEST);
+            sendResponse(ctx, request, "Too many metrics fetch in a single call. Max limit is " + maxMetricsPerRequest
+                    + ".", HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
