@@ -29,9 +29,9 @@ public class ThreadPoolBuilder {
 
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
-    private BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>();
+    private int queueSize = 0;
+    
     private RejectedExecutionHandler rejectedHandler = new ThreadPoolExecutor.CallerRunsPolicy();
-    private Gauge<Integer> workQueueSize;
     private Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread t, Throwable e) {
             log.error(e.getMessage(), e);
@@ -54,12 +54,12 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolBuilder withUnboundedQueue() {
-        this.workQueue = new LinkedBlockingQueue<Runnable>();
+        this.queueSize = 0;
         return this;
     }
 
     public ThreadPoolBuilder withBoundedQueue(int size) {
-        this.workQueue = new ArrayBlockingQueue<Runnable>(size);
+        this.queueSize = size;
         return this;
     }
 
@@ -85,12 +85,17 @@ public class ThreadPoolBuilder {
 
     public ThreadPoolExecutor build() {
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
-        this.workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, metricName, new Gauge<Integer>() {
+        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
+                    new LinkedBlockingQueue<Runnable>();
+        
+        // todo: needs to be included as a member in the ThreadPoolExecutor.
+        Gauge<Integer> workQueueSize = Metrics.newGauge(ThreadPoolBuilder.class, metricName, new Gauge<Integer>() {
             @Override
             public Integer value() {
                 return workQueue.size();
             }
         });
+        
         return new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,
