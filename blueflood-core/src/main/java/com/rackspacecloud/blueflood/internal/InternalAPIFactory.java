@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.internal;
 
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.http.conn.ClientConnectionManager;
@@ -33,8 +34,10 @@ public class InternalAPIFactory {
     private static int PAGINATION_RETRY_COUNT = 3;
 
     static final Map<Granularity, TimeValue> SAFETY_TTLS = new HashMap<Granularity, TimeValue>() {{
-        for (Granularity gran : Granularity.granularities())
-            put(gran, new TimeValue(gran.getTTL().getValue() * 5, gran.getTTL().getUnit()));
+        for (Granularity gran : Granularity.granularities()) {
+            TimeValue defaultTTL = AstyanaxIO.getColumnFamilyMapper().get(gran).getDefaultTTL(); 
+            put(gran, new TimeValue(defaultTTL.getValue() * 5, defaultTTL.getUnit()));
+        }
     }};
 
     private static final Account DEFAULT_ACCOUNT = new Account() {

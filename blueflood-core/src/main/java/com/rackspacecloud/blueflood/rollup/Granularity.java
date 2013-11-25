@@ -40,12 +40,12 @@ public class Granularity {
     public static final int MILLISECONDS_IN_SLOT = 300000;
     private static final int SECS_PER_DAY = 86400;
     
-    public static final Granularity FULL = new Granularity("metrics_full", 300000, BASE_SLOTS_PER_GRANULARITY, new TimeValue(1, TimeUnit.DAYS), "full");
-    public static final Granularity MIN_5 = new Granularity("metrics_5m", 300000, BASE_SLOTS_PER_GRANULARITY, new TimeValue(2, TimeUnit.DAYS), "5m");
-    public static final Granularity MIN_20 = new Granularity("metrics_20m", 1200000, (BASE_SLOTS_PER_GRANULARITY / 4), new TimeValue(3, TimeUnit.DAYS), "20m");
-    public static final Granularity MIN_60 = new Granularity("metrics_60m", 3600000, (BASE_SLOTS_PER_GRANULARITY / 12), new TimeValue(31, TimeUnit.DAYS), "60m");
-    public static final Granularity MIN_240 = new Granularity("metrics_240m", 14400000, (BASE_SLOTS_PER_GRANULARITY / 48), new TimeValue(60, TimeUnit.DAYS), "240m");
-    public static final Granularity MIN_1440 = new Granularity("metrics_1440m", 86400000, (BASE_SLOTS_PER_GRANULARITY / 288), new TimeValue(365, TimeUnit.DAYS), "1440m");
+    public static final Granularity FULL = new Granularity("metrics_full", 300000, BASE_SLOTS_PER_GRANULARITY, "full");
+    public static final Granularity MIN_5 = new Granularity("metrics_5m", 300000, BASE_SLOTS_PER_GRANULARITY, "5m");
+    public static final Granularity MIN_20 = new Granularity("metrics_20m", 1200000, (BASE_SLOTS_PER_GRANULARITY / 4), "20m");
+    public static final Granularity MIN_60 = new Granularity("metrics_60m", 3600000, (BASE_SLOTS_PER_GRANULARITY / 12), "60m");
+    public static final Granularity MIN_240 = new Granularity("metrics_240m", 14400000, (BASE_SLOTS_PER_GRANULARITY / 48), "240m");
+    public static final Granularity MIN_1440 = new Granularity("metrics_1440m", 86400000, (BASE_SLOTS_PER_GRANULARITY / 288), "1440m");
     
     private static final Granularity LAST = MIN_1440;
     
@@ -69,16 +69,12 @@ public class Granularity {
     // number of slots for this granularity.  This number decreases as granularity is more coarse.  Also, the number of
     // minutes indicated by a single slot increases as the number of slots goes down.
     private final int numSlots;
-
-    // Default TTL to use if not provided
-    private TimeValue defaultTTL = null;
     
-    private Granularity(String cf, int milliseconds, int numSlots, TimeValue ttl, String shortName) {
+    private Granularity(String cf, int milliseconds, int numSlots, String shortName) {
         index = INDEX_COUNTER++;
         this.cf = cf;
         this.milliseconds = milliseconds;
         this.numSlots = numSlots;
-        this.defaultTTL = ttl;
         this.shortName = shortName;
     }
     
@@ -279,12 +275,8 @@ public class Granularity {
         return Integer.parseInt(s.split(",")[1]);
     }
 
-    public TimeValue getTTL() {
-        return this.defaultTTL;
+    @Override
+    public String toString() {
+        return name();
     }
-
-  @Override
-  public String toString() {
-    return name();
-  }
 }

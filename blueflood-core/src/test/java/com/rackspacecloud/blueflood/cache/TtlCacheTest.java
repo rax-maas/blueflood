@@ -92,9 +92,9 @@ public class TtlCacheTest {
     
     private void warmCache() {
         for (int i = 0; i < 100; i++) {
-            for (Granularity gran : Granularity.granularities()) {
-                twoSecondCache.getTtl("ackVCKg1rk", AstyanaxIO.getColumnFamilyMapper().get(gran));
-                twoSecondCache.getTtl("acAAAAAAAA", AstyanaxIO.getColumnFamilyMapper().get(gran));
+            for (AstyanaxIO.MetricColumnFamily cf : AstyanaxIO.getMetricColumnFamilies()) {
+                twoSecondCache.getTtl("ackVCKg1rk", cf);
+                twoSecondCache.getTtl("acAAAAAAAA", cf);
             }
         }
     }
