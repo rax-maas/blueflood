@@ -28,6 +28,7 @@ public class Constants {
     public static final byte VERSION_1_FULL_RES = 0;
     public static final byte VERSION_1_ROLLUP = 0;
     public static final byte VERSION_1_HISTOGRAM = 0;
+    public static final byte VERSION_1_TIMER = 0;
 
     public static final int DOUBLE = (int) MetricHelper.Type.DOUBLE;
     public static final int I32 = (int) MetricHelper.Type.INT32;

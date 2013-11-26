@@ -73,8 +73,8 @@ public class MaxValue extends AbstractRollupStat {
     }
 
     @Override
-    void handleRollupMetric(BasicRollup basicRollup) throws RuntimeException {
-        MaxValue other = basicRollup.getMaxValue();
+    void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException {
+        AbstractRollupStat other = basicRollup.getMaxValue();
 
         if (init) {
             if (other.isFloatingPoint()) {
