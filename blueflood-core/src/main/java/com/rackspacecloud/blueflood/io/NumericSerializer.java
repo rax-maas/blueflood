@@ -98,8 +98,7 @@ public class NumericSerializer {
     }
 
     private static void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
-        // todo: simplify: rollupSize.update(buf.length); right?
-        rollupSize.update(sizeOf(basicRollup, Type.B_ROLLUP));
+        rollupSize.update(buf.length);
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         serializeRollup(basicRollup, protobufOut);
     }
