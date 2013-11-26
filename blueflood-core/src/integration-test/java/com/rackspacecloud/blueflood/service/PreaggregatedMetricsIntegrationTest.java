@@ -60,8 +60,8 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
             .withMinValue(104)
             .withMaxValue(105)
             .withCount(106);
-        simple.setPercentile("98th", 107, 108, 109);
-        simple.setPercentile("99th", 110, 111, 112);
+        simple.setPercentile("98th", 107);
+        simple.setPercentile("99th", 110);
         // todo: add a few percentiles.
     }
     
