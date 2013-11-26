@@ -162,13 +162,13 @@ public class TimerRollupTest {
         final TimerRollup tr1 = new TimerRollup().withSum(0).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
         
         // populate percentiles (these are nonsensical)
-        tr0.setPercentile("75", 0.1d, 100, 0.2d);
-        tr1.setPercentile("75", 0.2d, 200, 0.3d);
+        tr0.setPercentile("75", 0.1d);
+        tr1.setPercentile("75", 0.2d);
         // todo: do we want weighted means? e.g.: ((0.1d * 100d) + (0.2d * 200d)) / (100d + 200d)
         double expectedMean75 = (0.1d + 0.2d) / 2.0d;
         
-        tr0.setPercentile("98", 0.3d, 300, 0.4d);
-        tr1.setPercentile("98", 0.4d, 400, 0.5d);
+        tr0.setPercentile("98", 0.3d);
+        tr1.setPercentile("98", 0.4d);
         // weighted would be: ((0.3d * 300d) + (0.4d * 400d)) / (300d + 400d);
         double expectedMean98 = (0.3d + 0.4d) / 2.0d;
         
