@@ -24,7 +24,17 @@ public enum HttpConfig implements ConfigDefaults {
     HTTP_INGESTION_PORT("19000"),
 
     // blueflood can output metrics over HTTP
-    HTTP_METRIC_DATA_QUERY_PORT("20000");
+    HTTP_METRIC_DATA_QUERY_PORT("20000"),
+
+    // Maximum number of metrics allowed to be fetched per batch query
+    MAX_METRICS_PER_BATCH_QUERY("100"),
+
+    // Maximum number of threads to use for simultaneous fetch from db (must be included in connections calculations)
+    MAX_READ_THREADS_FOR_BATCH_QUERY("10"),
+
+    // Timeout (in seconds) for batch query. This value depends on number of threads, read latency per
+    // metric and max metrics allowed per batch query.
+    BATCH_QUERY_TIMEOUT("20");  // 20s
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());

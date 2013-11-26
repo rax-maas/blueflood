@@ -30,11 +30,15 @@ import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.HttpQueryService;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.simple.JSONArray;
 import org.junit.*;
 
 import java.net.URI;
@@ -183,6 +187,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         testHappyCaseHTTPRequest();
         testBadRequest();
         testBadMethod();
+        testHappyCaseMultiFetchHTTPRequest();
     }
 
     private void testHappyCaseHTTPRequest() throws Exception {
@@ -200,7 +205,19 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private void testBadMethod() throws Exception {
         HttpPost post = new HttpPost(getMetricsQueryURI());
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(501, response.getStatusLine().getStatusCode());
+        Assert.assertEquals(405, response.getStatusLine().getStatusCode());
+    }
+
+    private void testHappyCaseMultiFetchHTTPRequest() throws Exception {
+        HttpPost post = new HttpPost(getBatchMetricsQueryURI());
+        JSONArray metricsToGet = new JSONArray();
+        for (Locator locator : locators) {
+            metricsToGet.add(locator.toString());
+        }
+        HttpEntity entity = new StringEntity(metricsToGet.toString(), ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
     private void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
@@ -222,6 +239,15 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private URI getMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data/" + metricName)
+                .setParameter("from", String.valueOf(baseMillis))
+                .setParameter("to", String.valueOf(baseMillis + 86400000))
+                .setParameter("resolution", "full");
+        return builder.build();
+    }
+
+    private URI getBatchMetricsQueryURI() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data")
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");
