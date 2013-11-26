@@ -77,7 +77,7 @@ public class NumericSerializer {
         else if (type.equals(TimerRollup.class))
             return (AbstractSerializer<T>)timerRollupInstance;
         else if (type.equals(HistogramRollup.class))
-            throw new RuntimeException("Not implemented yet");
+            return (AbstractSerializer<T>)HistogramSerializer.get();
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
         else if (type.equals(Integer.class))
@@ -212,7 +212,7 @@ public class NumericSerializer {
                         CodedOutputStream.computeDoubleSizeNoTag(stat.toDouble()) :
                         CodedOutputStream.computeRawVarint64Size(stat.toLong());
                 return sz;
-            case Type.B_TIMER: // TimerRollup ... NOT PreaggregatedRollup.
+            case Type.B_TIMER:
                 sz += 1; // version
                 TimerRollup rollup = (TimerRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
@@ -402,7 +402,7 @@ public class NumericSerializer {
     }
     
     // handy utility to dump bad buffers when they are encountered. e.g. during serialization debugging.
-    private static void dumpBuffer(CodedInputStream in) {
+    private static void dumpBufferUnsafe(CodedInputStream in) {
         if (DUMP_BAD_BUFFERS) {
             try {
                 Field bufferField = in.getClass().getDeclaredField("buffer");
