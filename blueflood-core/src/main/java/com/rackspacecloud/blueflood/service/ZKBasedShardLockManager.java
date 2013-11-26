@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.base.Ticker;
@@ -78,11 +79,18 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
     private Gauge errorShardGauge;
 
     // thread that does the lock work.
-    private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, Long.MAX_VALUE, TimeUnit.DAYS, new ArrayBlockingQueue<Runnable>(1000), new ThreadFactory() {
-        public Thread newThread(Runnable r) {
-            return new Thread(r, "ZK Lock Worker " + id);
-        }
-    });
+    private final ThreadPoolExecutor worker = new InstrumentedThreadPoolExecutor("ZK Lock Worker",
+            1,
+            1,
+            Long.MAX_VALUE,
+            TimeUnit.DAYS,
+            new ArrayBlockingQueue<Runnable>(1000), 
+            new ThreadFactory() {
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "ZK Lock Worker " + id);
+                }
+            },
+            new ThreadPoolExecutor.AbortPolicy());
 
     private final Meter lockAcquisitionFailure = Metrics.newMeter(ZKBasedShardLockManager.class, "Lock acquisition failures", "ZK", TimeUnit.MINUTES);
     private final Timer lockAcquisitionTimer = Metrics.newTimer(ZKBasedShardLockManager.class, "Lock acquisition timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);

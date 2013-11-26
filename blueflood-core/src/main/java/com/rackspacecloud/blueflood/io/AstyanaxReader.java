@@ -85,6 +85,20 @@ public class AstyanaxReader extends AstyanaxIO {
             ctx.stop();
         }
     }
+    
+    public ColumnList<String> getAllMetadata(Locator locator) {
+        try {
+            RowQuery<Locator, String> query = keyspace
+                    .prepareQuery(CF_METRIC_METADATA)
+                    .getKey(locator);
+            return query.execute().getResult();
+        } catch (NotFoundException ex) {
+            return new EmptyColumnList<String>();
+        } catch (ConnectionException ex) {
+            log.error(ex.getMessage(), ex);
+            return new EmptyColumnList<String>();
+        }
+    }
 
     /**
      * reads a column slice and returns data points. this method doesn't do any checking to ensure that the range
@@ -128,6 +142,26 @@ public class AstyanaxReader extends AstyanaxIO {
             throw new IOException(ex);
         }
         
+        return points;
+    }
+    
+    // todo: this could be the basis for every rollup read method.
+    public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
+        AbstractSerializer serializer = NumericSerializer.serializerFor(type);
+        // special cases. :( the problem here is that the normal full res serializer returns Number instances instead of
+        // SimpleNumber instances.
+        if (cf == AstyanaxIO.CF_METRICS_FULL)
+            serializer = NumericSerializer.simpleNumberSerializer;
+        ColumnList<Long> cols = getNumericRollups(locator, cf, range.start, range.stop);
+        Points<T> points = new Points<T>();
+        try {
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
+            }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data");
+            throw new IOException(ex);
+        }
         return points;
     }
 
