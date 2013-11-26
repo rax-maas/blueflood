@@ -94,7 +94,9 @@ public class IntegrationTestBase {
         // todo: why not iterate over somethign in AstyanaxIO?
         final String[] columnFamilies = {"metrics_locator", "metrics_full", "metrics_5m", "metrics_20m", "metrics_60m",
                                          "metrics_240m", "metrics_1440m", "metrics_state", "metrics_string",
-                                         "metrics_metadata", "metrics_preaggregated"};
+                                         "metrics_metadata", "metrics_preaggregated_full", "metrics_preaggregated_5m", 
+                                         "metrics_preaggregated_20m", "metrics_preaggregated_60m",
+                                         "metrics_preaggregated_240m", "metrics_preaggregated_1440m" };
         AstyanaxTester truncator = new AstyanaxTester();
         for (String cf : columnFamilies)
             truncator.truncate(cf);
