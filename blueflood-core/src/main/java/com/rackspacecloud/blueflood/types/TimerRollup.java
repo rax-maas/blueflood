@@ -90,38 +90,30 @@ public class TimerRollup extends Rollup implements IBasicRollup {
     public AbstractRollupStat getMinValue() { return min; }
     public AbstractRollupStat getVariance() { return variance; }
     
-    public void setPercentile(String label, Number mean, Number sum, Number upper) {
-        percentiles.put(label, new Percentile(mean, sum, upper));
+    public void setPercentile(String label, Number mean) {
+        percentiles.put(label, new Percentile(mean));
     }
     
     // todo: consider moving this to its own class.
     public static class Percentile {
         private Number mean;
-        private Number sum;
-        private Number upper;
         
-        public Percentile(Number mean, Number sum, Number upper) {
+        public Percentile(Number mean) {
             // longs and doubles only please.
             this.mean = maybePromote(mean);
-            this.sum = maybePromote(sum);
-            this.upper = maybePromote(upper);
         }
         
         public boolean equals(Object obj) {
             if (!(obj instanceof Percentile)) return false;
             Percentile other = (Percentile)obj;
             if (!other.mean.equals(this.mean)) return false;
-            if (!other.sum.equals(this.sum)) return false;
-            if (!other.upper.equals(this.upper)) return false;
             return true;
         }
         
-        public Number getSum() { return sum; }
         public Number getMean() { return mean; }
-        public Number getUpper() { return upper; }
         
         public String toString() {
-            return String.format("{mean:%s sum:%s upper:%s}", mean.toString(), sum.toString(), upper.toString());
+            return String.format("{mean:%s}", mean.toString());
         }
         
         public static Number maybePromote(Number number) {
@@ -208,17 +200,13 @@ public class TimerRollup extends Rollup implements IBasicRollup {
                 labels.add(label);
                 Percentile percentile = percentilesToMerge.get(label);
                 pctMeans.get(label).add(percentile.getMean());
-                pctUppers.get(label).add(percentile.getUpper());
-                pctSums.get(label).add(percentile.getSum());
             }
         }
         
         // now go through the percentiles and calculate!
         for (String label : labels) {
-            Number sum = TimerRollup.sum(pctSums.get(label));
             Number mean = TimerRollup.avg(pctMeans.get(label));
-            Number upper = TimerRollup.max(pctUppers.get(label));
-            this.setPercentile(label, mean, sum, upper);
+            this.setPercentile(label, mean);
         }
         // wooo!
     }

@@ -228,8 +228,6 @@ public class NumericSerializer {
                 for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
                     sz += CodedOutputStream.computeStringSizeNoTag(entry.getKey());
                     Number[] pctComponents = new Number[] {
-                            entry.getValue().getSum(),
-                            entry.getValue().getUpper(),
                             entry.getValue().getMean(),
                     };
                     for (Number num : pctComponents) {
@@ -274,8 +272,6 @@ public class NumericSerializer {
         for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
             out.writeStringNoTag(entry.getKey());
             putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
-            putUnversionedDoubleOrLong(entry.getValue().getUpper(), out);
-            putUnversionedDoubleOrLong(entry.getValue().getSum(), out);
         }
     }
     
@@ -320,9 +316,7 @@ public class NumericSerializer {
         for (int i = 0; i < numPercentiles; i++) {
             String name = in.readString();
             Number mean = getUnversionedDoubleOrLong(in);
-            Number upper = getUnversionedDoubleOrLong(in);
-            Number pctSum = getUnversionedDoubleOrLong(in);
-            rollup.setPercentile(name, mean, pctSum, upper);
+            rollup.setPercentile(name, mean);
         }
         
         return rollup;

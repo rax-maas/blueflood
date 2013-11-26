@@ -42,8 +42,8 @@ public class TimerSerializationTest {
                 .withMinValue(2)
                 .withMaxValue(987)
                 .withCount(345);
-        r0.setPercentile("foo", 741.32d, 876, 9482);
-        r0.setPercentile("bar", 0.0323d, 32, 9.32d);
+        r0.setPercentile("foo", 741.32d);
+        r0.setPercentile("bar", 0.0323d);
         
         if (System.getProperty("GENERATE_TIMER_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/timer_version_" + Constants.VERSION_1_TIMER + ".bin", false);
