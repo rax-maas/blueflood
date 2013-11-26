@@ -20,7 +20,6 @@ import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -48,7 +47,7 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
         return globalJSON;
     }
 
-    private JSONArray transformDataToJSONArray(MetricData metricData, Set<MetricStat> filterStats)
+    protected JSONArray transformDataToJSONArray(MetricData metricData, Set<MetricStat> filterStats)
             throws SerializationException {
         Points points = metricData.getData();
         final JSONArray data = new JSONArray();
@@ -64,7 +63,6 @@ public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
             throws SerializationException {
         final JSONObject  object = new JSONObject();
         object.put("timestamp", timestamp);
-        object.put("unit", unit);
 
         JSONObject filterStatsObject = null;
         long numPoints = 1;

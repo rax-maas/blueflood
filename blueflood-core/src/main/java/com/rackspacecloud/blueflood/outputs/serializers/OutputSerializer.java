@@ -117,3 +117,4 @@ public interface OutputSerializer<T> {
         abstract Object convertRawSampleToObject(Object rawSample);
     }
 }
+
