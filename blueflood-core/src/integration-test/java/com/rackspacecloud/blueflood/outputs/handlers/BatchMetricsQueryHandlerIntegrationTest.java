@@ -112,9 +112,10 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         BatchMetricsQuery query = new BatchMetricsQuery(locators, range, gran);
 
         // Now test a bad case with extremely low timeout. We shouldn't throw any exceptions.
-        Map<Locator, MetricData> results = batchMetricsQueryHandler.execute(query, new TimeValue(5, TimeUnit.MILLISECONDS));
+        Map<Locator, MetricData> results = batchMetricsQueryHandler.execute(query, new TimeValue(1, TimeUnit.MILLISECONDS));
         // Make sure there were things still in progress.
-        Assert.assertTrue(results.size() < locators.size());
+        Assert.assertTrue("Count of results " + results.size() + " should be less than " + locators.size(),
+                results.size() < locators.size());
         // Executor queue should not have any items left.
         Assert.assertEquals(0, executor.getQueue().size());
         // Note there is no guarantee that items currently in execution will definitely be done or interrupted.
