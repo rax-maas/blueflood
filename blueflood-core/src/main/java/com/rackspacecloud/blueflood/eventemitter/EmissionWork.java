@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
-
 public class EmissionWork implements Runnable{
     private String eventName = "rollup";
     private Object[] payload;
