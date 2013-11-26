@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.concurrent;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class ThreadPoolBuilder {
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
     private int queueSize = 0;
+    private TimeValue keepAliveTime = new TimeValue(30, TimeUnit.SECONDS);
     
     private RejectedExecutionHandler rejectedHandler = new ThreadPoolExecutor.CallerRunsPolicy();
     private Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
@@ -58,6 +60,11 @@ public class ThreadPoolBuilder {
 
     public ThreadPoolBuilder withBoundedQueue(int size) {
         this.queueSize = size;
+        return this;
+    }
+    
+    public ThreadPoolBuilder withKeepAliveTime(TimeValue time) {
+        this.keepAliveTime = time;
         return this;
     }
 
