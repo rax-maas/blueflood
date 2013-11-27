@@ -52,8 +52,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
-    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS);
-    private static final int INTERNAL_API_CONCURRENCY = CACHE_CONCURRENCY;
+    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
@@ -62,6 +61,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_FULL = "Full Insert".intern();
     private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
+    private static final String INSERT_BASIC_ROLLUPS = "Basic Rollup Batch Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
@@ -274,6 +274,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) {
+        TimerContext ctx = Instrumentation.getTimerContext(INSERT_BASIC_ROLLUPS);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             BasicRollup rollup = writeContext.getRollup();
@@ -291,6 +292,8 @@ public class AstyanaxWriter extends AstyanaxIO {
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);
             log.error("Error writing rollup batch", e);
+        } finally {
+            ctx.stop();
         }
     }
 }

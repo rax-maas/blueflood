@@ -152,8 +152,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
         rollupReadExecutors = new InstrumentedThreadPoolExecutor(
             "RollupReadsThreadpool",
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
+            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
+            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
             30, TimeUnit.SECONDS,
             rollupReadQueue,
             Executors.defaultThreadFactory(),
@@ -162,8 +162,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
         final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
         rollupWriteExecutors = new InstrumentedThreadPoolExecutor(
                 "RollupWritesThreadpool",
-                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
-                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
                 30, TimeUnit.SECONDS,
                 rollupWriteQueue,
                 Executors.defaultThreadFactory(),

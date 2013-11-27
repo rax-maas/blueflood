@@ -36,13 +36,14 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
 
     static {
         // run this test with a configuration so that threadpool queue size is artificially constrained smaller.
-        System.setProperty("MAX_ROLLUP_THREADS", threadsInRollupPool.toString());
+        System.setProperty("MAX_ROLLUP_READ_THREADS", threadsInRollupPool.toString());
+        System.setProperty("MAX_ROLLUP_WRITE_THREADS", threadsInRollupPool.toString());
     }
 
     @Test
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
-        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS), threadsInRollupPool.intValue());
+        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS), threadsInRollupPool.intValue());
         int shardToTest = 0;
 
         // I want to see what happens when RollupService.rollupExecutors gets too much work. It should never reject
