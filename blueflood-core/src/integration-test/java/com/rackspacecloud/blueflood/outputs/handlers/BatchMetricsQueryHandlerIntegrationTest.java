@@ -117,7 +117,9 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         Assert.assertTrue("Count of results " + results.size() + " should be less than " + locators.size(),
                 results.size() < locators.size());
         // Executor queue should not have any items left.
-        Assert.assertEquals(0, executor.getQueue().size());
+        // XXX: OpenJDK6 ArrayBlockingQueue has a weird bug where it returns negative value for size() when you call
+        // purge() on the executor that uses the queue.
+        Assert.assertTrue("Number of items left in queue should be 0", executor.getQueue().size() <= 0);
         // Note there is no guarantee that items currently in execution will definitely be done or interrupted.
 
         // Test happy case. 5s is plenty of time to read two metrics.
