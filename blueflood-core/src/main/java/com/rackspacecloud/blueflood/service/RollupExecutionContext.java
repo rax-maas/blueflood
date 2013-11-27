@@ -1,12 +1,14 @@
 package com.rackspacecloud.blueflood.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Context of execution for a single shard, representing many rollups of a given granularity.
 public class RollupExecutionContext {
     private final AtomicLong readCounter;
     private final Thread owner;
-    private AtomicLong writeCounter;
+    private final AtomicLong writeCounter;
+    private final AtomicBoolean successful = new AtomicBoolean(true);
 
     public RollupExecutionContext(Thread owner) {
         this.owner = owner;
@@ -38,5 +40,13 @@ public class RollupExecutionContext {
 
     boolean doneWriting() {
         return writeCounter.get() == 0;
+    }
+
+    boolean wasSuccessful() {
+        return successful.get();
+    }
+
+    void markUnsuccessful(Throwable t) {
+        successful.set(false);
     }
 }

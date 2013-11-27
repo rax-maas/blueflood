@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
@@ -39,9 +40,14 @@ public class RollupBatchWriteRunnable  implements Runnable {
     @Override
     public void run() {
         TimerContext ctx = batchWriteTimer.time();
-        AstyanaxWriter.getInstance().insertBasicRollups(writeContexts);
+        try {
+            AstyanaxWriter.getInstance().insertBasicRollups(writeContexts);
+        } catch (ConnectionException e) {
+            executionContext.markUnsuccessful(e);
+        }
         executionContext.decrementWriteCounter(writeContexts.size());
         rollupsPerBatch.update(writeContexts.size());
         RollupService.lastRollupTime.set(System.currentTimeMillis());
+        ctx.stop();
     }
 }

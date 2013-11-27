@@ -246,7 +246,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
-    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) {
+    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_BASIC_ROLLUPS);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
@@ -265,6 +265,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);
             log.error("Error writing rollup batch", e);
+            throw e;
         } finally {
             ctx.stop();
         }
