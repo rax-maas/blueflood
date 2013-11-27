@@ -205,33 +205,6 @@ public class AstyanaxWriter extends AstyanaxIO {
         }});
     }
 
-    // todo: this method should be made private. outside of this class, it is only used by tests.
-    public void insertRollups(Locator locator, Map<Long, BasicRollup> rollups,
-                                          ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
-        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
-        try {
-            MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
-            for (Map.Entry<Long, BasicRollup> rollupEntry : rollups.entrySet()) {
-                        mutationBatchWithRow.putColumn(
-                                rollupEntry.getKey(),
-                                NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(rollupEntry.getValue()),
-                                ttl);
-            }
-            // send it.
-            try {
-                mutationBatch.execute();
-            } catch (ConnectionException e) {
-                Instrumentation.markWriteError(e);
-                log.error("Connection Exception persisting data", e);
-                throw e;
-            }
-        } finally {
-            ctx.stop();
-        }
-    }
-
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_SHARD);
         try {

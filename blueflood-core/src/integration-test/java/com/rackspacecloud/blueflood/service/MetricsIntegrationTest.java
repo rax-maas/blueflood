@@ -132,9 +132,11 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             }
             BasicRollup basicRollup = new BasicRollup();
             Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
+            ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
+            ColumnFamily<Locator, Long> destinationCF = AstyanaxIO.getColumnFamilyMapper().get(gran.coarser());
             for (Map.Entry<Long, Object> col : cols.entrySet()) {
                 while (col.getKey() > curRange.stop) {
-                    rollups.put(curRange.start, basicRollup);
+                    writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destinationCF, curRange.start));
                     basicRollup = new BasicRollup();
                     curRange = ranges.remove(0);
                 }
@@ -153,8 +155,9 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 }
             }
 
-            rollups.put(curRange.start, basicRollup);
-            writer.insertRollups(locator, rollups, AstyanaxIO.getColumnFamilyMapper().get(gran.coarser()));
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destinationCF, curRange.start));
+
+            writer.insertBasicRollups(writeContexts);
         }
         
         // verify the number of points in 48h worth of rollups. 
@@ -178,60 +181,72 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writeFullData(locator, baseMillis, hours, writer);
 
         // FULL -> 5m
-        Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
+        ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            rollups.put(range.start, basicRollup);
+
+            writes.add(new SingleRollupWriteContext(basicRollup,
+                    locator,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.coarser()),
+                    range.start));
         }
-        writer.insertRollups(locator, rollups,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.coarser()));
+        writer.insertBasicRollups(writes);
 
         // 5m -> 20m
-        rollups.clear();
+        writes.clear();
+
         for (Range range : Range.getRangesToRollup(Granularity.MIN_5, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-            rollups.put(range.start, basicRollup);
+            writes.add(new SingleRollupWriteContext(basicRollup,
+                    locator,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5.coarser()),
+                    range.start));
         }
-
-        writer.insertRollups(locator, rollups, AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5.coarser()));
+        writer.insertBasicRollups(writes);
 
         // 20m -> 60m
-        rollups.clear();
+        writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_20, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-            rollups.put(range.start, basicRollup);
+            writes.add(new SingleRollupWriteContext(basicRollup,
+                    locator,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20.coarser()),
+                    range.start));
         }
-        writer.insertRollups(locator, rollups,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20.coarser()));
+        writer.insertBasicRollups(writes);
 
         // 60m -> 240m
-        rollups.clear();
+        writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_60, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60));
 
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-            rollups.put(range.start, basicRollup);
+            writes.add(new SingleRollupWriteContext(basicRollup,
+                    locator,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60.coarser()),
+                    range.start));
         }
-        writer.insertRollups(locator, rollups,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60.coarser()));
+        writer.insertBasicRollups(writes);
 
         // 240m -> 1440m
-        rollups.clear();
+        writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_240, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-            rollups.put(range.start, basicRollup);
+            writes.add(new SingleRollupWriteContext(basicRollup,
+                    locator,
+                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.coarser()),
+                    range.start));
         }
-        writer.insertRollups(locator, rollups,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.coarser()));
+        writer.insertBasicRollups(writes);
 
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
