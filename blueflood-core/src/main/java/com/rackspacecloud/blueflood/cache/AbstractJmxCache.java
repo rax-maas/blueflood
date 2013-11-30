@@ -73,10 +73,6 @@ public abstract class AbstractJmxCache implements  CacheStatsMBean {
                 new JmxAttributeGauge(nameObj, "HitCount"));
         hitRate = reg.register(MetricRegistry.name(name, "Hit Rate"),
                 new JmxAttributeGauge(nameObj, "HitRate"));
-        hitCount = reg.register(MetricRegistry.name(name, "Hit Count"),
-                new JmxAttributeGauge(nameObj, "HitCount"));
-        hitRate = reg.register(MetricRegistry.name(name, "Hit Rate"),
-                new JmxAttributeGauge(nameObj, "HitRate"));
         loadCount = reg.register(MetricRegistry.name(name, "Load Count"),
                 new JmxAttributeGauge(nameObj, "LoadCount"));
         missRate = reg.register(MetricRegistry.name(name, "Miss Rate"),

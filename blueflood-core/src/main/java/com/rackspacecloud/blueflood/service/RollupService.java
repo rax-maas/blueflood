@@ -103,8 +103,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
                     new JmxAttributeGauge(nameObj, "ScheduledSlotCheckCount"));
             secondsSinceLastSlotCheckGauge = reg.register(MetricRegistry.name(RollupService.class, "Seconds Since Last Slot Check"),
                     new JmxAttributeGauge(nameObj, "SecondsSinceLastSlotCheck"));
-            pollerPeriodGauge = reg.register(MetricRegistry.name(RollupService.class, "Poller Period"),
-                    new JmxAttributeGauge(nameObj, "PollerPeriod"));
             serverTimeGauge = reg.register(MetricRegistry.name(RollupService.class, "Server Time"),
                     new JmxAttributeGauge(nameObj, "ServerTime"));
             slotCheckConcurrencyGauge = reg.register(MetricRegistry.name(RollupService.class, "Slot Check Concurrency"),

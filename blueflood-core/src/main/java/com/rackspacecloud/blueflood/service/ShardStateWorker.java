@@ -62,7 +62,7 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
             activeGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Active"),
                     new JmxBooleanGauge(nameObj, "Active"));
 
-            periodGauge = Metrics.getRegistry().register(MetricRegistry.name(RollupService.class, "Period"),
+            periodGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Period"),
                     new JmxAttributeGauge(nameObj, "Period"));
 
         } catch (Exception exc) {
