@@ -16,19 +16,18 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.google.common.base.Ticker;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class ShardStateManager {
     private static final Logger log = LoggerFactory.getLogger(ShardStateManager.class);
@@ -37,11 +36,11 @@ public class ShardStateManager {
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
 
-    private static final Histogram timeSinceUpdate = Metrics.newHistogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan", true);
+    private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
-    private static final Meter updateStampMeter = Metrics.newMeter(ShardStateManager.class, "Shard Slot Update Meter", "Updated", TimeUnit.SECONDS);
-    private final Meter parentBeforeChild = Metrics.newMeter(RollupService.class, "Parent slot executed before child", "OutOfOrderSchedule", TimeUnit.SECONDS);
-    private static final Meter reRollupData = Metrics.newMeter(RollupService.class, "Re-rolling up a slot because of new data", "Slot", TimeUnit.SECONDS);
+    private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter", "Updated");
+    private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child", "OutOfOrderSchedule");
+    private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data", "Slot");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);

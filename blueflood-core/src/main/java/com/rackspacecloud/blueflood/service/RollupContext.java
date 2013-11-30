@@ -16,15 +16,12 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.Timer;
-
-import java.util.concurrent.TimeUnit;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 /**
  * Will eventually become RollupContext as soon as the existing RollupContext is renamed to ScheduleContext.
@@ -37,8 +34,8 @@ class RollupContext {
     private final Range range;
     private final ColumnFamily<Locator, Long> srcCF; // this is the source column family to read from.
     private final ColumnFamily<Locator, Long> destCF; // this is the dest column family to write to.
-    private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
+    private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
+    private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
 
     RollupContext(Locator locator, Range rangeToRead, ColumnFamily srcColumnFamily, ColumnFamily destColumnFamily) {
         this.locator = locator;

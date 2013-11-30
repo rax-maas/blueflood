@@ -18,8 +18,6 @@ package com.rackspacecloud.blueflood.concurrent;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,0 +1,71 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package com.rackspacecloud.blueflood.utils;
+
+
+import com.codahale.metrics.*;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+
+public class Metrics {
+    private static final MetricRegistry registry = new MetricRegistry();
+    private static final GraphiteReporter reporter;
+
+    static {
+        Configuration config = Configuration.getInstance();
+
+        if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
+            Graphite graphite = new Graphite(new InetSocketAddress(config.getStringProperty(CoreConfig.GRAPHITE_HOST), config.getIntegerProperty(CoreConfig.GRAPHITE_PORT)));
+
+            reporter = GraphiteReporter
+                    .forRegistry(registry)
+                    .convertDurationsTo(TimeUnit.SECONDS)
+                    .convertRatesTo(TimeUnit.MILLISECONDS)
+                    .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
+                    .build(graphite);
+
+            reporter.start(30l, TimeUnit.SECONDS);
+        } else {
+            reporter = null;
+        }
+    }
+
+    public static MetricRegistry getRegistry() {
+        return registry;
+    }
+
+    public static Meter meter(Class kls, String... names) {
+        return getRegistry().meter(MetricRegistry.name(kls, names));
+    }
+
+    public static Timer timer(Class kls, String... names) {
+        return getRegistry().timer(MetricRegistry.name(kls, names));
+    }
+
+    public static Histogram histogram(Class kls, String... names) {
+        return getRegistry().histogram(MetricRegistry.name(kls, names));
+    }
+
+    public static Counter counter(Class kls, String... names) {
+        return getRegistry().counter(MetricRegistry.name(kls, names));
+    }
+}

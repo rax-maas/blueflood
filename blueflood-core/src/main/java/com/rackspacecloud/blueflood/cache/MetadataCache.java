@@ -54,7 +54,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             final String name = String.format(MetadataCache.class.getPackage().getName() + ":type=%s,name=Stats", MetadataCache.class.getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
             mbs.registerMBean(this, nameObj);
-            instantiateYammerMetrics(MetadataCache.class, null, nameObj);
+            instantiateYammerMetrics(MetadataCache.class, "metadata", nameObj);
         } catch (InstanceAlreadyExistsException doNotCare) {
             log.debug(doNotCare.getMessage());
         } catch (Exception ex) {

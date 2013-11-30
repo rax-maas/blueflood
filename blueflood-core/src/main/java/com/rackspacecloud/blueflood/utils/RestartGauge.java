@@ -16,15 +16,14 @@
 
 package com.rackspacecloud.blueflood.utils;
 
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.MetricsRegistry;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 
-public class RestartGauge extends Gauge<Integer> {
+public class RestartGauge implements Gauge<Integer> {
     boolean sentVal = false;
 
     @Override
-    public Integer value() {
+    public Integer getValue() {
         // Sends a value of 1 for the first flush after service restart and Gauge instantiation, then zero.
         if (!sentVal){
             sentVal = true;
@@ -33,12 +32,7 @@ public class RestartGauge extends Gauge<Integer> {
         return 0;
     }
 
-    public RestartGauge(MetricsRegistry registry, Class klass) {
-        registry.newGauge(klass, "Restart", this);
+    public RestartGauge(MetricRegistry registry, Class klass) {
+        registry.register(MetricRegistry.name(klass, "Restart"), this);
     }
-
-    public RestartGauge(Class klass) {
-        this(Metrics.defaultRegistry(), klass);
-    }
-
 }

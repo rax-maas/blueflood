@@ -16,21 +16,19 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Timer;
+import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-import com.netflix.astyanax.model.Column;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * fetches locators for a given slot and feeds a worker queue with rollup work. When those are all done notifies the
@@ -44,7 +42,7 @@ class LocatorFetchRunnable implements Runnable {
     private final String parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
-    private static final Timer rollupLocatorExecuteTimer = Metrics.newTimer(RollupService.class, "Locate and Schedule Rollups for Slot", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
 
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupExecutor) {
@@ -55,7 +53,7 @@ class LocatorFetchRunnable implements Runnable {
     }
     
     public void run() {
-        final TimerContext timerCtx = rollupLocatorExecuteTimer.time();
+        final Timer.Context timerCtx = rollupLocatorExecuteTimer.time();
         final Granularity gran = Granularity.granularityFromKey(parentSlotKey);
         final int parentSlot = Granularity.slotFromKey(parentSlotKey);
         final int shard = Granularity.shardFromKey(parentSlotKey);

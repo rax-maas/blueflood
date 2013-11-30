@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -24,20 +25,16 @@ import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
 class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
-    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
+    private static final Timer writeTimer = Metrics.timer(RollupRunnable.class, "Write Rollup");
     private final RollupContext rollupContext;
     private final RollupExecutionContext executionContext;
     private final long startWait;
@@ -55,9 +52,9 @@ class RollupRunnable implements Runnable {
                 rollupContext.getLocator()});
 
         rollupContext.getWaitHist().update(System.currentTimeMillis() - startWait);
-        TimerContext timerContext = rollupContext.getExecuteTimer().time();
+        Timer.Context timerContext = rollupContext.getExecuteTimer().time();
         try {
-            TimerContext calcrollupContext = calcTimer.time();
+            Timer.Context calcrollupContext = calcTimer.time();
 
             // Read data and compute rollup
             BasicRollup rollup;
@@ -79,7 +76,7 @@ class RollupRunnable implements Runnable {
                 calcrollupContext.stop();
             }
 
-            TimerContext writerollupContext = writeTimer.time();
+            Timer.Context writerollupContext = writeTimer.time();
             try {
                 AstyanaxWriter.getInstance().insertRollup(rollupContext.getLocator(),
                         rollupContext.getRange().getStart(), rollup,

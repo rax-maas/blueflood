@@ -16,16 +16,13 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.*;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-import com.yammer.metrics.util.JmxGauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +39,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
-    private final Timer polltimer = Metrics.newTimer(RollupService.class, "Poll Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private final Meter rejectedSlotChecks = Metrics.newMeter(RollupService.class, "Rejected Slot Checks", "Rollups", TimeUnit.MINUTES);
+    private final Timer polltimer = Metrics.timer(RollupService.class, "Poll Timer");
+    private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupExecutors;
     private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
@@ -68,55 +65,67 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private Gauge managedShardGauge;
 
     protected static final AtomicLong lastRollupTime = new AtomicLong(System.currentTimeMillis());
-    private static final Gauge<Long> timeSinceLastRollupGauge = Metrics.newGauge(RollupService.class, "Milliseconds Since Last Rollup", new Gauge<Long>() {
-        @Override
-        public Long value() {
-            return System.currentTimeMillis() - lastRollupTime.get();
-        }
-    });
+    private static final Gauge<Long> timeSinceLastRollupGauge;
+
+    static {
+        timeSinceLastRollupGauge = new Gauge<Long>() {
+            @Override
+            public Long getValue() {
+                return System.currentTimeMillis() - lastRollupTime.get();
+            }
+        };
+        Metrics.getRegistry().register(MetricRegistry.name(RollupService.class, "Milliseconds Since Last Rollup"), timeSinceLastRollupGauge);
+    }
 
     public RollupService(ScheduleContext context) {
         this.context = context;
         this.shardStateManager = context.getShardStateManager();
+
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
             mbs.registerMBean(this, nameObj);
-            activeGauge = Metrics.newGauge(RollupService.class, "Active",
+
+            MetricRegistry reg = Metrics.getRegistry();
+            activeGauge = reg.register(MetricRegistry.name(RollupService.class, "Active"),
                     new JmxBooleanGauge(nameObj, "Active"));
-            inflightRollupGauge = Metrics.newGauge(RollupService.class, "In Flight Rollup Count",
-                    new JmxGauge(nameObj, "InFlightRollupCount"));
-            pollerPeriodGauge = Metrics.newGauge(RollupService.class, "Poller Period",
-                    new JmxGauge(nameObj, "PollerPeriod"));
-            queuedRollupGauge = Metrics.newGauge(RollupService.class, "Queued Rollup Count",
-                    new JmxGauge(nameObj, "QueuedRollupCount"));
-            rollupConcurrencyGauge = Metrics.newGauge(RollupService.class, "Rollup Concurrency",
-                    new JmxGauge(nameObj, "RollupConcurrency"));
-            scheduledSlotCheckGauge = Metrics.newGauge(RollupService.class, "Scheduled Slot Check",
-                    new JmxGauge(nameObj, "ScheduledSlotCheckCount"));
-            secondsSinceLastSlotCheckGauge = Metrics.newGauge(RollupService.class, "Seconds Since Last Slot Check",
-                    new JmxGauge(nameObj, "SecondsSinceLastSlotCheck"));
-            pollerPeriodGauge = Metrics.newGauge(RollupService.class, "Poller Period",
-                    new JmxGauge(nameObj, "PollerPeriod"));
-            serverTimeGauge = Metrics.newGauge(RollupService.class, "Server Time",
-                    new JmxGauge(nameObj, "ServerTime"));
-            slotCheckConcurrencyGauge = Metrics.newGauge(RollupService.class, "Slot Check Concurrency",
-                    new JmxGauge(nameObj, "SlotCheckConcurrency"));
-            recentlyScheduledShardGauge = Metrics.newGauge(RollupService.class, "Recently Scheduled Shards",
+            inflightRollupGauge = reg.register(MetricRegistry.name(RollupService.class, "In Flight Rollup Count"),
+                    new JmxAttributeGauge(nameObj, "InFlightRollupCount"));
+
+            pollerPeriodGauge = reg.register(MetricRegistry.name(RollupService.class, "Poller Period"),
+                    new JmxAttributeGauge(nameObj, "PollerPeriod"));
+            queuedRollupGauge = reg.register(MetricRegistry.name(RollupService.class, "Queued Rollup Count"),
+                    new JmxAttributeGauge(nameObj, "QueuedRollupCount"));
+            rollupConcurrencyGauge = reg.register(MetricRegistry.name(RollupService.class, "Rollup Concurrency"),
+                    new JmxAttributeGauge(nameObj, "RollupConcurrency"));
+            scheduledSlotCheckGauge = reg.register(MetricRegistry.name(RollupService.class, "Scheduled Slot Check"),
+                    new JmxAttributeGauge(nameObj, "ScheduledSlotCheckCount"));
+            secondsSinceLastSlotCheckGauge = reg.register(MetricRegistry.name(RollupService.class, "Seconds Since Last Slot Check"),
+                    new JmxAttributeGauge(nameObj, "SecondsSinceLastSlotCheck"));
+            pollerPeriodGauge = reg.register(MetricRegistry.name(RollupService.class, "Poller Period"),
+                    new JmxAttributeGauge(nameObj, "PollerPeriod"));
+            serverTimeGauge = reg.register(MetricRegistry.name(RollupService.class, "Server Time"),
+                    new JmxAttributeGauge(nameObj, "ServerTime"));
+            slotCheckConcurrencyGauge = reg.register(MetricRegistry.name(RollupService.class, "Slot Check Concurrency"),
+                    new JmxAttributeGauge(nameObj, "SlotCheckConcurrency"));
+
+            recentlyScheduledShardGauge = reg.register(MetricRegistry.name(RollupService.class, "Recently Scheduled Shards"),
                     new Gauge<Integer>() {
                         @Override
-                        public Integer value() {
+                        public Integer getValue() {
                             return getRecentlyScheduledShards().size();
                         }
                     });
-            managedShardGauge = Metrics.newGauge(RollupService.class, "Managed Shards",
+
+            managedShardGauge = reg.register(MetricRegistry.name(RollupService.class, "Managed Shards"),
                     new Gauge<Integer>() {
                         @Override
-                        public Integer value() {
+                        public Integer getValue() {
                             return getManagedShards().size();
                         }
                     });
+
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
@@ -164,7 +173,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     }
 
     final void poll() {
-        TimerContext timer = polltimer.time();
+        Timer.Context timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
         context.scheduleSlotsOlderThan(ROLLUP_DELAY_MILLIS);
         timer.stop();

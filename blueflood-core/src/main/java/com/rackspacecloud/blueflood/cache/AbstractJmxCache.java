@@ -16,10 +16,11 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.JmxAttributeGauge;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.CacheStats;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.util.JmxGauge;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import javax.management.ObjectName;
 
@@ -63,18 +64,26 @@ public abstract class AbstractJmxCache implements  CacheStatsMBean {
     }
 
     public void instantiateYammerMetrics(Class klass, String scope, ObjectName nameObj) {
-        hitCount = Metrics.newGauge(klass, "Hit Count", scope,
-                new JmxGauge(nameObj, "HitCount"));
-        hitRate = Metrics.newGauge(klass, "Hit Rate", scope,
-                new JmxGauge(nameObj, "HitRate"));
-        loadCount = Metrics.newGauge(klass, "Load Count", scope,
-                new JmxGauge(nameObj, "LoadCount"));
-        missRate = Metrics.newGauge(klass, "Miss Rate", scope,
-                new JmxGauge(nameObj, "MissRate"));
-        requestCount = Metrics.newGauge(klass, "Request Count", scope,
-                new JmxGauge(nameObj, "RequestCount"));
-        totalLoadTime = Metrics.newGauge(klass, "Total Load Time", scope,
-                new JmxGauge(nameObj, "TotalLoadTime"));
-
+        String name = MetricRegistry.name(klass);
+        if (scope != null) {
+            name = MetricRegistry.name(name, scope);
+        }
+        MetricRegistry reg = Metrics.getRegistry();
+        hitCount = reg.register(MetricRegistry.name(name, "Hit Count"),
+                new JmxAttributeGauge(nameObj, "HitCount"));
+        hitRate = reg.register(MetricRegistry.name(name, "Hit Rate"),
+                new JmxAttributeGauge(nameObj, "HitRate"));
+        hitCount = reg.register(MetricRegistry.name(name, "Hit Count"),
+                new JmxAttributeGauge(nameObj, "HitCount"));
+        hitRate = reg.register(MetricRegistry.name(name, "Hit Rate"),
+                new JmxAttributeGauge(nameObj, "HitRate"));
+        loadCount = reg.register(MetricRegistry.name(name, "Load Count"),
+                new JmxAttributeGauge(nameObj, "LoadCount"));
+        missRate = reg.register(MetricRegistry.name(name, "Miss Rate"),
+                new JmxAttributeGauge(nameObj, "MissRate"));
+        requestCount = reg.register(MetricRegistry.name(name, "Request Count"),
+                new JmxAttributeGauge(nameObj, "RequestCount"));
+        totalLoadTime = reg.register(MetricRegistry.name(name, "Total Load Time"),
+                new JmxAttributeGauge(nameObj, "TotalLoadTime"));
     }
 }

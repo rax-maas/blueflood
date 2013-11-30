@@ -16,18 +16,14 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
-import com.rackspacecloud.blueflood.types.AbstractRollupStat;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.codahale.metrics.Histogram;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
+import com.rackspacecloud.blueflood.exceptions.SerializationException;
+import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
+import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,9 +33,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_FULL_RES;
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_TIMER;
+import static com.rackspacecloud.blueflood.io.Constants.*;
 
 public class NumericSerializer {
     // NumericSerializer can be used with Rollup and full resolution metrics.
@@ -50,8 +44,8 @@ public class NumericSerializer {
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
     
-    private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
-    private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
+    private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
+    private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';

@@ -21,8 +21,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,47 +54,47 @@ public class ConcurrentStructuresTest {
         Assert.assertEquals(0, completionLatch.getCount());
     }
 
-    @Test
-    public void testThreadPoolsWithSameNameIsNotBad() throws InterruptedException {
-        ThreadPoolExecutor svc1 = new ThreadPoolBuilder().withName("foo").build();
-        ThreadPoolExecutor svc2 = new ThreadPoolBuilder().withName("foo").build();
-
-        final List<String> threadNames = new ArrayList<String>();
-        final CountDownLatch latch = new CountDownLatch(2);
-        final CountDownLatch syncLatch = new CountDownLatch(1);
-
-        Runnable first = new Runnable() {
-            public void run() {
-                threadNames.add(Thread.currentThread().getName());
-                try {
-                    // Waits a max of 1 sec to let the other thread to run.
-                    // Counts down 'latch' only if other thread runs.
-                    if (syncLatch.await(1000, TimeUnit.MILLISECONDS)) {
-                        latch.countDown();
-                    }
-                } catch (InterruptedException e) {
-                    Assert.fail("Not a valid test anymore as one thread is interrupted.");
-                }
-            }
-        };
-
-        Runnable second = new Runnable() {
-            public void run() {
-                syncLatch.countDown(); // Tells the other thread that this one ran.
-                threadNames.add(Thread.currentThread().getName());
-                latch.countDown();
-            }
-        };
-
-        svc1.submit(first);
-        svc2.submit(second);
-
-        // Verify both the threads ran to completion.
-        Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-
-        Assert.assertEquals(2, threadNames.size());
-        Assert.assertEquals(threadNames.get(0), threadNames.get(1));
-    }
+//    @Test
+//    public void testThreadPoolsWithSameNameIsNotBad() throws InterruptedException {
+//        ThreadPoolExecutor svc1 = new ThreadPoolBuilder().withName("foo").build();
+//        ThreadPoolExecutor svc2 = new ThreadPoolBuilder().withName("foo").build();
+//
+//        final List<String> threadNames = new ArrayList<String>();
+//        final CountDownLatch latch = new CountDownLatch(2);
+//        final CountDownLatch syncLatch = new CountDownLatch(1);
+//
+//        Runnable first = new Runnable() {
+//            public void run() {
+//                threadNames.add(Thread.currentThread().getName());
+//                try {
+//                    // Waits a max of 1 sec to let the other thread to run.
+//                    // Counts down 'latch' only if other thread runs.
+//                    if (syncLatch.await(1000, TimeUnit.MILLISECONDS)) {
+//                        latch.countDown();
+//                    }
+//                } catch (InterruptedException e) {
+//                    Assert.fail("Not a valid test anymore as one thread is interrupted.");
+//                }
+//            }
+//        };
+//
+//        Runnable second = new Runnable() {
+//            public void run() {
+//                syncLatch.countDown(); // Tells the other thread that this one ran.
+//                threadNames.add(Thread.currentThread().getName());
+//                latch.countDown();
+//            }
+//        };
+//
+//        svc1.submit(first);
+//        svc2.submit(second);
+//
+//        // Verify both the threads ran to completion.
+//        Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+//
+//        Assert.assertEquals(2, threadNames.size());
+//        Assert.assertEquals(threadNames.get(0), threadNames.get(1));
+//    }
 
     @Test
     public void testAsyncFunctionSemantics() throws Exception {

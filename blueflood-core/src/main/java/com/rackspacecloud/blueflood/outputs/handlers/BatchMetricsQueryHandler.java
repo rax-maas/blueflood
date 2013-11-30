@@ -16,6 +16,9 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -23,9 +26,8 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BatchMetricsQuery;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,16 +44,16 @@ public class BatchMetricsQueryHandler {
     private final ThreadPoolExecutor executor;
     private final Map<Locator, MetricData> queryResults;
     private AtomicInteger failedReads;
-    private static final Timer queryTimer = Metrics.newTimer(Instrumentation.class,
-            "Batched Metrics Query Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Meter exceededQueryTimeout = Metrics.newMeter(Instrumentation.class,
-            "Batched Metrics Query Duration Exceeded Timeout", "Rollups", TimeUnit.SECONDS);
-    private static final Timer singleFetchTimer = Metrics.newTimer(Instrumentation.class,
-            "Single Metric Fetch Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Histogram failedQueriesHist = Metrics.newHistogram(Instrumentation.class,
-            "Failed queries", true);
-    private static final Histogram queriesSizeHist = Metrics.newHistogram(Instrumentation.class,
-            "Total queries", true);
+    private static final Timer queryTimer = Metrics.timer(Instrumentation.class,
+            "Batched Metrics Query Duration");
+    private static final Meter exceededQueryTimeout = Metrics.meter(Instrumentation.class,
+            "Batched Metrics Query Duration Exceeded Timeout");
+    private static final Timer singleFetchTimer = Metrics.timer(Instrumentation.class,
+            "Single Metric Fetch Duration");
+    private static final Histogram failedQueriesHist = Metrics.histogram(Instrumentation.class,
+            "Failed queries");
+    private static final Histogram queriesSizeHist = Metrics.histogram(Instrumentation.class,
+            "Total queries");
 
     public BatchMetricsQueryHandler(ThreadPoolExecutor executor, AstyanaxReader reader) {
         this.executor = executor;
@@ -63,7 +65,7 @@ public class BatchMetricsQueryHandler {
     public Map<Locator, MetricData> execute(final BatchMetricsQuery query, TimeValue queryTimeout)
             throws Exception {
         final CountDownLatch shortLatch = new CountDownLatch(query.getLocators().size());
-        final TimerContext queryTimerCtx = queryTimer.time();
+        final Timer.Context queryTimerCtx = queryTimer.time();
 
         final List<Future<Boolean>> resultFutures = new ArrayList<Future<Boolean>>();
         for (final Locator locator : query.getLocators()) {
@@ -119,7 +121,7 @@ public class BatchMetricsQueryHandler {
 
         @Override
         public Boolean call() throws Exception {
-            TimerContext singleQueryTimerCtx = singleFetchTimer.time();
+            Timer.Context singleQueryTimerCtx = singleFetchTimer.time();
             try {
                 MetricData data = reader.getDatapointsForRange(locator, range, gran);
                 queryResults.put(locator, data);

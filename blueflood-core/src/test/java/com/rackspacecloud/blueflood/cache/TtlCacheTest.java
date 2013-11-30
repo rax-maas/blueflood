@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.MetricRegistry;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.AccountMapEntry;
@@ -24,8 +26,8 @@ import com.rackspacecloud.blueflood.internal.InternalAPI;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
 import org.apache.http.client.HttpResponseException;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,11 +51,13 @@ public class TtlCacheTest {
     private TtlCache twoSecondCache;
     private AtomicLong loadCount;
     private AtomicLong buildCount;
+    private TestClock testClock;
     
     @Before
     public void setupCache() {
         loadCount = new AtomicLong(0);
         buildCount = new AtomicLong(0);
+        testClock = new TestClock();
         twoSecondCache = new TtlCache("Test", new TimeValue(2, TimeUnit.SECONDS), 5, new InternalAPI() {
             public Account fetchAccount(String tenantId) throws IOException {
                 loadCount.incrementAndGet();
@@ -69,7 +73,7 @@ public class TtlCacheTest {
             public List<AccountMapEntry> listAccountMapEntries() throws IOException {
                 throw new RuntimeException("Not implemented for this test");
             }
-        }) {
+        }, testClock) {
             @Override
             protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
                 buildCount.incrementAndGet();
@@ -86,8 +90,8 @@ public class TtlCacheTest {
         mbs.unregisterMBean(nameObj);
         
         // involves a little unsafe knowledge of TtlCache internals.
-        Metrics.defaultRegistry().removeMetric(TtlCache.class, "Load Errors", "Test");
-        Metrics.defaultRegistry().removeMetric(TtlCache.class, "Http Errors", "Test");
+        Metrics.getRegistry().remove(MetricRegistry.name(TtlCache.class, "Test", "Load Errors"));
+        Metrics.getRegistry().remove(MetricRegistry.name(TtlCache.class, "Test", "Http Errors"));
     }
     
     private void warmCache() {
@@ -174,11 +178,33 @@ public class TtlCacheTest {
             Field generalErrorMeterField = TtlCache.class.getDeclaredField(fieldName);
             generalErrorMeterField.setAccessible(true);
             Object generalErrorMeter = generalErrorMeterField.get(twoSecondCache);
-            Method tick = generalErrorMeter.getClass().getDeclaredMethod("tick");
+            testClock.setTime(testClock.getTick() + TimeUnit.SECONDS.toNanos(5l));
+
+            Method tick = generalErrorMeter.getClass().getDeclaredMethod("tickIfNecessary");
             tick.setAccessible(true);
             tick.invoke(generalErrorMeter);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    public class TestClock extends Clock {
+        private Long override = null;
+        public TestClock() {
+
+        }
+
+        @Override
+        public long getTick() {
+            if (override == null) {
+                return System.nanoTime();
+            } else {
+                return override;
+            }
+        }
+
+        public void setTime(long nanos) {
+            this.override = nanos;
         }
     }
 }

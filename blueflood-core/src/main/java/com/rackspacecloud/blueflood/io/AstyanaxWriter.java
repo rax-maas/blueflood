@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Timer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.netflix.astyanax.ColumnListMutation;
@@ -36,9 +37,6 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +61,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
-
-    private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -106,7 +102,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_FULL);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_FULL);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -132,7 +128,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 }
 
                 insertMetric(metric, mutationBatch);
-                metricsWritten.mark();
+                Instrumentation.markFullResMetricWritten();
             }
             // insert it
             try {
@@ -181,7 +177,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadataValue(Locator locator, String metaKey, Object metaValue) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_METADATA);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_METADATA);
         try {
             keyspace.prepareColumnMutation(CF_METRIC_METADATA, locator, metaKey)
                     .putValue(metaValue, MetadataSerializer.get(), null)
@@ -210,7 +206,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // todo: this method should be made private. outside of this class, it is only used by tests.
     public void insertRollups(Locator locator, Map<Long, BasicRollup> rollups,
                                           ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
         int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -235,7 +231,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_SHARD);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_SHARD);
         try {
             boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();

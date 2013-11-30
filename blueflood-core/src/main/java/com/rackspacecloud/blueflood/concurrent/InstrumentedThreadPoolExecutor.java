@@ -1,13 +1,10 @@
 package com.rackspacecloud.blueflood.concurrent;
 
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class InstrumentedThreadPoolExecutor extends ThreadPoolExecutor {
     private final Gauge<Integer> workQueueSize;
@@ -21,12 +18,12 @@ public class InstrumentedThreadPoolExecutor extends ThreadPoolExecutor {
                                           ThreadFactory threadFactory,
                                           RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
-
-        this.workQueueSize = Metrics.newGauge(InstrumentedThreadPoolExecutor.class, name, new Gauge<Integer>() {
+        this.workQueueSize = new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return workQueue.size();
             }
-        });
+        };
+        Metrics.getRegistry().register(MetricRegistry.name(InstrumentedThreadPoolExecutor.class, name), this.workQueueSize);
     }
 }
