@@ -61,6 +61,8 @@ public class NumericSerializer {
     
     private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
+    private static Histogram singleValueRollupSize = Metrics.newHistogram(NumericSerializer.class, "Counter Set Gauge Metric Size");
+    private static Histogram timerRollupSize = Metrics.newHistogram(NumericSerializer.class, "Timer Metric Size");
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
@@ -273,6 +275,7 @@ public class NumericSerializer {
     
     private static void serializeSingleValueRollup(SingleValueRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        singleValueRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_SINGLE_VALUE_ROLLUP);
         out.writeRawByte(typeOf(rollup));
         putUnversionedDoubleOrLong(rollup.getValue(), out);
@@ -295,7 +298,7 @@ public class NumericSerializer {
     
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
-        rollupSize.update(buf.length);
+        timerRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_TIMER);
         
         // sum, count, countps, avg, max, min, var
