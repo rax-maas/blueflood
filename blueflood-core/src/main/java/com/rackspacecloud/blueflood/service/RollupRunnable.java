@@ -81,7 +81,7 @@ class RollupRunnable implements Runnable {
             Points input;
             Rollup rollup = null;
             ColumnFamily<Locator, Long> srcCF;
-            ColumnFamily<Locator, Long> dstCF = AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser());
+            ColumnFamily<Locator, Long> dstCF;
             StatType statType = StatType.fromString((String)rollupTypeCache.get(rollupContext.getLocator(), StatType.CACHE_KEY));
             Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, rollupContext.getSourceGranularity());
             
@@ -105,6 +105,10 @@ class RollupRunnable implements Runnable {
                             rollupContext.getRange(),
                             srcCF);
                 }
+                
+                dstCF = statType == StatType.UNKNOWN
+                        ? AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser())
+                        : AstyanaxIO.getPreagColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser());
                 
                 // next, compute the rollup.
                 rollup =  RollupRunnable.getRollupComputer(statType, rollupContext.getSourceGranularity()).compute(input);

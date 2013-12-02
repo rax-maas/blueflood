@@ -135,7 +135,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
                                                     setLocator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         RollupContext rc = new RollupContext(setLocator, range, Granularity.FULL);
@@ -146,7 +146,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
                                                     setLocator,
                                                     range,
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
     }
     
     @Test
@@ -175,7 +175,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(0, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         RollupContext rc = new RollupContext(locator, range, Granularity.FULL);
@@ -186,7 +186,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
     }
 
 }
