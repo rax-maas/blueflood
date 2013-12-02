@@ -24,8 +24,10 @@ import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.codahale.metrics.log4j.InstrumentedAppender;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import org.apache.log4j.LogManager;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
@@ -35,10 +37,23 @@ import java.util.concurrent.TimeUnit;
 public class Metrics {
     private static final MetricRegistry registry = new MetricRegistry();
     private static final GraphiteReporter reporter;
+    private static final JmxReporter reporter2;
 
     static {
         Configuration config = Configuration.getInstance();
 
+        // register jvm metrics
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        if (!System.getProperty("java.version").split("\\.")[1].equals("6")) {
+            // if not running 1.6
+            registry.registerAll(new BufferPoolMetricSet(mbs));
+        }
+        registry.registerAll(new GarbageCollectorMetricSet());
+        registry.registerAll(new MemoryUsageGaugeSet());
+        registry.registerAll(new ThreadStatesGaugeSet());
+
+        // instrument log4j
+        LogManager.getRootLogger().addAppender(new InstrumentedAppender(registry));
         if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
             Graphite graphite = new Graphite(new InetSocketAddress(config.getStringProperty(CoreConfig.GRAPHITE_HOST), config.getIntegerProperty(CoreConfig.GRAPHITE_PORT)));
 
@@ -49,19 +64,17 @@ public class Metrics {
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
-            // register jvm metrics
-            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            if (!System.getProperty("java.version").split("\\.")[1].equals("6")) {
-                // if not running 1.6
-                registry.registerAll(new BufferPoolMetricSet(mbs));
-            }
-            registry.registerAll(new GarbageCollectorMetricSet());
-            registry.registerAll(new MemoryUsageGaugeSet());
-            registry.registerAll(new ThreadStatesGaugeSet());
             reporter.start(30l, TimeUnit.SECONDS);
         } else {
             reporter = null;
         }
+
+        reporter2 = JmxReporter
+                .forRegistry(registry)
+                .convertDurationsTo(TimeUnit.SECONDS)
+                .convertRatesTo(TimeUnit.MILLISECONDS)
+                .build();
+        reporter2.start();
     }
 
     public static MetricRegistry getRegistry() {
