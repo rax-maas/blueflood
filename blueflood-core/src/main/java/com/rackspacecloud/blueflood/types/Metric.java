@@ -100,6 +100,7 @@ public class Metric implements IMetric {
         return (ttlInSeconds < Integer.MAX_VALUE && ttlInSeconds > 0);
     }
 
+    // todo: bust out into a separate file.
     public static class Type {
         private final String type;
 

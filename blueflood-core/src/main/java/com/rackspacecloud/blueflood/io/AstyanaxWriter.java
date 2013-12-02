@@ -217,16 +217,40 @@ public class AstyanaxWriter extends AstyanaxIO {
         try {
             for (Locator locator : map.keySet()) {
                 ColumnListMutation<Long> mutation = batch.withRow(cf, locator);
+                
+                // we want to insert a locator only for non-string, non-boolean metrics. If there happen to be string or
+                // boolean metrics mixed in with numeric metrics, we still want to insert a locator.  If all metrics
+                // are boolean or string, we DO NOT want to insert a locator.
+                boolean locatorInsertOk = false;
+                
                 for (IMetric metric : map.get(locator)) {
-                    mutation.putColumn(
-                            metric.getCollectionTime(),
-                            metric.getValue(),
-                            (AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass())),
-                            metric.getTtlInSeconds());
+                    
+                    boolean shouldPersist = true;
+                    // todo: MetricsPersistenceOptimizerFactory interface needs to be retooled to accept IMetric
+                    if (metric instanceof Metric) {
+                        final boolean isString = Metric.Type.isStringMetric(metric.getValue());
+                        final boolean isBoolean = Metric.Type.isBooleanMetric(metric.getValue());
+                        
+                        
+                        if (!isString && !isBoolean)
+                            locatorInsertOk = true;
+                        shouldPersist = shouldPersist((Metric)metric);
+                    } else {
+                        locatorInsertOk = true;
+                    }
+                    
+                    if (shouldPersist) {
+                        mutation.putColumn(
+                                metric.getCollectionTime(),
+                                metric.getValue(),
+                                (AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass())),
+                                metric.getTtlInSeconds());
+                    }
                 }
                 
                 if (!AstyanaxWriter.isLocatorCurrent(locator)) {
-                    insertLocator(locator, batch);
+                    if (locatorInsertOk)
+                        insertLocator(locator, batch);
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
             }
