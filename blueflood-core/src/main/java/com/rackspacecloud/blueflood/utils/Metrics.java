@@ -20,9 +20,15 @@ package com.rackspacecloud.blueflood.utils;
 import com.codahale.metrics.*;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
+import com.codahale.metrics.jvm.BufferPoolMetricSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +49,15 @@ public class Metrics {
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
+            // register jvm metrics
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            if (!System.getProperty("java.version").split("\\.")[1].equals("6")) {
+                // if not running 1.6
+                registry.registerAll(new BufferPoolMetricSet(mbs));
+            }
+            registry.registerAll(new GarbageCollectorMetricSet());
+            registry.registerAll(new MemoryUsageGaugeSet());
+            registry.registerAll(new ThreadStatesGaugeSet());
             reporter.start(30l, TimeUnit.SECONDS);
         } else {
             reporter = null;
