@@ -21,10 +21,13 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadPoolBuilder {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolBuilder.class);
+    private static final Map<String, AtomicInteger> nameMap = new ConcurrentHashMap<String, AtomicInteger>();
 
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
@@ -77,6 +80,12 @@ public class ThreadPoolBuilder {
         // ensure we've got a spot to put the thread id.
         if (name.indexOf("%d") < 0) {
             name = name + "-%d";
+        }
+        if (!nameMap.containsKey(name)) {
+            nameMap.put(name, new AtomicInteger(2));
+        } else {
+            // unique threadpool names required for instrumentation
+            name = name.replace("%d", "" + nameMap.get(name).getAndIncrement() + "-%d");
         }
         this.name = name;
         return this;
