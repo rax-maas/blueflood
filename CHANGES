@@ -4,3 +4,4 @@
  * Various instrumentation additions
  * Batch metadata reads
  * Switch to using org.apache.curator instead of com.netflix.curator
+ * Add support for fetching multiple metrics in single HTTP call
