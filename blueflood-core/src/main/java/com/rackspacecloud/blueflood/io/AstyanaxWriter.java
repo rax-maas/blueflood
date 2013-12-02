@@ -218,8 +218,10 @@ public class AstyanaxWriter extends AstyanaxIO {
             for (Locator locator : map.keySet()) {
                 ColumnListMutation<Long> mutation = batch.withRow(cf, locator);
                 for (IMetric metric : map.get(locator)) {
-                    mutation.putColumn(metric.getCollectionTime(),
-                            ((AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass()))).toByteBuffer(metric.getValue()),
+                    mutation.putColumn(
+                            metric.getCollectionTime(),
+                            metric.getValue(),
+                            (AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass())),
                             metric.getTtlInSeconds());
                 }
                 
@@ -263,8 +265,11 @@ public class AstyanaxWriter extends AstyanaxIO {
             ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
             for (Map.Entry<Long, Rollup> rollupEntry : rollups.entrySet()) {
                 AbstractSerializer serializer = NumericSerializer.serializerFor(rollupEntry.getValue().getClass());
-                ByteBuffer buffer = serializer.toByteBuffer(rollupEntry.getValue());
-                mutationBatchWithRow.putColumn(rollupEntry.getKey(), buffer, ttl);
+                mutationBatchWithRow.putColumn(
+                        rollupEntry.getKey(), 
+                        rollupEntry.getValue(),
+                        serializer,
+                        ttl);
             }
             // send it.
             try {
