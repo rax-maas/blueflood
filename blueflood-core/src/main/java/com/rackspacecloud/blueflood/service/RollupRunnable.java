@@ -42,8 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
-class 
-        RollupRunnable implements Runnable {
+class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
     private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
