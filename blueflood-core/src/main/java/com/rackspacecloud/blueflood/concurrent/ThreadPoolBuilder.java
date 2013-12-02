@@ -97,7 +97,8 @@ public class ThreadPoolBuilder {
                 metricName,
                 corePoolSize,
                 maxPoolSize,
-                30, TimeUnit.SECONDS, // hard code the timeout.
+                keepAliveTime.getValue(),
+                keepAliveTime.getUnit(),
                 workQueue,
                 new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
                 rejectedHandler);
