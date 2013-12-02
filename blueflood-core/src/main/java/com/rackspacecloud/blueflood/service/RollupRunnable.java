@@ -47,7 +47,9 @@ class RollupRunnable implements Runnable {
 
     private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private static final Timer writeTimer = Metrics.newTimer(RollupRunnable.class, "Write Rollup", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(new TimeValue(48, TimeUnit.HOURS), 20); // todo: need a good default here.
+    private static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+            new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
+            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS));
     
     private final RollupContext rollupContext;
     private final RollupExecutionContext executionContext;
