@@ -57,6 +57,7 @@ public class NumericSerializer {
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    private static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
     private static AbstractSerializer<SingleValueRollup> singleValueRollup = new SingleValueRollupSerializer();
     
     private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
@@ -94,7 +95,7 @@ public class NumericSerializer {
         else if (type.equals(GaugeRollup.class))
             return (AbstractSerializer<T>)singleValueRollup;
         else if (type.equals(SetRollup.class))
-            return (AbstractSerializer<T>)singleValueRollup;
+            return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
         else if (type.equals(Integer.class))
@@ -210,6 +211,7 @@ public class NumericSerializer {
                 sz += CodedOutputStream.computeDoubleSizeNoTag(((Float)o).doubleValue());
                 break;
             case Type.B_ROLLUP:
+            case Type.B_SET:
                 sz += 1; // version
                 BasicRollup basicRollup = (BasicRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
@@ -257,7 +259,6 @@ public class NumericSerializer {
                 return sz;
                 
             case Type.B_GAUGE:
-            case Type.B_SET:
             case Type.B_COUNTER:
                 SingleValueRollup svr = (SingleValueRollup)o;
                 sz += 2; // version + rollup type.
@@ -287,8 +288,6 @@ public class NumericSerializer {
         switch (type) {
             case Type.B_COUNTER:
                 return new CounterRollup(1).withCount(value.longValue());
-            case Type.B_SET:
-                return new SetRollup().withCount(value.longValue());
             case Type.B_GAUGE:
                 return new GaugeRollup().withGauge(value);
             default:
@@ -366,7 +365,15 @@ public class NumericSerializer {
         return rollup;
     }
 
-
+    private static void serializeSet(SetRollup rollup, byte[] buf) throws IOException {
+        serializeRollup(rollup, buf);
+    }
+    
+    private static SetRollup deserializeV1Set(CodedInputStream in) throws IOException {
+        BasicRollup basic = deserializeV1Rollup(in);
+        return SetRollup.fromBasicRollup(basic);
+    }
+    
     private static byte typeOf(Object o) throws IOException {
         if (o instanceof Integer)
             return Constants.B_I32;
@@ -577,6 +584,20 @@ public class NumericSerializer {
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
+        }
+    }
+    
+    public static class SetRollupSerializer extends AbstractSerializer<SetRollup> {
+        private static final BasicRollupSerializer composed = new BasicRollupSerializer();
+        
+        @Override
+        public ByteBuffer toByteBuffer(SetRollup o) {
+            return composed.toByteBuffer(o);
+        }
+
+        @Override
+        public SetRollup fromByteBuffer(ByteBuffer byteBuffer) {
+            return SetRollup.fromBasicRollup(composed.fromByteBuffer(byteBuffer));
         }
     }
     

@@ -75,44 +75,6 @@ public class SingleValueRollupSerializationTest {
     }
     
     @Test
-    public void testSetV1RoundTrip() throws IOException {
-        SetRollup s0 = new SetRollup().withCount(32323523);
-        SetRollup s1 = new SetRollup().withCount(84234);
-        
-        if (System.getProperty("GENERATE_SET_SERIALIZATION") != null) {
-            OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SINGLE_VALUE_ROLLUP + ".bin", false);
-            os.write(Base64.encodeBase64(new NumericSerializer.SingleValueRollupSerializer().toByteBuffer(s0).array()));
-            os.write("\n".getBytes());
-            os.write(Base64.encodeBase64(new NumericSerializer.SingleValueRollupSerializer().toByteBuffer(s1).array()));
-            os.write("\n".getBytes());
-            os.close();
-        }
-        
-        Assert.assertTrue(new File("src/test/resources/serializations").exists());
-                
-        int count = 0;
-        int version = 0;
-        final int maxVersion = Constants.VERSION_1_SINGLE_VALUE_ROLLUP;
-        while (version <= maxVersion) {
-            BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
-            
-            ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup ss0 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
-            Assert.assertEquals(s0, ss0);
-            
-            bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SingleValueRollup ss1 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
-            Assert.assertEquals(s1, ss1);
-            
-            Assert.assertFalse(ss0.equals(ss1));
-            version++;
-            count++;
-        }
-        
-        Assert.assertTrue(count > 0);
-    }
-    
-    @Test
     public void testCounterV1RoundTrip() throws IOException {
         CounterRollup c0 = new CounterRollup(32).withCount(7442245);
         CounterRollup c1 = new CounterRollup(67321466).withCount(34454722343L);

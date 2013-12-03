@@ -85,11 +85,6 @@ class RollupRunnable implements Runnable {
             StatType statType = StatType.fromString((String)rollupTypeCache.get(rollupContext.getLocator(), StatType.CACHE_KEY));
             Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, rollupContext.getSourceGranularity());
             
-            // short circuit for sets, which are not rolled up, since we don't want to waste time reading them from
-            // full res.
-            if (statType == StatType.SET)
-                return;
-            
             try {
                 // first, get the points.
                 if (rollupContext.getSourceGranularity() == Granularity.FULL) {    
@@ -169,7 +164,7 @@ class RollupRunnable implements Runnable {
             case UNKNOWN:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
-                // we do not roll sets up.
+                return srcGran == Granularity.FULL ? Rollup.SetFromRaw : Rollup.SetFromSet;
             default:
                 break;
         }

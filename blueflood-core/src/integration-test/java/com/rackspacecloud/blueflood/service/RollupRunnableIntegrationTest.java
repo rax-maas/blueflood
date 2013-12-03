@@ -84,7 +84,12 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            SetRollup set = new SetRollup().withCount(99);
+            SetRollup set = new SetRollup();
+            set.setCount(99);
+            set.setMin(23L);
+            set.setMax(4232L);
+            set.setVariance(0.23f);
+            set.setAverage(32L);
             metric = new PreaggregatedMetric(time, setLocator, ttl, set);
             preaggregatedMetrics.add(metric);
             

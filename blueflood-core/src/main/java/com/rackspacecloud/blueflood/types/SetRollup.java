@@ -1,17 +1,31 @@
 package com.rackspacecloud.blueflood.types;
 
 
-public class SetRollup extends SingleValueRollup {
+import java.io.IOException;
+
+public class SetRollup extends BasicRollup {
     
-    public SetRollup withCount(long count) {
-        return (SetRollup) this.withValue(count);
+    public SetRollup() {}
+    
+    public static SetRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
+        SetRollup rollup = new SetRollup();
+        rollup.computeFromSimpleMetrics(input);
+        return rollup;
     }
     
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof SetRollup))
-            return false;
-        else
-            return getValue().equals(((SetRollup)obj).getValue());
+    public static SetRollup buildRollupFromSetRollups(Points<SetRollup> input) throws IOException {
+        SetRollup rollup = new SetRollup();
+        rollup.computeFromRollups(BasicRollup.recast(input, IBasicRollup.class));
+        return rollup;
+    }
+    
+    public static SetRollup fromBasicRollup(IBasicRollup basic) {
+        SetRollup rollup = new SetRollup();
+        rollup.setCount(basic.getCount());
+        rollup.setAverage((Average)basic.getAverage());
+        rollup.setMin((MinValue)basic.getMinValue());
+        rollup.setMax((MaxValue)basic.getMaxValue());
+        rollup.setVariance((Variance)basic.getVariance());
+        return rollup;
     }
 }
