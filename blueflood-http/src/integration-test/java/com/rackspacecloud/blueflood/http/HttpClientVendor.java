@@ -16,11 +16,6 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.httpclient.HttpClientMetricNameStrategies;
-import com.codahale.metrics.httpclient.InstrumentedClientConnManager;
-import com.codahale.metrics.httpclient.InstrumentedHttpClient;
-import com.rackspacecloud.blueflood.utils.Metrics;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -31,9 +26,7 @@ public class HttpClientVendor {
     private DefaultHttpClient client;
 
     public HttpClientVendor() {
-        client = new InstrumentedHttpClient(Metrics.getRegistry(), buildConnectionManager(20),
-                client.getParams(), MetricRegistry.name(HttpClientVendor.class, "HTTP"),
-                HttpClientMetricNameStrategies.HOST_AND_METHOD);
+        client = new DefaultHttpClient(buildConnectionManager(20));
         client.getParams().setBooleanParameter(ClientPNames.HANDLE_REDIRECTS, true);
         client.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
         client.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
@@ -48,7 +41,7 @@ public class HttpClientVendor {
     }
 
     private ClientConnectionManager buildConnectionManager(int concurrency) {
-        final PoolingClientConnectionManager connectionManager = new InstrumentedClientConnManager(Metrics.getRegistry());
+        final PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
         connectionManager.setDefaultMaxPerRoute(concurrency);
         connectionManager.setMaxTotal(concurrency);
         return connectionManager;
