@@ -17,10 +17,8 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.shallows.EmptyColumnList;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -130,7 +128,7 @@ class LocatorFetchRunnable implements Runnable {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
-            this.scheduleCtx.pushBackToScheduled(parentSlotKey);
+            this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
         }
 
         timerCtx.stop();

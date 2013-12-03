@@ -202,7 +202,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't
                     // have enough threads allocated to processing rollups or slot checks.
                     rejectedSlotChecks.mark();
-                    context.pushBackToScheduled(slotKey);
+                    context.pushBackToScheduled(slotKey, true);
                     rejected = true;
                 }
             }
