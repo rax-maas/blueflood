@@ -47,6 +47,12 @@ public class Variance extends AbstractRollupStat {
     }
 
     @Override
+    public boolean equals(Object otherObject) {
+        compute();
+        return super.equals(otherObject);
+    }
+
+    @Override
     public boolean isFloatingPoint() {
         return true;
     }
@@ -68,6 +74,11 @@ public class Variance extends AbstractRollupStat {
         this.needsCompute = true;
         this.isRollup = true;
         basicRollupList.add(basicRollup); // we need all the rollup metrics before computing the final variance.
+    }
+    
+    public String toString() {
+        compute();
+        return super.toString();
     }
 
     private synchronized void compute() {

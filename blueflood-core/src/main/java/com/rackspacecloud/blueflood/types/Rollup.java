@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
 
-abstract public class Rollup {
+public interface Rollup {
     
     // todo: these classes and instance can be moved into a static Computations holder.
     
@@ -54,5 +54,24 @@ abstract public class Rollup {
         }
     };
     
-    abstract public long getCount();
+    public static final Type<TimerRollup, TimerRollup> TimerFromTimer = new Type<TimerRollup, TimerRollup>() {
+        @Override
+        public TimerRollup compute(Points<TimerRollup> input) throws IOException {
+            return TimerRollup.buildRollupFromTimerRollups(input);
+        }
+    };
+    
+    public static final Type<CounterRollup, CounterRollup> CounterFromCounter = new Type<CounterRollup, CounterRollup>() {
+        @Override
+        public CounterRollup compute(Points<CounterRollup> input) throws IOException {
+            return CounterRollup.buildRollupFromCounterRollups(input);
+        }
+    };
+    
+    public static final Type<GaugeRollup, GaugeRollup> GaugeFromGauge = new Type<GaugeRollup, GaugeRollup>() {
+        @Override
+        public GaugeRollup compute(Points<GaugeRollup> input) throws IOException {
+            return GaugeRollup.buildFromGaugeRollups(input);
+        }
+    };
 }

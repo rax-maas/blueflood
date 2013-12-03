@@ -48,22 +48,21 @@ public class AstyanaxIO {
     public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily("metrics_1440m", new TimeValue(365, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily("metrics_string", new TimeValue(365 * 3, TimeUnit.DAYS));
     
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(3, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily("metrics_preaggregated_60m", new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
+    
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
+            CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
+            CF_METRICS_PREAGGREGATED_60M, CF_METRICS_PREAGGREGATED_240M,
+            CF_METRICS_PREAGGREGATED_1440M,
             CF_METRICS_STRING
     };
     
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(3, TimeUnit.DAYS));
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily("metrics_preaggregated_60m", new TimeValue(31, TimeUnit.DAYS));
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
-    public static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
-    
-    
-    protected static final ColumnFamily<Locator, Long> CF_METRICS_PREAGGREGATED = new ColumnFamily<Locator, Long>("metrics_preaggregated",
-            LocatorSerializer.get(),
-            LongSerializer.get());
     public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
@@ -73,7 +72,8 @@ public class AstyanaxIO {
     public static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
             LongSerializer.get(),
             StringSerializer.get());
-    protected static final ColumFamilyMapper CF_NAME_TO_CF;
+    protected static final ColumnFamilyMapper CF_NAME_TO_CF;
+    protected static final ColumnFamilyMapper PREAG_GRAN_TO_CF;
     protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
     protected static final Configuration config = Configuration.getInstance();
 
@@ -88,6 +88,14 @@ public class AstyanaxIO {
         columnFamilyMap.put(Granularity.MIN_60, CF_METRICS_60M);
         columnFamilyMap.put(Granularity.MIN_240, CF_METRICS_240M);
         columnFamilyMap.put(Granularity.MIN_1440, CF_METRICS_1440M);
+        
+        final Map<Granularity, MetricColumnFamily> preagCFMap = new HashMap<Granularity, MetricColumnFamily>();
+        preagCFMap.put(Granularity.FULL, CF_METRICS_PREAGGREGATED_FULL);
+        preagCFMap.put(Granularity.MIN_5, CF_METRICS_PREAGGREGATED_5M);
+        preagCFMap.put(Granularity.MIN_20, CF_METRICS_PREAGGREGATED_20M);
+        preagCFMap.put(Granularity.MIN_60, CF_METRICS_PREAGGREGATED_60M);
+        preagCFMap.put(Granularity.MIN_240, CF_METRICS_PREAGGREGATED_240M);
+        preagCFMap.put(Granularity.MIN_1440, CF_METRICS_PREAGGREGATED_1440M);
 
         Map<ColumnFamily<Locator, Long>, Granularity> cfToGranMap = new HashMap<ColumnFamily<Locator, Long>, Granularity>();
         cfToGranMap.put(CF_METRICS_FULL, Granularity.FULL);
@@ -98,10 +106,16 @@ public class AstyanaxIO {
         cfToGranMap.put(CF_METRICS_240M, Granularity.MIN_240);
         cfToGranMap.put(CF_METRICS_1440M, Granularity.MIN_1440);
 
-        CF_NAME_TO_CF = new ColumFamilyMapper() {
+        CF_NAME_TO_CF = new ColumnFamilyMapper() {
             @Override
             public MetricColumnFamily get(Granularity gran) {
                 return columnFamilyMap.get(gran);
+            }
+        };
+        PREAG_GRAN_TO_CF = new ColumnFamilyMapper() {
+            @Override
+            public MetricColumnFamily get(Granularity gran) {
+                return preagCFMap.get(gran);
             }
         };
         CF_TO_GRAN = Collections.unmodifiableMap(cfToGranMap);
@@ -167,17 +181,17 @@ public class AstyanaxIO {
         return keyspace;
     }
 
-    public static ColumFamilyMapper getColumnFamilyMapper() {
+    public static ColumnFamilyMapper getColumnFamilyMapper() {
         return CF_NAME_TO_CF;
     }
-
-    // todo: ensure this goes away
-    public static Map<ColumnFamily<Locator, Long>, Granularity> getCFToGranularityMapper() {
-        return CF_TO_GRAN;
-    }
     
+    // todo: temporary. ColumnFamilyMapper should be modified to take StatType into account.
+    public static ColumnFamilyMapper getPreagColumnFamilyMapper() {
+        return PREAG_GRAN_TO_CF;
+    }
+
     // future versions will have get(Granularity, StatType).
-    public interface ColumFamilyMapper {
+    public interface ColumnFamilyMapper {
         public MetricColumnFamily get(Granularity gran);
     }
     

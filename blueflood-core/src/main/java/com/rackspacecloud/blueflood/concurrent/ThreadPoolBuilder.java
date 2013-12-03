@@ -32,6 +32,7 @@ public class ThreadPoolBuilder {
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
     private int queueSize = 0;
+    private TimeValue keepAliveTime = new TimeValue(30, TimeUnit.SECONDS);
     
     private RejectedExecutionHandler rejectedHandler = new ThreadPoolExecutor.CallerRunsPolicy();
     private Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
@@ -40,7 +41,6 @@ public class ThreadPoolBuilder {
         }
     };
     private String name = "Thread";
-    private TimeValue keepAliveTime = new TimeValue(30, TimeUnit.SECONDS);
 
     public ThreadPoolBuilder() {
 
@@ -99,7 +99,7 @@ public class ThreadPoolBuilder {
 
     public ThreadPoolExecutor build() {
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
-        BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
+        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
                     new LinkedBlockingQueue<Runnable>();
         
         return new InstrumentedThreadPoolExecutor(
