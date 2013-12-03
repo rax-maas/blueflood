@@ -30,7 +30,8 @@ public class SingleRollupWriteContext {
         this(rollup, readContextSingle.getLocator(), readContextSingle.getDestinationColumnFamily(), readContextSingle.getRange().getStart());
     }
 
-    SingleRollupWriteContext(BasicRollup rollup, Locator locator, ColumnFamily<Locator, Long> destCf, Long timestamp) {
+    // public only for tests
+    public SingleRollupWriteContext(BasicRollup rollup, Locator locator, ColumnFamily<Locator, Long> destCf, Long timestamp) {
         this.rollup = rollup;
         this.locator = locator;
         this.destinationCF = destCf;

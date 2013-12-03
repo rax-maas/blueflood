@@ -52,8 +52,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
-    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS);
-    private static final int INTERNAL_API_CONCURRENCY = CACHE_CONCURRENCY;
+    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
@@ -62,6 +61,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_FULL = "Full Insert".intern();
     private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
+    private static final String INSERT_BASIC_ROLLUPS = "Basic Rollup Batch Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
@@ -205,33 +205,6 @@ public class AstyanaxWriter extends AstyanaxIO {
         }});
     }
 
-    // todo: this method should be made private. outside of this class, it is only used by tests.
-    public void insertRollups(Locator locator, Map<Long, BasicRollup> rollups,
-                                          ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
-        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
-        try {
-            MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
-            for (Map.Entry<Long, BasicRollup> rollupEntry : rollups.entrySet()) {
-                        mutationBatchWithRow.putColumn(
-                                rollupEntry.getKey(),
-                                NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(rollupEntry.getValue()),
-                                ttl);
-            }
-            // send it.
-            try {
-                mutationBatch.execute();
-            } catch (ConnectionException e) {
-                Instrumentation.markWriteError(e);
-                log.error("Connection Exception persisting data", e);
-                throw e;
-            }
-        } finally {
-            ctx.stop();
-        }
-    }
-
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_SHARD);
         try {
@@ -273,7 +246,8 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
-    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) {
+    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
+        TimerContext ctx = Instrumentation.getTimerContext(INSERT_BASIC_ROLLUPS);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             BasicRollup rollup = writeContext.getRollup();
@@ -291,6 +265,9 @@ public class AstyanaxWriter extends AstyanaxIO {
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);
             log.error("Error writing rollup batch", e);
+            throw e;
+        } finally {
+            ctx.stop();
         }
     }
 }

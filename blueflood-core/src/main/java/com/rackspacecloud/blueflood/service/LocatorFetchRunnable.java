@@ -16,13 +16,15 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-import com.netflix.astyanax.model.Column;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
@@ -79,7 +81,14 @@ class LocatorFetchRunnable implements Runnable {
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
-        for (Column<Locator> locatorCol : AstyanaxReader.getInstance().getAllLocators(shard)) {
+        ColumnList<Locator> locators = new EmptyColumnList<Locator>();
+        try {
+            locators = AstyanaxReader.getInstance().getAllLocators(shard);
+        } catch (RuntimeException e) {
+            executionContext.markUnsuccessful(e);
+            log.error("Failed reading locators for slot: " + parentSlot, e);
+        }
+        for (Column<Locator> locatorCol : locators) {
             final Locator locator = locatorCol.getName();
             final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran);
             final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran);
@@ -93,6 +102,7 @@ class LocatorFetchRunnable implements Runnable {
                 rollCount += 1;
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
+                executionContext.markUnsuccessful(any);
                 executionContext.decrementReadCounter();
                 log.error(any.getMessage(), any);
                 log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
@@ -117,7 +127,13 @@ class LocatorFetchRunnable implements Runnable {
         }
         if (log.isDebugEnabled())
             log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
-        this.scheduleCtx.clearFromRunning(parentSlotKey);
+
+        if (executionContext.wasSuccessful()) {
+            this.scheduleCtx.clearFromRunning(parentSlotKey);
+        } else {
+            log.error("Performing BasicRollups for {} failed", parentSlotKey);
+            this.scheduleCtx.pushBackToScheduled(parentSlotKey);
+        }
 
         timerCtx.stop();
     }
