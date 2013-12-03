@@ -1,67 +1,59 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.github.nkzawa.emitter.Emitter;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.Locator;
 import junit.framework.Assert;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static org.mockito.Mockito.*;
-
-
+import java.util.concurrent.*;
 
 public class RollupEventEmitterTest {
-
     String testEventName = "test";
-    List<Object> capturedTestEvents;
-
-    BasicRollup roll = new BasicRollup();
-    Locator loc = new Locator();
-    String testUnitsString = "testUnits";
-
     EventListener elistener = new EventListener();
-    EventListener mockListener = spy(elistener);
+    ArrayList<Object> store = new ArrayList<Object>();
 
     @Test
-    public void testSubscribe() {
-      RollupEventEmitter.getEmitterInstance().on(testEventName,mockListener);
-      Assert.assertEquals(true, RollupEventEmitter.getEmitterInstance().listeners(testEventName).contains(mockListener));
-    }
+    public void testConcurrentEmission() throws Exception {
+        //Test subscription
+        RollupEventEmitter.getEmitterInstance().on(testEventName,elistener);
+        Assert.assertTrue(RollupEventEmitter.getEmitterInstance().listeners(testEventName).contains(elistener));
 
-    @Test
-    public void testRollupEmit() {
-      RollupEventEmitter.emit(testEventName, loc, roll, testUnitsString);
-    }
+        //Test concurrent emission
+        final String obj1 = "payload1";
+        final String obj2 = "payload2";
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        Future<Object> f1 = RollupEventEmitter.getEventExecutors().submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                startLatch.await();
+                RollupEventEmitter.getEmitterInstance().emit(testEventName, obj1);
+                return null;
+            }
+        });
+        Future<Object> f2 = RollupEventEmitter.getEventExecutors().submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                startLatch.await();
+                RollupEventEmitter.getEmitterInstance().emit(testEventName, obj2);
+                return null;
+            }
+        });
+        startLatch.countDown();
+        f1.get();
+        f2.get();
+        Assert.assertEquals(store.size(),2);
+        Assert.assertTrue(store.contains(obj1));
+        Assert.assertTrue(store.contains(obj2));
 
-    @Test
-    public void testUnsubscribe() {
-      RollupEventEmitter.getEmitterInstance().off(testEventName, elistener);
-      Assert.assertEquals(false, RollupEventEmitter.getEmitterInstance().listeners(testEventName).contains(mockListener));
+        //Test unsubscription
+        RollupEventEmitter.getEmitterInstance().off(testEventName, elistener);
+        Assert.assertFalse(RollupEventEmitter.getEmitterInstance().listeners(testEventName).contains(elistener));
     }
 
     private class EventListener implements Emitter.Listener {
         @Override
         public void call(Object... objects) {
-            //This is stupidity. I know.
-            verify(mockListener, atLeastOnce()).call(anyVararg());
-            capturedTestEvents = Arrays.asList(objects);
-            Assert.assertNotNull(capturedTestEvents);
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode df = null;
-            try {
-                df = mapper.readValue((String)capturedTestEvents.get(0),JsonNode.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Assert.assertEquals(df.get("metadata").get("units").get("name").getTextValue(), testUnitsString);
-            Assert.assertNotNull(df.get("rollup").get("maxValue").getDoubleValue());
-            Assert.assertEquals(df.get("rollup").get("maxValue").getDoubleValue(), roll.getMaxValue().toDouble());
+            store.addAll(Arrays.asList(objects));
         }
     }
-
 }
