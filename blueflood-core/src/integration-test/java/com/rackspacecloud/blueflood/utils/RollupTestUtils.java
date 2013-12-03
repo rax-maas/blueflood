@@ -21,10 +21,10 @@ import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 public class RollupTestUtils {
     public static void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
@@ -32,14 +32,15 @@ public class RollupTestUtils {
             throw new Exception("Can't roll up to FULL");
         }
 
-        Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
+        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
+        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, range);
             Rollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            rollups.put(range.getStart(), basicRollup);
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.getStart()));
         }
 
-        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
-        AstyanaxWriter.getInstance().insertRollups(locator, rollups, destCF);
+
+        AstyanaxWriter.getInstance().insertRollups(writeContexts);
     }
 }

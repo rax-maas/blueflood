@@ -23,7 +23,7 @@ public enum CoreConfig implements ConfigDefaults {
     CASSANDRA_HOSTS("127.0.0.1:19180"),
     DEFAULT_CASSANDRA_PORT("19180"),
     // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
-    MAX_CASSANDRA_CONNECTIONS("70"),
+    MAX_CASSANDRA_CONNECTIONS("75"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
@@ -32,7 +32,9 @@ public enum CoreConfig implements ConfigDefaults {
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
 
-    MAX_ROLLUP_THREADS("20"),
+    MAX_ROLLUP_READ_THREADS("20"),
+    MAX_ROLLUP_WRITE_THREADS("5"),
+
     MAX_SCRIBE_WRITE_THREADS("50"),
     // Maximum timeout waiting on exhausted connection pools in milliseconds.
     // Maps directly to Astyanax's ConnectionPoolConfiguration.setMaxTimeoutWhenExhausted
@@ -80,7 +82,10 @@ public enum CoreConfig implements ConfigDefaults {
 
     // v1.0 defaults to ','. This configuration option provides backwards compatibility.
     // Using legacy separators is deprecated as of 2.0 and will be removed in 3.0
-    USE_LEGACY_METRIC_SEPARATOR("false");
+    USE_LEGACY_METRIC_SEPARATOR("false"),
+
+    ROLLUP_BATCH_MIN_SIZE("5"),
+    ROLLUP_BATCH_MAX_SIZE("100");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
