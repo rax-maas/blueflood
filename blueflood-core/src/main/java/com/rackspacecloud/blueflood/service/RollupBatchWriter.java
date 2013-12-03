@@ -33,9 +33,9 @@ public class RollupBatchWriter {
     private static final int ROLLUP_BATCH_MIN_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_BATCH_MIN_SIZE);
     private static final int ROLLUP_BATCH_MAX_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_BATCH_MAX_SIZE);
 
-    public RollupBatchWriter(ThreadPoolExecutor executor, RollupExecutionContext context1) {
+    public RollupBatchWriter(ThreadPoolExecutor executor, RollupExecutionContext context) {
         this.executor = executor;
-        this.context = context1;
+        this.context = context;
     }
 
 

@@ -1,6 +1,23 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -112,10 +129,19 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     AstyanaxIO.CF_METRICS_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        RollupContext rc = new RollupContext(normalLocator, range, Granularity.FULL);
-        RollupRunnable rr = new RollupRunnable(rec, rc);
+        SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.FULL);
+        RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
-        
+
+        while (!rec.doneReading() && !rec.doneWriting()) {
+            batchWriter.drainBatch();
+            try {
+                Thread.sleep(1000l);
+            } catch (InterruptedException e) {
+            }
+        }
+
         // assert something in 5m for this locator.
         Assert.assertEquals(1, reader.getDataToRoll(BasicRollup.class,
                                                     normalLocator,
@@ -138,10 +164,20 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        RollupContext rc = new RollupContext(setLocator, range, Granularity.FULL);
-        RollupRunnable rr = new RollupRunnable(rec, rc);
+        SingleRollupReadContext rc = new SingleRollupReadContext(setLocator, range, Granularity.FULL);
+        RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
-        
+
+        // assert something in 5m for this locator.
+        while (!rec.doneReading() && !rec.doneWriting()) {
+            batchWriter.drainBatch();
+            try {
+                Thread.sleep(1000l);
+            } catch (InterruptedException e) {
+            }
+        }
+
         // Here is the departure from other tests: nothing should get rolled up to 5m.
         Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
                                                     setLocator,
@@ -178,15 +214,22 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        RollupContext rc = new RollupContext(locator, range, Granularity.FULL);
-        RollupRunnable rr = new RollupRunnable(rec, rc);
+        SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.FULL);
+        RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
         
         // assert something in 5m for this locator.
+        while (!rec.doneReading() && !rec.doneWriting()) {
+            batchWriter.drainBatch();
+            try {
+                Thread.sleep(1000l);
+            } catch (InterruptedException e) {
+            }
+        }
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
     }
-
 }
