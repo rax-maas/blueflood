@@ -12,6 +12,7 @@ import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.types.SetRollup;
@@ -70,7 +71,11 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, counterLocator, ttl, counter);
             preaggregatedMetrics.add(metric);
 
-            GaugeRollup gauge = new GaugeRollup().withGauge(100 - i);
+            GaugeRollup gauge = GaugeRollup.buildFromRawSamples(new Points<SimpleNumber>() {{
+                add(new Point<SimpleNumber>(0, new SimpleNumber(10)));
+                add(new Point<SimpleNumber>(1, new SimpleNumber(20)));
+                add(new Point<SimpleNumber>(2, new SimpleNumber(30)));
+            }});
             metric = new PreaggregatedMetric(time, gaugeLocator, ttl, gauge);
             preaggregatedMetrics.add(metric);
             
@@ -126,32 +131,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     normalLocator,
                                                     range,
                                                     AstyanaxIO.CF_METRICS_5M).getPoints().size());
-    }
-    
-    @Test
-    public void testSetsDoNotGetRolledUp() throws IOException {
-        // full res has 5 samples.
-        Assert.assertEquals(5, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
-        
-        // assert nothing in 5m for this locator.
-        Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
-        
-        RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        RollupContext rc = new RollupContext(setLocator, range, Granularity.FULL);
-        RollupRunnable rr = new RollupRunnable(rec, rc);
-        rr.run();
-        
-        // Here is the departure from other tests: nothing should get rolled up to 5m.
-        Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range,
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
     }
     
     @Test

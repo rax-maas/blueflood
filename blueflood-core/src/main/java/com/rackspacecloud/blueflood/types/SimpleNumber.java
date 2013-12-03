@@ -75,4 +75,30 @@ public class SimpleNumber implements Rollup {
                 return super.toString();
         }
     }
+
+    @Override
+    public int hashCode() {
+        if (type.equals(Type.LONG))
+            return (int)(longValue ^ (longValue >>> 32));
+        else if (type.equals(Type.INTEGER))
+            return intValue;
+        else if (type.equals(Type.DOUBLE)) {
+            long bits = Double.doubleToLongBits(doubleValue);
+            return (int)(bits ^ (bits >>> 32));
+        } else {
+            throw new IllegalArgumentException("Invalid type: " + type);
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof SimpleNumber))
+            return false;
+        SimpleNumber other = (SimpleNumber)obj;
+        // just relying on getValue().equals() is not sufficient, as it fails on natural long and in comparisons.
+        if (this.type != other.type)
+            return false;
+        return getValue() == other.getValue(); // works because we are comparing primitives. woo.
+        
+    }
 }

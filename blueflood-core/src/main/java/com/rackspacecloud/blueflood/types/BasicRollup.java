@@ -25,6 +25,8 @@ import java.util.Map;
 
 public class BasicRollup implements Rollup, IBasicRollup {
     private static final Logger log = LoggerFactory.getLogger(BasicRollup.class);
+    public static final int NUM_STATS = 4;
+    
     private Average average;
     private Variance variance;
     private MinValue minValue;
