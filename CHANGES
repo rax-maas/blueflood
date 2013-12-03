@@ -5,3 +5,4 @@
  * Batch metadata reads
  * Batch rollup writes
  * Switch to using org.apache.curator instead of com.netflix.curator
+ * Add support for fetching multiple metrics in single HTTP call

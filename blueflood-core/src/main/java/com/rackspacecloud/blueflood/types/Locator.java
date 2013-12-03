@@ -48,6 +48,7 @@ public class Locator {
     }
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
+        // todo: null check and throw IllegalArgumentException?
         this.stringRep = rep;
         tenantId = this.stringRep.split(metricTokenSeparatorRegex)[0];
         metricName = this.stringRep.substring(this.stringRep.indexOf(metricTokenSeparator)+1);
@@ -59,7 +60,7 @@ public class Locator {
 
     @Override
     public int hashCode() {
-        return stringRep.hashCode();
+        return stringRep == null ? 0 : stringRep.hashCode();
     }
 
     @Override

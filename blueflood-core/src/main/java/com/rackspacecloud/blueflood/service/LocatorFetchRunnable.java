@@ -90,14 +90,12 @@ class LocatorFetchRunnable implements Runnable {
         }
         for (Column<Locator> locatorCol : locators) {
             final Locator locator = locatorCol.getName();
-            final ColumnFamily<Locator, Long> srcCF = AstyanaxIO.getColumnFamilyMapper().get(finerGran);
-            final ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(gran);
 
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
-                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, srcCF, destCF);
+                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, finerGran);
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
             } catch (Throwable any) {

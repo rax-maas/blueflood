@@ -131,7 +131,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 cols.put(col.getName(), col.getValue(serializer));
             }
             BasicRollup basicRollup = new BasicRollup();
-            Map<Long, BasicRollup> rollups = new HashMap<Long, BasicRollup>();
             ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
             ColumnFamily<Locator, Long> destinationCF = AstyanaxIO.getColumnFamilyMapper().get(gran.coarser());
             for (Map.Entry<Long, Object> col : cols.entrySet()) {
@@ -157,7 +156,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destinationCF, curRange.start));
 
-            writer.insertBasicRollups(writeContexts);
+            writer.insertRollups(writeContexts);
         }
         
         // verify the number of points in 48h worth of rollups. 
@@ -192,7 +191,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.coarser()),
                     range.start));
         }
-        writer.insertBasicRollups(writes);
+        writer.insertRollups(writes);
 
         // 5m -> 20m
         writes.clear();
@@ -206,7 +205,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5.coarser()),
                     range.start));
         }
-        writer.insertBasicRollups(writes);
+        writer.insertRollups(writes);
 
         // 20m -> 60m
         writes.clear();
@@ -219,7 +218,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20.coarser()),
                     range.start));
         }
-        writer.insertBasicRollups(writes);
+        writer.insertRollups(writes);
 
         // 60m -> 240m
         writes.clear();
@@ -233,7 +232,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60.coarser()),
                     range.start));
         }
-        writer.insertBasicRollups(writes);
+        writer.insertRollups(writes);
 
         // 240m -> 1440m
         writes.clear();
@@ -246,7 +245,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.coarser()),
                     range.start));
         }
-        writer.insertBasicRollups(writes);
+        writer.insertRollups(writes);
 
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));

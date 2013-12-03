@@ -17,28 +17,28 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.model.ColumnFamily;
-import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Rollup;
 
 public class SingleRollupWriteContext {
-    private final BasicRollup rollup;
+    private final Rollup rollup;
     private final Locator locator;
     private final Long timestamp;
     private final ColumnFamily<Locator, Long> destinationCF;
 
-    SingleRollupWriteContext(BasicRollup rollup, SingleRollupReadContext readContextSingle) {
-        this(rollup, readContextSingle.getLocator(), readContextSingle.getDestinationColumnFamily(), readContextSingle.getRange().getStart());
-    }
-
     // public only for tests
-    public SingleRollupWriteContext(BasicRollup rollup, Locator locator, ColumnFamily<Locator, Long> destCf, Long timestamp) {
+    public SingleRollupWriteContext(Rollup rollup, Locator locator, ColumnFamily<Locator, Long> destCf, Long timestamp) {
         this.rollup = rollup;
         this.locator = locator;
         this.destinationCF = destCf;
         this.timestamp = timestamp;
     }
 
-    public BasicRollup getRollup() {
+    public SingleRollupWriteContext(Rollup rollup, SingleRollupReadContext singleRollupReadContext, ColumnFamily<Locator, Long> dstCF) {
+        this(rollup, singleRollupReadContext.getLocator(), dstCF, singleRollupReadContext.getRange().getStart());
+    }
+
+    public Rollup getRollup() {
         return rollup;
     }
 

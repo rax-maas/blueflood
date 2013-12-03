@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.yammer.metrics.Metrics;
@@ -26,24 +26,19 @@ import com.yammer.metrics.core.Timer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Will eventually become SingleRollupReadContext as soon as the existing SingleRollupReadContext is renamed to ScheduleContext.
- * This class keeps track of what is happening in an rollup for a specific metric.  Rollups for a single metric are run 
- * in parallel, as indicated by the counter.  The counter signals a thread that is waiting for all rollups for that
- * metric is finished so that the metric service can be signaled/
+ * This class keeps track of what is happening in an rollup for a specific metric.
  */
 class SingleRollupReadContext {
     private final Locator locator;
     private final Range range;
-    private final ColumnFamily<Locator, Long> srcCF; // this is the source column family to read from.
-    private final ColumnFamily<Locator, Long> destCF; // this is the dest column family to write to.
+    private final Granularity sourceGranularity;
     private static final Timer executeTimer = Metrics.newTimer(RollupService.class, "Rollup Execution Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private static final Histogram waitHist = Metrics.newHistogram(RollupService.class, "Rollup Wait Histogram", true);
 
-    SingleRollupReadContext(Locator locator, Range rangeToRead, ColumnFamily srcColumnFamily, ColumnFamily destColumnFamily) {
+    SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity sourceGranularity) {
         this.locator = locator;
         this.range = rangeToRead;
-        this.srcCF = srcColumnFamily;
-        this.destCF = destColumnFamily;
+        this.sourceGranularity = sourceGranularity;
     }
     
     Timer getExecuteTimer() {
@@ -54,12 +49,8 @@ class SingleRollupReadContext {
         return waitHist;
     }
 
-    public ColumnFamily<Locator, Long> getSourceColumnFamily() {
-        return this.srcCF;
-    }
-
-    public ColumnFamily<Locator, Long> getDestinationColumnFamily() {
-        return this.destCF;
+    Granularity getSourceGranularity() {
+        return this.sourceGranularity;
     }
 
     Range getRange() {

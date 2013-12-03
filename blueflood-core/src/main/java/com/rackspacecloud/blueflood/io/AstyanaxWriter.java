@@ -18,11 +18,14 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
@@ -32,9 +35,7 @@ import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.yammer.metrics.Metrics;
@@ -43,9 +44,7 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class AstyanaxWriter extends AstyanaxIO {
@@ -61,7 +60,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_FULL = "Full Insert".intern();
     private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
-    private static final String INSERT_BASIC_ROLLUPS = "Basic Rollup Batch Insert".intern();
+    private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
@@ -195,14 +194,70 @@ public class AstyanaxWriter extends AstyanaxIO {
             ctx.stop();
         }
     }
-
-    public void insertBasicRollup(final SingleRollupWriteContext writeContext) throws ConnectionException {
-        if (writeContext.getDestinationCF().equals(AstyanaxIO.CF_METRICS_FULL)) {
-            throw new IllegalArgumentException("Invalid granularity FULL for BasicRollup insertion");
+    
+    private static Multimap<Locator, IMetric> asMultimap(Collection<IMetric> metrics) {
+        Multimap<Locator, IMetric> map = LinkedListMultimap.create();
+        for (IMetric metric: metrics)
+            map.put(metric.getLocator(), metric);
+        return map;
+    }
+    
+    // generic IMetric insertion. All other metric insertion methods could use this one.
+    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
+        // todo: need a way of using an interned string.
+        TimerContext ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
+        Multimap<Locator, IMetric> map = asMultimap(metrics);
+        MutationBatch batch = keyspace.prepareMutationBatch();
+        try {
+            for (Locator locator : map.keySet()) {
+                ColumnListMutation<Long> mutation = batch.withRow(cf, locator);
+                
+                // we want to insert a locator only for non-string, non-boolean metrics. If there happen to be string or
+                // boolean metrics mixed in with numeric metrics, we still want to insert a locator.  If all metrics
+                // are boolean or string, we DO NOT want to insert a locator.
+                boolean locatorInsertOk = false;
+                
+                for (IMetric metric : map.get(locator)) {
+                    
+                    boolean shouldPersist = true;
+                    // todo: MetricsPersistenceOptimizerFactory interface needs to be retooled to accept IMetric
+                    if (metric instanceof Metric) {
+                        final boolean isString = Metric.Type.isStringMetric(metric.getValue());
+                        final boolean isBoolean = Metric.Type.isBooleanMetric(metric.getValue());
+                        
+                        
+                        if (!isString && !isBoolean)
+                            locatorInsertOk = true;
+                        shouldPersist = shouldPersist((Metric)metric);
+                    } else {
+                        locatorInsertOk = true;
+                    }
+                    
+                    if (shouldPersist) {
+                        mutation.putColumn(
+                                metric.getCollectionTime(),
+                                metric.getValue(),
+                                (AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass())),
+                                metric.getTtlInSeconds());
+                    }
+                }
+                
+                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+                    if (locatorInsertOk)
+                        insertLocator(locator, batch);
+                    AstyanaxWriter.setLocatorCurrent(locator);
+                }
+            }
+            try {
+                batch.execute();
+            } catch (ConnectionException e) {
+                Instrumentation.markWriteError(e);
+                log.error("Connection exception persisting data", e);
+                throw e;
+            }
+        } finally {
+            ctx.stop();
         }
-        insertBasicRollups(new ArrayList<SingleRollupWriteContext>() {{
-            add(writeContext);
-        }});
     }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
@@ -246,18 +301,19 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
-    public void insertBasicRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_BASIC_ROLLUPS);
+    public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
+        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP_BATCH);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
-            BasicRollup rollup = writeContext.getRollup();
+            Rollup rollup = writeContext.getRollup();
             int ttl = (int) ROLLUP_TTL_CACHE.getTtl(
                     writeContext.getLocator().getTenantId(),
                     writeContext.getDestinationCF()).toSeconds();
+            AbstractSerializer serializer = NumericSerializer.serializerFor(rollup.getClass());
             mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
                     .putColumn(writeContext.getTimestamp(),
                             rollup,
-                            NumericSerializer.serializerFor(BasicRollup.class),
+                            serializer,
                             ttl);
         }
         try {

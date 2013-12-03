@@ -41,7 +41,7 @@ public class RollupBatchWriteRunnable  implements Runnable {
     public void run() {
         TimerContext ctx = batchWriteTimer.time();
         try {
-            AstyanaxWriter.getInstance().insertBasicRollups(writeContexts);
+            AstyanaxWriter.getInstance().insertRollups(writeContexts);
         } catch (ConnectionException e) {
             executionContext.markUnsuccessful(e);
         }
