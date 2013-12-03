@@ -25,10 +25,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.HttpQueryService;
-import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -225,15 +222,15 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
-        Map<Long, Rollup> rollups = new HashMap<Long, Rollup>();
+        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
+        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, range);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            rollups.put(range.getStart(), basicRollup);
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.start));
         }
 
-        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
-        AstyanaxWriter.getInstance().insertRollups(locator, rollups, destCF);
+        AstyanaxWriter.getInstance().insertRollups(writeContexts);
     }
 
     private URI getMetricsQueryURI() throws URISyntaxException {

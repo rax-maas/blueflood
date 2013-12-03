@@ -21,7 +21,6 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -37,33 +36,36 @@ class RollupRunnable implements Runnable {
 
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Timer writeTimer = Metrics.timer(RollupRunnable.class, "Write Rollup");
+    private final SingleRollupReadContext singleRollupReadContext;
     private static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
             new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
-            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS));
+            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
     
-    private final RollupContext rollupContext;
     private final RollupExecutionContext executionContext;
+    private final RollupBatchWriter rollupBatchWriter;
     private final long startWait;
     
-    RollupRunnable(RollupExecutionContext executionContext, RollupContext rollupContext) {
+    RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
-        this.rollupContext = rollupContext;
+        this.singleRollupReadContext = singleRollupReadContext;
+        this.rollupBatchWriter = rollupBatchWriter;
         startWait = System.currentTimeMillis();
     }
     
     public void run() {
         // done waiting.
-        rollupContext.getWaitHist().update(System.currentTimeMillis() - startWait);
+        singleRollupReadContext.getWaitHist().update(System.currentTimeMillis() - startWait);
 
         if (log.isDebugEnabled()) {
             log.debug("Executing rollup from {} for {} {}", new Object[] {
-                    rollupContext.getSourceGranularity().shortName(),
-                    rollupContext.getRange().toString(),
-                    rollupContext.getLocator()});
+                    singleRollupReadContext.getSourceGranularity().shortName(),
+                    singleRollupReadContext.getRange().toString(),
+                    singleRollupReadContext.getLocator()});
         }
-        
+
         // start timing this action.
-        Timer.Context timerContext = rollupContext.getExecuteTimer().time();
+        Timer.Context timerContext = singleRollupReadContext.getExecuteTimer().time();
+
         try {
             Timer.Context calcrollupContext = calcTimer.time();
 
@@ -72,8 +74,8 @@ class RollupRunnable implements Runnable {
             Rollup rollup = null;
             ColumnFamily<Locator, Long> srcCF;
             ColumnFamily<Locator, Long> dstCF;
-            StatType statType = StatType.fromString((String)rollupTypeCache.get(rollupContext.getLocator(), StatType.CACHE_KEY));
-            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, rollupContext.getSourceGranularity());
+            StatType statType = StatType.fromString((String)rollupTypeCache.get(singleRollupReadContext.getLocator(), StatType.CACHE_KEY));
+            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, singleRollupReadContext.getSourceGranularity());
             
             // short circuit for sets, which are not rolled up, since we don't want to waste time reading them from
             // full res.
@@ -82,49 +84,39 @@ class RollupRunnable implements Runnable {
             
             try {
                 // first, get the points.
-                if (rollupContext.getSourceGranularity() == Granularity.FULL) {    
+                if (singleRollupReadContext.getSourceGranularity() == Granularity.FULL) {
                     srcCF = statType == StatType.UNKNOWN
                             ? AstyanaxIO.CF_METRICS_FULL
                             : AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
                     input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
-                            rollupContext.getLocator(), rollupContext.getRange(), srcCF);
+                            singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
                 } else {
-                    srcCF = AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity());
+                    srcCF = AstyanaxIO.getColumnFamilyMapper().get(singleRollupReadContext.getSourceGranularity());
                     input = AstyanaxReader.getInstance().getBasicRollupDataToRoll(
-                            rollupContext.getLocator(),
-                            rollupContext.getRange(),
+                            singleRollupReadContext.getLocator(),
+                            singleRollupReadContext.getRange(),
                             srcCF);
                 }
                 
                 dstCF = statType == StatType.UNKNOWN
-                        ? AstyanaxIO.getColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser())
-                        : AstyanaxIO.getPreagColumnFamilyMapper().get(rollupContext.getSourceGranularity().coarser());
+                        ? AstyanaxIO.getColumnFamilyMapper().get(singleRollupReadContext.getSourceGranularity().coarser())
+                        : AstyanaxIO.getPreagColumnFamilyMapper().get(singleRollupReadContext.getSourceGranularity().coarser());
                 
                 // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(statType, rollupContext.getSourceGranularity()).compute(input);
+                rollup =  RollupRunnable.getRollupComputer(statType, singleRollupReadContext.getSourceGranularity()).compute(input);
                 
             } finally {
                 calcrollupContext.stop();
             }
-
-            // now save the new rollup.
-            Timer.Context writerollupContext = writeTimer.time();
-            try {
-                AstyanaxWriter.getInstance().insertRollup(
-                        rollupContext.getLocator(),
-                        rollupContext.getRange().getStart(),
-                        rollup,
-                        dstCF);
-            } finally {
-                writerollupContext.stop();
-            }
+            // now enqueue the new rollup for writing.
+            rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
         } catch (Throwable th) {
-            log.error("Rollup failed; Locator : ", rollupContext.getLocator()
-                    + ", Source Granularity: " + rollupContext.getSourceGranularity().name());
+            log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
+                    + ", Source Granularity: " + singleRollupReadContext.getSourceGranularity().name());
         } finally {
-            executionContext.decrement();
+            executionContext.decrementReadCounter();
             timerContext.stop();
         }
     }

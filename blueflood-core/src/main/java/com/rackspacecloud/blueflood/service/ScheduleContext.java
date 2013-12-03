@@ -186,7 +186,7 @@ public class ScheduleContext implements IngestionContext {
         }
     }
     
-    void pushBackToScheduled(String key) {
+    void pushBackToScheduled(String key, boolean rescheduleImmediately) {
         synchronized (scheduledSlots) {
             synchronized (runningSlots) {
                 int slot = Granularity.slotFromKey(key);
@@ -195,7 +195,11 @@ public class ScheduleContext implements IngestionContext {
                 // no need to set dirty/clean here.
                 shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Active);
                 scheduledSlots.add(key);
-                orderedScheduledSlots.add(0, key);
+                if (rescheduleImmediately) {
+                    orderedScheduledSlots.add(0, key);
+                } else {
+                    orderedScheduledSlots.add(key);
+                }
             }
         }
     }
