@@ -19,12 +19,12 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.TtlCache;
@@ -44,7 +44,6 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -207,7 +206,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // generic IMetric insertion. All other metric insertion methods could use this one.
     public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
         // todo: need a way of using an interned string.
-        TimerContext ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
+        Timer.Context ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
         try {
