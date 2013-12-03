@@ -29,6 +29,7 @@
     <module>blueflood-udp</module>
     <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
+    <module>blueflood-statsd</module>
   </modules>
 
   <description>

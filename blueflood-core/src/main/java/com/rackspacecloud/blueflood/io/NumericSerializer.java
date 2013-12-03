@@ -19,12 +19,16 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
+import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.HistogramRollup;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.SetRollup;
+import com.rackspacecloud.blueflood.types.SingleValueRollup;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
@@ -40,18 +44,25 @@ import java.util.Map;
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_FULL_RES;
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_TIMER;
+import java.math.BigInteger;
+
+import static com.rackspacecloud.blueflood.io.Constants.*;
 
 public class NumericSerializer {
     // NumericSerializer can be used with Rollup and full resolution metrics.
     
     private static final boolean DUMP_BAD_BUFFERS = System.getProperty("DUMP_BAD_BUFFERS") != null;
 
+    public static final AbstractSerializer<SimpleNumber> simpleNumberSerializer = new SimpleNumberSerializer();
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    private static AbstractSerializer<SingleValueRollup> singleValueRollup = new SingleValueRollupSerializer();
     
     private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
+    private static Histogram singleValueRollupSize = Metrics.newHistogram(NumericSerializer.class, "Counter Set Gauge Metric Size");
+    private static Histogram timerRollupSize = Metrics.newHistogram(NumericSerializer.class, "Timer Metric Size");
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
@@ -78,6 +89,12 @@ public class NumericSerializer {
             return (AbstractSerializer<T>)timerRollupInstance;
         else if (type.equals(HistogramRollup.class))
             return (AbstractSerializer<T>)HistogramSerializer.get();
+        else if (type.equals(CounterRollup.class))
+            return (AbstractSerializer<T>)singleValueRollup;
+        else if (type.equals(GaugeRollup.class))
+            return (AbstractSerializer<T>)singleValueRollup;
+        else if (type.equals(SetRollup.class))
+            return (AbstractSerializer<T>)singleValueRollup;
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
         else if (type.equals(Integer.class))
@@ -93,8 +110,7 @@ public class NumericSerializer {
         else if (type.equals(Object.class))
             return (AbstractSerializer<T>)fullInstance;
         else
-            return (AbstractSerializer<T>)fullInstance;
-        
+            return (AbstractSerializer<T>)fullInstance;   
     }
 
     private static void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
@@ -240,20 +256,49 @@ public class NumericSerializer {
                 }
                 return sz;
                 
-            
             case Type.B_GAUGE:
             case Type.B_SET:
             case Type.B_COUNTER:
+                SingleValueRollup svr = (SingleValueRollup)o;
+                sz += 2; // version + rollup type.
+                sz += 1; // numeric type.
+                if (svr.getValue() instanceof Long || svr.getValue() instanceof Integer)
+                    sz += CodedOutputStream.computeRawVarint64Size(svr.getValue().longValue());
+                else if (svr.getValue() instanceof Double || svr.getValue() instanceof Float)
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(svr.getValue().doubleValue());
+                return sz;
             default:
                 throw new IOException("Unexpected type: " + type);
         }
         return sz;
     }
     
+    private static void serializeSingleValueRollup(SingleValueRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        singleValueRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_1_SINGLE_VALUE_ROLLUP);
+        out.writeRawByte(typeOf(rollup));
+        putUnversionedDoubleOrLong(rollup.getValue(), out);
+    }
+    
+    private static SingleValueRollup deserializeV1SingleValueRollup(CodedInputStream in) throws IOException {
+        byte type = in.readRawByte();
+        Number value = getUnversionedDoubleOrLong(in);
+        switch (type) {
+            case Type.B_COUNTER:
+                return new CounterRollup(1).withCount(value.longValue());
+            case Type.B_SET:
+                return new SetRollup().withCount(value.longValue());
+            case Type.B_GAUGE:
+                return new GaugeRollup().withGauge(value);
+            default:
+                throw new IOException("Unexpected single value rollup type: " + new BigInteger(new byte[]{type}).toString(16));
+        }
+    }
+    
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
-        rollupSize.update(buf.length);
-//        out.writeRawByte(Type.B_TIMER);
+        timerRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_TIMER);
         
         // sum, count, countps, avg, max, min, var
@@ -337,6 +382,12 @@ public class NumericSerializer {
             return Type.B_TIMER;
         else if (o instanceof BasicRollup)
             return Type.B_ROLLUP;
+        else if (o instanceof GaugeRollup)
+            return Type.B_GAUGE;
+        else if (o instanceof SetRollup)
+            return Type.B_SET;
+        else if (o instanceof CounterRollup)
+            return Type.B_COUNTER;
         else
             throw new SerializationException("Unexpected type: " + o.getClass().getName());
     }
@@ -458,6 +509,21 @@ public class NumericSerializer {
         }
     }
     
+    // composes a raw serializer.
+    private static class SimpleNumberSerializer extends AbstractSerializer<SimpleNumber> {
+        private static final RawSerializer rawSerde = new RawSerializer();
+        
+        @Override
+        public ByteBuffer toByteBuffer(SimpleNumber obj) {
+            return rawSerde.toByteBuffer(obj);
+        }
+
+        @Override
+        public SimpleNumber fromByteBuffer(ByteBuffer byteBuffer) {
+            return new SimpleNumber(rawSerde.fromByteBuffer(byteBuffer));
+        }
+    }
+    
     private static class BasicRollupSerializer extends AbstractSerializer<BasicRollup> {
         @Override
         public ByteBuffer toByteBuffer(BasicRollup o) {
@@ -508,6 +574,35 @@ public class NumericSerializer {
                 if (version != VERSION_1_TIMER)
                     throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
                 return deserializeV1Timer(in);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+    
+    // for now let's try to get away with a single serializer for all single value rollups. We'll still encode specific
+    // types so we can differentiate.
+    public static class SingleValueRollupSerializer extends AbstractSerializer<SingleValueRollup> {
+        @Override
+        public ByteBuffer toByteBuffer(SingleValueRollup obj) {
+            try {
+                byte type = typeOf(obj);
+                byte[] buf = new byte[sizeOf(obj, type)];
+                serializeSingleValueRollup(obj, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @Override
+        public SingleValueRollup fromByteBuffer(ByteBuffer byteBuffer) {
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_SINGLE_VALUE_ROLLUP)
+                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
+                return deserializeV1SingleValueRollup(in);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }

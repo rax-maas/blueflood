@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HistogramRollup extends Rollup {
+public class HistogramRollup implements Rollup {
     private final Histogram<SimpleTarget> histogram;
     public static Integer MAX_BIN_SIZE = 64;
 
@@ -91,7 +91,6 @@ public class HistogramRollup extends Rollup {
         return histogram.getMaxBins();
     }
 
-    @Override
     public long getCount() {
         return (long)histogram.getBins().size();
     }

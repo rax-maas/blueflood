@@ -97,4 +97,16 @@ public class MetricTest {
         Assert.assertTrue(!Metric.Type.isNumericMetric(metricValueStr));
         Assert.assertTrue(Metric.Type.isStringMetric(metricValueStr));
     }
+    
+    @Test
+    public void testGenericStatSet() {
+        Average average = new Average(10, 30);
+        AbstractRollupStat.set(average, 50);
+        Assert.assertFalse(average.isFloatingPoint());
+        
+        // set as float (should get cast to double).
+        AbstractRollupStat.set(average, 45f);
+        // isFloatingPoint should have flipped.
+        Assert.assertTrue(average.isFloatingPoint());
+    }
 }
