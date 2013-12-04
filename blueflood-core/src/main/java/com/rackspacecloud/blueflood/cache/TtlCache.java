@@ -61,6 +61,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     private double safetyThreshold = 10d;
     
     private volatile long lastFetchError = 0;
+    private final int concurrency;
 
     public TtlCache(String label, TimeValue expiration, int cacheConcurrency, final InternalAPI internalAPI) {
         try {
@@ -111,11 +112,16 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
 
                     }
                 };
+        this.concurrency = cacheConcurrency;
         cache = CacheBuilder.newBuilder()
                 .expireAfterWrite(expiration.getValue(), expiration.getUnit())
-                .concurrencyLevel(cacheConcurrency)
+                .concurrencyLevel(concurrency)
                 .recordStats()
                 .build(loader);
+    }
+
+    public int getConcurrency() {
+        return concurrency;
     }
     
     // override this if you're not interested in caching the entire ttl map.
