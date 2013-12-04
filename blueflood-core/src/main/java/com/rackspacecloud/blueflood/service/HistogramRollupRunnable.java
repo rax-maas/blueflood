@@ -102,7 +102,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                         srcCF);
 
                 // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(statType, srcGran).compute(input);
+                rollup =  RollupRunnable.getRollupComputer(StatType.BF_HISTOGRAMS, srcGran).compute(input);
             } finally {
                 calcrollupContext.stop();
             }
