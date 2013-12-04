@@ -5,6 +5,7 @@ public enum StatType {
     TIMER,
     SET,
     GAUGE,
+    BF_HISTOGRAMS,
     UNKNOWN;
     
     public static final String CACHE_KEY = "statsd.type";
