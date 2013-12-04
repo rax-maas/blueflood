@@ -35,6 +35,12 @@
   </properties>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/integration-test/java</directory>
+      </testResource>
+    </testResources>
+
     <plugins>
       <!-- Used to add source directories to our build. -->
       <plugin>
