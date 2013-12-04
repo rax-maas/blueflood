@@ -31,13 +31,13 @@
   </properties>
 
   <build>
-      <testResources>
-          <testResource>
-              <directory>src/integration-test/java</directory>
-          </testResource>
-      </testResources>
+    <testResources>
+      <testResource>
+        <directory>src/integration-test/java</directory>
+      </testResource>
+    </testResources>
 
-      <plugins>
+    <plugins>
 
       <!-- test -->
 
