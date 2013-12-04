@@ -32,12 +32,16 @@ import org.apache.log4j.LogManager;
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Metrics {
     private static final MetricRegistry registry = new MetricRegistry();
     private static final GraphiteReporter reporter;
     private static final JmxReporter reporter2;
+    private static final String JVM_PREFIX = "jvm";
 
     static {
         Configuration config = Configuration.getInstance();
@@ -46,11 +50,11 @@ public class Metrics {
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         if (!System.getProperty("java.version").split("\\.")[1].equals("6")) {
             // if not running 1.6
-            registry.registerAll(new BufferPoolMetricSet(mbs));
+            registry.registerAll(new PrefixedMetricSet(new BufferPoolMetricSet(mbs), JVM_PREFIX, "buffer-pool"));
         }
-        registry.registerAll(new GarbageCollectorMetricSet());
-        registry.registerAll(new MemoryUsageGaugeSet());
-        registry.registerAll(new ThreadStatesGaugeSet());
+        registry.registerAll(new PrefixedMetricSet(new GarbageCollectorMetricSet(), JVM_PREFIX, "gc"));
+        registry.registerAll(new PrefixedMetricSet(new MemoryUsageGaugeSet(), JVM_PREFIX, "memory"));
+        registry.registerAll(new PrefixedMetricSet(new ThreadStatesGaugeSet(), JVM_PREFIX, "thread-states"));
 
         // instrument log4j
         InstrumentedAppender appender = new InstrumentedAppender(registry);
@@ -78,6 +82,23 @@ public class Metrics {
                 .convertRatesTo(TimeUnit.MILLISECONDS)
                 .build();
         reporter2.start();
+    }
+
+    static class PrefixedMetricSet implements MetricSet {
+        private final Map<String, Metric> metricMap;
+
+        PrefixedMetricSet(final MetricSet metricSet, final String prefix1, final String prefix2) {
+            metricMap = Collections.unmodifiableMap(new HashMap<String, Metric>(){{
+                for (Map.Entry<String, Metric> stringMetricEntry : metricSet.getMetrics().entrySet()) {
+                    put(MetricRegistry.name(prefix1, prefix2, stringMetricEntry.getKey()), stringMetricEntry.getValue());
+                }
+            }});
+        }
+
+        @Override
+        public Map<String, Metric> getMetrics() {
+            return metricMap;
+        }
     }
 
     public static MetricRegistry getRegistry() {
