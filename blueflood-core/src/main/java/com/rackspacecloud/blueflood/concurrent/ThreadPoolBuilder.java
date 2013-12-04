@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ThreadPoolBuilder {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolBuilder.class);
     private static final Map<String, AtomicInteger> nameMap = new ConcurrentHashMap<String, AtomicInteger>();
-
+    private static final String DEFAULT_NAME = "Threadpool";
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
     private int queueSize = 0;
@@ -40,7 +40,8 @@ public class ThreadPoolBuilder {
             log.error(e.getMessage(), e);
         }
     };
-    private String name = "Thread";
+
+    private String name = DEFAULT_NAME;
 
     public ThreadPoolBuilder() {
 
@@ -98,6 +99,9 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolExecutor build() {
+        if (name.equals(DEFAULT_NAME)) {
+            this.withName(name); // causes pool to have a unique name
+        }
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
         final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
                     new LinkedBlockingQueue<Runnable>();
