@@ -30,7 +30,7 @@ public class RollupBatchWriteRunnable  implements Runnable {
     private final RollupExecutionContext executionContext;
     private final ArrayList<SingleRollupWriteContext> writeContexts;
     private static final Histogram rollupsPerBatch = Metrics.newHistogram(RollupService.class, "Rollups Per Batch");
-    private static final Timer batchWriteTimer = Metrics.newTimer(RollupService.class, "Rollup Batch Write", TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+    private static final Timer batchWriteTimer = Metrics.newTimer(RollupService.class, "Rollup Batch Write", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
     public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts, RollupExecutionContext executionContext) {
         this.writeContexts = writeContexts;
