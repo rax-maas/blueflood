@@ -85,7 +85,9 @@ public enum CoreConfig implements ConfigDefaults {
     USE_LEGACY_METRIC_SEPARATOR("false"),
 
     ROLLUP_BATCH_MIN_SIZE("5"),
-    ROLLUP_BATCH_MAX_SIZE("100");
+    ROLLUP_BATCH_MAX_SIZE("100"),
+
+    ENABLE_HISTOGRAMS("true");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
