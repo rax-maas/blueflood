@@ -18,12 +18,12 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.TtlCache;
@@ -33,11 +33,9 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.yammer.metrics.Metrics;
@@ -46,19 +44,14 @@ import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
-    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS);
-    private static final int INTERNAL_API_CONCURRENCY = CACHE_CONCURRENCY;
+    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
@@ -67,6 +60,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_FULL = "Full Insert".intern();
     private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
     private static final String INSERT_ROLLUP = "Rollup Insert".intern();
+    private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
@@ -265,48 +259,6 @@ public class AstyanaxWriter extends AstyanaxIO {
             ctx.stop();
         }
     }
-    
-
-    // todo: rename to insertBasicRollup.
-    public void insertRollup(Locator locator, final long timestamp, final Rollup rollup,
-                             ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        if (destCF.equals(AstyanaxIO.CF_METRICS_FULL)) {
-            throw new IllegalArgumentException("Invalid granularity FULL for BasicRollup insertion");
-        }
-        insertRollups(locator, new HashMap<Long, Rollup>() {{
-            put(timestamp, rollup);
-        }}, destCF);
-    }
-
-
-    // todo: this method should be made private. outside of this class, it is only used by tests.
-    public void insertRollups(Locator locator, Map<Long, Rollup> rollups,
-                                          ColumnFamily<Locator, Long> destCF) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP);
-        int ttl = (int) ROLLUP_TTL_CACHE.getTtl(locator.getTenantId(), destCF).toSeconds();
-        try {
-            MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<Long> mutationBatchWithRow = mutationBatch.withRow(destCF, locator);
-            for (Map.Entry<Long, Rollup> rollupEntry : rollups.entrySet()) {
-                AbstractSerializer serializer = NumericSerializer.serializerFor(rollupEntry.getValue().getClass());
-                mutationBatchWithRow.putColumn(
-                        rollupEntry.getKey(), 
-                        rollupEntry.getValue(),
-                        serializer,
-                        ttl);
-            }
-            // send it.
-            try {
-                mutationBatch.execute();
-            } catch (ConnectionException e) {
-                Instrumentation.markWriteError(e);
-                log.error("Connection Exception persisting data", e);
-                throw e;
-            }
-        } finally {
-            ctx.stop();
-        }
-    }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
         TimerContext ctx = Instrumentation.getTimerContext(INSERT_SHARD);
@@ -349,4 +301,29 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
+    public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
+        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP_BATCH);
+        MutationBatch mb = keyspace.prepareMutationBatch();
+        for (SingleRollupWriteContext writeContext : writeContexts) {
+            Rollup rollup = writeContext.getRollup();
+            int ttl = (int) ROLLUP_TTL_CACHE.getTtl(
+                    writeContext.getLocator().getTenantId(),
+                    writeContext.getDestinationCF()).toSeconds();
+            AbstractSerializer serializer = NumericSerializer.serializerFor(rollup.getClass());
+            mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
+                    .putColumn(writeContext.getTimestamp(),
+                            rollup,
+                            serializer,
+                            ttl);
+        }
+        try {
+            mb.execute();
+        } catch (ConnectionException e) {
+            Instrumentation.markWriteError(e);
+            log.error("Error writing rollup batch", e);
+            throw e;
+        } finally {
+            ctx.stop();
+        }
+    }
 }

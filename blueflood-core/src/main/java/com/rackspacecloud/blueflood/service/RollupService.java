@@ -45,7 +45,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private final Timer polltimer = Metrics.newTimer(RollupService.class, "Poll Timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     private final Meter rejectedSlotChecks = Metrics.newMeter(RollupService.class, "Rejected Slot Checks", "Rollups", TimeUnit.MINUTES);
     private final ThreadPoolExecutor locatorFetchExecutors;
-    private final ThreadPoolExecutor rollupExecutors;
+    private final ThreadPoolExecutor rollupReadExecutors;
+    private final ThreadPoolExecutor rollupWriteExecutors;
     private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
     private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
     private transient Thread thread;
@@ -121,7 +122,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
 
-        // NOTE: higher locatorFetchConcurrency means that the queue used in rollupExecutors needs to be correspondingly
+        // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
         // higher.
         final int locatorFetchConcurrency = 2;
         locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
@@ -146,16 +147,27 @@ public class RollupService implements Runnable, RollupServiceMBean {
         };
 
         // unbounded work queue.
-        final BlockingQueue<Runnable> rollupQueue = new LinkedBlockingQueue<Runnable>();
+        final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
         Configuration config = Configuration.getInstance();
-        rollupExecutors = new InstrumentedThreadPoolExecutor (
-            "RollupsThreadPool",
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_THREADS),
+
+        rollupReadExecutors = new InstrumentedThreadPoolExecutor(
+            "RollupReadsThreadpool",
+            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
+            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
             30, TimeUnit.SECONDS,
-            rollupQueue,
+            rollupReadQueue,
             Executors.defaultThreadFactory(),
             new ThreadPoolExecutor.AbortPolicy()
+        );
+        final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
+        rollupWriteExecutors = new InstrumentedThreadPoolExecutor(
+                "RollupWritesThreadpool",
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
+                30, TimeUnit.SECONDS,
+                rollupWriteQueue,
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()
         );
     }
 
@@ -184,13 +196,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 final String slotKey = context.getNextScheduled();
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
-                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupExecutors));
+                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors));
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't
                     // have enough threads allocated to processing rollups or slot checks.
                     rejectedSlotChecks.mark();
-                    context.pushBackToScheduled(slotKey);
+                    context.pushBackToScheduled(slotKey, true);
                     rejected = true;
                 }
             }
@@ -250,16 +262,16 @@ public class RollupService implements Runnable, RollupServiceMBean {
     }
 
     public synchronized int getRollupConcurrency() {
-        return rollupExecutors.getMaximumPoolSize();
+        return rollupReadExecutors.getMaximumPoolSize();
     }
 
     public synchronized void setRollupConcurrency(int i) {
-        rollupExecutors.setCorePoolSize(i);
-        rollupExecutors.setMaximumPoolSize(i);
+        rollupReadExecutors.setCorePoolSize(i);
+        rollupReadExecutors.setMaximumPoolSize(i);
     }
 
-    public synchronized int getQueuedRollupCount() { return rollupExecutors.getQueue().size(); }
-    public synchronized int getInFlightRollupCount() { return rollupExecutors.getActiveCount(); }
+    public synchronized int getQueuedRollupCount() { return rollupReadExecutors.getQueue().size(); }
+    public synchronized int getInFlightRollupCount() { return rollupReadExecutors.getActiveCount(); }
 
     public synchronized boolean getActive() { return active; }
 

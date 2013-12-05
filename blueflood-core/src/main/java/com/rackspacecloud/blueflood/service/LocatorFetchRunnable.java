@@ -16,11 +16,13 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.model.Column;
+import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-import com.netflix.astyanax.model.Column;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
@@ -38,15 +40,17 @@ class LocatorFetchRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
-    private final ThreadPoolExecutor rollupExecutor;
+    private final ThreadPoolExecutor rollupReadExecutor;
+    private final ThreadPoolExecutor rollupWriteExecutor;
     private final String parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.newTimer(RollupService.class, "Locate and Schedule Rollups for Slot", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupExecutor) {
-        this.rollupExecutor = rollupExecutor;
+    LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
+        this.rollupReadExecutor = rollupReadExecutor;
+        this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
@@ -74,19 +78,28 @@ class LocatorFetchRunnable implements Runnable {
         int rollCount = 0;
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
-        for (Column<Locator> locatorCol : AstyanaxReader.getInstance().getAllLocators(shard)) {
+        final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
+        ColumnList<Locator> locators = new EmptyColumnList<Locator>();
+        try {
+            locators = AstyanaxReader.getInstance().getAllLocators(shard);
+        } catch (RuntimeException e) {
+            executionContext.markUnsuccessful(e);
+            log.error("Failed reading locators for slot: " + parentSlot, e);
+        }
+        for (Column<Locator> locatorCol : locators) {
             final Locator locator = locatorCol.getName();
 
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
             try {
-                executionContext.increment();
-                final RollupContext rollupContext = new RollupContext(locator, parentRange, finerGran);
-                rollupExecutor.execute(new RollupRunnable(executionContext, rollupContext));
+                executionContext.incrementReadCounter();
+                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, finerGran);
+                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
-                executionContext.decrement();
+                executionContext.markUnsuccessful(any);
+                executionContext.decrementReadCounter();
                 log.error(any.getMessage(), any);
                 log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
             }
@@ -94,19 +107,29 @@ class LocatorFetchRunnable implements Runnable {
         
         // now wait until ctx is drained. someone needs to be notified.
         log.debug("Waiting for rollups to finish for " + parentSlotKey);
-        while (!executionContext.done()) {
+        while (!executionContext.doneReading() || !executionContext.doneWriting()) {
+            if (executionContext.doneReading()) {
+                rollupBatchWriter.drainBatch(); // gets any remaining rollups enqueued for write. should be no-op after being called once
+            }
             try {
                 Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS);
             } catch (InterruptedException ex) {
                 if (log.isTraceEnabled())
                     log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
             } finally {
-                log.debug("Still waiting for rollups to finish for {} {}", parentSlotKey, System.currentTimeMillis() - waitStart);
+                String verb = executionContext.doneReading() ? "writing" : "reading";
+                log.debug("Still waiting for rollups to finish {} for {} {}", new Object[] {verb, parentSlotKey, System.currentTimeMillis() - waitStart });
             }
         }
         if (log.isDebugEnabled())
             log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
-        this.scheduleCtx.clearFromRunning(parentSlotKey);
+
+        if (executionContext.wasSuccessful()) {
+            this.scheduleCtx.clearFromRunning(parentSlotKey);
+        } else {
+            log.error("Performing BasicRollups for {} failed", parentSlotKey);
+            this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
+        }
 
         timerCtx.stop();
     }

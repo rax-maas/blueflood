@@ -3,5 +3,7 @@
     * Backwards compatibility provided via "USE_LEGACY_METRIC_SEPARATOR" configuration setting, to be removed in v3.0.0
  * Various instrumentation additions
  * Batch metadata reads
+ * Batch rollup writes
+   * Configuration value "MAX_ROLLUP_THREADS" has been replaced with "MAX_ROLLUP_READ_THREADS" and "MAX_ROLLUP_WRITE_THREADS"
  * Switch to using org.apache.curator instead of com.netflix.curator
  * Add support for fetching multiple metrics in single HTTP call
