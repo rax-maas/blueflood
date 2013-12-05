@@ -66,8 +66,8 @@ public class Metrics {
 
             reporter = GraphiteReporter
                     .forRegistry(registry)
-                    .convertDurationsTo(TimeUnit.SECONDS)
-                    .convertRatesTo(TimeUnit.MILLISECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .convertRatesTo(TimeUnit.SECONDS)
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
@@ -78,8 +78,8 @@ public class Metrics {
 
         reporter2 = JmxReporter
                 .forRegistry(registry)
-                .convertDurationsTo(TimeUnit.SECONDS)
-                .convertRatesTo(TimeUnit.MILLISECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .convertRatesTo(TimeUnit.SECONDS)
                 .build();
         reporter2.start();
     }
