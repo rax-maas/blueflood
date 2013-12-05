@@ -56,7 +56,7 @@ public class NumericSerializer {
     public static final AbstractSerializer<SimpleNumber> simpleNumberSerializer = new SimpleNumberSerializer();
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
-    private static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
     private static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
     private static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     private static AbstractSerializer<SingleValueRollup> singleValueRollup = new SingleValueRollupSerializer();

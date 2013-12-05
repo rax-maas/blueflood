@@ -67,16 +67,10 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             long time = i * 30000;
             IMetric metric;
             
-            CounterRollup counter = new CounterRollup(1).withCount(1);
-            metric = new PreaggregatedMetric(time, counterLocator, ttl, counter);
+            metric = new Metric(counterLocator, i, time, ttl, "gigawatts");
             preaggregatedMetrics.add(metric);
 
-            GaugeRollup gauge = GaugeRollup.buildFromRawSamples(new Points<SimpleNumber>() {{
-                add(new Point<SimpleNumber>(0, new SimpleNumber(10)));
-                add(new Point<SimpleNumber>(1, new SimpleNumber(20)));
-                add(new Point<SimpleNumber>(2, new SimpleNumber(30)));
-            }});
-            metric = new PreaggregatedMetric(time, gaugeLocator, ttl, gauge);
+            metric = new Metric(gaugeLocator, i, time, ttl, "micromorts");
             preaggregatedMetrics.add(metric);
             
             TimerRollup timer = new TimerRollup()
@@ -89,16 +83,10 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            SetRollup set = new SetRollup();
-            set.setCount(99);
-            set.setMin(23L);
-            set.setMax(4232L);
-            set.setVariance(0.23f);
-            set.setAverage(32L);
-            metric = new PreaggregatedMetric(time, setLocator, ttl, set);
+            metric = new Metric(setLocator, i, time, ttl, "furmans");
             preaggregatedMetrics.add(metric);
             
-            metric = new Metric(normalLocator, i, time, ttl, "horses");
+            metric = new Metric(normalLocator, i, time, ttl, "centipawns");
             normalMetrics.add(metric);
         }
         
@@ -135,22 +123,27 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testCounterRollup() throws IOException {
-        testRolledupMetric(counterLocator, CounterRollup.class);
+        testRolledupMetric(counterLocator, Integer.class, CounterRollup.class);
     }
     
     @Test
     public void testGaugeRollup() throws IOException {
-        testRolledupMetric(gaugeLocator, GaugeRollup.class);
+        testRolledupMetric(gaugeLocator, Integer.class, GaugeRollup.class);
     }
     
     @Test
     public void testTimerRollup() throws IOException {
-        testRolledupMetric(timerLocator, TimerRollup.class);
+        testRolledupMetric(timerLocator, TimerRollup.class, TimerRollup.class);
     }
     
-    private void testRolledupMetric(Locator locator, Class rollupClass) throws IOException { 
+    @Test
+    public void testSetRollup() throws IOException {
+        testRolledupMetric(setLocator, Integer.class, SetRollup.class);
+    }
+    
+    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 
         // full res has 5 samples.
-        Assert.assertEquals(5, reader.getDataToRoll(rollupClass,
+        Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
                                                     range, 
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
