@@ -87,7 +87,7 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_BATCH_MIN_SIZE("5"),
     ROLLUP_BATCH_MAX_SIZE("100"),
 
-    ENABLE_HISTOGRAMS("true");
+    ENABLE_HISTOGRAMS("false");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
