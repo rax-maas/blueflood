@@ -185,10 +185,15 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
 
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.coarser()),
+                    range.start));
+            writes.add(new SingleRollupWriteContext(histogramRollup,
+                    locator,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -204,6 +209,14 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     locator,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5.coarser()),
                     range.start));
+
+            Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
+            writes.add(new SingleRollupWriteContext(histogramRollup,
+                    locator,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_20),
+                    range.start));
         }
         writer.insertRollups(writes);
 
@@ -216,6 +229,14 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20.coarser()),
+                    range.start));
+
+            Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
+            writes.add(new SingleRollupWriteContext(histogramRollup,
+                    locator,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_60),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -231,6 +252,14 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     locator,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60.coarser()),
                     range.start));
+
+            Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
+            writes.add(new SingleRollupWriteContext(histogramRollup,
+                    locator,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_240),
+                    range.start));
         }
         writer.insertRollups(writes);
 
@@ -244,6 +273,14 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                     locator,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.coarser()),
                     range.start));
+
+            Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
+            writes.add(new SingleRollupWriteContext(histogramRollup,
+                    locator,
+                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_1440),
+                    range.start));
         }
         writer.insertRollups(writes);
 
@@ -253,6 +290,13 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
         BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
         Assert.assertEquals(60 * hours, basicRollup.getCount());
+
+        Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
+                AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_1440));
+        HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
+        Assert.assertTrue(histogramRollup.getNumberOfBins() > 0);
+        Assert.assertTrue("Number of bins is " + histogramRollup.getNumberOfBins(),
+                histogramRollup.getNumberOfBins() <= HistogramRollup.MAX_BIN_SIZE);
     }
 
     @Test
