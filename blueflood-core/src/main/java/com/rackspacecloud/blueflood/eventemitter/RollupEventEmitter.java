@@ -13,42 +13,36 @@
 *    See the License for the specific language governing permissions and
 *    limitations under the License.
 */
-
 package com.rackspacecloud.blueflood.eventemitter;
 
-import com.github.nkzawa.emitter.Emitter;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.Locator;
-import org.codehaus.jackson.node.ObjectNode;
-import org.codehaus.jackson.node.JsonNodeFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.concurrent.*;
 
-public class RollupEventEmitter {
-    private static Emitter emitterInstance = new Emitter();
+public class RollupEventEmitter extends Emitter<RollupEmission> {
+    private static final int numberOfWorkers = 5;
     private static ThreadPoolExecutor eventExecutors;
-    private static int numberOfWorkerThreads = 5;
+    private static final RollupEventEmitter instance = new RollupEventEmitter();
 
-    static {
+    private RollupEventEmitter() {
         eventExecutors = new ThreadPoolBuilder()
-                         .withName("EventEmitter ThreadPool")
-                         .withCorePoolSize(numberOfWorkerThreads)
-                         .withMaxPoolSize(numberOfWorkerThreads)
-                         .withUnboundedQueue()
-                         .build();
+                .withName("RollupEventEmitter ThreadPool")
+                .withCorePoolSize(numberOfWorkers)
+                .withMaxPoolSize(numberOfWorkers)
+                .withUnboundedQueue()
+                .build();
     }
 
-    public static Emitter getEmitterInstance() {
-        return emitterInstance;
-    }
+    public static RollupEventEmitter getInstance() { return instance; }
 
-    public static void emit(Object... eventPayload) {
-        eventExecutors.execute(new RollupEmissionWork(eventPayload));
+    @Override
+    public Emitter emit(final String event, final RollupEmission... eventPayload) {
+        eventExecutors.submit(new Runnable() {
+            @Override
+            public void run() {
+                RollupEventEmitter.super.emit(event, eventPayload);
+            }
+        });
+        return instance;
     }
 
     public static ThreadPoolExecutor getEventExecutors() {
