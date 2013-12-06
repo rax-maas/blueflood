@@ -10,10 +10,13 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Blueflood statsd integration</name>
+  <name>Blueflood Statsd Integration</name>
   <artifactId>blueflood-statsd</artifactId>
   <packaging>jar</packaging>
-
+  
+  <properties>
+    <cassandra.skip>false</cassandra.skip>
+  </properties>
 
   <build>
     <plugins>
