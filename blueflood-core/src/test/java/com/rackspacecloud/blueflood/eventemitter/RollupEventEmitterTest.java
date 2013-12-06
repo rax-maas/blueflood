@@ -16,71 +16,65 @@
 
 package com.rackspacecloud.blueflood.eventemitter;
 
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import junit.framework.Assert;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class RollupEventEmitterTest {
     String testEventName = "test";
     EventListener elistener = new EventListener();
-    ArrayList<RollupEmission> store = new ArrayList<RollupEmission>();
+    List<RollupEmission> store = Collections.synchronizedList(new ArrayList<RollupEmission>());
+    Emitter<RollupEmission> emitter = new Emitter<RollupEmission>();
 
     @Test
-    public void testConcurrentEmission() throws Exception {
+    public void testEmitter() throws Exception{
         //Test subscription
-        RollupEventEmitter.getInstance().on(testEventName,elistener);
-        Assert.assertTrue(RollupEventEmitter.getInstance().listeners(testEventName).contains(elistener));
-        Assert.assertTrue(store.isEmpty());
-
+        emitter.on(testEventName, elistener);
+        Assert.assertTrue(emitter.listeners(testEventName).contains(elistener));
         //Test concurrent emission
+        ThreadPoolExecutor executors = new ThreadPoolBuilder()
+                .withCorePoolSize(2)
+                .withMaxPoolSize(3)
+                .build();
         final RollupEmission obj1 = new RollupEmission(null, null, "payload1");
         final RollupEmission obj2 = new RollupEmission(null, null, "payload2");
         final CountDownLatch startLatch = new CountDownLatch(1);
-        Future<Object> f1 = RollupEventEmitter.getEventExecutors().submit(new Callable<Object>() {
+        Future<Object> f1 = executors.submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 startLatch.await();
-                RollupEventEmitter.getInstance().emit(testEventName, obj1);
+                emitter.emit(testEventName, obj1);
                 return null;
             }
         });
-        Future<Object> f2 = RollupEventEmitter.getEventExecutors().submit(new Callable<Object>() {
+        Future<Object> f2 = executors.submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 startLatch.await();
-                RollupEventEmitter.getInstance().emit(testEventName, obj2);
+                emitter.emit(testEventName, obj2);
                 return null;
             }
         });
+        Thread.sleep(1000);
+        //Assert that store is empty before testing emission
+        Assert.assertTrue(store.isEmpty());
         startLatch.countDown();
         f1.get();
         f2.get();
-
-        Thread.sleep(1000);
-
         Assert.assertEquals(store.size(),2);
         Assert.assertTrue(store.contains(obj1));
         Assert.assertTrue(store.contains(obj2));
-
         //Test unsubscription
-        RollupEventEmitter.getInstance().off(testEventName, elistener);
-        Assert.assertFalse(RollupEventEmitter.getInstance().listeners(testEventName).contains(elistener));
-
+        emitter.off(testEventName, elistener);
+        Assert.assertFalse(emitter.listeners(testEventName).contains(elistener));
         //Clear the store and check if it is not getting filled again
         store.clear();
-        Future<Object> f3 = RollupEventEmitter.getEventExecutors().submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                RollupEventEmitter.getInstance().emit(testEventName, obj1);
-                return null;
-            }
-        });
-        f3.get();
-
-        Thread.sleep(1000);
-
+        emitter.emit(testEventName, new RollupEmission(null, null, "payload3"));
         Assert.assertTrue(store.isEmpty());
     }
 

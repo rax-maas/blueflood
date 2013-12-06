@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 
 /**
  * The event emitter which is ported from the JavaScript module. This class is thread-safe.
@@ -155,7 +156,7 @@ public class Emitter<T> {
      * @param args
      * @return a reference to this object.
      */
-    public Emitter emit(String event, T... args) {
+    public Future emit(String event, T... args) {
         ConcurrentLinkedQueue<Listener> callbacks = this.callbacks.get(event);
         if (callbacks != null) {
             callbacks = new ConcurrentLinkedQueue<Listener>(callbacks);
@@ -163,7 +164,7 @@ public class Emitter<T> {
                 fn.call(args);
             }
         }
-        return this;
+        return null;
     }
 
     /**
@@ -189,7 +190,6 @@ public class Emitter<T> {
     }
 
     public static interface Listener<T> {
-
         public void call(T... arg);
     }
 }

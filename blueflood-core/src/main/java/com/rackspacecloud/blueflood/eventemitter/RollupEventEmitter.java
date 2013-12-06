@@ -35,17 +35,12 @@ public class RollupEventEmitter extends Emitter<RollupEmission> {
     public static RollupEventEmitter getInstance() { return instance; }
 
     @Override
-    public Emitter emit(final String event, final RollupEmission... eventPayload) {
-        eventExecutors.submit(new Runnable() {
+    public Future emit(final String event, final RollupEmission... eventPayload) {
+        return eventExecutors.submit(new Runnable() {
             @Override
             public void run() {
                 RollupEventEmitter.super.emit(event, eventPayload);
             }
         });
-        return instance;
-    }
-
-    public static ThreadPoolExecutor getEventExecutors() {
-        return eventExecutors;
     }
 }
