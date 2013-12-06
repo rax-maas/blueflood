@@ -91,9 +91,9 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
             },
             new ThreadPoolExecutor.AbortPolicy());
 
-    private final Meter lockAcquisitionFailure = Metrics.meter(ZKBasedShardLockManager.class, "Lock acquisition failures", "ZK");
+    private final Meter lockAcquisitionFailure = Metrics.meter(ZKBasedShardLockManager.class, "Lock acquisition failures");
     private final com.codahale.metrics.Timer lockAcquisitionTimer = Metrics.timer(ZKBasedShardLockManager.class, "Lock acquisition timer");
-    private final Meter lockErrors = Metrics.meter(ZKBasedShardLockManager.class, "Lock errors", "ZK");
+    private final Meter lockErrors = Metrics.meter(ZKBasedShardLockManager.class, "Lock errors");
 
     ZKBasedShardLockManager(String zookeeperCluster, Set<Integer> managedShards) {
         try {

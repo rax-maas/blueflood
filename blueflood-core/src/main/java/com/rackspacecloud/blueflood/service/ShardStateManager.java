@@ -38,9 +38,9 @@ public class ShardStateManager {
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
-    private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter", "Updated");
-    private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child", "OutOfOrderSchedule");
-    private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data", "Slot");
+    private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
+    private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
+    private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
