@@ -40,6 +40,7 @@ public class RollupHandler {
     protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
+    protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
 
     protected MetricData getRollupByGranularity(
             String tenantId,
@@ -95,5 +96,28 @@ public class RollupHandler {
         }
 
         return metricData;
+    }
+
+    protected MetricData getHistogramsByGranularity(String tenantId,
+                                                   String metricName,
+                                                   long from,
+                                                   long to,
+                                                   Granularity g) throws IOException {
+        if (!g.isCoarser(Granularity.FULL)) {
+            throw new IOException("Histograms are not available for this granularity");
+        }
+
+        final Timer.Context ctx = metricsFetchTimer.time();
+        final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
+
+        MetricData data;
+        try {
+            data = AstyanaxReader.getInstance().getHistogramsForRange(locator, new Range(g.snapMillis(from), to), g);
+            numHistogramPointsReturned.update(data.getData().getPoints().size());
+        } finally {
+            ctx.stop();
+        }
+
+        return data;
     }
 }
