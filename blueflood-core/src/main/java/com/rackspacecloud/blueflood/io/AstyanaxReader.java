@@ -132,12 +132,18 @@ public class AstyanaxReader extends AstyanaxIO {
     }
     
     // todo: this could be the basis for every rollup read method.
+    // todo: A better interface may be to pass the serializer in instead of the class type.
     public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
         AbstractSerializer serializer = NumericSerializer.serializerFor(type);
         // special cases. :( the problem here is that the normal full res serializer returns Number instances instead of
         // SimpleNumber instances.
+        // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
+        // to be known before we ever get to this method (see above comment).
         if (cf == AstyanaxIO.CF_METRICS_FULL)
             serializer = NumericSerializer.simpleNumberSerializer;
+        else if ( cf == AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL)
+            serializer = type.equals(TimerRollup.class) ? NumericSerializer.timerRollupInstance : NumericSerializer.simpleNumberSerializer;
+        
         ColumnList<Long> cols = getNumericRollups(locator, cf, range.start, range.stop);
         Points<T> points = new Points<T>();
         try {

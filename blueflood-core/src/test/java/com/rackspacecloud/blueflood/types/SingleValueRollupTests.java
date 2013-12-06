@@ -32,49 +32,6 @@ public class SingleValueRollupTests {
         Assert.assertEquals(expectedSamples, cumulative.getNumSamplesUnsafe());
     }
     
-    @Test
-    public void testGaugeRollupIdempotence() throws IOException {
-        GaugeRollup gr0 = new GaugeRollup().withGauge(100);
-        GaugeRollup cumulative = GaugeRollup.buildFromGaugeRollups(asPoints(GaugeRollup.class, 0, 10, gr0));
-        Assert.assertEquals(gr0, cumulative);
-    }
-    
-    @Test
-    public void testGaugeRollupGeneration() throws IOException {
-        final int sz = 1000;
-        long[] values = makeRandomNumbers(sz);
-        
-        // ensure first and last are not equal
-        while (values[0] == values[values.length - 1])
-            values = makeRandomNumbers(sz);
-        
-        GaugeRollup[] gauges = new GaugeRollup[values.length];
-        for (int i = 0; i < values.length; i++)
-            gauges[i] = new GaugeRollup().withGauge(values[i]);
-        
-        GaugeRollup cumulative = GaugeRollup.buildFromGaugeRollups(asPoints(GaugeRollup.class, 0, 10, gauges));
-        
-        Assert.assertNotSame(gauges[0], cumulative);
-        Assert.assertEquals(gauges[gauges.length - 1], cumulative);
-    }
-    
-    @Test
-    public void testEqualitiesAreFalseAcrossTypes() {
-        // they hold the same number, but instances should not be identical to each other when their types differ.
-        SingleValueRollup set = new SetRollup().withCount(3L);
-        SingleValueRollup counter = new CounterRollup(32).withCount(3L);
-        SingleValueRollup gauge = new GaugeRollup().withGauge(3L);
-        
-        Assert.assertFalse(set.equals(counter));
-        Assert.assertFalse(counter.equals(set));
-        
-        Assert.assertFalse(counter.equals(gauge));
-        Assert.assertFalse(gauge.equals(counter));
-        
-        Assert.assertFalse(gauge.equals(set));
-        Assert.assertFalse(set.equals(gauge));
-    }
-    
     private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
         Points<T> points = new Points<T>();
         long time = initialTime;

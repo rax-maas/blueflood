@@ -8,12 +8,12 @@ public class CounterRollup extends SingleValueRollup {
         this.numSamples = numSamples;
     }
     
-    public CounterRollup withCount(long count) {
+    public CounterRollup withCount(Number count) {
         return (CounterRollup)this.withValue(count);
     }
     
-    public long getCount() {
-        return getValue().longValue();
+    public Number getCount() {
+        return getValue();
     }
 
     @Override
@@ -22,14 +22,31 @@ public class CounterRollup extends SingleValueRollup {
             return false;
         return this.getValue().equals(((CounterRollup)obj).getValue());
     }
+    
+    public static CounterRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
+        CounterRollup rollup = new CounterRollup(input.getPoints().size());
+        Number count = 0L;
+        for (Points.Point<SimpleNumber> point : input.getPoints().values()) {
+            count = sum(count, (Number)point.getData().getValue());
+        }
+        return rollup.withCount(count);
+    }
 
     public static CounterRollup buildRollupFromCounterRollups(Points<CounterRollup> input) throws IOException {
-        long count = 0;
+        Number count = 0L;
         int numSamples = 0;
         for (Points.Point<CounterRollup> point : input.getPoints().values()) {
-            count += point.getData().getCount();
+            count = sum(count, point.getData().getCount());
             numSamples += point.getData().numSamples;
         }
         return new CounterRollup(numSamples).withCount(count);
+    }
+    
+    private static Number sum(Number x, Number y) {
+        boolean isDouble = x instanceof Double || x instanceof Float || y instanceof Double || y instanceof Float;
+        if (isDouble)
+            return x.doubleValue() + y.doubleValue();
+        else
+            return x.longValue() + y.longValue();
     }
 }

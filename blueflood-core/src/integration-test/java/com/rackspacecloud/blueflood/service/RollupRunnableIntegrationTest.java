@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.types.SetRollup;
@@ -83,12 +84,10 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             long time = i * 30000;
             IMetric metric;
             
-            CounterRollup counter = new CounterRollup(1).withCount(1);
-            metric = new PreaggregatedMetric(time, counterLocator, ttl, counter);
+            metric = new Metric(counterLocator, i, time, ttl, "gigawatts");
             preaggregatedMetrics.add(metric);
 
-            GaugeRollup gauge = new GaugeRollup().withGauge(100 - i);
-            metric = new PreaggregatedMetric(time, gaugeLocator, ttl, gauge);
+            metric = new Metric(gaugeLocator, i, time, ttl, "micromorts");
             preaggregatedMetrics.add(metric);
             
             TimerRollup timer = new TimerRollup()
@@ -101,11 +100,10 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            SetRollup set = new SetRollup().withCount(99);
-            metric = new PreaggregatedMetric(time, setLocator, ttl, set);
+            metric = new Metric(setLocator, i, time, ttl, "furmans");
             preaggregatedMetrics.add(metric);
             
-            metric = new Metric(normalLocator, i, time, ttl, "horses");
+            metric = new Metric(normalLocator, i, time, ttl, "centipawns");
             normalMetrics.add(metric);
         }
         
@@ -150,59 +148,28 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testSetsDoNotGetRolledUp() throws IOException {
-        // full res has 5 samples.
-        Assert.assertEquals(5, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
-        
-        // assert nothing in 5m for this locator.
-        Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
-        
-        RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        SingleRollupReadContext rc = new SingleRollupReadContext(setLocator, range, Granularity.FULL);
-        RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
-        rr.run();
-
-        // assert something in 5m for this locator.
-        while (!rec.doneReading() && !rec.doneWriting()) {
-            batchWriter.drainBatch();
-            try {
-                Thread.sleep(1000l);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        // Here is the departure from other tests: nothing should get rolled up to 5m.
-        Assert.assertEquals(0, reader.getDataToRoll(SetRollup.class,
-                                                    setLocator,
-                                                    range,
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
-    }
-    
-    @Test
     public void testCounterRollup() throws IOException {
-        testRolledupMetric(counterLocator, CounterRollup.class);
+        testRolledupMetric(counterLocator, Integer.class, CounterRollup.class);
     }
     
     @Test
     public void testGaugeRollup() throws IOException {
-        testRolledupMetric(gaugeLocator, GaugeRollup.class);
+        testRolledupMetric(gaugeLocator, Integer.class, GaugeRollup.class);
     }
     
     @Test
     public void testTimerRollup() throws IOException {
-        testRolledupMetric(timerLocator, TimerRollup.class);
+        testRolledupMetric(timerLocator, TimerRollup.class, TimerRollup.class);
     }
     
-    private void testRolledupMetric(Locator locator, Class rollupClass) throws IOException { 
+    @Test
+    public void testSetRollup() throws IOException {
+        testRolledupMetric(setLocator, Integer.class, SetRollup.class);
+    }
+    
+    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 
         // full res has 5 samples.
-        Assert.assertEquals(5, reader.getDataToRoll(rollupClass,
+        Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
                                                     range, 
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());

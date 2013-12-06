@@ -61,10 +61,24 @@ public interface Rollup {
         }
     };
     
+    public static final Type<SimpleNumber, CounterRollup> CounterFromRaw = new Type<SimpleNumber, CounterRollup>() {
+        @Override
+        public CounterRollup compute(Points<SimpleNumber> input) throws IOException {
+            return CounterRollup.buildRollupFromRawSamples(input);
+        }
+    };
+    
     public static final Type<CounterRollup, CounterRollup> CounterFromCounter = new Type<CounterRollup, CounterRollup>() {
         @Override
         public CounterRollup compute(Points<CounterRollup> input) throws IOException {
             return CounterRollup.buildRollupFromCounterRollups(input);
+        }
+    };
+    
+    public static final Type<SimpleNumber, GaugeRollup> GaugeFromRaw = new Type<SimpleNumber, GaugeRollup>() {
+        @Override
+        public GaugeRollup compute(Points<SimpleNumber> input) throws IOException {
+            return GaugeRollup.buildFromRawSamples(input);
         }
     };
     
@@ -74,4 +88,20 @@ public interface Rollup {
             return GaugeRollup.buildFromGaugeRollups(input);
         }
     };
+    
+    public static final Type<SimpleNumber, SetRollup> SetFromRaw = new Type<SimpleNumber, SetRollup>() {
+        @Override
+        public SetRollup compute(Points<SimpleNumber> input) throws IOException {
+            return SetRollup.buildRollupFromRawSamples(input);
+        }
+    };
+    
+    public static final Type<SetRollup, SetRollup> SetFromSet = new Type<SetRollup, SetRollup>() {
+        @Override
+        public SetRollup compute(Points<SetRollup> input) throws IOException {
+            return SetRollup.buildRollupFromSetRollups(input);
+        }
+    };
+    
+    
 }
