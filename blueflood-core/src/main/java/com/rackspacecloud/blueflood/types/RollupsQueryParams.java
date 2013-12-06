@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 
 import java.util.Set;
@@ -25,10 +25,10 @@ public class RollupsQueryParams {
     private int points;
     private Resolution resolution;
     private final Range range;
-    private final Set<OutputSerializer.MetricStat> stats;
+    private final Set<BasicRollupsOutputSerializer.MetricStat> stats;
     private boolean isPoints = false;
 
-    private RollupsQueryParams(long from, long to, Set<OutputSerializer.MetricStat> stats) {
+    private RollupsQueryParams(long from, long to, Set<BasicRollupsOutputSerializer.MetricStat> stats) {
         if (from >= to) {
             throw new IllegalArgumentException("'from' timestamp has to be strictly less than 'to'.");
         }
@@ -38,13 +38,13 @@ public class RollupsQueryParams {
         this.resolution = Resolution.FULL;
     }
 
-    public RollupsQueryParams(long from, long to, int points, Set<OutputSerializer.MetricStat> stats) {
+    public RollupsQueryParams(long from, long to, int points, Set<BasicRollupsOutputSerializer.MetricStat> stats) {
         this(from, to, stats);
         this.isPoints = true;
         this.points = points;
     }
 
-    public RollupsQueryParams(long from, long to, Resolution resolution, Set<OutputSerializer.MetricStat> stats) {
+    public RollupsQueryParams(long from, long to, Resolution resolution, Set<BasicRollupsOutputSerializer.MetricStat> stats) {
         this(from, to, stats);
         this.resolution = resolution;
         this.isPoints = false;
@@ -78,7 +78,7 @@ public class RollupsQueryParams {
         return resolution;
     }
 
-    public Set<OutputSerializer.MetricStat> getStats() {
+    public Set<BasicRollupsOutputSerializer.MetricStat> getStats() {
         return stats;
     }
 }

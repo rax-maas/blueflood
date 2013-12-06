@@ -26,15 +26,15 @@ import org.junit.Test;
 import java.util.*;
 
 public class BatchedMetricsJSONOutputSerializerTest {
-    private final Set<OutputSerializer.MetricStat> filterStats;
+    private final Set<BasicRollupsOutputSerializer.MetricStat> filterStats;
     private static final String tenantId = "879890";
 
     public BatchedMetricsJSONOutputSerializerTest() {
-        filterStats = new HashSet<OutputSerializer.MetricStat>();
-        filterStats.add(OutputSerializer.MetricStat.AVERAGE);
-        filterStats.add(OutputSerializer.MetricStat.MIN);
-        filterStats.add(OutputSerializer.MetricStat.MAX);
-        filterStats.add(OutputSerializer.MetricStat.NUM_POINTS);
+        filterStats = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
+        filterStats.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
+        filterStats.add(BasicRollupsOutputSerializer.MetricStat.MIN);
+        filterStats.add(BasicRollupsOutputSerializer.MetricStat.MAX);
+        filterStats.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
     }
 
     @Test

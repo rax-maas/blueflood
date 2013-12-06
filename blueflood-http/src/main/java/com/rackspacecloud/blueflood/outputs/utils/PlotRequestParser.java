@@ -17,19 +17,19 @@
 package com.rackspacecloud.blueflood.outputs.utils;
 
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
-import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.types.RollupsQueryParams;
 
 import java.util.*;
 
 public class PlotRequestParser {
-    private static final Set<OutputSerializer.MetricStat> defaultStats;
+    private static final Set<BasicRollupsOutputSerializer.MetricStat> defaultStats;
 
     static {
-        defaultStats = new HashSet<OutputSerializer.MetricStat>();
-        defaultStats.add(OutputSerializer.MetricStat.AVERAGE);
-        defaultStats.add(OutputSerializer.MetricStat.NUM_POINTS);
+        defaultStats = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
+        defaultStats.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
+        defaultStats.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
     }
 
     public static RollupsQueryParams parseParams(Map<String, List<String>> params) throws InvalidRequestException {
@@ -64,7 +64,7 @@ public class PlotRequestParser {
             throw new InvalidRequestException("paramter 'to' must be greater than 'from'");
         }
 
-        Set<OutputSerializer.MetricStat> stats = getStatsToFilter(select);
+        Set<BasicRollupsOutputSerializer.MetricStat> stats = getStatsToFilter(select);
 
         if (points != null) {
             return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
@@ -73,18 +73,18 @@ public class PlotRequestParser {
         }
     }
 
-    public static Set<OutputSerializer.MetricStat> getStatsToFilter(List<String> select) {
+    public static Set<BasicRollupsOutputSerializer.MetricStat> getStatsToFilter(List<String> select) {
         if (select == null || select.isEmpty()) {
             return defaultStats;
         } else {
-            Set<OutputSerializer.MetricStat> filters = new HashSet<OutputSerializer.MetricStat>();
+            Set<BasicRollupsOutputSerializer.MetricStat> filters = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
             // handle case when someone does select=average,min instead of select=average&select=min
             for (String stat : select) {
                 if (stat.contains(",")) {
                     List<String> nestedStats = Arrays.asList(stat.split(","));
-                    filters.addAll(OutputSerializer.MetricStat.fromStringList(nestedStats));
+                    filters.addAll(BasicRollupsOutputSerializer.MetricStat.fromStringList(nestedStats));
                 } else {
-                    filters.add(OutputSerializer.MetricStat.fromString(stat));
+                    filters.add(BasicRollupsOutputSerializer.MetricStat.fromString(stat));
                 }
             }
             return filters;

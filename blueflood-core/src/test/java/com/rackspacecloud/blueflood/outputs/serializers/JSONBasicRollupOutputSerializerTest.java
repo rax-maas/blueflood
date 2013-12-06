@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer.MetricStat;
+import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
@@ -30,10 +30,10 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-    public class JSONOutputSerializerTest {
+    public class JSONBasicRollupOutputSerializerTest {
     private final Set<MetricStat> filterStats;
 
-    public JSONOutputSerializerTest() {
+    public JSONBasicRollupOutputSerializerTest() {
         filterStats = new HashSet<MetricStat>();
         filterStats.add(MetricStat.AVERAGE);
         filterStats.add(MetricStat.MIN);
@@ -42,7 +42,7 @@ import java.util.Set;
 
     @Test
     public void testTransformRollupDataAtFullRes() throws Exception {
-        final JSONOutputSerializer serializer = new JSONOutputSerializer();
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown",
                 MetricData.Type.NUMBER);
 
@@ -68,7 +68,7 @@ import java.util.Set;
 
     @Test
     public void testTransformRollupDataForCoarserGran() throws Exception {
-        final JSONOutputSerializer serializer = new JSONOutputSerializer();
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
                 MetricData.Type.NUMBER);
         Set<MetricStat> filters = new HashSet<MetricStat>();
@@ -104,18 +104,18 @@ import java.util.Set;
 
     @Test
     public void testTransformRollupDataString() throws SerializationException{
-        final JSONOutputSerializer serializer = new JSONOutputSerializer();
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown",
                 MetricData.Type.STRING);
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
+
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
         for (int i = 0; i < data.size(); i++ ) {
             final JSONObject dataJSON = (JSONObject) data.get(i);
             final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
 
             Assert.assertEquals(point.getData(), dataJSON.get("value"));
-            Assert.assertEquals(1L, dataJSON.get("numPoints"));
 
             Assert.assertNull(dataJSON.get("average"));
             Assert.assertNull(dataJSON.get("min"));
