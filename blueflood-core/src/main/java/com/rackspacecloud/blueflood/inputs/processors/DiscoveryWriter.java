@@ -16,20 +16,17 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
-
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
@@ -56,10 +52,10 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
     public void registerIO(DiscoveryIO io) {
         discoveryIOs.add(io);
         writeDurationTimers.put(io.getClass(),
-                Metrics.newTimer(io.getClass(), "DiscoveryWriter Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+                Metrics.timer(io.getClass(), "DiscoveryWriter Write Duration")
                 );
         writeErrorMeters.put(io.getClass(),
-                Metrics.newMeter(io.getClass(), "DiscoveryWriter Write Errors", "DiscoveryWriter", TimeUnit.SECONDS)
+                Metrics.meter(io.getClass(), "DiscoveryWriter Write Errors")
                 );
     }
 
@@ -95,7 +91,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 public Boolean call() throws Exception {
                     boolean success = true;
                         for (DiscoveryIO io : discoveryIOs) {
-                            TimerContext actualWriteCtx = writeDurationTimers.get(io.getClass()).time();
+                            Timer.Context actualWriteCtx = writeDurationTimers.get(io.getClass()).time();
                             try {
                                 io.insertDiscovery(metrics);
                             } catch (Exception ex) {

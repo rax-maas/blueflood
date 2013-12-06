@@ -16,34 +16,32 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Util;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<Boolean>> {
         
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
-    private final Timer writeDurationTimer = Metrics.newTimer(BatchWriter.class, "Write Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private final Meter exceededScribeProcessingTime = Metrics.newMeter(BatchWriter.class, "Write Duration Exceeded Timeout", "Rollups", TimeUnit.SECONDS);
+    private final Timer writeDurationTimer = Metrics.timer(BatchWriter.class, "Write Duration");
+    private final Meter exceededScribeProcessingTime = Metrics.meter(BatchWriter.class, "Write Duration Exceeded Timeout");
     private final TimeValue scribeTimeout;
     private final Counter bufferedMetrics;
     private final IngestionContext context;
@@ -66,7 +64,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>,
         
         final AtomicBoolean writeTimedOut = new AtomicBoolean(false);
         final long writeStartTime = System.currentTimeMillis();
-        final TimerContext actualWriteCtx = writeDurationTimer.time();
+        final Timer.Context actualWriteCtx = writeDurationTimer.time();
         
         final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
         

@@ -16,6 +16,12 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.ClusterException;
@@ -23,12 +29,8 @@ import com.rackspacecloud.blueflood.internal.InternalAPI;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.CacheStats;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +41,6 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 // todo: need to go into safety mode if http fetches are taking too long.
 public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
@@ -64,6 +65,10 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     private final int concurrency;
 
     public TtlCache(String label, TimeValue expiration, int cacheConcurrency, final InternalAPI internalAPI) {
+        this(label, expiration, cacheConcurrency, internalAPI, Clock.defaultClock());
+    }
+
+    protected TtlCache(String label, TimeValue expiration, int cacheConcurrency, final InternalAPI internalAPI, Clock clock) {
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format(TtlCache.class.getPackage().getName() + ":type=%s,scope=%s,name=Stats", TtlCache.class.getSimpleName(), label);
@@ -73,8 +78,10 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         } catch (Exception ex) {
             log.error("Unable to register mbean for " + getClass().getName());
         }
-        generalErrorMeter = Metrics.newMeter(TtlCache.class, "Load Errors", label, "Rollups", TimeUnit.MINUTES);
-        httpErrorMeter = Metrics.newMeter(TtlCache.class, "Http Errors", label, "Rollups", TimeUnit.MINUTES);
+
+        httpErrorMeter = Metrics.meter(TtlCache.class, label, "Http Errors");
+        generalErrorMeter = Metrics.getRegistry().register(MetricRegistry.name(TtlCache.class, label, "Load Errors"),
+                new Meter(clock)); // because TtlCacheTest
         
         
         CacheLoader<String, Map<ColumnFamily<Locator, Long>, TimeValue>> loader =
@@ -183,7 +190,8 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     }
 
     public synchronized boolean isSafetyMode() {
-        return generalErrorMeter.oneMinuteRate() > safetyThreshold;
+        // oneMinuteRate is the per-second rate, so multiply by 60.
+        return generalErrorMeter.getOneMinuteRate() * 60d > safetyThreshold;
     }
 
     public synchronized void setSafetyThreshold(double d) { safetyThreshold = d; }

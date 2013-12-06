@@ -16,33 +16,30 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class RollupHandler {
     private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
 
-    protected final Meter rollupsByPointsMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by points", "BF-API", TimeUnit.SECONDS);
-    protected final Meter rollupsByGranularityMeter = Metrics.newMeter(RollupHandler.class, "Get rollups by gran", "BF-API", TimeUnit.SECONDS);
-    protected final Timer metricsForCheckTimer = Metrics.newTimer(RollupHandler.class, "Get metrics for check", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    protected final Timer metricsFetchTimer = Metrics.newTimer(RollupHandler.class, "Get metrics from db", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    protected final Timer rollupsCalcOnReadTimer = Metrics.newTimer(RollupHandler.class, "Rollups calculation on read", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    protected final Histogram numFullPointsReturned = Metrics.newHistogram(RollupHandler.class, "Full res points returned", true);
-    protected final Histogram numRollupPointsReturned = Metrics.newHistogram(RollupHandler.class, "Rollup points returned", true);
+    protected final Meter rollupsByPointsMeter = Metrics.meter(RollupHandler.class, "BF-API", "Get rollups by points");
+    protected final Meter rollupsByGranularityMeter = Metrics.meter(RollupHandler.class, "BF-API", "Get rollups by gran");
+    protected final Timer metricsForCheckTimer = Metrics.timer(RollupHandler.class, "Get metrics for check");
+    protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
+    protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
+    protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
+    protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
 
     protected MetricData getRollupByGranularity(
             String tenantId,
@@ -51,7 +48,7 @@ public class RollupHandler {
             long to,
             Granularity g) {
 
-        final TimerContext ctx = metricsFetchTimer.time();
+        final Timer.Context ctx = metricsFetchTimer.time();
         final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
         final MetricData metricData = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
@@ -60,7 +57,7 @@ public class RollupHandler {
 
         // if Granularity is FULL, we are missing raw data - can't generate that
         if (g != Granularity.FULL && metricData != null) {
-            final TimerContext rollupsCalcCtx = rollupsCalcOnReadTimer.time();
+            final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
 
             long latest = from;
             Map<Long, Points.Point> points = metricData.getData().getPoints();

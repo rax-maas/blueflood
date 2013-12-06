@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Timer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
@@ -38,12 +39,13 @@ import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -63,8 +65,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
     private static final String INSERT_SHARD = "Shard Insert".intern();
     private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
-
-    private static final Meter metricsWritten = Metrics.newMeter(Instrumentation.class, "Full Resolution Metrics Written", "Metrics", TimeUnit.SECONDS);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -106,7 +106,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_FULL);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_FULL);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -132,7 +132,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 }
 
                 insertMetric(metric, mutationBatch);
-                metricsWritten.mark();
+                Instrumentation.markFullResMetricWritten();
             }
             // insert it
             try {
@@ -181,7 +181,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadataValue(Locator locator, String metaKey, Object metaValue) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_METADATA);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_METADATA);
         try {
             keyspace.prepareColumnMutation(CF_METRIC_METADATA, locator, metaKey)
                     .putValue(metaValue, MetadataSerializer.get(), null)
@@ -205,7 +205,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // generic IMetric insertion. All other metric insertion methods could use this one.
     public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
         // todo: need a way of using an interned string.
-        TimerContext ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
+        Timer.Context ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
         try {
@@ -261,7 +261,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_SHARD);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_SHARD);
         try {
             boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -302,7 +302,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(INSERT_ROLLUP_BATCH);
+        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_ROLLUP_BATCH);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();

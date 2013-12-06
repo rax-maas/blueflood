@@ -16,16 +16,15 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.netflix.astyanax.model.Column;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.netflix.astyanax.model.Column;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.core.Timer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -90,8 +89,9 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
 
         Class.forName("com.rackspacecloud.blueflood.service.SingleRollupReadContext"); // Static initializer for the metric
 
-        MetricsRegistry registry = Metrics.defaultRegistry();
-        Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.rackspacecloud.blueflood.service", "RollupService", "Rollup Execution Timer"));
+        MetricRegistry registry = Metrics.getRegistry();
+        Timer rollupsTimer = registry.getTimers().get(MetricRegistry.name(RollupService.class, "Rollup Execution Timer"));
+//        Timer rollupsTimer = (Timer)registry.allMetrics().get(new MetricName("com.rackspacecloud.blueflood.service", "RollupService", "Rollup Execution Timer"));
 
         Assert.assertNotNull(rollupsTimer);
 
@@ -99,12 +99,12 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         long start = System.currentTimeMillis();
         while (true) {
             try { Thread.currentThread().sleep(1000); } catch (Exception ex) { }
-            if (rollupsTimer.count() >= locatorsForTestShard)
+            if (rollupsTimer.getCount() >= locatorsForTestShard)
                 break;
-            Assert.assertTrue(String.format("rollups:%d", rollupsTimer.count()), System.currentTimeMillis() - start < 120000);
+            Assert.assertTrue(String.format("rollups:%d", rollupsTimer.getCount()), System.currentTimeMillis() - start < 120000);
         }
 
         // make sure there were some that were delayed. If not, we need to increase NUM_LOCATORS.
-        Assert.assertTrue(rollupsTimer.count() > 0);
+        Assert.assertTrue(rollupsTimer.getCount() > 0);
     }
 }

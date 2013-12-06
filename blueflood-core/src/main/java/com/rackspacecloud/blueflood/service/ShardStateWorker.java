@@ -16,13 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.*;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.util.JmxGauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +28,6 @@ import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for pushing/pulling shard state. Todo: just bring the two child classes inside this one.
@@ -41,7 +37,7 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     
     protected final Collection<Integer> allShards;
     protected final ShardStateManager shardStateManager;
-    protected final Timer timer = Metrics.newTimer(getClass(), "Stats", TimeUnit.MILLISECONDS, TimeUnit.MINUTES);
+    protected final Timer timer = Metrics.timer(getClass(), "Stats");
     
     private long lastOp = 0L;
     private boolean active = true;
@@ -52,7 +48,6 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private final Counter errors;
     private Gauge activeGauge;
     private Gauge periodGauge;
-    ;
 
     ShardStateWorker(Collection<Integer> allShards, ShardStateManager shardStateManager, TimeValue period) {
         this.shardStateManager = shardStateManager;
@@ -64,17 +59,19 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
             String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName());
             final ObjectName nameObj = new ObjectName(name);
             mbs.registerMBean(this, nameObj);
-            activeGauge = Metrics.newGauge(getClass(), "Active",
+            activeGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Active"),
                     new JmxBooleanGauge(nameObj, "Active"));
-            periodGauge = Metrics.newGauge(RollupService.class, "Period",
-                    new JmxGauge(nameObj, "Period"));
+
+            periodGauge = Metrics.getRegistry().register(MetricRegistry.name(getClass(), "Period"),
+                    new JmxAttributeGauge(nameObj, "Period"));
+
         } catch (Exception exc) {
             // not critical (as in tests), but we want it logged.
             log.error("Unable to register mbean for " + getClass().getSimpleName());
             log.debug(exc.getMessage(), exc);
         }
         
-        errors = Metrics.newCounter(getClass(), "Poll Errors");;
+        errors = Metrics.counter(getClass(), "Poll Errors");
     }    
     
     final public void run() {

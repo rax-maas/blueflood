@@ -16,10 +16,15 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.JmxAttributeGauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.google.common.base.Ticker;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,12 +33,6 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-import com.yammer.metrics.util.JmxGauge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,9 +91,9 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
             },
             new ThreadPoolExecutor.AbortPolicy());
 
-    private final Meter lockAcquisitionFailure = Metrics.newMeter(ZKBasedShardLockManager.class, "Lock acquisition failures", "ZK", TimeUnit.MINUTES);
-    private final Timer lockAcquisitionTimer = Metrics.newTimer(ZKBasedShardLockManager.class, "Lock acquisition timer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private final Meter lockErrors = Metrics.newMeter(ZKBasedShardLockManager.class, "Lock errors", "ZK", TimeUnit.MINUTES);
+    private final Meter lockAcquisitionFailure = Metrics.meter(ZKBasedShardLockManager.class, "Lock acquisition failures");
+    private final com.codahale.metrics.Timer lockAcquisitionTimer = Metrics.timer(ZKBasedShardLockManager.class, "Lock acquisition timer");
+    private final Meter lockErrors = Metrics.meter(ZKBasedShardLockManager.class, "Lock errors");
 
     ZKBasedShardLockManager(String zookeeperCluster, Set<Integer> managedShards) {
         try {
@@ -102,41 +101,45 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
             final String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName() + (id == 0 ? "" : id));
             final ObjectName nameObj = new ObjectName(name);
             mbs.registerMBean(this, nameObj);
-            lockDisinterestedTimeMillisGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Lock Disinterested Time Millis",
-                    new JmxGauge(nameObj, "LockDisinterestedTimeMillis"));
-            minLockHoldTimeMillisGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Min Lock Hold Time Millis",
-                    new JmxGauge(nameObj, "MinLockHoldTimeMillis"));
-            secondsSinceLastScavengeGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Seconds Since Last Scavenge",
-                    new JmxGauge(nameObj, "SecondsSinceLastScavenge"));
-            zkConnectionStatusGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Zk Connection Status",
-                    new JmxGauge(nameObj, "ZkConnectionStatus") {
+            MetricRegistry reg = Metrics.getRegistry();
+
+            lockDisinterestedTimeMillisGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Lock Disinterested Time Millis"),
+                    new JmxAttributeGauge(nameObj, "LockDisinterestedTimeMillis"));
+            minLockHoldTimeMillisGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Min Lock Hold Time Millis"),
+                    new JmxAttributeGauge(nameObj, "MinLockHoldTimeMillis"));
+            secondsSinceLastScavengeGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Seconds Since Last Scavenge"),
+                    new JmxAttributeGauge(nameObj, "SecondsSinceLastScavenge"));
+
+            zkConnectionStatusGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Zk Connection Status"),
+                    new JmxAttributeGauge(nameObj, "ZkConnectionStatus") {
                         @Override
-                        public Object value() {
-                            Object val = super.value();
+                        public Object getValue() {
+                            Object val = super.getValue();
                             if (val.equals("connected")) {
                                 return 1;
                             }
                             return 0;
                         }
                     });
-            heldShardGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Held Shards",
+            heldShardGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Held Shards"),
                     new Gauge<Integer>() {
                         @Override
-                        public Integer value() {
+                        public Integer getValue() {
                             return getHeldShards().size();
                         }
                     });
-            unheldShardGauge = Metrics.newGauge(ZKBasedShardLockManager.class, "Unheld Shards",
+
+            unheldShardGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Unheld Shards"),
                     new Gauge<Integer>() {
                         @Override
-                        public Integer value() {
+                        public Integer getValue() {
                             return getUnheldShards().size();
                         }
                     });
-            errorShardGauge =  Metrics.newGauge(ZKBasedShardLockManager.class, "Error Shards",
+            errorShardGauge = reg.register(MetricRegistry.name(ZKBasedShardLockManager.class, "Error Shards"),
                     new Gauge<Integer>() {
                         @Override
-                        public Integer value() {
+                        public Integer getValue() {
                             return getErrorShards().size();
                         }
                     });
@@ -558,7 +561,7 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
                         return false;
                     else {
                         log.debug("Trying ZK lock for " + shard);
-                        TimerContext ctx = lockAcquisitionTimer.time();
+                        com.codahale.metrics.Timer.Context ctx = lockAcquisitionTimer.time();
                         if (mutex.isAcquiredInThisProcess()) {
                             if (log.isTraceEnabled())
                                 log.trace("Lock already acquired for " + shard);

@@ -16,6 +16,14 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Histogram;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.CodedOutputStream;
+import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.rackspacecloud.blueflood.exceptions.SerializationException;
+import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
+import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
@@ -30,8 +38,6 @@ import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SingleValueRollup;
 import com.rackspacecloud.blueflood.types.TimerRollup;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -61,10 +67,10 @@ public class NumericSerializer {
     private static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     private static AbstractSerializer<SingleValueRollup> singleValueRollup = new SingleValueRollupSerializer();
     
-    private static Histogram fullResSize = Metrics.newHistogram(NumericSerializer.class, "Full Resolution Metric Size");
-    private static Histogram rollupSize = Metrics.newHistogram(NumericSerializer.class, "Rollup Metric Size");
-    private static Histogram singleValueRollupSize = Metrics.newHistogram(NumericSerializer.class, "Counter Set Gauge Metric Size");
-    private static Histogram timerRollupSize = Metrics.newHistogram(NumericSerializer.class, "Timer Metric Size");
+    private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
+    private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
+    private static Histogram singleValueRollupSize = Metrics.histogram(NumericSerializer.class, "Counter Set Gauge Metric Size");
+    private static Histogram timerRollupSize = Metrics.histogram(NumericSerializer.class, "Timer Metric Size");
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
