@@ -122,7 +122,7 @@ class RollupRunnable implements Runnable {
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
             //Emit a rollup event to eventemitter
-            RollupEventEmitter.getInstance().emit(singleRollupReadContext.getRollupGranularity().coarser().name(), new RollupEmission(singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator())));
+            RollupEventEmitter.getInstance().emit("rollup", new RollupEmission(singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()), singleRollupReadContext.getRollupGranularity().coarser().name()));
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());

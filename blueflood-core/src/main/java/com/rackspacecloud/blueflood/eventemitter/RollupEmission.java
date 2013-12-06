@@ -7,11 +7,13 @@ public class RollupEmission {
     private Locator locator;
     private Rollup rollup;
     private String units;
+    private String granularityName;
 
-    public RollupEmission(Locator loc, Rollup rollup, String units) {
+    public RollupEmission(Locator loc, Rollup rollup, String units, String gran) {
         this.locator = loc;
         this.rollup = rollup;
         this.units = units;
+        this.granularityName = gran;
     }
 
     public Rollup getRollup() {
@@ -36,5 +38,13 @@ public class RollupEmission {
 
     public void setUnits(String units) {
         this.units = units;
+    }
+
+    public String getGranularityName() {
+        return granularityName;
+    }
+
+    public void setGranularityName(String granularityName) {
+        this.granularityName = granularityName;
     }
 }
