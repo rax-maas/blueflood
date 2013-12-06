@@ -21,8 +21,12 @@ public class GaugeRollup extends BasicRollup {
         return latestValue.getTimestamp();
     }
     
-    public Number getLatestValue() {
-        return (Number)latestValue.getData().getValue();
+    public Number getLatestNumericValue() {
+        return latestValue.getData().getValue();
+    }
+    
+    public SimpleNumber getLatestValue() {
+        return latestValue.getData();
     }
 
     public static GaugeRollup buildFromRawSamples(Points<SimpleNumber> input) throws IOException {

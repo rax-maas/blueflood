@@ -267,10 +267,10 @@ public class NumericSerializer {
                 GaugeRollup gauge = (GaugeRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
                 sz += 1; // type of latest value.
-                if (gauge.getLatestValue() instanceof Long || gauge.getLatestValue() instanceof Integer)
-                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestValue().longValue());
-                else if (gauge.getLatestValue() instanceof Double || gauge.getLatestValue() instanceof Float)
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestValue().doubleValue());
+                if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
+                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestNumericValue().longValue());
+                else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
                 return sz;
                 
             case Type.B_COUNTER:
@@ -392,7 +392,7 @@ public class NumericSerializer {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         serializeRollup(rollup, protobufOut);
         protobufOut.writeRawVarint64(rollup.getTimestamp());
-        putUnversionedDoubleOrLong(rollup.getLatestValue(), protobufOut);
+        putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
     }
     
     private static GaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {

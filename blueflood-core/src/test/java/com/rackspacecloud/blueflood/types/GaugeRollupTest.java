@@ -43,14 +43,14 @@ public class GaugeRollupTest {
         Assert.assertTrue(GaugeRollup.buildFromRawSamples(set0).equals(GaugeRollup.buildFromRawSamples(set0)));
         Assert.assertFalse(g0.equals(g1));
         
-        Assert.assertEquals(20L, g0.getLatestValue());
-        Assert.assertEquals(50L, g1.getLatestValue());
+        Assert.assertEquals(20L, g0.getLatestNumericValue());
+        Assert.assertEquals(50L, g1.getLatestNumericValue());
         
         Assert.assertEquals(40L, g2.getAverage().toLong());
         Assert.assertEquals(7, g2.getCount());
         Assert.assertEquals(10L, g2.getMinValue().toLong());
         Assert.assertEquals(70L, g2.getMaxValue().toLong());
-        Assert.assertEquals(50L, g2.getLatestValue());
+        Assert.assertEquals(50L, g2.getLatestNumericValue());
         Assert.assertEquals(variance(10,20,30,40,50,60,70), g2.getVariance().toDouble());
         
         
