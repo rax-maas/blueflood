@@ -17,60 +17,47 @@
 package com.rackspacecloud.blueflood.types;
 
 public class SimpleNumber implements Rollup {
-    private int intValue;
-    private double doubleValue;
-    private long longValue;
-    private Type type;
+    private final Number value;
+    private final Type type;
 
     enum Type {
-        INTEGER("I"),
-        LONG("L"),
-        DOUBLE("D");
-
-        private Type(String rep) {
-            typeVal = rep;
-        }
-
-        private final String typeVal;
+        INTEGER,
+        LONG,
+        DOUBLE
     }
 
     public SimpleNumber(Object value) {
+        if (value == null)
+            throw new NullPointerException("value cannot be null");
         if (value instanceof Integer) {
-            this.intValue = (Integer) value;
             this.type = Type.INTEGER;
+            this.value = (Number)value;
         } else if (value instanceof Long) {
-            this.longValue = (Long) value;
             this.type = Type.LONG;
+            this.value = (Number)value;
         } else if (value instanceof Double) {
-            this.doubleValue = (Double) value;
             this.type = Type.DOUBLE;
+            this.value = (Number)value;
+        } else if (value instanceof SimpleNumber) {
+            this.type = ((SimpleNumber)value).type;
+            this.value = ((SimpleNumber)value).value;
         } else {
             throw new IllegalArgumentException("Unexpected argument type " + value.getClass() + ", expected number.");
         }
     }
 
-    public boolean isFloatingPoint() {
-        return this.type.equals(Type.DOUBLE);
-    }
-
-    public Object getValue() {
-        if (type.equals(Type.LONG)) {
-            return longValue;
-        } else if (type.equals(Type.INTEGER)) {
-            return intValue;
-        } else {
-            return doubleValue;
-        }
+    public Number getValue() {
+        return value;
     }
 
     public String toString() {
         switch (type) {
             case INTEGER:
-                return String.format("%d (int)", intValue);
+                return String.format("%d (int)", value.intValue());
             case LONG:
-                return String.format("%d (long)", longValue);
+                return String.format("%d (long)", value.longValue());
             case DOUBLE:
-                return String.format("%s (double)", doubleValue);
+                return String.format("%s (double)", value.toString());
             default:
                 return super.toString();
         }
@@ -78,16 +65,7 @@ public class SimpleNumber implements Rollup {
 
     @Override
     public int hashCode() {
-        if (type.equals(Type.LONG))
-            return (int)(longValue ^ (longValue >>> 32));
-        else if (type.equals(Type.INTEGER))
-            return intValue;
-        else if (type.equals(Type.DOUBLE)) {
-            long bits = Double.doubleToLongBits(doubleValue);
-            return (int)(bits ^ (bits >>> 32));
-        } else {
-            throw new IllegalArgumentException("Invalid type: " + type);
-        }
+        return value.hashCode();
     }
 
     @Override
@@ -95,10 +73,6 @@ public class SimpleNumber implements Rollup {
         if (obj == null || !(obj instanceof SimpleNumber))
             return false;
         SimpleNumber other = (SimpleNumber)obj;
-        // just relying on getValue().equals() is not sufficient, as it fails on natural long and in comparisons.
-        if (this.type != other.type)
-            return false;
-        return getValue() == other.getValue(); // works because we are comparing primitives. woo.
-        
+        return other.value == this.value || other.value.equals(this.value);
     }
 }
