@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -32,10 +34,7 @@ import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.types.RollupsQueryParams;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
@@ -49,12 +48,12 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
 
-    private static final Timer histFetchTimer = Metrics.newTimer(HttpRollupsQueryHandler.class,
-            "Handle HTTP request for histograms", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
-    private static final Meter histByPointsMeter = Metrics.newMeter(RollupHandler.class, "Get histograms by points",
-            "BF-API", TimeUnit.SECONDS);
-    private static final Meter histByGranularityMeter = Metrics.newMeter(RollupHandler.class, "Get histograms by gran",
-            "BF-API", TimeUnit.SECONDS);
+    private static final Timer histFetchTimer = Metrics.timer(HttpRollupsQueryHandler.class,
+            "Handle HTTP request for histograms");
+    private static final Meter histByPointsMeter = Metrics.meter(RollupHandler.class, "Get histograms by points",
+            "BF-API");
+    private static final Meter histByGranularityMeter = Metrics.meter(RollupHandler.class, "Get histograms by gran",
+            "BF-API");
 
     public HttpHistogramQueryHandler() {
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
