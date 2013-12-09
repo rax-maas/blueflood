@@ -16,25 +16,22 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
+import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 public class HistogramRollupRunnable extends RollupRunnable {
     private static final Logger log = LoggerFactory.getLogger(HistogramRollupRunnable.class);
 
-    private static final Timer calcTimer = Metrics.newTimer(RollupRunnable.class, "Read And Calculate Histogram",
-            TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer calcTimer = Metrics.getRegistry().timer(MetricRegistry.name(RollupRunnable.class, "Read And Calculate Histogram"));
 
     public HistogramRollupRunnable(RollupExecutionContext executionContext,
                                    SingleRollupReadContext singleRollupReadContext,
@@ -66,7 +63,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                     singleRollupReadContext.getLocator()});
         }
 
-        TimerContext timerContext = singleRollupReadContext.getExecuteTimer().time();
+        Timer.Context timerContext = singleRollupReadContext.getExecuteTimer().time();
         try {
             // Read data and compute rollup
             Points<HistogramRollup> input;
@@ -89,7 +86,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                 srcCF = AstyanaxIO.CF_METRICS_HIST_5M;
             }
 
-            TimerContext calcrollupContext = calcTimer.time();
+            Timer.Context calcrollupContext = calcTimer.time();
             try {
                 input = AstyanaxReader.getInstance().getDataToRoll(
                             HistogramRollup.class,

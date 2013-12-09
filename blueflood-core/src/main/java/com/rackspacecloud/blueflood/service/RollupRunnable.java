@@ -36,7 +36,7 @@ class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
     private static final Timer writeTimer = Metrics.timer(RollupRunnable.class, "Write Rollup");
-    private final SingleRollupReadContext singleRollupReadContext;
+    protected final SingleRollupReadContext singleRollupReadContext;
     protected static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
             new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
             Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
