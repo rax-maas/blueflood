@@ -40,25 +40,6 @@ public class Conversions {
     private static final Logger log = LoggerFactory.getLogger(Conversions.class);
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
     
-    public static IMetric asMetric(Stat stat) {
-        Rollup rollup = null;
-        switch (stat.getType()) {
-            case SET:
-                rollup = new SetRollup().withCount(stat.getValue().longValue());
-                return new PreaggregatedMetric(stat.getTimestamp() * 1000, stat.getLocator(), DEFAULT_TTL, rollup);
-            case GAUGE:
-                rollup = new GaugeRollup().withGauge(stat.getValue());
-                return new PreaggregatedMetric(stat.getTimestamp() * 1000, stat.getLocator(), DEFAULT_TTL, rollup);
-            case COUNTER:
-                rollup = new CounterRollup(1).withCount(stat.getValue().longValue());
-                return new PreaggregatedMetric(stat.getTimestamp() * 1000, stat.getLocator(), DEFAULT_TTL, rollup);
-            case UNKNOWN:
-                return new Metric(stat.getLocator(), stat.getValue(), stat.getTimestamp() * 1000, DEFAULT_TTL, null);   
-            default:
-                return null; // timer make it in?
-        }   
-    }
-    
     public static IMetric asTimerMetric(Locator locator, Collection<Stat> stats) {
     return new PreaggregatedMetric(
             stats.iterator().next().getTimestamp() * 1000,
@@ -146,17 +127,11 @@ public class Conversions {
                     log.debug("Invalid percentile {} {}", entry.getKey(), Joiner.on(",").join(entry.getValue().keySet()));
                 }
                 double pctMean= 0;
-                Long pctSum = 0L;
-                Number pctUpper = 0;
                 for (Map.Entry<String, Number> pct : entry.getValue().entrySet()) {
                     if ("mean".equals(pct.getKey()))
                         pctMean = pct.getValue().doubleValue();
-                    else if ("sum".equals(pct.getKey()))
-                        pctSum = pct.getValue().longValue();
-                    else if ("upper".equals(pct.getKey()))
-                        pctUpper = pct.getValue();
                 }
-                rollup.setPercentile(entry.getKey(), pctMean, pctSum, pctUpper);
+                rollup.setPercentile(entry.getKey(), pctMean);
             }
             
             return rollup;
@@ -170,7 +145,7 @@ public class Conversions {
         for (StatType type : StatType.SIMPLE_TYPES) {
             for (Stat stat : stats.getStats(type)) {
                 if (stat.isValid()) {
-                    IMetric metric = Conversions.asMetric(stat);
+                    IMetric metric = new Metric(stat.getLocator(), stat.getValue(), stat.getTimestamp() * 1000, DEFAULT_TTL, null);
                     group.addMetric(metric);
                 }
             }

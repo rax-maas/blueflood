@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.RollupService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.ShardStateServices;
@@ -133,7 +134,7 @@ public class CarbonCompatibleIngest {
     
     public static void main(String args[]) {
         try {
-            Configuration.init();
+            Configuration.getInstance();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
             System.exit(-1);
@@ -141,7 +142,7 @@ public class CarbonCompatibleIngest {
         
         String bindAddr = getListenAddress();
         int bindPort = getListenPort();
-        final ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards(Configuration.getStringProperty("SHARDS")));
+        final ScheduleContext context = new ScheduleContext(System.currentTimeMillis(), Util.parseShards(Configuration.getInstance().getStringProperty(CoreConfig.SHARDS)));
         
         // time synchronization.
         Timer serverTimeUpdate = new java.util.Timer("Server Time Syncer", true);
@@ -152,10 +153,10 @@ public class CarbonCompatibleIngest {
             }
         }, 100, 500);
 
-        if (Configuration.getBooleanProperty("INGEST_MODE"))
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.INGEST_MODE))
             startIngestion(context, bindAddr, bindPort);
         
-        if (Configuration.getBooleanProperty("ROLLUP_MODE"))
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE))
             startRollups(context);
     }
     
@@ -197,19 +198,11 @@ public class CarbonCompatibleIngest {
     }
     
     
-    // todo: these don't belong in Configuration.java, but they belong somewhere other than here. 
-    
     private static String getListenAddress() {
-        String addr = Configuration.getStringProperty("GRAPHITE_INGEST_ADDRESS");
-        if (addr == null)
-            addr = "127.0.0.1"; // sorry, folks.
-        return addr;
+        return Configuration.getInstance().getStringProperty(StatsdConfig.GRAPHITE_INGEST_ADDRESS);
     }
     
     private static int getListenPort() {
-        String portStr = Configuration.getStringProperty("GRAPHITE_INGEST_PORT");
-        if (portStr == null)
-            portStr = "8126";
-        return Integer.parseInt(portStr);
+        return Integer.parseInt(Configuration.getInstance().getStringProperty(StatsdConfig.GRAPHITE_INGEST_PORT));
     }
 }
