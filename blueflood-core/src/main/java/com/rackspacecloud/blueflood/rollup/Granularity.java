@@ -205,9 +205,12 @@ public class Granularity {
         };
     }
 
-    /** find the granularity in the interval that will yield a number of data points that are close to $points. T
-     * The number of data points returned may be less than requested because the next finer resolution would return
-     * too many points.
+    /**
+     * Look for the granularity that would generate the density of data points closest to the value desired. For
+     * example, if 500 points were requested, it is better to return 1000 points (2x more than were requested)
+     * than it is to return 100 points (5x less than were requested). Our objective is to generate reasonable
+     * looking graphs.
+     *
      * @param from beginning of interval (millis)
      * @param to end of interval (millis)
      * @param points count of desired data points
@@ -218,21 +221,27 @@ public class Granularity {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
 
-        // look for the granularity that would generate the number of data points closest to the value desired.
-        // for FULL, assume 1 data p oint every 30s (the min timeout).
-        int closest = Integer.MAX_VALUE;
+        double requestedDuration = to - from;
+        double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
         
         for (Granularity g : Granularity.granularities()) {
-            int diff = 0;
-            // deciding when to use full resolution is tricky because we don't know the period of the check in question.
-            // assume the minimum was selected and go from there.
-            if (g == Granularity.FULL)
-                diff = (int)Math.abs(points - ((to-from)/ MIN_PERIOD_MILLIS));
-            else
-                diff = (int)Math.abs(points - ((to-from)/g.milliseconds())); 
-            if (diff < closest) {
-                closest = diff;
+            // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
+            // period and go from there.
+            long period = (g == Granularity.FULL) ? MIN_PERIOD_MILLIS : g.milliseconds();
+            double providedPoints = requestedDuration / period;
+            double positiveRatio;
+
+            // Generate a ratio >= 1 of either (points requested / points provided by this granularity) or the inverse.
+            // Think of it as an "absolute ratio". Our goal is to minimize this ratio.
+            if (providedPoints > points) {
+                positiveRatio = providedPoints / points;
+            } else {
+                positiveRatio = points / providedPoints;
+            }
+
+            if (positiveRatio < minimumPositivePointRatio) {
+                minimumPositivePointRatio = positiveRatio;
                 gran = g;
             }
         }
