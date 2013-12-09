@@ -103,15 +103,7 @@ public class Granularity {
     }
 
     public boolean isCoarser(Granularity other) {
-        int myIndex = indexOf(this);
-        int otherIndex = indexOf(other);
-
-        if (myIndex != -1 && otherIndex != -1) {
-            return myIndex > otherIndex;
-        }
-
-        throw new RuntimeException("Invalid granularity comparison, this = " + this.toString()
-                + ", other = " + other.toString());
+        return indexOf(this) > indexOf(other);
     }
 
     private int indexOf(Granularity gran) {
@@ -121,7 +113,7 @@ public class Granularity {
             }
         }
 
-        return -1;
+        throw new RuntimeException("Granularity " + gran.toString() + " not present in granularities list.");
     }
 
     // todo: needs explanation.
