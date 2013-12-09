@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Counter;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -26,15 +27,10 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -63,7 +59,7 @@ public class HttpMetricsIngestionServer {
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
     private ScheduleContext context;
-    private final Counter bufferedMetrics = Metrics.newCounter(HttpMetricsIngestionServer.class, "Buffered Metrics");
+    private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
 

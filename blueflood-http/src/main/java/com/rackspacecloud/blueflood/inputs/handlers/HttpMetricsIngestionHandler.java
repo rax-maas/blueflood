@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
@@ -23,10 +24,8 @@ import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
@@ -51,8 +49,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private final TimeValue timeout;
 
     // Metrics
-    private static final Timer handlerTimer = Metrics.newTimer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer",
-            TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, Boolean> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -66,7 +63,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final String tenantId = request.getHeader("tenantId");
         JSONMetricsContainer jsonMetricsContainer = null;
 
-        final TimerContext timerContext = handlerTimer.time();
+        final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
             List<JSONMetricsContainer.JSONMetric> jsonMetrics =

@@ -16,10 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Timer;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class ShardStatePuller extends ShardStateWorker {
     }
 
     public void performOperation() {
-        TimerContext ctx = timer.time();
+        Timer.Context ctx = timer.time();
         try {
             AstyanaxReader reader = AstyanaxReader.getInstance();
             reader.getAndUpdateAllShardStates(shardStateManager, shardStateManager.getManagedShards());

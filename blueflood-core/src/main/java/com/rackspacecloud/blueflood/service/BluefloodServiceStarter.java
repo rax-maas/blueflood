@@ -16,22 +16,14 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.reporting.GraphiteReporter;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
@@ -214,15 +206,8 @@ public class BluefloodServiceStarter {
         // check that we have cassandra hosts
         validateCassandraHosts();
 
-        if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
-            // this IF is a hack around the fact that we don't have graphite running in dev or staging environments
-            final MetricsRegistry restartRegistry = new MetricsRegistry();
-            final Gauge restartGauge = new RestartGauge(restartRegistry, RollupService.class);
-            GraphiteReporter.enable(restartRegistry, 60, TimeUnit.SECONDS,
-                    config.getStringProperty(CoreConfig.GRAPHITE_HOST),
-                    config.getIntegerProperty(CoreConfig.GRAPHITE_PORT),
-                    config.getStringProperty(CoreConfig.GRAPHITE_PREFIX));
-        }
+        // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
+        new RestartGauge(Metrics.getRegistry(), RollupService.class);
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));

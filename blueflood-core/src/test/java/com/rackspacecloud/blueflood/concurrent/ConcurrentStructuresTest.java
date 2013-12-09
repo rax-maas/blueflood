@@ -95,7 +95,8 @@ public class ConcurrentStructuresTest {
         Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
         Assert.assertEquals(2, threadNames.size());
-        Assert.assertEquals(threadNames.get(0), threadNames.get(1));
+        Assert.assertEquals("foo-0", threadNames.get(0));
+        Assert.assertEquals("foo-2-0", threadNames.get(1));
     }
 
     @Test

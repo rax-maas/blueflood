@@ -16,12 +16,12 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,19 +30,28 @@ import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class Instrumentation implements InstrumentationMBean {
-    private static QueryTimers timers = new QueryTimers();
-    private static Meter writeErrMeter = Metrics.newMeter(Instrumentation.class, "Cassandra Write Errors", "Writes", TimeUnit.MINUTES);
-    private static Meter readErrMeter = Metrics.newMeter(Instrumentation.class, "Cassandra Read Errors", "Reads", TimeUnit.MINUTES);
     private static final Logger log = LoggerFactory.getLogger(Instrumentation.class);
+    private static QueryTimers timers = new QueryTimers();
+    private static final Meter writeErrMeter;
+    private static final Meter readErrMeter;
+
     // One-off meters
-    private static Meter readStringsNotFound = Metrics.newMeter(Instrumentation.class, "String Metrics Not Found", "Operations", TimeUnit.MINUTES);
-    private static Meter scanAllColumnFamiliesMeter = Metrics.newMeter(Instrumentation.class, "Scan all ColumnFamilies", "Scans", TimeUnit.MINUTES);
-    private static Meter allPoolsExhaustedException = Metrics.newMeter(Instrumentation.class, "All Pools Exhausted", "Exceptions", TimeUnit.SECONDS);
+    private static final Meter readStringsNotFound;
+    private static final Meter scanAllColumnFamiliesMeter;
+    private static final Meter allPoolsExhaustedException;
+    private static final Meter fullResMetricWritten;
 
     static {
+        MetricRegistry reg = Metrics.getRegistry();
+        Class kls = Instrumentation.class;
+        writeErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Write Errors"));
+        readErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Read Errors"));
+        readStringsNotFound = reg.meter(MetricRegistry.name(kls, "String Metrics Not Found"));
+        scanAllColumnFamiliesMeter = reg.meter(MetricRegistry.name(kls, "Scan all ColumnFamilies"));
+        allPoolsExhaustedException = reg.meter(MetricRegistry.name(kls, "All Pools Exhausted"));
+        fullResMetricWritten = reg.meter(MetricRegistry.name(kls, "Full Resolution Metrics Written"));
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
                 final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", Instrumentation.class.getSimpleName());
@@ -55,7 +64,7 @@ public class Instrumentation implements InstrumentationMBean {
 
     private Instrumentation() {/* Used for JMX exposure */}
 
-    public static TimerContext getTimerContext(String query) {
+    public static Timer.Context getTimerContext(String query) {
         return timers.getTimerContext(query);
     }
 
@@ -89,11 +98,12 @@ public class Instrumentation implements InstrumentationMBean {
 
     private static class QueryTimers {
         private final Map<String, Timer> histograms = new HashMap<String, Timer>();
+        private final MetricRegistry registry = Metrics.getRegistry();
 
-        public TimerContext getTimerContext(String query) {
+        public Timer.Context getTimerContext(String query) {
             synchronized (query) {
                 if (!histograms.containsKey(query)) {
-                    histograms.put(query, Metrics.newTimer(Instrumentation.class, query, TimeUnit.MILLISECONDS, TimeUnit.SECONDS));
+                    histograms.put(query, registry.timer(MetricRegistry.name(Instrumentation.class, query)));
                 }
             }
             return histograms.get(query).time();
@@ -106,6 +116,10 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markScanAllColumnFamilies() {
         scanAllColumnFamiliesMeter.mark();
+    }
+
+    public static void markFullResMetricWritten() {
+        fullResMetricWritten.mark();
     }
 }
 

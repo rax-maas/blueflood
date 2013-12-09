@@ -16,21 +16,19 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Timer;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 public class RollupBatchWriteRunnable  implements Runnable {
     private final RollupExecutionContext executionContext;
     private final ArrayList<SingleRollupWriteContext> writeContexts;
-    private static final Histogram rollupsPerBatch = Metrics.newHistogram(RollupService.class, "Rollups Per Batch");
-    private static final Timer batchWriteTimer = Metrics.newTimer(RollupService.class, "Rollup Batch Write", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Per Batch");
+    private static final Timer batchWriteTimer = Metrics.timer(RollupService.class, "Rollup Batch Write");
 
     public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts, RollupExecutionContext executionContext) {
         this.writeContexts = writeContexts;
@@ -39,7 +37,7 @@ public class RollupBatchWriteRunnable  implements Runnable {
 
     @Override
     public void run() {
-        TimerContext ctx = batchWriteTimer.time();
+        Timer.Context ctx = batchWriteTimer.time();
         try {
             AstyanaxWriter.getInstance().insertRollups(writeContexts);
         } catch (ConnectionException e) {

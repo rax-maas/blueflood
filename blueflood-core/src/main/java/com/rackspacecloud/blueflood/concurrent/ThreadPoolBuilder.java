@@ -21,11 +21,14 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadPoolBuilder {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolBuilder.class);
-
+    private static final Map<String, AtomicInteger> nameMap = new ConcurrentHashMap<String, AtomicInteger>();
+    private static final String DEFAULT_NAME = "Threadpool";
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
     private int queueSize = 0;
@@ -37,7 +40,8 @@ public class ThreadPoolBuilder {
             log.error(e.getMessage(), e);
         }
     };
-    private String name = "Thread";
+
+    private String name = DEFAULT_NAME;
 
     public ThreadPoolBuilder() {
 
@@ -78,6 +82,12 @@ public class ThreadPoolBuilder {
         if (name.indexOf("%d") < 0) {
             name = name + "-%d";
         }
+        if (!nameMap.containsKey(name)) {
+            nameMap.put(name, new AtomicInteger(2));
+        } else {
+            // unique threadpool names required for instrumentation
+            name = name.replace("%d", "" + nameMap.get(name).getAndIncrement() + "-%d");
+        }
         this.name = name;
         return this;
 
@@ -89,6 +99,9 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolExecutor build() {
+        if (name.equals(DEFAULT_NAME)) {
+            this.withName(name); // causes pool to have a unique name
+        }
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
         final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
                     new LinkedBlockingQueue<Runnable>();

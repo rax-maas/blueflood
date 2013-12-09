@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Timer;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
@@ -36,7 +37,6 @@ import com.rackspacecloud.blueflood.service.ShardStateManager;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(GET_METADATA);
+        Timer.Context ctx = Instrumentation.getTimerContext(GET_METADATA);
         try {
             final ColumnList<String> results = keyspace.prepareQuery(CF_METRIC_METADATA)
                     .getKey(locator)
@@ -171,7 +171,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        TimerContext ctx = Instrumentation.getTimerContext(GET_ALL_SHARDS);
+        Timer.Context ctx = Instrumentation.getTimerContext(GET_ALL_SHARDS);
         try {
             for (int shard : shards) {
                 RowQuery<Long, String> query = keyspace
@@ -205,7 +205,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
         ColumnList<Long> columns;
-        TimerContext ctx = Instrumentation.getTimerContext(GET_NUMERIC_ROLLUPS);
+        Timer.Context ctx = Instrumentation.getTimerContext(GET_NUMERIC_ROLLUPS);
         try {
             RowQuery<Locator, Long> query = keyspace
                     .prepareQuery(srcCF)
@@ -229,7 +229,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
         ColumnList<Long> columns;
-        TimerContext ctx = Instrumentation.getTimerContext(GET_STRING_METRICS);
+        Timer.Context ctx = Instrumentation.getTimerContext(GET_STRING_METRICS);
         try {
             RowQuery<Locator, Long> query = keyspace
                     .prepareQuery(CF_METRICS_STRING)
@@ -250,7 +250,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public ColumnList<Locator> getAllLocators(long shard) {
-        TimerContext ctx = Instrumentation.getTimerContext(LOCATOR_ITERATOR);
+        Timer.Context ctx = Instrumentation.getTimerContext(LOCATOR_ITERATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CF_METRICS_LOCATOR)
@@ -387,7 +387,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public Column<Long> getLastMetricFromMetricsString(Locator locator)
             throws Exception {
         Column<Long> metric = null;
-        TimerContext ctx = Instrumentation.getTimerContext(GET_LAST_METRICS_VALUE);
+        Timer.Context ctx = Instrumentation.getTimerContext(GET_LAST_METRICS_VALUE);
 
         try {
             ColumnList<Long> query = keyspace
