@@ -120,6 +120,30 @@ public class GranularityTest {
         }
     }
 
+    @Test
+    public void testCommonPointRequests() {
+        long HOUR = 3600000;
+        long DAY = 24 * HOUR;
+
+        // 300 points covering 1 hour -> FULL (120 points)
+        Assert.assertEquals(Granularity.FULL, Granularity.granularityFromPointsInInterval(0, HOUR, 300));
+
+        // 300 points covering 8 hours -> MIN_5 (96 points - 8 hours is actually a really unfortunate interval)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 8 * HOUR, 300));
+
+        // 300 points covering 12 hours -> MIN_5 (144 points)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 12 * HOUR, 300));
+
+        // 300 points covering 1 day -> MIN_5 (288 points)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, DAY, 300));
+
+        // 300 points covering 1 week -> MIN_20 (504 points)
+        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval(0, 7 * DAY, 300));
+
+        // 300 points covering 1 month -> MIN_240 (180 points)
+        Assert.assertEquals(Granularity.MIN_240, Granularity.granularityFromPointsInInterval(0, 30 * DAY, 300));
+    }
+
     @Test(expected = GranularityException.class)
     public void testTooCoarse() throws Exception {
         Granularity g = Granularity.FULL;
