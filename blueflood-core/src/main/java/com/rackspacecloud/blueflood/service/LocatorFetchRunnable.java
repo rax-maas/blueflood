@@ -28,6 +28,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -43,8 +44,9 @@ class LocatorFetchRunnable implements Runnable {
     private final String parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
-    private static final com.codahale.metrics.Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
-
+    private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private static final boolean enableHistograms = Configuration.getInstance().
+            getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
         this.rollupReadExecutor = rollupReadExecutor;
@@ -60,10 +62,9 @@ class LocatorFetchRunnable implements Runnable {
         final int parentSlot = Granularity.slotFromKey(parentSlotKey);
         final int shard = Granularity.shardFromKey(parentSlotKey);
         final Range parentRange = gran.deriveRange(parentSlot, serverTime);
-        Granularity finerGran;
 
         try {
-            finerGran = gran.finer();
+            gran.finer();
         } catch (Exception ex) {
             log.error("No finer granularity available than " + gran);
             return;
@@ -91,7 +92,7 @@ class LocatorFetchRunnable implements Runnable {
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
-                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, finerGran);
+                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
             } catch (Throwable any) {
@@ -100,6 +101,27 @@ class LocatorFetchRunnable implements Runnable {
                 executionContext.decrementReadCounter();
                 log.error(any.getMessage(), any);
                 log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
+            }
+
+            if (enableHistograms) {
+                // Also, compute histograms. Histograms for > 5 MIN granularity are always computed from 5 MIN histograms.
+                try {
+                    executionContext.incrementReadCounter();
+                    final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator,
+                            parentRange, gran);
+                    rollupReadExecutor.execute(new HistogramRollupRunnable(executionContext, singleRollupReadContext,
+                            rollupBatchWriter));
+                    rollCount += 1;
+                } catch (RejectedExecutionException ex) {
+                    executionContext.markUnsuccessful(ex); // We should ideally only recompute the failed locators alone.
+                    executionContext.decrementReadCounter();
+                    log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
+                    log.error("Exception: ", ex);
+                } catch (Exception ex) { // do not retrigger rollups when they fail. histograms are fine to be lost.
+                    executionContext.decrementReadCounter();
+                    log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
+                    log.error("Exception: ", ex);
+                }
             }
         }
         

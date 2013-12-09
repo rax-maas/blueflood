@@ -314,4 +314,19 @@ public class GranularityTest {
             Assert.assertEquals("Not supported", e.getMessage());
         }
     }
+
+    @Test
+    public void testIsCoarser() {
+        Assert.assertTrue(!Granularity.FULL.isCoarser(Granularity.MIN_5));
+        Assert.assertTrue(!Granularity.MIN_5.isCoarser(Granularity.MIN_20));
+        Assert.assertTrue(!Granularity.MIN_20.isCoarser(Granularity.MIN_60));
+        Assert.assertTrue(!Granularity.MIN_60.isCoarser(Granularity.MIN_240));
+        Assert.assertTrue(!Granularity.MIN_240.isCoarser(Granularity.MIN_1440));
+
+        Assert.assertTrue(Granularity.MIN_5.isCoarser(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_20.isCoarser(Granularity.MIN_5));
+        Assert.assertTrue(Granularity.MIN_60.isCoarser(Granularity.MIN_20));
+        Assert.assertTrue(Granularity.MIN_240.isCoarser(Granularity.MIN_60));
+        Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.MIN_240));
+    }
 }
