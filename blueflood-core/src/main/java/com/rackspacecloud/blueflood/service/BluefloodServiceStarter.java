@@ -198,14 +198,14 @@ public class BluefloodServiceStarter {
         List<String> modules = config.getListProperty(CoreConfig.EVENT_LISTENER_MODULES);
         if (!modules.isEmpty()) {
             log.info("Starting event listener modules");
-            ClassLoader classLoader = ExternalModuleStarter.class.getClassLoader();
+            ClassLoader classLoader = EventListenerService.class.getClassLoader();
             for (String module : modules) {
                 log.info("Loading event listener module " + module);
                 try {
                     Class serviceClass = classLoader.loadClass(module);
-                    ExternalModuleStarter service = (ExternalModuleStarter) serviceClass.newInstance();
+                    EventListenerService service = (EventListenerService) serviceClass.newInstance();
                     log.info("Starting event listener module " + module);
-                    service.loadAndStart();
+                    service.startService();
                     log.info("Successfully started event listener module " + module);
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of event listener class for: " + module, e);

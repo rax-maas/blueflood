@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.ProducerConfig;
 
-public class KafkaService implements Emitter.Listener<RollupEvent>, ExternalModuleStarter {
+public class KafkaService implements Emitter.Listener<RollupEvent>, EventListenerService {
     private static final Logger log = LoggerFactory.getLogger(KafkaService.class);
     private ArrayList<Producer> producerList = new ArrayList<Producer>();
     private ThreadPoolExecutor kafkaExecutors;
@@ -71,7 +71,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, ExternalModu
     }
 
     @Override
-    public void loadAndStart() {
+    public void startService() {
         if (!ready) {
             try {
                 init();
@@ -89,7 +89,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, ExternalModu
     }
 
     @Override
-    public void stop() {
+    public void stopService() {
         //Check to see of the kafka production was already stopped
         if (!eventEmitter.listeners(eventName).contains(this)) {
             log.debug("Kafka Production is already shutdown");
