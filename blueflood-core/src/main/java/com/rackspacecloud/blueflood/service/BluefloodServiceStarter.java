@@ -193,6 +193,35 @@ public class BluefloodServiceStarter {
         }
     }
 
+    private static void startEventListenerModules() {
+        Configuration config = Configuration.getInstance();
+        List<String> modules = config.getListProperty(CoreConfig.EVENT_LISTENER_MODULES);
+        if (!modules.isEmpty()) {
+            log.info("Starting event listener modules");
+            ClassLoader classLoader = ExternalModuleStarter.class.getClassLoader();
+            for (String module : modules) {
+                log.info("Loading event listener module " + module);
+                try {
+                    Class serviceClass = classLoader.loadClass(module);
+                    ExternalModuleStarter service = (ExternalModuleStarter) serviceClass.newInstance();
+                    log.info("Starting event listener module " + module);
+                    service.loadAndStart();
+                    log.info("Successfully started event listener module " + module);
+                } catch (InstantiationException e) {
+                    log.error("Unable to create instance of event listener class for: " + module, e);
+                } catch (IllegalAccessException e) {
+                    log.error("Error starting event listener: " + module, e);
+                } catch (ClassNotFoundException e) {
+                    log.error("Unable to locate event listener module: " + module, e);
+                } catch (RuntimeException e) {
+                    log.error("Error starting event listener: " + module, e);
+                } catch (Throwable e) {
+                    log.error("Error starting event listener: " + module, e);
+                }
+            }
+        }
+    }
+
     public static void main(String args[]) {
         // load configuration.
         Configuration config = Configuration.getInstance();
@@ -221,6 +250,7 @@ public class BluefloodServiceStarter {
         startIngestServices(rollupContext);
         startQueryServices();
         startRollupService(rollupContext);
+        startEventListenerModules();
         log.info("All blueflood services started");
     }
 }

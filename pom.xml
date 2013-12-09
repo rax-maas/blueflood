@@ -30,6 +30,7 @@
     <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
     <module>blueflood-statsd</module>
+    <module>blueflood-kafka</module>
   </modules>
 
   <description>
