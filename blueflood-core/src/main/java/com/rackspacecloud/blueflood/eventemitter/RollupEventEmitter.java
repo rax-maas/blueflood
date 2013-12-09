@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.eventemitter;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import java.util.concurrent.*;
 
-public class RollupEventEmitter extends Emitter<RollupEmission> {
+public class RollupEventEmitter extends Emitter<RollupEvent> {
     private static final int numberOfWorkers = 5;
     private static ThreadPoolExecutor eventExecutors;
     private static final RollupEventEmitter instance = new RollupEventEmitter();
@@ -35,7 +35,7 @@ public class RollupEventEmitter extends Emitter<RollupEmission> {
     public static RollupEventEmitter getInstance() { return instance; }
 
     @Override
-    public Future emit(final String event, final RollupEmission... eventPayload) {
+    public Future emit(final String event, final RollupEvent... eventPayload) {
         return eventExecutors.submit(new Runnable() {
             @Override
             public void run() {

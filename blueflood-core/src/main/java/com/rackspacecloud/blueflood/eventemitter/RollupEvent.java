@@ -3,13 +3,13 @@ package com.rackspacecloud.blueflood.eventemitter;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
 
-public class RollupEmission {
+public class RollupEvent {
     private Locator locator;
     private Rollup rollup;
     private String units;
     private String granularityName;
 
-    public RollupEmission(Locator loc, Rollup rollup, String units, String gran) {
+    public RollupEvent(Locator loc, Rollup rollup, String units, String gran) {
         this.locator = loc;
         this.rollup = rollup;
         this.units = units;

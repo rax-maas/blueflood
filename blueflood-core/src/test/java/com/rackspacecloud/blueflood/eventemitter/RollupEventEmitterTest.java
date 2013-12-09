@@ -28,8 +28,8 @@ import java.util.concurrent.*;
 public class RollupEventEmitterTest {
     String testEventName = "test";
     EventListener elistener = new EventListener();
-    List<RollupEmission> store = Collections.synchronizedList(new ArrayList<RollupEmission>());
-    Emitter<RollupEmission> emitter = new Emitter<RollupEmission>();
+    List<RollupEvent> store = Collections.synchronizedList(new ArrayList<RollupEvent>());
+    Emitter<RollupEvent> emitter = new Emitter<RollupEvent>();
 
     @Test
     public void testEmitter() throws Exception{
@@ -41,8 +41,8 @@ public class RollupEventEmitterTest {
                 .withCorePoolSize(2)
                 .withMaxPoolSize(3)
                 .build();
-        final RollupEmission obj1 = new RollupEmission(null, null, "payload1", "gran");
-        final RollupEmission obj2 = new RollupEmission(null, null, "payload2", "gran");
+        final RollupEvent obj1 = new RollupEvent(null, null, "payload1", "gran");
+        final RollupEvent obj2 = new RollupEvent(null, null, "payload2", "gran");
         final CountDownLatch startLatch = new CountDownLatch(1);
         Future<Object> f1 = executors.submit(new Callable<Object>() {
             @Override
@@ -74,13 +74,13 @@ public class RollupEventEmitterTest {
         Assert.assertFalse(emitter.listeners(testEventName).contains(elistener));
         //Clear the store and check if it is not getting filled again
         store.clear();
-        emitter.emit(testEventName, new RollupEmission(null, null, "payload3", "gran"));
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload3", "gran"));
         Assert.assertTrue(store.isEmpty());
     }
 
-    private class EventListener implements Emitter.Listener<RollupEmission> {
+    private class EventListener implements Emitter.Listener<RollupEvent> {
         @Override
-        public void call(RollupEmission... rollupEventObjects) {
+        public void call(RollupEvent... rollupEventObjects) {
             store.addAll(Arrays.asList(rollupEventObjects));
         }
     }
