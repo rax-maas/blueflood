@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>blueflood</artifactId>
+        <groupId>com.rackspacecloud</groupId>
+        <version>${blueflood.version}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>Blueflood Rollup Kafka Producer</name>
+    <artifactId>blueflood-kafka</artifactId>
+    <packaging>jar</packaging>
+
+    <build>
+        <plugins>
+            <!-- Used for unit tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.14.1</version>
+                <configuration>
+                    <systemPropertyVariables>
+                            <kafka.config>file://${basedir}/src/test/resources/testKafka.conf</kafka.config>
+                    </systemPropertyVariables>
+                    <!-- Skips unit tests if the value of skip.unit.tests property is true -->
+                    <skipTests>${skip.unit.tests}</skipTests>
+                    <!-- Excludes integration tests when unit tests are run. -->
+                    <parallel>classes</parallel>
+                    <threadCount>5</threadCount>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+        <dependency>
+            <artifactId>blueflood-core</artifactId>
+            <groupId>com.rackspacecloud</groupId>
+            <version>${blueflood.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.10</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+
+    </dependencies>
+
+    
+</project>
