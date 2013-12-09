@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * A collection of stats. we do a little bit of preorganization to make metric generation simpler.
  **/
-public class StatsCollection {
+public class StatCollection {
 
     // everything
     private Multimap<StatType, Stat> allStats = HashMultimap.create();

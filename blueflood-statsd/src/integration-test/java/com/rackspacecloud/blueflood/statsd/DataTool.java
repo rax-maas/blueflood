@@ -123,14 +123,19 @@ public class DataTool {
         @Override
         public boolean execute(PrintStream out, PrintStream err, Map<String, String> opts) {
             Locator locator = Locator.createLocatorFromDbKey(opts.get(Options.Locator));
-            ColumnList<String> columns = reader.getAllMetadata(locator);
+            Map<String, Object> metadata;
+            try {
+                metadata = reader.getMetadataValues(locator);
+            } catch (Exception ex) {
+                metadata = new HashMap<String, Object>();
+            }
             out.println(locator.toString());
             out.println("-------------------");
-            if (columns.size() == 0) {
+            if (metadata.size() == 0) {
                 out.println("NONE");
             } else {
-                for (Column<String> col : columns) {
-                    System.out.println(col.getName() + ":" + col.getStringValue());
+                for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                    System.out.println(entry.getKey() + ":" + entry.getValue().toString());
                 }
             }
             return true;
@@ -170,7 +175,8 @@ public class DataTool {
                 Range range = new Range(Long.parseLong(opts.get(Options.From)), Long.parseLong(opts.get(Options.To)));
                 Granularity granularity = Granularity.fromString(opts.get(Options.Resolution));
                 Locator locator = Locator.createLocatorFromDbKey(opts.get(Options.Locator));
-                StatType type = StatType.fromString(reader.getMetadataValue(locator, StatType.CACHE_KEY).toString());
+                Map<String, Object> metadata = reader.getMetadataValues(locator);
+                StatType type = StatType.fromString(metadata.get(StatType.CACHE_KEY).toString());
                 ColumnFamily<Locator, Long> columnFamily = GetPoints.columnFamilyOf(type, granularity);
                 Class<? extends Rollup> classType = GetPoints.classOf(type, granularity);
                 
@@ -209,7 +215,7 @@ public class DataTool {
                     case TIMER:
                     case GAUGE:
                     case SET:
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED;
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
                     case UNKNOWN:
                     default:
                         return AstyanaxIO.CF_METRICS_FULL;

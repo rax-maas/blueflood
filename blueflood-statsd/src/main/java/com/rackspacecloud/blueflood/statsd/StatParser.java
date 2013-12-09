@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.statsd;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
-import com.rackspacecloud.blueflood.statsd.containers.StatsCollection;
+import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Stats sent to graphite from statsd come in this format:
  * {label} {value} {timtestamp}
  */
-public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSequence>, StatsCollection> {
+public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSequence>, StatCollection> {
     private static Logger log = LoggerFactory.getLogger(StatParser.class);
     private static Meter invalidStatsMeter = Metrics.newMeter(StatParser.class, "Invalid Stats", "Ingestion", TimeUnit.MINUTES);
     private static Meter statParseErrors = Metrics.newMeter(StatParser.class, "Stat Parse Errors", "Ingestion", TimeUnit.MINUTES);
@@ -29,11 +29,11 @@ public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSeque
     }
 
     @Override
-    public ListenableFuture<StatsCollection> apply(final Collection<CharSequence> input) throws Exception {
-        return getThreadPool().submit(new Callable<StatsCollection>() {
+    public ListenableFuture<StatCollection> apply(final Collection<CharSequence> input) throws Exception {
+        return getThreadPool().submit(new Callable<StatCollection>() {
             @Override
-            public StatsCollection call() throws Exception {
-                StatsCollection stats = new StatsCollection();
+            public StatCollection call() throws Exception {
+                StatCollection stats = new StatCollection();
                 for (CharSequence seq : input) {
                     try {
                         Stat stat = Conversions.asStat(seq);

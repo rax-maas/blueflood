@@ -17,14 +17,12 @@
 package com.rackspacecloud.blueflood.statsd.containers;
 
 import com.google.common.base.Joiner;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -138,15 +136,15 @@ public class Conversions {
         }
     }
     
-    public static TypedMetricsCollection asMetrics(StatsCollection stats) {
-        TypedMetricsCollection group = new TypedMetricsCollection();
+    public static Multimap<StatType, IMetric> asMetrics(StatCollection stats) {
+        Multimap<StatType, IMetric> metrics = ArrayListMultimap.create();
         
         // build simple types.
         for (StatType type : StatType.SIMPLE_TYPES) {
             for (Stat stat : stats.getStats(type)) {
                 if (stat.isValid()) {
                     IMetric metric = new Metric(stat.getLocator(), stat.getValue(), stat.getTimestamp() * 1000, DEFAULT_TTL, null);
-                    group.addMetric(metric);
+                    metrics.put(type, metric);
                 }
             }
         }
@@ -154,9 +152,9 @@ public class Conversions {
         // build timers.
         for (Map.Entry<Locator, Collection<Stat>> entry : stats.getTimerStats().entrySet()) {
             IMetric metric = Conversions.asTimerMetric(entry.getKey(), entry.getValue());
-            group.addMetric(metric);
+            metrics.put(StatType.TIMER, metric);
         }
         
-        return group;
+        return metrics;
     }
 }

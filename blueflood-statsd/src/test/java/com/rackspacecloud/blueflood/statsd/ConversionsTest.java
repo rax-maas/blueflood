@@ -16,20 +16,13 @@
 
 package com.rackspacecloud.blueflood.statsd;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
-import com.rackspacecloud.blueflood.statsd.containers.StatsCollection;
+import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
 import com.rackspacecloud.blueflood.types.StatType;
-import com.rackspacecloud.blueflood.statsd.containers.TypedMetricsCollection;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -141,13 +134,14 @@ public class ConversionsTest {
                 "stats.myprefix.graphiteStats.flush_length 2085 1380825845" // unk = 9
         };
         
-        StatsCollection stats = ConversionsTest.asStats(lines);
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        Assert.assertEquals(9, lines.length);
         
-        Assert.assertEquals(9, metrics.getNormalMetrics().size());
-        Assert.assertEquals(0, metrics.getPreaggregatedMetrics().size());
         
-        // 1 double and 8 longs.
+        StatCollection stats = ConversionsTest.asStats(lines);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
+        
+        // all of those metrics are not discernable as statsd metrics. they will be treated as normal metrics.
+        Assert.assertEquals(lines.length, metrics.get(StatType.UNKNOWN).size());
     }
     
     @Test
@@ -158,13 +152,11 @@ public class ConversionsTest {
                 "stats_counts.gary.foo.bar.counter 301 1380825845"
         };
         
-        StatsCollection stats = ConversionsTest.asStats(lines);
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        StatCollection stats = ConversionsTest.asStats(lines);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
-        Assert.assertEquals(0, metrics.getNormalMetrics().size());
-        Assert.assertEquals(3, metrics.getPreaggregatedMetrics().size());
-        for (PreaggregatedMetric metric : metrics.getPreaggregatedMetrics())
-            Assert.assertTrue(metric.getValue() instanceof CounterRollup);
+        Assert.assertEquals(3, metrics.size());
+        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
     }
     
     @Test
@@ -175,13 +167,12 @@ public class ConversionsTest {
                 "stats.sets.bar.C 21 1380825845",
         };
         
-        StatsCollection stats = ConversionsTest.asStats(lines);
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        StatCollection stats = ConversionsTest.asStats(lines);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
-        Assert.assertEquals(0, metrics.getNormalMetrics().size());
-        Assert.assertEquals(3, metrics.getPreaggregatedMetrics().size());
-        for (PreaggregatedMetric metric : metrics.getPreaggregatedMetrics())
-            Assert.assertTrue(metric.getValue() instanceof SetRollup);
+        Assert.assertEquals(3, metrics.size());
+        Assert.assertEquals(3, metrics.get(StatType.SET).size());
+        
     }
     
     @Test
@@ -192,60 +183,48 @@ public class ConversionsTest {
                 "stats.gauges.bar.C 5517 1380825845",
         };
         
-        StatsCollection stats = ConversionsTest.asStats(lines);
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        StatCollection stats = ConversionsTest.asStats(lines);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
-        Assert.assertEquals(0, metrics.getNormalMetrics().size());
-        Assert.assertEquals(3, metrics.getPreaggregatedMetrics().size());
-        for (PreaggregatedMetric metric : metrics.getPreaggregatedMetrics())
-            Assert.assertTrue(metric.getValue() instanceof GaugeRollup);
+        Assert.assertEquals(3, metrics.size());
+        Assert.assertEquals(3, metrics.get(StatType.GAUGE).size());
     }
     
     @Test
     public void testStatToMetricTimer() {
-        StatsCollection stats = ConversionsTest.asStats(TIMER_LINES);
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
+        StatCollection stats = ConversionsTest.asStats(TIMER_LINES);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
-        Assert.assertEquals(0, metrics.getNormalMetrics().size());
-        Assert.assertEquals(1, metrics.getPreaggregatedMetrics().size());
-        for (PreaggregatedMetric metric : metrics.getPreaggregatedMetrics())
-            Assert.assertTrue(metric.getValue() instanceof TimerRollup);
+        Assert.assertEquals(1, metrics.size());
+        Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
     }
     
     @Test
     public void testAllStatToMetric() {
-        StatsCollection stats = ConversionsTest.asStats(METRIC_LINES);
-
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
-        Assert.assertEquals(9, metrics.getNormalMetrics().size());
-        Assert.assertEquals(6, metrics.getPreaggregatedMetrics().size());
+        StatCollection stats = ConversionsTest.asStats(METRIC_LINES);
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
-        Multimap<Class, IMetric> rollups = HashMultimap.create();
-        for (IMetric metric : metrics.getNormalMetrics())
-            rollups.put(metric.getValue().getClass(), metric);
-        for (IMetric metric : metrics.getPreaggregatedMetrics())
-            rollups.put(metric.getValue().getClass(), metric);
+        // 15 metrics total.
+        Assert.assertEquals(15, metrics.size());
         
-        Assert.assertEquals(3, rollups.get(CounterRollup.class).size());
-        Assert.assertEquals(1, rollups.get(TimerRollup.class).size()); // condensed from 23.
-        Assert.assertEquals(1, rollups.get(GaugeRollup.class).size());
-        Assert.assertEquals(1, rollups.get(SetRollup.class).size());
-        
-        Assert.assertEquals(1, rollups.get(Double.class).size());
-        Assert.assertEquals(8, rollups.get(Long.class).size());
+        // broken up this way.
+        Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
+        Assert.assertEquals(1, metrics.get(StatType.SET).size());
+        Assert.assertEquals(1, metrics.get(StatType.GAUGE).size());
+        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
+        Assert.assertEquals(9, metrics.get(StatType.UNKNOWN).size());
     }
     
     @Test
     public void testInvalidCounterConversion() {
-        StatsCollection stats = new StatsCollection();
+        StatCollection stats = new StatCollection();
         stats.add(new Stat("malformed_counter_name.counter_0", 32, System.currentTimeMillis() / 1000));
-        TypedMetricsCollection metrics = Conversions.asMetrics(stats);
-        Assert.assertEquals(0, metrics.getNormalMetrics().size());
-        Assert.assertEquals(0, metrics.getPreaggregatedMetrics().size());
+        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
+        Assert.assertEquals(0, metrics.size());
     }
     
-    private static StatsCollection asStats(String[] lines) {
-        StatsCollection stats = new StatsCollection();
+    private static StatCollection asStats(String[] lines) {
+        StatCollection stats = new StatCollection();
         for (String line : lines)
             stats.add(Conversions.asStat(line));
         return stats;
