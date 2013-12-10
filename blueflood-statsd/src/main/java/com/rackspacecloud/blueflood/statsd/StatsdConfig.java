@@ -8,8 +8,6 @@ public enum StatsdConfig implements ConfigDefaults {
     GRAPHITE_INGEST_PORT("8126")
     ;
 
- 
-    
     static {
         Configuration.getInstance().loadDefaults(StatsdConfig.values());
     }
