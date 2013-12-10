@@ -46,7 +46,6 @@ class RollupRunnable implements Runnable {
     protected final RollupExecutionContext executionContext;
     protected final RollupBatchWriter rollupBatchWriter;
     protected final long startWait;
-    private final String rollupEventName = "rollup";
 
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
 
@@ -123,7 +122,7 @@ class RollupRunnable implements Runnable {
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
             //Emit a rollup event to eventemitter
-            RollupEventEmitter.getInstance().emit(rollupEventName, new RollupEvent(singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()), singleRollupReadContext.getRollupGranularity().coarser().name()));
+            RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME, new RollupEvent(singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()), singleRollupReadContext.getRollupGranularity().name()));
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
