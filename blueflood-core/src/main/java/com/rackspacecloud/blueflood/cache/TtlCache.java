@@ -145,6 +145,12 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
         map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M));
         map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M));
         map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M));
+        map.put(AstyanaxIO.CF_METRICS_HIST_5M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_5M));
+        map.put(AstyanaxIO.CF_METRICS_HIST_20M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_20M));
+        map.put(AstyanaxIO.CF_METRICS_HIST_60M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_60M));
+        map.put(AstyanaxIO.CF_METRICS_HIST_240M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_240M));
+        map.put(AstyanaxIO.CF_METRICS_HIST_1440M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_1440M));
+
         return map;
     }
     

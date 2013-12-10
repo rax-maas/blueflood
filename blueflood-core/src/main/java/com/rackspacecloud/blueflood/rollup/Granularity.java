@@ -101,7 +101,21 @@ public class Granularity {
         if (this == FULL) throw new GranularityException("Nothing finer than " + name());
         return granularities[index - 1];
     }
-    
+
+    public boolean isCoarser(Granularity other) {
+        return indexOf(this) > indexOf(other);
+    }
+
+    private int indexOf(Granularity gran) {
+        for (int i = 0; i < granularities.length; i++) {
+            if (gran == granularities[i]) {
+                return i;
+            }
+        }
+
+        throw new RuntimeException("Granularity " + gran.toString() + " not present in granularities list.");
+    }
+
     // todo: needs explanation.
     public long snapMillis(long millis) {
         if (this == FULL) return millis;

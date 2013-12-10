@@ -127,7 +127,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     AstyanaxIO.CF_METRICS_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.FULL);
+        SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
         RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
@@ -181,7 +181,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
-        SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.FULL);
+        SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
         RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();

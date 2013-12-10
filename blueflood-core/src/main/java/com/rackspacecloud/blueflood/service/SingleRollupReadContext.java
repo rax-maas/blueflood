@@ -34,14 +34,14 @@ import java.util.concurrent.TimeUnit;
 class SingleRollupReadContext {
     private final Locator locator;
     private final Range range;
-    private final Granularity sourceGranularity;
     private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
+    private final Granularity rollupGranularity;
 
-    SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity sourceGranularity) {
+    SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
         this.locator = locator;
         this.range = rangeToRead;
-        this.sourceGranularity = sourceGranularity;
+        this.rollupGranularity = rollupGranularity;
     }
     
     Timer getExecuteTimer() {
@@ -52,8 +52,8 @@ class SingleRollupReadContext {
         return waitHist;
     }
 
-    Granularity getSourceGranularity() {
-        return this.sourceGranularity;
+    Granularity getRollupGranularity() {
+        return this.rollupGranularity;
     }
 
     Range getRange() {
