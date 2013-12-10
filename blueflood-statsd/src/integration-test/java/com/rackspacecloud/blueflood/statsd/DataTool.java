@@ -28,7 +28,8 @@ import java.util.Map;
  * Usage:
  * 
  *  get locators:
- *    locators -host {host} -port {port}
+ *    locators -shards {a,b,c... | all} -host {host} -port {port}
+ *      shards is optional and will default to all.
  *    
  *  get metadata:
  *    metadata -locator {locator} -host {host} -port {port}
@@ -39,6 +40,9 @@ import java.util.Map;
  *      resolution is also optional (defaults to 'full')
  *    
  *  host and port are always required
+ *  
+ * You do not have to worry about Configuration.java.  As long as you populate the required fields of the command
+ * Configuration.java will be taken care of
  * 
  */
 public class DataTool {
@@ -269,25 +273,6 @@ public class DataTool {
     private static PrintStream err;
     private static AstyanaxReader reader;
 
-    /**
-     * Things you can do:
-     * 
-     * Show all locators:
-     *  java DataTool locators -host 192.168.231.128 -port 19180 -shards 1,3,5,6
-     *  java DataTool locators -host 192.168.231.128 -port 19180 -shards all
-     *  java DataTool locators -host 192.168.231.128 -port 19180
-     *  
-     * Dump metadata
-     *  java GetDAta metadata -host 192.168.231.128 -port 19180 -locator timer0
-     * 
-     * Dump metrics
-     *  java DataTool points -host 192.168.231.128 -port 19180 -locator timer0
-     *  java DataTool points -host 192.168.231.128 -port 19180 -locator timer0 -resolution full
-     *  java DataTool points -host 192.168.231.128 -port 19180 -locator timer0 -resolution 5m
-     *  
-     * You do not have to worry about Configuration.java.  As long as you populate the required fields of the command
-     * Configuration.java will be taken care of
-     */
     public static void main(String args[]) {
         // for now.
         DataTool.out = System.out;
