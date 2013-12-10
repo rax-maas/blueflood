@@ -85,7 +85,7 @@ public class DoesStuff {
                 @Override
                 public void run() {
                     if (random.nextFloat() <= incChance)
-                        System.out.println("incrementing " + name);
+//                        System.out.println("incrementing " + name);
                         client.counter(name, 1);
                 }
             }, 0, period);
@@ -100,7 +100,7 @@ public class DoesStuff {
                 @Override
                 public void run() {
                     int value = Math.abs((int) (random.nextGaussian() * 10d));
-                    System.out.println(String.format("timing %s %s", name, value));
+//                    System.out.println(String.format("timing %s %s", name, value));
                     client.timer(name, value);
                 }
             }, 0, period);
@@ -115,7 +115,7 @@ public class DoesStuff {
                 @Override
                 public void run() {
                     int value = random.nextInt(max);
-                    System.out.println(String.format("irand %d", value));
+//                    System.out.println(String.format("irand %d", value));
                     client.gauge(name, value);
                 }
             }, 0, period);
@@ -130,7 +130,7 @@ public class DoesStuff {
                 @Override
                 public void run() {
                     double value = random.nextDouble() * multiplier;
-                    System.out.println(String.format("drand %s", value));
+//                    System.out.println(String.format("drand %s", value));
                     client.gauge(name, value);
                 }
             }, 0, period);
@@ -145,7 +145,7 @@ public class DoesStuff {
                 @Override
                 public void run() {
                     int i = value++;
-                    System.out.println(String.format("igauge %d", i));
+//                    System.out.println(String.format("igauge %d", i));
                     client.gauge(name, i);
                 }
             }, 0, period);

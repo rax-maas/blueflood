@@ -209,29 +209,42 @@ public class DataTool {
         }
         
         public static ColumnFamily<Locator, Long> columnFamilyOf(StatType type, Granularity gran) {
-            if (gran == Granularity.FULL) {
-                switch (type) {
-                    case COUNTER:
-                    case TIMER:
-                    case GAUGE:
-                    case SET:
+            switch (type) {
+                case COUNTER:
+                case TIMER:
+                case GAUGE:
+                case SET:
+                    if (gran == Granularity.FULL)
                         return AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
-                    case UNKNOWN:
-                    default:
+                    else if (gran == Granularity.MIN_5)
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_5M;
+                    else if (gran == Granularity.MIN_20)
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_20M;
+                    else if (gran == Granularity.MIN_60)
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_60M;
+                    else if (gran == Granularity.MIN_240)
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_240M;
+                    else if (gran == Granularity.MIN_1440)
+                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M;
+                    else
+                        throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
+                case UNKNOWN:
+                default:
+                    if (gran == Granularity.FULL)
                         return AstyanaxIO.CF_METRICS_FULL;
-                } 
-            } else if (gran == Granularity.MIN_5)
-                return AstyanaxIO.CF_METRICS_5M;
-            else if (gran == Granularity.MIN_20)
-                return AstyanaxIO.CF_METRICS_20M;
-            else if (gran == Granularity.MIN_60)
-                return AstyanaxIO.CF_METRICS_60M;
-            else if (gran == Granularity.MIN_240)
-                return AstyanaxIO.CF_METRICS_240M;
-            else if (gran == Granularity.MIN_1440)
-                return AstyanaxIO.CF_METRICS_1440M;
-            else
-                throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
+                    else if (gran == Granularity.MIN_5)
+                        return AstyanaxIO.CF_METRICS_5M;
+                    else if (gran == Granularity.MIN_20)
+                        return AstyanaxIO.CF_METRICS_20M;
+                    else if (gran == Granularity.MIN_60)
+                        return AstyanaxIO.CF_METRICS_60M;
+                    else if (gran == Granularity.MIN_240)
+                        return AstyanaxIO.CF_METRICS_240M;
+                    else if (gran == Granularity.MIN_1440)
+                        return AstyanaxIO.CF_METRICS_1440M;
+                    else
+                        throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
+            }
         }
     }
     

@@ -271,12 +271,16 @@ public class NumericSerializer {
                 
                 // here's where it gets different.
                 GaugeRollup gauge = (GaugeRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
-                sz += 1; // type of latest value.
-                if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
-                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestNumericValue().longValue());
-                else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
+                if (gauge.getLatestValue() == null)
+                    sz += CodedOutputStream.computeRawVarint64Size(-1);
+                else {
+                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
+                    sz += 1; // type of latest value.
+                    if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
+                        sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestNumericValue().longValue());
+                    else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
+                        sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
+                }
                 return sz;
                 
             case Type.B_COUNTER:
@@ -397,14 +401,24 @@ public class NumericSerializer {
         rollupSize.update(buf.length);
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         serializeRollup(rollup, protobufOut);
-        protobufOut.writeRawVarint64(rollup.getTimestamp());
-        putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
+        if (rollup.getLatestValue() == null) {
+            protobufOut.writeRawVarint64(-1);
+        } else {
+            protobufOut.writeRawVarint64(rollup.getTimestamp());
+            putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
+        }
     }
     
     private static GaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
         BasicRollup basic = deserializeV1Rollup(in);
+        
         long timestamp = in.readRawVarint64();
-        Number lastValue = getUnversionedDoubleOrLong(in);
+        Number lastValue;
+        if (timestamp >= 0) {
+            lastValue = getUnversionedDoubleOrLong(in);
+        } else {
+            lastValue = null;
+        }
         return GaugeRollup.fromBasicRollup(basic, timestamp, lastValue);
     }
     
