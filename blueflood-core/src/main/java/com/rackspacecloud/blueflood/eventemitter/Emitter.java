@@ -75,7 +75,7 @@ public class Emitter<T> {
     public Emitter on(String event, Listener fn) {
         ConcurrentLinkedQueue<Listener> callbacks = this.callbacks.get(event);
         if (callbacks == null) {
-            callbacks = new ConcurrentLinkedQueue <Listener>();
+            callbacks = new ConcurrentLinkedQueue<Listener>();
             ConcurrentLinkedQueue<Listener> _callbacks = this.callbacks.putIfAbsent(event, callbacks);
             if (_callbacks != null) {
                 callbacks = _callbacks;

@@ -27,12 +27,12 @@ import java.util.concurrent.*;
 
 public class RollupEventEmitterTest {
     String testEventName = "test";
-    EventListener elistener = new EventListener();
     List<RollupEvent> store = Collections.synchronizedList(new ArrayList<RollupEvent>());
     Emitter<RollupEvent> emitter = new Emitter<RollupEvent>();
 
     @Test
-    public void testEmitter() throws Exception{
+    public void testEmitter() throws Exception {
+        EventListener elistener = new EventListener();
         //Test subscription
         emitter.on(testEventName, elistener);
         Assert.assertTrue(emitter.listeners(testEventName).contains(elistener));
@@ -76,6 +76,19 @@ public class RollupEventEmitterTest {
         store.clear();
         emitter.emit(testEventName, new RollupEvent(null, null, "payload3", "gran"));
         Assert.assertTrue(store.isEmpty());
+    }
+
+    @Test
+    public void testOnce() {
+        EventListener eventListener = new EventListener();
+        //Test once
+        emitter.once(testEventName, eventListener);
+        Assert.assertFalse(emitter.listeners(testEventName).contains(eventListener));
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran"));
+        Assert.assertEquals(store.size(), 1);
+        store.clear();
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran"));
+        Assert.assertEquals(store.size(), 0);
     }
 
     private class EventListener implements Emitter.Listener<RollupEvent> {
