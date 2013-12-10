@@ -13,6 +13,7 @@
 *    See the License for the specific language governing permissions and
 *    limitations under the License.
 */
+
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.rackspacecloud.blueflood.types.Locator;
@@ -21,13 +22,13 @@ import com.rackspacecloud.blueflood.types.Rollup;
 public class RollupEvent {
     private Locator locator;
     private Rollup rollup;
-    private String units;
+    private String unit;
     private String granularityName;
 
-    public RollupEvent(Locator loc, Rollup rollup, String units, String gran) {
+    public RollupEvent(Locator loc, Rollup rollup, String unit, String gran) {
         this.locator = loc;
         this.rollup = rollup;
-        this.units = units;
+        this.unit = unit;
         this.granularityName = gran;
     }
 
@@ -47,12 +48,12 @@ public class RollupEvent {
         this.locator = locator;
     }
 
-    public String getUnits() {
-        return units;
+    public String getunit() {
+        return unit;
     }
 
-    public void setUnits(String units) {
-        this.units = units;
+    public void setunit(String unit) {
+        this.unit = unit;
     }
 
     public String getGranularityName() {

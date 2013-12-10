@@ -42,7 +42,7 @@ H THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * This is a modified version of the EventEmitter found as part of nkzawa's engine.io-client library
  * https://github.com/nkzawa/engine.io-client.java
  *
- * The only difference is that it uses generics (T arg) rather than (Object... args)
+ * The only difference is that it uses generics (T... args) rather than (Object... args)
  */
 package com.rackspacecloud.blueflood.eventemitter;
 
@@ -95,9 +95,9 @@ public class Emitter<T> {
     public Emitter once(final String event, final Listener<T> fn) {
         Listener on = new Listener<T>() {
             @Override
-            public void call(T... arg) {
+            public void call(T... args) {
                 Emitter.this.off(event, this);
-                fn.call(arg);
+                fn.call(args);
             }
         };
 
@@ -190,6 +190,6 @@ public class Emitter<T> {
     }
 
     public static interface Listener<T> {
-        public void call(T... arg);
+        public void call(T... args);
     }
 }
