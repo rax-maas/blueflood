@@ -38,14 +38,14 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
     private static final Integer DEFAULT_KAFKA_PRODUCERS = 5;
     private Integer numberOfProducers;
     private final RollupEventEmitter eventEmitter = RollupEventEmitter.getInstance();
-    private final String eventName = "rollup";
+    private final String eventName = RollupEventEmitter.ROLLUP_EVENT_NAME;
     private Random rand = new Random();
 
     private void init() throws Exception {
         try {
             KafkaConfig config = new KafkaConfig();
-            if(config.getBooleanProperty("enable.kafka.service")) {
-                numberOfProducers = config.getIntegerProperty("number_of_producers") != null ? config.getIntegerProperty("number_of_producers") : DEFAULT_KAFKA_PRODUCERS;
+            if(config.getBooleanProperty("blueflood.enable.kafka.service")) {
+                numberOfProducers = config.getIntegerProperty("blueflood.producer.count") != null ? config.getIntegerProperty("blueflood.producer.count") : DEFAULT_KAFKA_PRODUCERS;
                 kafkaExecutors = new ThreadPoolBuilder()
                         .withCorePoolSize(numberOfProducers)
                         .withMaxPoolSize(numberOfProducers)
@@ -71,7 +71,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
     }
 
     @Override
-    public void startService() {
+    public synchronized void startService() {
         if (!ready) {
             try {
                 init();
@@ -89,7 +89,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
     }
 
     @Override
-    public void stopService() {
+    public synchronized void stopService() {
         //Check to see of the kafka production was already stopped
         if (!eventEmitter.listeners(eventName).contains(this)) {
             log.debug("Kafka Production is already shutdown");

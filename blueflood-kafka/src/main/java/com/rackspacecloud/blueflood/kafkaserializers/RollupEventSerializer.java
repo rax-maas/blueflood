@@ -44,7 +44,7 @@ public class RollupEventSerializer implements Encoder<RollupEvent>, Decoder<Roll
     public byte[] toBytes(RollupEvent rollupPayload) {
         Locator locator = rollupPayload.getLocator();
         BasicRollup rollup = (BasicRollup) rollupPayload.getRollup();
-        String unit = rollupPayload.getUnits();
+        String unit = rollupPayload.getUnit();
         //Main container node
         ObjectNode rootNode = JsonNodeFactory.instance.objectNode();
         //Rollup node
@@ -56,19 +56,15 @@ public class RollupEventSerializer implements Encoder<RollupEvent>, Decoder<Roll
         rollupNode.put("count", rollup.getCount());
         //Metadata Node
         ObjectNode metaNode = JsonNodeFactory.instance.objectNode();
-        //Units Node
-        ObjectNode unitsNode = JsonNodeFactory.instance.objectNode();
-        unitsNode.put("name", unit);
-        unitsNode.put("type", "numeric");
-        //Add units node to metadata node
-        metaNode.put("units",unitsNode);
+        metaNode.put("unit", unit);
+        metaNode.put("type", "numeric");
         //Fill up the root node
         try {
             rootNode.put("locator", locator.toString());
             rootNode.put("rollup", rollupNode);
             rootNode.put("metadata", metaNode);
         } catch (Exception e) {
-            log.error("Error encountered while serializing rollup");
+            log.error("Error encountered while serializing rollup. Locator:" + locator.toString() + " timestamp:" + System.currentTimeMillis(), e);
             return new byte[0];
         }
         return rootNode.toString().getBytes();
