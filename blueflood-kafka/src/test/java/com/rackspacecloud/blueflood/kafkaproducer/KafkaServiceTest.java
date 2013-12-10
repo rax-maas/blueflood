@@ -42,7 +42,7 @@ public class KafkaServiceTest {
         producerList.add(mockProducer);
 
         //Start KafkaProduction and test whether listener object was added
-        kafkaServiceSpy.loadAndStart();
+        kafkaServiceSpy.startService();
         Assert.assertTrue(RollupEventEmitter.getInstance().listeners(eventName).contains(kafkaServiceSpy));
 
         //Emit an event.
@@ -59,7 +59,7 @@ public class KafkaServiceTest {
         verify(mockProducer).send(anyListOf(KeyedMessage.class));
 
         //Stop Kafka Production and test whether the listener object was removed
-        kafkaServiceSpy.stop();
+        kafkaServiceSpy.stopService();
         Assert.assertFalse(RollupEventEmitter.getInstance().listeners(eventName).contains(kafkaServiceSpy));
 
         //Reset mocks, emit event and check if methods are not called
