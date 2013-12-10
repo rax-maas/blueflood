@@ -40,7 +40,7 @@ public class RollupEvent {
         return locator;
     }
 
-    public String getunit() {
+    public String getUnit() {
         return unit;
     }
 
