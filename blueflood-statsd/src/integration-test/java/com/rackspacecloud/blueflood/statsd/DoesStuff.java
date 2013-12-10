@@ -17,6 +17,17 @@ public class DoesStuff {
     /**
      * usage:
      * 
+     * stats_host,statsd_port,statsd_buffer_size [metric_descriptor ]+
+     * 
+     * A metric_descriptor takes the following formats:
+     *  For a counter:              counter,name,increment_chance,period_in_ms
+     *  for a timer:                timer,name,period_in_ms
+     *  for a random int gauge:     intgauge,name,period_in_ms,max_value
+     *  for a random double gauge:  doublegauge,name,period_in_ms,max_value
+     *  for an incrementing gauge:  incgauge,name,period_in_ms
+     *  
+     *  spaces are used to separate metrics, so don't include those in your names, etc.  Here is an example:
+     *  
      * java DoesStuff localhost,8125,1500 counter,counter0,0.75,100 timer,timer0,100 intgauge,igauge0,100,5000 doublegauge,dgauge0,100,100.0 incgauge,incgauge0,100
      */
     public static void main(String args[]) {
