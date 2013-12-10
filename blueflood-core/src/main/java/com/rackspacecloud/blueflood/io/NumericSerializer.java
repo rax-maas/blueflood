@@ -413,13 +413,14 @@ public class NumericSerializer {
         BasicRollup basic = deserializeV1Rollup(in);
         
         long timestamp = in.readRawVarint64();
-        Number lastValue;
-        if (timestamp >= 0) {
-            lastValue = getUnversionedDoubleOrLong(in);
+        Points.Point<SimpleNumber> latestValue;
+        
+        if (timestamp == GaugeRollup.NEVER_HAPPENED.getTimestamp()) {
+            latestValue = GaugeRollup.NEVER_HAPPENED;
         } else {
-            lastValue = null;
+            latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(getUnversionedDoubleOrLong(in)));
         }
-        return GaugeRollup.fromBasicRollup(basic, timestamp, lastValue);
+        return GaugeRollup.fromBasicRollup(basic, latestValue);
     }
     
     private static byte typeOf(Object o) throws IOException {

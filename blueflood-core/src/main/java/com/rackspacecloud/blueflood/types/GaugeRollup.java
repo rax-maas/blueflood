@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class GaugeRollup extends BasicRollup {
-    private static final Points.Point<SimpleNumber> NEVER_HAPPENED = new Points.Point(-1, null);
+    public static final Points.Point<SimpleNumber> NEVER_HAPPENED = new Points.Point(-1, null);
     private Points.Point<SimpleNumber> latestValue;
 
     @Override
@@ -68,7 +68,7 @@ public class GaugeRollup extends BasicRollup {
         return rollup;
     }
     
-    public static GaugeRollup fromBasicRollup(IBasicRollup basic, long timestamp, Number latestValue) {
+    public static GaugeRollup fromBasicRollup(IBasicRollup basic, Points.Point<SimpleNumber> latestValue) {
         GaugeRollup rollup = new GaugeRollup();
         
         rollup.setCount(basic.getCount());
@@ -76,9 +76,7 @@ public class GaugeRollup extends BasicRollup {
         rollup.setMin((MinValue)basic.getMinValue());
         rollup.setMax((MaxValue)basic.getMaxValue());
         rollup.setVariance((Variance)basic.getVariance());
-        
-        if (latestValue == null || timestamp < 0)
-            rollup.latestValue = NEVER_HAPPENED;
+        rollup.latestValue = latestValue;
         
         return rollup;
     }
