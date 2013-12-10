@@ -26,7 +26,7 @@ public class KafkaGraphiteReporter implements KafkaMetricsReporter, KafkaGraphit
                         Metrics.defaultRegistry(),
                         config.getStringProperty(CoreConfig.GRAPHITE_HOST),
                         config.getIntegerProperty(CoreConfig.GRAPHITE_PORT),
-                        config.getStringProperty(CoreConfig.GRAPHITE_PREFIX)
+                        config.getStringProperty(CoreConfig.GRAPHITE_PREFIX + "kafka")
                 );
             } catch (IOException e) {
                 log.error("Unable to initialize GraphiteReporter", e);

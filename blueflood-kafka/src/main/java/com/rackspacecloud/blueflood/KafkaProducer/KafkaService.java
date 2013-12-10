@@ -20,7 +20,7 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.eventemitter.Emitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
-import com.rackspacecloud.blueflood.service.ExternalModuleStarter;
+import com.rackspacecloud.blueflood.service.EventListenerService;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import java.util.ArrayList;
@@ -118,7 +118,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
 
     @Override
     public void call(RollupEvent... rollupPayload) {
-        kafkaExecutors.execute(new KafkaProductionWork(producerList.get(rand.nextInt(numberOfProducers)), rollupPayload));
+        kafkaExecutors.execute(new KafkaProducerWork(producerList.get(rand.nextInt(numberOfProducers)), rollupPayload));
     }
 
     //Used only for tests

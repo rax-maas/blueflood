@@ -24,12 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
-class KafkaProductionWork implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(KafkaProductionWork.class);
+class KafkaProducerWork implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(KafkaProducerWork.class);
     private RollupEvent[] rollupEventObjects;
     private Producer producer;
 
-    KafkaProductionWork(Producer producer, RollupEvent... objects) {
+    KafkaProducerWork(Producer producer, RollupEvent... objects) {
         this.rollupEventObjects = objects;
         this.producer = producer;
     }
