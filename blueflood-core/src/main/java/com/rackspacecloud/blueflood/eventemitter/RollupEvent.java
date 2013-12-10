@@ -20,10 +20,10 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
 
 public class RollupEvent {
-    private Locator locator;
-    private Rollup rollup;
-    private String unit;
-    private String granularityName;
+    private final Locator locator;
+    private final Rollup rollup;
+    private final String unit;
+    private final String granularityName;
 
     public RollupEvent(Locator loc, Rollup rollup, String unit, String gran) {
         this.locator = loc;
@@ -36,31 +36,15 @@ public class RollupEvent {
         return rollup;
     }
 
-    public void setRollup(Rollup rollup) {
-        this.rollup = rollup;
-    }
-
     public Locator getLocator() {
         return locator;
-    }
-
-    public void setLocator(Locator locator) {
-        this.locator = locator;
     }
 
     public String getunit() {
         return unit;
     }
 
-    public void setunit(String unit) {
-        this.unit = unit;
-    }
-
     public String getGranularityName() {
         return granularityName;
-    }
-
-    public void setGranularityName(String granularityName) {
-        this.granularityName = granularityName;
     }
 }
