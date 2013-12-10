@@ -24,6 +24,23 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Usage:
+ * 
+ *  get locators:
+ *    locators -host {host} -port {port}
+ *    
+ *  get metadata:
+ *    metadata -locator {locator} -host {host} -port {port}
+ *    
+ *  get values:
+ *    points -locator {locator} -host {host} -port {port} -resolution {full | 5m | 20m | 60m | 240m | 1440m} -from {timestamp_millis} -to {timestamp_millis}
+ *      from and to are optional (default to the last 24h)
+ *      resolution is also optional (defaults to 'full')
+ *    
+ *  host and port are always required
+ * 
+ */
 public class DataTool {
     
     private static class Options {
