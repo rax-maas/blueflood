@@ -31,7 +31,7 @@ class KafkaConfig {
         try {
             init();
         } catch (IOException ex) {
-            log.error("Error encountered while loading the Kafka Config");
+            log.error("Error encountered while loading the Kafka Config", ex);
             throw new RuntimeException(ex);
         }
     }
