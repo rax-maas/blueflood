@@ -28,6 +28,8 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
+import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.concurrent.TimeUnit;
 
@@ -119,6 +121,8 @@ class RollupRunnable implements Runnable {
             rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
+            //Emit a rollup event to eventemitter
+            RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME, new RollupEvent(singleRollupReadContext.getLocator(), rollup, AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()), singleRollupReadContext.getRollupGranularity().name()));
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
