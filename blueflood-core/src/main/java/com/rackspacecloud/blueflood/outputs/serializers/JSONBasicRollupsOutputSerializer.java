@@ -27,7 +27,7 @@ import org.json.simple.JSONObject;
 import java.util.Map;
 import java.util.Set;
 
-public class JSONOutputSerializer implements OutputSerializer<JSONObject> {
+public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSerializer<JSONObject> {
 
     @Override
     public JSONObject transformRollupData(MetricData metricData, Set<MetricStat> filterStats)

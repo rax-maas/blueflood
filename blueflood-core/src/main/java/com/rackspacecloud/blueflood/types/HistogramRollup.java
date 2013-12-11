@@ -30,6 +30,8 @@ public class HistogramRollup implements Rollup {
     private HistogramRollup(int bins) {
         if (bins > MAX_BIN_SIZE) {
             bins = MAX_BIN_SIZE;
+        } else if (bins <= 0) {
+            bins = 1;
         }
         this.histogram = new Histogram<SimpleTarget>(bins);
     }
@@ -114,7 +116,7 @@ public class HistogramRollup implements Rollup {
 
     public static int getIdealNumberOfBins(Points<SimpleNumber> input) {
         // Scott's rule
-        return (int) Math.floor(3.5 * (Math.sqrt(getVariance(input))/Math.cbrt(input.getPoints().size())));
+        return Math.abs((int) Math.floor(3.5 * (Math.sqrt(getVariance(input))/Math.cbrt(input.getPoints().size()))));
     }
 
     private double toDouble(Object val) throws RuntimeException {

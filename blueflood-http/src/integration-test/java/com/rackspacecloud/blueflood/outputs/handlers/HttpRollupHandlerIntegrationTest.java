@@ -127,6 +127,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         testGetRollupByPoints();
         testGetRollupByResolution();
         testHttpRequestForPoints();
+        testHttpRequestForHistograms();
     }
 
     private void testGetRollupByPoints() throws Exception {
@@ -193,6 +194,12 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
+    private void testHttpRequestForHistograms() throws Exception {
+        HttpGet get = new HttpGet(getHistQueryURI());
+        HttpResponse response = client.execute(get);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+    }
+
     private void testBadRequest() throws Exception {
         HttpGet get = new HttpGet(getInvalidMetricsQueryURI());
         HttpResponse response = client.execute(get);
@@ -222,12 +229,17 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
-        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
+        ColumnFamily<Locator, Long> destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
+            destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, range);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.start));
+
+            destCF = AstyanaxIO.getHistogramColumnFamilyMapper().get(destGranularity);
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
+            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destCF, range.start));
         }
 
         AstyanaxWriter.getInstance().insertRollups(writeContexts);
@@ -236,6 +248,15 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private URI getMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data/" + metricName)
+                .setParameter("from", String.valueOf(baseMillis))
+                .setParameter("to", String.valueOf(baseMillis + 86400000))
+                .setParameter("resolution", "full");
+        return builder.build();
+    }
+
+    private URI getHistQueryURI() throws URISyntaxException {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/histograms/" + metricName)
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");

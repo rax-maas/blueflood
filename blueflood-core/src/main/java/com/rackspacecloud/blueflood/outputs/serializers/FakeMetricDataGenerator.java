@@ -16,9 +16,16 @@
 
 package com.rackspacecloud.blueflood.outputs.serializers;
 
+import com.bigml.histogram.Bin;
+import com.bigml.histogram.SimpleTarget;
+import com.bigml.histogram.Target;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.HistogramRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class FakeMetricDataGenerator {
     public static Points<SimpleNumber> generateFakeFullResPoints() {
@@ -54,7 +61,28 @@ public class FakeMetricDataGenerator {
         for (int i =0; i < 5; i++) {
             long timeNow = startTime + i*1000;
             Points.Point<String> point = new Points.Point<String>(timeNow, String.valueOf(timeNow));
+            points.add(point);
         }
         return points;
+    }
+
+    public static Points<HistogramRollup> generateFakeHistogramRollupPoints() {
+        Points<HistogramRollup> points = new Points<HistogramRollup>();
+        long startTime = 1234567L;
+        for (int i =0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<HistogramRollup> point = new Points.Point<HistogramRollup>(timeNow,
+                    new HistogramRollup(getBins()));
+            points.add(point);
+        }
+        return points;
+    }
+
+    private static Collection<Bin<SimpleTarget>> getBins() {
+        Collection<Bin<SimpleTarget>> bins = new ArrayList<Bin<SimpleTarget>>();
+        for (int i = 1; i < 3; i++) {
+            bins.add(new Bin(55.55 + i, (double) i, SimpleTarget.TARGET));
+        }
+        return bins;
     }
 }

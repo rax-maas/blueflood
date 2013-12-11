@@ -44,7 +44,8 @@ public class MetricData {
     public enum Type {
         NUMBER("number"),
         BOOLEAN("boolean"),
-        STRING("string");
+        STRING("string"),
+        HISTOGRAM("histogram");
 
         private Type(String s) {
             this.name = s;

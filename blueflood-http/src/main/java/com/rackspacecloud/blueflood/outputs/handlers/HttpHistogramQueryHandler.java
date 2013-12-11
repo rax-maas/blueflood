@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -26,80 +28,58 @@ import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
-import com.rackspacecloud.blueflood.outputs.serializers.JSONBasicRollupsOutputSerializer;
-import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
+import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.types.RollupsQueryParams;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 
-public class HttpRollupsQueryHandler extends RollupHandler
-            implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
-    private final BasicRollupsOutputSerializer<JSONObject> serializer;
+public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequestHandler {
+    private final JSONHistogramOutputSerializer serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
-    private final Timer httpMetricsFetchTimer = Metrics.newTimer(HttpRollupsQueryHandler.class,
-            "Handle HTTP request for metrics", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
-    public HttpRollupsQueryHandler() {
-        this.serializer = new JSONBasicRollupsOutputSerializer();
+    private static final Timer histFetchTimer = Metrics.timer(HttpRollupsQueryHandler.class,
+            "Handle HTTP request for histograms");
+    private static final Meter histByPointsMeter = Metrics.meter(RollupHandler.class, "Get histograms by points",
+            "BF-API");
+    private static final Meter histByGranularityMeter = Metrics.meter(RollupHandler.class, "Get histograms by gran",
+            "BF-API");
+
+    public HttpHistogramQueryHandler() {
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         this.parser = new JsonParser();
+        this.serializer = new JSONHistogramOutputSerializer();
     }
 
-    private JSONObject GetDataByPoints(String tenantId,
-                                      String metric,
-                                      long from,
-                                      long to,
-                                      int points,
-                                      Set<MetricStat> stats) throws SerializationException {
-        return serializer.transformRollupData(GetDataByPoints(tenantId, metric, from, to, points), stats);
-    }
-
-    private JSONObject GetDataByResolution(String tenantId,
-                                      String metric,
-                                      long from,
-                                      long to,
-                                      Resolution resolution,
-                                      Set<MetricStat> stats) throws SerializationException {
-        return serializer.transformRollupData(GetDataByResolution(tenantId, metric, from, to, resolution), stats);
-    }
-
-    @Override
-    public MetricData GetDataByPoints(String tenantId,
-                                      String metric,
-                                      long from,
-                                      long to,
-                                      int points) throws SerializationException {
-        rollupsByPointsMeter.mark();
+    private JSONObject GetHistogramByPoints(String tenantId,
+                                       String metric,
+                                       long from,
+                                       long to,
+                                       int points) throws IOException, SerializationException {
+        histByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        return getRollupByGranularity(tenantId, metric, from, to, g);
+        return serializer.transformHistogram(getHistogramsByGranularity(tenantId, metric, from, to, g));
     }
 
-    @Override
-    public MetricData GetDataByResolution(String tenantId,
-                                          String metric,
-                                          long from,
-                                          long to,
-                                          Resolution resolution) throws SerializationException {
-        rollupsByGranularityMeter.mark();
-        if (resolution == null) {
-            resolution = Resolution.FULL;
+    private JSONObject GetHistogramByResolution(String tenantId,
+                                            String metric,
+                                            long from,
+                                            long to,
+                                            Resolution resolution) throws IOException, SerializationException {
+        histByGranularityMeter.mark();
+        if (resolution == null || resolution == Resolution.FULL) {
+            resolution = Resolution.MIN5;
         }
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        return getRollupByGranularity(tenantId, metric, from, to, g);
+        return serializer.transformHistogram(getHistogramsByGranularity(tenantId, metric, from, to, g));
     }
 
     @Override
@@ -114,22 +94,21 @@ public class HttpRollupsQueryHandler extends RollupHandler
         }
 
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+        final Timer.Context histFetchTimerContext = histFetchTimer.time();
 
-        final TimerContext httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
 
             JSONObject metricData;
             if (params.isGetByPoints()) {
-                metricData = GetDataByPoints(tenantId, metricName, params.getRange().getStart(),
-                        params.getRange().getStop(), params.getPoints(), params.getStats());
+                metricData = GetHistogramByPoints(tenantId, metricName, params.getRange().getStart(),
+                        params.getRange().getStop(), params.getPoints());
             } else if (params.isGetByResolution()) {
-                metricData = GetDataByResolution(tenantId, metricName, params.getRange().getStart(),
-                        params.getRange().getStop(), params.getResolution(), params.getStats());
+                metricData = GetHistogramByResolution(tenantId, metricName, params.getRange().getStart(),
+                        params.getRange().getStop(), params.getResolution());
             } else {
                 throw new InvalidRequestException("Invalid rollups query. Neither points nor resolution specified.");
             }
-
             final JsonElement element = parser.parse(metricData.toString());
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
@@ -140,12 +119,12 @@ public class HttpRollupsQueryHandler extends RollupHandler
         } catch (Exception e) {
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            httpMetricsFetchTimerContext.stop();
+            histFetchTimerContext.stop();
         }
     }
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
-                             HttpResponseStatus status) {
+                              HttpResponseStatus status) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
