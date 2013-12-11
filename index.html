@@ -85,9 +85,10 @@ This jar contains all the dependencies necessary to run Blueflood with a very si
 <p>The best place to start is the <a href="https://github.com/rackerlabs/blueflood/wiki/10minuteguide">10 minute guide</a>.
 In a nutshell, you must do this:</p>
 
-<pre><code>java -cp /path/to/uber.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter \
+<pre><code>java -cp /path/to/uber.jar \
 -Dblueflood.config=file:///path/to/blueflood.conf \
--Dlog4j.configuration=file:///path/to/log4j.properties
+-Dlog4j.configuration=file:///path/to/log4j.properties \
+com.rackspacecloud.blueflood.service.BluefloodServiceStarter
 </code></pre>
 
 <p>Each configuration option can be found in Configuration.java.  Each of those can be overridden on the command line by
