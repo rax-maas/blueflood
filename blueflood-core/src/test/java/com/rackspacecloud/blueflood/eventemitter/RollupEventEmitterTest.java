@@ -83,7 +83,6 @@ public class RollupEventEmitterTest {
         EventListener eventListener = new EventListener();
         //Test once
         emitter.once(testEventName, eventListener);
-        Assert.assertFalse(emitter.listeners(testEventName).contains(eventListener));
         emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran"));
         Assert.assertEquals(store.size(), 1);
         store.clear();
