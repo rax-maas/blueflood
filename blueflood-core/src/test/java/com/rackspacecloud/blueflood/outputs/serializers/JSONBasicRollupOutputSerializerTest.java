@@ -30,7 +30,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-    public class JSONBasicRollupOutputSerializerTest {
+public class JSONBasicRollupOutputSerializerTest {
     private final Set<MetricStat> filterStats;
 
     public JSONBasicRollupOutputSerializerTest() {
@@ -49,6 +49,10 @@ import java.util.Set;
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
 
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
+
+        // Assert that we have some data to test
+        Assert.assertTrue(data.size() > 0);
+
         for (int i = 0; i < data.size(); i++) {
             final JSONObject dataJSON = (JSONObject) data.get(i);
             final Points.Point<SimpleNumber> point = (Points.Point<SimpleNumber>) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
@@ -78,8 +82,11 @@ import java.util.Set;
         filters.add(MetricStat.NUM_POINTS);
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filters);
-
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
+
+        // Assert that we have some data to test
+        Assert.assertTrue(data.size() > 0);
+
         for (int i = 0; i < data.size(); i++) {
             final JSONObject dataJSON = (JSONObject) data.get(i);
             final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
@@ -111,6 +118,10 @@ import java.util.Set;
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
 
         final JSONArray data = (JSONArray) metricDataJSON.get("values");
+
+        // Assert that we have some data to test
+        Assert.assertTrue(data.size() > 0);
+
         for (int i = 0; i < data.size(); i++ ) {
             final JSONObject dataJSON = (JSONObject) data.get(i);
             final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
