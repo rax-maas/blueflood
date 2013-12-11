@@ -28,7 +28,6 @@ import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -41,7 +40,6 @@ import org.jboss.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequestHandler {
     private final JSONHistogramOutputSerializer serializer;
@@ -96,7 +94,7 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
         }
 
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-        final TimerContext histFetchTimerContext = histFetchTimer.time();
+        final Timer.Context histFetchTimerContext = histFetchTimer.time();
 
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
