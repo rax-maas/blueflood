@@ -86,23 +86,6 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public Points<SimpleNumber> getSimpleDataToRoll(Locator locator, Range range) throws IOException {
-        AbstractSerializer<SimpleNumber> serializer = NumericSerializer.serializerFor(SimpleNumber.class);
-        ColumnList<Long> cols = getNumericRollups(locator, AstyanaxIO.CF_METRICS_FULL, range.start, range.stop);
-        Points<SimpleNumber> points =new Points<SimpleNumber>();
-        
-        try {
-            for (Column<Long> col : cols) {
-                points.add(new Points.Point<SimpleNumber>(col.getName(), new SimpleNumber(col.getValue(serializer))));
-            }
-        } catch (RuntimeException ex) {
-            log.error("Problem deserializing data", ex);
-            throw new IOException(ex);
-        }
-        
-        return points;
-    }
-    
     // todo: this could be the basis for every rollup read method.
     // todo: A better interface may be to pass the serializer in instead of the class type.
     public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {

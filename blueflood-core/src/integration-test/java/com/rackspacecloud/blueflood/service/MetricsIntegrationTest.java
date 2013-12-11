@@ -183,7 +183,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
-            Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);
+            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
 
