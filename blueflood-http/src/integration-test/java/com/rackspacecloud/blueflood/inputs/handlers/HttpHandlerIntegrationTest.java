@@ -27,6 +27,9 @@ import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -77,10 +80,9 @@ public class HttpHandlerIntegrationTest {
         // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
-        ColumnList<Long> rollups = AstyanaxReader.getInstance().getNumericRollups(locator,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL),
-                1234567878, 1234567900);
-        Assert.assertEquals(1, rollups.size());
+        Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
+                locator, new Range(1234567878, 1234567900), AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+        Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
