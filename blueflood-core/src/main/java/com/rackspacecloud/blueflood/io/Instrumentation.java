@@ -21,7 +21,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
+import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.serializers.LongSerializer;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.yammer.metrics.core.MetricsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +33,11 @@ import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Instrumentation implements InstrumentationMBean {
     private static final Logger log = LoggerFactory.getLogger(Instrumentation.class);
-    private static QueryTimers timers = new QueryTimers();
+    private static QueryTimers queryTimers = new QueryTimers();
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
 
@@ -42,6 +46,7 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
+    private static final Map<ColumnFamily, Meter> keyNotFoundInCFMap = new HashMap<ColumnFamily, Meter>();
 
     static {
         MetricRegistry reg = Metrics.getRegistry();
@@ -64,8 +69,8 @@ public class Instrumentation implements InstrumentationMBean {
 
     private Instrumentation() {/* Used for JMX exposure */}
 
-    public static Timer.Context getTimerContext(String query) {
-        return timers.getTimerContext(query);
+    public static Timer.Context getReadTimerContext(ColumnFamily queryCF) {
+        return queryTimers.getTimerContext(queryCF);
     }
 
     // Most error tracking is done in InstrumentedConnectionPoolMonitor
@@ -97,16 +102,29 @@ public class Instrumentation implements InstrumentationMBean {
     }
 
     private static class QueryTimers {
-        private final Map<String, Timer> histograms = new HashMap<String, Timer>();
+        private final Map<ColumnFamily, Timer> histograms = new HashMap<ColumnFamily, Timer>();
         private final MetricRegistry registry = Metrics.getRegistry();
 
-        public Timer.Context getTimerContext(String query) {
-            synchronized (query) {
-                if (!histograms.containsKey(query)) {
-                    histograms.put(query, registry.timer(MetricRegistry.name(Instrumentation.class, query)));
+        public Timer.Context getTimerContext(ColumnFamily queryCF) {
+            synchronized (queryCF) {
+                if (!histograms.containsKey(queryCF)) {
+                    final String metricName = "Read From " + queryCF.getName();
+                    histograms.put(queryCF, registry.timer(MetricRegistry.name(Instrumentation.class, metricName)));
                 }
             }
-            return histograms.get(query).time();
+            return histograms.get(queryCF).time();
+        }
+    }
+
+    public static void markNotFound(ColumnFamily CF) {
+        synchronized (keyNotFoundInCFMap) {
+            Meter meter = keyNotFoundInCFMap.get(CF);
+            if (meter == null) {
+                meter = Metrics.getRegistry().meter(MetricRegistry.name(Instrumentation.class,
+                        "Key Not Found in " + CF.getName()));
+                keyNotFoundInCFMap.put(CF,meter);
+            }
+            meter.mark();
         }
     }
 
