@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.kafkagraphitemetricreporter;
+package com.rackspacecloud.blueflood.utils;
 
 import kafka.metrics.KafkaMetricsReporterMBean;
 

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.kafkaproducer;
+package com.rackspacecloud.blueflood.outputs.handlers.helpers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import kafka.javaapi.producer.Producer;
@@ -24,12 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
-class KafkaProducerWork implements Runnable {
+public class KafkaProducerWork implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(KafkaProducerWork.class);
     private RollupEvent[] rollupEventObjects;
     private Producer producer;
 
-    KafkaProducerWork(Producer producer, RollupEvent... objects) {
+    public KafkaProducerWork(Producer producer, RollupEvent... objects) {
         this.rollupEventObjects = objects;
         this.producer = producer;
     }

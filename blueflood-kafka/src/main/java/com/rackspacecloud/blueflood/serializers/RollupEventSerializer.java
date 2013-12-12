@@ -14,7 +14,7 @@
 *    limitations under the License.
 */
 
-package com.rackspacecloud.blueflood.kafkaserializers;
+package com.rackspacecloud.blueflood.serializers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.types.BasicRollup;
@@ -65,7 +65,7 @@ public class RollupEventSerializer implements Encoder<RollupEvent>, Decoder<Roll
             rootNode.put("metadata", metaNode);
         } catch (Exception e) {
             log.error("Error encountered while serializing rollup. Locator:" + locator.toString() + " timestamp:" + System.currentTimeMillis(), e);
-            return new byte[0];
+            throw new RuntimeException("Error encountered while serializing rollup. Locator:" + locator.toString() + " timestamp:" + System.currentTimeMillis(), e);
         }
         return rootNode.toString().getBytes();
     }

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.kafkaproducer;
+package com.rackspacecloud.blueflood.outputs.handlers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

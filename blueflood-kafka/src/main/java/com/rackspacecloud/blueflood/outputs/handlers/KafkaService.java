@@ -14,12 +14,13 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.kafkaproducer;
+package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.eventemitter.Emitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
+import com.rackspacecloud.blueflood.outputs.handlers.helpers.KafkaProducerWork;
 import com.rackspacecloud.blueflood.service.EventListenerService;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;

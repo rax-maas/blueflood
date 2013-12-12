@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.kafkaproducer;
+package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
@@ -34,6 +34,7 @@ public class KafkaServiceTest {
 
     @Test
     public void testKafkaService() throws Exception {
+
         KafkaService kafkaService = new KafkaService();
         KafkaService kafkaServiceSpy = spy(kafkaService);
         //Create a mock producer object and add it to the producer list
@@ -49,10 +50,7 @@ public class KafkaServiceTest {
         //Emit an event.
         RollupEventEmitter.getInstance().emit(eventName, rollupEvent);
         //Verify that the call method was called atleast once
-        verify(kafkaServiceSpy, timeout(2000).atLeastOnce()).call(rollupEvent);
-
-        //Sleep and wait for execution to complete
-        Thread.sleep(1000);
+        verify(kafkaServiceSpy, timeout(1000).atLeastOnce()).call(rollupEvent);
 
         //Test whether executor actually executed a task
         Assert.assertEquals(kafkaServiceSpy.getKafkaExecutorsUnsafe().getCompletedTaskCount(), 1);
