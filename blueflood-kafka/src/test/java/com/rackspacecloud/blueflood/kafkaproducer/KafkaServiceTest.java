@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.kafkaproducer;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import junit.framework.Assert;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.*;
 
 public class KafkaServiceTest {
     String eventName = "rollup";
-    RollupEvent rollupEvent = new RollupEvent(null, null, "payload", "metrics_1440m");
+    RollupEvent rollupEvent = new RollupEvent(null, new BasicRollup(), "payload", "metrics_1440m");
 
     @Test
     public void testKafkaService() throws Exception {
