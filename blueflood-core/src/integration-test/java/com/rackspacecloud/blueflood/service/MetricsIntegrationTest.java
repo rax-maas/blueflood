@@ -91,82 +91,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    // tests how rollup generation could be done optimally when regenerating large swaths of rollups.  It 
-    // minimizes round trips around column selection.  The operations are reduced to:
-    // 1) one long slice read.
-    // 2) average calcuations and aggregation (requires memory!)
-    // 3) a batch write.
-    public void testRollupGenerationOverSwath() throws Exception {
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        int hours = 48;
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
-        final long endMillis = baseMillis + (60 * 60 * hours * 1000);
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
-
-        writeFullData(locator, baseMillis, hours,  writer);
-        for (Granularity gran : new Granularity[] {Granularity.FULL, Granularity.MIN_5, Granularity.MIN_20, Granularity.MIN_60, Granularity.MIN_240}) {
-            
-            // this logic would have to be encapsulated somewhere:
-            // regenerateRollup(long startSecs, long endSecs, String locator, Granularity srcGran);
-            // it would need access to a Reader and Writer.
-            ArrayList<Range> ranges = new ArrayList<Range>();
-            for (Range range : Range.getRangesToRollup(gran, baseMillis, endMillis))
-                ranges.add(range);
-            Range macroRange = new Range(ranges.get(0).start, ranges.get(ranges.size() - 1).stop);
-            Range curRange = ranges.remove(0);
-    
-            SortedMap<Long, Object> cols = new TreeMap<Long, Object>();
-            ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran);
-            // todo: use serializer specific method when available.
-            AbstractSerializer serializer = CF.equals(AstyanaxIO.CF_METRICS_FULL) 
-                    ? NumericSerializer.serializerFor(SimpleNumber.class) 
-                    : NumericSerializer.serializerFor(BasicRollup.class);
-            for (Column<Long> col : reader.getNumericRollups(locator,
-                    CF,
-                    macroRange.start,
-                    macroRange.stop)) {
-                cols.put(col.getName(), col.getValue(serializer));
-            }
-            BasicRollup basicRollup = new BasicRollup();
-            ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-            ColumnFamily<Locator, Long> destinationCF = AstyanaxIO.getColumnFamilyMapper().get(gran.coarser());
-            for (Map.Entry<Long, Object> col : cols.entrySet()) {
-                while (col.getKey() > curRange.stop) {
-                    writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destinationCF, curRange.start));
-                    basicRollup = new BasicRollup();
-                    curRange = ranges.remove(0);
-                }
-
-                Points input;
-                if (gran == Granularity.FULL) {
-                    input = new Points<SimpleNumber>();
-                    Object longOrDouble = col.getValue();
-                    input.add(new Points.Point<SimpleNumber>(col.getKey(), new SimpleNumber(col.getValue())));
-                    basicRollup.computeFromSimpleMetricsUnsafe(input);
-                } else {
-                    input = new Points<BasicRollup>();
-                    BasicRollup desBasicRollup = (BasicRollup)col.getValue();
-                    input.add(new Points.Point<BasicRollup>(col.getKey(), desBasicRollup));
-                    basicRollup.computeFromRollupsUnsafe(input);
-                }
-            }
-
-            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destinationCF, curRange.start));
-
-            writer.insertRollups(writeContexts);
-        }
-        
-        // verify the number of points in 48h worth of rollups. 
-        Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
-        Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range, AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
-        BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-        Assert.assertEquals(60 * hours, basicRollup.getCount());
-    }
-
-    @Test
     public void testRollupGenerationSimple() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -323,9 +247,9 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Set<Long> actualTimestamps = new HashSet<Long>();
         // get back the cols that were written from start to stop.
 
-        for (Column<Long> col : reader.getNumericRollups(locator,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL), baseMillis, lastMillis))
-            actualTimestamps.add(col.getName());
+        Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator, new Range(baseMillis, lastMillis),
+                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+        actualTimestamps = points.getPoints().keySet();
         Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
@@ -349,9 +273,11 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         
         int count = 0;
         ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
-        for (Column<Long> col : reader.getNumericRollups(locator, CF_metrics_full, baseMillis, baseMillis + 500000)) {
-            int v = col.getValue(NumericSerializer.serializerFor(Integer.class));
-            Assert.assertEquals(count, v);
+        Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator,
+                new Range(baseMillis, baseMillis + 500000), CF_metrics_full);
+        for (Map.Entry<Long, Points.Point<SimpleNumber>> data : points.getPoints().entrySet()) {
+            Points.Point<SimpleNumber> point = data.getValue();
+            Assert.assertEquals(count, point.getData().getValue());
             count++;
         }
     }

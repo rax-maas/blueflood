@@ -155,7 +155,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public ColumnList<Long> getNumericRollups(Locator locator, ColumnFamily<Locator, Long> srcCF, long from, long to) {
+    private ColumnList<Long> getNumericRollups(Locator locator, ColumnFamily<Locator, Long> srcCF, long from, long to) {
         if (from > to) throw new RuntimeException(String.format("Invalid rollup period %d->%d", from, to));
 
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
@@ -179,7 +179,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public ColumnList<Long> getStringPoints(final Locator locator, final long from, final long to) {
+    private ColumnList<Long> getStringPoints(final Locator locator, final long from, final long to) {
         if (from > to) throw new IllegalArgumentException(String.format("Invalid rollup period %d->%d", from, to));
 
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
