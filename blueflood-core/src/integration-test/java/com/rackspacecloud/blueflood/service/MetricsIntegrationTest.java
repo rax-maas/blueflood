@@ -161,7 +161,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
-        Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range, AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
+        Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range, AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
         BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
         Assert.assertEquals(60 * hours, basicRollup.getCount());
     }
@@ -183,7 +183,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
-            Points<SimpleNumber> input = reader.getSimpleDataToRoll(locator, range);
+            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
 
@@ -202,7 +202,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writes.clear();
 
         for (Range range : Range.getRangesToRollup(Granularity.MIN_5, baseMillis, endMillis)) {
-            Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
+            Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
@@ -223,7 +223,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // 20m -> 60m
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_20, baseMillis, endMillis)) {
-            Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
+            Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
@@ -244,7 +244,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // 60m -> 240m
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_60, baseMillis, endMillis)) {
-            Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
+            Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60));
 
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
@@ -266,7 +266,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // 240m -> 1440m
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_240, baseMillis, endMillis)) {
-            Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
+            Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                     AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
@@ -286,7 +286,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
-        Points<BasicRollup> input = reader.getBasicRollupDataToRoll(locator, range,
+        Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                 AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
         BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
         Assert.assertEquals(60 * hours, basicRollup.getCount());

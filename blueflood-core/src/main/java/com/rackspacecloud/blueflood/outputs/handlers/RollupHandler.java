@@ -73,8 +73,8 @@ public class RollupHandler {
                 // missing some rollups, generate more (5 MIN rollups only)
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
                     try {
-                        
-                        Points<SimpleNumber> dataToRoll = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, r);
+                        MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+                        Points<SimpleNumber> dataToRoll = data.getData();
                         BasicRollup rollup = Rollup.BasicFromRaw.compute(dataToRoll);
                         if (rollup.getCount() > 0) {
                             metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), rollup));

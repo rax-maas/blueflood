@@ -101,7 +101,8 @@ class RollupRunnable implements Runnable {
                             singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
                 } else {
                     srcCF = AstyanaxIO.getColumnFamilyMapper().get(srcGran);
-                    input = AstyanaxReader.getInstance().getBasicRollupDataToRoll(
+                    input = AstyanaxReader.getInstance().getDataToRoll(
+                            rollupClass,
                             singleRollupReadContext.getLocator(),
                             singleRollupReadContext.getRange(),
                             srcCF);

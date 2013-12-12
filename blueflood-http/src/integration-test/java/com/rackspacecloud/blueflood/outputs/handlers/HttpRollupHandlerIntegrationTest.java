@@ -233,7 +233,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getSimpleDataToRoll(locator, range);
+            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.start));
 
