@@ -51,7 +51,7 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
                         .withMaxPoolSize(numberOfProducers)
                         .withUnboundedQueue()
                         .build();
-                for(int i=0; i<numberOfProducers; i++) {
+                for(int i=0;i<numberOfProducers;i++) {
                     Producer producer = new Producer(new ProducerConfig(config.getKafkaProperties()));
                     producerList.add(producer);
                 }
@@ -64,10 +64,6 @@ public class KafkaService implements Emitter.Listener<RollupEvent>, EventListene
             }
             throw e;
         }
-    }
-
-    public KafkaService() {
-
     }
 
     @Override
