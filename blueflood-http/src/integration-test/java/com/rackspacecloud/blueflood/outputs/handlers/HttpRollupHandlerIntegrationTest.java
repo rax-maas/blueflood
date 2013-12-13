@@ -19,10 +19,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -232,12 +229,13 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         ColumnFamily<Locator, Long> destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
+            destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
+            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
+                    CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.start));
 
-            destCF = AstyanaxIO.getHistogramColumnFamilyMapper().get(destGranularity);
+            destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destCF, range.start));
         }
