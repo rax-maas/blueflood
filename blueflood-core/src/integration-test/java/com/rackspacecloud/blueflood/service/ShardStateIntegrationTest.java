@@ -74,7 +74,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public void testSetAllCoarserSlotsDirtyForFinerSlot() {
         // Tests that the correct coarser slots are set dirty for a finer slot which was seen out-of-order.
         // Prior to a bug fix, clearFromRunning would throw NPE because we were looking up coarser slots
-        // based on the timestamp on the child slot's UpdateStamp, not based on the relative courser slot from the finer slot
+        // based on the timestamp on the finer slot's UpdateStamp, not based on the relative courser slot from the finer slot
         long time = 1386823200000L;
         final Collection<Integer> shards = Lists.newArrayList(123);
         ScheduleContext ctxA = new ScheduleContext(time, shards);
