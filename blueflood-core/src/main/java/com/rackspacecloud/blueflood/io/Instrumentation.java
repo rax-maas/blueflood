@@ -22,9 +22,7 @@ import com.codahale.metrics.Timer;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
 import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.serializers.LongSerializer;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.yammer.metrics.core.MetricsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,11 +31,11 @@ import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Instrumentation implements InstrumentationMBean {
     private static final Logger log = LoggerFactory.getLogger(Instrumentation.class);
     private static QueryTimers queryTimers = new QueryTimers();
+    private static UpdateTimers updateTimers = new UpdateTimers();
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
 
@@ -73,6 +71,18 @@ public class Instrumentation implements InstrumentationMBean {
         return queryTimers.getTimerContext(queryCF);
     }
 
+    public static Timer.Context getReadTimerContext(String query) {
+        return queryTimers.getTimerContext(query);
+    }
+
+    public static Timer.Context getWriteTimerContext(ColumnFamily queryCF) {
+        return updateTimers.getTimerContext(queryCF);
+    }
+
+    public static Timer.Context getWriteTimerContext(String query) {
+        return updateTimers.getTimerContext(query);
+    }
+
     // Most error tracking is done in InstrumentedConnectionPoolMonitor
     // However, some issues can't be properly tracked using that alone.
     // For example, there is no good way to differentiate (in the connectionpoolmonitor)
@@ -102,17 +112,54 @@ public class Instrumentation implements InstrumentationMBean {
     }
 
     private static class QueryTimers {
-        private final Map<ColumnFamily, Timer> histograms = new HashMap<ColumnFamily, Timer>();
+        private final Map<ColumnFamily, Timer> cfhistograms = new HashMap<ColumnFamily, Timer>();
+        private final Map<String, Timer> histograms = new HashMap<String, Timer>();
+
         private final MetricRegistry registry = Metrics.getRegistry();
 
         public Timer.Context getTimerContext(ColumnFamily queryCF) {
             synchronized (queryCF) {
-                if (!histograms.containsKey(queryCF)) {
+                if (!cfhistograms.containsKey(queryCF)) {
                     final String metricName = "Read From " + queryCF.getName();
-                    histograms.put(queryCF, registry.timer(MetricRegistry.name(Instrumentation.class, metricName)));
+                    cfhistograms.put(queryCF, registry.timer(registry.name(Instrumentation.class, metricName)));
                 }
             }
             return histograms.get(queryCF).time();
+        }
+
+        public Timer.Context getTimerContext(String query) {
+            synchronized (histograms) {
+                if (!histograms.containsKey(query)) {
+                    histograms.put(query, registry.timer(registry.name(Instrumentation.class, query)));
+                }
+            }
+            return histograms.get(query).time();
+        }
+    }
+
+    private static class UpdateTimers {
+        private final Map<ColumnFamily, Timer> cfhistograms = new HashMap<ColumnFamily, Timer>();
+        private final Map<String, Timer> histograms = new HashMap<String, Timer>();
+
+        private final MetricRegistry registry = Metrics.getRegistry();
+
+        public Timer.Context getTimerContext(ColumnFamily queryCF) {
+            synchronized (queryCF) {
+                if (!cfhistograms.containsKey(queryCF)) {
+                    final String metricName = "Write To  " + queryCF.getName();
+                    cfhistograms.put(queryCF, registry.timer(registry.name(Instrumentation.class, metricName)));
+                }
+            }
+            return cfhistograms.get(queryCF).time();
+        }
+
+        public Timer.Context getTimerContext(String query) {
+            synchronized (query) {
+                if (!histograms.containsKey(query)) {
+                    histograms.put(query, registry.timer(registry.name(Instrumentation.class, query)));
+                }
+            }
+            return histograms.get(query).time();
         }
     }
 

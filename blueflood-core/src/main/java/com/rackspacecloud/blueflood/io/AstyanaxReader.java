@@ -176,7 +176,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public ColumnList<Locator> getAllLocators(long shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_STATE);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_LOCATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CF_METRICS_LOCATOR)
