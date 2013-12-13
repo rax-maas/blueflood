@@ -124,11 +124,11 @@ public class Instrumentation implements InstrumentationMBean {
                     cfhistograms.put(queryCF, registry.timer(registry.name(Instrumentation.class, metricName)));
                 }
             }
-            return histograms.get(queryCF).time();
+            return cfhistograms.get(queryCF).time();
         }
 
         public Timer.Context getTimerContext(String query) {
-            synchronized (histograms) {
+            synchronized (query) {
                 if (!histograms.containsKey(query)) {
                     histograms.put(query, registry.timer(registry.name(Instrumentation.class, query)));
                 }

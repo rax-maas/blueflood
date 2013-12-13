@@ -235,7 +235,7 @@ public class AstyanaxReader extends AstyanaxIO {
     // Used for string metrics
     private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<String> points = new Points<String>();
-        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_FULL, range);
+        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_STRING, range);
 
         for (Column<Long> column : results) {
             try {
