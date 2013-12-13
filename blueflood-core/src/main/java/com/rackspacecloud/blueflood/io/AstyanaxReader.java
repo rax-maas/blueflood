@@ -69,6 +69,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             }};
         } catch (NotFoundException ex) {
+            Instrumentation.markNotFound(CF_METRIC_METADATA);
             return null;
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
@@ -99,7 +100,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
             }
         } catch (RuntimeException ex) {
-            log.error("Problem deserializing data");
+            log.error("Problem deserializing data for " + locator + " (" + range + ") from " + cf.getName(), ex);
             throw new IOException(ex);
         }
         return points;
@@ -119,7 +120,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(AstyanaxIO.CF_METRICS_STATE);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_STATE);
         try {
             for (int shard : shards) {
                 RowQuery<Long, String> query = keyspace
@@ -168,7 +169,7 @@ public class AstyanaxReader extends AstyanaxIO {
             return new EmptyColumnList<Long>();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
-            log.error("Error getting data from db for CF: " + srcCF.getName(), e);
+            log.error("Error getting data for " + locator + " (" + range + ") from " + srcCF.getName(), e);
             throw new RuntimeException("Error reading rollups", e);
         } finally {
             ctx.stop();
@@ -183,6 +184,7 @@ public class AstyanaxReader extends AstyanaxIO {
                     .getKey(shard);
             return query.execute().getResult();
         } catch (NotFoundException e) {
+            Instrumentation.markNotFound(CF_METRICS_LOCATOR);
             return new EmptyColumnList<Locator>();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
@@ -241,8 +243,7 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 points.add(new Points.Point<String>(column.getName(), column.getValue(StringSerializer.get())));
             } catch (RuntimeException ex) {
-                log.error("Problem deserializing rollup"); // TODO: update message?
-                log.error(ex.getMessage(), ex);
+                log.error("Problem deserializing String data for " + locator + " (" + range + ") from " + CF_METRICS_STRING.getName(), ex);
             }
         }
 
@@ -257,8 +258,7 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 points.add(new Points.Point<Boolean>(column.getName(), column.getValue(BooleanSerializer.get())));
             } catch (RuntimeException ex) {
-                log.error("Problem deserializing rollup"); // TODO: update message?
-                log.error(ex.getMessage(), ex);
+                log.error("Problem deserializing Boolean data for " + locator + " (" + range + ") from " + CF_METRICS_STRING.getName(), ex);
             }
         }
 
@@ -270,7 +270,7 @@ public class AstyanaxReader extends AstyanaxIO {
         ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         Points<SimpleNumber> points = new Points<SimpleNumber>();
-        ColumnList<Long> results = getColumnsFromDB(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran), range);
+        ColumnList<Long> results = getColumnsFromDB(locator, CF, range);
         
         // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
         // data we are asking for and use a specific reader method.
@@ -282,8 +282,7 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 points.add(pointFromColumn(column, gran, serializer));
             } catch (RuntimeException ex) {
-                log.error("Problem deserializing rollup"); // TODO: update message?
-                log.error(ex.getMessage(), ex);
+                log.error("Problem deserializing data for " + locator + " (" + range + ") from " + CF.getName(), ex);
             }
         }
 
@@ -335,7 +334,11 @@ public class AstyanaxReader extends AstyanaxIO {
                 metric = query.getColumnByIndex(0);
             }
         } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
+            if (e instanceof NotFoundException) {
+                Instrumentation.markNotFound(CF_METRICS_STRING);
+            } else {
+                Instrumentation.markReadError(e);
+            }
             log.warn("Cannot get previous string metric value for locator " +
                     locator, e);
             throw e;

@@ -34,8 +34,8 @@ import java.util.Map;
 
 public class Instrumentation implements InstrumentationMBean {
     private static final Logger log = LoggerFactory.getLogger(Instrumentation.class);
-    private static QueryTimers queryTimers = new QueryTimers();
-    private static UpdateTimers updateTimers = new UpdateTimers();
+    private static ReadTimers readTimers = new ReadTimers();
+    private static WriteTimers writeTimers = new WriteTimers();
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
 
@@ -46,13 +46,12 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Map<ColumnFamily, Meter> keyNotFoundInCFMap = new HashMap<ColumnFamily, Meter>();
 
     static {
-        MetricRegistry reg = Metrics.getRegistry();
         Class kls = Instrumentation.class;
-        writeErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Write Errors"));
-        readErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Read Errors"));
-        scanAllColumnFamiliesMeter = reg.meter(MetricRegistry.name(kls, "Scan all ColumnFamilies"));
-        allPoolsExhaustedException = reg.meter(MetricRegistry.name(kls, "All Pools Exhausted"));
-        fullResMetricWritten = reg.meter(MetricRegistry.name(kls, "Full Resolution Metrics Written"));
+        writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
+        readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
+        scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
+        allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
+        fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
                 final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", Instrumentation.class.getSimpleName());
@@ -66,19 +65,15 @@ public class Instrumentation implements InstrumentationMBean {
     private Instrumentation() {/* Used for JMX exposure */}
 
     public static Timer.Context getReadTimerContext(ColumnFamily queryCF) {
-        return queryTimers.getTimerContext(queryCF);
-    }
-
-    public static Timer.Context getReadTimerContext(String query) {
-        return queryTimers.getTimerContext(query);
+        return readTimers.getTimerContext(queryCF);
     }
 
     public static Timer.Context getWriteTimerContext(ColumnFamily queryCF) {
-        return updateTimers.getTimerContext(queryCF);
+        return writeTimers.getTimerContext(queryCF, false);
     }
 
-    public static Timer.Context getWriteTimerContext(String query) {
-        return updateTimers.getTimerContext(query);
+    public static Timer.Context getBatchWriteTimerContext(ColumnFamily queryCF) {
+        return writeTimers.getTimerContext(queryCF, true);
     }
 
     // Most error tracking is done in InstrumentedConnectionPoolMonitor
@@ -109,55 +104,33 @@ public class Instrumentation implements InstrumentationMBean {
         }
     }
 
-    private static class QueryTimers {
-        private final Map<ColumnFamily, Timer> cfhistograms = new HashMap<ColumnFamily, Timer>();
-        private final Map<String, Timer> histograms = new HashMap<String, Timer>();
-
-        private final MetricRegistry registry = Metrics.getRegistry();
+    private static class ReadTimers {
+        private final Map<ColumnFamily, Timer> cfTimers = new HashMap<ColumnFamily, Timer>();
 
         public Timer.Context getTimerContext(ColumnFamily queryCF) {
             synchronized (queryCF) {
-                if (!cfhistograms.containsKey(queryCF)) {
-                    final String metricName = "Read From " + queryCF.getName();
-                    cfhistograms.put(queryCF, registry.timer(registry.name(Instrumentation.class, metricName)));
+                if (!cfTimers.containsKey(queryCF)) {
+                    final String metricName = queryCF.getName();
+                    cfTimers.put(queryCF, Metrics.timer(Instrumentation.class, "reads", metricName));
                 }
             }
-            return cfhistograms.get(queryCF).time();
-        }
-
-        public Timer.Context getTimerContext(String query) {
-            synchronized (query) {
-                if (!histograms.containsKey(query)) {
-                    histograms.put(query, registry.timer(registry.name(Instrumentation.class, query)));
-                }
-            }
-            return histograms.get(query).time();
+            return cfTimers.get(queryCF).time();
         }
     }
 
-    private static class UpdateTimers {
-        private final Map<ColumnFamily, Timer> cfhistograms = new HashMap<ColumnFamily, Timer>();
-        private final Map<String, Timer> histograms = new HashMap<String, Timer>();
+    private static class WriteTimers {
+        private final Map<ColumnFamily, Timer> cfTimers = new HashMap<ColumnFamily, Timer>();
+        private final Map<ColumnFamily, Timer> cfBatchTimers = new HashMap<ColumnFamily, Timer>();
 
-        private final MetricRegistry registry = Metrics.getRegistry();
-
-        public Timer.Context getTimerContext(ColumnFamily queryCF) {
+        public Timer.Context getTimerContext(ColumnFamily queryCF, boolean batch) {
+            final Map<ColumnFamily, Timer> map = (batch ? cfBatchTimers : cfTimers);
             synchronized (queryCF) {
-                if (!cfhistograms.containsKey(queryCF)) {
-                    final String metricName = "Write To  " + queryCF.getName();
-                    cfhistograms.put(queryCF, registry.timer(registry.name(Instrumentation.class, metricName)));
+                if (!map.containsKey(queryCF)) {
+                    final String metricName = (batch ? MetricRegistry.name("batched", queryCF.getName()) : queryCF.getName());
+                    map.put(queryCF, Metrics.timer(Instrumentation.class, "writes", metricName));
                 }
             }
-            return cfhistograms.get(queryCF).time();
-        }
-
-        public Timer.Context getTimerContext(String query) {
-            synchronized (query) {
-                if (!histograms.containsKey(query)) {
-                    histograms.put(query, registry.timer(registry.name(Instrumentation.class, query)));
-                }
-            }
-            return histograms.get(query).time();
+            return cfTimers.get(queryCF).time();
         }
     }
 
@@ -165,8 +138,7 @@ public class Instrumentation implements InstrumentationMBean {
         synchronized (CF) {
             Meter meter = keyNotFoundInCFMap.get(CF);
             if (meter == null) {
-                meter = Metrics.getRegistry().meter(MetricRegistry.name(Instrumentation.class,
-                        "Key Not Found in " + CF.getName()));
+                meter = Metrics.meter(Instrumentation.class, "reads", "Not Found", CF.getName());
                 keyNotFoundInCFMap.put(CF, meter);
             }
             meter.mark();

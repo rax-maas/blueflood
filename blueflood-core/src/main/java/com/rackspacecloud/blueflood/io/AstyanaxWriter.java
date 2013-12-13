@@ -197,7 +197,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     
     // generic IMetric insertion. All other metric insertion methods could use this one.
     public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
-        // todo: need a way of using an interned string.
         Timer.Context ctx = Instrumentation.getWriteTimerContext(cf);
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
