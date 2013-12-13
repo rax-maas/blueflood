@@ -294,7 +294,10 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(INSERT_ROLLUP_BATCH);
+        if (writeContexts.size() == 0) {
+            return;
+        }
+        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(writeContexts.get(0).getDestinationCF());
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();
