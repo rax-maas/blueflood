@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.types.Range;
 import org.junit.Assert;
 import org.junit.Test;
@@ -223,6 +224,37 @@ public class SlotTest {
             Assert.assertEquals(0, gran.slot(endOfCycle + gran.milliseconds()));
         }
     }
+
+    @Test(expected=GranularityException.class)
+    public void testSlotFromFinerSlotThrowsAtFull() throws Throwable {
+        try {
+            Granularity.FULL.slotFromFinerSlot(123);
+        } catch (RuntimeException e) {
+            throw e.getCause();
+        }
+    }
+
+    @Test
+    public void testSlotFromFinerSlot() {
+        // i.e, slot 144 for a 5m is == slot 36 of 20m ( 144 / (20/5)), slot 12 at 60m, slot 3 at 240m, etc
+        try {
+            Assert.assertEquals(256, Granularity.MIN_5.slotFromFinerSlot(256));
+
+            Assert.assertEquals(35, Granularity.MIN_20.slotFromFinerSlot(143));
+            Assert.assertEquals(36, Granularity.MIN_20.slotFromFinerSlot(144));
+            Assert.assertEquals(36, Granularity.MIN_20.slotFromFinerSlot(145));
+            Assert.assertEquals(36, Granularity.MIN_20.slotFromFinerSlot(146));
+            Assert.assertEquals(36, Granularity.MIN_20.slotFromFinerSlot(147));
+            Assert.assertEquals(37, Granularity.MIN_20.slotFromFinerSlot(148));
+
+            Assert.assertEquals(12, Granularity.MIN_60.slotFromFinerSlot(36));
+            Assert.assertEquals(3, Granularity.MIN_240.slotFromFinerSlot(12));
+            Assert.assertEquals(2, Granularity.MIN_1440.slotFromFinerSlot(13));
+        } catch (GranularityException e) {
+            Assert.assertNull("GranularityException seen on non-full-res Granularity", e);
+        }
+    }
+
     
     @Test
     public void testRangeDerivation() {

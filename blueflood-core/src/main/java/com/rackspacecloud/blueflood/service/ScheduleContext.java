@@ -213,7 +213,7 @@ public class ScheduleContext implements IngestionContext {
             Granularity gran = Granularity.granularityFromKey(slotKey);
 
             UpdateStamp stamp = shardStateManager.getUpdateStamp(shard, gran, slot);
-            shardStateManager.setAllCoarserSlotsDirtyForChildSlot(shard, gran, slot, stamp.getTimestamp());
+            shardStateManager.setAllCoarserSlotsDirtyForSlot(shard, gran, slot);
             // Update the stamp to Rolled state if and only if the current state is running.
             // If the current state is active, it means we received a delayed write which toggled the status to Active.
             if (stamp.getState() == UpdateStamp.State.Running) {
