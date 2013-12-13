@@ -14,7 +14,7 @@
 *    limitations under the License.
 */
 
-package com.rackspacecloud.blueflood.serializers;
+package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.types.BasicRollup;
