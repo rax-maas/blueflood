@@ -17,7 +17,9 @@
 package com.rackspacecloud.blueflood.internal;
 
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -35,7 +37,7 @@ public class InternalAPIFactory {
 
     static final Map<Granularity, TimeValue> SAFETY_TTLS = new HashMap<Granularity, TimeValue>() {{
         for (Granularity gran : Granularity.granularities()) {
-            TimeValue defaultTTL = AstyanaxIO.getColumnFamilyMapper().get(gran).getDefaultTTL(); 
+            TimeValue defaultTTL = ((CassandraModel.MetricColumnFamily) CassandraModel.getColumnFamily(BasicRollup.class, gran)).getDefaultTTL();
             put(gran, new TimeValue(defaultTTL.getValue() * 5, defaultTTL.getUnit()));
         }
     }};

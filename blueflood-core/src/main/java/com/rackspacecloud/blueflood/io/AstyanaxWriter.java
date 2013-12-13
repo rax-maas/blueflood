@@ -99,7 +99,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(AstyanaxIO.CF_METRICS_FULL);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -142,7 +142,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
-        mutationBatch.withRow(CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
+        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
@@ -158,11 +158,11 @@ public class AstyanaxWriter extends AstyanaxIO {
             } else { //boolean
                 persist = String.valueOf(metric.getValue());
             }
-            mutationBatch.withRow(CF_METRICS_STRING, metric.getLocator())
+            mutationBatch.withRow(CassandraModel.CF_METRICS_STRING, metric.getLocator())
                     .putColumn(metric.getCollectionTime(), persist, metric.getTtlInSeconds());
         } else {
             try {
-                mutationBatch.withRow(CF_METRICS_FULL, metric.getLocator())
+                mutationBatch.withRow(CassandraModel.CF_METRICS_FULL, metric.getLocator())
                         .putColumn(metric.getCollectionTime(),
                                 metric.getValue(),
                                 NumericSerializer.serializerFor(Object.class),
@@ -174,9 +174,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadataValue(Locator locator, String metaKey, Object metaValue) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CF_METRIC_METADATA);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRIC_METADATA);
         try {
-            keyspace.prepareColumnMutation(CF_METRIC_METADATA, locator, metaKey)
+            keyspace.prepareColumnMutation(CassandraModel.CF_METRIC_METADATA, locator, metaKey)
                     .putValue(metaValue, MetadataSerializer.get(), null)
                     .execute();
         } catch (ConnectionException e) {
@@ -253,11 +253,11 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CF_METRICS_STATE);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE);
         try {
             boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<String> mutation = mutationBatch.withRow(CF_METRICS_STATE, (long)shard);
+            ColumnListMutation<String> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
             for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> granEntry : updates.entrySet()) {
                 Granularity g = granEntry.getKey();
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
