@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.outputs.handlers;
+package com.rackspacecloud.blueflood.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Properties;
 
-class KafkaConfig {
+public class KafkaConfig {
     private static final Logger log = LoggerFactory.getLogger(KafkaConfig.class);
     private Properties props = new Properties();
 

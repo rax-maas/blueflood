@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.outputs.handlers.helpers.KafkaProducerWork;
 import com.rackspacecloud.blueflood.service.EventListenerService;
+import com.rackspacecloud.blueflood.service.KafkaConfig;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import java.util.ArrayList;
