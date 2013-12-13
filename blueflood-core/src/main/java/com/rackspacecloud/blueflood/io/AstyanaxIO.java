@@ -80,7 +80,6 @@ public class AstyanaxIO {
     public static final ColumnFamily<Long, String> CF_METRICS_STATE = new ColumnFamily<Long, String>("metrics_state",
             LongSerializer.get(),
             StringSerializer.get());
-
     protected static final ColumnFamilyMapper CF_NAME_TO_CF;
     protected static final ColumnFamilyMapper PREAG_GRAN_TO_CF;
     protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;

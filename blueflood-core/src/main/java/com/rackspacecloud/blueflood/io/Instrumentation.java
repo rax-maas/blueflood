@@ -40,7 +40,6 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter readErrMeter;
 
     // One-off meters
-    private static final Meter readStringsNotFound;
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
@@ -51,7 +50,6 @@ public class Instrumentation implements InstrumentationMBean {
         Class kls = Instrumentation.class;
         writeErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Write Errors"));
         readErrMeter = reg.meter(MetricRegistry.name(kls, "Cassandra Read Errors"));
-        readStringsNotFound = reg.meter(MetricRegistry.name(kls, "String Metrics Not Found"));
         scanAllColumnFamiliesMeter = reg.meter(MetricRegistry.name(kls, "Scan all ColumnFamilies"));
         allPoolsExhaustedException = reg.meter(MetricRegistry.name(kls, "All Pools Exhausted"));
         fullResMetricWritten = reg.meter(MetricRegistry.name(kls, "Full Resolution Metrics Written"));
@@ -169,14 +167,10 @@ public class Instrumentation implements InstrumentationMBean {
             if (meter == null) {
                 meter = Metrics.getRegistry().meter(MetricRegistry.name(Instrumentation.class,
                         "Key Not Found in " + CF.getName()));
-                keyNotFoundInCFMap.put(CF,meter);
+                keyNotFoundInCFMap.put(CF, meter);
             }
             meter.mark();
         }
-    }
-
-    public static void markStringsNotFound() {
-        readStringsNotFound.mark();
     }
 
     public static void markScanAllColumnFamilies() {
