@@ -17,6 +17,8 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.types.BasicRollup;
+
 import java.util.concurrent.*;
 
 public class RollupEventEmitter extends Emitter<RollupEvent> {
@@ -38,11 +40,15 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
 
     @Override
     public Future emit(final String event, final RollupEvent... eventPayload) {
-        return eventExecutors.submit(new Runnable() {
-            @Override
-            public void run() {
-                RollupEventEmitter.super.emit(event, eventPayload);
-            }
-        });
+        //TODO: This hack will go away after Kafka Serializer is made generic
+        if(eventPayload[0].getRollup() instanceof BasicRollup) {
+            return eventExecutors.submit(new Runnable() {
+                @Override
+                public void run() {
+                    RollupEventEmitter.super.emit(event, eventPayload);
+                }
+            });
+        }
+        return null;
     }
 }
