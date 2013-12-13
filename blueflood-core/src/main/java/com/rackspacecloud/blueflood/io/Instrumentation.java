@@ -162,7 +162,7 @@ public class Instrumentation implements InstrumentationMBean {
     }
 
     public static void markNotFound(ColumnFamily CF) {
-        synchronized (keyNotFoundInCFMap) {
+        synchronized (CF) {
             Meter meter = keyNotFoundInCFMap.get(CF);
             if (meter == null) {
                 meter = Metrics.getRegistry().meter(MetricRegistry.name(Instrumentation.class,
