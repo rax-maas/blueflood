@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.*;
@@ -58,13 +57,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
 
-    private static final String INSERT_METADATA = "Metadata Insert".intern();
-    private static final String INSERT_FULL = "Full Insert".intern();
-    private static final String INSERT_PREAGGREGATED = "Preaggregate Insert".intern();
-    private static final String INSERT_ROLLUP = "Rollup Insert".intern();
     private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
-    private static final String INSERT_SHARD = "Shard Insert".intern();
-    private static final String INSERT_ROLLUP_WRITE = "Rollup Insert Write TEMPORARY".intern();
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -106,7 +99,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(List<Metric> metrics) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_FULL);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(AstyanaxIO.CF_METRICS_FULL);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -181,7 +174,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadataValue(Locator locator, String metaKey, Object metaValue) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_METADATA);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CF_METRIC_METADATA);
         try {
             keyspace.prepareColumnMutation(CF_METRIC_METADATA, locator, metaKey)
                     .putValue(metaValue, MetadataSerializer.get(), null)
@@ -205,7 +198,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // generic IMetric insertion. All other metric insertion methods could use this one.
     public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
         // todo: need a way of using an interned string.
-        Timer.Context ctx = Instrumentation.getTimerContext("insert_" + cf.getName());
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(cf);
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
         try {
@@ -261,7 +254,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_SHARD);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CF_METRICS_STATE);
         try {
             boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -302,7 +295,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(INSERT_ROLLUP_BATCH);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(INSERT_ROLLUP_BATCH);
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();

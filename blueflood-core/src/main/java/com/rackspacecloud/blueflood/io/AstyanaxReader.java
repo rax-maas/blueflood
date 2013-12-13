@@ -47,13 +47,6 @@ import java.util.Map;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
-
-    private static final String GET_ALL_SHARDS = "Get all shards";
-    private static final String GET_NUMERIC_ROLLUPS = "Get Numeric Rollup Iterator";
-    private static final String GET_STRING_METRICS = "Get String Rollup Iterator";
-    private static final String LOCATOR_ITERATOR = "Get Locators Iterator";
-    private static final String GET_LAST_METRICS_VALUE = "Get last metric value";
-    private static final String GET_METADATA = "Get Metadata col";
     private static final MetadataCache metaCache = MetadataCache.getInstance();
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
 
@@ -65,7 +58,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(GET_METADATA);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRIC_METADATA);
         try {
             final ColumnList<String> results = keyspace.prepareQuery(CF_METRIC_METADATA)
                     .getKey(locator)
@@ -99,7 +92,7 @@ public class AstyanaxReader extends AstyanaxIO {
         else if ( cf == AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL)
             serializer = type.equals(TimerRollup.class) ? NumericSerializer.timerRollupInstance : NumericSerializer.simpleNumberSerializer;
         
-        ColumnList<Long> cols = getNumericRollups(locator, cf, range.start, range.stop);
+        ColumnList<Long> cols = getColumnsFromDB(locator, cf, range);
         Points<T> points = new Points<T>();
         try {
             for (Column<Long> col : cols) {
@@ -126,7 +119,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getTimerContext(GET_ALL_SHARDS);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(AstyanaxIO.CF_METRICS_STATE);
         try {
             for (int shard : shards) {
                 RowQuery<Long, String> query = keyspace
@@ -155,12 +148,14 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    private ColumnList<Long> getNumericRollups(Locator locator, ColumnFamily<Locator, Long> srcCF, long from, long to) {
-        if (from > to) throw new RuntimeException(String.format("Invalid rollup period %d->%d", from, to));
+    private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
+        if (range.getStart() > range.getStop()) {
+            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
+        }
 
-        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
+        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
         ColumnList<Long> columns;
-        Timer.Context ctx = Instrumentation.getTimerContext(GET_NUMERIC_ROLLUPS);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(srcCF);
         try {
             RowQuery<Locator, Long> query = keyspace
                     .prepareQuery(srcCF)
@@ -169,43 +164,19 @@ public class AstyanaxReader extends AstyanaxIO {
             columns = query.execute().getResult();
             return columns;
         } catch (NotFoundException e) {
+            Instrumentation.markNotFound(srcCF);
             return new EmptyColumnList<Long>();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
-            log.error("Error getting numeric rollups", e);
-            throw new RuntimeException("Error reading numeric rollups", e);
-        } finally {
-            ctx.stop();
-        }
-    }
-
-    private ColumnList<Long> getStringPoints(final Locator locator, final long from, final long to) {
-        if (from > to) throw new IllegalArgumentException(String.format("Invalid rollup period %d->%d", from, to));
-
-        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(from).setEnd(to);
-        ColumnList<Long> columns;
-        Timer.Context ctx = Instrumentation.getTimerContext(GET_STRING_METRICS);
-        try {
-            RowQuery<Locator, Long> query = keyspace
-                    .prepareQuery(CF_METRICS_STRING)
-                    .getKey(locator)
-                    .withColumnRange(rangeBuilder.build());
-            columns = query.execute().getResult();
-            return columns;
-        } catch (NotFoundException e) {
-            Instrumentation.markStringsNotFound();
-            return new EmptyColumnList<Long>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error reading string points", e);
-            throw new RuntimeException("Error reading string points", e);
+            log.error("Error getting data from db for CF: " + srcCF.getName(), e);
+            throw new RuntimeException("Error reading rollups", e);
         } finally {
             ctx.stop();
         }
     }
 
     public ColumnList<Locator> getAllLocators(long shard) {
-        Timer.Context ctx = Instrumentation.getTimerContext(LOCATOR_ITERATOR);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_LOCATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CF_METRICS_LOCATOR)
@@ -264,7 +235,7 @@ public class AstyanaxReader extends AstyanaxIO {
     // Used for string metrics
     private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<String> points = new Points<String>();
-        ColumnList<Long> results = getStringPoints(locator, range.start, range.stop);
+        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_STRING, range);
 
         for (Column<Long> column : results) {
             try {
@@ -280,7 +251,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<Boolean> points = new Points<Boolean>();
-        ColumnList<Long> results = getStringPoints(locator, range.start, range.stop);
+        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_STRING, range);
 
         for (Column<Long> column : results) {
             try {
@@ -299,8 +270,7 @@ public class AstyanaxReader extends AstyanaxIO {
         ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
 
         Points<SimpleNumber> points = new Points<SimpleNumber>();
-        ColumnList<Long> results = getNumericRollups(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran),
-                range.start, range.stop);
+        ColumnList<Long> results = getColumnsFromDB(locator, AstyanaxIO.CF_NAME_TO_CF.get(gran), range);
         
         // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
         // data we are asking for and use a specific reader method.
@@ -352,7 +322,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public Column<Long> getLastMetricFromMetricsString(Locator locator)
             throws Exception {
         Column<Long> metric = null;
-        Timer.Context ctx = Instrumentation.getTimerContext(GET_LAST_METRICS_VALUE);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_STRING);
 
         try {
             ColumnList<Long> query = keyspace
