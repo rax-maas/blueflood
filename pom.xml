@@ -266,6 +266,11 @@
       <name>Dominic LoBue</name>
       <email>dominic.lobue@rackspace.com</email>
     </developer>
+    <developer>
+      <id>chinmay-gupte</id>
+      <name>Chinmay Gupte</name>
+      <email>chinmay.gupte@rackspace.com</email>
+    </developer>
   </developers>
 
 </project>
