@@ -28,8 +28,8 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
 
-    INGESTION_MODULES(""),
-    QUERY_MODULES(""),
+    INGESTION_MODULES("com.rackspacecloud.blueflood.service.HttpIngestionService"),
+    QUERY_MODULES("com.rackspacecloud.blueflood.service.HttpQueryService"),
     DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
 

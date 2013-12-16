@@ -58,8 +58,9 @@ public class ConfigurationTest {
     @Test
     public void testGetListProperty() {
         Configuration config = Configuration.getInstance();
-        Assert.assertEquals(config.getStringProperty(CoreConfig.QUERY_MODULES), "");
-        Assert.assertTrue(config.getListProperty(CoreConfig.QUERY_MODULES).isEmpty());
+        //Test the default query module
+        Assert.assertEquals(config.getStringProperty(CoreConfig.QUERY_MODULES), "com.rackspacecloud.blueflood.service.HttpQueryService");
+        //Override the default
         System.setProperty("QUERY_MODULES", "a");
         Assert.assertEquals(config.getListProperty(CoreConfig.QUERY_MODULES).size(), 1);
         System.setProperty("QUERY_MODULES", "a,b , c");
