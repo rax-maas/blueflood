@@ -39,10 +39,12 @@ import static org.jboss.netty.channel.Channels.pipeline;
 public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
+    private final String httpQueryHost;
     private AstyanaxReader reader = AstyanaxReader.getInstance();
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
+        this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
@@ -55,7 +57,7 @@ public class HttpMetricDataQueryServer {
                         Executors.newCachedThreadPool(),
                         Executors.newCachedThreadPool()));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpQueryPort));
+        server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {

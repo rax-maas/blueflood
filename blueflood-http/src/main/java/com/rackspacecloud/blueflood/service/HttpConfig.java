@@ -23,8 +23,14 @@ public enum HttpConfig implements ConfigDefaults {
     // blueflood can receive metric over HTTP
     HTTP_INGESTION_PORT("19000"),
 
+    // interface to which the ingestion server will bind
+    HTTP_INGESTION_HOST("localhost"),
+
     // blueflood can output metrics over HTTP
     HTTP_METRIC_DATA_QUERY_PORT("20000"),
+
+    // interface to which the query server will bind
+    HTTP_QUERY_HOST("localhost"),
 
     // Maximum number of metrics allowed to be fetched per batch query
     MAX_METRICS_PER_BATCH_QUERY("100"),
