@@ -29,7 +29,7 @@ You can run the entire suite of tests using Maven:
 
 Build an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar) using maven:
 
-    mvn package
+    mvn package -P all-modules
 
 The uber jar will be found in ${BLUEFLOOD_DIR}/blueflood-all/target/blueflood-all-${VERSION}-jar-with-dependencies.jar.
 This jar contains all the dependencies necessary to run Blueflood with a very simple classpath.
