@@ -130,7 +130,7 @@ public class Instrumentation implements InstrumentationMBean {
                     map.put(queryCF, Metrics.timer(Instrumentation.class, "writes", metricName));
                 }
             }
-            return cfTimers.get(queryCF).time();
+            return map.get(queryCF).time();
         }
     }
 
