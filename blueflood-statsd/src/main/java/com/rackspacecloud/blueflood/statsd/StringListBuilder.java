@@ -5,6 +5,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Constructs strings from buffers. Keep in mind that some characters are multiple bytes and may span two buffers.
@@ -23,8 +26,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class StringListBuilder extends AsyncFunctionWithThreadPool<List<ByteBuf>, List<CharSequence>> {
     
+    private static final Logger log = LoggerFactory.getLogger(StringListBuilder.class);
     private static final Charset CHARSET = Charsets.UTF_8;
     private static final byte EOL = (byte)'\n';
+    private static final AtomicLong bundleIdent = new AtomicLong(0);
     
     public StringListBuilder(ThreadPoolExecutor executor) {
         super(executor);
@@ -47,12 +52,16 @@ public class StringListBuilder extends AsyncFunctionWithThreadPool<List<ByteBuf>
     public static List<CharSequence> buildStrings(List<ByteBuf> input) {
         final List<CharSequence> strings = new ArrayList<CharSequence>();
         final BytesBuilder builder = new BytesBuilder();
+        final long bundleId = bundleIdent.getAndIncrement();
         for (ByteBuf bb : input) {
             bb.forEachByte(new ByteBufProcessor() {
                 @Override
                 public boolean process(byte value) throws Exception {
                     if (value == EOL) {
-                        strings.add(new String(builder.toArray(), CHARSET));
+                        String newString = new String(builder.toArray(), CHARSET);
+                        if (log.isTraceEnabled())
+                            log.trace("bundle:{} -> {}", bundleId, newString);
+                        strings.add(newString);
                         builder.clear();
                     } else {
                         builder.add(value);

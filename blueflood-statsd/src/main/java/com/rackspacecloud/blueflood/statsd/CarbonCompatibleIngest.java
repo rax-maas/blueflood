@@ -162,6 +162,7 @@ public class CarbonCompatibleIngest {
     
     private static void startIngestion(ScheduleContext context, String bindAddr, int bindPort) {
         MetadataCache typeCache = MetadataCache.createLoadingCacheInstance(new TimeValue(24, TimeUnit.HOURS), 5);
+        final StatsdOptions parseConfig = new StatsdOptions(Configuration.getInstance());
         try {
             
             ThreadPoolBuilder tpBuilder = new ThreadPoolBuilder()
@@ -173,7 +174,7 @@ public class CarbonCompatibleIngest {
             // set up an async chain to group messages.
             AsyncChain<List<ByteBuf>, Object> processor = new AsyncChain<List<ByteBuf>, Object>()
                     .withFunction(new StringListBuilder(tpBuilder.withName("String Constructor").build()))
-                    .withFunction(new StatParser(tpBuilder.withName("Stat Parser").build()))
+                    .withFunction(new StatParser(tpBuilder.withName("Stat Parser").build(), parseConfig))
                     .withFunction(new TypeCacher(tpBuilder.withName("Cache Metric Type").build(), typeCache))
                     .withFunction(new MetricsWriter(tpBuilder.withName("Metrics Writer").build()))
                     .withFunction(new ContextUpdater(context, tpBuilder.withName("Context Updater").build()))

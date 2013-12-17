@@ -23,7 +23,9 @@ import com.rackspacecloud.blueflood.types.StatType;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A collection of stats. we do a little bit of preorganization to make metric generation simpler.
@@ -48,5 +50,34 @@ public class StatCollection {
     
     public Map<Locator, Collection<Stat>> getTimerStats() {
         return Collections.unmodifiableMap(timers.asMap());
+    }
+    
+    // in non-legacy mode, counters (comprised of two lines) are rendered as timers.
+    // detect those and convert them to a COUNTER + UNKNOWN pair. We currently throw away the UNKNOWN stat (a rate).
+    // todo: In the future, it will be part of the counter.
+    public static void renderTimersAsCounters(StatCollection stats) {
+        Set<Locator> toRemove = new HashSet<Locator>();
+        for (Locator locator : stats.timers.keySet()) {
+            if (stats.timers.get(locator).size() == 2) {
+                toRemove.add(locator);
+            }
+        }
+        
+        for (Locator locator : toRemove) {
+            Collection<Stat> components = stats.timers.removeAll(locator);
+            // one is a counter, the other is a unknown.
+            for (Stat stat : components) {
+                stats.allStats.remove(stat.getType(), stat);
+                if ("rate".equals(stat.getLabel().getName())) {
+                    // becomes unknown.
+                    stat.getLabel().setType(StatType.UNKNOWN);
+                    stats.allStats.put(StatType.UNKNOWN, stat);
+                } else {
+                    // becomes counter.
+                    stat.getLabel().setType(StatType.COUNTER);
+                    stats.allStats.put(StatType.COUNTER, stat);
+                }
+            }
+        }
     }
 }

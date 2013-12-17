@@ -1,0 +1,221 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package com.rackspacecloud.blueflood.statsd.containers;
+
+import com.rackspacecloud.blueflood.statsd.StatsdOptions;
+import com.rackspacecloud.blueflood.statsd.Util;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.StatType;
+
+public class StatLabel {
+    private final String original;
+    private final boolean isInternal;
+    private StatType type;
+    private final Locator locator; // might be null!
+    private final String name;
+    
+    private StatLabel(String original, boolean isInternal, StatType type, Locator locator, String name) {
+        this.original = original;
+        this.isInternal = isInternal;
+        this.type = type;
+        this.locator = locator;
+        this.name = name;
+    }
+    
+    public void setType(StatType type) {
+        this.type = type;
+    }
+    
+    
+    
+    public static StatLabel parse(String raw, StatsdOptions options) {
+        if (options.isLegacyNamespace())
+            return LegacyParser.parse(raw, options);
+        else
+            return Parser.parse(raw, options);
+    }
+
+    public StatType getType() {
+        return type;
+    }
+
+    public Locator getLocator() {
+        return locator;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public static class LegacyParser {
+        public static StatLabel parse(String raw, StatsdOptions options) {
+            String[] parts = raw.split("\\.", -1);
+            
+            StatType type;
+            Locator locator;
+            String name;
+            boolean internal = false;
+            if (parts[0].equals(options.getPrefixStats()) && parts[1].equals("numStats")) {
+                internal = true;
+                type = StatType.GAUGE;
+                // there will be no global prefix.
+            } else if (parts[0].equals(options.getGlobalPrefix()) && parts[1].equals(options.getPrefixStats())) {
+                internal = true;
+                // order in this if statement is important. the second part needs to be checked first.
+                if (parts[2].equals("processing_time"))
+                    type = StatType.GAUGE;
+                else if (parts[2].equals("graphiteStats"))
+                    type = StatType.GAUGE;
+                else if (parts[0].equals("stats_counts"))
+                   type = StatType.COUNTER; // bad_lines_seen and packets_received.
+               else
+                    type = StatType.UNKNOWN; // these are the counts per second for the bad_lines_seen and packets_received counters.
+            } else {
+                // if (type == null) assert internal;
+                type = StatType.UNKNOWN; // will get set later because this is not internal. this satisfies the compiler though.
+            }
+            
+            if (internal) {
+                name = raw;
+                locator = Locator.createLocatorFromPathComponents(options.getInternalTenantId(), parts);
+                // type is already set!
+            } else {
+                if (parts[0].equals("stats_counts")) {
+                    type = StatType.COUNTER;
+                    // after this, tenantId should be exposed.
+                    parts = Util.shiftLeft(parts, 1);
+                } else if (options.hasGlobalPrefix()) {
+                    // get rid of the global prefix.
+                    parts = Util.shiftLeft(parts, 1);
+                    if (parts[0].equals(options.getPrefixCounter()))
+                        type = StatType.COUNTER;
+                    else if (parts[0].equals(options.getPrefixGauge()))
+                        type = StatType.GAUGE;
+                    else if (parts[0].equals(options.getPrefixSet()))
+                        type = StatType.SET;
+                    else if (parts[0].equals(options.getPrefixTimer()))
+                        type = StatType.TIMER;
+                    else
+                         // we probably just shifted of the global prefix on a counter's per_second value. 
+                         type = StatType.UNKNOWN;
+                    parts = Util.shiftLeft(parts, 1);
+                } else {
+                    // shouldn't happen. there is always a global prefix in legacy mode.
+                    type = StatType.UNKNOWN;
+                }
+                
+                String tenantId = parts[0];
+                parts = Util.shiftLeft(parts, 1);
+                
+                // at this point, I don't care if there is a global suffix. If it was configured to have one, they must
+                // want it as part of the identifying locator.
+                
+                // because timers are split onto multiple lines, the locator comprises every part but the last.
+                // name really only matters for timers.
+                if (type == StatType.TIMER) {
+                    if (options.hasGlobalSuffix()) {
+                        name = parts[parts.length - 2];
+                        parts = Util.remove(parts, parts.length - 2, 1);
+                        // todo: should the suffix be stripped. that value wasn't on the metric when it came into statsd.
+                    } else {
+                        name = parts[parts.length - 1];
+                        parts = Util.shiftRight(parts, 1);
+                    }
+                } else {
+                    name = null;
+                }
+                
+                locator = Locator.createLocatorFromPathComponents(tenantId, parts);
+            }
+            
+            return new StatLabel(raw, internal, type, locator, name);
+        } 
+    }
+    
+    public static class Parser {
+        public static StatLabel parse(String raw, StatsdOptions options) {
+            
+            String[] originalParts = raw.split("\\.", -1);
+            String[] parts = originalParts;
+            
+            if (options.hasGlobalPrefix())
+                parts = Util.shiftLeft(parts, 1);
+            
+            // at this point, we have either type or internal prefix.
+            
+            boolean internal = false;
+            StatType type;
+            Locator locator;
+            String tenantId;
+            String name;
+            if (parts[0].startsWith(options.getPrefixStats())) {
+                internal = true;
+                type = StatType.GAUGE;
+            } else if (parts[0].startsWith(options.getPrefixTimer()) && parts[1].startsWith(options.getPrefixStats())) {
+                // bad_lines_seen and packets_received.
+                internal = true;
+                //  this is internal, so I don't care about destroying parts at this point.
+                if (options.hasGlobalSuffix())
+                    parts = Util.shiftRight(parts, 1);
+                if ("rate".equals(parts[parts.length - 1]))
+                    type = StatType.UNKNOWN;
+                else if ("count".equals(parts[parts.length - 1]))
+                    type = StatType.COUNTER;
+                else
+                    type = StatType.UNKNOWN;
+            } else {
+                // if (type == null) assert internal;
+                type = StatType.UNKNOWN; // will get set when handling non-internals.
+            }
+            
+            if (internal) {
+                name = raw;
+                locator = Locator.createLocatorFromPathComponents(options.getInternalTenantId(), originalParts);
+            } else {
+                if (parts[0].equals(options.getPrefixCounter()))
+                    type = StatType.COUNTER;
+                else if (parts[0].equals(options.getPrefixTimer()))
+                    type = StatType.TIMER;
+                else if (parts[0].equals(options.getPrefixSet()))
+                    type = StatType.SET;
+                else if (parts[0].equals(options.getPrefixGauge()))
+                    type = StatType.GAUGE;
+                else
+                    type = StatType.UNKNOWN;
+                
+                tenantId = parts[1];
+                parts = Util.shiftLeft(parts, 2); // lops off type and tenant
+                
+                if (type == StatType.TIMER) {
+                    if (options.hasGlobalSuffix()) {
+                        name = parts[parts.length - 2];
+                        parts = Util.remove(parts, parts.length - 2, 1);
+                    } else {
+                        name = parts[parts.length - 1];
+                        parts = Util.shiftRight(parts, 1);
+                    }
+                } else {
+                    name = null;
+                }
+                
+                locator = Locator.createLocatorFromPathComponents(tenantId, parts);
+            }
+            
+            return new StatLabel(raw, internal, type, locator, name);
+        }
+    }
+}

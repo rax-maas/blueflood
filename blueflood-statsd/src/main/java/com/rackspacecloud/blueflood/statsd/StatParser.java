@@ -23,8 +23,11 @@ public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSeque
     private static Meter invalidStatsMeter = Metrics.meter(StatParser.class, "Stat Parser Invalid Stats");
     private static Meter statParseErrors = Metrics.meter(StatParser.class, "Stat Parse Errors");
     
-    public StatParser(ThreadPoolExecutor executor) {
+    private final StatsdOptions parseOptions;
+    
+    public StatParser(ThreadPoolExecutor executor, StatsdOptions parseOptions) {
         super(executor);
+        this.parseOptions = parseOptions;
     }
 
     @Override
@@ -35,7 +38,7 @@ public class StatParser extends AsyncFunctionWithThreadPool<Collection<CharSeque
                 StatCollection stats = new StatCollection();
                 for (CharSequence seq : input) {
                     try {
-                        Stat stat = Conversions.asStat(seq);
+                        Stat stat = Conversions.asStat(seq, parseOptions);
                         if (stat.isValid()) {
                             stats.add(stat);
                         } else {

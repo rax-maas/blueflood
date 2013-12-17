@@ -44,7 +44,7 @@ public class DoesStuff {
         }
         
         // abusing this method.
-        String[] descriptorLines = Stat.Parser.shiftLeft(args, 1);
+        String[] descriptorLines = Util.shiftLeft(args, 1);
         scheduleThings(descriptorLines);
         
         

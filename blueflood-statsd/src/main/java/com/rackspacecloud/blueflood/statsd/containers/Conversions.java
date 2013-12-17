@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.statsd.containers;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.rackspacecloud.blueflood.statsd.StatsdOptions;
+import com.rackspacecloud.blueflood.statsd.Util;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -39,7 +41,7 @@ public class Conversions {
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
     
     public static IMetric asTimerMetric(Locator locator, Collection<Stat> stats) {
-    return new PreaggregatedMetric(
+        return new PreaggregatedMetric(
             stats.iterator().next().getTimestamp() * 1000,
             locator,
             DEFAULT_TTL,
@@ -47,9 +49,9 @@ public class Conversions {
         );
     }
     
-    public static Stat asStat(CharSequence str) {
+    public static Stat asStat(CharSequence str, StatsdOptions parseOptions) {
         String[] parts = str.toString().split(" ", -1);
-        return new Stat(parts[0], Stat.Parser.grokValue(parts[1]), Long.parseLong(parts[2]));
+        return new Stat(StatLabel.parse(parts[0], parseOptions), Util.grokValue(parts[1]), Long.parseLong(parts[2]));
     }
     
     // convert to a statsd formatted line.
@@ -73,32 +75,32 @@ public class Conversions {
         int remainingRequired = 8;
         
         for (Stat stat : stats) {
-            if ("upper".equals(stat.getName())) {
+            if ("upper".equals(stat.getNameIfTimer())) {
                 max = stat.getValue();
                 remainingRequired--;
-            } else if ("lower".equals(stat.getName())) {
+            } else if ("lower".equals(stat.getNameIfTimer())) {
                 min = stat.getValue();
                 remainingRequired--;
-            } else if ("median".equals(stat.getName())) {
+            } else if ("median".equals(stat.getNameIfTimer())) {
                 remainingRequired--;
                 // median gets thrown out.
-            } else if ("mean".equals(stat.getName())) {
+            } else if ("mean".equals(stat.getNameIfTimer())) {
                 average = stat.getValue();
                 remainingRequired--;
-            } else if ("sum".equals(stat.getName())) {
+            } else if ("sum".equals(stat.getNameIfTimer())) {
                 sum = stat.getValue().longValue();
                 remainingRequired--;
-            } else if ("count_ps".equals(stat.getName())) {
+            } else if ("count_ps".equals(stat.getNameIfTimer())) {
                 countPS = stat.getValue().doubleValue();
                 remainingRequired--;
-            } else if ("count".equals(stat.getName())) {
+            } else if ("count".equals(stat.getNameIfTimer())) {
                 count = stat.getValue().longValue();
                 remainingRequired--;
-            } else if ("std".equals(stat.getName())) {
+            } else if ("std".equals(stat.getNameIfTimer())) {
                 variance = Math.pow(stat.getValue().doubleValue(), 2d);
                 remainingRequired--;
-            } else if (stat.getName() != null && stat.getName().indexOf("_") >= 0){
-                String[] pctlParts = stat.getName().split("_", -1);
+            } else if (stat.getNameIfTimer() != null && stat.getNameIfTimer().indexOf("_") >= 0){
+                String[] pctlParts = stat.getNameIfTimer().split("_", -1);
                 Map<String, Number> map = percentiles.get(pctlParts[1]);
                 if (map == null) {
                     map = new HashMap<String, Number>();
