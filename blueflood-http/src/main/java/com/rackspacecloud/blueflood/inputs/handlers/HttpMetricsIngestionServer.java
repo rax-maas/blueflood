@@ -53,7 +53,8 @@ public class HttpMetricsIngestionServer {
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
 
-    private int port;
+    private int httpIngestPort;
+    private String httpIngestHost;
     private AsyncChain<MetricsCollection, Boolean> processorChain;
     private TimeValue timeout;
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
@@ -65,7 +66,8 @@ public class HttpMetricsIngestionServer {
 
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
-        this.port = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
+        this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
+        this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
         this.processorChain = createDefaultProcessorChain();
@@ -74,14 +76,14 @@ public class HttpMetricsIngestionServer {
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(this.processorChain, timeout));
 
-        log.info("Starting metrics listener HTTP server on port {}", port);
+        log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newCachedThreadPool(),
                         Executors.newCachedThreadPool()));
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(port));
+        server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
     }
 
     private AsyncChain<MetricsCollection, Boolean> createDefaultProcessorChain() {
