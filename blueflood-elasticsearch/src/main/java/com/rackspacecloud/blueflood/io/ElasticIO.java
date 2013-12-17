@@ -22,11 +22,9 @@ import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -64,8 +62,7 @@ public class ElasticIO implements DiscoveryIO {
     private static final String ES_TYPE = "metrics";
     private static final String INDEX_PREFIX = "blueflood-";
     private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
-    private final Meter searchMeter = Metrics.newMeter(ElasticIO.class, "Searches Performed", "Discovery", TimeUnit.SECONDS);
-    private final Timer searchTimer = Metrics.newTimer(ElasticIO.class, "Search Duration", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
 
     public static String getIndexPrefix() {
         return INDEX_PREFIX;
@@ -140,10 +137,9 @@ public class ElasticIO implements DiscoveryIO {
     }
 
     public List<Result> search(Discovery md) {
-        searchMeter.mark();
         List<Result> result = new ArrayList<Result>();
         QueryBuilder query = createQuery(md);
-        TimerContext searchTimerCtx = searchTimer.time();
+        Timer.Context searchTimerCtx = searchTimer.time();
         SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
                 .setSize(500)
                 .setRouting(md.getRouting())

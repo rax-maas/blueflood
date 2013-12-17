@@ -26,7 +26,7 @@ import org.json.simple.JSONObject;
 import java.util.Map;
 import java.util.Set;
 
-public class BatchedMetricsJSONOutputSerializer extends JSONOutputSerializer
+public class BatchedMetricsJSONOutputSerializer extends JSONBasicRollupsOutputSerializer
         implements BatchedMetricsOutputSerializer<JSONObject> {
 
     @Override

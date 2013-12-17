@@ -104,25 +104,26 @@ public class ShardStateManager {
         getSlotStateManager(shard, g).updateSlotOnRead(slot, timestamp, state);
     }
 
-    public void setAllCoarserSlotsDirtyForChildSlot(int shard, Granularity childGran,
-                                                    int childslot, long childTimestamp) {
+    public void setAllCoarserSlotsDirtyForSlot(int shard, Granularity suppliedGranularity,
+                                               int suppliedSlot) {
         boolean done = false;
-        Granularity coarserGran = childGran;
+        Granularity coarserGran = suppliedGranularity;
+        int coarserSlot = suppliedSlot;
 
         while (!done) {
             try {
                 coarserGran = coarserGran.coarser();
-                int coarseSlot = coarserGran.slot(childTimestamp);
+                coarserSlot = coarserGran.slotFromFinerSlot(coarserSlot);
                 Map<Integer, UpdateStamp> updateStampsBySlotMap = getSlotStateManager(shard, coarserGran).slotToUpdateStampMap;
-                UpdateStamp coarseSlotStamp = updateStampsBySlotMap.get(coarseSlot);
+                UpdateStamp coarseSlotStamp = updateStampsBySlotMap.get(coarserSlot);
                 UpdateStamp.State coarseSlotState = coarseSlotStamp.getState();
 
                 if (coarseSlotState != UpdateStamp.State.Active) {
                     parentBeforeChild.mark();
-                    log.debug("Parent slot not in active state when child slot "
-                            + childGran.formatLocatorKey(childslot, shard)
-                            + " just got rolled up. Marking parent slot "
-                            + coarserGran.formatLocatorKey(coarseSlot, shard) + " dirty");
+                    log.debug("Courser slot not in active state when finer slot "
+                            + suppliedGranularity.formatLocatorKey(suppliedSlot, shard)
+                            + " just got rolled up. Marking courser slot "
+                            + coarserGran.formatLocatorKey(coarserSlot, shard) + " dirty");
                     coarseSlotStamp.setState(UpdateStamp.State.Active);
                     coarseSlotStamp.setDirty(true);
                     coarseSlotStamp.setTimestamp(serverTimeMillisecondTicker.read());

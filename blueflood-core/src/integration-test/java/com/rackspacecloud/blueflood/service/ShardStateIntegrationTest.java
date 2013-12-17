@@ -45,7 +45,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             ctx.update(t + 0, 1);
             ctx.update(t + 2000, 2);
             ctx.update(t + 4000, 3);
-            ctx.update(t + 6000, 4);           
+            ctx.update(t + 6000, 4);
         }
         
         time += 10000000 + 7;
@@ -68,6 +68,23 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                     Assert.assertEquals(1, ctx.getSlotStamps(g, shard).size());
             }
         }
+    }
+
+    @Test
+    public void testSetAllCoarserSlotsDirtyForFinerSlot() {
+        // Tests that the correct coarser slots are set dirty for a finer slot which was seen out-of-order.
+        // Prior to a bug fix, clearFromRunning would throw NPE because we were looking up coarser slots
+        // based on the timestamp on the finer slot's UpdateStamp, not based on the relative courser slot from the finer slot
+        long time = 1386823200000L;
+        final Collection<Integer> shards = Lists.newArrayList(123);
+        ScheduleContext ctxA = new ScheduleContext(time, shards);
+
+        ctxA.update(time, 123);
+        ShardStateManager.SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
+
+        UpdateStamp stamp  = slotStateManager20.getSlotStamps().get(518);
+        stamp.setTimestamp(time + 3600000L); // add one hour
+        ctxA.clearFromRunning("metrics_20m,518,123");
     }
 
     @Test

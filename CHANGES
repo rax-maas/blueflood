@@ -13,3 +13,6 @@
  * Statsd/Graphite module.
    * Carbon-compatible ingestion endpoint.
    * Support for rolling up sets, counters, gauges and timers.
+ * Add HTTP API endpoint for fetching histograms
+ * Add support for exporting basic rollups to Kafka
+

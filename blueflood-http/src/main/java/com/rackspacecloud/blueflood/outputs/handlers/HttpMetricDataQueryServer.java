@@ -47,6 +47,7 @@ public class HttpMetricDataQueryServer {
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
         router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
+        router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(

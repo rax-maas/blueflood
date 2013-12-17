@@ -23,7 +23,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import java.util.Map;
 import java.util.Set;
 
-public interface BatchedMetricsOutputSerializer<T> extends OutputSerializer<T> {
+public interface BatchedMetricsOutputSerializer<T> extends BasicRollupsOutputSerializer<T> {
     public T transformRollupData(Map<Locator, MetricData> metricData, Set<MetricStat> filterStats)
             throws SerializationException;
 }

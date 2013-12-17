@@ -18,12 +18,10 @@ package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 1440m    [ not enough space to show the relationship, but there would be 6 units of the 240m ranges in 1 1440m rnage.
@@ -131,6 +129,19 @@ public class Granularity {
     public int slot(long millis) {
         // the actual slot is 
         int fullSlot = millisToSlot(millis);
+        return (numSlots * fullSlot) / BASE_SLOTS_PER_GRANULARITY;
+    }
+
+    /**
+     * returns the slot for the current granularity based on a supplied slot from the granularity one resolution finer
+     * i.e, slot 144 for a 5m is == slot 36 of 20m (because 144 / (20m/5m)), slot 12 at 60m, slot 3 at 240m, etc
+     * @param finerSlot
+     * @return
+     */
+    public int slotFromFinerSlot(int finerSlot) throws GranularityException {
+        Granularity finerGran = this.finer();
+        int fullSlot = (finerSlot * BASE_SLOTS_PER_GRANULARITY) / finerGran.numSlots();
+
         return (numSlots * fullSlot) / BASE_SLOTS_PER_GRANULARITY;
     }
 

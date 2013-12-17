@@ -30,6 +30,7 @@
     <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
     <module>blueflood-statsd</module>
+    <module>blueflood-kafka</module>
   </modules>
 
   <description>
@@ -254,6 +255,11 @@
       <id>gdusbabek</id>
       <name>Gary Dusbabek</name>
       <email>gdusbabek@gmail.com</email>
+    </developer>
+    <developer>
+      <id>chinmay-gupte</id>
+      <name>Chinmay Gupte</name>
+      <email>chinmay.gupte@rackspace.com</email>
     </developer>
     <developer>
       <id>lakshmi-kannan</id>

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public interface OutputSerializer<T> {
+public interface BasicRollupsOutputSerializer<T> {
     public T transformRollupData(MetricData metricData, Set<MetricStat> filterStats) throws SerializationException;
 
     public static enum MetricStat {

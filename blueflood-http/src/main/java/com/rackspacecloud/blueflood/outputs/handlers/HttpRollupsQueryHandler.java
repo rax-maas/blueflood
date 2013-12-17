@@ -27,9 +27,9 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.outputs.serializers.JSONOutputSerializer;
-import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer;
-import com.rackspacecloud.blueflood.outputs.serializers.OutputSerializer.MetricStat;
+import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.JSONBasicRollupsOutputSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
@@ -47,14 +47,14 @@ import java.util.concurrent.TimeUnit;
 
 public class HttpRollupsQueryHandler extends RollupHandler
             implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
-    private final OutputSerializer<JSONObject> serializer;
+    private final BasicRollupsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
     private final Timer httpMetricsFetchTimer = Metrics.newTimer(HttpRollupsQueryHandler.class,
             "Handle HTTP request for metrics", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
     public HttpRollupsQueryHandler() {
-        this.serializer = new JSONOutputSerializer();
+        this.serializer = new JSONBasicRollupsOutputSerializer();
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         this.parser = new JsonParser();
     }

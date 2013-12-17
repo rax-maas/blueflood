@@ -79,6 +79,12 @@
       <version>${blueflood.version}</version>
     </dependency>
 
+    <dependency>
+      <artifactId>blueflood-kafka</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${blueflood.version}</version>
+   </dependency>
+
   </dependencies>
 
 </project>
