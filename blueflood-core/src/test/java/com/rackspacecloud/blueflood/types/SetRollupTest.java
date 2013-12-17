@@ -87,7 +87,7 @@ public class SetRollupTest {
                 
         int count = 0;
         int version = 0;
-        final int maxVersion = Constants.VERSION_1_COUNTER_ROLLUP;
+        final int maxVersion = Constants.VERSION_1_SET_ROLLUP;
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
             
