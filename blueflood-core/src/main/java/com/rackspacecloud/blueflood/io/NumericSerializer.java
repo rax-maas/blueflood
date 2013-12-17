@@ -298,7 +298,7 @@ public class NumericSerializer {
     private static CounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
         Number value = getUnversionedDoubleOrLong(in);
         double rate = in.readDouble();
-        return new CounterRollup(1).withCount(value.longValue()).withRate(rate);
+        return new CounterRollup().withCount(value.longValue()).withRate(rate);
     }
     
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {

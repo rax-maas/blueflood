@@ -24,12 +24,10 @@ public class SingleValueRollupTests {
         final CounterRollup cr1 = SingleValueRollupTests.buildCounterRollupFromLongs(src1);
         
         long expectedSum = sum(src0) + sum(src1);
-        long expectedSamples = src0.length + src1.length;
         
         CounterRollup cumulative = CounterRollup.buildRollupFromCounterRollups(asPoints(CounterRollup.class, 0, 1000, cr0, cr1));
         
         Assert.assertEquals(expectedSum, cumulative.getCount());
-        Assert.assertEquals(expectedSamples, cumulative.getNumSamplesUnsafe());
     }
     
     private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
@@ -58,11 +56,9 @@ public class SingleValueRollupTests {
     
     private static CounterRollup buildCounterRollupFromLongs(long... numbers) throws IOException {
         long count = 0;
-        int numSamples = 0;
         for (long number : numbers) {
             count += number;
-            numSamples += 1;
         }
-        return new CounterRollup(numSamples).withCount(count);
+        return new CounterRollup().withCount(count);
     }
 }

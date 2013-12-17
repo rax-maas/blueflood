@@ -33,8 +33,8 @@ public class CounterRollupSerializationTest {
     
     @Test
     public void testCounterV1RoundTrip() throws IOException {
-        CounterRollup c0 = new CounterRollup(32).withCount(7442245);
-        CounterRollup c1 = new CounterRollup(67321466).withCount(34454722343L);
+        CounterRollup c0 = new CounterRollup().withCount(7442245);
+        CounterRollup c1 = new CounterRollup().withCount(34454722343L);
         
         if (System.getProperty("GENERATE_COUNTER_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/counter_version_" + Constants.VERSION_1_COUNTER_ROLLUP + ".bin", false);
