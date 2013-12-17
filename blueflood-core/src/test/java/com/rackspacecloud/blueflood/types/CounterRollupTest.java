@@ -6,12 +6,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Random;
 
-public class SingleValueRollupTests {
+public class CounterRollupTest {
     private static final Random random = new Random(72262L);
     
     @Test
     public void testCounterRollupIdempotence() throws IOException {
-        final CounterRollup cr0 = SingleValueRollupTests.buildCounterRollupFromLongs(makeRandomNumbers(1000));
+        final CounterRollup cr0 = CounterRollupTest.buildCounterRollupFromLongs(makeRandomNumbers(1000));
         CounterRollup cumulative = CounterRollup.buildRollupFromCounterRollups(asPoints(CounterRollup.class, 0, 10, cr0));
         Assert.assertEquals(cr0, cumulative);
     }
@@ -20,8 +20,8 @@ public class SingleValueRollupTests {
     public void testCounterRollupGeneration() throws IOException {
         final long[] src0 = makeRandomNumbers(1000);
         final long[] src1 = makeRandomNumbers(500);
-        final CounterRollup cr0 = SingleValueRollupTests.buildCounterRollupFromLongs(src0);
-        final CounterRollup cr1 = SingleValueRollupTests.buildCounterRollupFromLongs(src1);
+        final CounterRollup cr0 = CounterRollupTest.buildCounterRollupFromLongs(src0);
+        final CounterRollup cr1 = CounterRollupTest.buildCounterRollupFromLongs(src1);
         
         long expectedSum = sum(src0) + sum(src1);
         
