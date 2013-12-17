@@ -133,8 +133,6 @@ public class TtlCacheTest {
         for (String acctId : new String[] {"ackVCKg1rk", "acAAAAAAAA"})
             for (Granularity gran : Granularity.granularities()) {
                 ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(BasicRollup.class, gran);
-                System.out.println("TtlCache default ttl " + TtlCache.SAFETY_TTLS.get(CF).toSeconds());
-                System.out.println("TtlCache account ttl " + twoSecondCache.getTtl(acctId, CF).toSeconds());
                 Assert.assertFalse("Failed for CF: " + CF.getName(),
                         TtlCache.SAFETY_TTLS.get(CF).toSeconds() == twoSecondCache.getTtl(acctId, CF).toSeconds());
             }
