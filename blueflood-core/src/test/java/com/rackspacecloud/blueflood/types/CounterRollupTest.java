@@ -10,6 +10,22 @@ public class CounterRollupTest {
     private static final Random random = new Random(72262L);
     
     @Test
+    public void testRateCalculations() throws IOException {
+        long[] sample0 = {10L,10L,10L,10L,10L,10L,10L,10L,10L,10L}; // 300 secs
+        long[] sample1 = {20L,20L,20L,20L,20L,20L,20L,20L,20L,20L,20L,20L,20L,20L,20L}; // 450 secs
+        final CounterRollup cr0 = CounterRollupTest.buildCounterRollupFromLongs(sample0);
+        final CounterRollup cr1 = CounterRollupTest.buildCounterRollupFromLongs(sample1);
+        
+        Assert.assertEquals(100d/300d, cr0.getRate());
+        Assert.assertEquals(300d/450d, cr1.getRate());
+        
+        // great, now combine them.
+        CounterRollup cr2 = CounterRollup.buildRollupFromCounterRollups(asPoints(CounterRollup.class, 0, 300, cr0, cr1));
+        
+        Assert.assertEquals(400d/750d, cr2.getRate());
+    }
+    
+    @Test
     public void testCounterRollupIdempotence() throws IOException {
         final CounterRollup cr0 = CounterRollupTest.buildCounterRollupFromLongs(makeRandomNumbers(1000));
         CounterRollup cumulative = CounterRollup.buildRollupFromCounterRollups(asPoints(CounterRollup.class, 0, 10, cr0));
@@ -54,11 +70,14 @@ public class CounterRollupTest {
         return sum;
     }
     
+    // assume the samples are 30s apart.
     private static CounterRollup buildCounterRollupFromLongs(long... numbers) throws IOException {
         long count = 0;
         for (long number : numbers) {
             count += number;
         }
-        return new CounterRollup().withCount(count);
+        long sum = sum(numbers);
+        double rate = (double)sum / (double)(30*numbers.length);
+        return new CounterRollup().withCount(count).withRate(rate);
     }
 }
