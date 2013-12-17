@@ -5,6 +5,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.utils.Util;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -160,13 +161,6 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return true;
     }
     
-    private static double safeDiv(double numerator, double denominator) {
-        if (denominator == 0)
-            return 0d;
-        else
-            return numerator / denominator;
-    }
-    
     private void computeFromRollups(Points<TimerRollup> input) throws IOException {
         if (input == null)
             throw new IOException("Null input to create rollup from");
@@ -184,8 +178,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
             
             // todo: put this calculation in a static method and write tests for it.
             long count = this.getCount() + rollup.getCount();
-            double time = safeDiv((double)getCount(), this.count_ps) + safeDiv((double) rollup.getCount(), rollup.count_ps);
-            this.count_ps = safeDiv((double)count, time);
+            double time = Util.safeDiv((double) getCount(), this.count_ps) + Util.safeDiv((double) rollup.getCount(), rollup.count_ps);
+            this.count_ps = Util.safeDiv((double)count, time);
             
             // update fields.
             this.count += rollup.getCount();
