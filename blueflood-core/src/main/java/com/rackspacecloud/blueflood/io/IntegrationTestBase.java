@@ -91,17 +91,9 @@ public class IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         // really short lived connections for tests!
-        // todo: why not iterate over somethign in AstyanaxIO?
-        final String[] columnFamilies = {"metrics_locator", "metrics_full", "metrics_5m", "metrics_20m", "metrics_60m",
-                                         "metrics_240m", "metrics_1440m", "metrics_state", "metrics_string",
-                                         "metrics_metadata", "metrics_preaggregated_full", "metrics_preaggregated_5m", 
-                                         "metrics_preaggregated_20m", "metrics_preaggregated_60m",
-                                         "metrics_preaggregated_240m", "metrics_preaggregated_1440m",
-                                         "metrics_histogram_5m", "metrics_histogram_20m", "metrics_histogram_60m",
-                                         "metrics_histogram_240m", "metrics_histogram_1440m"};
         AstyanaxTester truncator = new AstyanaxTester();
-        for (String cf : columnFamilies)
-            truncator.truncate(cf);
+        for (ColumnFamily cf : CassandraModel.getAllColumnFamilies())
+            truncator.truncate(cf.getName());
     }
     
     @After
