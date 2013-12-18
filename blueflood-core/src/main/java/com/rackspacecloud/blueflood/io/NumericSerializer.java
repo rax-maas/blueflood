@@ -22,6 +22,7 @@ import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
 import com.rackspacecloud.blueflood.types.CounterRollup;
