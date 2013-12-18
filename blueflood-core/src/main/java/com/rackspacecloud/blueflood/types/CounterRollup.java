@@ -46,7 +46,7 @@ public class CounterRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof CounterRollup) || obj == null)
+        if (obj == null || !(obj instanceof CounterRollup))
             return false;
         
         CounterRollup other = (CounterRollup)obj;

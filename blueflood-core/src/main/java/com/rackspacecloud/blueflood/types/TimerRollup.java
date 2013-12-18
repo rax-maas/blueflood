@@ -179,7 +179,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
             // todo: put this calculation in a static method and write tests for it.
             long count = this.getCount() + rollup.getCount();
             double time = Util.safeDiv((double) getCount(), this.count_ps) + Util.safeDiv((double) rollup.getCount(), rollup.count_ps);
-            this.count_ps = Util.safeDiv((double)count, time);
+            this.count_ps = Util.safeDiv((double) count, time);
             
             // update fields.
             this.count += rollup.getCount();

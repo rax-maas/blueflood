@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.io.Constants;
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -77,7 +78,7 @@ public class CounterRollupTest {
             count += number;
         }
         long sum = sum(numbers);
-        double rate = (double)sum / (double)(30*numbers.length);
+        double rate = (double)sum / (double)(Constants.DEFAULT_SAMPLE_INTERVAL * numbers.length);
         return new CounterRollup().withCount(count).withRate(rate);
     }
 }
