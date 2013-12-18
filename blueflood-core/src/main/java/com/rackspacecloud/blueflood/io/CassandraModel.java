@@ -63,11 +63,11 @@ public class CassandraModel {
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;
 
-    protected static final ColumnFamilyMapper CF_NAME_TO_CF;
-    protected static final ColumnFamilyMapper PREAG_GRAN_TO_CF;
-    protected static final ColumnFamilyMapper HIST_GRAN_TO_CF;
+    private static final ColumnFamilyMapper CF_NAME_TO_CF;
+    private static final ColumnFamilyMapper PREAG_GRAN_TO_CF;
+    private static final ColumnFamilyMapper HIST_GRAN_TO_CF;
 
-    protected static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
+    private static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
 
     static {
         final Map<Granularity, MetricColumnFamily> columnFamilyMap = new HashMap<Granularity, MetricColumnFamily>();
