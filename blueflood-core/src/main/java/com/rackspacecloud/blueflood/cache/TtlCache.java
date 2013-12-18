@@ -27,7 +27,9 @@ import com.rackspacecloud.blueflood.internal.Account;
 import com.rackspacecloud.blueflood.internal.ClusterException;
 import com.rackspacecloud.blueflood.internal.InternalAPI;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -49,7 +51,7 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     // these values get used in the absence of a ttl (internal API failure, etc.).
     static final Map<ColumnFamily<Locator, Long>, TimeValue> SAFETY_TTLS =
             new HashMap<ColumnFamily<Locator, Long>, TimeValue>() {{
-                for (AstyanaxIO.MetricColumnFamily cf : AstyanaxIO.getMetricColumnFamilies()) {
+                for (CassandraModel.MetricColumnFamily cf : CassandraModel.getMetricColumnFamilies()) {
                     put(cf, new TimeValue(cf.getDefaultTTL().getValue() * 5, cf.getDefaultTTL().getUnit()));
                 }
             }};
@@ -93,8 +95,8 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
                     private final Account DEFAULT_ACCOUNT = new Account() {
                         @Override
                         public TimeValue getMetricTtl(String resolution) {
-                            return SAFETY_TTLS.get(AstyanaxIO.getColumnFamilyMapper()
-                                    .get(Granularity.fromString(resolution)));
+                            return SAFETY_TTLS.get(CassandraModel.getColumnFamily(BasicRollup.class,
+                                   Granularity.fromString(resolution)));
                         }
                     };
 
@@ -130,26 +132,27 @@ public class TtlCache extends AbstractJmxCache implements TtlCacheMBean {
     public int getConcurrency() {
         return concurrency;
     }
-    
+
+    // XXX: This is horribly broken. Do not use this.
     // override this if you're not interested in caching the entire ttl map.
     protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
         Map<ColumnFamily<Locator, Long>, TimeValue> map = new HashMap<ColumnFamily<Locator, Long>, TimeValue>();
         for (Granularity gran : Granularity.granularities())
-            map.put(AstyanaxIO.getColumnFamilyMapper().get(gran), acct.getMetricTtl(gran.shortName()));
+            map.put(CassandraModel.getColumnFamily(BasicRollup.class, gran), acct.getMetricTtl(gran.shortName()));
         // todo: this is a temporary hack.  The Account API maps TTL to granularity, but everywhere else TTL is linked
         // to column families.  Either way, the account api used at rackspace doesn't contain TTLs for the string CF.
-        map.put(AstyanaxIO.CF_METRICS_STRING, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_STRING));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_5M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_5M));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_20M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_20M));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_60M));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_240M));
-        map.put(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M));
-        map.put(AstyanaxIO.CF_METRICS_HIST_5M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_5M));
-        map.put(AstyanaxIO.CF_METRICS_HIST_20M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_20M));
-        map.put(AstyanaxIO.CF_METRICS_HIST_60M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_60M));
-        map.put(AstyanaxIO.CF_METRICS_HIST_240M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_240M));
-        map.put(AstyanaxIO.CF_METRICS_HIST_1440M, SAFETY_TTLS.get(AstyanaxIO.CF_METRICS_HIST_1440M));
+        map.put(CassandraModel.CF_METRICS_STRING, SAFETY_TTLS.get(CassandraModel.CF_METRICS_STRING));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_FULL, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_FULL));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_5M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_5M));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_20M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_20M));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_60M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_60M));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_240M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_240M));
+        map.put(CassandraModel.CF_METRICS_PREAGGREGATED_1440M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_PREAGGREGATED_1440M));
+        map.put(CassandraModel.CF_METRICS_HIST_5M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_HIST_5M));
+        map.put(CassandraModel.CF_METRICS_HIST_20M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_HIST_20M));
+        map.put(CassandraModel.CF_METRICS_HIST_60M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_HIST_60M));
+        map.put(CassandraModel.CF_METRICS_HIST_240M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_HIST_240M));
+        map.put(CassandraModel.CF_METRICS_HIST_1440M, SAFETY_TTLS.get(CassandraModel.CF_METRICS_HIST_1440M));
 
         return map;
     }

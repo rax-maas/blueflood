@@ -107,17 +107,17 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis)) {
             // each range should produce one average
-            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
+            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
 
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL.coarser()),
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL.coarser()),
                     range.start));
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5),
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -127,19 +127,19 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         for (Range range : Range.getRangesToRollup(Granularity.MIN_5, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5));
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_5));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_5.coarser()),
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_5.coarser()),
                     range.start));
 
             Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5));
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_20),
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_20),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -148,19 +148,19 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_20, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20));
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_20));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_20.coarser()),
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_20.coarser()),
                     range.start));
 
             Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5));
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_60),
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_60),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -169,20 +169,20 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_60, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60));
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_60));
 
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_60.coarser()),
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_60.coarser()),
                     range.start));
 
             Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5));
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_240),
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_240),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -191,19 +191,19 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writes.clear();
         for (Range range : Range.getRangesToRollup(Granularity.MIN_240, baseMillis, endMillis)) {
             Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240));
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_240));
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_240.coarser()),
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_240.coarser()),
                     range.start));
 
             Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_5));
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5));
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
-                    AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_1440),
+                    CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_1440),
                     range.start));
         }
         writer.insertRollups(writes);
@@ -211,12 +211,12 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // verify the number of points in 48h worth of rollups. 
         Range range = new Range(Granularity.MIN_1440.snapMillis(baseMillis), Granularity.MIN_1440.snapMillis(endMillis + Granularity.MIN_1440.milliseconds()));
         Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.MIN_1440));
+                CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_1440));
         BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
         Assert.assertEquals(60 * hours, basicRollup.getCount());
 
         Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
-                AstyanaxIO.getHistogramColumnFamilyMapper().get(Granularity.MIN_1440));
+                CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_1440));
         HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
         Assert.assertTrue(histogramRollup.getNumberOfBins() > 0);
         Assert.assertTrue("Number of bins is " + histogramRollup.getNumberOfBins(),
@@ -248,7 +248,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         // get back the cols that were written from start to stop.
 
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator, new Range(baseMillis, lastMillis),
-                AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+                CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         actualTimestamps = points.getPoints().keySet();
         Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
@@ -272,7 +272,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
         
         int count = 0;
-        ColumnFamily<Locator, Long> CF_metrics_full = AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL);
+            ColumnFamily<Locator, Long> CF_metrics_full = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator,
                 new Range(baseMillis, baseMillis + 500000), CF_metrics_full);
         for (Map.Entry<Long, Points.Point<SimpleNumber>> data : points.getPoints().entrySet()) {

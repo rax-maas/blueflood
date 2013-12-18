@@ -20,9 +20,11 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import org.apache.cassandra.thrift.Cassandra;
 
 import java.util.ArrayList;
 
@@ -32,10 +34,10 @@ public class RollupTestUtils {
             throw new Exception("Can't roll up to FULL");
         }
 
-        ColumnFamily<Locator, Long> destCF = AstyanaxIO.getColumnFamilyMapper().get(destGranularity);
+        ColumnFamily<Locator, Long> destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range, AstyanaxIO.CF_METRICS_FULL);
+            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             Rollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.getStart()));
         }

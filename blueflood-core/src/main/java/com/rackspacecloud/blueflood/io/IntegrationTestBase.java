@@ -65,15 +65,15 @@ public class IntegrationTestBase {
         }
 
         public ColumnFamily<Locator, Long> getStringCF() {
-            return CF_METRICS_STRING;
+            return CassandraModel.CF_METRICS_STRING;
         }
 
         public ColumnFamily<Locator, Long> getFullCF() {
-            return CF_METRICS_FULL;
+            return CassandraModel.CF_METRICS_FULL;
         }
 
         public ColumnFamily<Long, Locator> getLocatorCF() {
-            return CF_METRICS_LOCATOR;
+            return CassandraModel.CF_METRICS_LOCATOR;
         }
 
         public MutationBatch createMutationBatch() {

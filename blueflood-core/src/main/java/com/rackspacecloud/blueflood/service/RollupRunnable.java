@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -86,35 +87,18 @@ class RollupRunnable implements Runnable {
             // Read data and compute rollup
             Points input;
             Rollup rollup = null;
-            ColumnFamily<Locator, Long> srcCF;
-            ColumnFamily<Locator, Long> dstCF;
             StatType statType = StatType.fromString((String)rollupTypeCache.get(singleRollupReadContext.getLocator(), StatType.CACHE_KEY));
-            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, srcGran);
-            
+            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, srcGran.coarser());
+            ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
+            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
+
             try {
                 // first, get the points.
-                if (srcGran == Granularity.FULL) {
-                    srcCF = statType == StatType.UNKNOWN
-                            ? AstyanaxIO.CF_METRICS_FULL
-                            : AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
-                    input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
-                            singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
-                } else {
-                    srcCF = AstyanaxIO.getColumnFamilyMapper().get(srcGran);
-                    input = AstyanaxReader.getInstance().getDataToRoll(
-                            rollupClass,
-                            singleRollupReadContext.getLocator(),
-                            singleRollupReadContext.getRange(),
-                            srcCF);
-                }
-                
-                dstCF = statType == StatType.UNKNOWN
-                        ? AstyanaxIO.getColumnFamilyMapper().get(srcGran.coarser())
-                        : AstyanaxIO.getPreagColumnFamilyMapper().get(srcGran.coarser());
-                
+                input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
+                        singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
+
                 // next, compute the rollup.
                 rollup =  RollupRunnable.getRollupComputer(statType, srcGran).compute(input);
-                
             } finally {
                 calcrollupContext.stop();
             }

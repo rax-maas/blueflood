@@ -58,9 +58,9 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRIC_METADATA);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRIC_METADATA);
         try {
-            final ColumnList<String> results = keyspace.prepareQuery(CF_METRIC_METADATA)
+            final ColumnList<String> results = keyspace.prepareQuery(CassandraModel.CF_METRIC_METADATA)
                     .getKey(locator)
                     .execute().getResult();
             return new HashMap<String, Object>(){{
@@ -69,7 +69,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             }};
         } catch (NotFoundException ex) {
-            Instrumentation.markNotFound(CF_METRIC_METADATA);
+            Instrumentation.markNotFound(CassandraModel.CF_METRIC_METADATA);
             return null;
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
@@ -88,9 +88,9 @@ public class AstyanaxReader extends AstyanaxIO {
         // SimpleNumber instances.
         // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
         // to be known before we ever get to this method (see above comment).
-        if (cf == AstyanaxIO.CF_METRICS_FULL)
+        if (cf == CassandraModel.CF_METRICS_FULL)
             serializer = NumericSerializer.simpleNumberSerializer;
-        else if ( cf == AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL)
+        else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL)
             serializer = type.equals(TimerRollup.class) ? NumericSerializer.timerRollupInstance : NumericSerializer.simpleNumberSerializer;
         
         ColumnList<Long> cols = getColumnsFromDB(locator, cf, range);
@@ -120,11 +120,11 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_STATE);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
         try {
             for (int shard : shards) {
                 RowQuery<Long, String> query = keyspace
-                        .prepareQuery(CF_METRICS_STATE)
+                        .prepareQuery(CassandraModel.CF_METRICS_STATE)
                         .getKey((long) shard);
                 ColumnList<String> columns = query.execute().getResult();
 
@@ -177,14 +177,14 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public ColumnList<Locator> getAllLocators(long shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_LOCATOR);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
-                    .prepareQuery(CF_METRICS_LOCATOR)
+                    .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
             return query.execute().getResult();
         } catch (NotFoundException e) {
-            Instrumentation.markNotFound(CF_METRICS_LOCATOR);
+            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
             return new EmptyColumnList<Locator>();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
@@ -229,7 +229,7 @@ public class AstyanaxReader extends AstyanaxIO {
             throw new RuntimeException("Histograms are not available for granularity " + granularity.toString());
         }
 
-        MetricColumnFamily cf = AstyanaxIO.getHistogramColumnFamilyMapper().get(granularity);
+        ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
         return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
     }
@@ -237,13 +237,14 @@ public class AstyanaxReader extends AstyanaxIO {
     // Used for string metrics
     private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<String> points = new Points<String>();
-        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_STRING, range);
+        ColumnList<Long> results = getColumnsFromDB(locator, CassandraModel.CF_METRICS_STRING, range);
 
         for (Column<Long> column : results) {
             try {
                 points.add(new Points.Point<String>(column.getName(), column.getValue(StringSerializer.get())));
             } catch (RuntimeException ex) {
-                log.error("Problem deserializing String data for " + locator + " (" + range + ") from " + CF_METRICS_STRING.getName(), ex);
+                log.error("Problem deserializing String data for " + locator + " (" + range + ") from " +
+                        CassandraModel.CF_METRICS_STRING.getName(), ex);
             }
         }
 
@@ -252,13 +253,14 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<Boolean> points = new Points<Boolean>();
-        ColumnList<Long> results = getColumnsFromDB(locator, CF_METRICS_STRING, range);
+        ColumnList<Long> results = getColumnsFromDB(locator, CassandraModel.CF_METRICS_STRING, range);
 
         for (Column<Long> column : results) {
             try {
                 points.add(new Points.Point<Boolean>(column.getName(), column.getValue(BooleanSerializer.get())));
             } catch (RuntimeException ex) {
-                log.error("Problem deserializing Boolean data for " + locator + " (" + range + ") from " + CF_METRICS_STRING.getName(), ex);
+                log.error("Problem deserializing Boolean data for " + locator + " (" + range + ") from " +
+                        CassandraModel.CF_METRICS_STRING.getName(), ex);
             }
         }
 
@@ -267,7 +269,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
     private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
+        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(BasicRollup.class, gran);
 
         Points<SimpleNumber> points = new Points<SimpleNumber>();
         ColumnList<Long> results = getColumnsFromDB(locator, CF, range);
@@ -291,7 +293,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran) {
         Instrumentation.markScanAllColumnFamilies();
-        final ColumnFamily<Locator, Long> CF = AstyanaxIO.CF_NAME_TO_CF.get(gran);
+        final ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(BasicRollup.class, gran);
 
         final MetricData metricData = getNumericMetricDataForRange(locator, range, gran);
 
@@ -321,11 +323,11 @@ public class AstyanaxReader extends AstyanaxIO {
     public Column<Long> getLastMetricFromMetricsString(Locator locator)
             throws Exception {
         Column<Long> metric = null;
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CF_METRICS_STRING);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
 
         try {
             ColumnList<Long> query = keyspace
-                    .prepareQuery(CF_METRICS_STRING)
+                    .prepareQuery(CassandraModel.CF_METRICS_STRING)
                     .getKey(locator)
                     .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
                     .execute()
@@ -335,7 +337,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) {
-                Instrumentation.markNotFound(CF_METRICS_STRING);
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
             } else {
                 Instrumentation.markReadError(e);
             }

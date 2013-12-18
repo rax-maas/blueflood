@@ -24,7 +24,9 @@ import com.rackspacecloud.blueflood.internal.AccountMapEntry;
 import com.rackspacecloud.blueflood.internal.AccountTest;
 import com.rackspacecloud.blueflood.internal.InternalAPI;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -96,7 +98,7 @@ public class TtlCacheTest {
     
     private void warmCache() {
         for (int i = 0; i < 100; i++) {
-            for (AstyanaxIO.MetricColumnFamily cf : AstyanaxIO.getMetricColumnFamilies()) {
+            for (CassandraModel.MetricColumnFamily cf : CassandraModel.getMetricColumnFamilies()) {
                 twoSecondCache.getTtl("ackVCKg1rk", cf);
                 twoSecondCache.getTtl("acAAAAAAAA", cf);
             }
@@ -130,8 +132,9 @@ public class TtlCacheTest {
         warmCache();
         for (String acctId : new String[] {"ackVCKg1rk", "acAAAAAAAA"})
             for (Granularity gran : Granularity.granularities()) {
-                ColumnFamily<Locator, Long> CF = AstyanaxIO.getColumnFamilyMapper().get(gran);
-                Assert.assertFalse(TtlCache.SAFETY_TTLS.get(CF).toSeconds() == twoSecondCache.getTtl(acctId, CF).toSeconds());
+                ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(BasicRollup.class, gran);
+                Assert.assertFalse("Failed for CF: " + CF.getName(),
+                        TtlCache.SAFETY_TTLS.get(CF).toSeconds() == twoSecondCache.getTtl(acctId, CF).toSeconds());
             }
     }
     
@@ -155,7 +158,7 @@ public class TtlCacheTest {
     public void testIOErrorTriggersSafetyMode() {
         warmCache();
         for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 10; i++) {
-            twoSecondCache.getTtl(IOException.class.getName(), AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+            twoSecondCache.getTtl(IOException.class.getName(), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         }
         forceMeterTick("generalErrorMeter");
         Assert.assertTrue(twoSecondCache.isSafetyMode());
@@ -166,7 +169,7 @@ public class TtlCacheTest {
         warmCache();
         for (int i = 0; i < (int)twoSecondCache.getSafetyThreshold() + 1; i++) {
             twoSecondCache.getTtl(HttpResponseException.class.getName(),
-                    AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         }
         forceMeterTick("generalErrorMeter");
         Assert.assertFalse(twoSecondCache.isSafetyMode());

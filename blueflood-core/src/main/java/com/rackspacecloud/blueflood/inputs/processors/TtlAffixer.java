@@ -16,10 +16,13 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
+import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -40,8 +43,9 @@ public class TtlAffixer extends AsyncFunctionWithThreadPool<MetricsCollection, M
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
                 for (Metric metric : metrics.getMetrics()) {
+                    ColumnFamily CF = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
                     metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getTenantId(),
-                            AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL)).toSeconds());
+                            CF).toSeconds());
                 }
                 return metrics;
             }
