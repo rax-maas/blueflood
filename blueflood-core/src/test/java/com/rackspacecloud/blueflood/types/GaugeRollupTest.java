@@ -67,7 +67,7 @@ public class GaugeRollupTest {
         
         int count = 0;
         int version = 0;
-        final int maxVersion = Constants.VERSION_1_SINGLE_VALUE_ROLLUP;
+        final int maxVersion = Constants.VERSION_1_COUNTER_ROLLUP;
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/gauge_version_" + version + ".bin"));
             

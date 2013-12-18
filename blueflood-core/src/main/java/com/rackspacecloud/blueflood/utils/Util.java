@@ -74,4 +74,11 @@ public class Util {
     public static String getMetricFromKey(String persistedMetric) {
         return persistedMetric.split("\\.", 2)[1];
     }
+    
+    public static double safeDiv(double numerator, double denominator) {
+        if (denominator == 0)
+            return 0d;
+        else
+            return numerator / denominator;
+    }
 }

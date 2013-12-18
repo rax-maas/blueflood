@@ -75,7 +75,7 @@ public class SetRollupTest {
         s1.setVariance(4.522d);
         
         if (System.getProperty("GENERATE_SET_SERIALIZATION") != null) {
-            OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SINGLE_VALUE_ROLLUP + ".bin", false);
+            OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SET_ROLLUP + ".bin", false);
             os.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(s0).array()));
             os.write("\n".getBytes());
             os.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(s1).array()));
@@ -87,7 +87,7 @@ public class SetRollupTest {
                 
         int count = 0;
         int version = 0;
-        final int maxVersion = Constants.VERSION_1_SINGLE_VALUE_ROLLUP;
+        final int maxVersion = Constants.VERSION_1_SET_ROLLUP;
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
             

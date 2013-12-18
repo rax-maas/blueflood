@@ -29,7 +29,8 @@ public class Constants {
     public static final byte VERSION_1_ROLLUP = 0;
     public static final byte VERSION_1_HISTOGRAM = 0;
     public static final byte VERSION_1_TIMER = 0;
-    public static final byte VERSION_1_SINGLE_VALUE_ROLLUP = 0;
+    public static final byte VERSION_1_COUNTER_ROLLUP = 0;
+    public static final byte VERSION_1_SET_ROLLUP = VERSION_1_ROLLUP; // don't change this.
 
     public static final int DOUBLE = (int) MetricHelper.Type.DOUBLE;
     public static final int I32 = (int) MetricHelper.Type.INT32;
@@ -49,6 +50,8 @@ public class Constants {
     public static final String monitoringZonePrefix = "mz";
     
     public static final int NUMBER_OF_SHARDS = 128;
+    
+    public static final int DEFAULT_SAMPLE_INTERVAL = 30; // seconds.
 
     // ensure that some yahoo did not set FullResSerializer.CUR_VERSION to an invalid value (for backwards compatibility
     // with old unversioned serializations).
