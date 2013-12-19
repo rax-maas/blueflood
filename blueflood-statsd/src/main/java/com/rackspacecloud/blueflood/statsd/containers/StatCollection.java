@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.types.StatType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,13 +36,16 @@ public class StatCollection {
     // everything
     private Multimap<StatType, Stat> allStats = HashMultimap.create();
     
-    // timers only.
+    // the next few collections capture metrics that occur on multiple lines: currently timers and countes.
     private Multimap<Locator, Stat> timers = HashMultimap.create();
+    private Multimap<Locator, Stat> counters = HashMultimap.create();
     
     public void add(Stat stat) {
         allStats.put(stat.getType(), stat);
         if (stat.getType() == StatType.TIMER)
             timers.put(stat.getLocator(), stat);
+        else if (stat.getType() == StatType.COUNTER)
+            counters.put(stat.getLocator(), stat);
     }
     
     public Collection<Stat> getStats(StatType type) {
@@ -52,8 +56,12 @@ public class StatCollection {
         return Collections.unmodifiableMap(timers.asMap());
     }
     
+    public Map<Locator, Collection<Stat>> getCounterStats() {
+        return Collections.unmodifiableMap(counters.asMap());
+    }
+    
     // in non-legacy mode, counters (comprised of two lines) are rendered as timers.
-    // detect those and convert them to a COUNTER + UNKNOWN pair. We currently throw away the UNKNOWN stat (a rate).
+    // detect those and convert them to a COUNTER pair. We previously threw away the rate component.
     // todo: In the future, it will be part of the counter.
     public static void renderTimersAsCounters(StatCollection stats) {
         Set<Locator> toRemove = new HashSet<Locator>();
@@ -68,16 +76,15 @@ public class StatCollection {
             // one is a counter, the other is a unknown.
             for (Stat stat : components) {
                 stats.allStats.remove(stat.getType(), stat);
-                if ("rate".equals(stat.getLabel().getName())) {
-                    // becomes unknown.
-                    stat.getLabel().setType(StatType.UNKNOWN);
-                    stats.allStats.put(StatType.UNKNOWN, stat);
-                } else {
-                    // becomes counter.
-                    stat.getLabel().setType(StatType.COUNTER);
-                    stats.allStats.put(StatType.COUNTER, stat);
-                }
+                stat.getLabel().setType(StatType.COUNTER);
+                stats.counters.put(locator, stat);
+                stats.allStats.put(StatType.COUNTER, stat);
             }
         }
+    }
+    
+    // used in tests.
+    public Iterable<Stat> iterableUnsafe() {
+        return new HashSet<Stat>(allStats.values());
     }
 }

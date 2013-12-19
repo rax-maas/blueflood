@@ -21,6 +21,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.statsd.StatsdOptions;
 import com.rackspacecloud.blueflood.statsd.Util;
+import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -49,6 +50,15 @@ public class Conversions {
         );
     }
     
+    public static IMetric asCounterMetric(Locator locator, Collection<Stat> stats) {
+        return new PreaggregatedMetric(
+            stats.iterator().next().getTimestamp() * 1000,
+            locator,
+            DEFAULT_TTL,
+            Conversions.statsToCounter(stats)
+        );
+    }
+    
     public static Stat asStat(CharSequence str, StatsdOptions parseOptions) {
         String[] parts = str.toString().split(" ", -1);
         return new Stat(StatLabel.parse(parts[0], parseOptions), Util.grokValue(parts[1]), Long.parseLong(parts[2]));
@@ -57,6 +67,27 @@ public class Conversions {
     // convert to a statsd formatted line.
     public static String asLine(Stat stat) {
         return String.format("%s %s %s", stat.getLabel(), stat.getValue().toString(), Long.toString(stat.getTimestamp()));
+    }
+    
+    public static CounterRollup statsToCounter(Collection<Stat> stats) {
+        Stat count = null;
+        Stat rate = null;
+        for (Stat stat : stats) {
+            if (stat.getNameIfMultiline().equals("rate"))
+                rate = stat;
+            else if (stat.getNameIfMultiline().equals("count"))
+                count = stat;
+        }
+        
+        if (count == null || rate == null) {
+            log.debug("Couldn't convert to counter {}", Joiner.on(",").join(stats));
+            return null;
+        } else {
+            CounterRollup rollup = new CounterRollup()
+                    .withCount(count.getValue())
+                    .withRate(rate.getValue().doubleValue());
+            return rollup;
+        }
     }
     
     // convert a collection of stats to a single timer rollup.
@@ -75,32 +106,32 @@ public class Conversions {
         int remainingRequired = 8;
         
         for (Stat stat : stats) {
-            if ("upper".equals(stat.getNameIfTimer())) {
+            if ("upper".equals(stat.getNameIfMultiline())) {
                 max = stat.getValue();
                 remainingRequired--;
-            } else if ("lower".equals(stat.getNameIfTimer())) {
+            } else if ("lower".equals(stat.getNameIfMultiline())) {
                 min = stat.getValue();
                 remainingRequired--;
-            } else if ("median".equals(stat.getNameIfTimer())) {
+            } else if ("median".equals(stat.getNameIfMultiline())) {
                 remainingRequired--;
                 // median gets thrown out.
-            } else if ("mean".equals(stat.getNameIfTimer())) {
+            } else if ("mean".equals(stat.getNameIfMultiline())) {
                 average = stat.getValue();
                 remainingRequired--;
-            } else if ("sum".equals(stat.getNameIfTimer())) {
+            } else if ("sum".equals(stat.getNameIfMultiline())) {
                 sum = stat.getValue().longValue();
                 remainingRequired--;
-            } else if ("count_ps".equals(stat.getNameIfTimer())) {
+            } else if ("count_ps".equals(stat.getNameIfMultiline())) {
                 countPS = stat.getValue().doubleValue();
                 remainingRequired--;
-            } else if ("count".equals(stat.getNameIfTimer())) {
+            } else if ("count".equals(stat.getNameIfMultiline())) {
                 count = stat.getValue().longValue();
                 remainingRequired--;
-            } else if ("std".equals(stat.getNameIfTimer())) {
+            } else if ("std".equals(stat.getNameIfMultiline())) {
                 variance = Math.pow(stat.getValue().doubleValue(), 2d);
                 remainingRequired--;
-            } else if (stat.getNameIfTimer() != null && stat.getNameIfTimer().indexOf("_") >= 0){
-                String[] pctlParts = stat.getNameIfTimer().split("_", -1);
+            } else if (stat.getNameIfMultiline() != null && stat.getNameIfMultiline().indexOf("_") >= 0){
+                String[] pctlParts = stat.getNameIfMultiline().split("_", -1);
                 Map<String, Number> map = percentiles.get(pctlParts[1]);
                 if (map == null) {
                     map = new HashMap<String, Number>();
@@ -155,6 +186,13 @@ public class Conversions {
         for (Map.Entry<Locator, Collection<Stat>> entry : stats.getTimerStats().entrySet()) {
             IMetric metric = Conversions.asTimerMetric(entry.getKey(), entry.getValue());
             metrics.put(StatType.TIMER, metric);
+        }
+        
+        // build timers.
+        for (Map.Entry<Locator, Collection<Stat>> entry : stats.getCounterStats().entrySet()) {
+            // assert entry.getValue().size() == 2;
+            IMetric metric = Conversions.asCounterMetric(entry.getKey(), entry.getValue());
+            metrics.put(StatType.COUNTER, metric);
         }
         
         return metrics;

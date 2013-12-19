@@ -77,7 +77,7 @@ public class Stat {
         this.timestamp = timestamp;
     }
     
-    public String getNameIfTimer() { return label.getName(); }
+    public String getNameIfMultiline() { return label.getName(); }
     public Locator getLocator() { return label.getLocator(); }
     public long getTimestamp() { return timestamp; }
     public Number getValue() { return value; }
@@ -90,5 +90,10 @@ public class Stat {
     
     public String toString() {
         return Conversions.asLine(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return label.getLocator().hashCode() ^ value.hashCode() ^ ((Long)timestamp).hashCode();
     }
 }

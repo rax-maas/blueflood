@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
+import com.rackspacecloud.blueflood.statsd.containers.StatLabel;
 import com.rackspacecloud.blueflood.types.StatType;
 import com.rackspacecloud.blueflood.types.IMetric;
 import junit.framework.Assert;
@@ -99,10 +100,10 @@ public class StatParserTest {
         
         // ensure individual count is accurate.
         
-        // the derivative counter. this part of the test will break when these values are included in counter types.
-        Assert.assertEquals(3, stats.getStats(StatType.UNKNOWN).size());
+        // at one point, we sent the rate component of a counter in as UNKNOWN, but that is no longer the case.
+        Assert.assertEquals(0, stats.getStats(StatType.UNKNOWN).size());
         
-        Assert.assertEquals(3, stats.getStats(StatType.COUNTER).size());
+        Assert.assertEquals(6, stats.getStats(StatType.COUNTER).size());
         Assert.assertEquals(23, stats.getStats(StatType.TIMER).size());
         Assert.assertEquals(10, stats.getStats(StatType.GAUGE).size());
         Assert.assertEquals(1, stats.getStats(StatType.SET).size());
@@ -114,17 +115,26 @@ public class StatParserTest {
         
         StatCollection stats = StatParserTest.asStats(lines, options);
         StatCollection.renderTimersAsCounters(stats);
+        
+        // values must be non-null.
+        for (Stat stat : stats.iterableUnsafe())
+            Assert.assertNotNull(stat.getLabel().toString(), stat.getValue());
+        
         Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
         
         // total metrics
-        Assert.assertEquals(18, metrics.size());
+        Assert.assertEquals(15, metrics.size());
         
         // broken up this way.
         Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
         Assert.assertEquals(1, metrics.get(StatType.SET).size());
         Assert.assertEquals(10, metrics.get(StatType.GAUGE).size());
         Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
-        Assert.assertEquals(3, metrics.get(StatType.UNKNOWN).size());
+        Assert.assertEquals(0, metrics.get(StatType.UNKNOWN).size());
+            
+        // all values must be null;
+        for (IMetric metric : metrics.values())
+            Assert.assertNotNull(metric.getLocator().toString(), metric.getValue());
     }
     
     private static StatCollection asStats(String[] lines, StatsdOptions options) {

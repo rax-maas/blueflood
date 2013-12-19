@@ -40,13 +40,16 @@ public class StatLabel {
         this.type = type;
     }
     
-    
-    
     public static StatLabel parse(String raw, StatsdOptions options) {
         if (options.isLegacyNamespace())
             return LegacyParser.parse(raw, options);
         else
             return Parser.parse(raw, options);
+    }
+
+    @Override
+    public String toString() {
+        return original;
     }
 
     public StatType getType() {
@@ -67,52 +70,65 @@ public class StatLabel {
             
             StatType type;
             Locator locator;
-            String name;
+            String name = null;
             boolean internal = false;
             if (parts[0].equals(options.getPrefixStats()) && parts[1].equals("numStats")) {
                 internal = true;
                 type = StatType.GAUGE;
                 // there will be no global prefix.
-            } else if (parts[0].equals(options.getGlobalPrefix()) && parts[1].equals(options.getPrefixStats())) {
+            } else if (parts[1].equals(options.getPrefixStats())) {
                 internal = true;
                 // order in this if statement is important. the second part needs to be checked first.
                 if (parts[2].equals("processing_time"))
                     type = StatType.GAUGE;
                 else if (parts[2].equals("graphiteStats"))
                     type = StatType.GAUGE;
-                else if (parts[0].equals("stats_counts"))
-                   type = StatType.COUNTER; // bad_lines_seen and packets_received.
-               else
-                    type = StatType.UNKNOWN; // these are the counts per second for the bad_lines_seen and packets_received counters.
+                else if (parts[2].equals("bad_lines_seen") || parts[2].equals("packets_received")) {
+                    // rate or count will depend on parts[0].equals(options.getGlobalPrefix())
+                    type = StatType.COUNTER; // bad_lines_seen and packets_received.
+                    if (parts[0].equals(options.getGlobalPrefix()))
+                        name = "rate";
+                    else
+                        name = "count";
+                } else
+                    type = StatType.UNKNOWN;
+                parts = Util.shiftLeft(parts, 1);
             } else {
                 // if (type == null) assert internal;
                 type = StatType.UNKNOWN; // will get set later because this is not internal. this satisfies the compiler though.
             }
             
             if (internal) {
-                name = raw;
                 locator = Locator.createLocatorFromPathComponents(options.getInternalTenantId(), parts);
                 // type is already set!
             } else {
+                boolean isCount = false;
+                boolean isRate = false;
                 if (parts[0].equals("stats_counts")) {
                     type = StatType.COUNTER;
                     // after this, tenantId should be exposed.
                     parts = Util.shiftLeft(parts, 1);
+                    isCount = true;
                 } else if (options.hasGlobalPrefix()) {
                     // get rid of the global prefix.
                     parts = Util.shiftLeft(parts, 1);
-                    if (parts[0].equals(options.getPrefixCounter()))
+                    if (parts[0].equals(options.getPrefixCounter())) {
                         type = StatType.COUNTER;
-                    else if (parts[0].equals(options.getPrefixGauge()))
+                        isCount = true;
+                    } else if (parts[0].equals(options.getPrefixGauge()))
                         type = StatType.GAUGE;
                     else if (parts[0].equals(options.getPrefixSet()))
                         type = StatType.SET;
                     else if (parts[0].equals(options.getPrefixTimer()))
                         type = StatType.TIMER;
-                    else
-                         // we probably just shifted of the global prefix on a counter's per_second value. 
-                         type = StatType.UNKNOWN;
-                    parts = Util.shiftLeft(parts, 1);
+                    else {
+                        // we just shifted of the global prefix on a counter's per_second value. 
+                        type = StatType.COUNTER;
+                        // because we're staring at the tenantId.
+                        isRate = true;
+                    }
+                    if (!isRate)
+                        parts = Util.shiftLeft(parts, 1);
                 } else {
                     // shouldn't happen. there is always a global prefix in legacy mode.
                     type = StatType.UNKNOWN;
@@ -135,6 +151,14 @@ public class StatLabel {
                         name = parts[parts.length - 1];
                         parts = Util.shiftRight(parts, 1);
                     }
+                } else if (type == StatType.COUNTER) {
+                    // need to identify count vs rate.
+                    if (isCount)
+                        name = "count";
+                    else if (isRate)
+                        name = "rate";
+                    else
+                        name = null;
                 } else {
                     name = null;
                 }
@@ -161,7 +185,7 @@ public class StatLabel {
             StatType type;
             Locator locator;
             String tenantId;
-            String name;
+            String name = null;
             if (parts[0].startsWith(options.getPrefixStats())) {
                 internal = true;
                 type = StatType.GAUGE;
@@ -171,11 +195,15 @@ public class StatLabel {
                 //  this is internal, so I don't care about destroying parts at this point.
                 if (options.hasGlobalSuffix())
                     parts = Util.shiftRight(parts, 1);
-                if ("rate".equals(parts[parts.length - 1]))
-                    type = StatType.UNKNOWN;
-                else if ("count".equals(parts[parts.length - 1]))
+                if ("rate".equals(parts[parts.length - 1])) {
                     type = StatType.COUNTER;
-                else
+                    name = "rate";
+                    parts = Util.shiftRight(parts, 1);
+                } else if ("count".equals(parts[parts.length - 1])) {
+                    type = StatType.COUNTER;
+                    name = "count";
+                    parts = Util.shiftRight(parts, 1);
+                } else
                     type = StatType.UNKNOWN;
             } else {
                 // if (type == null) assert internal;
@@ -183,8 +211,7 @@ public class StatLabel {
             }
             
             if (internal) {
-                name = raw;
-                locator = Locator.createLocatorFromPathComponents(options.getInternalTenantId(), originalParts);
+                locator = Locator.createLocatorFromPathComponents(options.getInternalTenantId(), parts);
             } else {
                 if (parts[0].equals(options.getPrefixCounter()))
                     type = StatType.COUNTER;
@@ -200,7 +227,7 @@ public class StatLabel {
                 tenantId = parts[1];
                 parts = Util.shiftLeft(parts, 2); // lops off type and tenant
                 
-                if (type == StatType.TIMER) {
+                if (type == StatType.TIMER || type == StatType.COUNTER) {
                     if (options.hasGlobalSuffix()) {
                         name = parts[parts.length - 2];
                         parts = Util.remove(parts, parts.length - 2, 1);
