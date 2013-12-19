@@ -93,11 +93,12 @@ public class MetricsWriterIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testCounter() throws Exception {
-        statsToWrite.add(statsSource.getStats(StatType.COUNTER).iterator().next());
+        for (Stat counterPart : statsSource.getStats(StatType.COUNTER))
+            statsToWrite.add(counterPart);
         Multimap<StatType, IMetric> metrics = writer.apply(statsToWrite).get();
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
-        Assert.assertEquals(1, metrics.get(StatType.COUNTER).size());
+        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
     }
     
     @Test
@@ -140,7 +141,7 @@ public class MetricsWriterIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
         Assert.assertEquals(1, metrics.get(StatType.SET).size());
         Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
-        Assert.assertEquals(3, metrics.get(StatType.UNKNOWN).size());
+        Assert.assertEquals(0, metrics.get(StatType.UNKNOWN).size());
     }
     
     @Parameterized.Parameters
