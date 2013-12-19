@@ -1,4 +1,4 @@
-# // RELAVANT CONFIG SETTINGS
+# // RELEVANT CONFIG SETTINGS
 #  "prefixStats": "internal_prefix",
 #  "graphite": {
 #    "legacyNamespace": false,
