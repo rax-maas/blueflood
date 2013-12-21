@@ -36,7 +36,7 @@ cp /src/config/blueflood-log4j.properties /src/blueflood/
 # Build blueflood
 cd /src/blueflood/
 mvn package
-cp /src/blueflood/blueflood-all/target/blueflood-all-*-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
+cp /src/blueflood/blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
 
 /usr/bin/java \
         -Dblueflood.config=file:blueflood.conf \
@@ -47,6 +47,6 @@ cp /src/blueflood/blueflood-all/target/blueflood-all-*-SNAPSHOT-jar-with-depende
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=${IP} \
         -Dcom.sun.management.jmxremote.port=9180 \
-        -classpath blueflood-all-*-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1 >  /src/blueflood/blueflood.log &
+        -classpath blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1 >  /src/blueflood/blueflood.log &
 
 /bin/bash
