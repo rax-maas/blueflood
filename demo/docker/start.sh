@@ -35,7 +35,7 @@ cp /src/config/blueflood-log4j.properties /src/blueflood/
 
 # Build blueflood
 cd /src/blueflood/
-mvn package
+mvn package -P all-modules
 cp /src/blueflood/blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
 
 /usr/bin/java \
