@@ -18,8 +18,8 @@ sed -i "s/%listen_ip%/$IP/g" /src/config/blueflood.conf
 cp /src/config/cassandra-env.sh /etc/cassandra/
 cp /src/config/cassandra.yaml /etc/cassandra/
 
-export MAX_HEAP_SIZE="512M"
-export HEAP_NEWSIZE="256M"
+#export MAX_HEAP_SIZE="512M"
+#export HEAP_NEWSIZE="256M"
 
 cassandra
 sleep 5;
@@ -35,8 +35,8 @@ cp /src/config/blueflood-log4j.properties /src/blueflood/
 
 # Build blueflood
 cd /src/blueflood/
-mvn package
-cp /src/blueflood/blueflood-all/target/blueflood-all-1.0.0-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
+mvn package -P all-modules
+cp /src/blueflood/blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
 
 /usr/bin/java \
         -Dblueflood.config=file:blueflood.conf \
@@ -47,6 +47,6 @@ cp /src/blueflood/blueflood-all/target/blueflood-all-1.0.0-SNAPSHOT-jar-with-dep
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=${IP} \
         -Dcom.sun.management.jmxremote.port=9180 \
-        -classpath blueflood-all-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1 >  /src/blueflood/blueflood.log &
+        -classpath blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1 >  /src/blueflood/blueflood.log &
 
 /bin/bash
