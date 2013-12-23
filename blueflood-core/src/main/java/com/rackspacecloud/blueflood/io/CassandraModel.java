@@ -149,6 +149,10 @@ public class CassandraModel {
         }
     }
 
+    public static ColumnFamily getColumnFamily(RollupType type, Granularity gran) {
+        return getColumnFamily(RollupType.classOf(type, gran), gran);
+    }
+
     // iterate over all column families that store metrics.
     public static Iterable<MetricColumnFamily> getMetricColumnFamilies() {
         return new Iterable<MetricColumnFamily>() {

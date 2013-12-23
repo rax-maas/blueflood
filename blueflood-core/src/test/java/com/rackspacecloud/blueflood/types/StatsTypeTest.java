@@ -8,17 +8,17 @@ public class StatsTypeTest {
     @Test
     public void testFromString() {
         // verify both equalities.
-        Assert.assertTrue(RollupType.STATSD_COUNTER == RollupType.fromString("STATSD_COUNTER"));
-        Assert.assertTrue(RollupType.STATSD_COUNTER.equals(RollupType.fromString("STATSD_COUNTER")));
+        Assert.assertTrue(RollupType.COUNTER == RollupType.fromString("COUNTER"));
+        Assert.assertTrue(RollupType.COUNTER.equals(RollupType.fromString("COUNTER")));
         
-        Assert.assertTrue(RollupType.STATSD_TIMER == RollupType.fromString("STATSD_TIMER"));
-        Assert.assertTrue(RollupType.STATSD_TIMER.equals(RollupType.fromString("STATSD_TIMER")));
+        Assert.assertTrue(RollupType.TIMER == RollupType.fromString("TIMER"));
+        Assert.assertTrue(RollupType.TIMER.equals(RollupType.fromString("TIMER")));
         
-        Assert.assertTrue(RollupType.STATSD_SET == RollupType.fromString("STATSD_SET"));
-        Assert.assertTrue(RollupType.STATSD_SET.equals(RollupType.fromString("STATSD_SET")));
+        Assert.assertTrue(RollupType.SET == RollupType.fromString("SET"));
+        Assert.assertTrue(RollupType.SET.equals(RollupType.fromString("SET")));
         
-        Assert.assertTrue(RollupType.STATSD_GAUGE == RollupType.fromString("STATSD_GAUGE"));
-        Assert.assertTrue(RollupType.STATSD_GAUGE.equals(RollupType.fromString("STATSD_GAUGE")));
+        Assert.assertTrue(RollupType.GAUGE == RollupType.fromString("GAUGE"));
+        Assert.assertTrue(RollupType.GAUGE.equals(RollupType.fromString("GAUGE")));
         
         Assert.assertTrue(RollupType.BF_BASIC == RollupType.fromString("BF_BASIC"));
         Assert.assertTrue(RollupType.BF_BASIC.equals(RollupType.fromString("BF_BASIC")));

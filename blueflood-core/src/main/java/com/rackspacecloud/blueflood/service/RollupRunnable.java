@@ -87,7 +87,7 @@ class RollupRunnable implements Runnable {
             Points input;
             Rollup rollup = null;
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(), RollupType.CACHE_KEY));
-            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(rollupType, srcGran.coarser());
+            Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
 
@@ -118,39 +118,21 @@ class RollupRunnable implements Runnable {
             timerContext.stop();
         }
     }
-    
-    // derive the class of the type. This will be used to determine which serializer is used.
-    public static Class<? extends Rollup> classOf(RollupType type, Granularity gran) {
-        if (type == RollupType.STATSD_COUNTER)
-            return CounterRollup.class;
-        else if (type == RollupType.STATSD_TIMER)
-            return TimerRollup.class;
-        else if (type == RollupType.STATSD_SET)
-            return SetRollup.class;
-        else if (type == RollupType.STATSD_GAUGE)
-            return GaugeRollup.class;
-        else if (type == RollupType.BF_BASIC && gran == Granularity.FULL)
-            return SimpleNumber.class;
-        else if (type == RollupType.BF_BASIC && gran != Granularity.FULL)
-            return BasicRollup.class;
-        else
-            throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
-    }
-    
+
     // dertmine which DataType to use for serialization.
     public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {
         switch (srcType) {
-            case STATSD_COUNTER:
+            case COUNTER:
                 return srcGran == Granularity.FULL ? Rollup.CounterFromRaw : Rollup.CounterFromCounter;
-            case STATSD_TIMER:
+            case TIMER:
                 return Rollup.TimerFromTimer;
-            case STATSD_GAUGE:
+            case GAUGE:
                 return srcGran == Granularity.FULL ? Rollup.GaugeFromRaw : Rollup.GaugeFromGauge;
             case BF_HISTOGRAMS:
                 return srcGran == Granularity.FULL ? Rollup.HistogramFromRaw : Rollup.HistogramFromHistogram;
             case BF_BASIC:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
-            case STATSD_SET:
+            case SET:
                 return srcGran == Granularity.FULL ? Rollup.SetFromRaw : Rollup.SetFromSet;
             default:
                 break;
