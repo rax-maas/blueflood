@@ -335,7 +335,7 @@ public class SerializationTest {
   
     @Test
     public void testForConstantCollisions() throws Exception {
-        // make sure we're not sharing any constants with MetricHelper.Type
+        // make sure we're not sharing any constants with MetricHelper.DataType
         Set<Character> metricHelperTypes = new HashSet<Character>();
         for (Field f : MetricHelper.Type.class.getFields())
             if (f.getType().equals(char.class))

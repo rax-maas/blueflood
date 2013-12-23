@@ -203,15 +203,15 @@ public class AstyanaxReader extends AstyanaxIO {
                 return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
-            Metric.Type metricType = new Metric.Type((String) type);
-            if (!com.rackspacecloud.blueflood.types.Metric.Type.isKnownMetricType(metricType)) {
+            Metric.DataType metricType = new Metric.DataType((String) type);
+            if (!Metric.DataType.isKnownMetricType(metricType)) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran);
             }
 
-            if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.STRING)) {
+            if (metricType.equals(Metric.DataType.STRING)) {
                 gran = Granularity.FULL;
                 return getStringMetricDataForRange(locator, range, gran);
-            } else if (metricType.equals(com.rackspacecloud.blueflood.types.Metric.Type.BOOLEAN)) {
+            } else if (metricType.equals(Metric.DataType.BOOLEAN)) {
                 gran = Granularity.FULL;
                 return getBooleanMetricDataForRange(locator, range, gran);
             } else {

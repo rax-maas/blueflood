@@ -46,8 +46,8 @@ public class MetricsPersistenceOptimizerFactory {
     }
 
     // get the right optimizer based on metric type
-    public static MetricsPersistenceOptimizer getOptimizer(Metric.Type metricType) {
-        if (metricType == Metric.Type.STRING || metricType == Metric.Type.BOOLEAN) {
+    public static MetricsPersistenceOptimizer getOptimizer(Metric.DataType metricType) {
+        if (metricType == Metric.DataType.STRING || metricType == Metric.DataType.BOOLEAN) {
             return optimizers.get(MetricType.STRING);
         } else {
             return optimizers.get(MetricType.GENERIC);

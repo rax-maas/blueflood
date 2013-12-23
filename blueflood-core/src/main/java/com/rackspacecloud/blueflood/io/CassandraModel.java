@@ -192,7 +192,7 @@ public class CassandraModel {
         }
     }
 
-    // future versions will have get(Granularity, StatType).
+    // future versions will have get(Granularity, RollupType).
     public interface ColumnFamilyMapper {
         public MetricColumnFamily get(Granularity gran);
     }

@@ -20,19 +20,8 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.StatType;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -67,10 +56,10 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         // cache needs to be populated so rollups knows which serializer to use.
         cache = MetadataCache.createLoadingCacheInstance(ttl, 2);
-        cache.put(counterLocator, StatType.CACHE_KEY, StatType.COUNTER.name());
-        cache.put(gaugeLocator, StatType.CACHE_KEY, StatType.GAUGE.name());
-        cache.put(timerLocator, StatType.CACHE_KEY, StatType.TIMER.name());
-        cache.put(setLocator, StatType.CACHE_KEY, StatType.SET.name());
+        cache.put(counterLocator, RollupType.CACHE_KEY, RollupType.STATSD_COUNTER.name());
+        cache.put(gaugeLocator, RollupType.CACHE_KEY, RollupType.STATSD_GAUGE.name());
+        cache.put(timerLocator, RollupType.CACHE_KEY, RollupType.STATSD_TIMER.name());
+        cache.put(setLocator, RollupType.CACHE_KEY, RollupType.STATSD_SET.name());
         // do not put normalLocator in the cache. it will constitute a miss.
         
         // write some full resolution data.

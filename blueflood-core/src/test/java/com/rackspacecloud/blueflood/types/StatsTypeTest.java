@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.types.StatType;
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -9,39 +8,39 @@ public class StatsTypeTest {
     @Test
     public void testFromString() {
         // verify both equalities.
-        Assert.assertTrue(StatType.COUNTER == StatType.fromString("COUNTER"));
-        Assert.assertTrue(StatType.COUNTER.equals(StatType.fromString("COUNTER")));
+        Assert.assertTrue(RollupType.STATSD_COUNTER == RollupType.fromString("STATSD_COUNTER"));
+        Assert.assertTrue(RollupType.STATSD_COUNTER.equals(RollupType.fromString("STATSD_COUNTER")));
         
-        Assert.assertTrue(StatType.TIMER == StatType.fromString("TIMER"));
-        Assert.assertTrue(StatType.TIMER.equals(StatType.fromString("TIMER")));
+        Assert.assertTrue(RollupType.STATSD_TIMER == RollupType.fromString("STATSD_TIMER"));
+        Assert.assertTrue(RollupType.STATSD_TIMER.equals(RollupType.fromString("STATSD_TIMER")));
         
-        Assert.assertTrue(StatType.SET == StatType.fromString("SET"));
-        Assert.assertTrue(StatType.SET.equals(StatType.fromString("SET")));
+        Assert.assertTrue(RollupType.STATSD_SET == RollupType.fromString("STATSD_SET"));
+        Assert.assertTrue(RollupType.STATSD_SET.equals(RollupType.fromString("STATSD_SET")));
         
-        Assert.assertTrue(StatType.GAUGE == StatType.fromString("GAUGE"));
-        Assert.assertTrue(StatType.GAUGE.equals(StatType.fromString("GAUGE")));
+        Assert.assertTrue(RollupType.STATSD_GAUGE == RollupType.fromString("STATSD_GAUGE"));
+        Assert.assertTrue(RollupType.STATSD_GAUGE.equals(RollupType.fromString("STATSD_GAUGE")));
         
-        Assert.assertTrue(StatType.UNKNOWN == StatType.fromString("UNKNOWN"));
-        Assert.assertTrue(StatType.UNKNOWN.equals(StatType.fromString("UNKNOWN")));
+        Assert.assertTrue(RollupType.BF_BASIC == RollupType.fromString("BF_BASIC"));
+        Assert.assertTrue(RollupType.BF_BASIC.equals(RollupType.fromString("BF_BASIC")));
     }
     
     @Test
     public void testOthersReturnUnknown() {
-        Assert.assertTrue(StatType.UNKNOWN == StatType.fromString("SomeInvalidStatsType"));
-        Assert.assertTrue(StatType.UNKNOWN.equals(StatType.fromString("SomeInvalidStatsType")));
+        Assert.assertTrue(RollupType.BF_BASIC == RollupType.fromString("SomeInvalidStatsType"));
+        Assert.assertTrue(RollupType.BF_BASIC.equals(RollupType.fromString("SomeInvalidStatsType")));
     }
     
     @Test
     public void testNullReturnUnknown() {
-        Assert.assertTrue(StatType.UNKNOWN == StatType.fromString(null));
-        Assert.assertTrue(StatType.UNKNOWN.equals(StatType.fromString(null)));
+        Assert.assertTrue(RollupType.BF_BASIC == RollupType.fromString(null));
+        Assert.assertTrue(RollupType.BF_BASIC.equals(RollupType.fromString(null)));
     }
     
     @Test
     public void testToStringRoundTrip() {
-        Assert.assertTrue(StatType.values().length > 0);
+        Assert.assertTrue(RollupType.values().length > 0);
         
-        for (StatType type : StatType.values())
-            Assert.assertEquals(type, StatType.fromString(type.toString()));
+        for (RollupType type : RollupType.values())
+            Assert.assertEquals(type, RollupType.fromString(type.toString()));
     }
 }

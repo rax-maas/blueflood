@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -71,10 +70,10 @@ public class HistogramRollupRunnable extends RollupRunnable {
             Rollup rollup = null;
             ColumnFamily<Locator, Long> srcCF;
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(HistogramRollup.class, dstGran);
-            StatType statType = StatType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
-                    StatType.CACHE_KEY));
+            RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
+                    RollupType.CACHE_KEY));
 
-            if (statType != StatType.UNKNOWN) { // Do not compute histogram for statsd metrics.
+            if (rollupType != RollupType.BF_BASIC) { // Do not compute histogram for statsd metrics.
                 executionContext.decrementReadCounter();
                 timerContext.stop();
                 return;
@@ -96,7 +95,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                             srcCF);
 
                 // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(StatType.BF_HISTOGRAMS, srcGran).compute(input);
+                rollup =  RollupRunnable.getRollupComputer(RollupType.BF_HISTOGRAMS, srcGran).compute(input);
             } finally {
                 calcrollupContext.stop();
             }
