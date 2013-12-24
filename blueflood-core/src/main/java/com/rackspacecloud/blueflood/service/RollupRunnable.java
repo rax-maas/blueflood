@@ -20,7 +20,6 @@ import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -87,8 +86,8 @@ class RollupRunnable implements Runnable {
             // Read data and compute rollup
             Points input;
             Rollup rollup = null;
-            StatType statType = StatType.fromString((String)rollupTypeCache.get(singleRollupReadContext.getLocator(), StatType.CACHE_KEY));
-            Class<? extends Rollup> rollupClass = RollupRunnable.classOf(statType, srcGran.coarser());
+            RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(), RollupType.CACHE_KEY));
+            Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
 
@@ -98,7 +97,7 @@ class RollupRunnable implements Runnable {
                         singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
 
                 // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(statType, srcGran).compute(input);
+                rollup =  RollupRunnable.getRollupComputer(rollupType, srcGran).compute(input);
             } finally {
                 calcrollupContext.stop();
             }
@@ -119,27 +118,9 @@ class RollupRunnable implements Runnable {
             timerContext.stop();
         }
     }
-    
-    // derive the class of the type. This will be used to determine which serializer is used.
-    public static Class<? extends Rollup> classOf(StatType type, Granularity gran) {
-        if (type == StatType.COUNTER)
-            return CounterRollup.class;
-        else if (type == StatType.TIMER)
-            return TimerRollup.class;
-        else if (type == StatType.SET)
-            return SetRollup.class;
-        else if (type == StatType.GAUGE)
-            return GaugeRollup.class;
-        else if (type == StatType.UNKNOWN && gran == Granularity.FULL)
-            return SimpleNumber.class;
-        else if (type == StatType.UNKNOWN && gran != Granularity.FULL)
-            return BasicRollup.class;
-        else
-            throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
-    }
-    
-    // dertmine which Type to use for serialization.
-    public static Rollup.Type getRollupComputer(StatType srcType, Granularity srcGran) {
+
+    // dertmine which DataType to use for serialization.
+    public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {
         switch (srcType) {
             case COUNTER:
                 return srcGran == Granularity.FULL ? Rollup.CounterFromRaw : Rollup.CounterFromCounter;
@@ -149,7 +130,7 @@ class RollupRunnable implements Runnable {
                 return srcGran == Granularity.FULL ? Rollup.GaugeFromRaw : Rollup.GaugeFromGauge;
             case BF_HISTOGRAMS:
                 return srcGran == Granularity.FULL ? Rollup.HistogramFromRaw : Rollup.HistogramFromHistogram;
-            case UNKNOWN:
+            case BF_BASIC:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
                 return srcGran == Granularity.FULL ? Rollup.SetFromRaw : Rollup.SetFromSet;

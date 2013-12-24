@@ -24,14 +24,14 @@ public class Metric implements IMetric {
     private final Object metricValue;
     private final long collectionTime;
     private int ttlSeconds;
-    private final Type metricType;
+    private final DataType metricType;
     private final String unit;
 
     public Metric(Locator locator, Object metricValue, long collectionTime, TimeValue ttl, String unit) {
         this.locator = locator;
         this.metricValue = metricValue;
         this.collectionTime = collectionTime;
-        this.metricType = Type.getMetricType(metricValue);
+        this.metricType = DataType.getMetricType(metricValue);
         this.unit = unit;
 
         setTtl(ttl);
@@ -45,7 +45,7 @@ public class Metric implements IMetric {
         return metricValue;
     }
 
-    public Type getType() {
+    public DataType getType() {
         return metricType;
     }
 
@@ -62,15 +62,15 @@ public class Metric implements IMetric {
     }
 
     public boolean isNumeric() {
-        return Type.isNumericMetric(metricValue);
+        return DataType.isNumericMetric(metricValue);
     }
 
     public boolean isString() {
-        return Type.isStringMetric(metricValue);
+        return DataType.isStringMetric(metricValue);
     }
 
     public boolean isBoolean() {
-        return Type.isBooleanMetric(metricValue);
+        return DataType.isBooleanMetric(metricValue);
     }
 
     public void setTtl(TimeValue ttl) {
@@ -101,21 +101,21 @@ public class Metric implements IMetric {
     }
 
     // todo: bust out into a separate file.
-    public static class Type {
+    public static class DataType {
         private final String type;
 
         // todo: we need to get rid of this and have a static method that returns the singleton instances below.
-        public Type(String type) {
+        public DataType(String type) {
             this.type = type;
         }
 
-        public final static Type STRING = new Type("S");
-        public final static Type INT = new Type("I");
-        public final static Type LONG = new Type("L");
-        public final static Type DOUBLE = new Type("D");
-        public final static Type BOOLEAN = new Type("B");
+        public final static DataType STRING = new DataType("S");
+        public final static DataType INT = new DataType("I");
+        public final static DataType LONG = new DataType("L");
+        public final static DataType DOUBLE = new DataType("D");
+        public final static DataType BOOLEAN = new DataType("B");
 
-        public static Type getMetricType(Object metricValue) {
+        public static DataType getMetricType(Object metricValue) {
             if (metricValue instanceof String) {
                 return STRING;
             } else if (metricValue instanceof Integer) {
@@ -132,21 +132,21 @@ public class Metric implements IMetric {
         }
 
         public static boolean isNumericMetric(Object metricValue) {
-            final Type metricType = getMetricType(metricValue);
-            return metricType == Type.INT || metricType == Type.LONG || metricType == Type.DOUBLE;
+            final DataType metricType = getMetricType(metricValue);
+            return metricType == DataType.INT || metricType == DataType.LONG || metricType == DataType.DOUBLE;
         }
 
         public static boolean isStringMetric(Object metricValue) {
-            final Type metricType = getMetricType(metricValue);
-            return metricType == Type.STRING;
+            final DataType metricType = getMetricType(metricValue);
+            return metricType == DataType.STRING;
         }
 
         public static boolean isBooleanMetric(Object metricValue) {
-            final Type metricType = getMetricType(metricValue);
-            return metricType == Type.BOOLEAN;
+            final DataType metricType = getMetricType(metricValue);
+            return metricType == DataType.BOOLEAN;
         }
 
-        public static boolean isKnownMetricType(Type incoming) {
+        public static boolean isKnownMetricType(DataType incoming) {
             return incoming.equals(STRING) || incoming.equals(INT) || incoming.equals(LONG) || incoming.equals(DOUBLE)
                     || incoming.equals(BOOLEAN);
         }
@@ -156,7 +156,7 @@ public class Metric implements IMetric {
             return type;
         }
 
-        public boolean equals(Type other) {
+        public boolean equals(DataType other) {
             return type.equals(other.type);
         }
     }
