@@ -38,6 +38,34 @@ public class Points<T> {
         return points.isEmpty();
     }
 
+    public static class Builder {
+        public static Points build(Metric.DataType dataType, Class<? extends Rollup> rollupClass) {
+            if (dataType == Metric.DataType.STRING) {
+                return new Points<String>();
+            } else if (dataType == Metric.DataType.BOOLEAN) {
+                return new Points<Boolean>();
+            } else {
+                if (rollupClass == BasicRollup.class) {
+                    return new Points<BasicRollup>();
+                } else if (rollupClass == SimpleNumber.class) {
+                    return new Points<SimpleNumber>();
+                } else if (rollupClass == HistogramRollup.class) {
+                    return new Points<HistogramRollup>();
+                } else if (rollupClass == CounterRollup.class) {
+                    return new Points<CounterRollup>();
+                } else if (rollupClass == TimerRollup.class) {
+                    return new Points<TimerRollup>();
+                } else if (rollupClass == SetRollup.class) {
+                    return new Points<SetRollup>();
+                } else if (rollupClass == GaugeRollup.class) {
+                    return new Points<GaugeRollup>();
+                } else {
+                    throw new RuntimeException("Rollup type unknown.");
+                }
+            }
+        }
+    }
+
     public static class Point<T> {
         private final T data;
         private final long timestamp;

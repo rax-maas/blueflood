@@ -24,6 +24,8 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.retry.RetryNTimes;
+import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
@@ -31,6 +33,8 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.util.*;
@@ -105,5 +109,15 @@ public class AstyanaxIO {
 
     protected static Keyspace getKeyspace() {
         return keyspace;
+    }
+
+    protected AbstractSerializer serializerFor(RollupType rollupType, Metric.DataType dataType, Granularity gran) {
+        if (dataType == Metric.DataType.STRING) {
+            return StringSerializer.get();
+        } else if (dataType == Metric.DataType.BOOLEAN) {
+            return BooleanSerializer.get();
+        } else {
+           return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+        }
     }
 }
