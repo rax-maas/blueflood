@@ -18,11 +18,10 @@ package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
-import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -41,9 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -224,6 +221,73 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
+    // TODO: This should be the only method all output handlers call. We should be able to deprecate
+    // other individual metric fetch methods once this gets in.
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
+        Map<ColumnFamily, List<Locator>> locatorsByCF =
+                new HashMap<ColumnFamily, List<Locator>>();
+        Map<Locator, ColumnList<Long>> results = new HashMap<Locator, ColumnList<Long>>();
+
+        for (Locator locator : locators) {
+            try {
+                RollupType rollupType = RollupType.fromString((String)
+                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                Metric.DataType dataType = new Metric.DataType((String)
+                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
+                List<Locator> locs = locatorsByCF.get(cf);
+
+                if (locs == null) {
+                    locs = new ArrayList<Locator>();
+                    locatorsByCF.put(cf, locs);
+                }
+                locs.add(locator);
+            } catch (Exception e) {
+                // pass for now. need metric to figure this stuff out.
+            }
+        }
+
+        for (ColumnFamily CF : locatorsByCF.keySet()) {
+            List<Locator> locs = locatorsByCF.get(CF);
+            Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
+            results.putAll(metrics);
+        }
+
+        return transformBatchResultsToMetricData(results, gran);
+    }
+
+    private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
+                                                            Range range) {
+        final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
+        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
+
+        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        try {
+            // We don't paginate this call. So we should make sure the number of reads is tolerable.
+            // TODO: Think about paginating this call.
+            OperationResult<Rows<Locator, Long>> query = keyspace
+                    .prepareQuery(CF)
+                    .getKeySlice(locators)
+                    .withColumnRange(rangeBuilder.build())
+                    .execute();
+
+            for (Row<Locator, Long> row : query.getResult()) {
+                columns.put(row.getKey(), row.getColumns());
+            }
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
+                Instrumentation.markNotFound(CF);
+            } else {
+                Instrumentation.markBatchReadError(e);
+            }
+            log.warn("Batch read query failed for column family " + CF.getName(), e);
+        } finally {
+            ctx.stop();
+        }
+
+        return columns;
+    }
+
     public MetricData getHistogramsForRange(Locator locator, Range range, Granularity granularity) throws IOException {
         if (!granularity.isCoarser(Granularity.FULL)) {
             throw new RuntimeException("Histograms are not available for granularity " + granularity.toString());
@@ -302,6 +366,40 @@ public class AstyanaxReader extends AstyanaxIO {
         }
 
         return getStringMetricDataForRange(locator, range, gran);
+    }
+
+    private Map<Locator, MetricData> transformBatchResultsToMetricData(Map<Locator, ColumnList<Long>> columnsMap,
+                                                                       Granularity gran) {
+        Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
+
+        for (Locator locator : columnsMap.keySet()) {
+            try {
+                RollupType rollupType = RollupType.fromString((String)
+                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                Metric.DataType dataType = new Metric.DataType((String)
+                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                String unit = getUnitString(locator);
+                MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
+                Points points = getPointsFromColumns(columnsMap.get(locator), rollupType, dataType, gran);
+                MetricData data = new MetricData(points, unit, outputType);
+                results.put(locator, data);
+            } catch (Exception e) {
+                // pass
+            }
+        }
+
+        return results;
+    }
+
+    private Points getPointsFromColumns(ColumnList columnList, RollupType rollupType,
+                                        Metric.DataType dataType, Granularity gran) {
+        Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
+        Points points = Points.Builder.build(dataType, rollupClass);
+        for (Column<Long> column : columnList) {
+            points.add(pointFromColumn(column, gran, serializerFor(rollupType, dataType, gran)));
+        }
+
+        return points;
     }
 
     private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
