@@ -18,7 +18,8 @@ package com.rackspacecloud.blueflood.types;
 
 public enum MetricMetadata {
     TYPE (0),
-    UNIT (1);
+    UNIT (1),
+    ROLLUP_TYPE (2);
 
     private final int value;
     MetricMetadata(int value) {

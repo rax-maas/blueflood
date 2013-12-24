@@ -9,9 +9,7 @@ public enum RollupType {
     GAUGE,
     BF_HISTOGRAMS,
     BF_BASIC;
-    
-    public static final String CACHE_KEY = "rollup.type";
-    
+
     public static final RollupType[] SIMPLE_TYPES = new RollupType[] {COUNTER, SET, GAUGE, BF_BASIC};
     
     public static RollupType fromString(String s) {
