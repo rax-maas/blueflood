@@ -71,7 +71,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
             ColumnFamily<Locator, Long> srcCF;
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(HistogramRollup.class, dstGran);
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
-                    RollupType.CACHE_KEY));
+                    MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
             if (rollupType != RollupType.BF_BASIC) { // Do not compute histogram for statsd metrics.
                 executionContext.decrementReadCounter();

@@ -56,10 +56,11 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         // cache needs to be populated so rollups knows which serializer to use.
         cache = MetadataCache.createLoadingCacheInstance(ttl, 2);
-        cache.put(counterLocator, RollupType.CACHE_KEY, RollupType.COUNTER.name());
-        cache.put(gaugeLocator, RollupType.CACHE_KEY, RollupType.GAUGE.name());
-        cache.put(timerLocator, RollupType.CACHE_KEY, RollupType.TIMER.name());
-        cache.put(setLocator, RollupType.CACHE_KEY, RollupType.SET.name());
+        String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
+        cache.put(counterLocator, cacheKey, RollupType.COUNTER.name());
+        cache.put(gaugeLocator, cacheKey, RollupType.GAUGE.name());
+        cache.put(timerLocator, cacheKey, RollupType.TIMER.name());
+        cache.put(setLocator, cacheKey, RollupType.SET.name());
         // do not put normalLocator in the cache. it will constitute a miss.
         
         // write some full resolution data.
