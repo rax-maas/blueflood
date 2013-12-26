@@ -45,6 +45,9 @@ public class HttpMetricDataQueryServer {
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
+        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
+        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
+
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
@@ -54,8 +57,8 @@ public class HttpMetricDataQueryServer {
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
-                        Executors.newCachedThreadPool(),
-                        Executors.newCachedThreadPool()));
+                        Executors.newFixedThreadPool(acceptThreads),
+                        Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }

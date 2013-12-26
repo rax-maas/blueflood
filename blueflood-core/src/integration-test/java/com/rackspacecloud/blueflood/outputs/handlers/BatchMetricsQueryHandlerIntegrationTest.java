@@ -113,9 +113,8 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
 
         // Now test a bad case with extremely low timeout. We shouldn't throw any exceptions.
         Map<Locator, MetricData> results = batchMetricsQueryHandler.execute(query, new TimeValue(1, TimeUnit.MILLISECONDS));
-        // Make sure there were things still in progress.
-        Assert.assertTrue("Count of results " + results.size() + " should be less than " + locators.size(),
-                results.size() < locators.size());
+        // Make sure there were things still in progress and nothing breaks.
+        Assert.assertNull(results);
         // Executor queue should not have any items left.
         // XXX: OpenJDK6 ArrayBlockingQueue has a weird bug where it returns negative value for size() when you call
         // purge() on the executor that uses the queue.
