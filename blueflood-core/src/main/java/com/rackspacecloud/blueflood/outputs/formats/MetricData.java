@@ -61,9 +61,9 @@ public class MetricData {
         }
 
         public static Type from(RollupType rollupType, Metric.DataType dataType) {
-            if (dataType == Metric.DataType.STRING) {
+            if (dataType.equals(Metric.DataType.STRING)) {
                 return STRING;
-            } else if (dataType == Metric.DataType.BOOLEAN) {
+            } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
                 return BOOLEAN;
             } else {
                 if (rollupType == RollupType.BF_HISTOGRAMS) {

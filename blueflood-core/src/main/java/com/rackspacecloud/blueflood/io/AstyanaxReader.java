@@ -274,6 +274,7 @@ public class AstyanaxReader extends AstyanaxIO {
             for (Row<Locator, Long> row : query.getResult()) {
                 columns.put(row.getKey(), row.getColumns());
             }
+
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
                 Instrumentation.markNotFound(CF);
@@ -391,12 +392,12 @@ public class AstyanaxReader extends AstyanaxIO {
         return results;
     }
 
-    private Points getPointsFromColumns(ColumnList columnList, RollupType rollupType,
+    private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
                                         Metric.DataType dataType, Granularity gran) {
         Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
         Points points = Points.Builder.build(dataType, rollupClass);
         for (Column<Long> column : columnList) {
-            points.add(pointFromColumn(column, gran, serializerFor(rollupType, dataType, gran)));
+            points.add(new Points.Point(column.getName(), column.getValue(serializerFor(rollupType, dataType, gran))));
         }
 
         return points;

@@ -151,7 +151,7 @@ public class CassandraModel {
 
     public static ColumnFamily getColumnFamily(RollupType type, Metric.DataType dataType, Granularity gran) {
         if (type == RollupType.BF_BASIC &&
-                (dataType == Metric.DataType.BOOLEAN || dataType == Metric.DataType.STRING)) {
+                (dataType.equals(Metric.DataType.BOOLEAN) || dataType.equals(Metric.DataType.STRING))) {
             return CF_METRICS_STRING;
         }
 

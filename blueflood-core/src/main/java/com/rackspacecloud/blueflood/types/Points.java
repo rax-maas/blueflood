@@ -40,9 +40,9 @@ public class Points<T> {
 
     public static class Builder {
         public static Points build(Metric.DataType dataType, Class<? extends Rollup> rollupClass) {
-            if (dataType == Metric.DataType.STRING) {
+            if (dataType.equals(Metric.DataType.STRING)) {
                 return new Points<String>();
-            } else if (dataType == Metric.DataType.BOOLEAN) {
+            } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
                 return new Points<Boolean>();
             } else {
                 if (rollupClass == BasicRollup.class) {
