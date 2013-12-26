@@ -372,7 +372,6 @@ public class AstyanaxReader extends AstyanaxIO {
     private Map<Locator, MetricData> transformBatchResultsToMetricData(Map<Locator, ColumnList<Long>> columnsMap,
                                                                        Granularity gran) {
         Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
-
         for (Locator locator : columnsMap.keySet()) {
             try {
                 RollupType rollupType = RollupType.fromString((String)
