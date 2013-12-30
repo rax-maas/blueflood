@@ -22,10 +22,16 @@ import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
+import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.types.SetRollup;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.TimerRollup;
 
 
 import java.util.ArrayList;
@@ -52,13 +58,13 @@ public class MetricsWriter extends AsyncFunctionWithThreadPool<StatCollection, M
             public Multimap<RollupType, IMetric> call() throws Exception {
                 Multimap<RollupType, IMetric> metrics = Conversions.asMetrics(input);
                 // there will be no string metrics, so we can get away with assuming CF_METRICS_FULL.
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.BF_BASIC)), CassandraModel.CF_METRICS_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.BF_BASIC)), CassandraModel.getColumnFamily(SimpleNumber.class, Granularity.FULL));
                 
                 // the rest of these calls deal with preaggregated metrics.
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.COUNTER)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.SET)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.GAUGE)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.TIMER)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.COUNTER)), CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.SET)), CassandraModel.getColumnFamily(SetRollup.class, Granularity.FULL));
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.GAUGE)), CassandraModel.getColumnFamily(GaugeRollup.class, Granularity.FULL));
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.TIMER)), CassandraModel.getColumnFamily(TimerRollup.class, Granularity.FULL));
                 return metrics;
             }
         });
