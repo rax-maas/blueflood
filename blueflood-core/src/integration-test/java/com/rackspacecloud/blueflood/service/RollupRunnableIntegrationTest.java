@@ -18,24 +18,10 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.StatType;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -70,10 +56,11 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         // cache needs to be populated so rollups knows which serializer to use.
         cache = MetadataCache.createLoadingCacheInstance(ttl, 2);
-        cache.put(counterLocator, StatType.CACHE_KEY, StatType.COUNTER.name());
-        cache.put(gaugeLocator, StatType.CACHE_KEY, StatType.GAUGE.name());
-        cache.put(timerLocator, StatType.CACHE_KEY, StatType.TIMER.name());
-        cache.put(setLocator, StatType.CACHE_KEY, StatType.SET.name());
+        String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
+        cache.put(counterLocator, cacheKey, RollupType.COUNTER.name());
+        cache.put(gaugeLocator, cacheKey, RollupType.GAUGE.name());
+        cache.put(timerLocator, cacheKey, RollupType.TIMER.name());
+        cache.put(setLocator, cacheKey, RollupType.SET.name());
         // do not put normalLocator in the cache. it will constitute a miss.
         
         // write some full resolution data.
@@ -107,8 +94,8 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             normalMetrics.add(metric);
         }
         
-        writer.insertMetrics(preaggregatedMetrics, AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
-        writer.insertMetrics(normalMetrics, AstyanaxIO.CF_METRICS_FULL);
+        writer.insertMetrics(preaggregatedMetrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+        writer.insertMetrics(normalMetrics, CassandraModel.CF_METRICS_FULL);
          
     }
     
@@ -118,13 +105,13 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(5, reader.getDataToRoll(SimpleNumber.class,
                                                     normalLocator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_FULL).getPoints().size());
+                                                    CassandraModel.CF_METRICS_FULL).getPoints().size());
         
         // assert nothing in 5m for this locator.
         Assert.assertEquals(0, reader.getDataToRoll(BasicRollup.class,
                                                     normalLocator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    CassandraModel.CF_METRICS_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
@@ -144,7 +131,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, reader.getDataToRoll(BasicRollup.class,
                                                     normalLocator,
                                                     range,
-                                                    AstyanaxIO.CF_METRICS_5M).getPoints().size());
+                                                    CassandraModel.CF_METRICS_5M).getPoints().size());
     }
     
     @Test
@@ -172,13 +159,13 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
+                                                    CassandraModel.CF_METRICS_PREAGGREGATED_FULL).getPoints().size());
         
         // assert nothing in 5m for this locator.
         Assert.assertEquals(0, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range, 
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
+                                                    CassandraModel.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
@@ -197,6 +184,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,
-                                                    AstyanaxIO.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
+                                                    CassandraModel.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
     }
 }

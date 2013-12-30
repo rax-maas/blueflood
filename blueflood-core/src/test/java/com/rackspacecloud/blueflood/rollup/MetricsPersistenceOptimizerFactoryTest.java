@@ -26,14 +26,14 @@ public class MetricsPersistenceOptimizerFactoryTest {
     @Test
     public void testFactoryGetOptimizer() {
         MetricsPersistenceOptimizer optimizer =
-                MetricsPersistenceOptimizerFactory.getOptimizer(Metric.Type.STRING);
+                MetricsPersistenceOptimizerFactory.getOptimizer(Metric.DataType.STRING);
 
         // we should get a valid optimizer
         assertEquals(false, optimizer == null);
         // we should get a StringMetricsPersistenceOptimizer
         assertEquals(true, optimizer instanceof StringMetricsPersistenceOptimizer);
 
-        optimizer = MetricsPersistenceOptimizerFactory.getOptimizer(Metric.Type.DOUBLE);
+        optimizer = MetricsPersistenceOptimizerFactory.getOptimizer(Metric.DataType.DOUBLE);
 
         // we should set a GenericMetricsPersistenceOptimizer
         assertEquals(true, optimizer instanceof GenericMetricsPersistenceOptimizer);

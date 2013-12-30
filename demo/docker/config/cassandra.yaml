@@ -33,7 +33,7 @@ max_hint_window_in_ms: 3600000 # one hour
 authenticator: org.apache.cassandra.auth.AllowAllAuthenticator
 
 # authorization backend, implementing IAuthority; used to limit access/provide permissions
-authority: org.apache.cassandra.auth.AllowAllAuthority
+#authority: org.apache.cassandra.auth.AllowAllAuthority
 
 # The partitioner is responsible for distributing rows (by key) across
 # nodes in the cluster.  Any IPartitioner may be used, including your
@@ -107,7 +107,7 @@ seed_provider:
 # it is most effective under light to moderate load, or read-heavy
 # workloads; under truly massive write load, it will often be too
 # little, too late.
-flush_largest_memtables_at: 0.75
+#flush_largest_memtables_at: 0.75
 
 # emergency pressure valve #2: the first time heap usage after a full
 # (CMS) garbage collection is above this fraction of the max,
@@ -118,8 +118,8 @@ flush_largest_memtables_at: 0.75
 #
 # Set to 1.0 to disable.  Setting this lower than
 # CMSInitiatingOccupancyFraction is not likely to be useful.
-reduce_cache_sizes_at: 0.85
-reduce_cache_capacity_to: 0.6
+#reduce_cache_sizes_at: 0.85
+#reduce_cache_capacity_to: 0.6
 
 # For workloads with more data than can fit in memory, Cassandra's
 # bottleneck will be reads that need to fetch data from

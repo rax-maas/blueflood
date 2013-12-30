@@ -19,8 +19,8 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -69,21 +69,21 @@ public class HistogramRollupRunnable extends RollupRunnable {
             Points<HistogramRollup> input;
             Rollup rollup = null;
             ColumnFamily<Locator, Long> srcCF;
-            ColumnFamily<Locator, Long> dstCF = AstyanaxIO.getHistogramColumnFamilyMapper().get(dstGran);
-            StatType statType = StatType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
-                    StatType.CACHE_KEY));
+            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(HistogramRollup.class, dstGran);
+            RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
+                    MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
-            if (statType != StatType.UNKNOWN) { // Do not compute histogram for statsd metrics.
+            if (rollupType != RollupType.BF_BASIC) { // Do not compute histogram for statsd metrics.
                 executionContext.decrementReadCounter();
                 timerContext.stop();
                 return;
             }
 
             if (srcGran == Granularity.MIN_5) {
-                srcCF = AstyanaxIO.CF_METRICS_FULL;
+                srcCF = CassandraModel.CF_METRICS_FULL;
             } else {
                 // Coarser histograms are always computed from 5 MIN histograms for error minimization
-                srcCF = AstyanaxIO.CF_METRICS_HIST_5M;
+                srcCF = CassandraModel.CF_METRICS_HIST_5M;
             }
 
             Timer.Context calcrollupContext = calcTimer.time();
@@ -95,7 +95,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                             srcCF);
 
                 // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(StatType.BF_HISTOGRAMS, srcGran).compute(input);
+                rollup =  RollupRunnable.getRollupComputer(RollupType.BF_HISTOGRAMS, srcGran).compute(input);
             } finally {
                 calcrollupContext.stop();
             }

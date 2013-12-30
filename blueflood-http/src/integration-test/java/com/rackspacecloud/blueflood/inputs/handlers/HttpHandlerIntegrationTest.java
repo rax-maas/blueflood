@@ -21,15 +21,13 @@ import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -81,7 +79,7 @@ public class HttpHandlerIntegrationTest {
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
         Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
-                locator, new Range(1234567878, 1234567900), AstyanaxIO.getColumnFamilyMapper().get(Granularity.FULL));
+                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }

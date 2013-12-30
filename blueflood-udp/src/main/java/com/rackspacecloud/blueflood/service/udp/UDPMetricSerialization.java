@@ -10,7 +10,6 @@ import io.netty.channel.socket.DatagramPacket;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,20 +34,20 @@ public class UDPMetricSerialization {
         
             String tenantId = in.readString();
             String metricName = in.readString();
-            Metric.Type type = new Metric.Type(in.readString());
+            Metric.DataType type = new Metric.DataType(in.readString());
             long collectionTime = in.readRawVarint64();
             int ttlSecs = in.readRawVarint32();
             String units = in.readString();
             Object value = null;
-            if (type.equals(Metric.Type.BOOLEAN))
+            if (type.equals(Metric.DataType.BOOLEAN))
                 value = in.readBool();
-            else if (type.equals(Metric.Type.DOUBLE))
+            else if (type.equals(Metric.DataType.DOUBLE))
                 value = in.readDouble();
-            else if (type.equals(Metric.Type.INT))
+            else if (type.equals(Metric.DataType.INT))
                 value = in.readRawVarint32();
-            else if (type.equals(Metric.Type.LONG))
+            else if (type.equals(Metric.DataType.LONG))
                 value = in.readRawVarint64();
-            else if (type.equals(Metric.Type.STRING))
+            else if (type.equals(Metric.DataType.STRING))
                 value = in.readString();
             
             if (value != null) {
@@ -91,15 +90,15 @@ public class UDPMetricSerialization {
             size += CodedOutputStream.computeRawVarint64Size(metric.getCollectionTime());
             size += CodedOutputStream.computeRawVarint32Size(metric.getTtlInSeconds());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getUnit());
-            if (metric.getType().equals(Metric.Type.STRING))
+            if (metric.getType().equals(Metric.DataType.STRING))
                 size += CodedOutputStream.computeStringSizeNoTag((String)metric.getValue());
-            if (metric.getType().equals(Metric.Type.INT))
+            if (metric.getType().equals(Metric.DataType.INT))
                 size += CodedOutputStream.computeRawVarint32Size((Integer) metric.getValue());
-            if (metric.getType().equals(Metric.Type.LONG))
+            if (metric.getType().equals(Metric.DataType.LONG))
                 size += CodedOutputStream.computeRawVarint64Size((Long) metric.getValue());
-            if (metric.getType().equals(Metric.Type.DOUBLE))
+            if (metric.getType().equals(Metric.DataType.DOUBLE))
                 size += CodedOutputStream.computeDoubleSizeNoTag((Double) metric.getValue());
-            if (metric.getType().equals(Metric.Type.BOOLEAN))
+            if (metric.getType().equals(Metric.DataType.BOOLEAN))
                 size += CodedOutputStream.computeBoolSizeNoTag((Boolean) metric.getValue());
         }
         
@@ -113,15 +112,15 @@ public class UDPMetricSerialization {
         out.writeRawVarint64(metric.getCollectionTime());
         out.writeRawVarint32(metric.getTtlInSeconds());
         out.writeStringNoTag(metric.getUnit());
-        if (metric.getType().equals(Metric.Type.STRING))
+        if (metric.getType().equals(Metric.DataType.STRING))
             out.writeStringNoTag((String) metric.getValue());
-        else if (metric.getType().equals(Metric.Type.INT))
+        else if (metric.getType().equals(Metric.DataType.INT))
             out.writeRawVarint32((Integer)metric.getValue());
-        else if (metric.getType().equals(Metric.Type.LONG))
+        else if (metric.getType().equals(Metric.DataType.LONG))
             out.writeRawVarint64((Long)metric.getValue());
-        else if (metric.getType().equals(Metric.Type.DOUBLE))
+        else if (metric.getType().equals(Metric.DataType.DOUBLE))
             out.writeDoubleNoTag((Double) metric.getValue());
-        else if (metric.getType().equals(Metric.Type.BOOLEAN))
+        else if (metric.getType().equals(Metric.DataType.BOOLEAN))
             out.writeBoolNoTag((Boolean) metric.getValue());
     }
     
