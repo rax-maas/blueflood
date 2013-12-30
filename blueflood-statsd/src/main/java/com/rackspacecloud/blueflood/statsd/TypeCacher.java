@@ -46,23 +46,19 @@ public class TypeCacher extends AsyncFunctionWithThreadPool<StatCollection, Stat
         return getThreadPool().submit(new Callable<StatCollection>() {
             @Override
             public StatCollection call() throws Exception {
-                int cached = 0;
                 
                 for (RollupType type : RollupType.SIMPLE_TYPES) {
                     for (Stat stat : input.getStats(type)) {
                         cache.put(stat.getLocator(), MetricMetadata.ROLLUP_TYPE.name(), type.toString());
-                        cached += 1;
                     }
                 }
                 
                 for (Locator locator : input.getTimerStats().keySet()) {
                     cache.put(locator, MetricMetadata.ROLLUP_TYPE.name(), RollupType.TIMER.toString());
-                    cached += 1;
                 }
                 
                 for (Locator locator : input.getCounterStats().keySet()) {
                     cache.put(locator, MetricMetadata.ROLLUP_TYPE.name(), RollupType.COUNTER.toString());
-                    cached += 1;
                 }
                 
                 return input;
