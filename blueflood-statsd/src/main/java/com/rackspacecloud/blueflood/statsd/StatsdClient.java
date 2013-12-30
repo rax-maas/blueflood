@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -53,22 +52,22 @@ public class StatsdClient {
     }
     
     public boolean counter(String key, int magnitude) {
-        String stat = String.format(Locale.ENGLISH, "%s:%d|c", key, magnitude);
+        String stat = String.format("%s:%d|c", key, magnitude);
         return maybeAppend(stat);
     }
     
     public boolean timer(String key, int value) {
-        String stat = String.format(Locale.ENGLISH, "%s:%d|ms", key, value);
+        String stat = String.format("%s:%d|ms", key, value);
         return maybeAppend(stat);
     }
     
     public boolean gauge(String key, double magnitude) {
-        String stat = String.format(Locale.ENGLISH, "%s:%s|g", key, magnitude);
+        String stat = String.format("%s:%s|g", key, magnitude);
         return maybeAppend(stat);
     }
     
     public boolean set(String key, String value) {
-        String stat = String.format(Locale.ENGLISH, "%s:%s|s", key, value);
+        String stat = String.format("%s:%s|s", key, value);
         return maybeAppend(stat);
     }
     
