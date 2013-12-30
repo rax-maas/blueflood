@@ -118,34 +118,4 @@ public class StatsdClient {
                 return false;
         }
     }
-    
-    public static void main(String args[]) {
-        final Random rand = new Random(56234363L);
-        final List<Integer> set = new ArrayList<Integer>() {{
-            for (int i = 0; i < 50; i++) {
-                add(i + 100);
-            }
-        }};
-        int counter = 0;
-        try {
-            StatsdClient client = new StatsdClient("192.168.231.128", 8125, 1500);
-            
-            while (true) {
-                
-                // statsd will take these metric names and append "stats.what." where "what" is one of { timers | gauges | sets | counters }
-                client.counter("gary.foo.bar.counter", 1);
-                client.timer("gary.foo.bar.timer", rand.nextInt(100));
-                client.gauge("gary.foo.bar.gauge", (double)counter);
-                if (rand.nextDouble() < 0.05)
-                    client.set("gary.foo.bar.set", set.get(rand.nextInt(set.size())).toString());    
-                
-                Thread.sleep((100));
-                counter++;
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            System.exit(-1);
-        }
-    }
-    
 }
