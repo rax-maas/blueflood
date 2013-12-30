@@ -21,17 +21,18 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class MetricsWriter extends AsyncFunctionWithThreadPool<StatCollection, Multimap<StatType, IMetric>> {
+public class MetricsWriter extends AsyncFunctionWithThreadPool<StatCollection, Multimap<RollupType, IMetric>> {
     
     private AstyanaxWriter writer = AstyanaxWriter.getInstance();
     
@@ -45,19 +46,19 @@ public class MetricsWriter extends AsyncFunctionWithThreadPool<StatCollection, M
     }
 
     @Override
-    public ListenableFuture<Multimap<StatType, IMetric>> apply(final StatCollection input) throws Exception {
-        return getThreadPool().submit(new Callable<Multimap<StatType, IMetric>>() {
+    public ListenableFuture<Multimap<RollupType, IMetric>> apply(final StatCollection input) throws Exception {
+        return getThreadPool().submit(new Callable<Multimap<RollupType, IMetric>>() {
             @Override
-            public Multimap<StatType, IMetric> call() throws Exception {
-                Multimap<StatType, IMetric> metrics = Conversions.asMetrics(input);
+            public Multimap<RollupType, IMetric> call() throws Exception {
+                Multimap<RollupType, IMetric> metrics = Conversions.asMetrics(input);
                 // there will be no string metrics, so we can get away with assuming CF_METRICS_FULL.
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(StatType.UNKNOWN)), AstyanaxIO.CF_METRICS_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.BF_BASIC)), CassandraModel.CF_METRICS_FULL);
                 
                 // the rest of these calls deal with preaggregated metrics.
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(StatType.COUNTER)), AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(StatType.SET)), AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(StatType.GAUGE)), AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
-                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(StatType.TIMER)), AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.COUNTER)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.SET)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.GAUGE)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                writer.insertMetrics(new ArrayList<IMetric>(metrics.get(RollupType.TIMER)), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
                 return metrics;
             }
         });

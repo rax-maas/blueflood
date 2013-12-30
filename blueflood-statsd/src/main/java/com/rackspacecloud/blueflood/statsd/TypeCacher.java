@@ -21,7 +21,8 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.MetricMetadata;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,20 +48,20 @@ public class TypeCacher extends AsyncFunctionWithThreadPool<StatCollection, Stat
             public StatCollection call() throws Exception {
                 int cached = 0;
                 
-                for (StatType type : StatType.SIMPLE_TYPES) {
+                for (RollupType type : RollupType.SIMPLE_TYPES) {
                     for (Stat stat : input.getStats(type)) {
-                        cache.put(stat.getLocator(), StatType.CACHE_KEY, type.toString());
+                        cache.put(stat.getLocator(), MetricMetadata.ROLLUP_TYPE.name(), type.toString());
                         cached += 1;
                     }
                 }
                 
                 for (Locator locator : input.getTimerStats().keySet()) {
-                    cache.put(locator, StatType.CACHE_KEY, StatType.TIMER.toString());
+                    cache.put(locator, MetricMetadata.ROLLUP_TYPE.name(), RollupType.TIMER.toString());
                     cached += 1;
                 }
                 
                 for (Locator locator : input.getCounterStats().keySet()) {
-                    cache.put(locator, StatType.CACHE_KEY, StatType.COUNTER.toString());
+                    cache.put(locator, MetricMetadata.ROLLUP_TYPE.name(), RollupType.COUNTER.toString());
                     cached += 1;
                 }
                 

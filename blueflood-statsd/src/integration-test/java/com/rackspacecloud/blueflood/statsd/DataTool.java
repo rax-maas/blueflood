@@ -19,10 +19,11 @@ package com.rackspacecloud.blueflood.statsd;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.MetricMetadata;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.GaugeRollup;
@@ -213,7 +214,7 @@ public class DataTool {
                 Granularity granularity = Granularity.fromString(opts.get(Options.Resolution));
                 Locator locator = Locator.createLocatorFromDbKey(opts.get(Options.Locator));
                 Map<String, Object> metadata = reader.getMetadataValues(locator);
-                StatType type = StatType.fromString(metadata.get(StatType.CACHE_KEY).toString());
+                RollupType type = RollupType.fromString(metadata.get(MetricMetadata.ROLLUP_TYPE.name()).toString());
                 ColumnFamily<Locator, Long> columnFamily = GetPoints.columnFamilyOf(type, granularity);
                 Class<? extends Rollup> classType = GetPoints.classOf(type, granularity);
                 
@@ -228,57 +229,57 @@ public class DataTool {
             }
         }
         
-        public static Class<? extends Rollup> classOf(StatType type, Granularity gran) {
-            if (type == StatType.COUNTER)
+        public static Class<? extends Rollup> classOf(RollupType type, Granularity gran) {
+            if (type == RollupType.COUNTER)
                 return CounterRollup.class;
-            else if (type == StatType.TIMER)
+            else if (type == RollupType.TIMER)
                 return TimerRollup.class;
-            else if (type == StatType.SET)
+            else if (type == RollupType.SET)
                 return SetRollup.class;
-            else if (type == StatType.GAUGE)
+            else if (type == RollupType.GAUGE)
                 return GaugeRollup.class;
-            else if (type == StatType.UNKNOWN && gran == Granularity.FULL)
+            else if (type == RollupType.BF_BASIC && gran == Granularity.FULL)
                 return SimpleNumber.class;
-            else if (type == StatType.UNKNOWN && gran != Granularity.FULL)
+            else if (type == RollupType.BF_BASIC && gran != Granularity.FULL)
                 return BasicRollup.class;
             else
                 throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
         }
         
-        public static ColumnFamily<Locator, Long> columnFamilyOf(StatType type, Granularity gran) {
+        public static ColumnFamily<Locator, Long> columnFamilyOf(RollupType type, Granularity gran) {
             switch (type) {
                 case COUNTER:
                 case TIMER:
                 case GAUGE:
                 case SET:
                     if (gran == Granularity.FULL)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_FULL;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_FULL;
                     else if (gran == Granularity.MIN_5)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_5M;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_5M;
                     else if (gran == Granularity.MIN_20)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_20M;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_20M;
                     else if (gran == Granularity.MIN_60)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_60M;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_60M;
                     else if (gran == Granularity.MIN_240)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_240M;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_240M;
                     else if (gran == Granularity.MIN_1440)
-                        return AstyanaxIO.CF_METRICS_PREAGGREGATED_1440M;
+                        return CassandraModel.CF_METRICS_PREAGGREGATED_1440M;
                     else
                         throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
-                case UNKNOWN:
+                case BF_BASIC:
                 default:
                     if (gran == Granularity.FULL)
-                        return AstyanaxIO.CF_METRICS_FULL;
+                        return CassandraModel.CF_METRICS_FULL;
                     else if (gran == Granularity.MIN_5)
-                        return AstyanaxIO.CF_METRICS_5M;
+                        return CassandraModel.CF_METRICS_5M;
                     else if (gran == Granularity.MIN_20)
-                        return AstyanaxIO.CF_METRICS_20M;
+                        return CassandraModel.CF_METRICS_20M;
                     else if (gran == Granularity.MIN_60)
-                        return AstyanaxIO.CF_METRICS_60M;
+                        return CassandraModel.CF_METRICS_60M;
                     else if (gran == Granularity.MIN_240)
-                        return AstyanaxIO.CF_METRICS_240M;
+                        return CassandraModel.CF_METRICS_240M;
                     else if (gran == Granularity.MIN_1440)
-                        return AstyanaxIO.CF_METRICS_1440M;
+                        return CassandraModel.CF_METRICS_1440M;
                     else
                         throw new RuntimeException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
             }

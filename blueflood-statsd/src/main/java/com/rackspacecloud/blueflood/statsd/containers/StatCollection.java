@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.statsd.containers;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,7 +34,7 @@ import java.util.Set;
 public class StatCollection {
 
     // everything
-    private Multimap<StatType, Stat> allStats = HashMultimap.create();
+    private Multimap<RollupType, Stat> allStats = HashMultimap.create();
     
     // the next few collections capture metrics that occur on multiple lines: currently timers and countes.
     private Multimap<Locator, Stat> timers = HashMultimap.create();
@@ -42,13 +42,13 @@ public class StatCollection {
     
     public void add(Stat stat) {
         allStats.put(stat.getType(), stat);
-        if (stat.getType() == StatType.TIMER)
+        if (stat.getType() == RollupType.TIMER)
             timers.put(stat.getLocator(), stat);
-        else if (stat.getType() == StatType.COUNTER)
+        else if (stat.getType() == RollupType.COUNTER)
             counters.put(stat.getLocator(), stat);
     }
     
-    public Collection<Stat> getStats(StatType type) {
+    public Collection<Stat> getStats(RollupType type) {
         return allStats.get(type);
     }
     
@@ -76,9 +76,9 @@ public class StatCollection {
             // one is a counter, the other is a unknown.
             for (Stat stat : components) {
                 stats.allStats.remove(stat.getType(), stat);
-                stat.getLabel().setType(StatType.COUNTER);
+                stat.getLabel().setType(RollupType.COUNTER);
                 stats.counters.put(locator, stat);
-                stats.allStats.put(StatType.COUNTER, stat);
+                stats.allStats.put(RollupType.COUNTER, stat);
             }
         }
     }

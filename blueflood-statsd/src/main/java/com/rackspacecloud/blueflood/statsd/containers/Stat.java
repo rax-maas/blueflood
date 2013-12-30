@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.statsd.containers;
 
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 
 /**
@@ -81,7 +81,7 @@ public class Stat {
     public Locator getLocator() { return label.getLocator(); }
     public long getTimestamp() { return timestamp; }
     public Number getValue() { return value; }
-    public StatType getType() { return label.getType(); }
+    public RollupType getType() { return label.getType(); }
     public StatLabel getLabel() { return label; }
     
     public boolean isValid() {

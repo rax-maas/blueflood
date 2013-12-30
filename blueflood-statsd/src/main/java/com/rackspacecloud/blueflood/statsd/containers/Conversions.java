@@ -26,7 +26,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
@@ -169,11 +169,11 @@ public class Conversions {
         }
     }
     
-    public static Multimap<StatType, IMetric> asMetrics(StatCollection stats) {
-        Multimap<StatType, IMetric> metrics = ArrayListMultimap.create();
+    public static Multimap<RollupType, IMetric> asMetrics(StatCollection stats) {
+        Multimap<RollupType, IMetric> metrics = ArrayListMultimap.create();
         
         // build simple types.
-        for (StatType type : StatType.SIMPLE_TYPES) {
+        for (RollupType type : RollupType.SIMPLE_TYPES) {
             for (Stat stat : stats.getStats(type)) {
                 if (stat.isValid()) {
                     IMetric metric = new Metric(stat.getLocator(), stat.getValue(), stat.getTimestamp() * 1000, DEFAULT_TTL, null);
@@ -185,14 +185,14 @@ public class Conversions {
         // build timers.
         for (Map.Entry<Locator, Collection<Stat>> entry : stats.getTimerStats().entrySet()) {
             IMetric metric = Conversions.asTimerMetric(entry.getKey(), entry.getValue());
-            metrics.put(StatType.TIMER, metric);
+            metrics.put(RollupType.TIMER, metric);
         }
         
         // build timers.
         for (Map.Entry<Locator, Collection<Stat>> entry : stats.getCounterStats().entrySet()) {
             // assert entry.getValue().size() == 2;
             IMetric metric = Conversions.asCounterMetric(entry.getKey(), entry.getValue());
-            metrics.put(StatType.COUNTER, metric);
+            metrics.put(RollupType.COUNTER, metric);
         }
         
         return metrics;

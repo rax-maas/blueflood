@@ -21,8 +21,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
-import com.rackspacecloud.blueflood.statsd.containers.StatLabel;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.IMetric;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -101,12 +100,12 @@ public class StatParserTest {
         // ensure individual count is accurate.
         
         // at one point, we sent the rate component of a counter in as UNKNOWN, but that is no longer the case.
-        Assert.assertEquals(0, stats.getStats(StatType.UNKNOWN).size());
+        Assert.assertEquals(0, stats.getStats(RollupType.BF_BASIC).size());
         
-        Assert.assertEquals(6, stats.getStats(StatType.COUNTER).size());
-        Assert.assertEquals(23, stats.getStats(StatType.TIMER).size());
-        Assert.assertEquals(10, stats.getStats(StatType.GAUGE).size());
-        Assert.assertEquals(1, stats.getStats(StatType.SET).size());
+        Assert.assertEquals(6, stats.getStats(RollupType.COUNTER).size());
+        Assert.assertEquals(23, stats.getStats(RollupType.TIMER).size());
+        Assert.assertEquals(10, stats.getStats(RollupType.GAUGE).size());
+        Assert.assertEquals(1, stats.getStats(RollupType.SET).size());
     }
 
     @Test
@@ -120,17 +119,17 @@ public class StatParserTest {
         for (Stat stat : stats.iterableUnsafe())
             Assert.assertNotNull(stat.getLabel().toString(), stat.getValue());
         
-        Multimap<StatType, IMetric> metrics = Conversions.asMetrics(stats);
+        Multimap<RollupType, IMetric> metrics = Conversions.asMetrics(stats);
         
         // total metrics
         Assert.assertEquals(15, metrics.size());
         
         // broken up this way.
-        Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
-        Assert.assertEquals(1, metrics.get(StatType.SET).size());
-        Assert.assertEquals(10, metrics.get(StatType.GAUGE).size());
-        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
-        Assert.assertEquals(0, metrics.get(StatType.UNKNOWN).size());
+        Assert.assertEquals(1, metrics.get(RollupType.TIMER).size());
+        Assert.assertEquals(1, metrics.get(RollupType.SET).size());
+        Assert.assertEquals(10, metrics.get(RollupType.GAUGE).size());
+        Assert.assertEquals(3, metrics.get(RollupType.COUNTER).size());
+        Assert.assertEquals(0, metrics.get(RollupType.BF_BASIC).size());
             
         // all values must be null;
         for (IMetric metric : metrics.values())

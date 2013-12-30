@@ -23,7 +23,7 @@ import com.rackspacecloud.blueflood.statsd.containers.Conversions;
 import com.rackspacecloud.blueflood.statsd.containers.Stat;
 import com.rackspacecloud.blueflood.statsd.containers.StatCollection;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.StatType;
+import com.rackspacecloud.blueflood.types.RollupType;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -108,55 +108,55 @@ public class MetricsWriterIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testCounter() throws Exception {
-        for (Stat counterPart : statsSource.getStats(StatType.COUNTER))
+        for (Stat counterPart : statsSource.getStats(RollupType.COUNTER))
             statsToWrite.add(counterPart);
-        Multimap<StatType, IMetric> metrics = writer.apply(statsToWrite).get();
+        Multimap<RollupType, IMetric> metrics = writer.apply(statsToWrite).get();
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
-        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
+        Assert.assertEquals(3, metrics.get(RollupType.COUNTER).size());
     }
     
     @Test
     public void testGauge() throws Exception {
-        statsToWrite.add(statsSource.getStats(StatType.GAUGE).iterator().next());
-        Multimap<StatType, IMetric> metrics = writer.apply(statsToWrite).get();
+        statsToWrite.add(statsSource.getStats(RollupType.GAUGE).iterator().next());
+        Multimap<RollupType, IMetric> metrics = writer.apply(statsToWrite).get();
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
-        Assert.assertEquals(1, metrics.get(StatType.GAUGE).size());
+        Assert.assertEquals(1, metrics.get(RollupType.GAUGE).size());
         
     }
     
     @Test
     public void testSet() throws Exception {
-        statsToWrite.add(statsSource.getStats(StatType.SET).iterator().next());
-        Multimap<StatType, IMetric> metrics = writer.apply(statsToWrite).get();
+        statsToWrite.add(statsSource.getStats(RollupType.SET).iterator().next());
+        Multimap<RollupType, IMetric> metrics = writer.apply(statsToWrite).get();
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
-        Assert.assertEquals(1, metrics.get(StatType.SET).size());
+        Assert.assertEquals(1, metrics.get(RollupType.SET).size());
     }
     
     @Test
     public void testTimer() throws Exception {
-        for (Stat timerPart : statsSource.getStats(StatType.TIMER))
+        for (Stat timerPart : statsSource.getStats(RollupType.TIMER))
             statsToWrite.add(timerPart);
-        Multimap<StatType, IMetric> metrics = writer.apply(statsToWrite).get();
+        Multimap<RollupType, IMetric> metrics = writer.apply(statsToWrite).get();
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
-        Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
+        Assert.assertEquals(1, metrics.get(RollupType.TIMER).size());
     }
     
     @Test
     public void testCombined() throws Exception {
-        Multimap<StatType, IMetric> metrics = writer.apply(statsSource).get();
+        Multimap<RollupType, IMetric> metrics = writer.apply(statsSource).get();
         
         Assert.assertEquals(0, exceptionCount);
         Assert.assertEquals(0, rejectionCount);
         
-        Assert.assertEquals(10, metrics.get(StatType.GAUGE).size());
-        Assert.assertEquals(3, metrics.get(StatType.COUNTER).size());
-        Assert.assertEquals(1, metrics.get(StatType.SET).size());
-        Assert.assertEquals(1, metrics.get(StatType.TIMER).size());
-        Assert.assertEquals(0, metrics.get(StatType.UNKNOWN).size());
+        Assert.assertEquals(10, metrics.get(RollupType.GAUGE).size());
+        Assert.assertEquals(3, metrics.get(RollupType.COUNTER).size());
+        Assert.assertEquals(1, metrics.get(RollupType.SET).size());
+        Assert.assertEquals(1, metrics.get(RollupType.TIMER).size());
+        Assert.assertEquals(0, metrics.get(RollupType.BF_BASIC).size());
     }
     
     @Parameterized.Parameters
