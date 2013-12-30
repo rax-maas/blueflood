@@ -10,7 +10,7 @@ public enum RollupType {
     BF_HISTOGRAMS,
     BF_BASIC;
 
-    public static final RollupType[] SIMPLE_TYPES = new RollupType[] {COUNTER, SET, GAUGE, BF_BASIC};
+    public static final RollupType[] SIMPLE_TYPES = new RollupType[] {SET, GAUGE, BF_BASIC};
     
     public static RollupType fromString(String s) {
         if (s == null)

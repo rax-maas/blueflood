@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.Map;
 
 public class GaugeRollup extends BasicRollup {
-    
-    Points.Point<SimpleNumber> latestValue;
+    public static final Points.Point<SimpleNumber> NEVER_HAPPENED = new Points.Point(-1, null);
+    private Points.Point<SimpleNumber> latestValue;
 
     @Override
     public boolean equals(Object obj) {
@@ -41,6 +41,9 @@ public class GaugeRollup extends BasicRollup {
             if (latest == null || entry.getValue().getTimestamp() > latest.getTimestamp())
                 latest = entry.getValue();
         }
+        
+        if (latest == null)
+            latest = NEVER_HAPPENED;
         rollup.latestValue = latest;
         
         return rollup;
@@ -58,12 +61,14 @@ public class GaugeRollup extends BasicRollup {
                 latest = entry.getValue().getData().latestValue;
         }
         
+        if (latest == null)
+            latest = NEVER_HAPPENED;
         rollup.latestValue = latest;
         
         return rollup;
     }
     
-    public static GaugeRollup fromBasicRollup(IBasicRollup basic, long timestamp, Number latestValue) {
+    public static GaugeRollup fromBasicRollup(IBasicRollup basic, Points.Point<SimpleNumber> latestValue) {
         GaugeRollup rollup = new GaugeRollup();
         
         rollup.setCount(basic.getCount());
@@ -71,8 +76,7 @@ public class GaugeRollup extends BasicRollup {
         rollup.setMin((MinValue)basic.getMinValue());
         rollup.setMax((MaxValue)basic.getMaxValue());
         rollup.setVariance((Variance)basic.getVariance());
-        
-        rollup.latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(latestValue));
+        rollup.latestValue = latestValue;
         
         return rollup;
     }
