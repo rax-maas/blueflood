@@ -226,7 +226,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
         Map<ColumnFamily, List<Locator>> locatorsByCF =
                 new HashMap<ColumnFamily, List<Locator>>();
-        Map<Locator, ColumnList<Long>> results = new HashMap<Locator, ColumnList<Long>>();
+        Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
 
         for (Locator locator : locators) {
             try {
@@ -250,10 +250,16 @@ public class AstyanaxReader extends AstyanaxIO {
         for (ColumnFamily CF : locatorsByCF.keySet()) {
             List<Locator> locs = locatorsByCF.get(CF);
             Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
-            results.putAll(metrics);
+            // transform columns to MetricData
+            for (Locator loc : metrics.keySet()) {
+                MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
+                if (data != null) {
+                    results.put(loc, data);
+                }
+            }
         }
 
-        return transformBatchResultsToMetricData(results, gran);
+        return results;
     }
 
     private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
@@ -369,26 +375,21 @@ public class AstyanaxReader extends AstyanaxIO {
         return getStringMetricDataForRange(locator, range, gran);
     }
 
-    private Map<Locator, MetricData> transformBatchResultsToMetricData(Map<Locator, ColumnList<Long>> columnsMap,
+    private MetricData transformColumnsToMetricData(Locator locator, ColumnList<Long> columns,
                                                                        Granularity gran) {
-        Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
-        for (Locator locator : columnsMap.keySet()) {
-            try {
-                RollupType rollupType = RollupType.fromString((String)
-                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                Metric.DataType dataType = new Metric.DataType((String)
-                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
-                String unit = getUnitString(locator);
-                MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
-                Points points = getPointsFromColumns(columnsMap.get(locator), rollupType, dataType, gran);
-                MetricData data = new MetricData(points, unit, outputType);
-                results.put(locator, data);
-            } catch (Exception e) {
-                // pass
-            }
+        try {
+            RollupType rollupType = RollupType.fromString((String)
+                    metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+            Metric.DataType dataType = new Metric.DataType((String)
+                    metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+            String unit = getUnitString(locator);
+            MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
+            Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
+            MetricData data = new MetricData(points, unit, outputType);
+            return data;
+        } catch (Exception e) {
+            return null;
         }
-
-        return results;
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
