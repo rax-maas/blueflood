@@ -58,7 +58,7 @@ public class BatchMetricsQueryHandler {
 
     public Map<Locator, MetricData> execute(final BatchMetricsQuery query, TimeValue queryTimeout)
             throws Exception {
-        final CountDownLatch shortLatch = new CountDownLatch(query.getLocators().size());
+        final CountDownLatch shortLatch = new CountDownLatch(1);
         final Timer.Context queryTimerCtx = queryTimer.time();
 
         Future<Boolean> result = executor.submit(
