@@ -61,11 +61,9 @@ public class BatchMetricsQueryHandler {
         final CountDownLatch shortLatch = new CountDownLatch(query.getLocators().size());
         final Timer.Context queryTimerCtx = queryTimer.time();
 
-        final List<Future<Boolean>> resultFutures = new ArrayList<Future<Boolean>>();
         Future<Boolean> result = executor.submit(
-                new MetricFetchCallable(query, shortLatch)
+            new MetricFetchCallable(query, shortLatch)
         );
-        resultFutures.add(result);
 
 
         // Wait until timeout happens or you got all the results
@@ -75,11 +73,10 @@ public class BatchMetricsQueryHandler {
         boolean inProgress = (shortLatch.getCount() > 0);
 
         if (inProgress) {
-            for (Future<Boolean> future : resultFutures) {
-                if (!future.isDone()) {
-                    future.cancel(true);
-                }
+            if (!result.isDone()) {
+                result.cancel(true);
             }
+
             log.warn("Interrupted batch fetch for metrics. Exceeded timeout of " + queryTimeout.toString());
             exceededQueryTimeout.mark();
             executor.purge();
