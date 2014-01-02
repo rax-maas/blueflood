@@ -396,8 +396,10 @@ public class AstyanaxReader extends AstyanaxIO {
                                         Metric.DataType dataType, Granularity gran) {
         Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
         Points points = Points.Builder.build(dataType, rollupClass);
+
+        AbstractSerializer serializer = serializerFor(rollupType, dataType, gran);
         for (Column<Long> column : columnList) {
-            points.add(new Points.Point(column.getName(), column.getValue(serializerFor(rollupType, dataType, gran))));
+            points.add(new Points.Point(column.getName(), column.getValue(serializer)));
         }
 
         return points;
