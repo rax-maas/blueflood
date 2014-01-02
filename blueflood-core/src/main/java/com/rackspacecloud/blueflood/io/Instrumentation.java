@@ -50,7 +50,7 @@ public class Instrumentation implements InstrumentationMBean {
         Class kls = Instrumentation.class;
         writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
         readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
-        batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Reads Errors");
+        batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Read Errors");
         scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
