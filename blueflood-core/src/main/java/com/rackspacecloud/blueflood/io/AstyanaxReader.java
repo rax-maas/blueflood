@@ -17,6 +17,8 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -224,8 +226,8 @@ public class AstyanaxReader extends AstyanaxIO {
     // TODO: This should be the only method all output handlers call. We should be able to deprecate
     // other individual metric fetch methods once this gets in.
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
-        Map<ColumnFamily, List<Locator>> locatorsByCF =
-                new HashMap<ColumnFamily, List<Locator>>();
+        ListMultimap<ColumnFamily, Locator> locatorsByCF =
+                 ArrayListMultimap.create();
         Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
 
         for (Locator locator : locators) {
@@ -236,11 +238,6 @@ public class AstyanaxReader extends AstyanaxIO {
                         metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
-
-                if (locs == null) {
-                    locs = new ArrayList<Locator>();
-                    locatorsByCF.put(cf, locs);
-                }
                 locs.add(locator);
             } catch (Exception e) {
                 // pass for now. need metric to figure this stuff out.
