@@ -38,6 +38,7 @@ public class Instrumentation implements InstrumentationMBean {
     private static WriteTimers writeTimers = new WriteTimers();
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
+    private static final Meter batchReadErrMeter;
 
     // One-off meters
     private static final Meter scanAllColumnFamiliesMeter;
@@ -49,6 +50,7 @@ public class Instrumentation implements InstrumentationMBean {
         Class kls = Instrumentation.class;
         writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
         readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
+        batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Read Errors");
         scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
@@ -65,7 +67,11 @@ public class Instrumentation implements InstrumentationMBean {
     private Instrumentation() {/* Used for JMX exposure */}
 
     public static Timer.Context getReadTimerContext(ColumnFamily queryCF) {
-        return readTimers.getTimerContext(queryCF);
+        return readTimers.getTimerContext(queryCF, false);
+    }
+
+    public static Timer.Context getBatchReadTimerContext(ColumnFamily queryCF) {
+        return readTimers.getTimerContext(queryCF, true);
     }
 
     public static Timer.Context getWriteTimerContext(ColumnFamily queryCF) {
@@ -84,6 +90,13 @@ public class Instrumentation implements InstrumentationMBean {
     // going to bubble up the exception to our reader/writer
     private static void markReadError() {
         readErrMeter.mark();
+    }
+
+    public static void markBatchReadError(ConnectionException e) {
+        batchReadErrMeter.mark();
+        if (e instanceof PoolTimeoutException) {
+            allPoolsExhaustedException.mark();
+        }
     }
 
     public static void markReadError(ConnectionException e) {
@@ -106,15 +119,17 @@ public class Instrumentation implements InstrumentationMBean {
 
     private static class ReadTimers {
         private final Map<ColumnFamily, Timer> cfTimers = new HashMap<ColumnFamily, Timer>();
+        private final Map<ColumnFamily, Timer> cfBatchTimers = new HashMap<ColumnFamily, Timer>();
 
-        public Timer.Context getTimerContext(ColumnFamily queryCF) {
+        public Timer.Context getTimerContext(ColumnFamily queryCF, boolean batch) {
+            final Map<ColumnFamily, Timer> map = (batch ? cfBatchTimers : cfTimers);
             synchronized (queryCF) {
-                if (!cfTimers.containsKey(queryCF)) {
-                    final String metricName = queryCF.getName();
-                    cfTimers.put(queryCF, Metrics.timer(Instrumentation.class, "reads", metricName));
+                if (!map.containsKey(queryCF)) {
+                    final String metricName = (batch ? MetricRegistry.name("batched-", queryCF.getName()) : queryCF.getName());
+                    map.put(queryCF, Metrics.timer(Instrumentation.class, "reads", metricName));
                 }
             }
-            return cfTimers.get(queryCF).time();
+            return map.get(queryCF).time();
         }
     }
 

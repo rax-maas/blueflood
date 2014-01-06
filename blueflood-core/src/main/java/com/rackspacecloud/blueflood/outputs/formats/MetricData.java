@@ -16,7 +16,9 @@
 
 package com.rackspacecloud.blueflood.outputs.formats;
 
+import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 public class MetricData {
     private final Points data;
@@ -56,6 +58,20 @@ public class MetricData {
         @Override
         public String toString() {
             return name;
+        }
+
+        public static Type from(RollupType rollupType, Metric.DataType dataType) {
+            if (dataType.equals(Metric.DataType.STRING)) {
+                return STRING;
+            } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
+                return BOOLEAN;
+            } else {
+                if (rollupType == RollupType.BF_HISTOGRAMS) {
+                    return HISTOGRAM;
+                }
+
+                return NUMBER;
+            }
         }
     }
 }
