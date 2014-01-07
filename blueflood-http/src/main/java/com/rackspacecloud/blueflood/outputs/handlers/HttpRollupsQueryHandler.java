@@ -33,7 +33,7 @@ import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerial
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
-import com.rackspacecloud.blueflood.types.RollupsQueryParams;
+import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;

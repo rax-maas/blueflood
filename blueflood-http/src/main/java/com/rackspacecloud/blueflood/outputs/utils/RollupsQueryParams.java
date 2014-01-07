@@ -14,10 +14,12 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.types;
+package com.rackspacecloud.blueflood.outputs.utils;
 
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.Resolution;
 
 import java.util.Set;
 
