@@ -8,11 +8,11 @@ public class CounterRollup implements Rollup {
     
     private Number count;
     private double rate; // per-second!
-    private int sample_count;
+    private int sampleCount;
     
     public CounterRollup() {
         this.rate = 0d;
-        this.sample_count = 0;
+        this.sampleCount = 0;
     }
     
     public CounterRollup withCount(Number count) {
@@ -26,7 +26,7 @@ public class CounterRollup implements Rollup {
     }
 
     public CounterRollup withSampleCount(int sampleCount) {
-        this.sample_count = sampleCount;
+        this.sampleCount = sampleCount;
         return this;
     }
     
@@ -38,7 +38,7 @@ public class CounterRollup implements Rollup {
         return rate;
     }
 
-    public int getSampleCount() { return sample_count; }
+    public int getSampleCount() { return sampleCount; }
     
     private static Number promoteToDoubleOrLong(Number num) {
         if (num instanceof Float)
@@ -104,6 +104,6 @@ public class CounterRollup implements Rollup {
 
     @Override
     public Boolean hasData() {
-        return sample_count > 0;
+        return sampleCount > 0;
     }
 }

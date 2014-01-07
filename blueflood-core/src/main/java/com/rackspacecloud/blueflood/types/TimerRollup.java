@@ -14,7 +14,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
     private long sum = 0;
     private long count = 0;
     private double count_ps = 0;
-    private int sample_count = 0;
+    private int sampleCount = 0;
     private AbstractRollupStat min = new MinValue();
     private AbstractRollupStat max = new MaxValue();
     private AbstractRollupStat average = new Average();
@@ -43,7 +43,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
 
     public TimerRollup withSampleCount(int sampleCount) {
-        this.sample_count = sampleCount;
+        this.sampleCount = sampleCount;
         return this;
     }
     
@@ -98,7 +98,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
 
     @Override
     public Boolean hasData() {
-        return sample_count > 0;
+        return sampleCount > 0;
     }
 
     // todo: consider moving this to its own class.
@@ -137,11 +137,11 @@ public class TimerRollup implements Rollup, IBasicRollup {
     public double getCountPS() { return count_ps; }
     public long getSum() { return sum; }
     public long getCount() { return count; };
-    public int getSampleCount() { return sample_count; }
+    public int getSampleCount() { return sampleCount; }
     
     public String toString() {
         return String.format("sum:%s, count_ps:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, sample_cnt:%s, %s",
-                sum, count_ps, count, min, max, average, variance, sample_count,
+                sum, count_ps, count, min, max, average, variance, sampleCount,
                 Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
     
@@ -150,7 +150,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         TimerRollup other = (TimerRollup)obj;
 
         if (other.sum != this.sum) return false;
-        if (other.sample_count != this.sample_count) return false;
+        if (other.sampleCount != this.sampleCount) return false;
         if (other.count_ps != this.count_ps) return false;
         if (!other.average.equals(this.average)) return false;
         if (!other.variance.equals(this.variance)) return false;
@@ -192,7 +192,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
             // update fields.
             this.count += rollup.getCount();
             this.sum += rollup.getSum();
-            this.sample_count += rollup.getSampleCount();
+            this.sampleCount += rollup.getSampleCount();
             
             this.average.handleRollupMetric(rollup);
             this.variance.handleRollupMetric(rollup);
