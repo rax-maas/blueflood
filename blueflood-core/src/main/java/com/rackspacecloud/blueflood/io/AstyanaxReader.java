@@ -64,7 +64,7 @@ public class AstyanaxReader extends AstyanaxIO {
      *
      * @param locator  locator name
      * @return Map of metadata for that locator
-     * @throws java.lang.RuntimeException ConnectionException
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
      */
     public Map<String, String> getMetadataValues(Locator locator) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRIC_METADATA);
@@ -90,15 +90,13 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
-     * Method that makes the actual cassandra call to get last string metric for a locator
+     * Method that makes the actual cassandra call to get the most recent string value for a locator
      *
      * @param locator  locator name
-     * @return Set of previous metrics in database
-     * @throws Exception
+     * @return String most recent string value for metric.
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
      */
-    public Column<Long> getLastMetricFromMetricsString(Locator locator)
-            throws Exception {
-        Column<Long> metric = null;
+    public String getLastStringValue(Locator locator) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
 
         try {
@@ -108,23 +106,20 @@ public class AstyanaxReader extends AstyanaxIO {
                     .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
                     .execute()
                     .getResult();
-            if (query.size() > 0) {
-                metric = query.getColumnByIndex(0);
-            }
+
+            return query.isEmpty() ? null : query.getColumnByIndex(0).getStringValue();
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) {
                 Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
             } else {
                 Instrumentation.markReadError(e);
             }
-            log.warn("Cannot get previous string metric value for locator " +
+            log.warn("Could not get previous string metric value for locator " +
                     locator, e);
-            throw e;
+            throw new RuntimeException(e);
         } finally {
             ctx.stop();
         }
-
-        return metric;
     }
 
     public ColumnList<Locator> getAllLocators(long shard) {
