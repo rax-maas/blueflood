@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.outputs.utils;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.types.Resolution;
-import com.rackspacecloud.blueflood.types.RollupsQueryParams;
+import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 
 import java.util.*;
 

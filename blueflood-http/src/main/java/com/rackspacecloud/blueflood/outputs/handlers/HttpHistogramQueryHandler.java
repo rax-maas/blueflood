@@ -32,7 +32,7 @@ import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSeria
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
-import com.rackspacecloud.blueflood.types.RollupsQueryParams;
+import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
