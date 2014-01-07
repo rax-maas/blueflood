@@ -280,6 +280,7 @@ public class NumericSerializer {
                 else if (counter.getCount() instanceof Double || counter.getCount() instanceof Float)
                     sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getCount().doubleValue());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getRate());
+                sz += CodedOutputStream.computeRawVarint32Size(counter.getSampleCount());
                 return sz;
             default:
                 throw new IOException("Unexpected type: " + type);
@@ -293,12 +294,14 @@ public class NumericSerializer {
         out.writeRawByte(Constants.VERSION_1_COUNTER_ROLLUP);
         putUnversionedDoubleOrLong(rollup.getCount(), out);
         out.writeDoubleNoTag(rollup.getRate());
+        out.writeRawVarint32(rollup.getSampleCount());
     }
     
     private static CounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
         Number value = getUnversionedDoubleOrLong(in);
         double rate = in.readDouble();
-        return new CounterRollup().withCount(value.longValue()).withRate(rate);
+        int sampleCount = in.readRawVarint32();
+        return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
     
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {

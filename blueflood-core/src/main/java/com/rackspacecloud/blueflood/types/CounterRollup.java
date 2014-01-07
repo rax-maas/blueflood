@@ -8,9 +8,11 @@ public class CounterRollup implements Rollup {
     
     private Number count;
     private double rate; // per-second!
+    private int sampleCount;
     
     public CounterRollup() {
         this.rate = 0d;
+        this.sampleCount = 0;
     }
     
     public CounterRollup withCount(Number count) {
@@ -22,6 +24,11 @@ public class CounterRollup implements Rollup {
         this.rate = rate;
         return this;
     }
+
+    public CounterRollup withSampleCount(int sampleCount) {
+        this.sampleCount = sampleCount;
+        return this;
+    }
     
     public Number getCount() {
         return count;
@@ -30,6 +37,8 @@ public class CounterRollup implements Rollup {
     public double getRate() {
         return rate;
     }
+
+    public int getSampleCount() { return sampleCount; }
     
     private static Number promoteToDoubleOrLong(Number num) {
         if (num instanceof Float)
@@ -51,7 +60,8 @@ public class CounterRollup implements Rollup {
         
         CounterRollup other = (CounterRollup)obj;
         return this.getCount().equals(other.getCount())
-                && this.rate == other.rate;
+                && this.rate == other.rate
+                && this.getSampleCount() == other.getSampleCount();
     }
     
     public static CounterRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
@@ -66,19 +76,22 @@ public class CounterRollup implements Rollup {
         }
         double numSeconds = (double)(maxTime - minTime);
         double rate = count.doubleValue() / numSeconds;
-        return rollup.withCount(count).withRate(rate);
+        return rollup.withCount(count).withRate(rate).withSampleCount(input.getPoints().size());
     }
 
     public static CounterRollup buildRollupFromCounterRollups(Points<CounterRollup> input) throws IOException {
         
         Number count = 0L;
         double seconds = 0;
+        int sampleCount = 0;
         for (Points.Point<CounterRollup> point : input.getPoints().values()) {
             count = sum(count, point.getData().getCount());
+            sampleCount = sampleCount + point.getData().getSampleCount();
             seconds += Util.safeDiv(point.getData().getCount().doubleValue(), point.getData().getRate());
         }
         double aggregateRate = Util.safeDiv(count.doubleValue(), seconds);
-        return new CounterRollup().withCount(count).withRate(aggregateRate);
+
+        return new CounterRollup().withCount(count).withRate(aggregateRate).withSampleCount(sampleCount);
     }
     
     private static Number sum(Number x, Number y) {
