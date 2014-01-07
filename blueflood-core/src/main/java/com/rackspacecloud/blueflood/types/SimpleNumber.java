@@ -20,6 +20,11 @@ public class SimpleNumber implements Rollup {
     private final Number value;
     private final Type type;
 
+    @Override
+    public Boolean hasData() {
+        return true; // value cannot be null, therefore this is always true.
+    }
+
     enum Type {
         INTEGER,
         LONG,
