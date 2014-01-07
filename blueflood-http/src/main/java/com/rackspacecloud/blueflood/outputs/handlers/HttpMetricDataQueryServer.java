@@ -46,6 +46,7 @@ public class HttpMetricDataQueryServer {
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
+        router.get("/v1.0/:tenantId/experimental/views/metrics/:metricName/data", new HttpRollupsQueryHandler());
         router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
         router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
 
