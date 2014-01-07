@@ -81,6 +81,18 @@ public class TimerRollupTest {
         
         Assert.assertEquals(4.5d, cumulativeTimer.getCountPS());
     }
+
+    @Test
+    public void testNullVersusZero() throws IOException {
+        final TimerRollup timerWithData = new TimerRollup()
+                .withSampleCount(1);
+
+        final TimerRollup timerWithoutData = new TimerRollup()
+                .withSampleCount(0);
+
+        Assert.assertNotSame(timerWithData, timerWithoutData);
+
+    }
     
     @Test
     public void testVariableRateTimerRollup() throws IOException {
