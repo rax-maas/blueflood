@@ -120,7 +120,7 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         // Make sure there were things still in progress and nothing breaks.
         Assert.assertNull(results);
         // Executor queue should not have any items left.
-        // XXX: OpenJDK6 ArrayBlockingQueue has a weird bug where it returns negative value for size() when you
+        // XXX: OpenJDK6 ArrayBlockingQueue has a weird bug where it returns negative value for size() when you call
         // purge() on the executor that uses the queue.
         Assert.assertTrue("Number of items left in queue should be 0", executor.getQueue().size() <= 0);
         // Note there is no guarantee that items currently in execution will definitely be done or interrupted.
