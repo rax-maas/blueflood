@@ -65,25 +65,6 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
-// TODO: uncomment the following pending https://issues.rax.io/browse/CMD-139
-//        Map<String, byte[]> expected = new HashMap<String, byte[]>(){{
-//            put("a", new byte[]{1,2,3,4,5});
-//            put("b", new byte[]{6,7,8,9,0});
-//            put("c", new byte[]{11,22,33,44,55,66,77,88});
-//            put("d", new byte[]{-1,-2,-3,-4});
-//        }};
-
-//        for (Map.Entry<String, byte[]> entry : expected.entrySet()) {
-//            writer.writeMetadataValue(loc1, entry.getKey(), entry.getValue());
-//        }
-
-//        for (Map.Entry<String, byte[]> entry : expected.entrySet()) {
-//            Assert.assertArrayEquals(
-//                "broke on " + entry.getKey(),
-//                entry.getValue(),
-//                (byte[])reader.getMetadataValue(loc1, entry.getKey())
-//            );
-//        }
         writer.writeMetadataValue(loc1, "foo", "bar");
         Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
     }

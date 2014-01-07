@@ -56,15 +56,22 @@ public class AstyanaxReader extends AstyanaxIO {
         return INSTANCE;
     }
 
-    public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
+    /**
+     * Method that returns all metadata for a given locator as a map.
+     *
+     * @param locator  locator name
+     * @return Map of metadata for that locator
+     * @throws java.lang.RuntimeException ConnectionException
+     */
+    public Map<String, String> getMetadataValues(Locator locator) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRIC_METADATA);
         try {
             final ColumnList<String> results = keyspace.prepareQuery(CassandraModel.CF_METRIC_METADATA)
                     .getKey(locator)
                     .execute().getResult();
-            return new HashMap<String, Object>(){{
+            return new HashMap<String, String>(){{
                 for (Column<String> result : results) {
-                    put(result.getName(), result.getValue(MetadataSerializer.get()));
+                    put(result.getName(), result.getValue(StringMetadataSerializer.get()));
                 }
             }};
         } catch (NotFoundException ex) {
@@ -73,7 +80,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
             Instrumentation.markReadError(e);
-            throw e;
+            throw new RuntimeException(e);
         } finally {
             ctx.stop();
         }

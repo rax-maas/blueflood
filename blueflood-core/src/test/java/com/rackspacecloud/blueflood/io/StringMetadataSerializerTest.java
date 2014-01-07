@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class MetadataSerializerTest {
+public class StringMetadataSerializerTest {
 
     // TODO: uncomment most of these, pending https://issues.rax.io/browse/CMD-139
     
@@ -116,12 +116,12 @@ public class MetadataSerializerTest {
     
     private void testRoundTrip(Object[] objects) throws IOException {
         for (Object obj : objects) {
-            byte[] buf = MetadataSerializer.get().toByteBuffer(obj).array();
+            byte[] buf = StringMetadataSerializer.get().toByteBuffer(obj).array();
             ByteBuffer bb = ByteBuffer.wrap(buf);
             if (obj instanceof byte[]) {
-                assertArrayEquals((byte[])obj, (byte[]) MetadataSerializer.get().fromByteBuffer(bb));
+                assertArrayEquals((byte[])obj, (byte[]) StringMetadataSerializer.get().fromByteBuffer(bb));
             } else {
-                assertEquals(obj, MetadataSerializer.get().fromByteBuffer(bb));
+                assertEquals(obj, StringMetadataSerializer.get().fromByteBuffer(bb));
             }
         }
     }
