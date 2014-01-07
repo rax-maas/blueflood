@@ -8,6 +8,10 @@ public class CounterRollup implements Rollup {
     
     private Number count;
     private double rate; // per-second!
+
+    /**
+     * Number of pre-aggregated counters received by Blueflood
+     */
     private int sampleCount;
     
     public CounterRollup() {

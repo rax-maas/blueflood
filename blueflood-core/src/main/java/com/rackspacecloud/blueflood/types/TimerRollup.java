@@ -14,6 +14,13 @@ public class TimerRollup implements Rollup, IBasicRollup {
     private long sum = 0;
     private long count = 0;
     private double count_ps = 0;
+
+    /**
+     * Number of pre-aggregated timers received by Blueflood
+     * No relationship to 'count', which indicates number of raw timings.
+     * If you have a 5-minute rollup and sent a Timer to Blueflood every 60 seconds,
+     * the value would be 5.
+     */
     private int sampleCount = 0;
     private AbstractRollupStat min = new MinValue();
     private AbstractRollupStat max = new MaxValue();
