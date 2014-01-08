@@ -75,6 +75,7 @@ public class HttpMetricsIngestionServer {
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(this.processorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler());
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
