@@ -72,7 +72,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         
         // put in one, read in both.
         Class<String> expectedClass = String.class;
-        Object expected = "expected";
+        String expected = "expected";
 
         String key = "metaA";
         cache1.put(loc1, key, expected);
@@ -119,7 +119,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         
         // update in 1, should read out of both.
         Class<String> expectedClass = String.class;
-        Object expected = "Hello";
+        String expected = "Hello";
         String key = "metaA";
         cache1.put(loc1, key, expected);
         Assert.assertEquals(expected, cache1.get(loc1, key, expectedClass));
@@ -142,26 +142,10 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     public void testTypedGet() throws Exception {
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
-        // TODO: uncomment, pending https://issues.rax.io/browse/CMD-139
-//        Integer expectedInt = 23;
-//        Double expectedDouble = 43d;
-//        Long expectedLong = 65L;
-//        Float expectedFloat = 87f;
-//        byte[] expectedBinary = new byte[]{1,2,3,4,5};
         String expectedString = "expected";
         
-//        cache.put(loc1, "int", expectedInt);
-//        cache.put(loc1, "dbl", expectedDouble);
-//        cache.put(loc1, "long", expectedLong);
-//        cache.put(loc1, "flt", expectedFloat);
-//        cache.put(loc1, "bin", expectedBinary);
         cache.put(loc1, "str", expectedString);
 
-//        Assert.assertArrayEquals(expectedBinary, cache.get(loc1, "bin", byte[].class));
-//        assertEquals(expectedInt, cache.get(loc1, "int", Integer.class));
-//        assertEquals(expectedDouble, cache.get(loc1, "dbl", Double.class));
-//        assertEquals(expectedLong, cache.get(loc1, "long", Long.class));
-//        assertEquals(expectedFloat, cache.get(loc1, "flt", Float.class));
         Assert.assertEquals(expectedString, cache.get(loc1, "str", String.class));
     }
 }

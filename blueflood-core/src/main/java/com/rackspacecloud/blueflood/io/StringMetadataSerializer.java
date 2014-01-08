@@ -23,19 +23,19 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class MetadataSerializer extends AbstractSerializer<Object> {
-    private static final MetadataSerializer INSTANCE = new MetadataSerializer();
+public class StringMetadataSerializer extends AbstractSerializer<String> {
+    private static final StringMetadataSerializer INSTANCE = new StringMetadataSerializer();
     private static final byte STRING = 4; // History: this used to support multiple types.
     // However, we never actually used that functionality, and it duplicated a lot of logic
     // as is contained in NumericSerializer, without actually being in a compatible [de]serialization format.
     // TODO: re-add non-str functionality in a way that does not involve as much code duplication and format incompatibility
 
-    public static MetadataSerializer get() {
+    public static StringMetadataSerializer get() {
         return INSTANCE;
     }
 
     @Override
-    public ByteBuffer toByteBuffer(Object o) {
+    public ByteBuffer toByteBuffer(String o) {
         try {
             byte[] buf = new byte[computeBufLength(o)];
             CodedOutputStream out = CodedOutputStream.newInstance(buf);
@@ -54,12 +54,12 @@ public class MetadataSerializer extends AbstractSerializer<Object> {
 
     // figure out how much space it will take to encode an object. this makes it so that we only allocate one buffer
     // during encode.
-    private static int computeBufLength(Object obj) throws IOException {
-        return 1 + CodedOutputStream.computeStringSizeNoTag((String)obj); // 1 for type
+    private static int computeBufLength(String obj) throws IOException {
+        return 1 + CodedOutputStream.computeStringSizeNoTag(obj); // 1 for type
     }
 
     @Override
-    public Object fromByteBuffer(ByteBuffer byteBuffer) {
+    public String fromByteBuffer(ByteBuffer byteBuffer) {
         CodedInputStream is = CodedInputStream.newInstance(byteBuffer.array());
         try {
             byte type = is.readRawByte();
