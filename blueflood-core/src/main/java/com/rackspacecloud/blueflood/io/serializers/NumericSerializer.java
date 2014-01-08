@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.serializers;
 
 import com.codahale.metrics.Histogram;
 import com.google.protobuf.CodedInputStream;
@@ -22,6 +22,7 @@ import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.types.AbstractRollupStat;
 import com.rackspacecloud.blueflood.types.CounterRollup;
@@ -88,7 +89,7 @@ public class NumericSerializer {
         else if (type.equals(TimerRollup.class))
             return (AbstractSerializer<T>)timerRollupInstance;
         else if (type.equals(HistogramRollup.class))
-            return (AbstractSerializer<T>)HistogramSerializer.get();
+            return (AbstractSerializer<T>) HistogramSerializer.get();
         else if (type.equals(CounterRollup.class))
             return (AbstractSerializer<T>) CounterRollupInstance;
         else if (type.equals(GaugeRollup.class))

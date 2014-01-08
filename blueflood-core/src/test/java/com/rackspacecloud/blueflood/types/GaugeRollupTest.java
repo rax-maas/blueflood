@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.io.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;

@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
+import com.rackspacecloud.blueflood.io.serializers.HistogramSerializer;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;

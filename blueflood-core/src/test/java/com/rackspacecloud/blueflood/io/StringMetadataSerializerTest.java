@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import org.junit.Test;
 
 import java.io.IOException;
