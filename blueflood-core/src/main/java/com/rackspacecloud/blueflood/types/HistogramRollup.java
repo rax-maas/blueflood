@@ -130,4 +130,9 @@ public class HistogramRollup implements Rollup {
             throw new RuntimeException("Unsupported data type for histogram");
         }
     }
+
+    @Override
+    public Boolean hasData() {
+        throw new RuntimeException("Unsupported operation for histogram");
+    }
 }

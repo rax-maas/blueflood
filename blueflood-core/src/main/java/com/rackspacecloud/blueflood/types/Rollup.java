@@ -102,6 +102,7 @@ public interface Rollup {
             return SetRollup.buildRollupFromSetRollups(input);
         }
     };
-    
-    
+
+    // Tells whether or not data exists
+    public Boolean hasData();
 }

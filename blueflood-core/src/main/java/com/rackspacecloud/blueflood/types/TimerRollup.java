@@ -4,22 +4,24 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.utils.Util;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 public class TimerRollup implements Rollup, IBasicRollup {
     private long sum = 0;
     private long count = 0;
     private double count_ps = 0;
+
+    /**
+     * Number of pre-aggregated timers received by Blueflood
+     * No relationship to 'count', which indicates number of raw timings.
+     * If you have a 5-minute rollup and sent a Timer to Blueflood every 60 seconds,
+     * the value would be 5.
+     */
+    private int sampleCount = 0;
     private AbstractRollupStat min = new MinValue();
     private AbstractRollupStat max = new MaxValue();
     private AbstractRollupStat average = new Average();
@@ -36,14 +38,19 @@ public class TimerRollup implements Rollup, IBasicRollup {
         this.sum = sum;
         return this;
     }
-    
+
+    public TimerRollup withCount(long count) {
+        this.count = count;
+        return this;
+    }
+
     public TimerRollup withCountPS(double count_ps) {
         this.count_ps = count_ps;
         return this;
     }
-    
-    public TimerRollup withCount(long count) {
-        this.count = count;
+
+    public TimerRollup withSampleCount(int sampleCount) {
+        this.sampleCount = sampleCount;
         return this;
     }
     
@@ -95,7 +102,12 @@ public class TimerRollup implements Rollup, IBasicRollup {
     public void setPercentile(String label, Number mean) {
         percentiles.put(label, new Percentile(mean));
     }
-    
+
+    @Override
+    public Boolean hasData() {
+        return sampleCount > 0;
+    }
+
     // todo: consider moving this to its own class.
     public static class Percentile {
         private Number mean;
@@ -132,24 +144,27 @@ public class TimerRollup implements Rollup, IBasicRollup {
     public double getCountPS() { return count_ps; }
     public long getSum() { return sum; }
     public long getCount() { return count; };
+    public int getSampleCount() { return sampleCount; }
     
     public String toString() {
-        return String.format("sum:%s, count_ps:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, %s", 
-                sum, count_ps, count, min, max, average, variance,
+        return String.format("sum:%s, count_ps:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, sample_cnt:%s, %s",
+                sum, count_ps, count, min, max, average, variance, sampleCount,
                 Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
     
     public boolean equals(Object obj) {
         if (!(obj instanceof TimerRollup)) return false;
         TimerRollup other = (TimerRollup)obj;
-        
+
         if (other.sum != this.sum) return false;
+        if (other.sampleCount != this.sampleCount) return false;
         if (other.count_ps != this.count_ps) return false;
         if (!other.average.equals(this.average)) return false;
         if (!other.variance.equals(this.variance)) return false;
         if (!other.min.equals(this.min)) return false;
         if (!other.max.equals(this.max)) return false;
         if (other.count != this.count) return false;
+
         
         Map<String, Percentile> otherPct = other.getPercentiles();
         Set<String> allKeys = Sets.union(otherPct.keySet(), this.getPercentiles().keySet());
@@ -172,7 +187,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         Multimap<String, Number> pctMeans = LinkedListMultimap.create();
         Multimap<String, Number> pctUppers = LinkedListMultimap.create();
         Multimap<String, Number> pctSums = LinkedListMultimap.create();
-        
+
         for (Map.Entry<Long, Points.Point<TimerRollup>> item : points.entrySet()) {
             TimerRollup rollup = item.getValue().getData();
             
@@ -184,6 +199,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
             // update fields.
             this.count += rollup.getCount();
             this.sum += rollup.getSum();
+            this.sampleCount += rollup.getSampleCount();
             
             this.average.handleRollupMetric(rollup);
             this.variance.handleRollupMetric(rollup);
