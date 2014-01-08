@@ -173,11 +173,11 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    public void writeMetadataValue(Locator locator, String metaKey, Object metaValue) throws ConnectionException {
+    public void writeMetadataValue(Locator locator, String metaKey, String metaValue) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRIC_METADATA);
         try {
             keyspace.prepareColumnMutation(CassandraModel.CF_METRIC_METADATA, locator, metaKey)
-                    .putValue(metaValue, MetadataSerializer.get(), null)
+                    .putValue(metaValue, StringMetadataSerializer.get(), null)
                     .execute();
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);

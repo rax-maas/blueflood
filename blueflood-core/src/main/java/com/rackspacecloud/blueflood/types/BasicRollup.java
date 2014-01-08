@@ -199,4 +199,9 @@ public class BasicRollup implements Rollup, IBasicRollup {
             newPoints.add(new Points.Point<T>(entry.getKey(), (T)entry.getValue().getData()));
         return newPoints;
     }
+
+    @Override
+    public Boolean hasData() {
+        return getCount() == 0;
+    }
 }

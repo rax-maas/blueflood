@@ -46,7 +46,16 @@ public class CounterRollupTest {
         
         Assert.assertEquals(expectedSum, cumulative.getCount());
     }
-    
+
+    @Test
+    public void testNullCounterRollupVersusZero() throws IOException {
+        final long[] data = new long[]{0L, 0L, 0L};
+        final long[] no_data = new long[]{};
+        final CounterRollup crData = CounterRollupTest.buildCounterRollupFromLongs(data);
+        final CounterRollup crNoData = CounterRollupTest.buildCounterRollupFromLongs(no_data);
+        Assert.assertNotSame(crData, crNoData);
+    }
+
     private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
         Points<T> points = new Points<T>();
         long time = initialTime;
@@ -79,6 +88,6 @@ public class CounterRollupTest {
         }
         long sum = sum(numbers);
         double rate = (double)sum / (double)(Constants.DEFAULT_SAMPLE_INTERVAL * numbers.length);
-        return new CounterRollup().withCount(count).withRate(rate);
+        return new CounterRollup().withCount(count).withRate(rate).withSampleCount(numbers.length);
     }
 }

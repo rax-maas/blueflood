@@ -35,8 +35,14 @@ public enum HttpConfig implements ConfigDefaults {
     // Maximum number of metrics allowed to be fetched per batch query
     MAX_METRICS_PER_BATCH_QUERY("100"),
 
-    // Maximum number of threads to use for simultaneous fetch from db (must be included in connections calculations)
-    MAX_READ_THREADS_FOR_BATCH_QUERY("10"),
+    // Maximum number of ACCEPT threads for HTTP output
+    MAX_READ_ACCEPT_THREADS("10"),
+
+    // Maximum number of WORKER threads for HTTP output (must be included in connections calculations)
+    MAX_READ_WORKER_THREADS("50"),
+
+    // Maximum number of batch requests that can be queued
+    MAX_BATCH_READ_REQUESTS_TO_QUEUE("10"),
 
     // Timeout (in seconds) for batch query. This value depends on number of threads, read latency per
     // metric and max metrics allowed per batch query.

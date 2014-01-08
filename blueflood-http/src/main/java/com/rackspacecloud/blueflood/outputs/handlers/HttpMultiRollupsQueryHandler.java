@@ -33,7 +33,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.types.BatchMetricsQuery;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.RollupsQueryParams;
+import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
@@ -62,8 +62,8 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
 
     public HttpMultiRollupsQueryHandler() {
         Configuration config = Configuration.getInstance();
-        int maxMetricsPerBatchQuery = config.getIntegerProperty(HttpConfig.MAX_METRICS_PER_BATCH_QUERY);
-        int maxThreadsToUse = config.getIntegerProperty(HttpConfig.MAX_READ_THREADS_FOR_BATCH_QUERY);
+        int maxThreadsToUse = config.getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
+        int maxQueueSize = config.getIntegerProperty(HttpConfig.MAX_BATCH_READ_REQUESTS_TO_QUEUE);
         this.queryTimeout = new TimeValue(
                 config.getIntegerProperty(HttpConfig.BATCH_QUERY_TIMEOUT),
                 TimeUnit.SECONDS
@@ -73,7 +73,7 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         this.parser = new JsonParser();
         this.executor = new ThreadPoolBuilder().withCorePoolSize(maxThreadsToUse).withMaxPoolSize(maxThreadsToUse)
-                .withName("HTTP-BatchMetricsFetch").withBoundedQueue(maxMetricsPerBatchQuery * 3).build();
+                .withName("HTTP-BatchMetricsFetch").withBoundedQueue(maxQueueSize).build();
     }
 
     @Override

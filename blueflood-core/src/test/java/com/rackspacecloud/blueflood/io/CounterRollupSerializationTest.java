@@ -30,11 +30,11 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 public class CounterRollupSerializationTest {
-    
+
     @Test
     public void testCounterV1RoundTrip() throws IOException {
-        CounterRollup c0 = new CounterRollup().withCount(7442245);
-        CounterRollup c1 = new CounterRollup().withCount(34454722343L);
+        CounterRollup c0 = new CounterRollup().withCount(7442245).withSampleCount(1);
+        CounterRollup c1 = new CounterRollup().withCount(34454722343L).withSampleCount(10);
         
         if (System.getProperty("GENERATE_COUNTER_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/counter_version_" + Constants.VERSION_1_COUNTER_ROLLUP + ".bin", false);

@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBean {
     // todo: give each cache a name.
 
-    private final com.google.common.cache.LoadingCache<CacheKey, Object> cache;
-    public static final Object EMPTY = new Object();
+    private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
+    public static final String EMPTY = "__~EMPTY_SENTINEL_STRING~__".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
@@ -61,9 +61,9 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             log.error("Unable to register mbean for " + getClass().getName(), ex);
         }
 
-        CacheLoader<CacheKey, Object> loader = new CacheLoader<CacheKey, Object>() {
+        CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
             @Override
-            public Object load(CacheKey key) throws Exception {
+            public String load(CacheKey key) throws Exception {
                 return MetadataCache.this.databaseLoad(key.locator, key.keyString);
             }
         };
@@ -89,12 +89,12 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     public static MetadataCache createInMemoryCacheInstance(TimeValue expiration, int concurrency) {
         return new MetadataCache(expiration, concurrency) {
             @Override
-            public void databasePut(Locator locator, String key, Object value) throws CacheException {
+            public void databasePut(Locator locator, String key, String value) throws CacheException {
                 // no op.
             }
 
             @Override
-            public Object databaseLoad(Locator locator, String key) throws CacheException {
+            public String databaseLoad(Locator locator, String key) throws CacheException {
                 // nothing there.
                 return MetadataCache.EMPTY;
             }
@@ -105,10 +105,10 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         return cache.getIfPresent(new CacheKey(locator, key)) != null;
     }
 
-    public Object get(Locator locator, String key) throws CacheException {
+    public String get(Locator locator, String key) throws CacheException {
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
-            Object result = cache.get(new CacheKey(locator, key));
+            String result = cache.get(new CacheKey(locator, key));
             if (result == EMPTY) {
                 cache.invalidate(cacheKey);
                 return null;
@@ -130,10 +130,10 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
     // todo: synchronization?
     // returns true if updated.
-    public boolean put(Locator locator, String key, Object value) throws CacheException {
+    public boolean put(Locator locator, String key, String value) throws CacheException {
         if (value == null) return false;
         CacheKey cacheKey = new CacheKey(locator, key);
-        Object oldValue = cache.getIfPresent(cacheKey);
+        String oldValue = cache.getIfPresent(cacheKey);
         // don't care if oldValue == EMPTY.
         // always put new value in the cache. it keeps reads from happening.
         cache.put(cacheKey, value);
@@ -149,7 +149,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         cache.invalidate(new CacheKey(locator, key));
     }
 
-    public void databasePut(Locator locator, String key, Object value) throws CacheException {
+    public void databasePut(Locator locator, String key, String value) throws CacheException {
         try {
             AstyanaxWriter.getInstance().writeMetadataValue(locator, key, value);
         } catch (RuntimeException ex) {
@@ -160,23 +160,22 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     }
 
     // implements the CacheLoader interface.
-    public Object databaseLoad(Locator locator, String key) throws CacheException {
+    public String databaseLoad(Locator locator, String key) throws CacheException {
         try {
-            Map<String, Object> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
+            Map<String, String> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
             if (metadata == null) {
                 return MetadataCache.EMPTY;
             }
 
-            for (Map.Entry<String, Object> meta : metadata.entrySet()) {
+            // prepopulate all other metadata other than the key we called the method with
+            for (Map.Entry<String, String> meta : metadata.entrySet()) {
                 if (meta.getKey().equals(key)) continue;
                 CacheKey cacheKey = new CacheKey(locator, meta.getKey());
                 cache.put(cacheKey, meta.getValue());
             }
 
-            Object value = metadata.get(key);
+            String value = metadata.get(key);
             return value == null ? MetadataCache.EMPTY : value;
-        } catch (ConnectionException ex) {
-            throw new CacheException(ex);
         } catch (RuntimeException ex) {
             throw new CacheException(ex);
         }

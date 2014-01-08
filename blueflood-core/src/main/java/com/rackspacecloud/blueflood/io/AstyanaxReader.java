@@ -17,12 +17,13 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
-import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AstyanaxReader extends AstyanaxIO {
@@ -57,15 +59,22 @@ public class AstyanaxReader extends AstyanaxIO {
         return INSTANCE;
     }
 
-    public Map<String, Object> getMetadataValues(Locator locator) throws ConnectionException {
+    /**
+     * Method that returns all metadata for a given locator as a map.
+     *
+     * @param locator  locator name
+     * @return Map of metadata for that locator
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
+     */
+    public Map<String, String> getMetadataValues(Locator locator) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRIC_METADATA);
         try {
             final ColumnList<String> results = keyspace.prepareQuery(CassandraModel.CF_METRIC_METADATA)
                     .getKey(locator)
                     .execute().getResult();
-            return new HashMap<String, Object>(){{
+            return new HashMap<String, String>(){{
                 for (Column<String> result : results) {
-                    put(result.getName(), result.getValue(MetadataSerializer.get()));
+                    put(result.getName(), result.getValue(StringMetadataSerializer.get()));
                 }
             }};
         } catch (NotFoundException ex) {
@@ -74,6 +83,148 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
             Instrumentation.markReadError(e);
+            throw new RuntimeException(e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    /**
+     * Method that makes the actual cassandra call to get the most recent string value for a locator
+     *
+     * @param locator  locator name
+     * @return String most recent string value for metric.
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
+     */
+    public String getLastStringValue(Locator locator) {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
+
+        try {
+            ColumnList<Long> query = keyspace
+                    .prepareQuery(CassandraModel.CF_METRICS_STRING)
+                    .getKey(locator)
+                    .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
+                    .execute()
+                    .getResult();
+
+            return query.isEmpty() ? null : query.getColumnByIndex(0).getStringValue();
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) {
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
+            } else {
+                Instrumentation.markReadError(e);
+            }
+            log.warn("Could not get previous string metric value for locator " +
+                    locator, e);
+            throw new RuntimeException(e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    public ColumnList<Locator> getAllLocators(long shard) {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
+        try {
+            RowQuery<Long, Locator> query = keyspace
+                    .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
+                    .getKey(shard);
+            return query.execute().getResult();
+        } catch (NotFoundException e) {
+            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
+            return new EmptyColumnList<Locator>();
+        } catch (ConnectionException e) {
+            Instrumentation.markReadError(e);
+            log.error("Error reading locators", e);
+            throw new RuntimeException("Error reading locators", e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
+        if (range.getStart() > range.getStop()) {
+            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
+        }
+
+        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
+        ColumnList<Long> columns;
+        Timer.Context ctx = Instrumentation.getReadTimerContext(srcCF);
+        try {
+            RowQuery<Locator, Long> query = keyspace
+                    .prepareQuery(srcCF)
+                    .getKey(locator)
+                    .withColumnRange(rangeBuilder.build());
+            columns = query.execute().getResult();
+            return columns;
+        } catch (NotFoundException e) {
+            Instrumentation.markNotFound(srcCF);
+            return new EmptyColumnList<Long>();
+        } catch (ConnectionException e) {
+            Instrumentation.markReadError(e);
+            log.error("Error getting data for " + locator + " (" + range + ") from " + srcCF.getName(), e);
+            throw new RuntimeException("Error reading rollups", e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
+                                                            Range range) {
+        final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
+        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
+
+        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        try {
+            // We don't paginate this call. So we should make sure the number of reads is tolerable.
+            // TODO: Think about paginating this call.
+            OperationResult<Rows<Locator, Long>> query = keyspace
+                    .prepareQuery(CF)
+                    .getKeySlice(locators)
+                    .withColumnRange(rangeBuilder.build())
+                    .execute();
+
+            for (Row<Locator, Long> row : query.getResult()) {
+                columns.put(row.getKey(), row.getColumns());
+            }
+
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
+                Instrumentation.markNotFound(CF);
+            } else {
+                Instrumentation.markBatchReadError(e);
+            }
+            log.warn("Batch read query failed for column family " + CF.getName(), e);
+        } finally {
+            ctx.stop();
+        }
+
+        return columns;
+    }
+
+    public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
+        try {
+            for (int shard : shards) {
+                RowQuery<Long, String> query = keyspace
+                        .prepareQuery(CassandraModel.CF_METRICS_STATE)
+                        .getKey((long) shard);
+                ColumnList<String> columns = query.execute().getResult();
+
+                for (Column<String> column : columns) {
+                    String columnName = column.getName();
+                    long timestamp = column.getLongValue();
+                    Granularity g = Util.granularityFromStateCol(columnName);
+                    int slot = Util.slotFromStateCol(columnName);
+
+                    boolean isRemove = UpdateStamp.State.Rolled.code().equals(Util.stateFromStateCol(columnName));
+                    UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
+
+                    shardStateManager.updateSlotOnRead(shard, g, slot, timestamp, state);
+                }
+            }
+        } catch (ConnectionException e) {
+            Instrumentation.markReadError(e);
+            log.error("Error getting all shard states", e);
             throw e;
         } finally {
             ctx.stop();
@@ -119,82 +270,6 @@ public class AstyanaxReader extends AstyanaxIO {
         return unitString;
     }
 
-    public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-        try {
-            for (int shard : shards) {
-                RowQuery<Long, String> query = keyspace
-                        .prepareQuery(CassandraModel.CF_METRICS_STATE)
-                        .getKey((long) shard);
-                ColumnList<String> columns = query.execute().getResult();
-
-                for (Column<String> column : columns) {
-                    String columnName = column.getName();
-                    long timestamp = column.getLongValue();
-                    Granularity g = Util.granularityFromStateCol(columnName);
-                    int slot = Util.slotFromStateCol(columnName);
-
-                    boolean isRemove = UpdateStamp.State.Rolled.code().equals(Util.stateFromStateCol(columnName));
-                    UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
-
-                    shardStateManager.updateSlotOnRead(shard, g, slot, timestamp, state);
-                }
-            }
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting all shard states", e);
-            throw e;
-        } finally {
-            ctx.stop();
-        }
-    }
-
-    private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
-        if (range.getStart() > range.getStop()) {
-            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
-        }
-
-        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
-        ColumnList<Long> columns;
-        Timer.Context ctx = Instrumentation.getReadTimerContext(srcCF);
-        try {
-            RowQuery<Locator, Long> query = keyspace
-                    .prepareQuery(srcCF)
-                    .getKey(locator)
-                    .withColumnRange(rangeBuilder.build());
-            columns = query.execute().getResult();
-            return columns;
-        } catch (NotFoundException e) {
-            Instrumentation.markNotFound(srcCF);
-            return new EmptyColumnList<Long>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting data for " + locator + " (" + range + ") from " + srcCF.getName(), e);
-            throw new RuntimeException("Error reading rollups", e);
-        } finally {
-            ctx.stop();
-        }
-    }
-
-    public ColumnList<Locator> getAllLocators(long shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
-        try {
-            RowQuery<Long, Locator> query = keyspace
-                    .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
-                    .getKey(shard);
-            return query.execute().getResult();
-        } catch (NotFoundException e) {
-            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
-            return new EmptyColumnList<Locator>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error reading locators", e);
-            throw new RuntimeException("Error reading locators", e);
-        } finally {
-            ctx.stop();
-        }
-    }
-
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
             Object type = metaCache.get(locator, "type");
@@ -223,6 +298,43 @@ public class AstyanaxReader extends AstyanaxIO {
             return getNumericOrStringRollupDataForRange(locator, range, gran);
         }
     }
+
+    // TODO: This should be the only method all output handlers call. We should be able to deprecate
+    // other individual metric fetch methods once this gets in.
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
+        ListMultimap<ColumnFamily, Locator> locatorsByCF =
+                 ArrayListMultimap.create();
+        Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
+
+        for (Locator locator : locators) {
+            try {
+                RollupType rollupType = RollupType.fromString((String)
+                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                Metric.DataType dataType = new Metric.DataType((String)
+                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
+                List<Locator> locs = locatorsByCF.get(cf);
+                locs.add(locator);
+            } catch (Exception e) {
+                // pass for now. need metric to figure this stuff out.
+            }
+        }
+
+        for (ColumnFamily CF : locatorsByCF.keySet()) {
+            List<Locator> locs = locatorsByCF.get(CF);
+            Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
+            // transform columns to MetricData
+            for (Locator loc : metrics.keySet()) {
+                MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
+                if (data != null) {
+                    results.put(loc, data);
+                }
+            }
+        }
+
+        return results;
+    }
+
 
     public MetricData getHistogramsForRange(Locator locator, Range range, Granularity granularity) throws IOException {
         if (!granularity.isCoarser(Granularity.FULL)) {
@@ -304,6 +416,35 @@ public class AstyanaxReader extends AstyanaxIO {
         return getStringMetricDataForRange(locator, range, gran);
     }
 
+    private MetricData transformColumnsToMetricData(Locator locator, ColumnList<Long> columns,
+                                                                       Granularity gran) {
+        try {
+            RollupType rollupType = RollupType.fromString((String)
+                    metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+            Metric.DataType dataType = new Metric.DataType((String)
+                    metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+            String unit = getUnitString(locator);
+            MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
+            Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
+            MetricData data = new MetricData(points, unit, outputType);
+            return data;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
+                                        Metric.DataType dataType, Granularity gran) {
+        Points points = new Points();
+
+        AbstractSerializer serializer = serializerFor(rollupType, dataType, gran);
+        for (Column<Long> column : columnList) {
+            points.add(new Points.Point(column.getName(), column.getValue(serializer)));
+        }
+
+        return points;
+    }
+
     private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
         if (gran == Granularity.FULL) {
             return new Points.Point<SimpleNumber>(column.getName(), new SimpleNumber(column.getValue(serializer)));
@@ -311,43 +452,5 @@ public class AstyanaxReader extends AstyanaxIO {
             BasicRollup basicRollup = (BasicRollup) column.getValue(serializer);
             return new Points.Point<BasicRollup>(column.getName(), basicRollup);
         }
-    }
-
-    /**
-     * Method that makes the actual cassandra call to get last string metric for a locator
-     *
-     * @param locator  locator name
-     * @return Set of previous metrics in database
-     * @throws Exception
-     */
-    public Column<Long> getLastMetricFromMetricsString(Locator locator)
-            throws Exception {
-        Column<Long> metric = null;
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
-
-        try {
-            ColumnList<Long> query = keyspace
-                    .prepareQuery(CassandraModel.CF_METRICS_STRING)
-                    .getKey(locator)
-                    .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
-                    .execute()
-                    .getResult();
-            if (query.size() > 0) {
-                metric = query.getColumnByIndex(0);
-            }
-        } catch (ConnectionException e) {
-            if (e instanceof NotFoundException) {
-                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
-            } else {
-                Instrumentation.markReadError(e);
-            }
-            log.warn("Cannot get previous string metric value for locator " +
-                    locator, e);
-            throw e;
-        } finally {
-            ctx.stop();
-        }
-
-        return metric;
     }
 }

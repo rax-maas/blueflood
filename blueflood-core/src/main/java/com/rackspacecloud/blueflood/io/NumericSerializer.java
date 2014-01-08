@@ -234,6 +234,7 @@ public class NumericSerializer {
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getCountPS());
+                sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
                 sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
                 sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
                 sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
@@ -280,6 +281,7 @@ public class NumericSerializer {
                 else if (counter.getCount() instanceof Double || counter.getCount() instanceof Float)
                     sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getCount().doubleValue());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getRate());
+                sz += CodedOutputStream.computeRawVarint32Size(counter.getSampleCount());
                 return sz;
             default:
                 throw new IOException("Unexpected type: " + type);
@@ -293,12 +295,14 @@ public class NumericSerializer {
         out.writeRawByte(Constants.VERSION_1_COUNTER_ROLLUP);
         putUnversionedDoubleOrLong(rollup.getCount(), out);
         out.writeDoubleNoTag(rollup.getRate());
+        out.writeRawVarint32(rollup.getSampleCount());
     }
     
     private static CounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
         Number value = getUnversionedDoubleOrLong(in);
         double rate = in.readDouble();
-        return new CounterRollup().withCount(value.longValue()).withRate(rate);
+        int sampleCount = in.readRawVarint32();
+        return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
     
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
@@ -310,6 +314,7 @@ public class NumericSerializer {
         out.writeRawVarint64(rollup.getSum());
         out.writeRawVarint64(rollup.getCount());
         out.writeDoubleNoTag(rollup.getCountPS());
+        out.writeRawVarint32(rollup.getSampleCount());
         putRollupStat(rollup.getAverage(), out);
         putRollupStat(rollup.getMaxValue(), out);
         putRollupStat(rollup.getMinValue(), out);
@@ -329,6 +334,7 @@ public class NumericSerializer {
         final long sum = in.readRawVarint64();
         final long count = in.readRawVarint64();
         final double countPs = in.readDouble();
+        final int sampleCount = in.readRawVarint32();
         
         BasicRollup statBucket = new BasicRollup();
         
@@ -356,6 +362,7 @@ public class NumericSerializer {
                 .withSum(sum)
                 .withCount(count)
                 .withCountPS(countPs)
+                .withSampleCount(sampleCount)
                 .withAverage(statBucket.getAverage())
                 .withMaxValue(statBucket.getMaxValue())
                 .withMinValue(statBucket.getMinValue())
