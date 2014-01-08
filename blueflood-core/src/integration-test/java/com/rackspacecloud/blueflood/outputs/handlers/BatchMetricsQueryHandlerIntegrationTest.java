@@ -34,10 +34,7 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -109,13 +106,19 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
 
         Granularity gran = Granularity.MIN_20;
         Range range = new Range(gran.snapMillis(baseMillis), baseMillis + 86400000);
-        BatchMetricsQuery query = new BatchMetricsQuery(locators, range, gran);
+
+        final List<Locator> tooManyLocators = new ArrayList<Locator>();
+        tooManyLocators.addAll(locators);
+        // generate arbitrarily large number of locators so we slow down the query so we can test a timeout
+        for (int i = 0; i < 50; i++) {
+            tooManyLocators.add(Locator.createLocatorFromDbKey(UUID.randomUUID().toString()));
+        }
+        BatchMetricsQuery query = new BatchMetricsQuery(tooManyLocators, range, gran);
 
         // Now test a bad case with extremely low timeout. We shouldn't throw any exceptions.
         Map<Locator, MetricData> results = batchMetricsQueryHandler.execute(query, new TimeValue(1, TimeUnit.MILLISECONDS));
-        // Make sure there were things still in progress.
-        Assert.assertTrue("Count of results " + results.size() + " should be less than " + locators.size(),
-                results.size() < locators.size());
+        // Make sure there were things still in progress and nothing breaks.
+        Assert.assertNull(results);
         // Executor queue should not have any items left.
         // XXX: OpenJDK6 ArrayBlockingQueue has a weird bug where it returns negative value for size() when you call
         // purge() on the executor that uses the queue.

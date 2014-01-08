@@ -42,64 +42,45 @@ public class BatchMetricsQueryHandler {
 
     private final AstyanaxReader reader;
     private final ThreadPoolExecutor executor;
-    private final Map<Locator, MetricData> queryResults;
-    private AtomicInteger failedReads;
+    private Map<Locator, MetricData> queryResults;
     private static final Timer queryTimer = Metrics.timer(Instrumentation.class,
             "Batched Metrics Query Duration");
     private static final Meter exceededQueryTimeout = Metrics.meter(Instrumentation.class,
             "Batched Metrics Query Duration Exceeded Timeout");
-    private static final Timer singleFetchTimer = Metrics.timer(Instrumentation.class,
-            "Single Metric Fetch Duration");
-    private static final Histogram failedQueriesHist = Metrics.histogram(Instrumentation.class,
-            "Failed queries");
     private static final Histogram queriesSizeHist = Metrics.histogram(Instrumentation.class,
             "Total queries");
 
     public BatchMetricsQueryHandler(ThreadPoolExecutor executor, AstyanaxReader reader) {
         this.executor = executor;
         this.reader = reader;
-        this.queryResults = new ConcurrentHashMap<Locator, MetricData>();
-        this.failedReads = new AtomicInteger(0);
+        this.queryResults = null;
     }
 
     public Map<Locator, MetricData> execute(final BatchMetricsQuery query, TimeValue queryTimeout)
             throws Exception {
-        final CountDownLatch shortLatch = new CountDownLatch(query.getLocators().size());
+        final CountDownLatch shortLatch = new CountDownLatch(1);
         final Timer.Context queryTimerCtx = queryTimer.time();
 
-        final List<Future<Boolean>> resultFutures = new ArrayList<Future<Boolean>>();
-        for (final Locator locator : query.getLocators()) {
-            Future<Boolean> result = executor.submit(
-                    new MetricFetchCallable(locator,
-                                            query.getRange(),
-                                            query.getGranularity(),
-                                            shortLatch)
-            );
-            resultFutures.add(result);
-        }
+        Future<Boolean> result = executor.submit(
+            new MetricFetchCallable(query, shortLatch)
+        );
+
 
         // Wait until timeout happens or you got all the results
         shortLatch.await(queryTimeout.getValue(), queryTimeout.getUnit());
         queryTimerCtx.stop();
 
-        long inProgress = query.getLocators().size() - queryResults.size();
+        boolean inProgress = (shortLatch.getCount() > 0);
 
-        if (failedReads.get() > 0) {
-            log.error("Failed reading data for " + failedReads + " out of " + query.getLocators().size() + " metrics");
-        }
-
-        if (inProgress > 0) {
-            for (Future<Boolean> future : resultFutures) {
-                if (!future.isDone()) {
-                    future.cancel(true);
-                }
+        if (inProgress) {
+            if (!result.isDone()) {
+                result.cancel(true);
             }
-            log.warn("Interrupted metric fetch for " + inProgress + " out of " + query.getLocators().size() + " metrics");
+
+            log.warn("Interrupted batch fetch for metrics. Exceeded timeout of " + queryTimeout.toString());
             exceededQueryTimeout.mark();
             executor.purge();
         }
-
-        failedQueriesHist.update(failedReads.get());
         queriesSizeHist.update(query.getLocators().size());
 
         return queryResults;
@@ -107,31 +88,23 @@ public class BatchMetricsQueryHandler {
 
 
     public class MetricFetchCallable implements Callable<Boolean> {
-        private final Locator locator;
-        private final Range range;
-        private final Granularity gran;
+        private final BatchMetricsQuery query;
         private final CountDownLatch latch;
 
-        public MetricFetchCallable(Locator locator, Range range, Granularity gran, CountDownLatch latch) {
-            this.locator = locator;
-            this.range = range;
-            this.gran = gran;
+        public MetricFetchCallable(BatchMetricsQuery query, CountDownLatch latch) {
+            this.query = query;
             this.latch = latch;
         }
 
         @Override
         public Boolean call() throws Exception {
-            Timer.Context singleQueryTimerCtx = singleFetchTimer.time();
             try {
-                MetricData data = reader.getDatapointsForRange(locator, range, gran);
-                queryResults.put(locator, data);
+                queryResults= reader.getDatapointsForRange(query.getLocators(), query.getRange(), query.getGranularity());
                 return true;
             } catch (Exception ex) {
-                log.error("Exception reading metrics for locator " + locator, ex);
-                failedReads.incrementAndGet();
+                log.error("Exception reading batch of metrics ", ex);
                 return false;
             } finally {
-                singleQueryTimerCtx.stop();
                 latch.countDown();
             }
         }
