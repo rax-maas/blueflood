@@ -48,6 +48,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -124,16 +125,26 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public ColumnList<Locator> getAllLocators(long shard) {
+    /**
+     * Returns the recently seen locators, i.e. those that should be rolled up, for a given shard.
+     * 'Should' means:
+     *  1) A locator is capable of rollup (it is not a string/boolean metric).
+     *  2) A locator has had new data in the past {@link com.rackspacecloud.blueflood.io.AstyanaxWriter.LOCATOR_TTL} seconds.
+     *
+     * @param shard Number of the shard you want the recent locators for. 0-127 inclusive.
+     * @return Collection of locators
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
+     */
+    public Collection<Locator> getLocatorsToRollup(long shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
-            return query.execute().getResult();
+            return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
-            return new EmptyColumnList<Locator>();
+            return Collections.emptySet();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
             log.error("Error reading locators", e);

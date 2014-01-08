@@ -16,17 +16,18 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.collect.Lists;
+import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.google.common.collect.Lists;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.Column;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -83,8 +84,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         Set<String> actualLocators = new HashSet<String>();
         for (Locator locator : locators) {
-            for (Column<Locator> locatorCol : r.getAllLocators(Util.computeShard(locator.toString()))) {
-                actualLocators.add(locatorCol.getName().toString());
+            for (Locator databaseLocator : r.getLocatorsToRollup(Util.computeShard(locator.toString()))) {
+                actualLocators.add(databaseLocator.toString());
             }
         }
         Assert.assertEquals(48, actualLocators.size());
