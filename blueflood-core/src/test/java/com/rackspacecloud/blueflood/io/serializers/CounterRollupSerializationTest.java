@@ -14,8 +14,9 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.serializers;
 
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.CounterRollup;
 import junit.framework.Assert;
