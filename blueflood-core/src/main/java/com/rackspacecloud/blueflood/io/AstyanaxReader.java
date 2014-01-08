@@ -32,6 +32,8 @@ import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
+import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.ShardStateManager;

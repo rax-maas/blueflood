@@ -16,9 +16,8 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.io.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;

@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -47,7 +48,7 @@ public class TimerSerializationTest {
         
         if (System.getProperty("GENERATE_TIMER_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/timer_version_" + Constants.VERSION_1_TIMER + ".bin", false);
-            os.write(Base64.encodeBase64(new NumericSerializer.TimerRollupSerializer().toByteBuffer(r0).array()));  
+            os.write(Base64.encodeBase64(new NumericSerializer.TimerRollupSerializer().toByteBuffer(r0).array()));
             os.write("\n".getBytes());
             os.close();
         }
