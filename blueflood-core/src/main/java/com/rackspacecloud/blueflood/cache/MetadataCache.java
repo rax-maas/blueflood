@@ -42,6 +42,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
+    public static final String EMPTY = "__~EMPTY_SENTINEL_STRING~__".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
@@ -95,7 +96,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             @Override
             public String databaseLoad(Locator locator, String key) throws CacheException {
                 // nothing there.
-                return null;
+                return MetadataCache.EMPTY;
             }
         };
     }
@@ -108,10 +109,12 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
             String result = cache.get(new CacheKey(locator, key));
-            if (result == null) {
+            if (result == EMPTY) {
                 cache.invalidate(cacheKey);
+                return null;
+            } else {
+                return result;
             }
-            return result;
         } catch (ExecutionException ex) {
             throw new CacheException(ex);
         }
@@ -161,7 +164,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         try {
             Map<String, String> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
             if (metadata == null) {
-                return null;
+                return MetadataCache.EMPTY;
             }
 
             // prepopulate all other metadata other than the key we called the method with
@@ -171,7 +174,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 cache.put(cacheKey, meta.getValue());
             }
 
-            return metadata.get(key);
+            String value = metadata.get(key);
+            return value == null ? MetadataCache.EMPTY : value;
         } catch (RuntimeException ex) {
             throw new CacheException(ex);
         }
