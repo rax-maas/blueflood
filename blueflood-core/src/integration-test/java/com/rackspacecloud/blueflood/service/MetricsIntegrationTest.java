@@ -317,12 +317,12 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
 
         // Now we would have the longest row for each shard because we filled all the slots.
-        // Now test whether getAndUpdateAllShardStates returns all the slots [https://issues.rax.io/browse/CMD-11]
+        // Now test whether getAndUpdateShardStates returns all the slots
         AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
-        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), shards);
+        reader.getAndUpdateShardStates(ctx.getShardStateManager(), shards);
 
         for (Integer shard : shards) {
             for (Granularity granularity : Granularity.rollupGranularities()) {
@@ -349,9 +349,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writer.persistShardState(shard, updates);
         
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        //Map<Granularity, Map<Integer, UpdateStamp>> dbShardState = reader.getAndUpdateAllShardStates(Lists.newArrayList(shard)).get(shard);
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
-        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), Lists.newArrayList(shard));
+        reader.getAndUpdateShardStates(ctx.getShardStateManager(), Lists.newArrayList(shard));
         ShardStateManager shardStateManager = ctx.getShardStateManager();
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 

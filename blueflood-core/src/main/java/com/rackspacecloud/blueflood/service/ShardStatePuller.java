@@ -37,7 +37,7 @@ public class ShardStatePuller extends ShardStateWorker {
         Timer.Context ctx = timer.time();
         try {
             AstyanaxReader reader = AstyanaxReader.getInstance();
-            reader.getAndUpdateAllShardStates(shardStateManager, shardStateManager.getManagedShards());
+            reader.getAndUpdateShardStates(shardStateManager, shardStateManager.getManagedShards());
         } catch (ConnectionException ex) {
             log.error("Could not read shard state from the database. " + ex.getMessage(), ex);
         } finally {

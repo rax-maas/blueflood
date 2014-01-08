@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -37,7 +38,6 @@ import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.ShardStateManager;
-import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
@@ -154,6 +154,42 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
+    /**
+     * Updates shard state on the provided ShardStateManager for the provided shards.
+     *
+     * @param shardStateManager Shard State Manager responsible for maintaining state.
+     * @param intShards Shards to update get and update state for
+     */
+    public void getAndUpdateShardStates(ShardStateManager shardStateManager, final Collection<Integer> intShards) {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
+
+        Collection<Long> longShards = new LinkedList<Long>() {{
+            for (Integer shard : intShards) {
+                add((long) shard);
+            }
+        }};
+        try {
+            Rows<Long, String> result = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+                    .getKeySlice(longShards).execute().getResult();
+            for (Row<Long, String> row : result) {
+                for (Column<String> column : row.getColumns()) {
+                    long shard = row.getKey();
+                    Granularity g = Util.granularityFromStateCol(column.getName());
+                    int slot = Util.slotFromStateCol(column.getName());
+                    String stateString = Util.stateFromStateCol(column.getName());
+
+                    shardStateManager.updateSlotOnRead((int)shard, g, slot, column.getLongValue(), stateString);
+                }
+            }
+        } catch (ConnectionException e) {
+            Instrumentation.markReadError(e);
+            log.error("Error getting all shard states", e);
+            throw new RuntimeException(e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
     private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
         if (range.getStart() > range.getStop()) {
             throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
@@ -212,36 +248,6 @@ public class AstyanaxReader extends AstyanaxIO {
         }
 
         return columns;
-    }
-
-    public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-        try {
-            for (int shard : shards) {
-                RowQuery<Long, String> query = keyspace
-                        .prepareQuery(CassandraModel.CF_METRICS_STATE)
-                        .getKey((long) shard);
-                ColumnList<String> columns = query.execute().getResult();
-
-                for (Column<String> column : columns) {
-                    String columnName = column.getName();
-                    long timestamp = column.getLongValue();
-                    Granularity g = Util.granularityFromStateCol(columnName);
-                    int slot = Util.slotFromStateCol(columnName);
-
-                    boolean isRemove = UpdateStamp.State.Rolled.code().equals(Util.stateFromStateCol(columnName));
-                    UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
-
-                    shardStateManager.updateSlotOnRead(shard, g, slot, timestamp, state);
-                }
-            }
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting all shard states", e);
-            throw e;
-        } finally {
-            ctx.stop();
-        }
     }
 
     // todo: this could be the basis for every rollup read method.
