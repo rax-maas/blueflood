@@ -53,7 +53,7 @@ public class KafkaServiceTest {
         verify(kafkaServiceSpy, timeout(1000).atLeastOnce()).call(rollupEvent);
 
         //Test whether executor actually executed a task
-        Assert.assertEquals(kafkaServiceSpy.getKafkaExecutorsUnsafe().getCompletedTaskCount(), 1);
+        Assert.assertEquals(kafkaServiceSpy.getKafkaExecutorsUnsafe().getTaskCount(), 1);
         //Verify that there were interactions with the mock producer
         verify(mockProducer).send(anyListOf(KeyedMessage.class));
 
