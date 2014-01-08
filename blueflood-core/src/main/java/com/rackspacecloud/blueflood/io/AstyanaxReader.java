@@ -20,11 +20,13 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.netflix.astyanax.Execution;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
+import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -159,6 +161,7 @@ public class AstyanaxReader extends AstyanaxIO {
      *
      * @param shardStateManager Shard State Manager responsible for maintaining state.
      * @param intShards Shards to update get and update state for
+     * @todo Pagination
      */
     public void getAndUpdateShardStates(ShardStateManager shardStateManager, final Collection<Integer> intShards) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
@@ -190,39 +193,23 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
-        if (range.getStart() > range.getStop()) {
-            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
-        }
-
-        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
-        ColumnList<Long> columns;
-        Timer.Context ctx = Instrumentation.getReadTimerContext(srcCF);
-        try {
-            RowQuery<Locator, Long> query = keyspace
-                    .prepareQuery(srcCF)
-                    .getKey(locator)
-                    .withColumnRange(rangeBuilder.build());
-            columns = query.execute().getResult();
-            return columns;
-        } catch (NotFoundException e) {
-            Instrumentation.markNotFound(srcCF);
-            return new EmptyColumnList<Long>();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting data for " + locator + " (" + range + ") from " + srcCF.getName(), e);
-            throw new RuntimeException("Error reading rollups", e);
-        } finally {
-            ctx.stop();
-        }
+    private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
+        List<Locator> locators = new LinkedList<Locator>(){{ add(locator); }};
+        ColumnList<Long> columns = getColumnsFromDB(locators, srcCF, range).get(locator);
+        return columns == null ? new EmptyColumnList<Long>() : columns;
     }
 
     private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
                                                             Range range) {
+        if (range.getStart() > range.getStop()) {
+            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
+        }
+        boolean isBatch = locators.size() != 1;
+
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
 
-        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF) : Instrumentation.getReadTimerContext(CF);
         try {
             // We don't paginate this call. So we should make sure the number of reads is tolerable.
             // TODO: Think about paginating this call.
@@ -235,14 +222,14 @@ public class AstyanaxReader extends AstyanaxIO {
             for (Row<Locator, Long> row : query.getResult()) {
                 columns.put(row.getKey(), row.getColumns());
             }
-
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
                 Instrumentation.markNotFound(CF);
             } else {
-                Instrumentation.markBatchReadError(e);
+                if (isBatch) { Instrumentation.markBatchReadError(e); }
+                else { Instrumentation.markReadError(e); }
             }
-            log.warn("Batch read query failed for column family " + CF.getName(), e);
+            log.warn((isBatch ? "Batch " : "") + " read query failed for column family " + CF.getName(), e);
         } finally {
             ctx.stop();
         }
