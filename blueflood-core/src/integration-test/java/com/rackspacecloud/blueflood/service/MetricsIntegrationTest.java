@@ -317,14 +317,13 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
 
         // Now we would have the longest row for each shard because we filled all the slots.
-        // Now test whether getAndUpdateShardStates returns all the slots
+        // Now test whether getAndUpdateShardState returns all the slots
         AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
-        reader.getAndUpdateShardStates(ctx.getShardStateManager(), shards);
-
         for (Integer shard : shards) {
+            reader.getAndUpdateShardState(shardStateManager, shard);
             for (Granularity granularity : Granularity.rollupGranularities()) {
                 ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
                 Assert.assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
@@ -350,7 +349,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         
         AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
-        reader.getAndUpdateShardStates(ctx.getShardStateManager(), Lists.newArrayList(shard));
+        reader.getAndUpdateShardState(ctx.getShardStateManager(), shard);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 

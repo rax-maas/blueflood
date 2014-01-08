@@ -157,36 +157,31 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
-     * Updates shard state on the provided ShardStateManager for the provided shards.
+     * Updates shard state on the provided ShardStateManager for the provided shard.
      *
      * @param shardStateManager Shard State Manager responsible for maintaining state.
-     * @param intShards Shards to update get and update state for
+     * @param shard Shard to update get and update state for.
      * @todo Pagination
      */
-    public void getAndUpdateShardStates(ShardStateManager shardStateManager, final Collection<Integer> intShards) {
+    public void getAndUpdateShardState(ShardStateManager shardStateManager, int shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
 
-        Collection<Long> longShards = new LinkedList<Long>() {{
-            for (Integer shard : intShards) {
-                add((long) shard);
-            }
-        }};
         try {
-            Rows<Long, String> result = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
-                    .getKeySlice(longShards).execute().getResult();
-            for (Row<Long, String> row : result) {
-                for (Column<String> column : row.getColumns()) {
-                    long shard = row.getKey();
+            ColumnList<String> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+                    .getKey((long)shard)
+                    .execute()
+                    .getResult();
+
+                for (Column<String> column : columns) {
                     Granularity g = Util.granularityFromStateCol(column.getName());
                     int slot = Util.slotFromStateCol(column.getName());
                     String stateString = Util.stateFromStateCol(column.getName());
 
-                    shardStateManager.updateSlotOnRead((int)shard, g, slot, column.getLongValue(), stateString);
+                    shardStateManager.updateSlotOnRead(shard, g, slot, column.getLongValue(), stateString);
                 }
-            }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
-            log.error("Error getting all shard states", e);
+            log.error("Error getting shard state for shard " + shard, e);
             throw new RuntimeException(e);
         } finally {
             ctx.stop();
