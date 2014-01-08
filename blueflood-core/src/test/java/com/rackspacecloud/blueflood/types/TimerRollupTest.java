@@ -91,7 +91,6 @@ public class TimerRollupTest {
                 .withSampleCount(0);
 
         Assert.assertNotSame(timerWithData, timerWithoutData);
-
     }
     
     @Test
