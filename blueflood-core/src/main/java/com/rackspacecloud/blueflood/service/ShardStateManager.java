@@ -100,11 +100,8 @@ public class ShardStateManager {
         return null;
     }
 
-    public void updateSlotOnRead(int shard, Granularity g, int slot, long timestamp, String stateString) {
-        boolean isRemove = UpdateStamp.State.Rolled.code().equals(stateString);
-        UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
-
-        getSlotStateManager(shard, g).updateSlotOnRead(slot, timestamp, state);
+    public void updateSlotOnRead(int shard, ShardState shardState) {
+        getSlotStateManager(shard, shardState.getGranularity()).updateSlotOnRead(shardState);
     }
 
     public void setAllCoarserSlotsDirtyForSlot(int shard, Granularity suppliedGranularity,
@@ -160,8 +157,10 @@ public class ShardStateManager {
             this.granularity = granularity;
             slotToUpdateStampMap = new ConcurrentHashMap<Integer, UpdateStamp>(granularity.numSlots());
         }
-
-        protected void updateSlotOnRead(int slot, long timestamp, UpdateStamp.State state) {
+        protected void updateSlotOnRead(ShardState shardState) {
+            final int slot = shardState.getSlot();
+            final long timestamp = shardState.getTimestamp();
+            UpdateStamp.State state = shardState.getState();
             UpdateStamp stamp = slotToUpdateStampMap.get(slot);
             if (stamp == null) {
                 // haven't seen this slot before, take the update

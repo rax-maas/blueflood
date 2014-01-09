@@ -151,29 +151,22 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
-     * Updates shard state on the provided ShardStateManager for the provided shard.
+     * Gets all ShardStates for a given shard.
      *
-     * @param shardStateManager Shard State Manager responsible for maintaining state.
      * @param shard Shard to update get and update state for.
-     * @todo Pagination
      */
-    public void getAndUpdateShardState(ShardStateManager shardStateManager, int shard) {
+    public Collection<ShardState> getShardState(int shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-
+        final Collection<ShardState> shardStates = new LinkedList<ShardState>();
         try {
-            ColumnList<String> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+            ColumnList<ShardState> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
                     .getKey((long)shard)
                     .execute()
                     .getResult();
 
-                for (Column<String> column : columns) {
-                    ShardState state = new ShardState(column.getName());
-                    Granularity g = Util.granularityFromStateCol(column.getName());
-                    int slot = Util.slotFromStateCol(column.getName());
-                    String stateString = Util.stateFromStateCol(column.getName());
-
-                    shardStateManager.updateSlotOnRead(shard, g, slot, column.getLongValue(), stateString);
-                }
+            for (Column<ShardState> column : columns) {
+                shardStates.add(column.getName().withTimestamp(column.getLongValue()));
+            }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
             log.error("Error getting shard state for shard " + shard, e);
@@ -181,6 +174,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
+        return shardStates;
     }
 
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {

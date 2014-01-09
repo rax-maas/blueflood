@@ -22,7 +22,13 @@ import com.rackspacecloud.blueflood.service.ShardState;
 
 import java.nio.ByteBuffer;
 
-public class ShardStateSerializer extends AbstractSerializer<ShardState>{
+public class ShardStateSerializer extends AbstractSerializer<ShardState> {
+    private static final ShardStateSerializer INSTANCE = new ShardStateSerializer();
+
+    public static ShardStateSerializer get() {
+        return INSTANCE;
+    }
+
     @Override
     public ByteBuffer toByteBuffer(ShardState state) {
         return StringSerializer.get().toByteBuffer(state.toString());

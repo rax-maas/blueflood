@@ -24,11 +24,19 @@ public class ShardState {
     private int slot;
     private UpdateStamp.State state;
     private String stringRep;
+    private long timestamp;
 
     public ShardState(String compoundShardState) {
         this.granularity = Util.granularityFromStateCol(compoundShardState);
         this.slot = Util.slotFromStateCol(compoundShardState);
         this.state = stateFromCode(Util.stateFromStateCol(compoundShardState));
+        this.stringRep = calculateStringRep();
+    }
+
+    public ShardState(Granularity g, int slot, UpdateStamp.State state) {
+        this.granularity = g;
+        this.slot = slot;
+        this.state = state;
         this.stringRep = calculateStringRep();
     }
 
@@ -50,5 +58,26 @@ public class ShardState {
 
     public String toString() {
         return stringRep;
+    }
+
+    public Granularity getGranularity() {
+        return granularity;
+    }
+
+    public int getSlot() {
+        return slot;
+    }
+
+    public UpdateStamp.State getState() {
+        return state;
+    }
+
+    public ShardState withTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 }
