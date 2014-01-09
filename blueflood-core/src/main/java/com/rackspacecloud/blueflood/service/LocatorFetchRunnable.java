@@ -17,9 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -28,6 +25,8 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -78,18 +77,17 @@ class LocatorFetchRunnable implements Runnable {
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
-        ColumnList<Locator> locators = new EmptyColumnList<Locator>();
+        Set<Locator> locators = new HashSet<Locator>();
+
         try {
-            locators = AstyanaxReader.getInstance().getAllLocators(shard);
+            locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
         } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
-        for (Column<Locator> locatorCol : locators) {
-            final Locator locator = locatorCol.getName();
-
+        for (Locator locator : locators) {
             if (log.isTraceEnabled())
-                log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locatorCol.getName(), parentSlotKey);
+                log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);

@@ -19,11 +19,14 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
+import com.netflix.astyanax.Execution;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
+import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -37,7 +40,6 @@ import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.ShardStateManager;
-import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxReader.class);
@@ -124,16 +127,26 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    public ColumnList<Locator> getAllLocators(long shard) {
+    /**
+     * Returns the recently seen locators, i.e. those that should be rolled up, for a given shard.
+     * 'Should' means:
+     *  1) A locator is capable of rollup (it is not a string/boolean metric).
+     *  2) A locator has had new data in the past {@link com.rackspacecloud.blueflood.io.AstyanaxWriter.LOCATOR_TTL} seconds.
+     *
+     * @param shard Number of the shard you want the recent locators for. 0-127 inclusive.
+     * @return Collection of locators
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
+     */
+    public Collection<Locator> getLocatorsToRollup(long shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
-            return query.execute().getResult();
+            return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
-            return new EmptyColumnList<Locator>();
+            return Collections.emptySet();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
             log.error("Error reading locators", e);
@@ -143,39 +156,55 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    private ColumnList<Long> getColumnsFromDB(Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
-        if (range.getStart() > range.getStop()) {
-            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
-        }
+    /**
+     * Updates shard state on the provided ShardStateManager for the provided shard.
+     *
+     * @param shardStateManager Shard State Manager responsible for maintaining state.
+     * @param shard Shard to update get and update state for.
+     * @todo Pagination
+     */
+    public void getAndUpdateShardState(ShardStateManager shardStateManager, int shard) {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
 
-        final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
-        ColumnList<Long> columns;
-        Timer.Context ctx = Instrumentation.getReadTimerContext(srcCF);
         try {
-            RowQuery<Locator, Long> query = keyspace
-                    .prepareQuery(srcCF)
-                    .getKey(locator)
-                    .withColumnRange(rangeBuilder.build());
-            columns = query.execute().getResult();
-            return columns;
-        } catch (NotFoundException e) {
-            Instrumentation.markNotFound(srcCF);
-            return new EmptyColumnList<Long>();
+            ColumnList<String> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+                    .getKey((long)shard)
+                    .execute()
+                    .getResult();
+
+                for (Column<String> column : columns) {
+                    Granularity g = Util.granularityFromStateCol(column.getName());
+                    int slot = Util.slotFromStateCol(column.getName());
+                    String stateString = Util.stateFromStateCol(column.getName());
+
+                    shardStateManager.updateSlotOnRead(shard, g, slot, column.getLongValue(), stateString);
+                }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
-            log.error("Error getting data for " + locator + " (" + range + ") from " + srcCF.getName(), e);
-            throw new RuntimeException("Error reading rollups", e);
+            log.error("Error getting shard state for shard " + shard, e);
+            throw new RuntimeException(e);
         } finally {
             ctx.stop();
         }
     }
 
+    private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
+        List<Locator> locators = new LinkedList<Locator>(){{ add(locator); }};
+        ColumnList<Long> columns = getColumnsFromDB(locators, srcCF, range).get(locator);
+        return columns == null ? new EmptyColumnList<Long>() : columns;
+    }
+
     private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
                                                             Range range) {
+        if (range.getStart() > range.getStop()) {
+            throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
+        }
+        boolean isBatch = locators.size() != 1;
+
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
 
-        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF) : Instrumentation.getReadTimerContext(CF);
         try {
             // We don't paginate this call. So we should make sure the number of reads is tolerable.
             // TODO: Think about paginating this call.
@@ -188,49 +217,19 @@ public class AstyanaxReader extends AstyanaxIO {
             for (Row<Locator, Long> row : query.getResult()) {
                 columns.put(row.getKey(), row.getColumns());
             }
-
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
                 Instrumentation.markNotFound(CF);
             } else {
-                Instrumentation.markBatchReadError(e);
+                if (isBatch) { Instrumentation.markBatchReadError(e); }
+                else { Instrumentation.markReadError(e); }
             }
-            log.warn("Batch read query failed for column family " + CF.getName(), e);
+            log.warn((isBatch ? "Batch " : "") + " read query failed for column family " + CF.getName(), e);
         } finally {
             ctx.stop();
         }
 
         return columns;
-    }
-
-    public void getAndUpdateAllShardStates(ShardStateManager shardStateManager, Collection<Integer> shards) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-        try {
-            for (int shard : shards) {
-                RowQuery<Long, String> query = keyspace
-                        .prepareQuery(CassandraModel.CF_METRICS_STATE)
-                        .getKey((long) shard);
-                ColumnList<String> columns = query.execute().getResult();
-
-                for (Column<String> column : columns) {
-                    String columnName = column.getName();
-                    long timestamp = column.getLongValue();
-                    Granularity g = Util.granularityFromStateCol(columnName);
-                    int slot = Util.slotFromStateCol(columnName);
-
-                    boolean isRemove = UpdateStamp.State.Rolled.code().equals(Util.stateFromStateCol(columnName));
-                    UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
-
-                    shardStateManager.updateSlotOnRead(shard, g, slot, timestamp, state);
-                }
-            }
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting all shard states", e);
-            throw e;
-        } finally {
-            ctx.stop();
-        }
     }
 
     // todo: this could be the basis for every rollup read method.
