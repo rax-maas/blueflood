@@ -25,13 +25,6 @@ public class SlotState {
     private String stringRep;
     private Long timestamp = null;
 
-    public SlotState(String compoundShardState) {
-        this.granularity = granularityFromStateCol(compoundShardState);
-        this.slot = slotFromStateCol(compoundShardState);
-        this.state = stateFromCode(stateCodeFromStateCol(compoundShardState));
-        this.stringRep = calculateStringRep();
-    }
-
     public SlotState(Granularity g, int slot, UpdateStamp.State state) {
         this.granularity = g;
         this.slot = slot;
@@ -47,8 +40,8 @@ public class SlotState {
     }
 
     /**
-     * Milliseconds
-     * @param timestamp
+     * Set the timestamp
+     * @param timestamp in milliseconds
      * @return
      */
     public SlotState withTimestamp(long timestamp) {
@@ -98,24 +91,5 @@ public class SlotState {
 
     public Long getTimestamp() {
         return timestamp;
-    }
-
-    protected static Granularity granularityFromStateCol(String s) {
-        String field = s.split(",", -1)[0];
-        for (Granularity g : Granularity.granularities())
-            if (g.name().startsWith(field))
-                return g;
-        return null;
-    }
-
-    protected static int slotFromStateCol(String s) { return Integer.parseInt(s.split(",", -1)[1]); }
-    protected static String stateCodeFromStateCol(String s) { return s.split(",", -1)[2]; }
-
-    protected static UpdateStamp.State stateFromCode(String stateCode) {
-        if (stateCode.equals(UpdateStamp.State.Rolled.code())) {
-            return UpdateStamp.State.Rolled;
-        } else {
-            return UpdateStamp.State.Active;
-        }
     }
 }

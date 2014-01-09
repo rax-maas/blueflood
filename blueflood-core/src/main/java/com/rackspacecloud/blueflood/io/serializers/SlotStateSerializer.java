@@ -46,7 +46,7 @@ public class SlotStateSerializer extends AbstractSerializer<SlotState> {
         return new SlotState(g, slot, state);
     }
 
-    protected static Granularity granularityFromStateCol(String s) {
+    public static Granularity granularityFromStateCol(String s) {
         String field = s.split(",", -1)[0];
         for (Granularity g : Granularity.granularities())
             if (g.name().startsWith(field))

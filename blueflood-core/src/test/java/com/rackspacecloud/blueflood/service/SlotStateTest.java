@@ -48,12 +48,9 @@ public class SlotStateTest {
 
     @Test
     public void testEquality() {
-        SlotStateSerializer sss = SlotStateSerializer.get();
-        StringSerializer ss = StringSerializer.get();
-
-        // verify that equality works regardless of constructor choice
-        Assert.assertEquals(ss1, sss.fromByteBuffer(ss.toByteBuffer(ss1.getStringRep())));
-        Assert.assertEquals(ss2, sss.fromByteBuffer(ss.toByteBuffer(ss2.getStringRep())).withTimestamp(time));
+        // verify that equality works with and without timestamp
+        Assert.assertEquals(ss1, fromString(s1));
+        Assert.assertEquals(ss2, fromString(s2).withTimestamp(time));
         // verify that Active and Running are considered equal
         Assert.assertEquals(new SlotState(Granularity.FULL, 1, UpdateStamp.State.Active),
                 new SlotState(Granularity.FULL, 1, UpdateStamp.State.Running));
@@ -61,37 +58,19 @@ public class SlotStateTest {
         Assert.assertNotSame(new SlotState(Granularity.FULL, 1, UpdateStamp.State.Active),
                 new SlotState(Granularity.FULL, 1, UpdateStamp.State.Rolled));
         // verify that inequality works
-        SlotState timestampedState = sss.fromByteBuffer(ss.toByteBuffer(ss1.getStringRep()))
-        Assert.assertNotSame(.withTimestamp(123l), new SlotState(ss1.toString()));
+        SlotState timestampedState = fromString(s1).withTimestamp(time);
+        Assert.assertNotSame(timestampedState, fromString(s1));
     }
 
     @Test
     public void testGranularity() {
-        Assert.assertEquals(Granularity.FULL, new SlotState(s1).getGranularity());
-        Assert.assertNull(new SlotState("FULL,1,X").getGranularity());
-
-        Granularity myGranularity = SlotState.granularityFromStateCol("metrics_full,1,okay");
-        Assert.assertNotNull(myGranularity);
-        Assert.assertEquals(myGranularity, Granularity.FULL);
-
-        myGranularity = SlotState.granularityFromStateCol("FULL");
-        Assert.assertNull(myGranularity);
+        Assert.assertEquals(Granularity.FULL, fromString(s1).getGranularity());
+        Assert.assertNull(fromString("FULL,1,X").getGranularity());
     }
 
-    @Test
-    public void testSlotFromStateCol() {
-        Assert.assertEquals(1, SlotState.slotFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
-    public void testStateFromStateCol() {
-        Assert.assertEquals("okay", SlotState.stateCodeFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
-    public void testStateFromStateCode() {
-        Assert.assertEquals(UpdateStamp.State.Active, SlotState.stateFromCode("foo"));
-        Assert.assertEquals(UpdateStamp.State.Active, SlotState.stateFromCode("A"));
-        Assert.assertEquals(UpdateStamp.State.Rolled, SlotState.stateFromCode("X"));
+    private SlotState fromString(String string) {
+        SlotStateSerializer slotSer = SlotStateSerializer.get();
+        StringSerializer stringSer = StringSerializer.get();
+        return slotSer.fromByteBuffer(stringSer.toByteBuffer(string));
     }
 }
