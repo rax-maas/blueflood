@@ -36,7 +36,7 @@ import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.ShardState;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,19 +151,19 @@ public class AstyanaxReader extends AstyanaxIO {
     /**
      * Gets all ShardStates for a given shard.
      *
-     * @param shard Shard to retrieve all ShardState objects for.
+     * @param shard Shard to retrieve all SlotState objects for.
      */
-    public Collection<ShardState> getShardState(int shard) {
+    public Collection<SlotState> getShardState(int shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-        final Collection<ShardState> shardStates = new LinkedList<ShardState>();
+        final Collection<SlotState> slotStates = new LinkedList<SlotState>();
         try {
-            ColumnList<ShardState> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+            ColumnList<SlotState> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
                     .getKey((long)shard)
                     .execute()
                     .getResult();
 
-            for (Column<ShardState> column : columns) {
-                shardStates.add(column.getName().withTimestamp(column.getLongValue()));
+            for (Column<SlotState> column : columns) {
+                slotStates.add(column.getName().withTimestamp(column.getLongValue()));
             }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
@@ -172,7 +172,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
-        return shardStates;
+        return slotStates;
     }
 
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {

@@ -36,7 +36,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.ShardState;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
@@ -259,13 +259,13 @@ public class AstyanaxWriter extends AstyanaxIO {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE);
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<ShardState> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
+            ColumnListMutation<SlotState> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
             for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> granEntry : updates.entrySet()) {
                 Granularity g = granEntry.getKey();
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
                     // granularity,slot,state
-                    ShardState shardState = new ShardState(g, entry.getKey(), entry.getValue().getState());
-                    mutation.putColumn(shardState, entry.getValue().getTimestamp())
+                    SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
+                    mutation.putColumn(slotState, entry.getValue().getTimestamp())
                             // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
                             // written. this effectively creates a check-then-set update that fails if the value currently in the
                             // database is newer.

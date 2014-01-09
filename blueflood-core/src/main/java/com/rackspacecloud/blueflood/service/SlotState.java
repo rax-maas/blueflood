@@ -18,28 +18,28 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
 
-public class ShardState {
+public class SlotState {
     private Granularity granularity;
     private Integer slot;
     private UpdateStamp.State state;
     private String stringRep;
     private Long timestamp = null;
 
-    public ShardState(String compoundShardState) {
+    public SlotState(String compoundShardState) {
         this.granularity = granularityFromStateCol(compoundShardState);
         this.slot = slotFromStateCol(compoundShardState);
         this.state = stateFromCode(stateCodeFromStateCol(compoundShardState));
         this.stringRep = calculateStringRep();
     }
 
-    public ShardState(Granularity g, int slot, UpdateStamp.State state) {
+    public SlotState(Granularity g, int slot, UpdateStamp.State state) {
         this.granularity = g;
         this.slot = slot;
         this.state = state;
         this.stringRep = calculateStringRep();
     }
 
-    public ShardState() {
+    public SlotState() {
         this.granularity = null;
         this.slot = null;
         this.state = null;
@@ -51,7 +51,7 @@ public class ShardState {
      * @param timestamp
      * @return
      */
-    public ShardState withTimestamp(long timestamp) {
+    public SlotState withTimestamp(long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
@@ -70,10 +70,10 @@ public class ShardState {
     }
 
     public boolean equals(Object other) {
-        if (!(other instanceof ShardState)) {
+        if (!(other instanceof SlotState)) {
             return false;
         }
-        ShardState that = (ShardState) other;
+        SlotState that = (SlotState) other;
         return this.toString().equals(that.toString());
     }
 

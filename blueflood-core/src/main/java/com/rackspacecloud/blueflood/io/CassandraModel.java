@@ -4,11 +4,11 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.io.serializers.LocatorSerializer;
-import com.rackspacecloud.blueflood.io.serializers.ShardStateSerializer;
+import com.rackspacecloud.blueflood.io.serializers.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.ShardState;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
@@ -47,9 +47,9 @@ public class CassandraModel {
     public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
-    public static final ColumnFamily<Long, ShardState> CF_METRICS_STATE = new ColumnFamily<Long, ShardState>("metrics_state",
+    public static final ColumnFamily<Long, SlotState> CF_METRICS_STATE = new ColumnFamily<Long, SlotState>("metrics_state",
             LongSerializer.get(),
-            ShardStateSerializer.get());
+            SlotStateSerializer.get());
 
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,

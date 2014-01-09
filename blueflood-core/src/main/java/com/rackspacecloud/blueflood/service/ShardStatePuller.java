@@ -38,9 +38,9 @@ public class ShardStatePuller extends ShardStateWorker {
         for (int shard : shardStateManager.getManagedShards()) {
 
             try {
-                Collection<ShardState> shardStates = reader.getShardState(shard);
-                for (ShardState shardState : shardStates) {
-                    shardStateManager.updateSlotOnRead(shard, shardState);
+                Collection<SlotState> slotStates = reader.getShardState(shard);
+                for (SlotState slotState : slotStates) {
+                    shardStateManager.updateSlotOnRead(shard, slotState);
                 }
 
             } catch (Exception ex) {

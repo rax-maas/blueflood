@@ -323,9 +323,9 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
         for (Integer shard : shards) {
-            Collection<ShardState> shardStates = reader.getShardState(shard);
-            for (ShardState shardState : shardStates) {
-                shardStateManager.updateSlotOnRead(shard, shardState);
+            Collection<SlotState> slotStates = reader.getShardState(shard);
+            for (SlotState slotState : slotStates) {
+                shardStateManager.updateSlotOnRead(shard, slotState);
             }
 
             for (Granularity granularity : Granularity.rollupGranularities()) {
@@ -354,9 +354,9 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
 
-        Collection<ShardState> shardStates = reader.getShardState(shard);
-        for (ShardState shardState : shardStates) {
-            ctx.getShardStateManager().updateSlotOnRead(shard, shardState);
+        Collection<SlotState> slotStates = reader.getShardState(shard);
+        for (SlotState slotState : slotStates) {
+            ctx.getShardStateManager().updateSlotOnRead(shard, slotState);
         }
 
         ShardStateManager shardStateManager = ctx.getShardStateManager();

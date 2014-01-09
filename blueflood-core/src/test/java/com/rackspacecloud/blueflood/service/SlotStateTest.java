@@ -16,19 +16,21 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.netflix.astyanax.serializers.StringSerializer;
+import com.rackspacecloud.blueflood.io.serializers.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ShardStateTest {
+public class SlotStateTest {
     private final long time = 123456;
     private final String s1 = "metrics_full,1,A";
     private final String s2 = "metrics_60m,1,A";
     private final String s3 = "metrics_full,1,X";
 
-    private final ShardState ss1 = new ShardState(Granularity.FULL, 1, UpdateStamp.State.Active);
-    private final ShardState ss2 = new ShardState(Granularity.MIN_60, 1, UpdateStamp.State.Running).withTimestamp(time);
-    private final ShardState ss3 = new ShardState(Granularity.FULL, 1, UpdateStamp.State.Rolled).withTimestamp(time);
+    private final SlotState ss1 = new SlotState(Granularity.FULL, 1, UpdateStamp.State.Active);
+    private final SlotState ss2 = new SlotState(Granularity.MIN_60, 1, UpdateStamp.State.Running).withTimestamp(time);
+    private final SlotState ss3 = new SlotState(Granularity.FULL, 1, UpdateStamp.State.Rolled).withTimestamp(time);
 
     @Test
     public void testStringConversion() {
@@ -46,46 +48,50 @@ public class ShardStateTest {
 
     @Test
     public void testEquality() {
+        SlotStateSerializer sss = SlotStateSerializer.get();
+        StringSerializer ss = StringSerializer.get();
+
         // verify that equality works regardless of constructor choice
-        Assert.assertEquals(ss1, new ShardState(ss1.getStringRep()));
-        Assert.assertEquals(ss2, new ShardState(ss2.getStringRep()).withTimestamp(time));
+        Assert.assertEquals(ss1, sss.fromByteBuffer(ss.toByteBuffer(ss1.getStringRep())));
+        Assert.assertEquals(ss2, sss.fromByteBuffer(ss.toByteBuffer(ss2.getStringRep())).withTimestamp(time));
         // verify that Active and Running are considered equal
-        Assert.assertEquals(new ShardState(Granularity.FULL, 1, UpdateStamp.State.Active),
-                new ShardState(Granularity.FULL, 1, UpdateStamp.State.Running));
+        Assert.assertEquals(new SlotState(Granularity.FULL, 1, UpdateStamp.State.Active),
+                new SlotState(Granularity.FULL, 1, UpdateStamp.State.Running));
         // ... but that they are not equal to Rolled
-        Assert.assertNotSame(new ShardState(Granularity.FULL, 1, UpdateStamp.State.Active),
-                new ShardState(Granularity.FULL, 1, UpdateStamp.State.Rolled));
+        Assert.assertNotSame(new SlotState(Granularity.FULL, 1, UpdateStamp.State.Active),
+                new SlotState(Granularity.FULL, 1, UpdateStamp.State.Rolled));
         // verify that inequality works
-        Assert.assertNotSame(new ShardState(ss1.toString()).withTimestamp(123l), new ShardState(ss1.toString()));
+        SlotState timestampedState = sss.fromByteBuffer(ss.toByteBuffer(ss1.getStringRep()))
+        Assert.assertNotSame(.withTimestamp(123l), new SlotState(ss1.toString()));
     }
 
     @Test
     public void testGranularity() {
-        Assert.assertEquals(Granularity.FULL, new ShardState(s1).getGranularity());
-        Assert.assertNull(new ShardState("FULL,1,X").getGranularity());
+        Assert.assertEquals(Granularity.FULL, new SlotState(s1).getGranularity());
+        Assert.assertNull(new SlotState("FULL,1,X").getGranularity());
 
-        Granularity myGranularity = ShardState.granularityFromStateCol("metrics_full,1,okay");
+        Granularity myGranularity = SlotState.granularityFromStateCol("metrics_full,1,okay");
         Assert.assertNotNull(myGranularity);
         Assert.assertEquals(myGranularity, Granularity.FULL);
 
-        myGranularity = ShardState.granularityFromStateCol("FULL");
+        myGranularity = SlotState.granularityFromStateCol("FULL");
         Assert.assertNull(myGranularity);
     }
 
     @Test
     public void testSlotFromStateCol() {
-        Assert.assertEquals(1, ShardState.slotFromStateCol("metrics_full,1,okay"));
+        Assert.assertEquals(1, SlotState.slotFromStateCol("metrics_full,1,okay"));
     }
 
     @Test
     public void testStateFromStateCol() {
-        Assert.assertEquals("okay", ShardState.stateCodeFromStateCol("metrics_full,1,okay"));
+        Assert.assertEquals("okay", SlotState.stateCodeFromStateCol("metrics_full,1,okay"));
     }
 
     @Test
     public void testStateFromStateCode() {
-        Assert.assertEquals(UpdateStamp.State.Active, ShardState.stateFromCode("foo"));
-        Assert.assertEquals(UpdateStamp.State.Active, ShardState.stateFromCode("A"));
-        Assert.assertEquals(UpdateStamp.State.Rolled, ShardState.stateFromCode("X"));
+        Assert.assertEquals(UpdateStamp.State.Active, SlotState.stateFromCode("foo"));
+        Assert.assertEquals(UpdateStamp.State.Active, SlotState.stateFromCode("A"));
+        Assert.assertEquals(UpdateStamp.State.Rolled, SlotState.stateFromCode("X"));
     }
 }

@@ -331,7 +331,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             }
             final UpdateStamp stamp = stateTimestamps.get(slot);
             if (stamp != null) {
-                results.add(new ShardState(g, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
+                results.add(new SlotState(g, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
             }
         }
 
@@ -348,12 +348,12 @@ public class RollupService implements Runnable, RollupServiceMBean {
             }
 
             // Iterate through the map of slot to UpdateStamp and find the oldest one
-            ShardState minSlot = new ShardState().withTimestamp(System.currentTimeMillis());
+            SlotState minSlot = new SlotState().withTimestamp(System.currentTimeMillis());
             boolean add = false;
             for (Map.Entry<Integer, UpdateStamp> entry : stateTimestamps.entrySet()) {
                 final UpdateStamp stamp = entry.getValue();
                 if (stamp.getState() != UpdateStamp.State.Rolled && stamp.getTimestamp() < minSlot.getTimestamp()) {
-                    minSlot = new ShardState(g, entry.getKey(), stamp.getState()).withTimestamp(stamp.getTimestamp());
+                    minSlot = new SlotState(g, entry.getKey(), stamp.getState()).withTimestamp(stamp.getTimestamp());
                     add = true;
                 }
             }
