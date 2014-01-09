@@ -19,14 +19,11 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.netflix.astyanax.Execution;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
-import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -39,6 +36,7 @@ import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.ShardState;
 import com.rackspacecloud.blueflood.service.ShardStateManager;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -46,10 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
@@ -173,6 +167,7 @@ public class AstyanaxReader extends AstyanaxIO {
                     .getResult();
 
                 for (Column<String> column : columns) {
+                    ShardState state = new ShardState(column.getName());
                     Granularity g = Util.granularityFromStateCol(column.getName());
                     int slot = Util.slotFromStateCol(column.getName());
                     String stateString = Util.stateFromStateCol(column.getName());
