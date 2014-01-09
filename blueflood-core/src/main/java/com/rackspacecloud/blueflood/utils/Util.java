@@ -52,10 +52,6 @@ public class Util {
         return list;
     }
 
-    public static String formatStateColumnName(Granularity gran, int slot, String state) {
-        return String.format("%s,%d,%s", gran.name(), slot, state); 
-    }
-    
     public static Granularity granularityFromStateCol(String s) {
         String field = s.split(",", -1)[0];
         for (Granularity g : Granularity.granularities())

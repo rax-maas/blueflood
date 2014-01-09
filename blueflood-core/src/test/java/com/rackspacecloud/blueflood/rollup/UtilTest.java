@@ -17,6 +17,8 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.service.ShardState;
+import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Test;
@@ -76,7 +78,9 @@ public class UtilTest {
 
     @Test
     public void testFormatStateColumnName() {
-        Assert.assertEquals("metrics_full,1,okay", Util.formatStateColumnName(Granularity.FULL, 1, "okay"));
+        Assert.assertEquals("metrics_full,1,A", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Active).getStringRep());
+        Assert.assertEquals("metrics_full,1,A", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Running).getStringRep());
+        Assert.assertEquals("metrics_full,1,X", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Rolled).getStringRep());
     }
 
     @Test

@@ -31,7 +31,7 @@ public class ShardStateSerializer extends AbstractSerializer<ShardState> {
 
     @Override
     public ByteBuffer toByteBuffer(ShardState state) {
-        return StringSerializer.get().toByteBuffer(state.toString());
+        return StringSerializer.get().toByteBuffer(state.getStringRep());
     }
 
     @Override

@@ -21,7 +21,7 @@ import com.rackspacecloud.blueflood.utils.Util;
 
 public class ShardState {
     private Granularity granularity;
-    private int slot;
+    private Integer slot;
     private UpdateStamp.State state;
     private String stringRep;
     private long timestamp;
@@ -40,6 +40,13 @@ public class ShardState {
         this.stringRep = calculateStringRep();
     }
 
+    public ShardState() {
+        this.granularity = null;
+        this.slot = null;
+        this.state = null;
+        this.stringRep = "";
+    }
+
     private UpdateStamp.State stateFromCode(String stateCode) {
         if (stateCode.equals(UpdateStamp.State.Rolled.code())) {
             return UpdateStamp.State.Rolled;
@@ -52,12 +59,21 @@ public class ShardState {
         return new StringBuilder()
                 .append(granularity.name()).append(",")
                 .append(slot).append(",")
-                .append(state.code()).append(",")
+                .append(state.code())
                 .toString();
     }
 
-    public String toString() {
+    /**
+     * Gets string representation of all non-optional fields (i.e. NOT timestamp)
+     * Does not include timestamp. Use toString for that.
+     * @return string
+     */
+    public String getStringRep() {
         return stringRep;
+    }
+
+    public String toString() {
+        return stringRep + ": " + getTimestamp();
     }
 
     public Granularity getGranularity() {

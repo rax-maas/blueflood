@@ -43,8 +43,7 @@ public class ShardStatePuller extends ShardStateWorker {
                     shardStateManager.updateSlotOnRead(shard, shardState);
                 }
 
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 log.error("Could not read shard state from the database. " + ex.getMessage(), ex);
             }
         }
