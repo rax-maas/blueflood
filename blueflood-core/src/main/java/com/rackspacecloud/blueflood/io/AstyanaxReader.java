@@ -37,9 +37,7 @@ import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.ShardState;
-import com.rackspacecloud.blueflood.service.ShardStateManager;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +151,7 @@ public class AstyanaxReader extends AstyanaxIO {
     /**
      * Gets all ShardStates for a given shard.
      *
-     * @param shard Shard to update get and update state for.
+     * @param shard Shard to retrieve all ShardState objects for.
      */
     public Collection<ShardState> getShardState(int shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);

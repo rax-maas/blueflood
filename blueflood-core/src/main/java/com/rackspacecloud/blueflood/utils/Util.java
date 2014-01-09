@@ -17,9 +17,7 @@
 package com.rackspacecloud.blueflood.utils;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.apache.commons.codec.digest.DigestUtils;
-
 
 import java.text.DecimalFormat;
 import java.text.Format;
@@ -51,17 +49,6 @@ public class Util {
         }
         return list;
     }
-
-    public static Granularity granularityFromStateCol(String s) {
-        String field = s.split(",", -1)[0];
-        for (Granularity g : Granularity.granularities())
-            if (g.name().startsWith(field))
-                return g;
-        return null;
-    }
-    public static int slotFromStateCol(String s) { return Integer.parseInt(s.split(",", -1)[1]); }
-    public static String stateFromStateCol(String s) { return s.split(",", -1)[2]; }
-
 
     public static String getDimensionFromKey(String persistedMetric) {
        return persistedMetric.split("\\.", -1)[0];

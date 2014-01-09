@@ -17,8 +17,6 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.service.ShardState;
-import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Test;
@@ -74,33 +72,6 @@ public class UtilTest {
         }
 
         Assert.assertEquals(true, exception);
-    }
-
-    @Test
-    public void testFormatStateColumnName() {
-        Assert.assertEquals("metrics_full,1,A", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Active).getStringRep());
-        Assert.assertEquals("metrics_full,1,A", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Running).getStringRep());
-        Assert.assertEquals("metrics_full,1,X", new ShardState(Granularity.FULL, 1, UpdateStamp.State.Rolled).getStringRep());
-    }
-
-    @Test
-    public void testGranularityFromStateCol() {
-        Granularity myGranularity = Util.granularityFromStateCol("metrics_full,1,okay");
-        Assert.assertNotNull(myGranularity);
-        Assert.assertEquals(myGranularity, Granularity.FULL);
-
-        myGranularity = Util.granularityFromStateCol("FULL");
-        Assert.assertNull(myGranularity);
-    }
-
-    @Test
-    public void testSlotFromStateCol() {
-        Assert.assertEquals(1, Util.slotFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
-    public void testStateFromStateCol() {
-        Assert.assertEquals("okay", Util.stateFromStateCol("metrics_full,1,okay"));
     }
 
     @Test

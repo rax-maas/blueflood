@@ -17,19 +17,18 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.utils.Util;
 
 public class ShardState {
     private Granularity granularity;
     private Integer slot;
     private UpdateStamp.State state;
     private String stringRep;
-    private long timestamp;
+    private Long timestamp = null;
 
     public ShardState(String compoundShardState) {
-        this.granularity = Util.granularityFromStateCol(compoundShardState);
-        this.slot = Util.slotFromStateCol(compoundShardState);
-        this.state = stateFromCode(Util.stateFromStateCol(compoundShardState));
+        this.granularity = granularityFromStateCol(compoundShardState);
+        this.slot = slotFromStateCol(compoundShardState);
+        this.state = stateFromCode(stateCodeFromStateCol(compoundShardState));
         this.stringRep = calculateStringRep();
     }
 
@@ -47,20 +46,14 @@ public class ShardState {
         this.stringRep = "";
     }
 
-    private UpdateStamp.State stateFromCode(String stateCode) {
-        if (stateCode.equals(UpdateStamp.State.Rolled.code())) {
-            return UpdateStamp.State.Rolled;
-        } else {
-            return UpdateStamp.State.Active;
-        }
-    }
-
-    private String calculateStringRep() {
-        return new StringBuilder()
-                .append(granularity.name()).append(",")
-                .append(slot).append(",")
-                .append(state.code())
-                .toString();
+    /**
+     * Milliseconds
+     * @param timestamp
+     * @return
+     */
+    public ShardState withTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
     }
 
     /**
@@ -73,7 +66,22 @@ public class ShardState {
     }
 
     public String toString() {
-        return stringRep + ": " + getTimestamp();
+        return stringRep + ": " + (getTimestamp() == null ? "" : getTimestamp());
+    }
+
+    public boolean equals(Object other) {
+        if (!(other instanceof ShardState)) {
+            return false;
+        }
+        ShardState that = (ShardState) other;
+        return this.toString().equals(that.toString());
+    }
+
+    private String calculateStringRep() {
+        return new StringBuilder().append(granularity == null ? "null" : granularity.name())
+                .append(",").append(slot)
+                .append(",").append(state == null ? "null" : state.code())
+                .toString();
     }
 
     public Granularity getGranularity() {
@@ -88,12 +96,26 @@ public class ShardState {
         return state;
     }
 
-    public ShardState withTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-        return this;
+    public Long getTimestamp() {
+        return timestamp;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    protected static Granularity granularityFromStateCol(String s) {
+        String field = s.split(",", -1)[0];
+        for (Granularity g : Granularity.granularities())
+            if (g.name().startsWith(field))
+                return g;
+        return null;
+    }
+
+    protected static int slotFromStateCol(String s) { return Integer.parseInt(s.split(",", -1)[1]); }
+    protected static String stateCodeFromStateCol(String s) { return s.split(",", -1)[2]; }
+
+    protected static UpdateStamp.State stateFromCode(String stateCode) {
+        if (stateCode.equals(UpdateStamp.State.Rolled.code())) {
+            return UpdateStamp.State.Rolled;
+        } else {
+            return UpdateStamp.State.Active;
+        }
     }
 }
