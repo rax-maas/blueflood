@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.types.Locator;
 import com.google.common.base.Charsets;

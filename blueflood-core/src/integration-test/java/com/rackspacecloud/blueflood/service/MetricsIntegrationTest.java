@@ -16,17 +16,18 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.collect.Lists;
+import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import com.google.common.collect.Lists;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.Column;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -83,8 +84,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         Set<String> actualLocators = new HashSet<String>();
         for (Locator locator : locators) {
-            for (Column<Locator> locatorCol : r.getAllLocators(Util.computeShard(locator.toString()))) {
-                actualLocators.add(locatorCol.getName().toString());
+            for (Locator databaseLocator : r.getLocatorsToRollup(Util.computeShard(locator.toString()))) {
+                actualLocators.add(databaseLocator.toString());
             }
         }
         Assert.assertEquals(48, actualLocators.size());
@@ -316,14 +317,13 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
 
         // Now we would have the longest row for each shard because we filled all the slots.
-        // Now test whether getAndUpdateAllShardStates returns all the slots [https://issues.rax.io/browse/CMD-11]
+        // Now test whether getAndUpdateShardState returns all the slots
         AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
-        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), shards);
-
         for (Integer shard : shards) {
+            reader.getAndUpdateShardState(shardStateManager, shard);
             for (Granularity granularity : Granularity.rollupGranularities()) {
                 ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
                 Assert.assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
@@ -348,9 +348,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         writer.persistShardState(shard, updates);
         
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        //Map<Granularity, Map<Integer, UpdateStamp>> dbShardState = reader.getAndUpdateAllShardStates(Lists.newArrayList(shard)).get(shard);
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
-        reader.getAndUpdateAllShardStates(ctx.getShardStateManager(), Lists.newArrayList(shard));
+        reader.getAndUpdateShardState(ctx.getShardStateManager(), shard);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 

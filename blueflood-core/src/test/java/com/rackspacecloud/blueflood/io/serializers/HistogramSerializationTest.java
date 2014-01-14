@@ -14,10 +14,11 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.serializers;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
