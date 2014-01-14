@@ -2,7 +2,10 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.Gson;
 import com.google.gson.internal.LazilyParsedNumber;
+import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.io.NumericSerializer;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -49,23 +52,36 @@ public class StatsdHttpIngestionTests {
     public void testCounters() {
         Collection<PreaggregatedMetric> counters = HttpStatsDIngestionHandler.convertCounters("1", 1, bundle.getCounters());
         Assert.assertEquals(6, counters.size());
+        ensureSerializability(counters);
     }
     
     @Test
     public void testGauges() {
         Collection<PreaggregatedMetric> gauges = HttpStatsDIngestionHandler.convertGauges("1", 1, bundle.getGauges());
         Assert.assertEquals(4, gauges.size());
+        ensureSerializability(gauges);
     }
      
     @Test
     public void testSets() {
         Collection<PreaggregatedMetric> sets = HttpStatsDIngestionHandler.convertSets("1", 1, bundle.getSets());
         Assert.assertEquals(2, sets.size());
+        ensureSerializability(sets);
     }
     
     @Test
     public void testTimers() {
         Collection<PreaggregatedMetric> timers = HttpStatsDIngestionHandler.convertTimers("1", 1, bundle.getTimers());
         Assert.assertEquals(4, timers.size());
+        ensureSerializability(timers);
+    }
+    
+    // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics
+    // follow a different creation path that what we currently have in tests.
+    private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {
+        for (PreaggregatedMetric metric : metrics) {
+            AbstractSerializer serializer = NumericSerializer.serializerFor(metric.getValue().getClass());
+            serializer.toByteBuffer(metric.getValue());
+        }
     }
 }

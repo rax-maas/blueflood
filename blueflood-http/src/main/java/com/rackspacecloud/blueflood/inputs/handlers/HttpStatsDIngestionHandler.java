@@ -108,13 +108,19 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         metrics.addAll(convertTimers(bundle.getTenantId(), bundle.getTimestamp(), bundle.getTimers()));
         return metrics;
     }
+    
+    // NOTE: when you create objects from gson-converted json, you need to make sure to resolve numbers that
+    // are not accessed via `doubleValue()` or `longValue()`, i.e., they are treated as `Number` instances.
+    // the Number supplied by gson is and instance of LazilyParsedNumber and will cause breakage in certain
+    // circumstances. e.g. calling `longValue()` when the number is obviously a double, or is used in the
+    // type comparisions we use to determine how to serialize a number.
 
     public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, Collection<Bundle.Counter> counters) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(counters.size());
         for (Bundle.Counter counter : counters) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, counter.getName().split(NAME_DELIMITER, -1));
             Rollup rollup = new CounterRollup()
-                    .withCount(counter.getValue())
+                    .withCount(resolveNumber(counter.getValue()))
                     .withRate(counter.getRate().doubleValue())
                     // todo: if we knew the flush period, we could estimate the sample count.  consider sending that as
                     // part of the bundle.
@@ -159,7 +165,9 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
                     .withVariance(Math.pow(timer.getStd().doubleValue(), 2d));
             for (Map.Entry<String, Bundle.Percentile> entry : timer.getPercentiles().entrySet()) {
                 // throw away max and sum.
-                rollup.setPercentile(entry.getKey(), entry.getValue().getAvg());
+                if (entry.getValue().getAvg() != null) {
+                    rollup.setPercentile(entry.getKey(), resolveNumber(entry.getValue().getAvg()));
+                }
             }
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
