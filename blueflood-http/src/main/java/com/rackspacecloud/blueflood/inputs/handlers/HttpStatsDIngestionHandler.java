@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Timer;
 import com.google.gson.Gson;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -36,6 +37,7 @@ import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -59,6 +61,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     // todo: this needs to be set some other way. punting for now.
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
     
+    private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
+    
     private AstyanaxWriter writer;
     
     public HttpStatsDIngestionHandler() {
@@ -68,11 +72,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     // our own stuff.
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        // ok. let's see whats in the headers, etc. I need to find out what's been put in, etc.
-        logger.info("HEADERS...");
-        for (Map.Entry header : request.getHeaders()) {
-            logger.info(String.format("%s = %s", header.getKey().toString(), header.getValue().toString()));
-        }
+        
+        final Timer.Context timerContext = handlerTimer.time();
         
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
@@ -92,6 +93,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (ConnectionException ex) {
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "", HttpResponseStatus.INTERNAL_SERVER_ERROR); 
+        } finally {
+            timerContext.stop();
         }
     }
     
@@ -143,9 +146,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
                 list.add(metric);
             } catch (IOException ex) {
                 throw new IOError(ex);
-            }
-            
-                    
+            }   
         }
         return list;
     }
