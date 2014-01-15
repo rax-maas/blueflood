@@ -17,6 +17,8 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
 
 import java.util.HashSet;
@@ -32,7 +34,8 @@ import java.util.Set;
  * full     [ granularity to the second, but ranges are partitioned the same as in 5m.                               ...
  */
 public class Granularity {
-    private static final int MIN_PERIOD_MILLIS = 30000;
+    private static final int GET_BY_POINTS_ASSUME_INTERVAL = Configuration.getInstance().getIntegerProperty(CoreConfig.GET_BY_POINTS_ASSUME_INTERVAL);
+    private static final String GET_BY_POINTS_SELECTION_ALGORITHM = Configuration.getInstance().getStringProperty(CoreConfig.GET_BY_POINTS_GRANULARITY_SELECTION);
     private static int INDEX_COUNTER = 0;
     private static final int BASE_SLOTS_PER_GRANULARITY = 4032; // needs to be a multiple of the GCF of 4, 12, 48, 288.
     public static final int MILLISECONDS_IN_SLOT = 300000;
@@ -214,10 +217,8 @@ public class Granularity {
     }
 
     /**
-     * Look for the granularity that would generate the density of data points closest to the value desired. For
-     * example, if 500 points were requested, it is better to return 1000 points (2x more than were requested)
-     * than it is to return 100 points (5x less than were requested). Our objective is to generate reasonable
-     * looking graphs.
+     * Return granularity that maps most closely to requested number of points based on
+     * provided selection algorithm
      *
      * @param from beginning of interval (millis)
      * @param to end of interval (millis)
@@ -230,13 +231,81 @@ public class Granularity {
         }
 
         double requestedDuration = to - from;
+
+        if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("GEOMETRIC"))
+            return granularityFromPointsGeometric(requestedDuration, points);
+        else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LINEAR"))
+            return granularityFromPointsLinear(requestedDuration, points);
+        else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LESSTHANEQUAL"))
+            return granularityFromPointsLessThanEqual(requestedDuration, points);
+
+        return granularityFromPointsGeometric(requestedDuration, points);
+    }
+
+    /**
+     * Find the granularity in the interval that will yield a number of data points that are
+     * closest to the requested points but <= requested points.
+     *
+     * @param requestedDuration
+     * @param points
+     * @return
+     */
+    private static Granularity granularityFromPointsLessThanEqual(double requestedDuration, int points) {
+        Granularity gran = granularityFromPointsLinear(requestedDuration, points);
+
+        if (requestedDuration / gran.milliseconds() > points) {
+            try {
+                gran = gran.coarser();
+            } catch (GranularityException e) { /* do nothing, already at 1440m */ }
+        }
+
+        return gran;
+    }
+
+    /**
+     * Find the granularity in the interval that will yield a number of data points that are close to $points
+     * in terms of linear distance.
+     *
+     * @param requestedDuration
+     * @param points
+     * @return
+     */
+    private static Granularity granularityFromPointsLinear(double requestedDuration, int points) {
+        int closest = Integer.MAX_VALUE;
+        int diff = 0;
+        Granularity gran = null;
+
+        for (Granularity g : Granularity.granularities()) {
+            if (g == Granularity.FULL)
+                diff = (int)Math.abs(points - (requestedDuration / GET_BY_POINTS_ASSUME_INTERVAL));
+            else
+                diff = (int)Math.abs(points - (requestedDuration /g.milliseconds()));
+            if (diff < closest) {
+                closest = diff;
+                gran = g;
+            }
+        }
+
+        return gran;
+    }
+
+    /**
+     *
+     * Look for the granularity that would generate the density of data points closest to the value desired. For
+     * example, if 500 points were requested, it is better to return 1000 points (2x more than were requested)
+     * than it is to return 100 points (5x less than were requested). Our objective is to generate reasonable
+     * looking graphs.
+     *
+     * @param requestedDuration (milliseconds)
+     */
+    private static Granularity granularityFromPointsGeometric(double requestedDuration, int points) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
-        
+
         for (Granularity g : Granularity.granularities()) {
             // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
             // period and go from there.
-            long period = (g == Granularity.FULL) ? MIN_PERIOD_MILLIS : g.milliseconds();
+            long period = (g == Granularity.FULL) ? GET_BY_POINTS_ASSUME_INTERVAL : g.milliseconds();
             double providedPoints = requestedDuration / period;
             double positiveRatio;
 
