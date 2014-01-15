@@ -134,7 +134,7 @@ class RollupRunnable implements Runnable {
             case BF_BASIC:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
-                return srcGran == Granularity.FULL ? Rollup.SetFromRaw : Rollup.SetFromSet;
+                return Rollup.SetFromSet;
             default:
                 break;
         }

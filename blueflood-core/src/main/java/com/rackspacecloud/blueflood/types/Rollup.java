@@ -89,13 +89,6 @@ public interface Rollup {
         }
     };
     
-    public static final Type<SimpleNumber, SetRollup> SetFromRaw = new Type<SimpleNumber, SetRollup>() {
-        @Override
-        public SetRollup compute(Points<SimpleNumber> input) throws IOException {
-            return SetRollup.buildRollupFromRawSamples(input);
-        }
-    };
-    
     public static final Type<SetRollup, SetRollup> SetFromSet = new Type<SetRollup, SetRollup>() {
         @Override
         public SetRollup compute(Points<SetRollup> input) throws IOException {
