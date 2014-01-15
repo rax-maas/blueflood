@@ -103,7 +103,10 @@ If you would like to contribute documentation, you should get familiar with
 [our wiki](https://github.com/rackerlabs/blueflood/wiki)
 
 Also, we have set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
-If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode.
+
+If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode. 
+
+If you prefer hipchat, here is the link: https://www.hipchat.com/gQPx7fG8u
 
 ## License
 

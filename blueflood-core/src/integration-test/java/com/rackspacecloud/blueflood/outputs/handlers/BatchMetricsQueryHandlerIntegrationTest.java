@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -103,6 +104,19 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
                 .withCorePoolSize(1).withMaxPoolSize(1).withName("TestBatchQuery").build();
         BatchMetricsQueryHandler batchMetricsQueryHandler = new BatchMetricsQueryHandler(executor,
                 AstyanaxReader.getInstance());
+        
+        // let's make the executor a little slow
+        executor.setThreadFactory(new ThreadFactory() {
+            @Override
+            public Thread newThread(final Runnable r) {
+                return new Thread() {
+                    public void run() {
+                        try { sleep(5); } catch (Exception ex) {};
+                        r.run();
+                    }
+                };
+            }
+        });
 
         Granularity gran = Granularity.MIN_20;
         Range range = new Range(gran.snapMillis(baseMillis), baseMillis + 86400000);
