@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.Column;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
@@ -63,7 +62,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         // lets see how many locators this generated. We want it to be a lot.
 
         int locatorsForTestShard = 0;
-        for (Column<Locator> locator : AstyanaxReader.getInstance().getAllLocators(shardToTest)) {
+        for (Locator locator : AstyanaxReader.getInstance().getLocatorsToRollup(shardToTest)) {
             locatorsForTestShard++;
         }
 

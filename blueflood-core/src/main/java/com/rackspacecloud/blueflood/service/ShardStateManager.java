@@ -100,7 +100,10 @@ public class ShardStateManager {
         return null;
     }
 
-    public void updateSlotOnRead(int shard, Granularity g, int slot, long timestamp, UpdateStamp.State state) {
+    public void updateSlotOnRead(int shard, Granularity g, int slot, long timestamp, String stateString) {
+        boolean isRemove = UpdateStamp.State.Rolled.code().equals(stateString);
+        UpdateStamp.State state = isRemove ? UpdateStamp.State.Rolled : UpdateStamp.State.Active;
+
         getSlotStateManager(shard, g).updateSlotOnRead(slot, timestamp, state);
     }
 
