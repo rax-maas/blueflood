@@ -20,7 +20,7 @@ public class SetRollup implements Rollup {
     public static SetRollup buildRollupFromSetRollups(Points<SetRollup> input) throws IOException {
         SetRollup rollup = new SetRollup();
         for (Points.Point<SetRollup> point : input.getPoints().values()) {
-            for (Integer i : point.getData().hashes) {
+            for (Integer i : point.getData().getHashes()) {
                 rollup.hashes.add(i);
             }
         }
