@@ -1,11 +1,9 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.google.gson.Gson;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
-import com.rackspacecloud.blueflood.io.NumericSerializer;
-import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
 import org.junit.Before;
