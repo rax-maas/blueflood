@@ -87,7 +87,8 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            metric = new Metric(setLocator, i, time, ttl, "furmans");
+            SetRollup rollup = new SetRollup().withObject(i);
+            metric = new PreaggregatedMetric(time, setLocator, ttl, rollup);
             preaggregatedMetrics.add(metric);
             
             metric = new Metric(normalLocator, i, time, ttl, "centipawns");
@@ -151,7 +152,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testSetRollup() throws IOException {
-        testRolledupMetric(setLocator, Integer.class, SetRollup.class);
+        testRolledupMetric(setLocator, SetRollup.class, SetRollup.class);
     }
     
     private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 

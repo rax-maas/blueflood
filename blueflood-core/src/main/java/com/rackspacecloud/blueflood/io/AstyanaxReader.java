@@ -240,10 +240,18 @@ public class AstyanaxReader extends AstyanaxIO {
         // SimpleNumber instances.
         // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
         // to be known before we ever get to this method (see above comment).
-        if (cf == CassandraModel.CF_METRICS_FULL)
+        if (cf == CassandraModel.CF_METRICS_FULL) {
             serializer = NumericSerializer.simpleNumberSerializer;
-        else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL)
-            serializer = type.equals(TimerRollup.class) ? NumericSerializer.timerRollupInstance : NumericSerializer.simpleNumberSerializer;
+        } else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL) {
+            // consider a method for this.  getSerializer(CF, TYPE);
+            if (type.equals(TimerRollup.class)) {
+                serializer = NumericSerializer.timerRollupInstance;
+            } else if (type.equals(SetRollup.class)) {
+                serializer = NumericSerializer.setRollupInstance;
+            } else {
+                serializer = NumericSerializer.simpleNumberSerializer;
+            }
+        }
         
         ColumnList<Long> cols = getColumnsFromDB(locator, cf, range);
         Points<T> points = new Points<T>();
