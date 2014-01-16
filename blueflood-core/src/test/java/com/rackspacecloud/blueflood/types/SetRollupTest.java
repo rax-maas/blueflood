@@ -13,6 +13,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class SetRollupTest {
     
@@ -24,26 +27,29 @@ public class SetRollupTest {
             add(new Point<SimpleNumber>(1, new SimpleNumber(20L)));
             add(new Point<SimpleNumber>(2, new SimpleNumber(30L)));
         }};  
-        final SetRollup rollup0 = SetRollup.buildRollupFromRawSamples(set0);
+        final SetRollup rollup0 = new SetRollup()
+                .withObject(10)
+                .withObject(20)
+                .withObject(30);
         
         Assert.assertEquals(3, rollup0.getCount());
-        Assert.assertEquals(20L, rollup0.getAverage().toLong());
-        Assert.assertEquals(10L, rollup0.getMinValue().toLong());
-        Assert.assertEquals(30L, rollup0.getMaxValue().toLong());
         
-        // sum = 220, avg = 55, min = 40, max = 50, count = 4
         Points<SimpleNumber> set1 = new Points<SimpleNumber>() {{
             add(new Point<SimpleNumber>(3, new SimpleNumber(40L)));
             add(new Point<SimpleNumber>(4, new SimpleNumber(50L)));
             add(new Point<SimpleNumber>(5, new SimpleNumber(60L)));
             add(new Point<SimpleNumber>(6, new SimpleNumber(70L)));
         }};
-        final SetRollup rollup1 = SetRollup.buildRollupFromRawSamples(set1);
+        final SetRollup rollup1 = new SetRollup()
+                .withObject(40)
+                .withObject(50)
+                .withObject(60)
+                // notice the duplicates being sent in here. they should be ignored.
+                .withObject(70)
+                .withObject(70)
+                .withObject(70);
         
         Assert.assertEquals(4, rollup1.getCount());
-        Assert.assertEquals(55L, rollup1.getAverage().toLong());
-        Assert.assertEquals(40L, rollup1.getMinValue().toLong());
-        Assert.assertEquals(70L, rollup1.getMaxValue().toLong());
         
         // now combine them!
         SetRollup rollup2 = SetRollup.buildRollupFromSetRollups(new Points<SetRollup>() {{
@@ -51,28 +57,28 @@ public class SetRollupTest {
             add(new Point<SetRollup>(3, rollup1));
         }});
         
-        long expectedAverage = (rollup0.getAverage().toLong() * rollup0.getCount() + rollup1.getAverage().toLong() * rollup1.getCount()) / (rollup0.getCount() + rollup1.getCount());
-        Assert.assertEquals(rollup0.getCount() + rollup1.getCount(), rollup2.getCount());
-        Assert.assertEquals(expectedAverage, rollup2.getAverage().toLong());
-        Assert.assertEquals(10L, rollup2.getMinValue().toLong());
-        Assert.assertEquals(70L, rollup2.getMaxValue().toLong());
+        Assert.assertEquals(4 + 3, rollup2.getCount());
     }
     
     
     @Test
     public void testSetV1RoundTrip() throws IOException {
+        final Random rand = new Random(7391938383L);
+        Set<String> s0Sample = new HashSet<String>();
+        Set<String> s1Sample = new HashSet<String>();
         SetRollup s0 = new SetRollup();
-        s0.setCount(32323523);
-        s0.setAverage(1);
-        s0.setMin(2);
-        s0.setMax(3);
-        s0.setVariance(2.1d);
         SetRollup s1 = new SetRollup();
-        s1.setCount(84234);
-        s1.setAverage(4);
-        s1.setMin(5);
-        s1.setMax(6);
-        s1.setVariance(4.522d);
+        
+        for (int i = 0; i < 200; i++) {
+            String s0String = Long.toHexString(rand.nextLong());
+            String s1String = Long.toHexString(rand.nextLong());
+            s0 = s0.withObject(s0String);
+            s1 = s1.withObject(s1String);
+            if (i % 5 == 0) {
+                s0Sample.add(s0String);
+                s1Sample.add(s1String);
+            }
+        }
         
         if (System.getProperty("GENERATE_SET_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SET_ROLLUP + ".bin", false);
@@ -100,6 +106,20 @@ public class SetRollupTest {
             Assert.assertEquals(s1, ss1);
             
             Assert.assertFalse(ss0.equals(ss1));
+            
+            for (String s0String : s0Sample) {
+                Assert.assertTrue(ss0.contains(s0String));
+                Assert.assertTrue(s0.contains(s0String));
+                Assert.assertFalse(ss1.contains(s0String));
+                Assert.assertFalse(ss1.contains(s0String));
+            }
+            for (String s1String : s1Sample) {
+                Assert.assertFalse(ss0.contains(s1String));
+                Assert.assertFalse(s0.contains(s1String));
+                Assert.assertTrue(ss1.contains(s1String));
+                Assert.assertTrue(s1.contains(s1String));
+            }
+            
             version++;
             count++;
         }

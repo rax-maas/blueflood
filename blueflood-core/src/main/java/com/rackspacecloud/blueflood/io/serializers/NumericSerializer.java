@@ -56,13 +56,14 @@ public class NumericSerializer {
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
-    private static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
+    public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
     private static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     private static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
-    private static Histogram CounterRollupSize = Metrics.histogram(NumericSerializer.class, "Counter Set Gauge Metric Size");
+    private static Histogram CounterRollupSize = Metrics.histogram(NumericSerializer.class, "Counter Gauge Metric Size");
+    private static Histogram SetRollupSize = Metrics.histogram(NumericSerializer.class, "Set Metric Size");
     private static Histogram timerRollupSize = Metrics.histogram(NumericSerializer.class, "Timer Metric Size");
 
     static class Type {
@@ -211,7 +212,6 @@ public class NumericSerializer {
                 sz += CodedOutputStream.computeDoubleSizeNoTag(((Float)o).doubleValue());
                 break;
             case Type.B_ROLLUP:
-            case Type.B_SET:
                 sz += 1; // version
                 BasicRollup basicRollup = (BasicRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
@@ -220,6 +220,14 @@ public class NumericSerializer {
                     sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT);
                     sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT);
                     sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                }
+                break;
+            case Type.B_SET:
+                sz += 1; // version
+                SetRollup setRollup = (SetRollup)o;
+                sz += CodedOutputStream.computeRawVarint32Size(setRollup.getCount());
+                for (Integer i : setRollup.getHashes()) {
+                    sz += CodedOutputStream.computeRawVarint32Size(i);
                 }
                 break;
             case Type.B_ROLLUP_STAT:
@@ -304,6 +312,25 @@ public class NumericSerializer {
         double rate = in.readDouble();
         int sampleCount = in.readRawVarint32();
         return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
+    }
+    
+    private static void serializeSetRollup(SetRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        SetRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_1_SET_ROLLUP);
+        out.writeRawVarint32(rollup.getCount());
+        for (Integer i : rollup.getHashes()) {
+            out.writeRawVarint32(i);
+        }
+    }
+    
+    private static SetRollup deserializeV1SetRollup(CodedInputStream in) throws IOException {
+        int count = in.readRawVarint32();
+        SetRollup rollup = new SetRollup();
+        while (count-- > 0) {
+            rollup = rollup.withObject(in.readRawVarint32());
+        }
+        return rollup;
     }
     
     private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
@@ -608,16 +635,30 @@ public class NumericSerializer {
     }
     
     public static class SetRollupSerializer extends AbstractSerializer<SetRollup> {
-        private static final BasicRollupSerializer composed = new BasicRollupSerializer();
         
         @Override
-        public ByteBuffer toByteBuffer(SetRollup o) {
-            return composed.toByteBuffer(o);
+        public ByteBuffer toByteBuffer(SetRollup obj) {
+            try {
+                byte type = typeOf(obj);
+                byte[] buf = new byte[sizeOf(obj, type)];
+                serializeSetRollup(obj, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
 
         @Override
         public SetRollup fromByteBuffer(ByteBuffer byteBuffer) {
-            return SetRollup.fromBasicRollup(composed.fromByteBuffer(byteBuffer));
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_SET_ROLLUP)
+                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
+                return deserializeV1SetRollup(in);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
     
