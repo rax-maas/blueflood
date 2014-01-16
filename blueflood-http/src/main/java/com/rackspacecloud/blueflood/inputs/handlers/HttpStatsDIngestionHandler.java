@@ -183,11 +183,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, set.getName().split(NAME_DELIMITER, -1));
             SetRollup rollup = new SetRollup();
             for (String value : set.getValues()) {
-                // todo: need to support this kind of set rollup.
-//                rollup.merge(value.hashCode());
+                rollup = rollup.withObject(value);
             }
-            // for now, we'll do this
-            rollup.setCount(set.getValues().length);
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }
