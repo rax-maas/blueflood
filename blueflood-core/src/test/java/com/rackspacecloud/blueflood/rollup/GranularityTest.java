@@ -82,33 +82,41 @@ public class GranularityTest {
         Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval(start, start + 10000000, desiredPoints));
         Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(start, start + 1000000, desiredPoints));
       
-        // test for points over a 100000000 millisecond swath. test round numbers as well as edge cases.  For reference 100k secs
-        // generates:
+        // Test edge cases using a 100000000 millisecond swath. For reference 100k secs generates:
         // 3333.33 full res points (at 30s per check)
         // 333.33 5min points
         // 83.33 20min points
         // 27.78 60min points
         // 6.94 240min points
         // 1.15 1440min points
+        // To compute the boundaries used below, solve the parallel equation for x (I suggest Wolfram Alpha):
+        //    1/a * x = higher_res_point_count
+        //      a * x = lower_res_point_count
         Map<Integer, Granularity> expectedGranularities = new HashMap<Integer, Granularity>() {{
+            // Request sub 30 second periods
             put(5000, Granularity.FULL);
-            put(3332, Granularity.FULL);
-            put(1835, Granularity.FULL);
-            put(1832, Granularity.MIN_5);
-            put(335, Granularity.MIN_5);
-            put(332, Granularity.MIN_5);
-            put(210, Granularity.MIN_5);
-            put(206, Granularity.MIN_20);
-            put(82, Granularity.MIN_20);
-            put(57, Granularity.MIN_20);
-            put(54, Granularity.MIN_60);
-            put(30, Granularity.MIN_60);
-            put(19, Granularity.MIN_60);
-            put(16, Granularity.MIN_240);
-            put(10, Granularity.MIN_240);
-            put(5, Granularity.MIN_240);
+
+            // Edge between FULL and MIN_5 (boundary is ~1054.09 points)
+            put(1055, Granularity.FULL);
+            put(1054, Granularity.MIN_5);
+
+            // Edge between MIN_5 and MIN_20 (boundary is ~166.66 points)
+            put(167, Granularity.MIN_5);
+            put(166, Granularity.MIN_20);
+
+            // Edge between MIN_20 and MIN_60 (boundary is ~48.11 points)
+            put(49, Granularity.MIN_20);
+            put(48, Granularity.MIN_60);
+
+            // Edge between MIN_60 and MIN_240 (boundary is ~13.89 points)
+            put(14, Granularity.MIN_60);
+            put(13, Granularity.MIN_240);
+
+            // Edge between MIN_240 and MIN_1440 (boundary is ~2.83 points)
+            put(3, Granularity.MIN_240);
             put(2, Granularity.MIN_1440);
-            put(1, Granularity.MIN_1440);
+
+            put(1, Granularity.MIN_1440); // Request > 1 day periods
         }};
         
         for (Map.Entry<Integer, Granularity> entry : expectedGranularities.entrySet()) {
@@ -118,6 +126,30 @@ public class GranularityTest {
                     entry.getValue(), 
                     actual);
         }
+    }
+
+    @Test
+    public void testCommonPointRequests() {
+        long HOUR = 3600000;
+        long DAY = 24 * HOUR;
+
+        // 300 points covering 1 hour -> FULL (120 points)
+        Assert.assertEquals(Granularity.FULL, Granularity.granularityFromPointsInInterval(0, HOUR, 300));
+
+        // 300 points covering 8 hours -> MIN_5 (96 points - 8 hours is actually a really unfortunate interval)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 8 * HOUR, 300));
+
+        // 300 points covering 12 hours -> MIN_5 (144 points)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 12 * HOUR, 300));
+
+        // 300 points covering 1 day -> MIN_5 (288 points)
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, DAY, 300));
+
+        // 300 points covering 1 week -> MIN_20 (504 points)
+        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval(0, 7 * DAY, 300));
+
+        // 300 points covering 1 month -> MIN_240 (180 points)
+        Assert.assertEquals(Granularity.MIN_240, Granularity.granularityFromPointsInInterval(0, 30 * DAY, 300));
     }
 
     @Test(expected = GranularityException.class)
