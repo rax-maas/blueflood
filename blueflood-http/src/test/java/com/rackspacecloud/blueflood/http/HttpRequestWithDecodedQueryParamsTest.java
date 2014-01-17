@@ -51,4 +51,15 @@ public class HttpRequestWithDecodedQueryParamsTest {
             Assert.assertTrue(fooParam.equals("x,y,z") || fooParam.equals("p"));
         }
     }
+
+    @Test
+    public void testNoQueryParamsDecode() {
+        final DefaultHttpRequest defaultRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
+                "http://localhost/v1.0/ac98760XYZ/experimental/metric_views/metXYZ");
+        final HTTPRequestWithDecodedQueryParams requestWithParams =
+                HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(defaultRequest);
+
+        Map<String, List<String>> queryParams = requestWithParams.getQueryParams();
+        Assert.assertEquals(0, queryParams.size());
+    }
 }

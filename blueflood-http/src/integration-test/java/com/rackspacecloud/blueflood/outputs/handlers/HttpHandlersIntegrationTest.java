@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
+public class HttpHandlersIntegrationTest extends IntegrationTestBase {
     private final long baseMillis = 1335820166000L;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
@@ -125,6 +125,14 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         testGetRollupByResolution();
         testHttpRequestForPoints();
         testHttpRequestForHistograms();
+    }
+
+    @Ignore("Elastic search indexing not turned on during tests")
+    @Test
+    public void testGetMetrics() throws Exception {
+        HttpGet get = new HttpGet(getMetricsListURI());
+        HttpResponse response = client.execute(get);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
     private void testGetRollupByPoints() throws Exception {
@@ -267,6 +275,12 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");
+        return builder.build();
+    }
+
+    private URI getMetricsListURI() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metrics");
         return builder.build();
     }
 

@@ -39,16 +39,9 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
         Object msg = e.getMessage();
         if (msg instanceof DefaultHttpRequest) {
             final DefaultHttpRequest request = (DefaultHttpRequest) msg;
-            final QueryStringDecoder decoder = new QueryStringDecoder(((HttpRequest) msg).getUri());
-
-            // Modify the original request headers with query parameters
-            if (decoder != null && !decoder.getParameters().isEmpty()) {
-                final HttpRequest requestWithParams =
-                        HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request);
-                router.route(ctx, requestWithParams);
-            } else {
-                router.route(ctx, request);
-            }
+            final HttpRequest requestWithParams =
+                    HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request);
+            router.route(ctx, requestWithParams);
         } else {
             log.error("Ignoring non HTTP message {}, from {}", e.getMessage(), e.getRemoteAddress());
             throw new Exception("Non-HTTP message from " + e.getRemoteAddress());
