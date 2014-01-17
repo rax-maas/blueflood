@@ -89,7 +89,7 @@ public class HistogramRollup implements Rollup {
         return histogramRollup;
     }
 
-    public int getNumberOfBins() {
+    public int getMaxBins() {
         return histogram.getMaxBins();
     }
 
