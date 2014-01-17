@@ -34,7 +34,6 @@ public class HTTPRequestWithDecodedQueryParams implements HttpRequest {
     }
 
     public static HTTPRequestWithDecodedQueryParams createHttpRequestWithDecodedQueryParams(DefaultHttpRequest request) {
-        final String uri = request.getUri();
         final QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         request.setUri(decoder.getPath());
         return new HTTPRequestWithDecodedQueryParams(request, decoder.getParameters());
