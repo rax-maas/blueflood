@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class ShardStateManager {
     private static final Logger log = LoggerFactory.getLogger(ShardStateManager.class);
@@ -117,15 +118,21 @@ public class ShardStateManager {
             try {
                 coarserGran = coarserGran.coarser();
                 coarserSlot = coarserGran.slotFromFinerSlot(coarserSlot);
-                Map<Integer, UpdateStamp> updateStampsBySlotMap = getSlotStateManager(shard, coarserGran).slotToUpdateStampMap;
+                ConcurrentMap<Integer, UpdateStamp> updateStampsBySlotMap = getSlotStateManager(shard, coarserGran).slotToUpdateStampMap;
                 UpdateStamp coarseSlotStamp = updateStampsBySlotMap.get(coarserSlot);
-                UpdateStamp.State coarseSlotState = coarseSlotStamp.getState();
 
+                if (coarseSlotStamp == null) {
+                    updateStampsBySlotMap.putIfAbsent(coarserSlot,
+                            new UpdateStamp(serverTimeMillisecondTicker.read(), UpdateStamp.State.Active, true));
+                    continue;
+                }
+
+                UpdateStamp.State coarseSlotState = coarseSlotStamp.getState();
                 if (coarseSlotState != UpdateStamp.State.Active) {
                     parentBeforeChild.mark();
-                    log.debug("Courser slot not in active state when finer slot "
+                    log.debug("Coarser slot not in active state when finer slot "
                             + suppliedGranularity.formatLocatorKey(suppliedSlot, shard)
-                            + " just got rolled up. Marking courser slot "
+                            + " just got rolled up. Marking coarser slot "
                             + coarserGran.formatLocatorKey(coarserSlot, shard) + " dirty");
                     coarseSlotStamp.setState(UpdateStamp.State.Active);
                     coarseSlotStamp.setDirty(true);
@@ -153,7 +160,7 @@ public class ShardStateManager {
     protected class SlotStateManager {
         private final int shard;
         final Granularity granularity;
-        final Map<Integer, UpdateStamp> slotToUpdateStampMap;
+        final ConcurrentMap<Integer, UpdateStamp> slotToUpdateStampMap;
 
         protected SlotStateManager(int shard, Granularity granularity) {
             this.shard = shard;
