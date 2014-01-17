@@ -219,9 +219,9 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
                 CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_1440));
         HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
-        Assert.assertTrue(histogramRollup.getNumberOfBins() > 0);
-        Assert.assertTrue("Number of bins is " + histogramRollup.getNumberOfBins(),
-                histogramRollup.getNumberOfBins() <= HistogramRollup.MAX_BIN_SIZE);
+        Assert.assertTrue(histogramRollup.getBins().size() > 0);
+        Assert.assertTrue("Number of bins is " + histogramRollup.getBins().size(),
+                histogramRollup.getBins().size() <= HistogramRollup.MAX_BIN_SIZE);
     }
 
     @Test
