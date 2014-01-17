@@ -122,6 +122,8 @@ public class ShardStateManager {
                 UpdateStamp coarseSlotStamp = updateStampsBySlotMap.get(coarserSlot);
 
                 if (coarseSlotStamp == null) {
+                    log.debug("No stamp for coarser slot: " + coarserGran.formatLocatorKey(coarserSlot, shard) +
+                        " ; supplied slot: " + suppliedGranularity.formatLocatorKey(suppliedSlot, shard));
                     updateStampsBySlotMap.putIfAbsent(coarserSlot,
                             new UpdateStamp(serverTimeMillisecondTicker.read(), UpdateStamp.State.Active, true));
                     continue;
