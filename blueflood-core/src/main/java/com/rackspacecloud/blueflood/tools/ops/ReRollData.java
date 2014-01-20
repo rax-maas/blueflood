@@ -18,21 +18,23 @@ package com.rackspacecloud.blueflood.tools.ops;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.RollupRunnable;
-import com.rackspacecloud.blueflood.service.SingleRollupReadContext;
-import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ReRollData {
     private static final Options cliOptions = new Options();
@@ -42,6 +44,10 @@ public class ReRollData {
     private static final String METRIC = "metric";
     private static final String FROM = "from";
     private static final String TO = "to";
+    //Number of threads that will be updating the cache simultaneously.
+    //Has been set to 1, for standalone use. If someone wraps these around some threadpool
+    //set this to number of threads that will be using this class.
+    private static final int METADATA_CACHE_CONCURRENCY = 1;
 
     static {
         cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withDescription("Tenant ID").create(TENANT_ID));
@@ -100,17 +106,16 @@ public class ReRollData {
     }
 
     private static void rerollData(Locator loc, Range range) {
-        Granularity[] rollupGrans = Granularity.rollupGranularities();
         RollupType rollupType = null;
-        //Get the rollup type by grabbing the metadata
+        final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+                new TimeValue(48, TimeUnit.HOURS),
+                METADATA_CACHE_CONCURRENCY);
+
         try {
-            Map<String, Object> metadata = AstyanaxReader.getInstance().getMetadataValues(loc);
-            rollupType = RollupType.fromString((String) metadata.get(MetricMetadata.ROLLUP_TYPE.name()));
-        } catch (ConnectionException ex) {
-            System.err.println("Connection exception while fetching metadata " + ex.getMessage());
-            System.exit(2);
-        } catch (RuntimeException ex) {
-            System.err.println("Unexpected Runtime exception while fetching metadata " + ex.getMessage());
+            rollupType = RollupType.fromString(rollupTypeCache.get(
+                    loc, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+        } catch (CacheException e) {
+            System.err.println("Exception encountered while grabbing metadata for the locator for cache "+e.getMessage());
             System.exit(-1);
         }
 
@@ -119,6 +124,7 @@ public class ReRollData {
             System.exit(-1);
         }
 
+        Granularity[] rollupGrans = Granularity.rollupGranularities();
         for (Granularity gran : rollupGrans) {
             rerollDataPerGran(loc, gran, range, rollupType);
         }
@@ -150,7 +156,7 @@ public class ReRollData {
                     rollup = rollupComputer.compute(input);
                 } catch (IOException ex) {
                     System.err.println("IOException while getting points to roll " + ex.getMessage());
-                    System.exit(2);
+                    System.exit(-1);
                 }
                 writeContexts.add(new SingleRollupWriteContext(rollup, new SingleRollupReadContext(loc, r, gran), dstCF));
                 count++;
@@ -160,10 +166,10 @@ public class ReRollData {
                 AstyanaxWriter.getInstance().insertRollups(writeContexts);
             } catch (ConnectionException ex) {
                 System.err.println("Connection exception while inserting rollups" + ex.getMessage());
-                System.exit(2);
+                System.exit(-1);
             }
             System.out.println("Rolled up " + count + " ranges of " + gran+"\n");
-            Thread.sleep(2000);
+            Thread.sleep(1000);
         } catch (GranularityException e) {
             // Since we start rolling from 5m, we should never reach here.
             System.err.println("Unexpected exception encountered " + e.getMessage());
