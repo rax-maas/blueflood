@@ -35,11 +35,6 @@ public class SlotStateTest {
     @Test
     public void testStringConversion() {
         // verify active and running are the same string rep.
-        // verify that timestamp is not shown for getStringRep.
-        Assert.assertEquals(s1, ss1.getStringRep());
-        Assert.assertEquals(s2, ss2.getStringRep());
-        Assert.assertEquals(s3, ss3.getStringRep());
-
         // verify that toString includes timestamp...
         Assert.assertEquals(s1 + ": ", ss1.toString()); // ...unless it wasn't specified
         Assert.assertEquals(s2 + ": " + time, ss2.toString());

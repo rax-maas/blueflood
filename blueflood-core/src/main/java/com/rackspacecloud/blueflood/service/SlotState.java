@@ -22,21 +22,18 @@ public class SlotState {
     private Granularity granularity;
     private Integer slot;
     private UpdateStamp.State state;
-    private String stringRep;
     private Long timestamp = null;
 
     public SlotState(Granularity g, int slot, UpdateStamp.State state) {
         this.granularity = g;
         this.slot = slot;
         this.state = state;
-        this.stringRep = calculateStringRep();
     }
 
     public SlotState() {
         this.granularity = null;
         this.slot = null;
         this.state = null;
-        this.stringRep = "";
     }
 
     /**
@@ -49,17 +46,12 @@ public class SlotState {
         return this;
     }
 
-    /**
-     * Gets string representation of all non-optional fields (i.e. NOT timestamp)
-     * Does not include timestamp. Use toString for that.
-     * @return string
-     */
-    public String getStringRep() {
-        return stringRep;
-    }
-
     public String toString() {
-        return stringRep + ": " + (getTimestamp() == null ? "" : getTimestamp());
+        return new StringBuilder().append(granularity == null ? "null" : granularity.name())
+                .append(",").append(slot)
+                .append(",").append(state == null ? "null" : state.code())
+                .append(": ").append(getTimestamp() == null ? "" : getTimestamp())
+                .toString();
     }
 
     public boolean equals(Object other) {
@@ -68,13 +60,6 @@ public class SlotState {
         }
         SlotState that = (SlotState) other;
         return this.toString().equals(that.toString());
-    }
-
-    private String calculateStringRep() {
-        return new StringBuilder().append(granularity == null ? "null" : granularity.name())
-                .append(",").append(slot)
-                .append(",").append(state == null ? "null" : state.code())
-                .toString();
     }
 
     public Granularity getGranularity() {

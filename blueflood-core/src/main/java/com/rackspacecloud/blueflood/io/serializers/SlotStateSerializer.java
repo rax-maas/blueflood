@@ -33,7 +33,13 @@ public class SlotStateSerializer extends AbstractSerializer<SlotState> {
 
     @Override
     public ByteBuffer toByteBuffer(SlotState state) {
-        return StringSerializer.get().toByteBuffer(state.getStringRep());
+        Granularity gran = state.getGranularity();
+        String stringRep = new StringBuilder().append(gran == null ? "null" : gran.name())
+                .append(",").append(state.getSlot())
+                .append(",").append(state == null ? "null" : state.getState().code())
+                .toString();
+
+        return StringSerializer.get().toByteBuffer(stringRep);
     }
 
     @Override
@@ -46,7 +52,7 @@ public class SlotStateSerializer extends AbstractSerializer<SlotState> {
         return new SlotState(g, slot, state);
     }
 
-    public static Granularity granularityFromStateCol(String s) {
+    protected static Granularity granularityFromStateCol(String s) {
         String field = s.split(",", -1)[0];
         for (Granularity g : Granularity.granularities())
             if (g.name().startsWith(field))

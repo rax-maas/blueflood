@@ -16,10 +16,14 @@
 
 package com.rackspacecloud.blueflood.io.serializers;
 
+import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
 
 public class SlotStateSerializerTest {
     @Test
@@ -30,6 +34,20 @@ public class SlotStateSerializerTest {
 
         myGranularity = SlotStateSerializer.granularityFromStateCol("FULL");
         Assert.assertNull(myGranularity);
+    }
+
+    @Test
+    public void testToFromByteBuffer() {
+        ByteBuffer origBuff = StringSerializer.get().toByteBuffer("metrics_full,1,X");
+        Assert.assertNotNull(origBuff);
+
+        SlotState state = SlotStateSerializer.get().fromByteBuffer(origBuff.duplicate());
+        Assert.assertEquals(state.getGranularity(), Granularity.FULL);
+        Assert.assertEquals(state.getSlot(), 1);
+        Assert.assertEquals(state.getState(), UpdateStamp.State.Rolled);
+
+        ByteBuffer newBuff = SlotStateSerializer.get().toByteBuffer(state);
+        Assert.assertEquals(origBuff, newBuff);
     }
 
     @Test
