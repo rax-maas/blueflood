@@ -31,14 +31,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class keeps track of what is happening in an rollup for a specific metric.
  */
-class SingleRollupReadContext {
+public class SingleRollupReadContext {
     private final Locator locator;
     private final Range range;
     private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
     private final Granularity rollupGranularity;
 
-    SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
+    public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
         this.locator = locator;
         this.range = rangeToRead;
         this.rollupGranularity = rollupGranularity;

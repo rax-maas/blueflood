@@ -114,7 +114,11 @@ public class Granularity {
         throw new RuntimeException("Granularity " + gran.toString() + " not present in granularities list.");
     }
 
-    // todo: needs explanation.
+    /**
+     * Gets the floor multiple of number of milliseconds in this granularity
+     * @param millis
+     * @return
+     */
     public long snapMillis(long millis) {
         if (this == FULL) return millis;
         else return (millis / milliseconds) * milliseconds;

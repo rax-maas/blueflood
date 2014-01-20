@@ -34,7 +34,7 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
-class RollupRunnable implements Runnable {
+public class RollupRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
 
     private static final Timer writeTimer = Metrics.timer(RollupRunnable.class, "Write Rollup");
@@ -50,7 +50,7 @@ class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
 
     
-    RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
+    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
         this.rollupBatchWriter = rollupBatchWriter;
