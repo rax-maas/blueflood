@@ -98,7 +98,7 @@ public class SlotTest {
         int hrs = 10;
         int endMillis = baseMillis + 3600000 * hrs;
         //Map of every 60m(coarser gran) in this time range, mapped to iterable of 20m sub-ranges that get rolled up
-        HashMap<Range, Iterable<Range>> retMap = (HashMap<Range, Iterable<Range>>) Range.mapFinerRanges(Granularity.MIN_60, new Range(baseMillis, endMillis));
+        Map<Range, Iterable<Range>> retMap = Range.mapFinerRanges(Granularity.MIN_60, new Range(baseMillis, endMillis));
         Assert.assertEquals(retMap.entrySet().size(), 11);
         for(Map.Entry<Range,Iterable<Range>> entry : retMap.entrySet()) {
             Range coarserSubRange = entry.getKey();

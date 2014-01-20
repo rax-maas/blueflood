@@ -103,15 +103,12 @@ public class Range {
     public static Map<Range, Iterable<Range>> mapFinerRanges(Granularity g, Range range) throws GranularityException {
 
         if(range.getStart() >= range.getStop())
-            throw new IllegalArgumentException("start cannot be greater than end");
+            throw new IllegalArgumentException("start cannot be greater than end. Start: "+range.getStart()+" Stop:"+range.getStop());
 
-        //Snap the start and stop times for coarser granularity
         final long snappedStartMillis = g.snapMillis(range.getStart());
         final long snappedStopMillis = g.snapMillis(range.getStop() + g.milliseconds());
         HashMap<Range, Iterable<Range>> rangeMap = new HashMap<Range, Iterable<Range>>();
-        //Start from the snapped start time of coarser granularity
         long tempStartMillis = snappedStartMillis;
-        //Number of millis in coarser granularity
         int numberOfMillis = g.milliseconds();
 
         while (tempStartMillis <= (snappedStopMillis-numberOfMillis)) {
