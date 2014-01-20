@@ -104,7 +104,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     public static Collection<IMetric> buildMetrics(Bundle bundle) {
         Collection<IMetric> metrics = new ArrayList<IMetric>();
-        metrics.addAll(convertCounters(bundle.getTenantId(), bundle.getTimestamp(), bundle.getCounters()));
+        metrics.addAll(convertCounters(bundle.getTenantId(), bundle.getTimestamp(), bundle.getFlushIntervalMillis(), bundle.getCounters()));
         metrics.addAll(convertGauges(bundle.getTenantId(), bundle.getTimestamp(), bundle.getGauges()));
         metrics.addAll(convertSets(bundle.getTenantId(), bundle.getTimestamp(), bundle.getSets()));
         metrics.addAll(convertTimers(bundle.getTenantId(), bundle.getTimestamp(), bundle.getTimers()));
@@ -117,16 +117,18 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     // circumstances. e.g. calling `longValue()` when the number is obviously a double, or is used in the
     // type comparisions we use to determine how to serialize a number.
 
-    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, Collection<Bundle.Counter> counters) {
+    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<Bundle.Counter> counters) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(counters.size());
         for (Bundle.Counter counter : counters) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, counter.getName().split(NAME_DELIMITER, -1));
+            // flushIntervalMillis could be zero (if not specified in the statsD config).
+            long sampleCount = flushIntervalMillis > 0
+                    ? (long)(counter.getRate().doubleValue() * ((double)flushIntervalMillis/1000d))
+                    : 1;
             Rollup rollup = new CounterRollup()
                     .withCount(resolveNumber(counter.getValue()))
                     .withRate(counter.getRate().doubleValue())
-                    // todo: if we knew the flush period, we could estimate the sample count.  consider sending that as
-                    // part of the bundle.
-                    .withSampleCount(1);
+                    .withCount(sampleCount);
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }
