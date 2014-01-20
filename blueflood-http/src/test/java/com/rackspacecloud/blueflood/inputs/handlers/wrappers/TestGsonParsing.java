@@ -37,6 +37,7 @@ public class TestGsonParsing {
         Assert.assertNotNull(bundle);
         Assert.assertEquals("333333", bundle.getTenantId());
         Assert.assertEquals(1389211230L, bundle.getTimestamp());
+        Assert.assertEquals(15000L, bundle.getFlushIntervalMillis());
         
         Assert.assertEquals(4, bundle.getGauges().size());
         Assert.assertEquals(6, bundle.getCounters().size());

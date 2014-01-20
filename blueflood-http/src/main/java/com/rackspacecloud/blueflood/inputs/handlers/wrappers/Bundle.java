@@ -13,6 +13,9 @@ public class Bundle {
     private String tenantId;
     private long timestamp; // seconds since epoch.
     
+    // this field is optional
+    private long flushInterval = 0;
+    
     private Gauge[] gauges;
     private Counter[] counters;
     private Timer[] timers;
@@ -28,6 +31,8 @@ public class Bundle {
     
     // seconds since epoch.
     public long getTimestamp() { return timestamp; }
+    
+    public long getFlushIntervalMillis() { return flushInterval; }
     
     public Collection<Gauge> getGauges() { return safeAsList(gauges); }
     public Collection<Counter> getCounters() { return safeAsList(counters); }

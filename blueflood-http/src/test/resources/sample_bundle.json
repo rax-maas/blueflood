@@ -1,6 +1,7 @@
 {
     "tenantId":"333333",
     "timestamp":1389211230,
+    "flushInterval": 15000,
     "gauges":[
         {
             "name":"4444444.G200ms",

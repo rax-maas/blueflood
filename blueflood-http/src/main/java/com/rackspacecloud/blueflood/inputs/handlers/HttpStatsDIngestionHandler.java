@@ -81,7 +81,6 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // todo: what happens when crappy JSON gets sent in?
         
         Bundle bundle = createBundle(body);
-        logger.info(String.format("BUNDLE: %s", bundle.toString()));
         
         // we want this to block until things get ingested.
         
