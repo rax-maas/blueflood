@@ -95,8 +95,8 @@ public class Range {
      * Here is an example: Given start/end (s,e), we need to return mapping between ranges in Y that will be mapped to
      * a single range in X. From the example above, it will be mapping from A to all the sub-ranges in Y that get rolled
      * to a single point in A
-     * @param g
-     * @param range
+     * @param g Coarser Granularity
+     * @param range Range to be mapped
      * @return
      * @throws GranularityException
      */
@@ -114,7 +114,7 @@ public class Range {
         //Number of millis in coarser granularity
         int numberOfMillis = g.milliseconds();
 
-        while(tempStartMillis <= (snappedStopMillis-numberOfMillis)) {
+        while (tempStartMillis <= (snappedStopMillis-numberOfMillis)) {
             Range slotRange = new Range(tempStartMillis, tempStartMillis+numberOfMillis);
             rangeMap.put(slotRange, new IntervalRangeIterator(g.finer(), slotRange.start, slotRange.stop));
             tempStartMillis = tempStartMillis + numberOfMillis;
