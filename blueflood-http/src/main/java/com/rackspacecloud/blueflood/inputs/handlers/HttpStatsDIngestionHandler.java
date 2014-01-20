@@ -91,7 +91,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (ConnectionException ex) {
-            HttpMetricsIngestionHandler.sendResponse(ctx, request, "", HttpResponseStatus.INTERNAL_SERVER_ERROR); 
+            logger.error(ex.getMessage(), ex);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR); 
         } finally {
             timerContext.stop();
         }
