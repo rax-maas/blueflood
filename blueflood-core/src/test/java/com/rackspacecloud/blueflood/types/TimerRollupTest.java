@@ -79,7 +79,7 @@ public class TimerRollupTest {
         assertRollupsAreClose(cumulativeBasicFromRaw, cumulativeTimer);
         assertRollupsAreClose(cumulativeBasicFromRollups, cumulativeTimer);
         
-        Assert.assertEquals(4.5d, cumulativeTimer.getCountPS());
+        Assert.assertEquals(4.5d, cumulativeTimer.getRate());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class TimerRollupTest {
             add(new Point<TimerRollup>(200, tr1));
         }});
         
-        Assert.assertEquals(4d/3d, cumulative.getCountPS());
+        Assert.assertEquals(4d/3d, cumulative.getRate());
     }
     
     private static final Collection<Number> longs = new ArrayList<Number>() {{

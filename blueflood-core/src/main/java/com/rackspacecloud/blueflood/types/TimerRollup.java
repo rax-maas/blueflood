@@ -13,7 +13,7 @@ import java.util.*;
 public class TimerRollup implements Rollup, IBasicRollup {
     private long sum = 0;
     private long count = 0;
-    private double count_ps = 0;
+    private double rate = 0;
 
     /**
      * Number of pre-aggregated timers received by Blueflood
@@ -45,7 +45,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
 
     public TimerRollup withCountPS(double count_ps) {
-        this.count_ps = count_ps;
+        this.rate = count_ps;
         return this;
     }
 
@@ -141,14 +141,15 @@ public class TimerRollup implements Rollup, IBasicRollup {
         
     }
     
-    public double getCountPS() { return count_ps; }
+    // per second rate.
+    public double getRate() { return rate; }
     public long getSum() { return sum; }
     public long getCount() { return count; };
     public int getSampleCount() { return sampleCount; }
     
     public String toString() {
-        return String.format("sum:%s, count_ps:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, sample_cnt:%s, %s",
-                sum, count_ps, count, min, max, average, variance, sampleCount,
+        return String.format("sum:%s, rate:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, sample_cnt:%s, %s",
+                sum, rate, count, min, max, average, variance, sampleCount,
                 Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
     
@@ -158,7 +159,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
 
         if (other.sum != this.sum) return false;
         if (other.sampleCount != this.sampleCount) return false;
-        if (other.count_ps != this.count_ps) return false;
+        if (other.rate != this.rate) return false;
         if (!other.average.equals(this.average)) return false;
         if (!other.variance.equals(this.variance)) return false;
         if (!other.min.equals(this.min)) return false;
@@ -193,8 +194,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
             
             // todo: put this calculation in a static method and write tests for it.
             long count = this.getCount() + rollup.getCount();
-            double time = Util.safeDiv((double) getCount(), this.count_ps) + Util.safeDiv((double) rollup.getCount(), rollup.count_ps);
-            this.count_ps = Util.safeDiv((double) count, time);
+            double time = Util.safeDiv((double) getCount(), this.rate) + Util.safeDiv((double) rollup.getCount(), rollup.rate);
+            this.rate = Util.safeDiv((double) count, time);
             
             // update fields.
             this.count += rollup.getCount();

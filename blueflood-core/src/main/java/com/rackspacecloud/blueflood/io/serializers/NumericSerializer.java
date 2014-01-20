@@ -242,7 +242,7 @@ public class NumericSerializer {
                 TimerRollup rollup = (TimerRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
-                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getCountPS());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
                 sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
                 sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
@@ -341,7 +341,7 @@ public class NumericSerializer {
         // sum, count, countps, avg, max, min, var
         out.writeRawVarint64(rollup.getSum());
         out.writeRawVarint64(rollup.getCount());
-        out.writeDoubleNoTag(rollup.getCountPS());
+        out.writeDoubleNoTag(rollup.getRate());
         out.writeRawVarint32(rollup.getSampleCount());
         putRollupStat(rollup.getAverage(), out);
         putRollupStat(rollup.getMaxValue(), out);
