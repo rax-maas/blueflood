@@ -48,7 +48,7 @@ public class StatsdHttpIngestionTests {
     
     @Test
     public void testCounters() {
-        Collection<PreaggregatedMetric> counters = HttpStatsDIngestionHandler.convertCounters("1", 1, bundle.getCounters());
+        Collection<PreaggregatedMetric> counters = HttpStatsDIngestionHandler.convertCounters("1", 1, 15000, bundle.getCounters());
         Assert.assertEquals(6, counters.size());
         ensureSerializability(counters);
     }

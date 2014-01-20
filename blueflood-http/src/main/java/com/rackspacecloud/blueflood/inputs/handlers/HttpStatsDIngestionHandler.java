@@ -18,6 +18,8 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -78,13 +80,18 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
 
-        // todo: what happens when crappy JSON gets sent in?
-        
-        Bundle bundle = createBundle(body);
+        Bundle bundle;
+        try {
+            bundle = createBundle(body);
+        } catch (JsonParseException ex) {
+            logger.error("BAD JSON: %s", body);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Bad JSON", HttpResponseStatus.BAD_REQUEST);
+            return;
+        }
         
         // we want this to block until things get ingested.
         
-        // convert, then respond.
+        // convert, then write, then respond.
         Collection<IMetric> metrics = buildMetrics(bundle);
         
         try {
