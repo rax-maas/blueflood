@@ -21,7 +21,9 @@ import com.rackspacecloud.blueflood.types.Range;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class SlotTest {
@@ -88,6 +90,33 @@ public class SlotTest {
             verifySingleSlot(time, Granularity.MIN_20);
         }
         Assert.assertEquals(expectedRanges, actualRanges);
+    }
+
+    @Test
+    public void testRangeMapper60m() throws Exception {
+        int baseMillis = 6500000;
+        int hrs = 10;
+        int endMillis = baseMillis + 3600000 * hrs;
+        //Map of every 60m(coarser gran) in this time range, mapped to iterable of 20m sub-ranges that get rolled up
+        HashMap<Range, Iterable<Range>> retMap = (HashMap<Range, Iterable<Range>>) Range.mapFinerRanges(Granularity.MIN_60, new Range(baseMillis, endMillis));
+        Assert.assertEquals(retMap.entrySet().size(), 11);
+        for(Map.Entry<Range,Iterable<Range>> entry : retMap.entrySet()) {
+            Range coarserSubRange = entry.getKey();
+            int iterValCount = 0;
+            Iterable<Range> subranges = entry.getValue();
+            for (Range subrange : subranges) {
+                if(iterValCount == 0) {
+                    //Start point of coarser range is equal to start point of 1st 20m sub-range
+                    Assert.assertEquals(coarserSubRange.getStart(), subrange.getStart());
+                }
+                iterValCount++;
+                if(iterValCount == 3) {
+                    Assert.assertEquals(coarserSubRange.getStop()-1, subrange.getStop());
+                }
+            }
+            //Every 60m range gets divided into 3 20m sub-ranges
+            Assert.assertEquals(iterValCount, 3);
+        }
     }
     
     @Test
