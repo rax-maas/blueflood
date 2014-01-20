@@ -60,7 +60,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     private static final Logger logger = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
     private static final String NAME_DELIMITER = "//.";
     
-    // todo: this needs to be set some other way. punting for now.
+    // todo: punt on TTL
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
@@ -185,7 +185,6 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         return list;
     }
     
-//    meh. set's not supported until they are refactored.
     public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<Bundle.Set> sets) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(sets.size());
         for (Bundle.Set set : sets) {
