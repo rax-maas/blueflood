@@ -139,10 +139,7 @@ public class Granularity {
      * @return
      */
     public int slotFromFinerSlot(int finerSlot) throws GranularityException {
-        Granularity finerGran = this.finer();
-        int fullSlot = (finerSlot * BASE_SLOTS_PER_GRANULARITY) / finerGran.numSlots();
-
-        return (numSlots * fullSlot) / BASE_SLOTS_PER_GRANULARITY;
+        return (finerSlot * numSlots()) / this.finer().numSlots();
     }
 
     /**
