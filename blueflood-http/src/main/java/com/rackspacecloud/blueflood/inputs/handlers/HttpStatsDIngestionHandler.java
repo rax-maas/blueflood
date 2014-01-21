@@ -33,12 +33,11 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
-    private static final Logger logger = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     
@@ -61,7 +60,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         try {
             bundle = createBundle(body);
         } catch (JsonParseException ex) {
-            logger.error("BAD JSON: %s", body);
+            log.error("BAD JSON: %s", body);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
         }
@@ -75,7 +74,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (ConnectionException ex) {
-            logger.error(ex.getMessage(), ex);
+            log.error(ex.getMessage(), ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR); 
         } finally {
             timerContext.stop();
