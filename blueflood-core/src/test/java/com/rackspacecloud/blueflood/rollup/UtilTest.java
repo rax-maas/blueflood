@@ -75,31 +75,6 @@ public class UtilTest {
     }
 
     @Test
-    public void testFormatStateColumnName() {
-        Assert.assertEquals("metrics_full,1,okay", Util.formatStateColumnName(Granularity.FULL, 1, "okay"));
-    }
-
-    @Test
-    public void testGranularityFromStateCol() {
-        Granularity myGranularity = Util.granularityFromStateCol("metrics_full,1,okay");
-        Assert.assertNotNull(myGranularity);
-        Assert.assertEquals(myGranularity, Granularity.FULL);
-
-        myGranularity = Util.granularityFromStateCol("FULL");
-        Assert.assertNull(myGranularity);
-    }
-
-    @Test
-    public void testSlotFromStateCol() {
-        Assert.assertEquals(1, Util.slotFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
-    public void testStateFromStateCol() {
-        Assert.assertEquals("okay", Util.stateFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
     public void testGetDimensionFromKey() {
         Assert.assertEquals("mzORD", Util.getDimensionFromKey("mzORD.blah"));
         Assert.assertEquals("dim0", Util.getDimensionFromKey("dim0.blah"));

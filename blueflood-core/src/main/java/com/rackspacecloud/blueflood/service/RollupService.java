@@ -22,7 +22,6 @@ import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -332,7 +331,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             }
             final UpdateStamp stamp = stateTimestamps.get(slot);
             if (stamp != null) {
-                results.add(Util.formatStateColumnName(g, slot, stamp.getState().code()) + ": " + stamp.getTimestamp());
+                results.add(new SlotState(g, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
             }
         }
 
@@ -349,18 +348,18 @@ public class RollupService implements Runnable, RollupServiceMBean {
             }
 
             // Iterate through the map of slot to UpdateStamp and find the oldest one
-            long min = System.currentTimeMillis(); String minSlot = ""; boolean add = false;
+            SlotState minSlot = new SlotState().withTimestamp(System.currentTimeMillis());
+            boolean add = false;
             for (Map.Entry<Integer, UpdateStamp> entry : stateTimestamps.entrySet()) {
                 final UpdateStamp stamp = entry.getValue();
-                if (stamp.getState() != UpdateStamp.State.Rolled && stamp.getTimestamp() < min) {
-                    min = stamp.getTimestamp();
-                    minSlot = Util.formatStateColumnName(g, entry.getKey(), stamp.getState().code());
+                if (stamp.getState() != UpdateStamp.State.Rolled && stamp.getTimestamp() < minSlot.getTimestamp()) {
+                    minSlot = new SlotState(g, entry.getKey(), stamp.getState()).withTimestamp(stamp.getTimestamp());
                     add = true;
                 }
             }
 
             if (add) {
-                results.add(minSlot + ": " + min);
+                results.add(minSlot.toString());
             }
         }
 

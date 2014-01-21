@@ -36,6 +36,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
@@ -257,24 +258,22 @@ public class AstyanaxWriter extends AstyanaxIO {
     public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE);
         try {
-            boolean presenceSentinel = false;
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<String> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
+            ColumnListMutation<SlotState> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
             for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> granEntry : updates.entrySet()) {
                 Granularity g = granEntry.getKey();
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
                     // granularity,slot,state
-                    String columnName = Util.formatStateColumnName(g, entry.getKey(), entry.getValue().getState().code());
-                    mutation.putColumn(columnName, entry.getValue().getTimestamp())
-                                    // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
-                                    // written. this effectively creates a check-then-set update that fails if the value currently in the
-                                    // database is newer.
-                                    // multiply by 1000 to produce microseconds from milliseconds.
+                    SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
+                    mutation.putColumn(slotState, entry.getValue().getTimestamp())
+                            // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
+                            // written. this effectively creates a check-then-set update that fails if the value currently in the
+                            // database is newer.
+                            // multiply by 1000 to produce microseconds from milliseconds.
                             .setTimestamp(entry.getValue().getTimestamp() * 1000);
-                    presenceSentinel = true;
                 }
             }
-            if (presenceSentinel)
+            if (!mutationBatch.isEmpty())
                 try {
                     mutationBatch.execute();
                 } catch (ConnectionException e) {
