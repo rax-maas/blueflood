@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.BatchMetricsQuery;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Range;
@@ -65,7 +66,7 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
             metrics.add(metric);
             metrics.add(stringMetric);
 
-            analyzer.scanMetrics(metrics);
+            analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
             writer.insertFull(metrics);
         }
 

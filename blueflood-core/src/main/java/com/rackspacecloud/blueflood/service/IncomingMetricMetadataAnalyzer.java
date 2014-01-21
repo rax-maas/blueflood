@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
 import com.rackspacecloud.blueflood.exceptions.IncomingTypeException;
 import com.rackspacecloud.blueflood.exceptions.IncomingUnitException;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -40,13 +41,15 @@ public class IncomingMetricMetadataAnalyzer {
         this.cache = cache;
     }
     
-    public Collection<IncomingMetricException> scanMetrics(List<Metric> metrics) {
+    public Collection<IncomingMetricException> scanMetrics(Collection<IMetric> metrics) {
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
-        for (Metric metric : metrics) {
+        for (IMetric metric : metrics) {
             try {
-                Collection<IncomingMetricException> metricProblems = checkMetric(metric);
-                if (metricProblems != null) {
-                    problems.addAll(metricProblems);
+                if (metric instanceof Metric) {
+                    Collection<IncomingMetricException> metricProblems = checkMetric((Metric)metric);
+                    if (metricProblems != null) {
+                        problems.addAll(metricProblems);
+                    }
                 }
             } catch (CacheException ex) {
                 log.warn(ex.getMessage(), ex);
