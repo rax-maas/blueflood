@@ -5,4 +5,5 @@ public interface IMetric {
     public Locator getLocator();
     public long getCollectionTime();
     public int getTtlInSeconds();
+    public void setTtlInSeconds(int seconds);
 }

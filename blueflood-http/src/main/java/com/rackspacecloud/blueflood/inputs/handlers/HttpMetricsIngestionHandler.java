@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -96,14 +98,14 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             return;
         }
 
-        List<Metric> metrics =  jsonMetricsContainer.toMetrics();
-        if (metrics == null || metrics.isEmpty()) {
+        List<Metric> containerMetrics = jsonMetricsContainer.toMetrics();
+        if (containerMetrics == null || containerMetrics.isEmpty()) {
             sendResponse(ctx, request, null, HttpResponseStatus.OK);
             return;
         }
 
         final MetricsCollection collection = new MetricsCollection();
-        collection.add(metrics);
+        collection.add(new ArrayList<IMetric>(containerMetrics));
 
         try {
             processorChain.apply(collection).get(timeout.getValue(), timeout.getUnit());
