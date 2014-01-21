@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.types;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MetricsCollection {
@@ -28,11 +29,11 @@ public class MetricsCollection {
         this.metrics = new ArrayList<Metric>();
     }
 
-    public void add(List<Metric> other) {
+    public void add(Collection<Metric> other) {
         metrics.addAll(other);
     }
 
-    public List<Metric> toMetrics() {
+    public Collection<Metric> toMetrics() {
         return metrics;
     }
 

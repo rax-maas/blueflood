@@ -40,7 +40,7 @@ public class IncomingMetricMetadataAnalyzer {
         this.cache = cache;
     }
     
-    public Collection<IncomingMetricException> scanMetrics(List<Metric> metrics) {
+    public Collection<IncomingMetricException> scanMetrics(Collection<Metric> metrics) {
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
         for (Metric metric : metrics) {
             try {

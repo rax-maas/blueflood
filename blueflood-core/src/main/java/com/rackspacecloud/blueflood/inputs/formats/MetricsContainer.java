@@ -18,8 +18,8 @@ package com.rackspacecloud.blueflood.inputs.formats;
 
 import com.rackspacecloud.blueflood.types.Metric;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface MetricsContainer {
-    public List<Metric> toMetrics();
+    public Collection<Metric> toMetrics();
 }
