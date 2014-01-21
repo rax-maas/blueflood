@@ -103,7 +103,7 @@ public class Range {
     public static Map<Range, Iterable<Range>> mapFinerRanges(Granularity g, Range range) throws GranularityException {
 
         if(range.getStart() >= range.getStop())
-            throw new IllegalArgumentException("start cannot be greater than end. Start: "+range.getStart()+" Stop:"+range.getStop());
+            throw new IllegalArgumentException("start cannot be greater than end. Start: " + range.getStart() + " Stop:" + range.getStop());
 
         final long snappedStartMillis = g.snapMillis(range.getStart());
         final long snappedStopMillis = g.snapMillis(range.getStop() + g.milliseconds());
@@ -111,8 +111,8 @@ public class Range {
         long tempStartMillis = snappedStartMillis;
         int numberOfMillis = g.milliseconds();
 
-        while (tempStartMillis <= (snappedStopMillis-numberOfMillis)) {
-            Range slotRange = new Range(tempStartMillis, tempStartMillis+numberOfMillis);
+        while (tempStartMillis <= (snappedStopMillis - numberOfMillis)) {
+            Range slotRange = new Range(tempStartMillis, tempStartMillis + numberOfMillis);
             rangeMap.put(slotRange, new IntervalRangeIterator(g.finer(), slotRange.start, slotRange.stop));
             tempStartMillis = tempStartMillis + numberOfMillis;
         }

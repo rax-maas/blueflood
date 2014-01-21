@@ -111,7 +111,7 @@ public class SlotTest {
                 }
                 iterValCount++;
                 if(iterValCount == 3) {
-                    Assert.assertEquals(coarserSubRange.getStop()-1, subrange.getStop());
+                    Assert.assertEquals(coarserSubRange.getStop() - 1, subrange.getStop());
                 }
             }
             //Every 60m range gets divided into 3 20m sub-ranges
