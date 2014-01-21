@@ -20,6 +20,6 @@ import com.rackspacecloud.blueflood.types.Metric;
 
 import java.util.List;
 
-public abstract class MetricsContainer {
-    public abstract List<Metric> toMetrics();
+public interface MetricsContainer {
+    public List<Metric> toMetrics();
 }

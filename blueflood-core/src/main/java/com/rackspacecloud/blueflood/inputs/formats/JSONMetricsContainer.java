@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class JSONMetricsContainer extends MetricsContainer {
+public class JSONMetricsContainer implements MetricsContainer {
     private final String tenantId;
     private final List<JSONMetric> jsonMetrics;
 
