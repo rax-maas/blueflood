@@ -20,7 +20,9 @@ import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 // typed pair tuple.
 public class Range {
@@ -86,7 +88,38 @@ public class Range {
 
         return new IntervalRangeIterator(g, snappedStartMillis, snappedStopMillis);
     }
-    
+
+    /**
+     * Returns a mapping of ranges in the coarser granularity to the sub-ranges in finer granularity
+     *
+     * Here is an example: Given start/end (s,e), we need to return mapping between ranges in Y that will be mapped to
+     * a single range in X. From the example above, it will be mapping from A to all the sub-ranges in Y that get rolled
+     * to a single point in A
+     * @param g Coarser Granularity
+     * @param range Range to be mapped
+     * @return
+     * @throws GranularityException
+     */
+    public static Map<Range, Iterable<Range>> mapFinerRanges(Granularity g, Range range) throws GranularityException {
+
+        if(range.getStart() >= range.getStop())
+            throw new IllegalArgumentException("start cannot be greater than end. Start: " + range.getStart() + " Stop:" + range.getStop());
+
+        final long snappedStartMillis = g.snapMillis(range.getStart());
+        final long snappedStopMillis = g.snapMillis(range.getStop() + g.milliseconds());
+        HashMap<Range, Iterable<Range>> rangeMap = new HashMap<Range, Iterable<Range>>();
+        long tempStartMillis = snappedStartMillis;
+        int numberOfMillis = g.milliseconds();
+
+        while (tempStartMillis <= (snappedStopMillis - numberOfMillis)) {
+            Range slotRange = new Range(tempStartMillis, tempStartMillis + numberOfMillis);
+            rangeMap.put(slotRange, new IntervalRangeIterator(g.finer(), slotRange.start, slotRange.stop));
+            tempStartMillis = tempStartMillis + numberOfMillis;
+        }
+
+        return rangeMap;
+    }
+
     /** return the Ranges for an interval at this granularity
      * @param from start time
      * @param to end time
