@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2014 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class ReRollData {
+public class RollupTool {
     private static final Options cliOptions = new Options();
     private static final GnuParser parser = new GnuParser();
     private static final HelpFormatter helpFormatter = new HelpFormatter();
@@ -48,6 +48,9 @@ public class ReRollData {
     //Has been set to 1, for standalone use. If someone wraps these around some threadpool
     //set this to number of threads that will be using this class.
     private static final int METADATA_CACHE_CONCURRENCY = 1;
+    private static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+            new TimeValue(48, TimeUnit.HOURS),
+            METADATA_CACHE_CONCURRENCY);
 
     static {
         cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withDescription("Tenant ID").create(TENANT_ID));
@@ -105,11 +108,8 @@ public class ReRollData {
         return options;
     }
 
-    private static void rerollData(Locator loc, Range range) {
+    public static void rerollData(Locator loc, Range range) {
         RollupType rollupType = null;
-        final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
-                new TimeValue(48, TimeUnit.HOURS),
-                METADATA_CACHE_CONCURRENCY);
 
         try {
             rollupType = RollupType.fromString(rollupTypeCache.get(
@@ -130,7 +130,7 @@ public class ReRollData {
         }
     }
 
-    private static void rerollDataPerGran(Locator loc, Granularity gran, Range range,RollupType rollupType) {
+    private static void rerollDataPerGran(Locator loc, Granularity gran, Range range, RollupType rollupType) {
         try {
             //Get the source and destination column families
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
