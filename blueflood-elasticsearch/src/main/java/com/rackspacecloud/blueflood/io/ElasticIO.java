@@ -113,7 +113,6 @@ public class ElasticIO implements DiscoveryIO {
         }
         return client.prepareIndex(getIndex(md.getTenantId()), ES_TYPE)
                 .setId(md.getDocumentId())
-                .setRouting(md.getRouting())
                 .setSource(md.createSourceContent());
     }
 
@@ -142,7 +141,6 @@ public class ElasticIO implements DiscoveryIO {
         Timer.Context searchTimerCtx = searchTimer.time();
         SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
                 .setSize(500)
-                .setRouting(md.getRouting())
                 .setVersion(true)
                 .setQuery(query)
                 .execute()
@@ -174,10 +172,6 @@ public class ElasticIO implements DiscoveryIO {
 
         public String getMetricName() {
             return metricName;
-        }
-
-        public String getRouting() {
-            return tenantId;
         }
 
         public String getDocumentId() {
