@@ -40,36 +40,36 @@ public class StatsdHttpIngestionTests {
     @Test
     public void testGsonNumberConversions() {
         Number doubleNum = new LazilyParsedNumber("2.321");
-        Assert.assertEquals(Double.parseDouble("2.321"), HttpStatsDIngestionHandler.resolveNumber(doubleNum));
+        Assert.assertEquals(Double.parseDouble("2.321"), PreaggregateConversions.resolveNumber(doubleNum));
         
         Number longNum = new LazilyParsedNumber("12345");
-        Assert.assertEquals(Long.parseLong("12345"), HttpStatsDIngestionHandler.resolveNumber(longNum));
+        Assert.assertEquals(Long.parseLong("12345"), PreaggregateConversions.resolveNumber(longNum));
     }
     
     @Test
     public void testCounters() {
-        Collection<PreaggregatedMetric> counters = HttpStatsDIngestionHandler.convertCounters("1", 1, 15000, bundle.getCounters());
+        Collection<PreaggregatedMetric> counters = PreaggregateConversions.convertCounters("1", 1, 15000, bundle.getCounters());
         Assert.assertEquals(6, counters.size());
         ensureSerializability(counters);
     }
     
     @Test
     public void testGauges() {
-        Collection<PreaggregatedMetric> gauges = HttpStatsDIngestionHandler.convertGauges("1", 1, bundle.getGauges());
+        Collection<PreaggregatedMetric> gauges = PreaggregateConversions.convertGauges("1", 1, bundle.getGauges());
         Assert.assertEquals(4, gauges.size());
         ensureSerializability(gauges);
     }
      
     @Test
     public void testSets() {
-        Collection<PreaggregatedMetric> sets = HttpStatsDIngestionHandler.convertSets("1", 1, bundle.getSets());
+        Collection<PreaggregatedMetric> sets = PreaggregateConversions.convertSets("1", 1, bundle.getSets());
         Assert.assertEquals(2, sets.size());
         ensureSerializability(sets);
     }
     
     @Test
     public void testTimers() {
-        Collection<PreaggregatedMetric> timers = HttpStatsDIngestionHandler.convertTimers("1", 1, bundle.getTimers());
+        Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, bundle.getTimers());
         Assert.assertEquals(4, timers.size());
         ensureSerializability(timers);
     }
