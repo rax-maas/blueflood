@@ -88,7 +88,12 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_BATCH_MIN_SIZE("5"),
     ROLLUP_BATCH_MAX_SIZE("100"),
 
-    ENABLE_HISTOGRAMS("false");
+    ENABLE_HISTOGRAMS("false"),
+
+    // Assume, for calculating granularity for GetByPoints queries, that data is sent at this interval.
+    GET_BY_POINTS_ASSUME_INTERVAL("30000"),
+    // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
+    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
