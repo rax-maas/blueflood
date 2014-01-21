@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class JSONMetricsContainer implements MetricsContainer {
+public class JSONMetricsContainer {
     private final String tenantId;
     private final List<JSONMetric> jsonMetrics;
 
@@ -33,7 +33,6 @@ public class JSONMetricsContainer implements MetricsContainer {
         this.jsonMetrics = metrics;
     }
 
-    @Override
     public List<Metric> toMetrics() {
         if (jsonMetrics == null || jsonMetrics.isEmpty()) {
             return null;
