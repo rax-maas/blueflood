@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.Util;
 
 import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -61,7 +62,6 @@ public class ElasticIO implements DiscoveryIO {
     private final Client client;
     private static final String ES_TYPE = "metrics";
     private static final String INDEX_PREFIX = "blueflood-";
-    private final int NUM_INDICES = Configuration.getInstance().getIntegerProperty(ElasticIOConfig.ELASTICSEARCH_NUM_INDICES);
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
 
     public static String getIndexPrefix() {
@@ -118,7 +118,7 @@ public class ElasticIO implements DiscoveryIO {
     }
 
     private String getIndex(String tenantId) {
-        return INDEX_PREFIX + String.valueOf(Math.abs(tenantId.hashCode() % NUM_INDICES));
+        return INDEX_PREFIX + String.valueOf(Util.computeShard(tenantId));
     }
 
     private static QueryBuilder createQuery(Discovery md) {
