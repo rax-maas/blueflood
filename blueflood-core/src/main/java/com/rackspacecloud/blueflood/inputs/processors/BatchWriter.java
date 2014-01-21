@@ -23,20 +23,24 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.service.IngestionContext;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<Boolean>> {
+public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<Boolean>> {
         
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
@@ -56,7 +60,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>,
         this.context = context;
     }
     
-    public ListenableFuture<List<Boolean>> apply(List<List<Metric>> input) throws Exception {
+    public ListenableFuture<List<Boolean>> apply(List<List<IMetric>> input) throws Exception {
         
         final CountDownLatch shortLatch = new CountDownLatch(input.size());
         final AtomicBoolean successfullyPersisted = new AtomicBoolean(true);
@@ -68,18 +72,34 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>,
         
         final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
         
-        for (List<Metric> metrics: input) {
+        for (List<IMetric> metrics: input) {
             final int batchId = batchIdGenerator.next();
-            final List<Metric> batch = metrics;
+            final List<IMetric> batch = metrics;
             
             
             ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
                 public Boolean call() throws Exception {
                     try {
-                        writer.insertFull(batch);
+                        // break into Metric and PreaggregatedMetric, as the write paths are somewhat different.
+                        // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
+                        // susses out the string and boolean metrics for a different path, then segregates the Metric
+                        // and Preaggregated metrics and writes them to the appropriate column families.
+                        Collection<Metric> simpleMetrics = new ArrayList<Metric>();
+                        Collection<IMetric> preagMetrics = new ArrayList<IMetric>();
+                        
+                        for (IMetric m : batch) {
+                            if (m instanceof Metric)
+                                simpleMetrics.add((Metric)m);
+                            else if (m instanceof PreaggregatedMetric)
+                                preagMetrics.add(m);
+                        }
+                        if (simpleMetrics.size() > 0)
+                            writer.insertFull(simpleMetrics);
+                        if (preagMetrics.size() > 0)
+                            writer.insertMetrics(preagMetrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
                         
                         // marks this shard dirty, so rollup nodes know to pick up the work.
-                        for (Metric metric : batch) {
+                        for (IMetric metric : batch) {
                             context.update(metric.getCollectionTime(), Util.computeShard(metric.getLocator().toString()));
                         }
                         

@@ -17,16 +17,24 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -34,6 +42,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
@@ -41,10 +53,12 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     
-    private AstyanaxWriter writer;
+    private AsyncChain<String, Boolean> processorChain;
+    private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler() {
-        writer = AstyanaxWriter.getInstance();
+    public HttpStatsDIngestionHandler(AsyncChain<String, Boolean> processorChain, TimeValue timeout) {
+        this.processorChain = processorChain;
+        this.timeout = timeout;
     }
     
     // our own stuff.
@@ -55,27 +69,22 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
-
-        Bundle bundle;
         try {
-            bundle = createBundle(body);
+            // block until things get ingested.
+            processorChain.apply(body).get(timeout.getValue(), timeout.getUnit());
         } catch (JsonParseException ex) {
             log.error("BAD JSON: %s", body);
+            log.error(ex.getMessage(), ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
-        }
-        
-        // we want this to block until things get ingested.
-        
-        // convert, then write, then respond.
-        Collection<IMetric> metrics = PreaggregateConversions.buildMetricsCollection(bundle);
-        
-        try {
-            writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
-            HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (ConnectionException ex) {
             log.error(ex.getMessage(), ex);
-            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR); 
+                        HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        } catch (TimeoutException ex) {
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+        } catch (Exception ex) {
+            log.warn("Other exception while trying to parse content", ex);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             timerContext.stop();
         }
@@ -84,5 +93,41 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     public static Bundle createBundle(String json) {
         Bundle bundle = new Gson().fromJson(json, Bundle.class);
         return bundle;
+    }
+    
+    public static class MakeBundle implements AsyncFunction<String, Bundle> {
+        @Override
+        public ListenableFuture<Bundle> apply(String input) throws Exception {
+            return new NoOpFuture<Bundle>(createBundle(input));
+        }
+    }
+    
+    public static class MakeCollection implements AsyncFunction<Bundle, MetricsCollection> {
+        @Override
+        public ListenableFuture<MetricsCollection> apply(Bundle input) throws Exception {
+            MetricsCollection collection = new MetricsCollection();
+            collection.add(PreaggregateConversions.buildMetricsCollection(input));
+            return new NoOpFuture<MetricsCollection>(collection);
+        }
+    }
+    
+    public static class WriteMetrics extends AsyncFunctionWithThreadPool<Collection<IMetric>, Boolean> {
+        private final AstyanaxWriter writer;
+        
+        public WriteMetrics(ThreadPoolExecutor executor, AstyanaxWriter writer) {
+            super(executor);
+            this.writer = writer;
+        }
+
+        @Override
+        public ListenableFuture<Boolean> apply(final Collection<IMetric> input) throws Exception {
+            return this.getThreadPool().submit(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    writer.insertMetrics(input, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                    return true;
+                }
+            });
+        }
     }
 }
