@@ -39,7 +39,7 @@ public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCol
     public ListenableFuture<MetricsCollection> apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
-                Collection<IncomingMetricException> problems = metricMetadataAnalyzer.scanMetrics(input.getMetrics());
+                Collection<IncomingMetricException> problems = metricMetadataAnalyzer.scanMetrics(input.toMetrics());
                 for (IncomingMetricException problem : problems)
                     // TODO: this is where a system annotation should be raised.
                     getLogger().warn(problem.getMessage());

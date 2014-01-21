@@ -19,14 +19,11 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.netflix.astyanax.Execution;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
-import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
@@ -39,17 +36,12 @@ import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.ShardStateManager;
+import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
@@ -157,28 +149,22 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
-     * Updates shard state on the provided ShardStateManager for the provided shard.
+     * Gets all ShardStates for a given shard.
      *
-     * @param shardStateManager Shard State Manager responsible for maintaining state.
-     * @param shard Shard to update get and update state for.
-     * @todo Pagination
+     * @param shard Shard to retrieve all SlotState objects for.
      */
-    public void getAndUpdateShardState(ShardStateManager shardStateManager, int shard) {
+    public Collection<SlotState> getShardState(int shard) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-
+        final Collection<SlotState> slotStates = new LinkedList<SlotState>();
         try {
-            ColumnList<String> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
+            ColumnList<SlotState> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
                     .getKey((long)shard)
                     .execute()
                     .getResult();
 
-                for (Column<String> column : columns) {
-                    Granularity g = Util.granularityFromStateCol(column.getName());
-                    int slot = Util.slotFromStateCol(column.getName());
-                    String stateString = Util.stateFromStateCol(column.getName());
-
-                    shardStateManager.updateSlotOnRead(shard, g, slot, column.getLongValue(), stateString);
-                }
+            for (Column<SlotState> column : columns) {
+                slotStates.add(column.getName().withTimestamp(column.getLongValue()));
+            }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
             log.error("Error getting shard state for shard " + shard, e);
@@ -186,6 +172,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
+        return slotStates;
     }
 
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {

@@ -55,7 +55,7 @@ public class KafkaServiceTest {
         //Test whether executor got the task
         Assert.assertEquals(kafkaServiceSpy.getKafkaExecutorsUnsafe().getTaskCount(), 1);
         //Verify that there were interactions with the mock producer
-        verify(mockProducer).send(anyListOf(KeyedMessage.class));
+        verify(mockProducer, timeout(1000)).send(anyListOf(KeyedMessage.class));
 
         //Stop Kafka Production and test whether the listener object was removed
         kafkaServiceSpy.stopService();

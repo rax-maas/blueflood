@@ -17,9 +17,8 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.types.Metric;
+
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -27,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<Metric>>> {
+public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<IMetric>>> {
     private int batchSize;
 
     public BatchSplitter(ThreadPoolExecutor threadPool, int batchSize) {
@@ -35,9 +34,9 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
         this.batchSize = batchSize;
     }
 
-    public ListenableFuture<List<List<Metric>>> apply(final MetricsCollection input) throws Exception {
-        return getThreadPool().submit(new Callable<List<List<Metric>>>() {
-            public List<List<Metric>> call() throws Exception {
+    public ListenableFuture<List<List<IMetric>>> apply(final MetricsCollection input) throws Exception {
+        return getThreadPool().submit(new Callable<List<List<IMetric>>>() {
+            public List<List<IMetric>> call() throws Exception {
                 return input.splitMetricsIntoBatches(batchSize);
             }
         });

@@ -83,7 +83,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             metrics.add(metric);
             metrics.add(stringMetric);
 
-            analyzer.scanMetrics(metrics);
+            analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
             writer.insertFull(metrics);
 
         }

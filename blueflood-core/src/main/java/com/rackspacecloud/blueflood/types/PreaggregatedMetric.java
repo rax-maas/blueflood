@@ -18,11 +18,13 @@ package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
+import java.util.concurrent.TimeUnit;
+
 /** It's like a rollup already. */
 public class PreaggregatedMetric implements IMetric {
     private final long collectionTime;
     private final Locator locator;
-    private final TimeValue ttl;
+    private TimeValue ttl;
     private final Rollup value;
     
     public PreaggregatedMetric(long collectionTime, Locator locator, TimeValue ttl, Rollup value) {
@@ -36,4 +38,5 @@ public class PreaggregatedMetric implements IMetric {
     public long getCollectionTime() { return collectionTime; }
     public int getTtlInSeconds() { return (int)ttl.toSeconds(); }
     public Object getValue() { return value; }
+    public void setTtlInSeconds(int seconds) { ttl = new TimeValue(seconds, TimeUnit.SECONDS); }
 }

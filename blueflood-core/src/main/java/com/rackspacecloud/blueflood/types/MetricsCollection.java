@@ -19,20 +19,21 @@ package com.rackspacecloud.blueflood.types;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MetricsCollection {
-    private final List<Metric> metrics;
+    private final List<IMetric> metrics;
 
     public MetricsCollection() {
-        this.metrics = new ArrayList<Metric>();
+        this.metrics = new ArrayList<IMetric>();
     }
 
-    public void add(List<Metric> other) {
+    public void add(Collection<IMetric> other) {
         metrics.addAll(other);
     }
 
-    public List<Metric> getMetrics() {
+    public Collection<IMetric> toMetrics() {
         return metrics;
     }
 
@@ -40,7 +41,7 @@ public class MetricsCollection {
         return metrics.size();
     }
 
-    public List<List<Metric>> splitMetricsIntoBatches(int sizePerBatch) {
+    public List<List<IMetric>> splitMetricsIntoBatches(int sizePerBatch) {
         if (sizePerBatch <= 0) {
             sizePerBatch = metrics.size();
         }
