@@ -50,8 +50,8 @@ public class Granularity {
     
     private static final Granularity LAST = MIN_1440;
     
-    private static final Granularity[] granularities = new Granularity[] { FULL, MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 };
-    private static final Granularity[] rollupGranularities = new Granularity[] { MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 };
+    private static final Granularity[] granularities = new Granularity[] { FULL, MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 }; // order is important.
+    private static final Granularity[] rollupGranularities = new Granularity[] { MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 }; // order is important.
     
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
     
@@ -283,6 +283,8 @@ public class Granularity {
             if (diff < closest) {
                 closest = diff;
                 gran = g;
+            } else {
+                break;
             }
         }
 
@@ -298,7 +300,7 @@ public class Granularity {
      *
      * @param requestedDuration (milliseconds)
      */
-    private static Granularity granularityFromPointsGeometric(double requestedDuration, int points) {
+    private static Granularity granularityFromPointsGeometric(double requestedDuration, int requestedPoints) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
 
@@ -306,20 +308,22 @@ public class Granularity {
             // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
             // period and go from there.
             long period = (g == Granularity.FULL) ? GET_BY_POINTS_ASSUME_INTERVAL : g.milliseconds();
-            double providedPoints = requestedDuration / period;
+            double providablePoints = requestedDuration / period;
             double positiveRatio;
 
             // Generate a ratio >= 1 of either (points requested / points provided by this granularity) or the inverse.
             // Think of it as an "absolute ratio". Our goal is to minimize this ratio.
-            if (providedPoints > points) {
-                positiveRatio = providedPoints / points;
+            if (providablePoints > requestedPoints) {
+                positiveRatio = providablePoints / requestedPoints;
             } else {
-                positiveRatio = points / providedPoints;
+                positiveRatio = requestedPoints / providablePoints;
             }
 
             if (positiveRatio < minimumPositivePointRatio) {
                 minimumPositivePointRatio = positiveRatio;
                 gran = g;
+            } else {
+                break;
             }
         }
         return gran;
