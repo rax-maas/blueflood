@@ -62,7 +62,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             bundle = createBundle(body);
         } catch (JsonParseException ex) {
             logger.error("BAD JSON: %s", body);
-            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Bad JSON", HttpResponseStatus.BAD_REQUEST);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
         }
         
