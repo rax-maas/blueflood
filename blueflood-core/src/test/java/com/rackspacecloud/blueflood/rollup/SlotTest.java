@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.types.Range;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
