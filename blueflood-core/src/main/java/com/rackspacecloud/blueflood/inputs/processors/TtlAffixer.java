@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.TtlCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BasicRollup;
@@ -42,7 +41,7 @@ public class TtlAffixer extends AsyncFunctionWithThreadPool<MetricsCollection, M
     public ListenableFuture<MetricsCollection> apply(final MetricsCollection metrics) {
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
-                for (Metric metric : metrics.getMetrics()) {
+                for (Metric metric : metrics.toMetrics()) {
                     ColumnFamily CF = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
                     metric.setTtlInSeconds((int)cache.getTtl(metric.getLocator().getTenantId(),
                             CF).toSeconds());

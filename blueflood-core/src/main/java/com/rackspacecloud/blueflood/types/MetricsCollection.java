@@ -32,7 +32,7 @@ public class MetricsCollection {
         metrics.addAll(other);
     }
 
-    public List<Metric> getMetrics() {
+    public List<Metric> toMetrics() {
         return metrics;
     }
 
