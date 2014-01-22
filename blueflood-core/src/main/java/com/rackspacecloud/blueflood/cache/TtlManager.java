@@ -33,26 +33,24 @@ import java.util.concurrent.ExecutionException;
 
 public class TtlManager implements TtlProvider {
     private static final Logger log = LoggerFactory.getLogger(TtlManager.class);
-    private static final String DEFAULT_TENANT = "*";
     private final LoadingCache<String, GranRollupTypeTtlMap> tenanttTtlMap;
 
     // these values get used in the absence of a ttl (db lookup failure, etc.).
-    static final Map<String, GranRollupTypeTtlMap> SAFETY_TTLS =
-            new HashMap<String, GranRollupTypeTtlMap>() {{
-                GranRollupTypeTtlMap ttlMap = new GranRollupTypeTtlMap();
-                for (Granularity granularity : Granularity.granularities()) {
-                    for (RollupType type : RollupType.values()) {
-                        ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
+    private static final GranRollupTypeTtlMap SAFETY_TTLS = new GranRollupTypeTtlMap();
 
-                        if (cf instanceof CassandraModel.MetricColumnFamily) {
-                            CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
-                            TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-                            ttlMap.setTtl(granularity, type, ttl);
-                        }
-                    }
+    static {
+        for (Granularity granularity : Granularity.granularities()) {
+            for (RollupType type : RollupType.values()) {
+                ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
+
+                if (cf instanceof CassandraModel.MetricColumnFamily) {
+                    CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
+                    TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
+                    SAFETY_TTLS.setTtl(granularity, type, ttl);
                 }
-                put(DEFAULT_TENANT, ttlMap);
-            }};
+            }
+        }
+    }
 
     public TtlManager(TimeValue expiration, int cacheConcurrency) {
         CacheLoader<String, GranRollupTypeTtlMap> loader = new CacheLoader<String, GranRollupTypeTtlMap>() {
@@ -78,7 +76,7 @@ public class TtlManager implements TtlProvider {
         try {
             return tenanttTtlMap.get(tenantId).getTtl(gran, rollupType);
         } catch (ExecutionException ex) {
-            return SAFETY_TTLS.get(DEFAULT_TENANT).getTtl(gran, rollupType);
+            return SAFETY_TTLS.getTtl(gran, rollupType);
         }
     }
 
