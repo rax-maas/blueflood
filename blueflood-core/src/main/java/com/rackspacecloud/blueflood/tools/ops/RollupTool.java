@@ -137,7 +137,6 @@ public class RollupTool {
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, gran.finer());
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
             System.out.println("Calculating rollups for " + gran.name() + ". Reading from: " + srcCF.getName() + ". Writing to: " + dstCF.getName());
-            Thread.sleep(500);
             //Get Rollup Computer
             Rollup.Type rollupComputer = RollupRunnable.getRollupComputer(rollupType, gran.finer());
             //This needs some explanation: Here we take slots in the gran to which we are rolling up i.e dstgran
@@ -169,13 +168,8 @@ public class RollupTool {
                 System.exit(-1);
             }
             System.out.println("Rolled up " + count + " ranges of " + gran+"\n");
-            Thread.sleep(1000);
         } catch (GranularityException e) {
             // Since we start rolling from 5m, we should never reach here.
-            System.err.println("Unexpected exception encountered " + e.getMessage());
-            System.exit(-1);
-        } catch (InterruptedException e) {
-            // We should not reach over here as well.
             System.err.println("Unexpected exception encountered " + e.getMessage());
             System.exit(-1);
         }
