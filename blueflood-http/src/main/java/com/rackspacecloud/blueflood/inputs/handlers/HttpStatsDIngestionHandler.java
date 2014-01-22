@@ -72,14 +72,14 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         try {
             // block until things get ingested.
             processorChain.apply(body).get(timeout.getValue(), timeout.getUnit());
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (JsonParseException ex) {
             log.error("BAD JSON: %s", body);
             log.error(ex.getMessage(), ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
-            return;
         } catch (ConnectionException ex) {
             log.error(ex.getMessage(), ex);
-                        HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (TimeoutException ex) {
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
