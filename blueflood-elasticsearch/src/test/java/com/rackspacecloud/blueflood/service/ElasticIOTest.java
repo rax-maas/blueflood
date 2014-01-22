@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.io.Constants;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
@@ -86,14 +87,14 @@ public class ElasticIOTest {
 
     @Before
     public void setup() throws IOException {
-        System.setProperty("ELASTICSEARCH_NUM_INDICES", "1");
         esSetup = new EsSetup();
-
-        esSetup.execute(
-                EsSetup.deleteAll(),
-                EsSetup.createIndex(ElasticIO.getIndexPrefix() + "0")
-                    .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json"))
-        );
+        esSetup.execute(EsSetup.deleteAll());
+        for (int s = 0; s < Constants.NUMBER_OF_SHARDS; s++) {
+            esSetup.execute(
+                    EsSetup.createIndex(ElasticIO.getIndexPrefix() + String.valueOf(s))
+                        .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json"))
+            );
+        }
         elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
