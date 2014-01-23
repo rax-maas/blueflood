@@ -101,7 +101,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
-    public void insertFull(List<Metric> metrics) throws ConnectionException {
+    public void insertFull(Collection<Metric> metrics) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL);
 
         try {

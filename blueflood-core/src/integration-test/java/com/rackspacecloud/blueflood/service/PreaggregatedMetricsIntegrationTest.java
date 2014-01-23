@@ -60,7 +60,6 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
             .withCount(106);
         simple.setPercentile("98th", 107);
         simple.setPercentile("99th", 110);
-        // todo: add a few percentiles.
     }
     
     private static Points<TimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {

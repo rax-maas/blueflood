@@ -48,6 +48,6 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-        log.warn("Exception event received: ", e);
+        log.warn("Exception event received: ", e.getCause());
     }
 }

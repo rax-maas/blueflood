@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -55,7 +56,6 @@ public class HttpMetricsIngestionServer {
 
     private int httpIngestPort;
     private String httpIngestHost;
-    private AsyncChain<MetricsCollection, Boolean> processorChain;
     private TimeValue timeout;
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -63,18 +63,26 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
-
-
+    
+    private AsyncChain<MetricsCollection, Boolean> defaultProcessorChain;
+    private AsyncChain<String, Boolean> statsdProcessorChain;
+    
     public HttpMetricsIngestionServer(ScheduleContext context) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
-        this.processorChain = createDefaultProcessorChain();
-
+        
+        buildProcessingChains();
+        if (defaultProcessorChain == null || statsdProcessorChain == null) {
+            log.error("Processor chains were not set up propertly");
+            return;
+        }
+        
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(this.processorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -85,30 +93,47 @@ public class HttpMetricsIngestionServer {
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
     }
-
-    private AsyncChain<MetricsCollection, Boolean> createDefaultProcessorChain() {
-        return new AsyncChain<MetricsCollection, Boolean>()
-                .withFunction(new TypeAndUnitProcessor(
-                        new ThreadPoolBuilder().withName("Metric type and unit processing").build(),
-                        metricMetadataAnalyzer)
-                        .withLogger(log))
-                .withFunction(new BatchSplitter(
-                        new ThreadPoolBuilder().withName("Metric batching").build(),
-                        BATCH_SIZE)
-                        .withLogger(log))
-                .withFunction(new BatchWriter(
-                        new ThreadPoolBuilder()
-                                .withName("Metric Batch Writing")
-                                .withCorePoolSize(WRITE_THREADS)
-                                .withMaxPoolSize(WRITE_THREADS)
-                                .withUnboundedQueue()
-                                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
-                                .build(),
-                        AstyanaxWriter.getInstance(),
-                        timeout,
-                        bufferedMetrics,
-                        context)
-                        .withLogger(log));
+    
+    private void buildProcessingChains() {
+        final AsyncFunction typeAndUnitProcessor; 
+        final AsyncFunction batchSplitter;        
+        final AsyncFunction batchWriter;          
+        
+        typeAndUnitProcessor = new TypeAndUnitProcessor(
+                new ThreadPoolBuilder().withName("Metric type and unit processing").build(),
+                metricMetadataAnalyzer
+        ).withLogger(log);
+        
+        batchSplitter = new BatchSplitter(
+                new ThreadPoolBuilder().withName("Metric batching").build(),
+                BATCH_SIZE
+        ).withLogger(log);
+        
+        batchWriter = new BatchWriter(
+            new ThreadPoolBuilder()
+                .withName("Metric Batch Writing")
+                .withCorePoolSize(WRITE_THREADS)
+                .withMaxPoolSize(WRITE_THREADS)
+                .withUnboundedQueue()
+                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                .build(),
+            AstyanaxWriter.getInstance(),
+            timeout,
+            bufferedMetrics,
+            context
+        ).withLogger(log);
+        
+        this.defaultProcessorChain = new AsyncChain<MetricsCollection, Boolean>()
+                .withFunction(typeAndUnitProcessor)
+                .withFunction(batchSplitter)
+                .withFunction(batchWriter);
+        
+        this.statsdProcessorChain = new AsyncChain<String, Boolean>()
+                .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
+                .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
+                .withFunction(typeAndUnitProcessor)
+                .withFunction(batchSplitter)
+                .withFunction(batchWriter);
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {

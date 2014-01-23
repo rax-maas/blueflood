@@ -120,7 +120,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         }
     }
 
-    public void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
