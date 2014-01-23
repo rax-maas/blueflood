@@ -56,7 +56,6 @@ public class RollupToolTest {
             normalMetrics.add(metric);
             time = time + Granularity.MIN_5.milliseconds();
         }
-
         writer.insertMetrics(normalMetrics, CassandraModel.CF_METRICS_FULL);
     }
 
@@ -77,13 +76,11 @@ public class RollupToolTest {
                 CassandraModel.CF_METRICS_5M);
         Assert.assertEquals(288, points.getPoints().size());
         int i=1;
-
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i);
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
             i++;
         }
-
     }
 
     private void test20mRollups() throws IOException {
@@ -93,13 +90,11 @@ public class RollupToolTest {
                 CassandraModel.CF_METRICS_20M);
         Assert.assertEquals(72, points.getPoints().size());
         int i=1;
-
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
             Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+3);
             i=i+4;
         }
-
     }
 
     private void test60mRollups() throws IOException {
@@ -109,13 +104,11 @@ public class RollupToolTest {
                 CassandraModel.CF_METRICS_60M);
         Assert.assertEquals(24, points.getPoints().size());
         int i=1;
-
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
             Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+11);
             i=i+12;
         }
-
     }
 
     private void test240mRollups() throws IOException {
@@ -130,7 +123,6 @@ public class RollupToolTest {
             Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+47);
             i=i+48;
         }
-
     }
 
     private void test1440mRollups() throws IOException {
@@ -145,6 +137,5 @@ public class RollupToolTest {
             Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+287);
             i=i+288;
         }
-
     }
 }
