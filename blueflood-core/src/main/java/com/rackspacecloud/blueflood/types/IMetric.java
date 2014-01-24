@@ -6,4 +6,5 @@ public interface IMetric {
     public long getCollectionTime();
     public int getTtlInSeconds();
     public void setTtlInSeconds(int seconds);
+    public RollupType getRollupType();
 }

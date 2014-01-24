@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
+import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.service.*;
@@ -97,7 +98,8 @@ public class HttpMetricsIngestionServer {
     private void buildProcessingChains() {
         final AsyncFunction typeAndUnitProcessor; 
         final AsyncFunction batchSplitter;        
-        final AsyncFunction batchWriter;          
+        final AsyncFunction batchWriter; 
+        final AsyncFunction rollupTypeCacher;
         
         typeAndUnitProcessor = new TypeAndUnitProcessor(
                 new ThreadPoolBuilder().withName("Metric type and unit processing").build(),
@@ -123,8 +125,19 @@ public class HttpMetricsIngestionServer {
             context
         ).withLogger(log);
         
+        // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
+        MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+                new TimeValue(48, TimeUnit.HOURS),
+                Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
+        rollupTypeCacher = new RollupTypeCacher(
+                new ThreadPoolBuilder().withName("Rollup type persistence").build(),
+                rollupTypeCache,
+                true
+        ).withLogger(log);
+        
         this.defaultProcessorChain = new AsyncChain<MetricsCollection, Boolean>()
                 .withFunction(typeAndUnitProcessor)
+                .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(batchWriter);
         
@@ -132,6 +145,7 @@ public class HttpMetricsIngestionServer {
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
                 .withFunction(typeAndUnitProcessor)
+                .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(batchWriter);
     }

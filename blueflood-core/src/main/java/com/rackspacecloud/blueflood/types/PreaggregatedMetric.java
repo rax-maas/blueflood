@@ -26,14 +26,21 @@ public class PreaggregatedMetric implements IMetric {
     private final Locator locator;
     private TimeValue ttl;
     private final Rollup value;
+    private final RollupType type;
     
     public PreaggregatedMetric(long collectionTime, Locator locator, TimeValue ttl, Rollup value) {
         this.collectionTime = collectionTime;
         this.locator = locator;
         this.ttl = ttl;
         this.value = value;
+        this.type = RollupType.fromRollup(value);
     }
-    
+
+    @Override
+    public RollupType getRollupType() {
+        return type;
+    }
+
     public Locator getLocator() { return locator; }
     public long getCollectionTime() { return collectionTime; }
     public int getTtlInSeconds() { return (int)ttl.toSeconds(); }
