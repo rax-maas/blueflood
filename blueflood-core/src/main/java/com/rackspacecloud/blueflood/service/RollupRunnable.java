@@ -124,11 +124,11 @@ class RollupRunnable implements Runnable {
     public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {
         switch (srcType) {
             case COUNTER:
-                return srcGran == Granularity.FULL ? Rollup.CounterFromRaw : Rollup.CounterFromCounter;
+                return Rollup.CounterFromCounter;
             case TIMER:
                 return Rollup.TimerFromTimer;
             case GAUGE:
-                return srcGran == Granularity.FULL ? Rollup.GaugeFromRaw : Rollup.GaugeFromGauge;
+                return Rollup.GaugeFromGauge;
             case BF_HISTOGRAMS:
                 return srcGran == Granularity.FULL ? Rollup.HistogramFromRaw : Rollup.HistogramFromHistogram;
             case BF_BASIC:

@@ -71,10 +71,16 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             long time = i * 30000;
             IMetric metric;
             
-            metric = new Metric(counterLocator, i, time, ttl, "gigawatts");
+            CounterRollup counter = new CounterRollup()
+                    .withCount(i)
+                    .withRate(i * i)
+                    .withSampleCount(1);
+            metric = new PreaggregatedMetric(time, counterLocator, ttl, counter);
             preaggregatedMetrics.add(metric);
 
-            metric = new Metric(gaugeLocator, i, time, ttl, "micromorts");
+            GaugeRollup gauge = new GaugeRollup()
+                    .withLatest(time, i);
+            metric = new PreaggregatedMetric(time, gaugeLocator, ttl, gauge);
             preaggregatedMetrics.add(metric);
             
             TimerRollup timer = new TimerRollup()
@@ -137,12 +143,12 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testCounterRollup() throws IOException {
-        testRolledupMetric(counterLocator, Integer.class, CounterRollup.class);
+        testRolledupMetric(counterLocator, CounterRollup.class, CounterRollup.class);
     }
     
     @Test
     public void testGaugeRollup() throws IOException {
-        testRolledupMetric(gaugeLocator, Integer.class, GaugeRollup.class);
+        testRolledupMetric(gaugeLocator, GaugeRollup.class, GaugeRollup.class);
     }
     
     @Test
