@@ -20,10 +20,10 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-public interface TtlProvider {
-    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception;
-//    public TimeValue getTTL(Locator locator, Granularity gran, Rollup.Type rollupType);
+public interface SimpleTtlProvider {
+    public TimeValue getTTL(Granularity gran, RollupType rollupType) throws Exception;
 
-    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception;
-//    public void setTTL(Locator locator, Granularity gran, Rollup.Type rollupType, TimeValue ttlValue) throws Exception;
+    public void setTTL(Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception;
+
+    public TimeValue getTTLForStrings() throws Exception;
 }
