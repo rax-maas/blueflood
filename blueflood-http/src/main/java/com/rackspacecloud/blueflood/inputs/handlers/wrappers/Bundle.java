@@ -27,7 +27,7 @@ import java.util.Map;
 // Using nested classes for now. Expect this to be cleaned up.
 public class Bundle {
     private String tenantId;
-    private long timestamp; // seconds since epoch.
+    private long timestamp; // millis since epoch.
     
     // this field is optional
     private long flushInterval = 0;

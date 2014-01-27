@@ -57,8 +57,8 @@ public class NumericSerializer {
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
     public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
-    private static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    private static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
+    public static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
+    public static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");

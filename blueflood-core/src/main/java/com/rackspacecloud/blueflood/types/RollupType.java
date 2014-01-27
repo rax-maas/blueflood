@@ -22,6 +22,23 @@ public enum RollupType {
             return RollupType.BF_BASIC;
         }
     }
+    
+    public static RollupType fromRollup(Rollup value) {
+        if (value instanceof SetRollup)
+            return RollupType.SET;
+        else if (value instanceof TimerRollup)
+            return RollupType.TIMER;
+        else if (value instanceof CounterRollup)
+            return RollupType.COUNTER;
+        else if (value instanceof GaugeRollup)
+            return RollupType.GAUGE;
+        else if  (value instanceof Metric)
+            return RollupType.BF_BASIC;
+        else if (value instanceof HistogramRollup)
+            return RollupType.BF_HISTOGRAMS;
+        else
+            throw new Error(String.format("Cannot discern RollupType from %s", value.getClass().getSimpleName()));
+    }
 
     // derive the class of the type. This will be used to determine which serializer is used.
     public static Class<? extends Rollup> classOf(RollupType type, Granularity gran) {

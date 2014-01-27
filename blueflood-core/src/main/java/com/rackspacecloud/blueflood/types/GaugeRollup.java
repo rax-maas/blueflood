@@ -7,6 +7,11 @@ public class GaugeRollup extends BasicRollup {
     
     Points.Point<SimpleNumber> latestValue;
 
+    public GaugeRollup withLatest(long timestamp, Number value) {
+        this.latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(value));
+        return this;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof GaugeRollup))

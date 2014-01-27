@@ -90,6 +90,10 @@ public class Metric implements IMetric {
 
         ttlSeconds = ttlInSeconds;
     }
+    
+    public RollupType getRollupType() {
+        return RollupType.BF_BASIC;
+    }
 
     @Override
     public String toString() {

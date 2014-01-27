@@ -306,11 +306,16 @@ public class AstyanaxWriter extends AstyanaxIO {
                     writeContext.getLocator().getTenantId(),
                     writeContext.getDestinationCF()).toSeconds();
             AbstractSerializer serializer = NumericSerializer.serializerFor(rollup.getClass());
-            mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
-                    .putColumn(writeContext.getTimestamp(),
-                            rollup,
-                            serializer,
-                            ttl);
+            try {
+                mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
+                        .putColumn(writeContext.getTimestamp(),
+                                rollup,
+                                serializer,
+                                ttl);
+            } catch (RuntimeException ex) {
+                // let's not let stupidness prevent the rest of this write.
+                log.warn(String.format("Cannot save %s", writeContext.getLocator().toString()), ex);
+            }
         }
         try {
             mb.execute();
