@@ -70,6 +70,7 @@ public enum CoreConfig implements ConfigDefaults {
     GRAPHITE_HOST(""),
     GRAPHITE_PORT("2003"),
     GRAPHITE_PREFIX("unconfiguredNode.metrics."),
+    GRAPHITE_REPORT_INTERVAL("30"), // in seconds
 
     INGEST_MODE("true"),
     ROLLUP_MODE("true"),
@@ -93,7 +94,10 @@ public enum CoreConfig implements ConfigDefaults {
     // Assume, for calculating granularity for GetByPoints queries, that data is sent at this interval.
     GET_BY_POINTS_ASSUME_INTERVAL("30000"),
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
-    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC");
+    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
+
+    // Threadcount used by ingestor for writes.
+    INGESTION_WRITE_THREADS("50");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

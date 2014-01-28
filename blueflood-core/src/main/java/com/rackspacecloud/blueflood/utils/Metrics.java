@@ -71,7 +71,7 @@ public class Metrics {
                     .prefixedWith(config.getStringProperty(CoreConfig.GRAPHITE_PREFIX))
                     .build(graphite);
 
-            reporter.start(30l, TimeUnit.SECONDS);
+            reporter.start(config.getLongProperty(CoreConfig.GRAPHITE_REPORT_INTERVAL), TimeUnit.SECONDS);
         } else {
             reporter = null;
         }

@@ -53,7 +53,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
-    private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
+    private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.INGESTION_WRITE_THREADS); // metrics will be batched into this many partitions.
 
     private int httpIngestPort;
     private String httpIngestHost;
@@ -76,7 +76,7 @@ public class HttpMetricsIngestionServer {
         
         buildProcessingChains();
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
-            log.error("Processor chains were not set up propertly");
+            log.error("Processor chains were not set up properly");
             return;
         }
         
