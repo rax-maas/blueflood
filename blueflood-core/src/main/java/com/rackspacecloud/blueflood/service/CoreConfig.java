@@ -93,45 +93,7 @@ public enum CoreConfig implements ConfigDefaults {
     // Assume, for calculating granularity for GetByPoints queries, that data is sent at this interval.
     GET_BY_POINTS_ASSUME_INTERVAL("30000"),
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
-    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
-
-    // TTL specification for various rollup & data types (specified in days)
-    STRING_METRICS_TTL("365"),
-
-    RAW_METRICS_TTL("7"), // 7 days
-    BASIC_ROLLUPS_MIN5("30"), // 1 month
-    BASIC_ROLLUPS_MIN20("60"), // 2 months
-    BASIC_ROLLUPS_MIN60("90"), // 3 months
-    BASIC_ROLLUPS_MIN240("180"), // 6 months
-    BASIC_ROLLUPS_MIN1440("365"), // 1 year
-
-    HIST_ROLLUPS_MIN5("30"), // 1 month
-    HIST_ROLLUPS_MIN20("60"), // 2 months
-    HIST_ROLLUPS_MIN60("90"), // 3 months
-    HIST_ROLLUPS_MIN240("180"), // 6 months
-    HIST_ROLLUPS_MIN1440("365"), // 1 year
-
-    SET_ROLLUPS_FULL("7"), // 7 days
-    SET_ROLLUPS_MIN5("30"), // 1 month
-    SET_ROLLUPS_MIN20("60"), // 2 months
-    SET_ROLLUPS_MIN60("90"), // 3 months
-    SET_ROLLUPS_MIN240("180"), // 6 months
-    SET_ROLLUPS_MIN1440("365"), // 1 year
-
-    GAUGE_ROLLUPS_FULL("7"), // 7 days
-    GAUGE_ROLLUPS_MIN5("30"), // 1 month
-    GAUGE_ROLLUPS_MIN20("60"), // 2 months
-    GAUGE_ROLLUPS_MIN60("90"), // 3 months
-    GAUGE_ROLLUPS_MIN240("180"), // 6 months
-    GAUGE_ROLLUPS_MIN1440("365"), // 1 year
-
-    TIMER_ROLLUPS_FULL("7"), // 7 days
-    TIMER_ROLLUPS_MIN5("30"), // 1 month
-    TIMER_ROLLUPS_MIN20("60"), // 2 months
-    TIMER_ROLLUPS_MIN60("90"), // 3 months
-    TIMER_ROLLUPS_MIN240("180"), // 6 months
-    TIMER_ROLLUPS_MIN1440("365"); // 1 year
-
+    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
