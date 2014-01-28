@@ -39,4 +39,13 @@ public class ConfigTtlProviderTest {
         // Ask for an invalid combination of granularity and rollup type
         Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.BF_HISTOGRAMS));
     }
+
+    @Test
+    public void testConfigTtlForStrings() throws Exception {
+        final ConfigTtlProvider ttlProvider = ConfigTtlProvider.getInstance();
+        final Configuration config = Configuration.getInstance();
+
+        Assert.assertTrue(new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS).equals(
+                ttlProvider.getTTLForStrings("acFoo")));
+    }
 }
