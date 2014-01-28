@@ -39,4 +39,6 @@ ADD . /src
 RUN chmod +x /src/start.sh
 EXPOSE 9160
 EXPOSE 7199
-# CMD ["/src/start.sh"]
+EXPOSE 19000
+EXPOSE 20000
+CMD ["/src/start.sh"]
