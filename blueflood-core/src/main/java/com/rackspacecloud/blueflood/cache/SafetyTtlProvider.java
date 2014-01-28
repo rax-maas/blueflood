@@ -24,36 +24,46 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.TtlMapper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-public class SafetyTtlProvider implements SimpleTtlProvider {
-    private static final TtlMapper SAFETY_TTLS = new TtlMapper();
-    private static final TimeValue STRING_TTLS = Constants.STRING_SAFETY_TTL;
+public class SafetyTtlProvider implements TenantTtlProvider {
+    private final TtlMapper SAFETY_TTLS = new TtlMapper();
+    private final TimeValue STRING_TTLS = Constants.STRING_SAFETY_TTL;
 
-    static {
+    private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
+
+    public static SafetyTtlProvider getInstance() {
+        return INSTANCE;
+    }
+
+    private SafetyTtlProvider() {
         for (Granularity granularity : Granularity.granularities()) {
             for (RollupType type : RollupType.values()) {
-                ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
+                try {
+                    ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
 
-                if (cf instanceof CassandraModel.MetricColumnFamily) {
-                    CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
-                    TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-                    SAFETY_TTLS.setTtl(granularity, type, ttl);
+                    if (cf instanceof CassandraModel.MetricColumnFamily) {
+                        CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
+                        TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
+                        SAFETY_TTLS.setTtl(granularity, type, ttl);
+                    }
+                } catch (IllegalArgumentException ex) {
+                    // pass
                 }
             }
         }
     }
 
     @Override
-    public TimeValue getTTL(Granularity gran, RollupType rollupType) throws Exception {
+    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
         return SAFETY_TTLS.getTtl(gran, rollupType);
     }
 
     @Override
-    public void setTTL(Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception {
+    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception {
         throw new RuntimeException("Not allowed to override safety ttls. They are auto-derived based on granularity.");
     }
 
     @Override
-    public TimeValue getTTLForStrings() throws Exception {
+    public TimeValue getTTLForStrings(String tenantId) throws Exception {
         return STRING_TTLS;
     }
 }

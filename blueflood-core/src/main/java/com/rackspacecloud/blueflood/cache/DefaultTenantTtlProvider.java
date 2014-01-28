@@ -19,20 +19,15 @@ package com.rackspacecloud.blueflood.cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.types.TtlMapper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-import java.util.concurrent.ExecutionException;
-
-public class DefaultTenantTtlProvider implements TenantTtlProvider {
+public abstract class DefaultTenantTtlProvider implements TenantTtlProvider {
     private static final Logger log = LoggerFactory.getLogger(DefaultTenantTtlProvider.class);
 
-    private static final SimpleTtlProvider fallback = new ConfigTtlProvider();
+    private final ConfigTtlProvider fallback =  ConfigTtlProvider.getInstance();
     private final LoadingCache<String, TtlMapper> tenanttTtlMap;
 
     public DefaultTenantTtlProvider(TimeValue expiration, int cacheConcurrency) {
@@ -52,32 +47,5 @@ public class DefaultTenantTtlProvider implements TenantTtlProvider {
                 .recordStats()
                 .build(loader);
 
-    }
-
-    @Override
-    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
-        try {
-            return tenanttTtlMap.get(tenantId).getTtl(gran, rollupType);
-        } catch (ExecutionException ex) {
-            return fallback.getTTL(gran, rollupType);
-        }
-    }
-
-    @Override
-    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception {
-        TtlMapper ttlMap = tenanttTtlMap.get(tenantId);
-
-        if (ttlMap == null) {
-            ttlMap = new TtlMapper();
-            ttlMap.setTtl(gran, rollupType, ttlValue);
-            tenanttTtlMap.put(tenantId, ttlMap);
-            // TODO: Flush changes to database.
-        }
-    }
-
-    @Override
-    public TimeValue getTTLForStrings(String tenantId) throws Exception {
-        // For now, we don't want to allow people to change String TTLs on a per tenant basis.
-        return fallback.getTTLForStrings();
     }
 }
