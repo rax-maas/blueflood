@@ -45,7 +45,7 @@ public class TtlMapper {
         Map<RollupType, TimeValue> rollupTypeTtlMap = ttlMap.get(gran);
 
         if (rollupTypeTtlMap == null) {
-            return null;  // Decide what to do.
+            return null;
         }
 
         return rollupTypeTtlMap.get(rollupType);
