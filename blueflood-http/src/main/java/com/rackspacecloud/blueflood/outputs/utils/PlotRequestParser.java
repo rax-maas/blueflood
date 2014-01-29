@@ -19,18 +19,40 @@ package com.rackspacecloud.blueflood.outputs.utils;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.types.Resolution;
-import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 
 import java.util.*;
 
 public class PlotRequestParser {
-    private static final Set<BasicRollupsOutputSerializer.MetricStat> defaultStats;
-
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_STATS = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_BASIC;
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_COUNTER;
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_GAUGE;
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_SET;
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_TIMER;
+    
     static {
-        defaultStats = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
-        defaultStats.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
-        defaultStats.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
-    }
+        // EnumSet is so crappy for making me do this instead of using an anonymous subclass.
+        DEFAULT_BASIC = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        DEFAULT_COUNTER = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        DEFAULT_GAUGE = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        DEFAULT_SET = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        DEFAULT_TIMER = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        
+        DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
+        DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        
+        DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        
+        DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.LATEST);
+        
+        DEFAULT_SET.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        
+        DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.RATE);
+        DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
+        
+    } 
 
     public static RollupsQueryParams parseParams(Map<String, List<String>> params) throws InvalidRequestException {
         if (params == null || params.isEmpty()) {
@@ -75,7 +97,7 @@ public class PlotRequestParser {
 
     public static Set<BasicRollupsOutputSerializer.MetricStat> getStatsToFilter(List<String> select) {
         if (select == null || select.isEmpty()) {
-            return defaultStats;
+            return DEFAULT_STATS;
         } else {
             Set<BasicRollupsOutputSerializer.MetricStat> filters = new HashSet<BasicRollupsOutputSerializer.MetricStat>();
             // handle case when someone does select=average,min instead of select=average&select=min
@@ -84,7 +106,9 @@ public class PlotRequestParser {
                     List<String> nestedStats = Arrays.asList(stat.split(","));
                     filters.addAll(BasicRollupsOutputSerializer.MetricStat.fromStringList(nestedStats));
                 } else {
-                    filters.add(BasicRollupsOutputSerializer.MetricStat.fromString(stat));
+                    BasicRollupsOutputSerializer.MetricStat possibleStat = BasicRollupsOutputSerializer.MetricStat.fromString(stat);
+                    if (possibleStat != null)
+                        filters.add(possibleStat);
                 }
             }
             return filters;
