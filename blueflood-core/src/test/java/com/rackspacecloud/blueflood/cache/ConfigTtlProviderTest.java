@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
@@ -37,7 +38,13 @@ public class ConfigTtlProviderTest {
                 ttlProvider.getTTL("acFoo", Granularity.FULL, RollupType.BF_BASIC)));
 
         // Ask for an invalid combination of granularity and rollup type
-        Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.BF_HISTOGRAMS));
+        try {
+            Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.BF_HISTOGRAMS));
+        } catch (ConfigException ex) {
+            // pass
+        } catch (Exception ex) {
+            Assert.fail("Should have thrown a ConfigException.");
+        }
     }
 
     @Test
