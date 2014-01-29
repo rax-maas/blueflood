@@ -16,16 +16,16 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.collect.ImmutableTable;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.RollupType;
-import com.rackspacecloud.blueflood.types.TtlMapper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 public class SafetyTtlProvider implements TenantTtlProvider {
-    private final TtlMapper SAFETY_TTLS = new TtlMapper();
+    private final ImmutableTable<Granularity, RollupType, TimeValue> SAFETY_TTLS;
     private final TimeValue STRING_TTLS = Constants.STRING_SAFETY_TTL;
 
     private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
@@ -35,6 +35,9 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     }
 
     private SafetyTtlProvider() {
+        ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
+                new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
+
         for (Granularity granularity : Granularity.granularities()) {
             for (RollupType type : RollupType.values()) {
                 try {
@@ -43,18 +46,20 @@ public class SafetyTtlProvider implements TenantTtlProvider {
                     if (cf instanceof CassandraModel.MetricColumnFamily) {
                         CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
                         TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-                        SAFETY_TTLS.setTtl(granularity, type, ttl);
+                        ttlMapBuilder.put(granularity, type, ttl);
                     }
                 } catch (IllegalArgumentException ex) {
                     // pass
                 }
             }
         }
+
+        this.SAFETY_TTLS = ttlMapBuilder.build();
     }
 
     @Override
     public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
-        return SAFETY_TTLS.getTtl(gran, rollupType);
+        return SAFETY_TTLS.get(gran, rollupType);
     }
 
     @Override

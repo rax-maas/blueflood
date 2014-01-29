@@ -16,12 +16,12 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.collect.ImmutableTable;
 import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
 import com.rackspacecloud.blueflood.types.RollupType;
-import com.rackspacecloud.blueflood.types.TtlMapper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class ConfigTtlProvider implements TenantTtlProvider {
     private static final Logger log = LoggerFactory.getLogger(ConfigTtlProvider.class);
 
-    private final TtlMapper ttlMapper;
+    private final ImmutableTable<Granularity, RollupType, TimeValue> ttlMapper;
     private final TimeValue stringTTL;
     private static final ConfigTtlProvider INSTANCE = new ConfigTtlProvider();
 
@@ -40,88 +40,89 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     }
 
     private ConfigTtlProvider() {
-        this.ttlMapper = new TtlMapper();
         final Configuration config = Configuration.getInstance();
 
         // String rollups
         stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
+        ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
+                new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
 
         // Basic rollups
-        ttlMapper.setTtl(Granularity.FULL, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.FULL, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.RAW_METRICS_TTL), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_5, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.MIN_5, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_20, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.MIN_20, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_60, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.MIN_60, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_240, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.MIN_240, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_1440, RollupType.BF_BASIC,
+        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN1440), TimeUnit.DAYS));
 
         // Histogram rollups
 
-        ttlMapper.setTtl(Granularity.MIN_5, RollupType.BF_HISTOGRAMS,
+        ttlMapBuilder.put(Granularity.MIN_5, RollupType.BF_HISTOGRAMS,
                 new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_20, RollupType.BF_HISTOGRAMS,
+        ttlMapBuilder.put(Granularity.MIN_20, RollupType.BF_HISTOGRAMS,
                 new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_60, RollupType.BF_HISTOGRAMS,
+        ttlMapBuilder.put(Granularity.MIN_60, RollupType.BF_HISTOGRAMS,
                 new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_240, RollupType.BF_HISTOGRAMS,
+        ttlMapBuilder.put(Granularity.MIN_240, RollupType.BF_HISTOGRAMS,
                 new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_1440, RollupType.BF_HISTOGRAMS,
+        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.BF_HISTOGRAMS,
                 new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN1440), TimeUnit.DAYS));
 
         /* Pre-aggregated rollups */
 
         // Set rollups
-        ttlMapper.setTtl(Granularity.FULL, RollupType.SET,
+        ttlMapBuilder.put(Granularity.FULL, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_5, RollupType.SET,
+        ttlMapBuilder.put(Granularity.MIN_5, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_20, RollupType.SET,
+        ttlMapBuilder.put(Granularity.MIN_20, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_60, RollupType.SET,
+        ttlMapBuilder.put(Granularity.MIN_60, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_240, RollupType.SET,
+        ttlMapBuilder.put(Granularity.MIN_240, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_1440, RollupType.SET,
+        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.SET,
                 new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN1440), TimeUnit.DAYS));
 
         // Timer rollups
-        ttlMapper.setTtl(Granularity.FULL, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.FULL, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_5, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.MIN_5, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_20, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.MIN_20, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_60, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.MIN_60, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_240, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.MIN_240, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_1440, RollupType.TIMER,
+        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.TIMER,
                 new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN1440), TimeUnit.DAYS));
 
         // Gauge rollups
-        ttlMapper.setTtl(Granularity.FULL, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.FULL, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_5, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.MIN_5, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_20, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.MIN_20, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_60, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.MIN_60, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_240, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.MIN_240, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapper.setTtl(Granularity.MIN_1440, RollupType.GAUGE,
+        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.GAUGE,
                 new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN1440), TimeUnit.DAYS));
+        this.ttlMapper = ttlMapBuilder.build();
     }
 
     @Override
     public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
-        final TimeValue ttl = ttlMapper.getTtl(gran, rollupType);
-        System.out.println("ttl " + ttl);
+        final TimeValue ttl = ttlMapper.get(gran, rollupType);
 
         if (ttl == null) {
             log.warn("No valid TTL entry for granularity: " + gran + ", rollup type: " + rollupType.name()
