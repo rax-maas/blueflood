@@ -41,6 +41,12 @@ public enum HttpConfig implements ConfigDefaults {
     // Maximum number of WORKER threads for HTTP output (must be included in connections calculations)
     MAX_READ_WORKER_THREADS("50"),
 
+    // Maximum number of ACCEPT threads for HTTP input server
+    MAX_WRITE_ACCEPT_THREADS("10"),
+
+    // Maximum number of WORKER threads for HTTP output (must be included in connections calculations)
+    MAX_WRITE_WORKER_THREADS("50"),
+
     // Maximum number of batch requests that can be queued
     MAX_BATCH_READ_REQUESTS_TO_QUEUE("10"),
 
