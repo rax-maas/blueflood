@@ -153,10 +153,14 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         for (MetricStat stat : filterStats) {
             try {
                 Object filteredValue = stat.convertRollupToObject(rollup);
-                if (filteredValue instanceof Map)
-                    filteredObject.putAll((Map)filteredValue);
-                else
+                if (filteredValue instanceof Map && stat == MetricStat.PERCENTILE) {
+                    for (Map.Entry entry : ((Map<?,?>)filteredValue).entrySet()) {
+                        TimerRollup.Percentile pct = (TimerRollup.Percentile)entry.getValue();
+                        filteredObject.put(String.format("pct_%s", entry.getKey().toString()), pct.getMean());
+                    }
+                } else {
                     filteredObject.put(stat.toString(), filteredValue);
+                }
             } catch (Exception ex) {
                 log.warn(ex.getMessage(), ex);
             }
