@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
@@ -32,8 +33,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
 
     private final TtlMapper ttlMapper;
     private final TimeValue stringTTL;
-    private final SafetyTtlProvider fallback;
-
     private static final ConfigTtlProvider INSTANCE = new ConfigTtlProvider();
 
     public static ConfigTtlProvider getInstance() {
@@ -42,8 +41,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
 
     private ConfigTtlProvider() {
         this.ttlMapper = new TtlMapper();
-        this.fallback = SafetyTtlProvider.getInstance();
-
         final Configuration config = Configuration.getInstance();
 
         // String rollups
@@ -129,7 +126,8 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         if (ttl == null) {
             log.warn("No valid TTL entry for granularity: " + gran + ", rollup type: " + rollupType.name()
                     + " in config. Resorting to safe TTL values.");
-            return fallback.getTTL(tenantId, gran, rollupType);
+            throw new ConfigException("No TTL config found for granularity: " + gran
+                    + ", rollup type: " + rollupType.name());
         }
 
         return ttl;

@@ -16,37 +16,27 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class TtlMapper {
-    // Simple map sufficient as guava map would lock at tenant level
-    private Map<Granularity, Map<RollupType, TimeValue>> ttlMap;
+    private Table<Granularity, RollupType, TimeValue> ttlMap;
 
     public TtlMapper() {
-        ttlMap = new HashMap<Granularity, Map<RollupType, TimeValue>>();
+        ttlMap = HashBasedTable.create();
     }
 
     public void setTtl(Granularity gran, RollupType rollupType, TimeValue ttl) {
-        Map<RollupType, TimeValue> rollupTypeTtlMap = ttlMap.get(gran);
-
-        if (rollupTypeTtlMap == null) {
-            rollupTypeTtlMap = new HashMap<RollupType, TimeValue>();
-            ttlMap.put(gran, rollupTypeTtlMap);
-        }
-
+        Map<RollupType, TimeValue> rollupTypeTtlMap = ttlMap.row(gran);
         rollupTypeTtlMap.put(rollupType, ttl);
     }
 
     public TimeValue getTtl(Granularity gran, RollupType rollupType) {
-        Map<RollupType, TimeValue> rollupTypeTtlMap = ttlMap.get(gran);
-
-        if (rollupTypeTtlMap == null) {
-            return null;
-        }
+        Map<RollupType, TimeValue> rollupTypeTtlMap = ttlMap.row(gran);
 
         return rollupTypeTtlMap.get(rollupType);
     }
