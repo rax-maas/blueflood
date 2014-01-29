@@ -70,3 +70,4 @@ atlassian-ide-plugin.xml
 # Project specific gitignore #
 #######################################
 tests.log
+node_modules

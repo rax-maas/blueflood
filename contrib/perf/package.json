@@ -1,0 +1,9 @@
+{
+  "name": "bf-perf-benchmark",
+  "version": "1.0.0",
+  "dependencies": {
+    "async": "0.2.10",
+    "optimist": "0.6.0",
+    "node-statsd": "0.0.7"
+  }
+}
