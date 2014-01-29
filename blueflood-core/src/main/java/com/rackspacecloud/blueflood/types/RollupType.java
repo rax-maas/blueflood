@@ -13,7 +13,7 @@ public enum RollupType {
     public static final RollupType[] SIMPLE_TYPES = new RollupType[] {COUNTER, SET, GAUGE, BF_BASIC};
     
     public static RollupType fromString(String s) {
-        if (s == null)
+        if (s == null || s.length() == 0)
             return RollupType.BF_BASIC;
         
         try {

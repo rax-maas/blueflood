@@ -118,6 +118,8 @@ public class Metric implements IMetric {
         public final static DataType LONG = new DataType("L");
         public final static DataType DOUBLE = new DataType("D");
         public final static DataType BOOLEAN = new DataType("B");
+        
+        public final static DataType NUMERIC = new DataType("NUMERIC"); // marker for non-string + non-boolean
 
         public static DataType getMetricType(Object metricValue) {
             if (metricValue instanceof String) {

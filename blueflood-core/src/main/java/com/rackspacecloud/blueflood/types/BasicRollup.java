@@ -202,6 +202,6 @@ public class BasicRollup implements Rollup, IBasicRollup {
 
     @Override
     public Boolean hasData() {
-        return getCount() == 0;
+        return getCount() != 0;
     }
 }

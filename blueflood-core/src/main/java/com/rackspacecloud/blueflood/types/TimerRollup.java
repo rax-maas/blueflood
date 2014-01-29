@@ -105,7 +105,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
 
     @Override
     public Boolean hasData() {
-        return sampleCount > 0;
+        return count > 0;
     }
 
     // todo: consider moving this to its own class.

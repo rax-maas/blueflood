@@ -108,6 +108,6 @@ public class CounterRollup implements Rollup {
 
     @Override
     public Boolean hasData() {
-        return sampleCount > 0;
+        return count.longValue() > 0;
     }
 }

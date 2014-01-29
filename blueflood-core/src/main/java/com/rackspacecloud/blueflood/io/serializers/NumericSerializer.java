@@ -530,7 +530,7 @@ public class NumericSerializer {
         }
     }
     
-    private static class RawSerializer extends AbstractSerializer<Object> {
+    public static class RawSerializer extends AbstractSerializer<Object> {
         @Override
         public ByteBuffer toByteBuffer(Object o) {
             try {
