@@ -20,9 +20,13 @@ import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
 import com.bigml.histogram.Target;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.GaugeRollup;
 import com.rackspacecloud.blueflood.types.HistogramRollup;
 import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.types.TimerRollup;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,5 +88,66 @@ public class FakeMetricDataGenerator {
             bins.add(new Bin(55.55 + i, (double) i, SimpleTarget.TARGET));
         }
         return bins;
+    }
+    
+    public static Points<CounterRollup> generateFakeCounterRollupPoints() {
+        Points<CounterRollup> points = new Points<CounterRollup>();
+        long startTime = 1234567L;
+        for (int i = 0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<CounterRollup> point = new Points.Point<CounterRollup>(timeNow, new CounterRollup()
+                    .withCount(i + 1000)
+                    .withRate((double) i)
+                    .withSampleCount(1));
+            points.add(point);
+        }
+        return points;
+    }
+    
+    public static Points<SetRollup> generateFakeSetRollupPoints() {
+        Points<SetRollup> points = new Points<SetRollup>();
+        long startTime = 1234567L;
+        for (int i = 0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<SetRollup> point = new Points.Point<SetRollup>(timeNow, new SetRollup()
+                    .withObject(i)
+                    .withObject(i % 2)
+                    .withObject(i / 2));
+            points.add(point);
+        }
+        return points;
+    }
+    
+    public static Points<GaugeRollup> generateFakeGaugeRollups() {
+        Points<GaugeRollup> points = new Points<GaugeRollup>();
+        long startTime = 1234567L;
+        for (int i = 0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<GaugeRollup> point = new Points.Point<GaugeRollup>(timeNow, new GaugeRollup()
+                .withLatest(timeNow, i));
+            points.add(point);
+        }
+        return points;
+    }
+    
+    public static Points<TimerRollup> generateFakeTimerRollups() {
+        Points<TimerRollup> points = new Points<TimerRollup>();
+        long startTime = 1234567L;
+        for (int i = 0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            TimerRollup rollup = new TimerRollup()
+                .withAverage(i)
+                .withCount(i)
+                .withCountPS(i*0.1d)
+                .withMaxValue(i)
+                .withMinValue(i)
+                .withSum(i+i)
+                .withVariance(i);
+            rollup.setPercentile("50", i);
+            rollup.setPercentile("99", i * 2 + 1);
+            Points.Point<TimerRollup> point = new Points.Point<TimerRollup>(timeNow, rollup);
+            points.add(point);
+        }
+        return points;
     }
 }
