@@ -27,15 +27,13 @@ import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.cache.TtlCache;
-import com.rackspacecloud.blueflood.internal.Account;
-import com.rackspacecloud.blueflood.internal.InternalAPIFactory;
+import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
+import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
 import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
@@ -46,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +52,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
-    private static final int CACHE_CONCURRENCY = config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
@@ -66,19 +62,9 @@ public class AstyanaxWriter extends AstyanaxIO {
         return instance;
     }
 
-    private static TtlCache ROLLUP_TTL_CACHE = new TtlCache(
-            "Rollup TTL Cache",
-            new TimeValue(120, TimeUnit.HOURS),
-            CACHE_CONCURRENCY,
-            InternalAPIFactory.createDefaultTTLProvider()) {
-        // we do not care about caching full res values.
-        @Override
-        protected Map<ColumnFamily<Locator, Long>, TimeValue> buildTtlMap(Account acct) {
-            Map<ColumnFamily<Locator, Long>, TimeValue> map = super.buildTtlMap(acct);
-            map.remove("full");
-            return map;
-        }
-    };
+    // todo: should be some other impl.
+    private static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
+    
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // written in the last 10 minutes, don't bother.
@@ -302,9 +288,18 @@ public class AstyanaxWriter extends AstyanaxIO {
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();
-            int ttl = (int) ROLLUP_TTL_CACHE.getTtl(
+            int ttl;
+            try {
+                ttl = (int)TTL_PROVIDER.getTTL(
                     writeContext.getLocator().getTenantId(),
-                    writeContext.getDestinationCF()).toSeconds();
+                    writeContext.getGranularity(),
+                    writeContext.getRollup().getRollupType()).toSeconds();
+            } catch (Exception ex) {
+                log.warn(ex.getMessage(), ex);
+                ttl = (int)SafetyTtlProvider.getInstance().getSafeTTL(
+                        writeContext.getGranularity(),
+                        writeContext.getRollup().getRollupType()).toSeconds();
+            }
             AbstractSerializer serializer = NumericSerializer.serializerFor(rollup.getClass());
             try {
                 mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
