@@ -204,4 +204,9 @@ public class BasicRollup implements Rollup, IBasicRollup {
     public Boolean hasData() {
         return getCount() == 0;
     }
+
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.BF_BASIC;
+    }
 }

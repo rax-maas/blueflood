@@ -69,6 +69,11 @@ public class SimpleNumber implements Rollup {
     }
 
     @Override
+    public RollupType getRollupType() {
+        return RollupType.NOT_A_ROLLUP;
+    }
+
+    @Override
     public int hashCode() {
         return value.hashCode();
     }
