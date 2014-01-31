@@ -135,4 +135,9 @@ public class HistogramRollup implements Rollup {
     public Boolean hasData() {
         throw new RuntimeException("Unsupported operation for histogram");
     }
+
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.BF_HISTOGRAMS;
+    }
 }
