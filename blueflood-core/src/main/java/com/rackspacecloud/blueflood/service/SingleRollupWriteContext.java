@@ -17,25 +17,29 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 public class SingleRollupWriteContext {
     private final Rollup rollup;
     private final Locator locator;
     private final Long timestamp;
     private final ColumnFamily<Locator, Long> destinationCF;
+    private final Granularity granularity;
 
     // public only for tests
-    public SingleRollupWriteContext(Rollup rollup, Locator locator, ColumnFamily<Locator, Long> destCf, Long timestamp) {
+    public SingleRollupWriteContext(Rollup rollup, Locator locator, Granularity granularity, ColumnFamily<Locator, Long> destCf, Long timestamp) {
         this.rollup = rollup;
         this.locator = locator;
+        this.granularity = granularity;
         this.destinationCF = destCf;
         this.timestamp = timestamp;
     }
 
     public SingleRollupWriteContext(Rollup rollup, SingleRollupReadContext singleRollupReadContext, ColumnFamily<Locator, Long> dstCF) {
-        this(rollup, singleRollupReadContext.getLocator(), dstCF, singleRollupReadContext.getRange().getStart());
+        this(rollup, singleRollupReadContext.getLocator(), singleRollupReadContext.getRollupGranularity(), dstCF, singleRollupReadContext.getRange().getStart());
     }
 
     public Rollup getRollup() {
@@ -53,4 +57,6 @@ public class SingleRollupWriteContext {
     public ColumnFamily<Locator, Long> getDestinationCF() {
         return destinationCF;
     }
+    
+    public Granularity getGranularity() { return granularity; }
 }
