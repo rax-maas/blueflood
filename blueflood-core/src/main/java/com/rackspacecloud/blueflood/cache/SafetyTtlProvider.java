@@ -59,6 +59,10 @@ public class SafetyTtlProvider implements TenantTtlProvider {
 
     @Override
     public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
+        return getSafeTTL(gran, rollupType);
+    }
+    
+    public TimeValue getSafeTTL(Granularity gran, RollupType rollupType) {
         return SAFETY_TTLS.get(gran, rollupType);
     }
 

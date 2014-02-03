@@ -233,11 +233,11 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
                     CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.start));
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
 
             destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destCF, range.start));
+            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
         }
 
         AstyanaxWriter.getInstance().insertRollups(writeContexts);
