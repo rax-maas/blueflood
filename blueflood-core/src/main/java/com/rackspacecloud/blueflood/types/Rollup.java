@@ -98,5 +98,4 @@ public interface Rollup {
 
     // Tells whether or not data exists
     public Boolean hasData();
-    public RollupType getRollupType();
 }

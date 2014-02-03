@@ -34,7 +34,6 @@ import java.util.List;
 
 public class IncomingMetricMetadataAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(IncomingMetricMetadataAnalyzer.class);
-    private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
     
     private final MetadataCache cache;
     
@@ -46,7 +45,6 @@ public class IncomingMetricMetadataAnalyzer {
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
         for (IMetric metric : metrics) {
             try {
-                cacheRollupType(metric);
                 if (metric instanceof Metric) {
                     Collection<IncomingMetricException> metricProblems = checkMetric((Metric)metric);
                     if (metricProblems != null) {
@@ -98,9 +96,5 @@ public class IncomingMetricMetadataAnalyzer {
         }
 
         return problems;
-    }
-    
-    private void cacheRollupType(IMetric metric) throws CacheException {
-        cache.put(metric.getLocator(), cacheKey, metric.getRollupType().toString());
     }
 }
