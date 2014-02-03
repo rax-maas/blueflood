@@ -53,40 +53,11 @@
       <version>${blueflood.version}</version>
     </dependency>
 
-    <!--<dependency>-->
-      <!--<groupId>org.apache.jclouds</groupId>-->
-      <!--<artifactId>jclouds-all</artifactId>-->
-      <!--<version>1.6.0</version>-->
-    <!--</dependency>-->
-
-    <!--<dependency>-->
-      <!--<groupId>org.jclouds</groupId>-->
-      <!--<artifactId>jclouds-allblobstore</artifactId>-->
-      <!--<version>1.5.2</version>-->
-    <!--</dependency>-->
-    
-    <!--<dependency>-->
-      <!--<groupId>org.apache.jclouds.provider</groupId>-->
-      <!--<artifactId>cloudfiles-us</artifactId>-->
-      <!--<version>1.7.0</version>-->
-    <!--</dependency>-->
-
-<dependency>
-	<groupId>org.jclouds.provider</groupId>
-	<artifactId>cloudfiles-us</artifactId>
-	<version>1.6.0</version>
-</dependency>
-    
-    
-
-            
-            
-    <!--<dependency>-->
-      <!--<groupId>org.apache.jclouds.provider</groupId>-->
-      <!--<artifactId>cloudfiles-us</artifactId>-->
-      <!--<version>1.6.0</version>-->
-    <!--</dependency>-->
-    
+    <dependency>
+      <groupId>org.jclouds.provider</groupId>
+      <artifactId>cloudfiles-us</artifactId>
+      <version>1.6.0</version>
+    </dependency>
   </dependencies>
 
 
