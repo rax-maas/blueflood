@@ -24,11 +24,13 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import java.io.IOException;
 
+@Ignore
 public class HttpJsonResourceTest {
     private static final String BASE_PATH = "/test_base";
 
