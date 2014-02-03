@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.tools;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.tools.ops.RollupTool;
 import com.rackspacecloud.blueflood.types.*;
@@ -33,7 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class RollupToolTest {
+public class RollupToolTest extends IntegrationTestBase {
 
     private AstyanaxWriter writer = AstyanaxWriter.getInstance();
     private AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -42,6 +43,7 @@ public class RollupToolTest {
 
     @Before
     public void setUp() throws Exception{
+        super.setUp();
         final TimeValue ttl = new TimeValue(48, TimeUnit.HOURS);
 
         // write some full resolution data.
