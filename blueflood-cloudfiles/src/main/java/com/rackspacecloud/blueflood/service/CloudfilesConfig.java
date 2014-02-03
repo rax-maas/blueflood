@@ -25,12 +25,12 @@ public enum CloudfilesConfig implements ConfigDefaults {
     CLOUDFILES_MAX_BUFFER_SIZE("104857600"), // 1024*1024*100 = 100MB
     CLOUDFILES_BUFFER_DIR("./CLOUDFILES_BUFFER");
 
-
     static {
         Configuration.getInstance().loadDefaults(CloudfilesConfig.values());
     }
 
     private String defaultValue;
+
     private CloudfilesConfig(String value) {
         this.defaultValue = value;
     }
