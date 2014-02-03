@@ -21,3 +21,5 @@
    * "GET_BY_POINTS_ASSUME_INTERVAL" config option added. GetByPoints requests assume this as data ingest interval (30s default)
    * "GET_BY_POINTS_GRANULARITY_SELECTION" config option. GetByPoints will use for Granularity selection.
      * New default is "GEOMETRIC". 1.x behavior can be preserved by setting the value to "LINEAR". Also available is "LESSTHANEQUAL"
+ * Added blueflood-cloudfiles module. If enabled, will upload json dumps of all rollups to Rackspace CloudFiles.
+   * See CloudfilesConfig.java for configuration options.

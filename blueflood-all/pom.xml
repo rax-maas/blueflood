@@ -85,6 +85,11 @@
       <version>${blueflood.version}</version>
    </dependency>
 
+    <dependency>
+      <artifactId>blueflood-cloudfiles</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${blueflood.version}</version>
+   </dependency>
   </dependencies>
 
 </project>
