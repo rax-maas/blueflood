@@ -26,6 +26,7 @@ import org.apache.http.params.CoreConnectionPNames;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
@@ -36,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Ignore
 public class InternalApiTest {
     private InternalAPI api;
     private HttpServerFixture server;

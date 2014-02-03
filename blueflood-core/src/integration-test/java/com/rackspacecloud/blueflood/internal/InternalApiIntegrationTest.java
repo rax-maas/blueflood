@@ -22,6 +22,7 @@ import org.apache.http.client.HttpResponseException;
 
 import org.apache.http.conn.ClientConnectionManager;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
@@ -30,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Ignore
 public class InternalApiIntegrationTest {
     private final String clusterString = Configuration.getInstance().getStringProperty(CoreConfig.INTERNAL_API_CLUSTER);
 
