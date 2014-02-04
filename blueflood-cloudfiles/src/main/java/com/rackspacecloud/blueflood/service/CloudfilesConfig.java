@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.service;
 public enum CloudfilesConfig implements ConfigDefaults {
     CLOUDFILES_USERNAME(""),
     CLOUDFILES_API_KEY(""),
-    CLOUDFILES_CONTAINER("blueflood"),
+    CLOUDFILES_CONTAINER_FORMAT("'blueflood'-yyyy-MM"), // Java SimpleDateFormat
     CLOUDFILES_ZONE("IAD"),
     CLOUDFILES_MAX_BUFFER_AGE("3600000"), // 1000*60*60 = 60 minutes
     CLOUDFILES_MAX_BUFFER_SIZE("104857600"), // 1024*1024*100 = 100MB

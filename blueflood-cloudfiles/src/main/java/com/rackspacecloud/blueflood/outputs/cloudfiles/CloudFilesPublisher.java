@@ -29,6 +29,8 @@ import org.jclouds.location.reference.LocationConstants;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 public class CloudFilesPublisher implements Closeable {
@@ -39,14 +41,15 @@ public class CloudFilesPublisher implements Closeable {
 
     public static final String USERNAME;
     public static final String API_KEY;
-    public static final String CONTAINER;
+    public static final SimpleDateFormat CONTAINER_DATE_FORMAT;
     public static final Timer uploadTimer = Metrics.timer(CloudFilesPublisher.class, "Rollup Upload Timer");
+    private String lastContainerCreated = "";
 
     static {
         Configuration conf = Configuration.getInstance();
         USERNAME = conf.getStringProperty(CloudfilesConfig.CLOUDFILES_USERNAME);
         API_KEY = conf.getStringProperty(CloudfilesConfig.CLOUDFILES_API_KEY);
-        CONTAINER = conf.getStringProperty(CloudfilesConfig.CLOUDFILES_CONTAINER);
+        CONTAINER_DATE_FORMAT = new SimpleDateFormat(conf.getStringProperty(CloudfilesConfig.CLOUDFILES_CONTAINER_FORMAT));
         ZONE = conf.getStringProperty(CloudfilesConfig.CLOUDFILES_ZONE);
     }
 
@@ -59,12 +62,13 @@ public class CloudFilesPublisher implements Closeable {
                 .overrides(overrides)
                 .buildView(BlobStoreContext.class);
         blobStore = context.getBlobStore();
-        createContainer();
     }
 
-    // idempotent
+    // idempotent other than when the month changes between two calls
     private void createContainer() {
-        blobStore.createContainerInLocation(null, CONTAINER);
+        String containerName = CONTAINER_DATE_FORMAT.format(new Date());
+        blobStore.createContainerInLocation(null, containerName);
+        lastContainerCreated = containerName;
     }
 
     public void close() throws IOException {
@@ -79,7 +83,11 @@ public class CloudFilesPublisher implements Closeable {
                     .contentEncoding(remoteName.endsWith(".gz") ? "gzip" : "identity")
                     .calculateMD5().build();
 
-            blobStore.putBlob(CONTAINER, blob);
+            String containerName = CONTAINER_DATE_FORMAT.format(new Date());
+            if (!lastContainerCreated.matches(containerName)) {
+                createContainer();
+            }
+            blobStore.putBlob(containerName, blob);
         } finally {
             ctx.stop();
         }
