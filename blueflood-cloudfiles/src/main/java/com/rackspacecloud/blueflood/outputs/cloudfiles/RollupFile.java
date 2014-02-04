@@ -63,7 +63,7 @@ public class RollupFile implements Comparable {
      * @return The path to the remote file.
      */
     public String getRemoteName() {
-        java.util.Date time = new java.util.Date(timestamp);
+        java.util.Date time = new java.util.Date(timestamp / 1000000); // convert back from nanoseconds
         String str = new SimpleDateFormat("yyyyMMdd_").format(time);
         return str + Configuration.getInstance().getStringProperty(CoreConfig.SHARDS) + "_" + getName();
     }
@@ -74,7 +74,7 @@ public class RollupFile implements Comparable {
      * @return The age of the rollup file in milliseconds.
      */
     public long getAge() {
-        return System.currentTimeMillis() - timestamp;
+        return System.nanoTime() - timestamp;
     }
 
     /**
@@ -187,6 +187,6 @@ public class RollupFile implements Comparable {
      * @return The new RollupFile.
      */
     public static RollupFile buildRollupFile(File bufferDir) {
-        return new RollupFile(new File(bufferDir, System.currentTimeMillis() + ".json"));
+        return new RollupFile(new File(bufferDir, System.nanoTime() + ".json"));
     }
 }
