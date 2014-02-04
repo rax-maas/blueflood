@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.text.SimpleDateFormat;
 
+// Not thread-safe
 public class RollupFile implements Comparable {
     private static final Logger log = LoggerFactory.getLogger(RollupFile.class);
 
@@ -33,6 +34,7 @@ public class RollupFile implements Comparable {
     private FileOutputStream outputStream;
     private long timestamp;
     private RollupSerializer serializer = new RollupSerializer();
+    public static final FileFilter fileFilter = new RollupFileFilter();
 
     public RollupFile(File file) {
         this.file = file;
@@ -94,7 +96,7 @@ public class RollupFile implements Comparable {
      * @return An InputStream of data from the file.
      * @throws FileNotFoundException
      */
-    public InputStream getReadStream() throws FileNotFoundException {
+    public InputStream asReadStream() throws FileNotFoundException {
         return new FileInputStream(file);
     }
 
@@ -105,11 +107,10 @@ public class RollupFile implements Comparable {
      * @throws IOException
      */
     public void append(RollupEvent rollup) throws IOException {
-        log.info("Appending a rollupEvent");
         ensureOpen();
         outputStream.write(serializer.toBytes(rollup));
         outputStream.write('\n');
-        log.info("Wrote it successfully!");
+        outputStream.flush();
     }
 
     public void close() throws IOException {
@@ -119,9 +120,9 @@ public class RollupFile implements Comparable {
         }
     }
 
-    public void delete() {
+    public void delete() throws IOException {
         if (!file.delete()) {
-            throw new RuntimeException("Unable to remove rollup file");
+            throw new IOException("Unable to remove rollup file");
         }
     }
 
@@ -163,18 +164,6 @@ public class RollupFile implements Comparable {
             log.info("skipping non-file: {}", fileName);
         }
 
-        if (!fileName.endsWith(".json")) {
-            log.info("skipping non-JSON file: {}", fileName);
-            return false;
-        }
-
-        try {
-            parseTimestamp(fileName);
-        } catch (NumberFormatException e) {
-            log.info("skipping malformatted filename: {}", fileName);
-            return false;
-        }
-
         return true;
     }
 
@@ -188,5 +177,28 @@ public class RollupFile implements Comparable {
      */
     public static RollupFile buildRollupFile(File bufferDir) {
         return new RollupFile(new File(bufferDir, System.nanoTime() + ".json"));
+    }
+
+    private static class RollupFileFilter implements FileFilter {
+        public boolean accept(File f) {
+            String fileName = f.getName();
+
+            if (!f.isFile()) {
+                return false;
+            }
+
+            if (!fileName.endsWith(".json")) {
+                log.info("skipping non-JSON file: {}", fileName);
+                return false;
+            }
+
+            try {
+                parseTimestamp(fileName);
+            } catch (NumberFormatException e) {
+                log.info("skipping malformatted filename: {}", fileName);
+                return false;
+            }
+            return true;
+        }
     }
 }

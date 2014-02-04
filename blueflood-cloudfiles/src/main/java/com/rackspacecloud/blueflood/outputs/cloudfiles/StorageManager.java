@@ -71,14 +71,12 @@ public class StorageManager {
             throw new IOException("Specified BUFFER_DIR is not a directory: " + bufferDir.getAbsolutePath());
         }
 
-        File[] bufferFiles = bufferDir.listFiles();
+        File[] bufferFiles = bufferDir.listFiles(RollupFile.fileFilter);
         LinkedList<RollupFile> rollupFileList = new LinkedList<RollupFile>();
 
         // Build a list of all buffer files in the directory
         for (File bufferFile : bufferFiles) {
-            if (RollupFile.isRollupFile(bufferFile)) {
-                rollupFileList.add(new RollupFile(bufferFile));
-            }
+            rollupFileList.add(new RollupFile(bufferFile));
         }
 
         Collections.sort(rollupFileList);
@@ -194,7 +192,7 @@ public class StorageManager {
             while (true) {
                 try {
 
-                    InputStream fileStream = file.getReadStream();
+                    InputStream fileStream = file.asReadStream();
                     publisher.publish(file.getRemoteName() + ".gz", gzipper.gzip(fileStream));
                     file.delete();
                     break;
@@ -210,7 +208,7 @@ public class StorageManager {
                     /**
                      * These are *probably* jclouds exceptions, but they make it very hard to know.
                      */
-                    log.error("error uploading metric file", e);
+                    log.error("Error uploading RollupFile", e);
                     uploadExceptionMeter.mark();
                 }
 
