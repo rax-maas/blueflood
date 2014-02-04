@@ -24,20 +24,15 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
+import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.location.reference.LocationConstants;
-import org.jclouds.openstack.swift.CommonSwiftAsyncClient;
-import org.jclouds.openstack.swift.CommonSwiftClient;
-import org.jclouds.openstack.swift.domain.SwiftObject;
-import org.jclouds.rest.RestContext;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 public class CloudFilesPublisher implements Closeable {
     private final BlobStore blobStore;
-    private final RestContext<CommonSwiftClient, CommonSwiftAsyncClient> swiftCtx;
 
     public static final String PROVIDER = "cloudfiles-us";
     public static final String ZONE;
@@ -64,27 +59,27 @@ public class CloudFilesPublisher implements Closeable {
                 .overrides(overrides)
                 .buildView(BlobStoreContext.class);
         blobStore = context.getBlobStore();
-        swiftCtx = context.unwrap();
         createContainer();
     }
 
     // idempotent
     private void createContainer() {
-        swiftCtx.getApi().createContainer(CONTAINER);
+        blobStore.createContainerInLocation(null, CONTAINER);
     }
 
     public void close() throws IOException {
         Closeables.close(blobStore.getContext(), true);
     }
 
-    public void publish(String remoteName, InputStream fileStream) {
+    public void publish(String remoteName, byte[] payload) throws IOException {
         Timer.Context ctx = uploadTimer.time();
         try {
-            SwiftObject object = swiftCtx.getApi().newSwiftObject();
-            object.getInfo().setName(remoteName);
-            object.setPayload(fileStream);
+            Blob blob = blobStore.blobBuilder(remoteName).payload(payload)
+                    .contentType("application/json")
+                    .contentEncoding(remoteName.endsWith(".gz") ? "gzip" : "identity")
+                    .calculateMD5().build();
 
-            swiftCtx.getApi().putObject(CONTAINER, object);
+            blobStore.putBlob(CONTAINER, blob);
         } finally {
             ctx.stop();
         }

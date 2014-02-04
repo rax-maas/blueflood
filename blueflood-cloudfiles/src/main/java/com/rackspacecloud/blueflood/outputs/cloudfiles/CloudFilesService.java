@@ -55,7 +55,7 @@ public class CloudFilesService  implements Emitter.Listener<RollupEvent>, EventL
     public synchronized void stopService() {
         if (!started) { throw new RuntimeException("Not started, but stopService was called"); }
         try {
-            storageManager.shutdown();
+            storageManager.stop();
             started = false;
         } catch (IOException e) {
             log.warn("Error shutting down CloudFilesPublisher", e);
@@ -64,12 +64,10 @@ public class CloudFilesService  implements Emitter.Listener<RollupEvent>, EventL
 
     @Override
     public void call(RollupEvent... args) {
-        for (RollupEvent rollup : args) {
-            try {
-                storageManager.store(rollup);
-            } catch (IOException e) {
-                log.error("Problem enqueueing rollup event for upload.", e);
-            }
+        try {
+            storageManager.store(args);
+        } catch (IOException e) {
+            log.error("Problem enqueueing rollup events for upload.", e);
         }
     }
 }

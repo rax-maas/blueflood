@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.outputs.cloudfiles;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -43,7 +42,6 @@ public class StorageManager {
     private final int maxBufferSize;
     private static final int UPLOAD_RETRY_INTERVAL = 30000;
     private final BlockingQueue<RollupFile> done = new LinkedBlockingQueue<RollupFile>();
-    private final Counter pendingCount = Metrics.counter(StorageManager.class, "Pending Count");
     private RollupFile current;
     private Thread uploaderThread;
     private DoneFileUploader fileUploader;
@@ -93,35 +91,7 @@ public class StorageManager {
         }
 
         // Queue the rest for upload
-//        pendingCount.set(rollupFileList.size());
         done.addAll(rollupFileList);
-
-    }
-
-    public synchronized void store(RollupEvent event) throws IOException {
-        if (current.getAge() > maxBufferAge) {
-            log.info("buffer file reached age limit, rotating: {}", current.getName());
-            rotateCurrent();
-        } else if (current.getSize() > maxBufferSize) {
-            log.info("buffer file reached size limit, rotating: {}", current.getName());
-            rotateCurrent();
-        }
-
-        rollupEventsSeen.mark();
-        try {
-            current.append(event);
-        } catch (Exception e) {
-            rollupWriteFailures.mark();
-            log.error("Could not locally persist rollupEvent, throwing away.", event, e);
-        }
-    }
-
-    private synchronized void rotateCurrent() throws IOException {
-        current.close();
-        pendingCount.inc();
-        done.add(current);
-        current = RollupFile.buildRollupFile(bufferDir);
-        fileCreationMeter.mark();
     }
 
     /**
@@ -135,17 +105,52 @@ public class StorageManager {
 
         uploaderThread = new Thread(fileUploader, "StorageManager uploader");
         uploaderThread.start();
-        log.info("Storage Manager fully started");
     }
 
-    public void shutdown() throws IOException {
+    /**
+     * Stop background storage management.
+     * @throws IOException
+     */
+    public synchronized void stop() throws IOException {
+        if (uploaderThread == null) {
+            throw new RuntimeException("Not running");
+        }
+
         uploaderThread.interrupt();
+        uploaderThread = null;
         fileUploader.shutdown();
     }
 
+    public synchronized void store(RollupEvent... events) throws IOException {
+        if (current.getAge() > maxBufferAge) {
+            log.info("buffer file reached age limit, rotating: {}", current.getName());
+            rotateCurrent();
+        } else if (current.getSize() > maxBufferSize) {
+            log.info("buffer file reached size limit, rotating: {}", current.getName());
+            rotateCurrent();
+        }
+
+        for (RollupEvent event : events) {
+            rollupEventsSeen.mark();
+            try {
+                current.append(event);
+            } catch (Exception e) {
+                rollupWriteFailures.mark();
+                log.error("Could not locally persist rollupEvent, throwing away.", event, e);
+            }
+        }
+    }
+
+    private synchronized void rotateCurrent() throws IOException {
+        current.close();
+        done.add(current);
+        current = RollupFile.buildRollupFile(bufferDir);
+        fileCreationMeter.mark();
+    }
 
     private class DoneFileUploader implements Runnable {
         private CloudFilesPublisher publisher;
+        private Gzipper gzipper = new Gzipper();
 
         public DoneFileUploader() {
             resetPublisher();
@@ -163,7 +168,6 @@ public class StorageManager {
             try {
                 while (true) {
                     uploadAndDeleteFile(done.take());
-                    pendingCount.dec();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -189,8 +193,9 @@ public class StorageManager {
         private synchronized void uploadAndDeleteFile(RollupFile file) throws InterruptedException {
             while (true) {
                 try {
+
                     InputStream fileStream = file.getReadStream();
-                    publisher.publish(file.getRemoteName(), fileStream);
+                    publisher.publish(file.getRemoteName() + ".gz", gzipper.gzip(fileStream));
                     file.delete();
                     break;
                 } catch (IOException e) {
