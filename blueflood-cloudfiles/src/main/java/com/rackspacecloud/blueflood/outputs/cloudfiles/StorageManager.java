@@ -97,11 +97,11 @@ public class StorageManager {
      * Start background storage management and uploading tasks.
      */
     public synchronized void start() {
-        fileUploader = new DoneFileUploader();
         if (uploaderThread != null) {
             throw new RuntimeException("StorageManager is already started");
         }
 
+        fileUploader = new DoneFileUploader();
         uploaderThread = new Thread(fileUploader, "StorageManager uploader");
         uploaderThread.start();
     }
