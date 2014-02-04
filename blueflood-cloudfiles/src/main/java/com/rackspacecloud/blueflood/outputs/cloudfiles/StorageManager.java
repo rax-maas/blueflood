@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -191,11 +192,16 @@ public class StorageManager {
         private synchronized void uploadAndDeleteFile(RollupFile file) throws InterruptedException {
             while (true) {
                 try {
-
                     InputStream fileStream = file.asReadStream();
                     publisher.publish(file.getRemoteName() + ".gz", gzipper.gzip(fileStream));
                     file.delete();
                     break;
+                } catch (FileNotFoundException e) {
+                    log.error("File could not be found to be deleted.", e);
+                    break; // assume file is already gone, so just break
+                } catch (IllegalAccessException e) {
+                    log.error("File exists but could not be deleted.", e);
+                    break; // prevent getting stuck in a loop of re-uploading the file indefinitely
                 } catch (IOException e) {
                     log.error("error reading or removing metric file, ignoring", e);
                     uploadExceptionMeter.mark();

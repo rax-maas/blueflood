@@ -120,9 +120,12 @@ public class RollupFile implements Comparable {
         }
     }
 
-    public void delete() throws IOException {
+    public void delete() throws FileNotFoundException, IllegalAccessException {
         if (!file.delete()) {
-            throw new IOException("Unable to remove rollup file");
+            if (!file.exists()) {
+                throw new FileNotFoundException("File does not exist");
+            }
+            throw new IllegalAccessException("File exists but could not be deleted. File is probably locked.");
         }
     }
 
