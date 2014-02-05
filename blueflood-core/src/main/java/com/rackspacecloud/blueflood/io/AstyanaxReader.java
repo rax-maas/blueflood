@@ -50,7 +50,7 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
 
     private static final Keyspace keyspace = getKeyspace();
-    private static final String UNKNOWN_UNIT = "unknown";
+    private static final String UNKNOWN = "unknown";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -265,9 +265,22 @@ public class AstyanaxReader extends AstyanaxIO {
             log.warn("Cache exception reading unitString from MetadataCache: ", ex);
         }
         if (unitString == null) {
-            unitString = UNKNOWN_UNIT;
+            unitString = UNKNOWN;
         }
         return unitString;
+    }
+
+    public static String getType(Locator locator) {
+        String type = null;
+        try {
+            type = metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase(), String.class);
+        } catch (CacheException ex) {
+            log.warn("Cache exception reading type from MetadatCache. ", ex);
+        }
+        if (type == null) {
+            type = UNKNOWN;
+        }
+        return type;
     }
 
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
