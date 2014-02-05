@@ -17,9 +17,11 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.utils.MetricHelper;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.util.CharsetUtil;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 public class Constants {
     
@@ -47,8 +49,8 @@ public class Constants {
     public static final byte MIN = 2;
     public static final byte MAX = 3;
 
-    public static final String monitoringZonePrefix = "mz";
-    
+    public static final TimeValue STRING_SAFETY_TTL = new TimeValue(365, TimeUnit.DAYS);
+
     public static final int NUMBER_OF_SHARDS = 128;
     
     public static final int DEFAULT_SAMPLE_INTERVAL = 30; // seconds.

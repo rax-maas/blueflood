@@ -110,4 +110,9 @@ public class CounterRollup implements Rollup {
     public Boolean hasData() {
         return count.longValue() > 0;
     }
+
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.COUNTER;
+    }
 }

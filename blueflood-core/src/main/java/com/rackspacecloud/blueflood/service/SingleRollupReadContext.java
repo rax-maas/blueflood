@@ -36,6 +36,8 @@ public class SingleRollupReadContext {
     private final Range range;
     private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
+    
+    // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
 
     public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {

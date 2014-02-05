@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2014 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-public interface TtlCacheMBean extends CacheStatsMBean {
-    
-    public boolean isSafetyMode();
-    public void setSafetyThreshold(double d);
-    public double getSafetyThreshold();
-    
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.utils.TimeValue;
+
+public interface TenantTtlProvider {
+    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception;
+
+    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception;
+
+    public TimeValue getTTLForStrings(String tenantId) throws Exception;
 }

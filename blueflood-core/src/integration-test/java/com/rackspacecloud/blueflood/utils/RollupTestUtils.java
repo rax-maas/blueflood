@@ -39,7 +39,7 @@ public class RollupTestUtils {
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             Rollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destCF, range.getStart()));
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.getStart()));
         }
 
 

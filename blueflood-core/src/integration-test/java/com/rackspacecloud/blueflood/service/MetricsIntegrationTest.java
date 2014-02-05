@@ -114,10 +114,12 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
+                    Granularity.FULL.coarser(),
                     CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL.coarser()),
                     range.start));
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
+                    Granularity.FULL.MIN_5,
                     CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_5),
                     range.start));
         }
@@ -132,6 +134,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
+                    Granularity.MIN_5.coarser(),
                     CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_5.coarser()),
                     range.start));
 
@@ -140,6 +143,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
+                    Granularity.MIN_20,
                     CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_20),
                     range.start));
         }
@@ -153,6 +157,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
+                    Granularity.MIN_20.coarser(),
                     CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_20.coarser()),
                     range.start));
 
@@ -161,6 +166,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
+                    Granularity.MIN_60,
                     CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_60),
                     range.start));
         }
@@ -175,6 +181,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
+                    Granularity.MIN_60.coarser(),
                     CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_60.coarser()),
                     range.start));
 
@@ -183,6 +190,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
+                    Granularity.MIN_240,
                     CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_240),
                     range.start));
         }
@@ -196,6 +204,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
             writes.add(new SingleRollupWriteContext(basicRollup,
                     locator,
+                    Granularity.MIN_240.coarser(),
                     CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_240.coarser()),
                     range.start));
 
@@ -204,6 +213,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRollups(histInput);
             writes.add(new SingleRollupWriteContext(histogramRollup,
                     locator,
+                    Granularity.MIN_1440,
                     CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_1440),
                     range.start));
         }

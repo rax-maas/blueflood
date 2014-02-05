@@ -62,4 +62,10 @@ public class TimeValue {
     public String toString() {
         return String.format("%s %s", String.valueOf(this.getValue()), unit.name());
     }
+
+    public boolean equals(TimeValue other) {
+        if (other == null) return false;
+
+        return other.getValue() == this.getValue() && other.getUnit().equals(this.getUnit());
+    }
 }

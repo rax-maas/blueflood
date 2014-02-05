@@ -152,7 +152,12 @@ public class TimerRollup implements Rollup, IBasicRollup {
                 sum, rate, count, min, max, average, variance, sampleCount,
                 Joiner.on(", ").withKeyValueSeparator(": ").join(percentiles.entrySet()));
     }
-    
+
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.TIMER;
+    }
+
     public boolean equals(Object obj) {
         if (!(obj instanceof TimerRollup)) return false;
         TimerRollup other = (TimerRollup)obj;

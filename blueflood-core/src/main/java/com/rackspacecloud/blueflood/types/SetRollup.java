@@ -44,7 +44,12 @@ public class SetRollup implements Rollup {
     public Boolean hasData() {
         return hashes.size() > 0;
     }
-    
+
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.SET;
+    }
+
     public int getCount() {
         return hashes.size();
     }

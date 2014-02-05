@@ -219,6 +219,8 @@ public class BluefloodServiceStarter {
                     log.error("Error starting event listener: " + module, e);
                 }
             }
+        } else {
+            log.info("No event listener modules configured.");
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2014 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.internal;
+package com.rackspacecloud.blueflood.exceptions;
 
+public class ConfigException extends Exception {
+    public ConfigException(Throwable cause) {
+        super(cause);
+    }
 
-public class PaginationMetadata {
-    private String next_marker;
-
-    public String getNextMarker() {
-        return next_marker;
+    public ConfigException(String what) {
+        super(what);
     }
 }

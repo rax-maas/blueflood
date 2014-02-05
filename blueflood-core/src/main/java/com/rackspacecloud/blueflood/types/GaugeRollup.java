@@ -35,6 +35,11 @@ public class GaugeRollup extends BasicRollup {
         return latestValue.getData();
     }
 
+    @Override
+    public RollupType getRollupType() {
+        return RollupType.GAUGE;
+    }
+
     public static GaugeRollup buildFromRawSamples(Points<SimpleNumber> input) throws IOException {
         
         // normal stuff.
