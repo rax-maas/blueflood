@@ -110,7 +110,8 @@ public class RollupRunnable implements Runnable {
             RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
                     new RollupEvent(singleRollupReadContext.getLocator(), rollup,
                             AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
-                            singleRollupReadContext.getRollupGranularity().name()));
+                            singleRollupReadContext.getRollupGranularity().name(),
+                            singleRollupReadContext.getRange().getStart()));
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
