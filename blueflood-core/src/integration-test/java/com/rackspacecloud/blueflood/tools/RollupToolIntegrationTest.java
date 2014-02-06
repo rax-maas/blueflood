@@ -49,7 +49,7 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         Collection<IMetric> normalMetrics = new ArrayList<IMetric>();
         long time = Granularity.MIN_5.milliseconds()/2;
 
-        //Values 1-288 located at the mid-point of every 5m slot. So 288 5m rollups, 288/4 20 m rollups and so on
+        // Values 1-288 located at the mid-point of every 5m slot. So 288 5m rollups, 288/4 20 m rollups and so on
         for (int i = 1; i < 289; i++) {
             //every raw metric slot centered at the mid point of 5m slot
             IMetric metric;
@@ -63,14 +63,14 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     @Test
     public void testRollupTool() throws Exception{
         RollupTool.rerollData(testLocator, range);
-        test5mRollups();
-        test20mRollups();
-        test60mRollups();
-        test240mRollups();
-        test1440mRollups();
+        assert5mRollups();
+        assert20mRollups();
+        assert60mRollups();
+        assert240mRollups();
+        assert1440mRollups();
     }
 
-    private void test5mRollups() throws IOException {
+    private void assert5mRollups() throws IOException {
         Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
                 testLocator,
                 range,
@@ -78,13 +78,13 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(288, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
-            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i);
+            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(), i);
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
             i++;
         }
     }
 
-    private void test20mRollups() throws IOException {
+    private void assert20mRollups() throws IOException {
         Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
                 testLocator,
                 range,
@@ -93,12 +93,12 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
-            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+3);
+            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(), i+3);
             i=i+4;
         }
     }
 
-    private void test60mRollups() throws IOException {
+    private void assert60mRollups() throws IOException {
         Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
                 testLocator,
                 range,
@@ -107,12 +107,12 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
-            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+11);
+            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(), i+11);
             i=i+12;
         }
     }
 
-    private void test240mRollups() throws IOException {
+    private void assert240mRollups() throws IOException {
         Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
                 testLocator,
                 range,
@@ -121,12 +121,12 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
-            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+47);
+            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(), i+47);
             i=i+48;
         }
     }
 
-    private void test1440mRollups() throws IOException {
+    private void assert1440mRollups() throws IOException {
         Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
                 testLocator,
                 range,
@@ -135,7 +135,7 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
             Assert.assertEquals(pointsEntry.getValue().getData().getMinValue().toLong(), i);
-            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(),i+287);
+            Assert.assertEquals(pointsEntry.getValue().getData().getMaxValue().toLong(), i+287);
             i=i+288;
         }
     }
