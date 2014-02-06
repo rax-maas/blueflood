@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 
 public class KafkaServiceTest {
     String eventName = "rollup";
-    RollupEvent rollupEvent = new RollupEvent(null, new BasicRollup(), "payload", "metrics_1440m");
+    RollupEvent rollupEvent = new RollupEvent(null, new BasicRollup(), "payload", "metrics_1440m", 0);
 
     @Test
     public void testKafkaService() throws Exception {

@@ -24,12 +24,15 @@ public class RollupEvent {
     private final Rollup rollup;
     private final String unit;
     private final String granularityName;
+    //Rollup slot in millis
+    private final long timestamp;
 
-    public RollupEvent(Locator loc, Rollup rollup, String unit, String gran) {
+    public RollupEvent(Locator loc, Rollup rollup, String unit, String gran, long ts) {
         this.locator = loc;
         this.rollup = rollup;
         this.unit = unit;
         this.granularityName = gran;
+        this.timestamp = ts;
     }
 
     public Rollup getRollup() {
@@ -46,5 +49,9 @@ public class RollupEvent {
 
     public String getGranularityName() {
         return granularityName;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 }

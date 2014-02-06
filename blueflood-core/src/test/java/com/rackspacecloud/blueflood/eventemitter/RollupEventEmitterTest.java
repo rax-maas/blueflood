@@ -41,8 +41,8 @@ public class RollupEventEmitterTest {
                 .withCorePoolSize(2)
                 .withMaxPoolSize(3)
                 .build();
-        final RollupEvent obj1 = new RollupEvent(null, null, "payload1", "gran");
-        final RollupEvent obj2 = new RollupEvent(null, null, "payload2", "gran");
+        final RollupEvent obj1 = new RollupEvent(null, null, "payload1", "gran", 0);
+        final RollupEvent obj2 = new RollupEvent(null, null, "payload2", "gran", 0);
         final CountDownLatch startLatch = new CountDownLatch(1);
         Future<Object> f1 = executors.submit(new Callable<Object>() {
             @Override
@@ -74,7 +74,7 @@ public class RollupEventEmitterTest {
         Assert.assertFalse(emitter.listeners(testEventName).contains(elistener));
         //Clear the store and check if it is not getting filled again
         store.clear();
-        emitter.emit(testEventName, new RollupEvent(null, null, "payload3", "gran"));
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload3", "gran", 0));
         Assert.assertTrue(store.isEmpty());
     }
 
@@ -83,10 +83,10 @@ public class RollupEventEmitterTest {
         EventListener eventListener = new EventListener();
         //Test once
         emitter.once(testEventName, eventListener);
-        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran"));
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran", 0));
         Assert.assertEquals(store.size(), 1);
         store.clear();
-        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran"));
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran", 0));
         Assert.assertEquals(store.size(), 0);
     }
 
