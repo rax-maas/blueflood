@@ -43,13 +43,14 @@ public class ElasticIOTest {
     private static final String TENANT_A = "ratanasv";
     private static final String TENANT_B = "someotherguy";
     private static final String UNIT = "horse length";
+    private static final String TYPE = "number";
     private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
     private ElasticIO elasticIO;
     private EsSetup esSetup;
 
     private static ElasticIO.Result createExpectedResult(String tenantId, int x, String y, int z) {
         Locator locator = createTestLocator(tenantId, x, y, z);
-        return new ElasticIO.Result(tenantId, locator.getMetricName(), UNIT);
+        return new ElasticIO.Result(tenantId, locator.getMetricName(), UNIT, TYPE);
     }
     private static Locator createTestLocator(String tenantId, int x, String y, int z) {
         String xs = (x < 10 ? "0" : "") + String.valueOf(x);
@@ -126,7 +127,7 @@ public class ElasticIOTest {
         List<Locator> locators = locatorMap.get(TENANT_A);
         Assert.assertEquals(locators.size(), results.size());
         for (Locator locator : locators) {
-            entry =  new ElasticIO.Result(TENANT_A, locator.getMetricName(), UNIT);
+            entry = new ElasticIO.Result(TENANT_A, locator.getMetricName(), UNIT, TYPE);
             Assert.assertTrue((results.contains(entry)));
         }
 

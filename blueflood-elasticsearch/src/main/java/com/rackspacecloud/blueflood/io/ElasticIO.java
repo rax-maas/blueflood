@@ -16,9 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -43,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -85,7 +82,8 @@ public class ElasticIO implements DiscoveryIO {
         String metricName = (String)source.get(METRIC_NAME.toString());
         String tenantId = (String)source.get(TENANT_ID.toString());
         String unit = (String)source.get(UNIT.toString());
-        Result result = new Result(tenantId, metricName, unit);
+        String type = (String)source.get(TYPE.toString());
+        Result result = new Result(tenantId, metricName, unit, type);
 
         return result;
     }
@@ -208,26 +206,36 @@ public class ElasticIO implements DiscoveryIO {
     public static class Result {
         private final String metricName;
         private final String unit;
+        private final String type;
         private final String tenantId;
 
-        public Result(String tenantId, String name, String unit) {
+        public Result(String tenantId, String name, String unit, String type) {
             this.tenantId = tenantId;
             this.metricName = name;
             this.unit = unit;
+            this.type = type;
         }
 
         public String getTenantId() {
             return tenantId;
         }
+
         public String getMetricName() {
             return metricName;
         }
+
         public String getUnit() {
             return unit;
         }
+
+        public String getType() {
+            return type;
+        }
+
         @Override
         public String toString() {
-            return "Result [tenantId=" + tenantId + ", metricName=" + metricName + ", unit=" + unit + "]";
+            return "Result [tenantId=" + tenantId + ", metricName=" + metricName
+                    + ", unit=" + unit + ", type=" + type + "]";
         }
 
         @Override
@@ -236,7 +244,7 @@ public class ElasticIO implements DiscoveryIO {
             int result = 1;
             result = prime * result
                     + ((metricName == null) ? 0 : metricName.hashCode());
-            result = prime * result + ((unit == null) ? 0 : unit.hashCode());
+            result = prime * result + ((unit == null) ? 0 : unit.hashCode()) + ((type == null) ? 0 : type.hashCode());
             return result;
         }
 
@@ -250,11 +258,13 @@ public class ElasticIO implements DiscoveryIO {
             }
             return equals((Result) obj);
         }
+
         public boolean equals(Result other) {
             if (this == other) {
                 return true;
             }
-            return metricName.equals(other.metricName) && unit.equals(other.unit) && tenantId.equals(other.tenantId);
+            return metricName.equals(other.metricName) && unit.equals(other.unit) && tenantId.equals(other.tenantId)
+                    && type.equals(other.type);
         }
     }
 }
