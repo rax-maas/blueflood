@@ -34,12 +34,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class RollupToolTest extends IntegrationTestBase {
-
-    private AstyanaxWriter writer = AstyanaxWriter.getInstance();
-    private AstyanaxReader reader = AstyanaxReader.getInstance();
+public class RollupToolIntegrationTest extends IntegrationTestBase {
     private final Locator testLocator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
     private final Range range = new Range(0, Granularity.MIN_1440.milliseconds() - 1);
+    AstyanaxReader reader = AstyanaxReader.getInstance();
+    AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
     @Before
     public void setUp() throws Exception{
