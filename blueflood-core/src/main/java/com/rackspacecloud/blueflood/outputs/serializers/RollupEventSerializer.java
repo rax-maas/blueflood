@@ -17,18 +17,19 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOError;
+import java.io.IOException;
 
 public class RollupEventSerializer {
     private static final Logger log = LoggerFactory.getLogger(RollupEventSerializer.class);
 
-    public static ObjectNode serializeRollupEvent(RollupEvent rollupPayload) {
+    public static ObjectNode serializeRollupEvent(RollupEvent rollupPayload) throws IOException {
         //Metadata Node
         ObjectNode metaNode = JsonNodeFactory.instance.objectNode();
         metaNode.put("type", rollupPayload.getRollup().getRollupType().toString());
@@ -44,8 +45,12 @@ public class RollupEventSerializer {
             rootNode.put("metadata", metaNode);
         } catch (Exception e) {
             log.error("Error encountered while serializing rollup. Locator:" + rollupPayload.getLocator() + " timestamp:" + System.currentTimeMillis(), e);
-            throw new IOError(e);
+            throw new IOException(e);
         }
         return rootNode;
+    }
+
+    public byte[] toBytes(RollupEvent event) throws IOException {
+        return serializeRollupEvent(event).toString().getBytes(Constants.DEFAULT_CHARSET);
     }
 }
