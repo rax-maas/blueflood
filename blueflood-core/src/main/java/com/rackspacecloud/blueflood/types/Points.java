@@ -37,6 +37,12 @@ public class Points<T> {
     public boolean isEmpty() {
         return points.isEmpty();
     }
+    
+    public Class getDataClass() {
+        if (points.size() == 0)
+            throw new IllegalStateException("");
+        return points.values().iterator().next().data.getClass();
+    }
 
     public static class Point<T> {
         private final T data;

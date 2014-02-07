@@ -16,9 +16,13 @@
 
 package com.rackspacecloud.blueflood.outputs.serializers;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
+import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
@@ -134,4 +138,95 @@ public class JSONBasicRollupOutputSerializerTest {
             Assert.assertNull(dataJSON.get("variance"));
         }
     }
+    
+    @Test
+    public void testCounters() throws Exception {
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
+        final MetricData metricData = new MetricData(
+                FakeMetricDataGenerator.generateFakeCounterRollupPoints(), 
+                "unknown", 
+                MetricData.Type.NUMBER);
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_COUNTER);
+        final JSONArray data = (JSONArray)metricDataJSON.get("values");
+        
+        Assert.assertEquals(5, data.size());
+        for (int i = 0; i < data.size(); i++) {
+            final JSONObject dataJSON = (JSONObject)data.get(i);
+            
+            Assert.assertNotNull(dataJSON.get("numPoints"));
+            Assert.assertEquals((long) (i + 1000), dataJSON.get("numPoints"));
+            Assert.assertNull(dataJSON.get("rate"));
+        }
+    }
+    
+    @Test
+    public void testGauges() throws Exception {
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
+        final MetricData metricData = new MetricData(
+                FakeMetricDataGenerator.generateFakeGaugeRollups(),
+                "unknown",
+                MetricData.Type.NUMBER);
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_GAUGE);
+        final JSONArray data = (JSONArray)metricDataJSON.get("values");
+        
+        Assert.assertEquals(5, data.size());
+        for (int i = 0; i < data.size(); i++) {
+            final JSONObject dataJSON = (JSONObject)data.get(i);
+            
+            Assert.assertNotNull(dataJSON.get("numPoints"));
+            Assert.assertEquals(1L, dataJSON.get("numPoints"));
+            Assert.assertNotNull("latest");
+            Assert.assertEquals(i, dataJSON.get("latest"));
+            
+            // other fields were filtered out.
+            Assert.assertNull(dataJSON.get(MetricStat.AVERAGE.toString()));
+            Assert.assertNull(dataJSON.get(MetricStat.VARIANCE.toString()));
+            Assert.assertNull(dataJSON.get(MetricStat.MIN.toString()));
+            Assert.assertNull(dataJSON.get(MetricStat.MAX.toString()));
+        }
+    }
+    
+    @Test
+    public void testSets() throws Exception {
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
+        final MetricData metricData = new MetricData(
+                FakeMetricDataGenerator.generateFakeSetRollupPoints(),
+                "unknown",
+                MetricData.Type.NUMBER);
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_SET);
+        final JSONArray data = (JSONArray)metricDataJSON.get("values");
+        
+        Assert.assertEquals(5, data.size());
+        for (int i = 0; i < data.size(); i++) {
+            final JSONObject dataJSON = (JSONObject)data.get(i);
+            
+            Assert.assertNotNull(dataJSON.get("numPoints"));
+            Assert.assertEquals(Sets.newHashSet(i, i % 2, i / 2).size(), dataJSON.get("numPoints"));
+        }
+    }
+    
+    @Test
+    public void setTimers() throws Exception {
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
+        final MetricData metricData = new MetricData(
+                FakeMetricDataGenerator.generateFakeTimerRollups(),
+                "unknown",
+                MetricData.Type.NUMBER);
+        
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_TIMER);
+        final JSONArray data = (JSONArray)metricDataJSON.get("values");
+        
+        Assert.assertEquals(5, data.size());
+        for (int i = 0; i < data.size(); i++) {
+            final JSONObject dataJSON = (JSONObject)data.get(i);
+            
+            Assert.assertNotNull(dataJSON.get("numPoints"));
+            Assert.assertNotNull(dataJSON.get("average"));
+            Assert.assertNotNull(dataJSON.get("rate"));
+            
+            // bah. I'm too lazy to check equals.
+        }
+    }
+    
+    
 }

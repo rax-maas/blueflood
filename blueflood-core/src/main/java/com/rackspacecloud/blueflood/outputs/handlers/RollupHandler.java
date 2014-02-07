@@ -74,10 +74,11 @@ public class RollupHandler {
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
                     try {
                         MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
-                        Points<SimpleNumber> dataToRoll = data.getData();
-                        BasicRollup rollup = Rollup.BasicFromRaw.compute(dataToRoll);
-                        if (rollup.getCount() > 0) {
-                            metricData.getData().add(new Points.Point<BasicRollup>(r.getStart(), rollup));
+                        Points dataToRoll = data.getData();
+                        Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
+                        
+                        if (rollup.hasData()) {
+                            metricData.getData().add(new Points.Point(minTime(dataToRoll), rollup));
                         }
 
                     } catch (IOException ex) {
@@ -96,6 +97,31 @@ public class RollupHandler {
         }
 
         return metricData;
+    }
+    
+    private static long minTime(Points<?> points) {
+        long min = Long.MAX_VALUE;
+        for (long time : points.getPoints().keySet())
+            min = Math.min(min, time);
+        return min;
+    }
+    
+    // note: similar thing happening in RollupRunnable.getRollupComputer(), but we don't have access to RollupType here.
+    private static Rollup rollupFromPoints(Points points) throws IOException {
+        Class rollupTypeClass = points.getDataClass();
+        if (rollupTypeClass.equals(SimpleNumber.class)) {
+            return Rollup.BasicFromRaw.compute(points);
+        } else if (rollupTypeClass.equals(CounterRollup.class)) {
+            return Rollup.CounterFromCounter.compute(points);
+        } else if (rollupTypeClass.equals(SetRollup.class)) {
+            return Rollup.SetFromSet.compute(points);
+        } else if (rollupTypeClass.equals(TimerRollup.class)) {
+            return Rollup.TimerFromTimer.compute(points);
+        } else if (rollupTypeClass.equals(GaugeRollup.class)) {
+            return Rollup.GaugeFromGauge.compute(points);
+        } else {
+            throw new IOException(String.format("Unexpected rollup type: %s", rollupTypeClass.getSimpleName()));
+        }
     }
 
     protected MetricData getHistogramsByGranularity(String tenantId,

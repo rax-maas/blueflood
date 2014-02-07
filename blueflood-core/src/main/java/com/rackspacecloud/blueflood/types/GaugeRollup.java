@@ -9,6 +9,7 @@ public class GaugeRollup extends BasicRollup {
 
     public GaugeRollup withLatest(long timestamp, Number value) {
         this.latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(value));
+        this.setCount(Math.max(1, this.getCount()));
         return this;
     }
     
