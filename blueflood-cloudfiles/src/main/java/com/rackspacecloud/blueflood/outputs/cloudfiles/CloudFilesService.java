@@ -60,6 +60,7 @@ public class CloudFilesService  implements Emitter.Listener<RollupEvent>, EventL
         } catch (IOException e) {
             log.warn("Error shutting down CloudFilesPublisher", e);
         }
+        eventEmitter.off(RollupEventEmitter.ROLLUP_EVENT_NAME, this);
     }
 
     @Override
