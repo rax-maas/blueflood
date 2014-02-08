@@ -22,10 +22,15 @@ import com.rackspacecloud.blueflood.types.*;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.util.Collection;
 
 public class RollupSerializationHelper {
+    private static final Logger log = LoggerFactory.getLogger(RollupSerializationHelper.class);
 
     public static ObjectNode rollupToJson(Rollup rollup) {
         if (rollup instanceof CounterRollup)
@@ -40,8 +45,10 @@ public class RollupSerializationHelper {
             return handleBasicRollup((BasicRollup)rollup, JsonNodeFactory.instance.objectNode());
         else if (rollup instanceof HistogramRollup)
             return handleHistogramRollup((HistogramRollup)rollup);
-        else
-            throw new RuntimeException("Cannot serialize rollup: "+rollup);
+        else {
+            log.error("Error encountered while serializing the rollup "+rollup);
+            throw new IOError(new IOException("Cannot serialize the Rollup : "+rollup));
+        }
     }
 
     private static ObjectNode handleHistogramRollup(HistogramRollup rollup) {
