@@ -108,7 +108,7 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("latestVal").asLong(), rollup.getLatestNumericValue().longValue());
     }
 
-    //Passing an unknown rollup type will throw RTE
+    //Passing an unknown rollup type will throw IOError
     @Test(expected = IOError.class)
     public void testExceptionOnInvalid() {
         class TestRollup implements Rollup{
