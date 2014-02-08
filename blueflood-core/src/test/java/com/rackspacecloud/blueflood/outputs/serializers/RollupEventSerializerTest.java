@@ -16,15 +16,14 @@
 
 package com.rackspacecloud.blueflood.outputs.serializers;
 
-import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import junit.framework.Assert;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Test;
 
+import java.io.IOError;
 import java.io.IOException;
 
 public class RollupEventSerializerTest {
@@ -110,7 +109,7 @@ public class RollupEventSerializerTest {
     }
 
     //Passing an unknown rollup type will throw RTE
-    @Test(expected = RuntimeException.class)
+    @Test(expected = IOError.class)
     public void testExceptionOnInvalid() {
         class TestRollup implements Rollup{
             @Override
