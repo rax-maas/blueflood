@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.cloudfiles;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
-import com.rackspacecloud.blueflood.outputs.serializers.RollupSerializer;
+import com.rackspacecloud.blueflood.outputs.serializers.RollupEventSerializer;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public class RollupFile implements Comparable {
     private final File file;
     private FileOutputStream outputStream;
     private long timestamp;
-    private RollupSerializer serializer = new RollupSerializer();
+    private RollupEventSerializer serializer = new RollupEventSerializer();
     public static final FileFilter fileFilter = new RollupFileFilter();
 
     public RollupFile(File file) {

@@ -17,13 +17,16 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 
+import java.io.IOException;
+
 public class RollupEventSerializer {
 
-    public static ObjectNode serializeRollupEvent(RollupEvent rollupPayload) {
+    public static ObjectNode serializeRollupEvent(RollupEvent rollupPayload) throws IOException {
         //Metadata Node
         ObjectNode metaNode = JsonNodeFactory.instance.objectNode();
         metaNode.put("type", rollupPayload.getRollup().getRollupType().toString());
@@ -39,5 +42,9 @@ public class RollupEventSerializer {
         rootNode.put("metadata", metaNode);
 
         return rootNode;
+    }
+
+    public byte[] toBytes(RollupEvent event) throws IOException {
+        return serializeRollupEvent(event).toString().getBytes(Constants.DEFAULT_CHARSET);
     }
 }
