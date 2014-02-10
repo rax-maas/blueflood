@@ -75,6 +75,9 @@ public class RollupHandler {
                     try {
                         MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
                         Points dataToRoll = data.getData();
+                        if (dataToRoll.isEmpty()) {
+                            continue;
+                        }
                         Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
                         
                         if (rollup.hasData()) {
