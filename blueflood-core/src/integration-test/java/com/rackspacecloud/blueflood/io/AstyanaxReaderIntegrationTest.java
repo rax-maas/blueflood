@@ -19,10 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,15 +71,15 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         // Write metrics and also persist their types.
         List<Locator> locatorList = new ArrayList<Locator>();
         Metric metric = writeMetric("string_metric", "version 1.0.43342346");
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.STRING.toString());
+        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.getCode());
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("int_metric", 45);
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.INT.toString());
+        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.INT.getCode());
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("long_metric", 67L);
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.LONG.toString());
+        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.LONG.getCode());
         locatorList.add(metric.getLocator());
 
         // Test batch reads
