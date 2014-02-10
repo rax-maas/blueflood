@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
+import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.Metric;
 
 import java.util.HashMap;
@@ -46,8 +47,8 @@ public class MetricsPersistenceOptimizerFactory {
     }
 
     // get the right optimizer based on metric type
-    public static MetricsPersistenceOptimizer getOptimizer(Metric.DataType metricType) {
-        if (metricType == Metric.DataType.STRING || metricType == Metric.DataType.BOOLEAN) {
+    public static MetricsPersistenceOptimizer getOptimizer(DataType metricType) {
+        if (metricType == DataType.STRING || metricType == DataType.BOOLEAN) {
             return optimizers.get(MetricType.STRING);
         } else {
             return optimizers.get(MetricType.GENERIC);

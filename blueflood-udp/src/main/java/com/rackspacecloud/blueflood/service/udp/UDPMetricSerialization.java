@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.service.udp;
 
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
+import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -34,20 +35,20 @@ public class UDPMetricSerialization {
         
             String tenantId = in.readString();
             String metricName = in.readString();
-            Metric.DataType type = new Metric.DataType(in.readString());
+            DataType type = DataType.fromCode(in.readString());
             long collectionTime = in.readRawVarint64();
             int ttlSecs = in.readRawVarint32();
             String units = in.readString();
             Object value = null;
-            if (type.equals(Metric.DataType.BOOLEAN))
+            if (type.equals(DataType.BOOLEAN))
                 value = in.readBool();
-            else if (type.equals(Metric.DataType.DOUBLE))
+            else if (type.equals(DataType.DOUBLE))
                 value = in.readDouble();
-            else if (type.equals(Metric.DataType.INT))
+            else if (type.equals(DataType.INT))
                 value = in.readRawVarint32();
-            else if (type.equals(Metric.DataType.LONG))
+            else if (type.equals(DataType.LONG))
                 value = in.readRawVarint64();
-            else if (type.equals(Metric.DataType.STRING))
+            else if (type.equals(DataType.STRING))
                 value = in.readString();
             
             if (value != null) {
@@ -86,19 +87,19 @@ public class UDPMetricSerialization {
         for (Metric metric : metrics) {
             size += CodedOutputStream.computeStringSizeNoTag(metric.getLocator().getTenantId());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getLocator().getMetricName());
-            size += CodedOutputStream.computeStringSizeNoTag(metric.getType().toString());
+            size += CodedOutputStream.computeStringSizeNoTag(metric.getType().getCode());
             size += CodedOutputStream.computeRawVarint64Size(metric.getCollectionTime());
             size += CodedOutputStream.computeRawVarint32Size(metric.getTtlInSeconds());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getUnit());
-            if (metric.getType().equals(Metric.DataType.STRING))
+            if (metric.getType().equals(DataType.STRING))
                 size += CodedOutputStream.computeStringSizeNoTag((String)metric.getValue());
-            if (metric.getType().equals(Metric.DataType.INT))
+            if (metric.getType().equals(DataType.INT))
                 size += CodedOutputStream.computeRawVarint32Size((Integer) metric.getValue());
-            if (metric.getType().equals(Metric.DataType.LONG))
+            if (metric.getType().equals(DataType.LONG))
                 size += CodedOutputStream.computeRawVarint64Size((Long) metric.getValue());
-            if (metric.getType().equals(Metric.DataType.DOUBLE))
+            if (metric.getType().equals(DataType.DOUBLE))
                 size += CodedOutputStream.computeDoubleSizeNoTag((Double) metric.getValue());
-            if (metric.getType().equals(Metric.DataType.BOOLEAN))
+            if (metric.getType().equals(DataType.BOOLEAN))
                 size += CodedOutputStream.computeBoolSizeNoTag((Boolean) metric.getValue());
         }
         
@@ -108,19 +109,19 @@ public class UDPMetricSerialization {
         
         out.writeStringNoTag(metric.getLocator().getTenantId());
         out.writeStringNoTag(metric.getLocator().getMetricName());
-        out.writeStringNoTag(metric.getType().toString());
+        out.writeStringNoTag(metric.getType().getCode());
         out.writeRawVarint64(metric.getCollectionTime());
         out.writeRawVarint32(metric.getTtlInSeconds());
         out.writeStringNoTag(metric.getUnit());
-        if (metric.getType().equals(Metric.DataType.STRING))
+        if (metric.getType().equals(DataType.STRING))
             out.writeStringNoTag((String) metric.getValue());
-        else if (metric.getType().equals(Metric.DataType.INT))
+        else if (metric.getType().equals(DataType.INT))
             out.writeRawVarint32((Integer)metric.getValue());
-        else if (metric.getType().equals(Metric.DataType.LONG))
+        else if (metric.getType().equals(DataType.LONG))
             out.writeRawVarint64((Long)metric.getValue());
-        else if (metric.getType().equals(Metric.DataType.DOUBLE))
+        else if (metric.getType().equals(DataType.DOUBLE))
             out.writeDoubleNoTag((Double) metric.getValue());
-        else if (metric.getType().equals(Metric.DataType.BOOLEAN))
+        else if (metric.getType().equals(DataType.BOOLEAN))
             out.writeBoolNoTag((Boolean) metric.getValue());
     }
     
