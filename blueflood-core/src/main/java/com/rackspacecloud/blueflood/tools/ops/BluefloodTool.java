@@ -75,7 +75,7 @@ public class BluefloodTool {
 
         locator = Locator.createLocatorFromPathComponents(
                 line.getOptionValue(TENANT_ID),
-                (String) line.getOptionValue(METRIC));
+                line.getOptionValue(METRIC));
 
         for(BF_Mode mode : BF_Mode.values()) {
 
@@ -92,9 +92,9 @@ public class BluefloodTool {
             System.exit(2);
         }
 
-        if(bfMode.name().equals("INGEST"))
+        if(bfMode.name().equals(BF_Mode.INGEST.name()))
             handleIngestMode(args);
-        else if(bfMode.name().equals("QUERY"))
+        else if(bfMode.name().equals(BF_Mode.QUERY.name()))
             handleQueryMode(args);
         else
             handleRollupMode(args);
@@ -191,7 +191,7 @@ public class BluefloodTool {
             System.err.println(errOutput);
             System.exit(2);
         }
-        //TODO : Missing validation of file
+        //TODO 1) Missing validation of file  2)Metric Metadata processing
         try {
             reader.beginObject();
             String tenantIdKey = reader.nextName();
