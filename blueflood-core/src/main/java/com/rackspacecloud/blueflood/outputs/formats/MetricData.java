@@ -16,16 +16,14 @@
 
 package com.rackspacecloud.blueflood.outputs.formats;
 
-import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.RollupType;
 
 public class MetricData {
     private final Points data;
     private final String unit;
-    private final Type type;
+    private final String type;
 
-    public MetricData(Points points, String unit, Type type) {
+    public MetricData(Points points, String unit, String type) {
         this.data = points;
         this.unit = unit;
         this.type = type;
@@ -40,38 +38,6 @@ public class MetricData {
     }
 
     public String getType() {
-        return type.toString();
-    }
-
-    public enum Type {
-        NUMBER("number"),
-        BOOLEAN("boolean"),
-        STRING("string"),
-        HISTOGRAM("histogram");
-
-        private Type(String s) {
-            this.name = s;
-        }
-
-        private String name;
-
-        @Override
-        public String toString() {
-            return name;
-        }
-
-        public static Type from(RollupType rollupType, Metric.DataType dataType) {
-            if (dataType.equals(Metric.DataType.STRING)) {
-                return STRING;
-            } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
-                return BOOLEAN;
-            } else {
-                if (rollupType == RollupType.BF_HISTOGRAMS) {
-                    return HISTOGRAM;
-                }
-
-                return NUMBER;
-            }
-        }
+        return type;
     }
 }

@@ -53,6 +53,10 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private static final Keyspace keyspace = getKeyspace();
     private static final String UNKNOWN = "unknown";
+    private static final String NUMBER = "number";
+    private static final String STRING = "string";
+    private static final String BOOLEAN = "boolean";
+    private static final String HISTOGRAM = "histogram";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -294,15 +298,15 @@ public class AstyanaxReader extends AstyanaxIO {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
             }
 
-            Metric.DataType metricType = new Metric.DataType((String) type);
-            if (!Metric.DataType.isKnownMetricType(metricType)) {
+            DataType metricType = DataType.fromCode((String) type);
+            if (!DataType.isKnownMetricType(metricType)) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
             }
 
-            if (metricType.equals(Metric.DataType.STRING)) {
+            if (metricType == DataType.STRING) {
                 gran = Granularity.FULL;
                 return getStringMetricDataForRange(locator, range, gran);
-            } else if (metricType.equals(Metric.DataType.BOOLEAN)) {
+            } else if (metricType == DataType.BOOLEAN) {
                 gran = Granularity.FULL;
                 return getBooleanMetricDataForRange(locator, range, gran);
             } else {
@@ -326,7 +330,7 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 RollupType rollupType = RollupType.fromString((String)
                         metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                Metric.DataType dataType = new Metric.DataType((String)
+                DataType dataType = DataType.fromCode((String)
                         metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
@@ -359,7 +363,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
+        return new MetricData(histogramRollupPoints, getUnitString(locator), HISTOGRAM);
     }
 
     // Used for string metrics
@@ -376,7 +380,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
+        return new MetricData(points, getUnitString(locator), STRING);
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -392,11 +396,11 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.BOOLEAN);
+        return new MetricData(points, getUnitString(locator), BOOLEAN);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
-    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType, Metric.DataType dataType) {
+    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType, DataType dataType) {
         ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(rollupType, dataType, gran);
 
         Points points = new Points();
@@ -414,14 +418,15 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        // XXX: This needs to use the actual DataType
+        return new MetricData(points, getUnitString(locator), NUMBER);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType) {
         Instrumentation.markScanAllColumnFamilies();
 
-        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran, rollupType, Metric.DataType.DOUBLE);
+        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran, rollupType, DataType.DOUBLE);
 
         if (metricData.getData().getPoints().size() > 0) {
             return metricData;
@@ -434,9 +439,10 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            Metric.DataType dataType = new Metric.DataType(metaCache.get(locator, dataTypeCacheKey));
+            DataType dataType = DataType.fromCode((String)
+                    metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
             String unit = getUnitString(locator);
-            MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
+            String outputType = outputType(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
             MetricData data = new MetricData(points, unit, outputType);
             return data;
@@ -446,7 +452,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
-                                        Metric.DataType dataType, Granularity gran) {
+                                        DataType dataType, Granularity gran) {
         Points points = new Points();
 
         AbstractSerializer serializer = serializerFor(rollupType, dataType, gran);
@@ -464,5 +470,20 @@ public class AstyanaxReader extends AstyanaxIO {
         else
             // this works for EVERYTHING except SimpleNumber.
         return new Points.Point(column.getName(), column.getValue(serializer));
+    }
+
+    // XXX: Not sure this is the right place for this method.
+    private static String outputType(RollupType rollupType, DataType dataType) {
+        if (dataType.equals(DataType.STRING)) {
+            return STRING;
+        } else if (dataType.equals(DataType.BOOLEAN)) {
+            return BOOLEAN;
+        } else {
+            if (rollupType == RollupType.BF_HISTOGRAMS) {
+                return HISTOGRAM;
+            }
+
+            return NUMBER;
+        }
     }
 }

@@ -30,7 +30,7 @@ public class JSONHistogramOutputSerializerTest {
     public void testHistogramRollupsSerialization() throws SerializationException {
         final JSONHistogramOutputSerializer serializer = new JSONHistogramOutputSerializer();
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeHistogramRollupPoints(), "unknown",
-                MetricData.Type.HISTOGRAM);
+                "histogram");
 
         JSONObject metricDataJSON = serializer.transformHistogram(metricData);
 
