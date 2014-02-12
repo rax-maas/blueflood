@@ -16,13 +16,10 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.netflix.astyanax.model.ColumnList;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
@@ -44,7 +41,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -113,6 +109,7 @@ public class HttpHandlerIntegrationTest {
         gzipOut.write(content.getBytes());
         gzipOut.close();
         ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
+        //Setting the content encoding to gzip
         entity.setContentEncoding("gzip");
         baos.close();
         post.setEntity(entity);
