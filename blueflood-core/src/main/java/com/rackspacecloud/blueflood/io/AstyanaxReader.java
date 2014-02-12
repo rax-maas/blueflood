@@ -53,6 +53,10 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private static final Keyspace keyspace = getKeyspace();
     private static final String UNKNOWN = "unknown";
+    private static final String NUMBER = "number";
+    private static final String STRING = "string";
+    private static final String BOOLEAN = "boolean";
+    private static final String HISTOGRAM = "histogram";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -359,7 +363,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), "histogram");
+        return new MetricData(histogramRollupPoints, getUnitString(locator), HISTOGRAM);
     }
 
     // Used for string metrics
@@ -376,7 +380,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), "string");
+        return new MetricData(points, getUnitString(locator), STRING);
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -392,7 +396,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), "boolean");
+        return new MetricData(points, getUnitString(locator), BOOLEAN);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
@@ -415,7 +419,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
 
         // XXX: This needs to use the actual DataType
-        return new MetricData(points, getUnitString(locator), "number");
+        return new MetricData(points, getUnitString(locator), NUMBER);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
@@ -471,15 +475,15 @@ public class AstyanaxReader extends AstyanaxIO {
     // XXX: Not sure this is the right place for this method.
     private static String outputType(RollupType rollupType, DataType dataType) {
         if (dataType.equals(DataType.STRING)) {
-            return "string";
+            return STRING;
         } else if (dataType.equals(DataType.BOOLEAN)) {
-            return "boolean";
+            return BOOLEAN;
         } else {
             if (rollupType == RollupType.BF_HISTOGRAMS) {
-                return "histogram";
+                return HISTOGRAM;
             }
 
-            return "number";
+            return NUMBER;
         }
     }
 }
