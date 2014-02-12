@@ -4,6 +4,10 @@ These ideas will range from neatly scoped to epic.
 
 __NOTE:__ When adding, please indicate level of complexity on a scale of 0-9 (0==easy, 9==difficult).
 
+#### (7) Integrate with existing dashboard apps like grafana
+
+Blueflood is currently API only. Integrating it with grafana would be really cool. 
+
 #### (7) Local Ingestion Durability
 
 Currently, when data arrives, the HTTP call blocks until data is written to Cassandra. This could be sped up using a local commit log.
