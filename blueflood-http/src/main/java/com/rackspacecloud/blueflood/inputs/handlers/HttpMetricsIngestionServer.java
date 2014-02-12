@@ -165,9 +165,9 @@ public class HttpMetricsIngestionServer {
             final ChannelPipeline pipeline = pipeline();
 
             pipeline.addLast("decoder", new HttpRequestDecoder());
+            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("inflater", new HttpContentDecompressor());
             pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;
