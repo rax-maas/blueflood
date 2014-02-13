@@ -262,7 +262,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public static String getUnitString(Locator locator) {
         String unitString = null;
         try {
-            unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
+            unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), UNKNOWN);
         } catch (CacheException ex) {
             log.warn("Cache exception reading unitString from MetadataCache: ", ex);
         }
@@ -275,7 +275,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public static String getType(Locator locator) {
         String type = null;
         try {
-            type = metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase(), String.class);
+            type = metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase(), UNKNOWN);
         } catch (CacheException ex) {
             log.warn("Cache exception reading type from MetadatCache. ", ex);
         }
@@ -287,7 +287,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
-            Object type = metaCache.get(locator, dataTypeCacheKey);
+            String type = getType(locator);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
 
             if (type == null) {
@@ -326,8 +326,7 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 RollupType rollupType = RollupType.fromString((String)
                         metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                Metric.DataType dataType = new Metric.DataType((String)
-                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                Metric.DataType dataType = new Metric.DataType(getType(locator));
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
                 locs.add(locator);
@@ -434,7 +433,7 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            Metric.DataType dataType = new Metric.DataType(metaCache.get(locator, dataTypeCacheKey));
+            Metric.DataType dataType = new Metric.DataType(getType(locator));
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);

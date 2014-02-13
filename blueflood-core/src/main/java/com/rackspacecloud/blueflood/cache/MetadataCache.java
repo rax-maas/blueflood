@@ -42,6 +42,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
+    private boolean cacheEmpties = true;
+    
     public static final String EMPTY = "__~EMPTY_SENTINEL_STRING~__".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
@@ -100,16 +102,25 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             }
         };
     }
+    
+    public void setCacheEmpties(boolean b) {
+        cacheEmpties = b;
+    }
 
     public boolean containsKey(Locator locator, String key) {
         return cache.getIfPresent(new CacheKey(locator, key)) != null;
+    }
+    
+    public String get(Locator locator, String key, String defaultValue) throws CacheException {
+        String value = get(locator, key);
+        return value == EMPTY ? defaultValue : value;
     }
 
     public String get(Locator locator, String key) throws CacheException {
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
             String result = cache.get(new CacheKey(locator, key));
-            if (result == EMPTY) {
+            if (result == EMPTY && !cacheEmpties) {
                 cache.invalidate(cacheKey);
                 return null;
             } else {
