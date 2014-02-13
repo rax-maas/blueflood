@@ -70,7 +70,8 @@ public class RollupHandler {
 
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
-                // missing some rollups, generate more (5 MIN rollups only)
+                // missing some rollups, generate more on the fly.
+                long start = latest + g.milliseconds();
                 for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
                     try {
                         MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
@@ -81,11 +82,13 @@ public class RollupHandler {
                         Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
                         
                         if (rollup.hasData()) {
-                            metricData.getData().add(new Points.Point(minTime(dataToRoll), rollup));
+                            metricData.getData().add(new Points.Point(start, rollup));
                         }
 
                     } catch (IOException ex) {
                         log.error("Exception computing rollups during read: ", ex);
+                    } finally {
+                        start += g.milliseconds();
                     }
                 }
             }
@@ -101,14 +104,7 @@ public class RollupHandler {
 
         return metricData;
     }
-    
-    private static long minTime(Points<?> points) {
-        long min = Long.MAX_VALUE;
-        for (long time : points.getPoints().keySet())
-            min = Math.min(min, time);
-        return min;
-    }
-    
+
     // note: similar thing happening in RollupRunnable.getRollupComputer(), but we don't have access to RollupType here.
     private static Rollup rollupFromPoints(Points points) throws IOException {
         Class rollupTypeClass = points.getDataClass();
