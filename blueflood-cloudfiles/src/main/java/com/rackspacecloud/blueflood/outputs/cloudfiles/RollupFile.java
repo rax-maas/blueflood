@@ -76,7 +76,7 @@ public class RollupFile implements Comparable {
      * @return The age of the rollup file in milliseconds.
      */
     public long getAge() {
-        return System.nanoTime() - timestamp;
+        return (System.nanoTime() - timestamp) / 1000;
     }
 
     /**
