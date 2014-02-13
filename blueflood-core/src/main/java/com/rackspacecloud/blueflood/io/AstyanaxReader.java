@@ -277,7 +277,7 @@ public class AstyanaxReader extends AstyanaxIO {
         try {
             type = metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase(), String.class);
         } catch (CacheException ex) {
-            log.warn("Cache exception reading type from MetadatCache. ", ex);
+            log.warn("Cache exception reading type from MetadataCache. ", ex);
         }
         if (type == null) {
             type = UNKNOWN;
