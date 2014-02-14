@@ -24,9 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPOutputStream;
 
-/**
- * Created by jburkhart on 2/4/14.
- */
 public class Gzipper {
     InputStream jsonFileIn = null;
     ByteArrayOutputStream gzippedPayload = null;

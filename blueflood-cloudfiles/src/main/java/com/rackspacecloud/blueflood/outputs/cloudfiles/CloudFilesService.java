@@ -24,9 +24,6 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 
-/**
- * Created by jburkhart on 1/30/14.
- */
 public class CloudFilesService  implements Emitter.Listener<RollupEvent>, EventListenerService {
     private Boolean started = false;
     private final RollupEventEmitter eventEmitter = RollupEventEmitter.getInstance();
@@ -40,7 +37,7 @@ public class CloudFilesService  implements Emitter.Listener<RollupEvent>, EventL
         try {
             storageManager = new StorageManager();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error starting up Cloud Files exporter", e);
         }
 
         storageManager.start();
