@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class RollupHandler {
@@ -71,8 +72,16 @@ public class RollupHandler {
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
                 // missing some rollups, generate more on the fly.
-                long start = latest + g.milliseconds();
-                for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
+                long start;
+
+                if (points.size() > 0) {
+                    start = latest + g.milliseconds();
+                } else {
+                    start = latest; // We got no points. so start = from. This happens when rollups are delayed.
+                }
+
+                Iterable<Range> ranges = Range.rangesForInterval(g, start, to);
+                for (Range r : ranges) {
                     try {
                         MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
                         Points dataToRoll = data.getData();
