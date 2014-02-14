@@ -74,15 +74,15 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         // Write metrics and also persist their types.
         List<Locator> locatorList = new ArrayList<Locator>();
         Metric metric = writeMetric("string_metric", "version 1.0.43342346");
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.STRING.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.STRING.toString());
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("int_metric", 45);
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.INT.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.INT.toString());
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("long_metric", 67L);
-        MetadataCache.getInstance().databasePut(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.LONG.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), Metric.DataType.LONG.toString());
         locatorList.add(metric.getLocator());
 
         // Test batch reads
