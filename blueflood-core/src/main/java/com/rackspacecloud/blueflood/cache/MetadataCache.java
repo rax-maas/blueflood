@@ -42,7 +42,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
-    public static final String EMPTY = "__~EMPTY_SENTINEL_STRING~__".intern();
+    private static final String NULL = "null";
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
@@ -96,7 +96,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             @Override
             public String databaseLoad(Locator locator, String key) throws CacheException {
                 // nothing there.
-                return MetadataCache.EMPTY;
+                return NULL;
             }
         };
     }
@@ -108,9 +108,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     public String get(Locator locator, String key) throws CacheException {
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
-            String result = cache.get(new CacheKey(locator, key));
-            if (result == EMPTY) {
-                cache.invalidate(cacheKey);
+            String result = cache.get(cacheKey);
+            if (result.equals(NULL)) {
                 return null;
             } else {
                 return result;
@@ -162,20 +161,28 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // implements the CacheLoader interface.
     public String databaseLoad(Locator locator, String key) throws CacheException {
         try {
+            CacheKey cacheKey = new CacheKey(locator, key);
             Map<String, String> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
-            if (metadata == null) {
-                return MetadataCache.EMPTY;
+            if (metadata == null || metadata.isEmpty()) {
+                cache.put(cacheKey, NULL);
+                return NULL;
             }
 
             // prepopulate all other metadata other than the key we called the method with
             for (Map.Entry<String, String> meta : metadata.entrySet()) {
                 if (meta.getKey().equals(key)) continue;
-                CacheKey cacheKey = new CacheKey(locator, meta.getKey());
-                cache.put(cacheKey, meta.getValue());
+                CacheKey metaKey = new CacheKey(locator, meta.getKey());
+                cache.put(metaKey, meta.getValue());
             }
 
             String value = metadata.get(key);
-            return value == null ? MetadataCache.EMPTY : value;
+
+            if (value == null) {
+                cache.put(cacheKey, NULL);
+                value = NULL;
+            }
+
+            return value;
         } catch (RuntimeException ex) {
             throw new CacheException(ex);
         }
