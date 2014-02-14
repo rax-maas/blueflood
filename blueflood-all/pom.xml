@@ -37,7 +37,6 @@
           </descriptorRefs>
         </configuration>
       </plugin>
-
     </plugins>
   </build>
 
@@ -66,13 +65,7 @@
       <groupId>com.rackspacecloud</groupId>
       <version>${blueflood.version}</version>
     </dependency>
-    
-    <dependency>
-      <artifactId>blueflood-udp</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${blueflood.version}</version>
-    </dependency>
-    
+
     <dependency>
       <artifactId>blueflood-statsd</artifactId>
       <groupId>com.rackspacecloud</groupId>
@@ -83,13 +76,13 @@
       <artifactId>blueflood-kafka</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${blueflood.version}</version>
-   </dependency>
+    </dependency>
 
     <dependency>
       <artifactId>blueflood-cloudfiles</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${blueflood.version}</version>
-   </dependency>
+    </dependency>
   </dependencies>
 
 </project>
