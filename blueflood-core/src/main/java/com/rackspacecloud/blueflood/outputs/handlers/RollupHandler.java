@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class RollupHandler {
@@ -70,8 +71,17 @@ public class RollupHandler {
 
             // timestamp of the end of the latest slot
             if (latest + g.milliseconds() <= to) {
-                // missing some rollups, generate more (5 MIN rollups only)
-                for (Range r : Range.rangesForInterval(g, latest + g.milliseconds(), to)) {
+                // missing some rollups, generate more on the fly.
+                long start;
+
+                if (points.size() > 0) {
+                    start = latest + g.milliseconds();
+                } else {
+                    start = latest; // We got no points. so start = from. This happens when rollups are delayed.
+                }
+
+                Iterable<Range> ranges = Range.rangesForInterval(g, start, to);
+                for (Range r : ranges) {
                     try {
                         MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
                         Points dataToRoll = data.getData();
@@ -81,11 +91,13 @@ public class RollupHandler {
                         Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
                         
                         if (rollup.hasData()) {
-                            metricData.getData().add(new Points.Point(minTime(dataToRoll), rollup));
+                            metricData.getData().add(new Points.Point(start, rollup));
                         }
 
                     } catch (IOException ex) {
                         log.error("Exception computing rollups during read: ", ex);
+                    } finally {
+                        start += g.milliseconds();
                     }
                 }
             }
@@ -101,14 +113,7 @@ public class RollupHandler {
 
         return metricData;
     }
-    
-    private static long minTime(Points<?> points) {
-        long min = Long.MAX_VALUE;
-        for (long time : points.getPoints().keySet())
-            min = Math.min(min, time);
-        return min;
-    }
-    
+
     // note: similar thing happening in RollupRunnable.getRollupComputer(), but we don't have access to RollupType here.
     private static Rollup rollupFromPoints(Points points) throws IOException {
         Class rollupTypeClass = points.getDataClass();
