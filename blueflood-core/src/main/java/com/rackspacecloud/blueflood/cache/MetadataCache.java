@@ -42,7 +42,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
-    private static final String NULL = "null";
+    private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
