@@ -32,6 +32,11 @@
           </execution>
         </executions>
         <configuration>
+        <archive>
+          <manifest>
+            <mainClass>com.rackspacecloud.blueflood.service.BluefloodServiceStarter</mainClass>
+          </manifest>
+        </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
