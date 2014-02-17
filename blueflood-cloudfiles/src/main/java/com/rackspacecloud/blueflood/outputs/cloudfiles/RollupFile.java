@@ -65,7 +65,7 @@ public class RollupFile implements Comparable {
      * @return The path to the remote file.
      */
     public String getRemoteName() {
-        java.util.Date time = new java.util.Date(timestamp / 1000000); // convert back from nanoseconds
+        java.util.Date time = new java.util.Date(timestamp);
         String str = new SimpleDateFormat("yyyyMMdd_").format(time);
         return str + Configuration.getInstance().getStringProperty(CoreConfig.SHARDS) + "_" + getName();
     }
@@ -76,7 +76,7 @@ public class RollupFile implements Comparable {
      * @return The age of the rollup file in milliseconds.
      */
     public long getAge() {
-        return System.nanoTime() - timestamp;
+        return System.currentTimeMillis() - timestamp;
     }
 
     /**
@@ -153,24 +153,6 @@ public class RollupFile implements Comparable {
         return Long.parseLong(numberPart);
     }
 
-
-    /**
-     * Test whether a File looks like a RollupFile.
-     *
-     * @param file The file to test.
-     * @return Whether the file looks like a RollupFile.
-     */
-    public static boolean isRollupFile(File file) {
-        String fileName = file.getName();
-
-        if (!file.isFile()) {
-            log.info("skipping non-file: {}", fileName);
-        }
-
-        return true;
-    }
-
-
     /**
      * Build a new RollupFile using the current time as the timestamp. The file won't be created until it is actually
      * written to for the first time.
@@ -179,7 +161,7 @@ public class RollupFile implements Comparable {
      * @return The new RollupFile.
      */
     public static RollupFile buildRollupFile(File bufferDir) {
-        return new RollupFile(new File(bufferDir, System.nanoTime() + ".json"));
+        return new RollupFile(new File(bufferDir, System.currentTimeMillis() + ".json"));
     }
 
     private static class RollupFileFilter implements FileFilter {
