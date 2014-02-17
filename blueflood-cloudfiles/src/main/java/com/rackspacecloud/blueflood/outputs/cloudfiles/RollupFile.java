@@ -32,22 +32,22 @@ public class RollupFile implements Comparable {
 
     private final File file;
     private FileOutputStream outputStream;
-    private long timestamp;
+    private long nanoTimestamp; // in nanoseconds
     private RollupEventSerializer serializer = new RollupEventSerializer();
     public static final FileFilter fileFilter = new RollupFileFilter();
 
     public RollupFile(File file) {
         this.file = file;
-        this.timestamp = parseTimestamp(file.getName());
+        this.nanoTimestamp = parseTimestamp(file.getName());
     }
 
     /**
-     * Retrieve the timestamp associated with this file.
+     * Retrieve the nanoTimestamp associated with this file.
      *
-     * @return The timestamp associated with the file.
+     * @return The nanoTimestamp associated with the file.
      */
-    public long getTimestamp() {
-        return timestamp;
+    public long getNanoTimestamp() {
+        return nanoTimestamp;
     }
 
     /**
@@ -65,7 +65,7 @@ public class RollupFile implements Comparable {
      * @return The path to the remote file.
      */
     public String getRemoteName() {
-        java.util.Date time = new java.util.Date(timestamp / 1000000); // convert back from nanoseconds
+        java.util.Date time = new java.util.Date(nanoTimestamp / 1000000); // convert back from nanoseconds
         String str = new SimpleDateFormat("yyyyMMdd_").format(time);
         return str + Configuration.getInstance().getStringProperty(CoreConfig.SHARDS) + "_" + getName();
     }
@@ -76,7 +76,7 @@ public class RollupFile implements Comparable {
      * @return The age of the rollup file in milliseconds.
      */
     public long getAge() {
-        return (System.nanoTime() - timestamp) / 1000;
+        return (System.nanoTime() - nanoTimestamp) / 1000000;
     }
 
     /**
@@ -130,7 +130,7 @@ public class RollupFile implements Comparable {
     }
 
     public int compareTo(Object other) {
-        return new Long(getTimestamp()).compareTo(((RollupFile) other).getTimestamp());
+        return new Long(getNanoTimestamp()).compareTo(((RollupFile) other).getNanoTimestamp());
     }
 
 
@@ -142,10 +142,10 @@ public class RollupFile implements Comparable {
     }
 
     /**
-     * Parse the timestamp from a filename.
+     * Parse the nanoTimestamp from a filename.
      *
      * @param fileName The file name to parse.
-     * @return The timestamp contained in the file name.
+     * @return The nanoTimestamp contained in the file name.
      * @throws NumberFormatException
      */
     private static long parseTimestamp(String fileName) throws NumberFormatException {
@@ -172,7 +172,7 @@ public class RollupFile implements Comparable {
 
 
     /**
-     * Build a new RollupFile using the current time as the timestamp. The file won't be created until it is actually
+     * Build a new RollupFile using the current time as the nanoTimestamp. The file won't be created until it is actually
      * written to for the first time.
      *
      * @param bufferDir The directory in which to create the file.
