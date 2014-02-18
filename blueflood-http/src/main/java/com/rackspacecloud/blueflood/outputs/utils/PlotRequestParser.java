@@ -52,6 +52,8 @@ public class PlotRequestParser {
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
         
+        DEFAULT_STATS.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
+        DEFAULT_STATS.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
     } 
 
     public static RollupsQueryParams parseParams(Map<String, List<String>> params) throws InvalidRequestException {

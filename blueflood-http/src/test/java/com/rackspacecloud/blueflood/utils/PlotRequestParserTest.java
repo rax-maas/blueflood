@@ -45,4 +45,9 @@ public class PlotRequestParserTest {
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.MIN));
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.MAX));
     }
+    
+    @Test
+    public void testDefaultStatsAreNotEmpty() {
+        Assert.assertTrue(PlotRequestParser.DEFAULT_BASIC.size() > 0);
+    }
 }
