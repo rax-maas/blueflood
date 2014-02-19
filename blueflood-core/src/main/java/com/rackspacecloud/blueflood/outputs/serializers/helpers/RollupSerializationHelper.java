@@ -19,8 +19,10 @@ package com.rackspacecloud.blueflood.outputs.serializers.helpers;
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
 import com.rackspacecloud.blueflood.types.*;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
+import org.codehaus.jackson.node.NullNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +69,19 @@ public class RollupSerializationHelper {
     }
 
     private static ObjectNode handleBasicRollup(IBasicRollup rollup, ObjectNode rollupNode) {
-        rollupNode.put("max", rollup.getMaxValue().isFloatingPoint() ? rollup.getMaxValue().toDouble() : rollup.getMaxValue().toLong());
-        rollupNode.put("min", rollup.getMinValue().isFloatingPoint() ? rollup.getMinValue().toDouble() : rollup.getMinValue().toLong());
-        rollupNode.put("mean", rollup.getAverage().isFloatingPoint() ? rollup.getAverage().toDouble() : rollup.getAverage().toLong());
-        rollupNode.put("var", rollup.getVariance().isFloatingPoint() ? rollup.getVariance().toDouble() : rollup.getVariance().toLong());
-        rollupNode.put("count", rollup.getCount());
+        long count = rollup.getCount();
+        rollupNode.put("count", count);
+        if (count == 0) {
+            rollupNode.putNull("max");
+            rollupNode.putNull("min");
+            rollupNode.putNull("mean");
+            rollupNode.putNull("var");
+        } else {
+            rollupNode.put("max", rollup.getMaxValue().isFloatingPoint() ? rollup.getMaxValue().toDouble() : rollup.getMaxValue().toLong());
+            rollupNode.put("min", rollup.getMinValue().isFloatingPoint() ? rollup.getMinValue().toDouble() : rollup.getMinValue().toLong());
+            rollupNode.put("mean", rollup.getAverage().isFloatingPoint() ? rollup.getAverage().toDouble() : rollup.getAverage().toLong());
+            rollupNode.put("var", rollup.getVariance().isFloatingPoint() ? rollup.getVariance().toDouble() : rollup.getVariance().toLong());
+        }
         return rollupNode;
     }
 

@@ -124,4 +124,17 @@ public class RollupEventSerializerTest {
         };
         RollupSerializationHelper.rollupToJson(new TestRollup());
     }
+
+    @Test
+    public void testNullValuesOnZeroCount() {
+        BasicRollup rollup = new BasicRollup();
+        rollup.setCount(0);
+        //Get the JSON object node from Rollup
+        ObjectNode resultNode = RollupSerializationHelper.rollupToJson(rollup);
+        Assert.assertTrue(resultNode.get("max").isNull());
+        Assert.assertTrue(resultNode.get("min").isNull());
+        Assert.assertTrue(resultNode.get("mean").isNull());
+        Assert.assertTrue(resultNode.get("var").isNull());
+        Assert.assertEquals(resultNode.get("count").asLong(), 0);
+    }
 }
