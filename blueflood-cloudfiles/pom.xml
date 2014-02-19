@@ -54,9 +54,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jclouds.provider</groupId>
+      <groupId>org.apache.jclouds.provider</groupId>
       <artifactId>cloudfiles-us</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.0</version>
     </dependency>
   </dependencies>
 
