@@ -93,7 +93,7 @@ public enum CoreConfig implements ConfigDefaults {
     // Assume, for calculating granularity for GetByPoints queries, that data is sent at this interval.
     GET_BY_POINTS_ASSUME_INTERVAL("30000"),
 
-    // Rollups repair omn read
+    // Rollups repair on read
     REPAIR_ROLLUPS_ON_READ("true"),
 
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
