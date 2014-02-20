@@ -66,6 +66,8 @@ public class ScheduleContext implements IngestionContext {
     // shard lock manager
     private ShardLockManager lockManager;
 
+    Configuration config = Configuration.getInstance();
+
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
         this.scheduleTime = currentTimeMillis;
         this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
@@ -116,25 +118,27 @@ public class ScheduleContext implements IngestionContext {
 
         for (int shard : shardKeys) {
             for (Granularity g : Granularity.rollupGranularities()) {
-                // sync on map since we do not want anything added to or taken from it while we iterate.
-                synchronized (scheduledSlots) { // read
-                    synchronized (runningSlots) { // read
-                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsOlderThan(now, maxAgeMillis);
-                        if (slotsToWorkOn.size() == 0) {
-                            continue;
-                        }
-                        if (!canWorkOnShard(shard)) {
-                            continue;
-                        }
-
-                        for (Integer slot : slotsToWorkOn) {
-                            if (areChildKeysOrSelfKeyScheduledOrRunning(shard, g, slot)) {
+                if (config.getBooleanProperty(g.name().toUpperCase())) {
+                    // sync on map since we do not want anything added to or taken from it while we iterate.
+                    synchronized (scheduledSlots) { // read
+                        synchronized (runningSlots) { // read
+                            List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsOlderThan(now, maxAgeMillis);
+                            if (slotsToWorkOn.size() == 0) {
                                 continue;
                             }
-                            String key = g.formatLocatorKey(slot, shard);
-                            scheduledSlots.add(key);
-                            orderedScheduledSlots.add(key);
-                            recentlyScheduledShards.put(shard, scheduleTime);
+                            if (!canWorkOnShard(shard)) {
+                                continue;
+                            }
+
+                            for (Integer slot : slotsToWorkOn) {
+                                if (areChildKeysOrSelfKeyScheduledOrRunning(shard, g, slot)) {
+                                    continue;
+                                }
+                                String key = g.formatLocatorKey(slot, shard);
+                                scheduledSlots.add(key);
+                                orderedScheduledSlots.add(key);
+                                recentlyScheduledShards.put(shard, scheduleTime);
+                            }
                         }
                     }
                 }
