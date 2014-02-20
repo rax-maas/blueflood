@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.base.Ticker;
@@ -36,12 +37,14 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
+    final long millisInCatchPeriod = Configuration.getInstance().getIntegerProperty("CATCH_PERIOD")*60*60*1000;
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
+    private static final Counter catchPeriodDroppedSlots = Metrics.counter(RollupService.class, "Dropping a slot from rolling because its beyond catch-up period");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
@@ -236,6 +239,27 @@ public class ShardStateManager {
                 outputKeys.add(entry.getKey());
             }
             return outputKeys;
+        }
+
+        protected List<Integer> getSlotsWithinCatchUpPeriod(long now, long maxAgeMillis) {
+                List<Integer> outputKeys = new ArrayList<Integer>();
+                for (Map.Entry<Integer, UpdateStamp> entry : slotToUpdateStampMap.entrySet()) {
+                    final UpdateStamp update = entry.getValue();
+                    final long timeElapsed = now - update.getTimestamp();
+                    timeSinceUpdate.update(timeElapsed);
+                    if (update.getState() == UpdateStamp.State.Rolled) {
+                        continue;
+                    }
+                    if (timeElapsed <= maxAgeMillis) {
+                        continue;
+                    }
+                    if (timeElapsed >= millisInCatchPeriod) {
+                        catchPeriodDroppedSlots.inc();
+                        continue;
+                    }
+                    outputKeys.add(entry.getKey());
+                }
+                return outputKeys;
         }
 
         protected Collection<String> getChildAndSelfKeysForSlot(int slot) {
