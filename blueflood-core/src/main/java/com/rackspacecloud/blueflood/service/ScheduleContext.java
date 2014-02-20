@@ -122,7 +122,7 @@ public class ScheduleContext implements IngestionContext {
                 // sync on map since we do not want anything added to or taken from it while we iterate.
                 synchronized (scheduledSlots) { // read
                     synchronized (runningSlots) { // read
-                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsOlderThan(now, maxAgeMillis);
+                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsWithinCatchUpPeriod(now, maxAgeMillis);
                         if (slotsToWorkOn.size() == 0) {
                             continue;
                         }
