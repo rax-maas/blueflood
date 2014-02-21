@@ -16,11 +16,13 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.codahale.metrics.Meter;
 import com.google.common.base.Ticker;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ public class ScheduleContext implements IngestionContext {
 
     // state
     //
+    private final Meter shardOwnershipChanged = Metrics.meter(ScheduleContext.class, "Shard Change Before Running");
 
     // these are all the slots that are scheduled to run in no particular order. the collection is synchronized to 
     // control updates.
@@ -179,9 +182,14 @@ public class ScheduleContext implements IngestionContext {
                 // same (this will happen), that a remove always wins during the coalesce.
                 scheduledSlots.remove(key);
 
-                UpdateStamp stamp = shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Running);
-                runningSlots.put(key, stamp.getTimestamp());
-                return key;
+                if (canWorkOnShard(shard)) {
+                    UpdateStamp stamp = shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Running);
+                    runningSlots.put(key, stamp.getTimestamp());
+                    return key;
+                } else {
+                    shardOwnershipChanged.mark();
+                }
+                return null;
             }
         }
     }
