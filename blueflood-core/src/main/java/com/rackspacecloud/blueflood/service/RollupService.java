@@ -200,6 +200,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             boolean rejected = false;
             while (context.hasScheduled() && !rejected && active) {
                 final String slotKey = context.getNextScheduled();
+                if (slotKey == null) { continue; }
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
                     locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors));
