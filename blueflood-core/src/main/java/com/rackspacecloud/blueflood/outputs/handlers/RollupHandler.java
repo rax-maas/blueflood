@@ -22,12 +22,15 @@ import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -36,12 +39,20 @@ public class RollupHandler {
 
     protected final Meter rollupsByPointsMeter = Metrics.meter(RollupHandler.class, "BF-API", "Get rollups by points");
     protected final Meter rollupsByGranularityMeter = Metrics.meter(RollupHandler.class, "BF-API", "Get rollups by gran");
+    protected final Meter rollupsRepairEntireRange = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range");
+    protected final Meter rollupsRepairedLeft = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left");
+    protected final Meter rollupsRepairedRight = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right");
+    protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
+    protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
+    protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
     protected final Timer metricsForCheckTimer = Metrics.timer(RollupHandler.class, "Get metrics for check");
     protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
     protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
+
+    private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
 
     protected MetricData getRollupByGranularity(
             String tenantId,
@@ -58,46 +69,46 @@ public class RollupHandler {
                 g);
 
         // if Granularity is FULL, we are missing raw data - can't generate that
-        if (g != Granularity.FULL && metricData != null) {
+        if (ROLLUP_REPAIR && g != Granularity.FULL && metricData != null) {
             final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
 
-            long latest = from;
-            Map<Long, Points.Point> points = metricData.getData().getPoints();
-            for (Map.Entry<Long, Points.Point> point : points.entrySet()) {
-                if (point.getValue().getTimestamp() > latest) {
-                    latest = point.getValue().getTimestamp();
-                }
-            }
-
-            // timestamp of the end of the latest slot
-            if (latest + g.milliseconds() <= to) {
-                // missing some rollups, generate more on the fly.
-                long start;
-
-                if (points.size() > 0) {
-                    start = latest + g.milliseconds();
-                } else {
-                    start = latest; // We got no points. so start = from. This happens when rollups are delayed.
+            if (metricData.getData().isEmpty()) { // data completely missing for range. complete repair.
+                rollupsRepairEntireRange.mark();
+                List<Points.Point> repairedPoints = repairRollupsOnRead(locator, g, from, to);
+                for (Points.Point repairedPoint : repairedPoints) {
+                    metricData.getData().add(repairedPoint);
                 }
 
-                Iterable<Range> ranges = Range.rangesForInterval(g, start, to);
-                for (Range r : ranges) {
-                    try {
-                        MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
-                        Points dataToRoll = data.getData();
-                        if (dataToRoll.isEmpty()) {
-                            continue;
-                        }
-                        Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
-                        
-                        if (rollup.hasData()) {
-                            metricData.getData().add(new Points.Point(start, rollup));
-                        }
+                if (repairedPoints.isEmpty()) {
+                    rollupsRepairEntireRangeEmpty.mark();
+                }
+            } else {
+                long actualStart = minTime(metricData.getData());
+                long actualEnd = maxTime(metricData.getData());
 
-                    } catch (IOException ex) {
-                        log.error("Exception computing rollups during read: ", ex);
-                    } finally {
-                        start += g.milliseconds();
+                // If the returned start is greater than 'from', we are missing a portion of data.
+                if (actualStart > from) {
+                    rollupsRepairedLeft.mark();
+                    List<Points.Point> repairedLeft = repairRollupsOnRead(locator, g, from, actualStart);
+                    for (Points.Point repairedPoint : repairedLeft) {
+                        metricData.getData().add(repairedPoint);
+                    }
+
+                    if (repairedLeft.isEmpty()) {
+                        rollupsRepairedLeftEmpty.mark();
+                    }
+                }
+
+                // If the returned end timestamp is less than 'to', we are missing a portion of data.
+                if (actualEnd + g.milliseconds() <= to) {
+                    rollupsRepairedRight.mark();
+                    List<Points.Point> repairedRight = repairRollupsOnRead(locator, g, actualEnd + g.milliseconds(), to);
+                    for (Points.Point repairedPoint : repairedRight) {
+                        metricData.getData().add(repairedPoint);
+                    }
+
+                    if (repairedRight.isEmpty()) {
+                        rollupsRepairedRightEmpty.mark();
                     }
                 }
             }
@@ -112,6 +123,44 @@ public class RollupHandler {
         }
 
         return metricData;
+    }
+
+    private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
+        List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
+
+        Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
+        for (Range r : ranges) {
+            try {
+                MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+                Points dataToRoll = data.getData();
+                if (dataToRoll.isEmpty()) {
+                    continue;
+                }
+                Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
+
+                if (rollup.hasData()) {
+                    repairedPoints.add(new Points.Point(r.getStart(), rollup));
+                }
+            } catch (IOException ex) {
+                log.error("Exception computing rollups during read: ", ex);
+            }
+        }
+
+        return repairedPoints;
+    }
+
+    private static long minTime(Points<?> points) {
+        long min = Long.MAX_VALUE;
+        for (long time : points.getPoints().keySet())
+            min = Math.min(min, time);
+        return min;
+    }
+
+    private static long maxTime(Points<?> points) {
+        long max = Long.MIN_VALUE;
+        for (long time : points.getPoints().keySet())
+            max = Math.max(max, time);
+        return max;
     }
 
     // note: similar thing happening in RollupRunnable.getRollupComputer(), but we don't have access to RollupType here.
