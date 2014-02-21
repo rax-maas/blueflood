@@ -44,7 +44,7 @@ public class ShardStateManager {
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
-    private static final Meter catchPeriodDroppedSlots = Metrics.meter(RollupService.class, "Dropping a slot from rolling because its beyond catch-up period");
+    private static final Counter catchPeriodDroppedSlots = Metrics.counter(RollupService.class, "Dropping a slot from rolling because its beyond catch-up period");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
@@ -254,7 +254,7 @@ public class ShardStateManager {
                         continue;
                     }
                     if (update.getTimestamp() < millisAbsoluteTimeStamp) {
-                        catchPeriodDroppedSlots.mark();
+                        catchPeriodDroppedSlots.inc();
                         continue;
                     }
                     outputKeys.add(entry.getKey());
