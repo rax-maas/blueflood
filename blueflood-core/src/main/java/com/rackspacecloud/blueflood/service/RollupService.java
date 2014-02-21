@@ -184,7 +184,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     final void poll() {
         Timer.Context timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
-        context.scheduleSlotsOlderThan(ROLLUP_DELAY_MILLIS);
+        context.scheduleSlotsWithinCatchupPeriod(ROLLUP_DELAY_MILLIS);
         timer.stop();
     }
 

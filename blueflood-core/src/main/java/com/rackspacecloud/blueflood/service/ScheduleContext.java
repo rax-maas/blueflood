@@ -119,6 +119,39 @@ public class ScheduleContext implements IngestionContext {
                 // sync on map since we do not want anything added to or taken from it while we iterate.
                 synchronized (scheduledSlots) { // read
                     synchronized (runningSlots) { // read
+                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsOlderThan(now, maxAgeMillis);
+                        if (slotsToWorkOn.size() == 0) {
+                            continue;
+                        }
+                        if (!canWorkOnShard(shard)) {
+                            continue;
+                        }
+
+                        for (Integer slot : slotsToWorkOn) {
+                            if (areChildKeysOrSelfKeyScheduledOrRunning(shard, g, slot)) {
+                                continue;
+                            }
+                            String key = g.formatLocatorKey(slot, shard);
+                            scheduledSlots.add(key);
+                            orderedScheduledSlots.add(key);
+                            recentlyScheduledShards.put(shard, scheduleTime);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void scheduleSlotsWithinCatchupPeriod(long maxAgeMillis) {
+        long now = scheduleTime;
+        ArrayList<Integer> shardKeys = new ArrayList<Integer>(shardStateManager.getManagedShards());
+        Collections.shuffle(shardKeys);
+
+        for (int shard : shardKeys) {
+            for (Granularity g : Granularity.rollupGranularities()) {
+                // sync on map since we do not want anything added to or taken from it while we iterate.
+                synchronized (scheduledSlots) { // read
+                    synchronized (runningSlots) { // read
                         List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsWithinCatchUpPeriod(now, maxAgeMillis);
                         if (slotsToWorkOn.size() == 0) {
                             continue;
@@ -140,6 +173,7 @@ public class ScheduleContext implements IngestionContext {
                 }
             }
         }
+
     }
 
     private boolean areChildKeysOrSelfKeyScheduledOrRunning(int shard, Granularity g, int slot) {
