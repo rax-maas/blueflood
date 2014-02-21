@@ -99,8 +99,8 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    //Catch-up period in hours
-    CATCH_UP_PERIOD("48");
+    //Catch-up absolute timestamp // Human time (GMT): Fri, 21 Feb 2014 12:00:00 GMT
+    CATCH_UP_ABSOLUTE_TS("1392984000000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

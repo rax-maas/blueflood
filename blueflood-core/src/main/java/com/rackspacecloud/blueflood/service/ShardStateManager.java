@@ -37,7 +37,7 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
-    final long millisAbsoluteTimeStamp = 1392984000 * 1000; // Human time (GMT): Fri, 21 Feb 2014 12:00:00 GMT
+    final long millisAbsoluteTimeStamp = Configuration.getInstance().getLongProperty("CATCH_UP_ABSOLUTE_TS");
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
