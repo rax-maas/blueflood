@@ -97,7 +97,14 @@ public enum CoreConfig implements ConfigDefaults {
     REPAIR_ROLLUPS_ON_READ("true"),
 
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
-    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC");
+    GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
+
+    //Granularities to rollup when rollup mode is enabled
+    METRICS_5M("true"),
+    METRICS_20M("true"),
+    METRICS_60M("true"),
+    METRICS_240M("true"),
+    METRICS_1440M("true");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
