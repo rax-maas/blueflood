@@ -253,7 +253,7 @@ public class ShardStateManager {
                     if (timeElapsed <= maxAgeMillis) {
                         continue;
                     }
-                    if (update.getTimestamp() > millisAbsoluteTimeStamp) {
+                    if (update.getTimestamp() < millisAbsoluteTimeStamp) {
                         catchPeriodDroppedSlots.mark();
                         continue;
                     }
