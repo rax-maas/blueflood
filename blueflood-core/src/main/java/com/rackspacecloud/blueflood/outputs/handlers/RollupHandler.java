@@ -42,6 +42,9 @@ public class RollupHandler {
     protected final Meter rollupsRepairEntireRange = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range");
     protected final Meter rollupsRepairedLeft = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left");
     protected final Meter rollupsRepairedRight = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right");
+    protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
+    protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
+    protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
     protected final Timer metricsForCheckTimer = Metrics.timer(RollupHandler.class, "Get metrics for check");
     protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
     protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
@@ -75,6 +78,10 @@ public class RollupHandler {
                 for (Points.Point repairedPoint : repairedPoints) {
                     metricData.getData().add(repairedPoint);
                 }
+
+                if (repairedPoints.isEmpty()) {
+                    rollupsRepairEntireRangeEmpty.mark();
+                }
             } else {
                 long actualStart = minTime(metricData.getData());
                 long actualEnd = maxTime(metricData.getData());
@@ -86,6 +93,10 @@ public class RollupHandler {
                     for (Points.Point repairedPoint : repairedLeft) {
                         metricData.getData().add(repairedPoint);
                     }
+
+                    if (repairedLeft.isEmpty()) {
+                        rollupsRepairedLeftEmpty.mark();
+                    }
                 }
 
                 // If the returned end timestamp is less than 'to', we are missing a portion of data.
@@ -94,6 +105,10 @@ public class RollupHandler {
                     List<Points.Point> repairedRight = repairRollupsOnRead(locator, g, actualEnd + g.milliseconds(), to);
                     for (Points.Point repairedPoint : repairedRight) {
                         metricData.getData().add(repairedPoint);
+                    }
+
+                    if (repairedRight.isEmpty()) {
+                        rollupsRepairedRightEmpty.mark();
                     }
                 }
             }
