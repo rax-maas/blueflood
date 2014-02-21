@@ -68,8 +68,11 @@ public class RollupHandler {
                 new Range(g.snapMillis(from), to),
                 g);
 
+        boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString())
+                || metricData.getType().equals(MetricData.Type.HISTOGRAM.toString());
+
         // if Granularity is FULL, we are missing raw data - can't generate that
-        if (ROLLUP_REPAIR && g != Granularity.FULL && metricData != null) {
+        if (ROLLUP_REPAIR && isRollable && g != Granularity.FULL && metricData != null) {
             final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
 
             if (metricData.getData().isEmpty()) { // data completely missing for range. complete repair.
