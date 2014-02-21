@@ -37,14 +37,14 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
-    final long millisInCatchPeriod = Configuration.getInstance().getIntegerProperty("CATCH_UP_PERIOD")*60*60*1000;
+    final long millisAbsoluteTimeStamp = 1392984000 * 1000; // Human time (GMT): Fri, 21 Feb 2014 12:00:00 GMT
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
-    private static final Counter catchPeriodDroppedSlots = Metrics.counter(RollupService.class, "Dropping a slot from rolling because its beyond catch-up period");
+    private static final Meter catchPeriodDroppedSlots = Metrics.meter(RollupService.class, "Dropping a slot from rolling because its beyond catch-up period");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
@@ -253,8 +253,8 @@ public class ShardStateManager {
                     if (timeElapsed <= maxAgeMillis) {
                         continue;
                     }
-                    if (timeElapsed >= millisInCatchPeriod) {
-                        catchPeriodDroppedSlots.inc();
+                    if (update.getTimestamp() > millisAbsoluteTimeStamp) {
+                        catchPeriodDroppedSlots.mark();
                         continue;
                     }
                     outputKeys.add(entry.getKey());
