@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Ignore;
 
 // this test used to measure rollups that were refused, but we don't care anymore. Not it makes sure that all rollups
 // get executed.
@@ -38,7 +39,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         System.setProperty("MAX_ROLLUP_WRITE_THREADS", threadsInRollupPool.toString());
     }
 
-    @Test
+    @Ignore @Test
     // remember: this tests behavior, not performance.
     public void testManyLocators() throws Exception {
         Assert.assertEquals(Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS), threadsInRollupPool.intValue());
