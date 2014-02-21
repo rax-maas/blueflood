@@ -188,8 +188,8 @@ public class ScheduleContext implements IngestionContext {
                     return key;
                 } else {
                     shardOwnershipChanged.mark();
+                    return null;
                 }
-                return null;
             }
         }
     }
