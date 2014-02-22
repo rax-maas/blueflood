@@ -47,5 +47,8 @@ public class RollupBatchWriteRunnable  implements Runnable {
         rollupsPerBatch.update(writeContexts.size());
         RollupService.lastRollupTime.set(System.currentTimeMillis());
         ctx.stop();
+        for (SingleRollupWriteContext writeContext : writeContexts) {
+            writeContext.getExecuteTimerContext().stop();
+        }
     }
 }
