@@ -18,15 +18,13 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.ColumnFamily;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-
-import java.util.concurrent.TimeUnit;
+import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 /**
  * This class keeps track of what is happening in an rollup for a specific metric.
@@ -39,11 +37,15 @@ public class SingleRollupReadContext {
     
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
+    private final Granularity srcGranularity;
+    private RollupType rollupType;
+    private Class<? extends Rollup> rollupClass;
 
-    public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
+    public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) throws GranularityException {
         this.locator = locator;
         this.range = rangeToRead;
         this.rollupGranularity = rollupGranularity;
+        this.srcGranularity = rollupGranularity.finer();
     }
     
     Timer getExecuteTimer() {
@@ -64,5 +66,23 @@ public class SingleRollupReadContext {
 
     Locator getLocator() {
         return this.locator;
+    }
+
+    void setRollupType(RollupType rollupType) {
+        this.rollupType = rollupType;
+        this.rollupClass = RollupType.classOf(rollupType, rollupGranularity);
+    }
+
+    public Class<? extends Rollup> getRollupClass() {
+        return rollupClass;
+    }
+
+
+    public Granularity getSourceGranularity() {
+        return srcGranularity;
+    }
+
+    public RollupType getRollupType() {
+        return rollupType;
     }
 }

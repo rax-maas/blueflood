@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
@@ -77,6 +78,7 @@ class LocatorFetchRunnable implements Runnable {
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
+        final RollupBatchReader rollupBatchReader = new RollupBatchReader(rollupReadExecutor, executionContext);
         Set<Locator> locators = new HashSet<Locator>();
 
         try {
@@ -85,14 +87,19 @@ class LocatorFetchRunnable implements Runnable {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
+        Integer locatorCount = 0;
+        ArrayList<SingleRollupReadContext> readBatch = new ArrayList<SingleRollupReadContext>();
+
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
+                rollupReadExecutor.execute(new RollupPreReadRunnable(executionContext, singleRollupReadContext, rollupBatchReader));
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
+
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.markUnsuccessful(any);
