@@ -21,6 +21,11 @@ public class RollupExecutionContext {
         owner.interrupt(); // this is what interrupts that long sleep in LocatorFetchRunnable.
     }
 
+    public void decrementReadCounter(long count) {
+        readCounter.addAndGet((-1) * count);
+        owner.interrupt();
+    }
+
     void decrementWriteCounter(long count) {
         writeCounter.addAndGet((-1) * count);
         owner.interrupt();

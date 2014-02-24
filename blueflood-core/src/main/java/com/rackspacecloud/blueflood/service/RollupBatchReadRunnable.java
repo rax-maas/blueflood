@@ -18,8 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -39,7 +37,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Read Per Batch");
     private static final Timer batchReadTimer = Metrics.timer(RollupService.class, "Rollup Batch Read");
 
-    public RollupBatchReadRunnable(ArrayList<SingleRollupReadContext> readContexts, RollupExecutionContext context) {
+    public RollupBatchReadRunnable(ArrayList<SingleRollupReadContext> readContexts, RollupExecutionContext context, Class<T> kls) {
         this.readContexts = readContexts;
         this.executionContext = context;
     }
@@ -49,7 +47,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     public void run() {
         if (readContexts.size() == 0) throw new RuntimeException("Invalid count of readContexts of 0");
         SingleRollupReadContext readContext = readContexts.get(0);
-        Class<? extends Rollup> rollupClass = readContext.getRollupClass();
+        Class<T> rollupClass = (Class<T>) readContext.getRollupClass();
         Range range = readContext.getRange();
         CassandraModel.MetricColumnFamily cf = CassandraModel.getColumnFamily(rollupClass, readContext.getSourceGranularity());
         Rollup.Type rollupComputer = getRollupComputer(readContext.getRollupType(), readContext.getSourceGranularity());
@@ -63,19 +61,17 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         }};
 
         try {
-            Map<Locator, Points<? extends Rollup>> data = AstyanaxReader.getInstance().getDataToRoll(rollupClass, locators, range, cf);
+            Map<Locator, Points<T>> data = AstyanaxReader.getInstance().getDataToRoll(rollupClass, locators, range, cf);
             // next, compute the rollups.
-            for (Map.Entry<Locator, Points<? extends Rollup>> locatorPointsEntry : data.entrySet()) {
+            for (Map.Entry<Locator, Points<T>> locatorPointsEntry : data.entrySet()) {
                 Rollup rollup = rollupComputer.compute(locatorPointsEntry.getValue());
             }
-
-            rollup = getRollupComputer(rollupType, srcGran).compute(input);
-        } catch (ConnectionException e) {
+        } catch (RuntimeException e) { //TODO: validate -- i think ConnectionException is thrown as a RTE
             executionContext.markUnsuccessful(e);
         } catch (IOException e) {
             executionContext.markUnsuccessful(e);
         }
-        executionContext.decrementReadCounter(readContexts.size());
+        executionContext.decrementReadCounter((long)readContexts.size());
         rollupsPerBatch.update(readContexts.size());
         RollupService.lastRollupTime.set(System.currentTimeMillis());
         ctx.stop();

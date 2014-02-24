@@ -17,12 +17,11 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.types.MetricMetadata;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
@@ -35,15 +34,18 @@ public class RollupPreReadRunnable implements Runnable {
     protected final long startWait;
     private final RollupExecutionContext executionContext;
     private final SingleRollupReadContext singleRollupReadContext;
+    private final RollupBatchReader batchReader;
     protected static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
             new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
             Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
 
     private static final Timer timer = Metrics.timer(RollupService.class, "Rollup Pre-Read Timer");
 
+
     public RollupPreReadRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchReader rollupBatchReader) {
         this.singleRollupReadContext = singleRollupReadContext;
         this.executionContext = executionContext;
+        this.batchReader = rollupBatchReader;
         startWait = System.currentTimeMillis();
     }
 
@@ -61,51 +63,27 @@ public class RollupPreReadRunnable implements Runnable {
 
 
         if (log.isDebugEnabled()) {
-            log.debug("Executing rollup from {} for {} {}", new Object[] {
+            log.debug("Executing rollup pre-read from {} for {} {}", new Object[] {
                     srcGran.shortName(),
                     singleRollupReadContext.getRange().toString(),
                     singleRollupReadContext.getLocator()});
         }
 
-        // Read data and compute rollup
-        Rollup rollup = null;
         RollupType rollupType = null;
         Timer.Context timerContext = timer.time();
         try {
             rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     singleRollupReadContext.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
-            Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
-            ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
-            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
+            singleRollupReadContext.setRollupType(rollupType);
+            batchReader.enqueueRollup(singleRollupReadContext);
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
+            executionContext.markUnsuccessful(th);
         } finally {
             executionContext.decrementReadCounter();
             timerContext.stop();
         }
-
-}
-
-    // dertmine which DataType to use for serialization.
-    public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {
-        switch (srcType) {
-            case COUNTER:
-                return Rollup.CounterFromCounter;
-            case TIMER:
-                return Rollup.TimerFromTimer;
-            case GAUGE:
-                return Rollup.GaugeFromGauge;
-            case BF_HISTOGRAMS:
-                return srcGran == Granularity.FULL ? Rollup.HistogramFromRaw : Rollup.HistogramFromHistogram;
-            case BF_BASIC:
-                return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
-            case SET:
-                return Rollup.SetFromSet;
-            default:
-                break;
-        }
-        throw new IllegalArgumentException(String.format("Cannot compute rollups for %s from %s", srcType.name(), srcGran.shortName()));
     }
 }

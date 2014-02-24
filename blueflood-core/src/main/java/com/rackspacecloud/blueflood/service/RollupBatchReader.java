@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.types.Rollup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,8 @@ public class RollupBatchReader {
             // pass
         }
         if (readContexts.size() > 0) {
-            executor.execute(new RollupBatchReadRunnable(readContexts, context));
+            Class<? extends Rollup> kls =  readContexts.get(0).getRollupClass();
+            executor.execute(new RollupBatchReadRunnable(readContexts, context, kls));
         }
     }
 }

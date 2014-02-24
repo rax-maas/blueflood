@@ -97,7 +97,7 @@ class LocatorFetchRunnable implements Runnable {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
                 rollupReadExecutor.execute(new RollupPreReadRunnable(executionContext, singleRollupReadContext, rollupBatchReader));
-                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
+//                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
 
             } catch (Throwable any) {
