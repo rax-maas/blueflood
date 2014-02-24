@@ -30,3 +30,8 @@ Create a reporter module that would allow metrics created by using the Coda Hale
 #### (3) Clients
 
 Create a Blueflood client library in $LANGUAGE (java, python, node, ruby, etc.)
+
+#### (5) Explore using a different REST framework.
+
+I would recommend looking at [Dropwizard](https://github.com/dropwizard/dropwizard).
+The only sticking points I can think of is that our JSON marshalling may not be conducive to the way Dropwizard does things.
