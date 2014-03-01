@@ -67,6 +67,14 @@ public enum CoreConfig implements ConfigDefaults {
 
     INTERNAL_API_CLUSTER("127.0.0.1:50020,127.0.0.1:50020"),
 
+    RIEMANN_HOST(""),
+    RIEMANN_PORT("5555"),
+    RIEMANN_PREFIX(""),
+    RIEMANN_LOCALHOST(""),
+    RIEMANN_TAGS(""),
+    RIEMANN_SEPARATOR(""),
+    RIEMANN_TTL(""),
+
     GRAPHITE_HOST(""),
     GRAPHITE_PORT("2003"),
     GRAPHITE_PREFIX("unconfiguredNode.metrics."),
