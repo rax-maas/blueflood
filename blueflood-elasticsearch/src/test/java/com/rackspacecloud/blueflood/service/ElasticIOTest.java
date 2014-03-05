@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.io.ElasticIO;
+import com.rackspacecloud.blueflood.types.DiscoveryResult;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -47,9 +48,9 @@ public class ElasticIOTest {
     private ElasticIO elasticIO;
     private EsSetup esSetup;
 
-    private static ElasticIO.Result createExpectedResult(String tenantId, int x, String y, int z) {
+    private static DiscoveryResult createExpectedResult(String tenantId, int x, String y, int z) {
         Locator locator = createTestLocator(tenantId, x, y, z);
-        return new ElasticIO.Result(tenantId, locator.getMetricName(), UNIT);
+        return new DiscoveryResult(tenantId, locator.getMetricName(), UNIT);
     }
     private static Locator createTestLocator(String tenantId, int x, String y, int z) {
         String xs = (x < 10 ? "0" : "") + String.valueOf(x);
@@ -110,9 +111,9 @@ public class ElasticIOTest {
 
     @Test
     public void testNoCrossTenantResults() {
-        List<ElasticIO.Result> results = elasticIO.getMetrics(TENANT_A);
+        List<DiscoveryResult> results = elasticIO.getMetrics(TENANT_A);
         Assert.assertEquals(NUM_DOCS, results.size());
-        for (ElasticIO.Result result : results) {
+        for (DiscoveryResult result : results) {
             Assert.assertNotNull(result.getTenantId());
             Assert.assertNotSame(TENANT_B, result.getTenantId());
         }
@@ -120,13 +121,13 @@ public class ElasticIOTest {
 
     @Test
     public void testWildcard() {
-        ElasticIO.Result entry;
-        List<ElasticIO.Result> results;
+        DiscoveryResult entry;
+        List<DiscoveryResult> results;
         results = elasticIO.getMetricsLike(TENANT_A, "one.two.*");
         List<Locator> locators = locatorMap.get(TENANT_A);
         Assert.assertEquals(locators.size(), results.size());
         for (Locator locator : locators) {
-            entry =  new ElasticIO.Result(TENANT_A, locator.getMetricName(), UNIT);
+            entry =  new DiscoveryResult(TENANT_A, locator.getMetricName(), UNIT);
             Assert.assertTrue((results.contains(entry)));
         }
 

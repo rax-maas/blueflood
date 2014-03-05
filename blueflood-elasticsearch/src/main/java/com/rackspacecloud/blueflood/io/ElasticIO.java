@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
+import com.rackspacecloud.blueflood.types.DiscoveryResult;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -80,12 +81,12 @@ public class ElasticIO implements DiscoveryIO {
         this(manager.getClient());
     }
 
-    private static Result convertHitToMetricDiscoveryResult(SearchHit hit) {
+    private static DiscoveryResult convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
         String metricName = (String)source.get(METRIC_NAME.toString());
         String tenantId = (String)source.get(TENANT_ID.toString());
         String unit = (String)source.get(UNIT.toString());
-        Result result = new Result(tenantId, metricName, unit);
+        DiscoveryResult result = new DiscoveryResult(tenantId, metricName, unit);
 
         return result;
     }
@@ -137,17 +138,17 @@ public class ElasticIO implements DiscoveryIO {
         return qb;
     }
 
-    public List<Result> getMetricsLike(String tenantId, String query) {
+    public List<DiscoveryResult> getMetricsLike(String tenantId, String query) {
         return search(new Discovery(tenantId, query));
     }
 
-    public List<Result> getMetrics(String tenantId) {
+    public List<DiscoveryResult> getMetrics(String tenantId) {
         return search(new Discovery(tenantId, "*"));
     }
 
 
-    public List<Result> search(Discovery md) {
-        List<Result> result = new ArrayList<Result>();
+    public List<DiscoveryResult> search(Discovery md) {
+        List<DiscoveryResult> result = new ArrayList<DiscoveryResult>();
         QueryBuilder query = createQuery(md);
         Timer.Context searchTimerCtx = searchTimer.time();
         SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
@@ -158,7 +159,7 @@ public class ElasticIO implements DiscoveryIO {
                 .actionGet();
         searchTimerCtx.stop();
         for (SearchHit hit : searchRes.getHits().getHits()) {
-            Result entry = convertHitToMetricDiscoveryResult(hit);
+            DiscoveryResult entry = convertHitToMetricDiscoveryResult(hit);
             result.add(entry);
         }
         return result;
@@ -216,56 +217,4 @@ public class ElasticIO implements DiscoveryIO {
         }
     }
 
-    public static class Result {
-        private final String metricName;
-        private final String unit;
-        private final String tenantId;
-
-        public Result(String tenantId, String name, String unit) {
-            this.tenantId = tenantId;
-            this.metricName = name;
-            this.unit = unit;
-        }
-
-        public String getTenantId() {
-            return tenantId;
-        }
-        public String getMetricName() {
-            return metricName;
-        }
-        public String getUnit() {
-            return unit;
-        }
-        @Override
-        public String toString() {
-            return "Result [tenantId=" + tenantId + ", metricName=" + metricName + ", unit=" + unit + "]";
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result
-                    + ((metricName == null) ? 0 : metricName.hashCode());
-            result = prime * result + ((unit == null) ? 0 : unit.hashCode());
-            return result;
-        }
-
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            } else if (obj == null) {
-                return false;
-            } else if (!getClass().equals(obj.getClass())) {
-                return false;
-            }
-            return equals((Result) obj);
-        }
-        public boolean equals(Result other) {
-            if (this == other) {
-                return true;
-            }
-            return metricName.equals(other.metricName) && unit.equals(other.unit) && tenantId.equals(other.tenantId);
-        }
-    }
 }
