@@ -124,16 +124,27 @@ public class ElasticIO implements DiscoveryIO {
         BoolQueryBuilder qb = boolQuery()
                 .must(termQuery(TENANT_ID.toString(), md.getTenantId()));
         String metricName = md.getMetricName();
-        if (metricName.contains("*")) {
-            qb.must(wildcardQuery("RAW_" + METRIC_NAME.toString(), metricName));
-        } else {
-            qb.must(termQuery("RAW_" + METRIC_NAME.toString(), metricName));
+        if (!metricName.equals("*")) {
+            if (metricName.contains("*")) {
+                qb.must(wildcardQuery("RAW_" + METRIC_NAME.toString(), metricName));
+            } else {
+                qb.must(termQuery("RAW_" + METRIC_NAME.toString(), metricName));
+            }
         }
         for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
             qb.should(termQuery(entry.getKey(), entry.getValue()));
         }
         return qb;
     }
+
+    public List<Result> getMetricsLike(String tenantId, String query) {
+        return search(new Discovery(tenantId, query));
+    }
+
+    public List<Result> getMetrics(String tenantId) {
+        return search(new Discovery(tenantId, "*"));
+    }
+
 
     public List<Result> search(Discovery md) {
         List<Result> result = new ArrayList<Result>();

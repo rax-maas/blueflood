@@ -110,7 +110,7 @@ public class ElasticIOTest {
 
     @Test
     public void testNoCrossTenantResults() {
-        List<ElasticIO.Result> results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*"));
+        List<ElasticIO.Result> results = elasticIO.getMetrics(TENANT_A);
         Assert.assertEquals(NUM_DOCS, results.size());
         for (ElasticIO.Result result : results) {
             Assert.assertNotNull(result.getTenantId());
@@ -122,7 +122,7 @@ public class ElasticIOTest {
     public void testWildcard() {
         ElasticIO.Result entry;
         List<ElasticIO.Result> results;
-        results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "one.two.*"));
+        results = elasticIO.getMetricsLike(TENANT_A, "one.two.*");
         List<Locator> locators = locatorMap.get(TENANT_A);
         Assert.assertEquals(locators.size(), results.size());
         for (Locator locator : locators) {
@@ -130,7 +130,7 @@ public class ElasticIOTest {
             Assert.assertTrue((results.contains(entry)));
         }
 
-        results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*.fourA.*"));
+        results = elasticIO.getMetricsLike(TENANT_A, "*.fourA.*");
         Assert.assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
@@ -139,7 +139,7 @@ public class ElasticIOTest {
             }
         }
 
-        results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*.three1*.four*.five2"));
+        results = elasticIO.getMetricsLike(TENANT_A, "*.three1*.four*.five2");
         Assert.assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
         for (int x = 10; x < 20; x++) {
             for (String y : CHILD_ELEMENTS) {
