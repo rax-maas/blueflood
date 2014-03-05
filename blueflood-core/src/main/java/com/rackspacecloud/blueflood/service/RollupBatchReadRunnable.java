@@ -26,22 +26,21 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-/**
- * Created by jburkhart on 2/22/14.
- */
 public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     private final RollupExecutionContext executionContext;
-    private final ArrayList<SingleRollupReadContext> readContexts;
+    private final List<SingleRollupReadContext> readContexts;
+    private final RollupBatchWriter rollupBatchWriter;
     private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Read Per Batch");
     private static final Timer batchReadTimer = Metrics.timer(RollupService.class, "Rollup Batch Read");
 
-    public RollupBatchReadRunnable(ArrayList<SingleRollupReadContext> readContexts, RollupExecutionContext context, Class<T> kls) {
+    public RollupBatchReadRunnable(List<SingleRollupReadContext> readContexts, RollupExecutionContext context, RollupBatchWriter writer) {
         this.readContexts = readContexts;
         this.executionContext = context;
+        this.rollupBatchWriter = writer;
     }
-
 
     @Override
     public void run() {
@@ -50,6 +49,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         Class<T> rollupClass = (Class<T>) readContext.getRollupClass();
         Range range = readContext.getRange();
         CassandraModel.MetricColumnFamily cf = CassandraModel.getColumnFamily(rollupClass, readContext.getSourceGranularity());
+        CassandraModel.MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, readContext.getRollupGranularity());
         Rollup.Type rollupComputer = getRollupComputer(readContext.getRollupType(), readContext.getSourceGranularity());
 
         Timer.Context ctx = batchReadTimer.time();
@@ -63,18 +63,28 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         try {
             Map<Locator, Points<T>> data = AstyanaxReader.getInstance().getDataToRoll(rollupClass, locators, range, cf);
             // next, compute the rollups.
-            for (Map.Entry<Locator, Points<T>> locatorPointsEntry : data.entrySet()) {
-                Rollup rollup = rollupComputer.compute(locatorPointsEntry.getValue());
+            for (SingleRollupReadContext context : readContexts) {
+                Rollup rollup = rollupComputer.compute(data.get(context.getLocator()));
+                rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, context, dstCF));
             }
-        } catch (RuntimeException e) { //TODO: validate -- i think ConnectionException is thrown as a RTE
+        } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
+            stopTimers(readContexts);
         } catch (IOException e) {
             executionContext.markUnsuccessful(e);
+            stopTimers(readContexts);
         }
         executionContext.decrementReadCounter((long)readContexts.size());
         rollupsPerBatch.update(readContexts.size());
         RollupService.lastRollupTime.set(System.currentTimeMillis());
         ctx.stop();
+    }
+
+    private static void stopTimers(List<SingleRollupReadContext> contexts) {
+        // Stops all timers that are tracking end-to-end rollup execution times.
+        for (SingleRollupReadContext context : contexts) {
+            context.getExecuteTimerContext().stop();
+        }
     }
 
     public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {

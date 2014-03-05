@@ -53,14 +53,15 @@ public class RollupPreReadRunnable implements Runnable {
     public void run() {
         singleRollupReadContext.getWaitHist().update(System.currentTimeMillis() - startWait);
 
+        Timer.Context ctx = singleRollupReadContext.getExecuteTimerContext();
         Granularity srcGran;
         try {
             srcGran = singleRollupReadContext.getRollupGranularity().finer();
         } catch (GranularityException ex) {
             executionContext.decrementReadCounter();
+            ctx.stop();
             return; // no work to be done.
         }
-
 
         if (log.isDebugEnabled()) {
             log.debug("Executing rollup pre-read from {} for {} {}", new Object[] {
@@ -80,9 +81,10 @@ public class RollupPreReadRunnable implements Runnable {
         } catch (Throwable th) {
             log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
                     + ", Source Granularity: " + srcGran.name());
-            executionContext.markUnsuccessful(th);
-        } finally {
             executionContext.decrementReadCounter();
+            executionContext.markUnsuccessful(th);
+            ctx.stop(); // stop end-to-end timer now since this rollup execution is now effectively over.
+        } finally {
             timerContext.stop();
         }
     }

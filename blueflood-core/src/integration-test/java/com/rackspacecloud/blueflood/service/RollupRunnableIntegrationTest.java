@@ -123,11 +123,16 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
+        rec.incrementReadCounter();
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
+        RollupBatchReader batchReader = new RollupBatchReader(new ThreadPoolBuilder().build(), rec, batchWriter);
+
+        RollupPreReadRunnable rr = new RollupPreReadRunnable(rec, rc, batchReader);
+
         rr.run();
 
-        while (!rec.doneReading() && !rec.doneWriting()) {
+        while (!(rec.doneReading() && rec.doneWriting())) {
+            batchReader.drainBatch();
             batchWriter.drainBatch();
             try {
                 Thread.sleep(1000l);
@@ -177,18 +182,24 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
+        rec.incrementReadCounter();
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
+        RollupBatchReader batchReader = new RollupBatchReader(new ThreadPoolBuilder().build(), rec, batchWriter);
+
+        RollupPreReadRunnable rr = new RollupPreReadRunnable(rec, rc, batchReader);
+
+
         rr.run();
-        
-        // assert something in 5m for this locator.
-        while (!rec.doneReading() && !rec.doneWriting()) {
+
+        while (!(rec.doneReading() && rec.doneWriting())) {
+            batchReader.drainBatch();
             batchWriter.drainBatch();
             try {
                 Thread.sleep(1000l);
             } catch (InterruptedException e) {
             }
         }
+
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,

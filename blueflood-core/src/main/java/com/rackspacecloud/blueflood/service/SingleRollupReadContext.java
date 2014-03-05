@@ -32,7 +32,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 public class SingleRollupReadContext {
     private final Locator locator;
     private final Range range;
-    private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
+    private static final Timer endToEndTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
     
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
@@ -40,6 +40,7 @@ public class SingleRollupReadContext {
     private final Granularity srcGranularity;
     private RollupType rollupType;
     private Class<? extends Rollup> rollupClass;
+    private Timer.Context timingContext = null;
 
     public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) throws GranularityException {
         this.locator = locator;
@@ -47,9 +48,13 @@ public class SingleRollupReadContext {
         this.rollupGranularity = rollupGranularity;
         this.srcGranularity = rollupGranularity.finer();
     }
-    
-    Timer getExecuteTimer() {
-        return executeTimer;
+
+    Timer.Context getExecuteTimerContext() {
+        // This is pretty hacky, the way we pass this around. tracks end-to-end rollup execution time.
+        if (timingContext == null) {
+            timingContext = endToEndTimer.time();
+        }
+        return timingContext;
     }
 
     Histogram getWaitHist() {
