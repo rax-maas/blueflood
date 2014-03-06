@@ -130,7 +130,7 @@ class LocatorFetchRunnable implements Runnable {
         log.debug("Waiting for rollups to finish for " + parentSlotKey);
         while (!executionContext.done()) {
             // gets any remaining rollups enqueued for io. should be no-op after being called once
-            rollupBatchReader.drainBatch();
+            rollupBatchReader.drainBatches();
             rollupBatchWriter.drainBatch();
             try {
                 Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS);

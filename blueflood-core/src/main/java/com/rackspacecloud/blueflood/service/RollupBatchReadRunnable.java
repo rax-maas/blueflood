@@ -37,6 +37,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     private static final Timer batchReadTimer = Metrics.timer(RollupService.class, "Rollup Batch Read");
 
     public RollupBatchReadRunnable(List<SingleRollupReadContext> readContexts, RollupExecutionContext context, RollupBatchWriter writer) {
+        // All read contexts MUST be identical besides the locator
         this.readContexts = readContexts;
         this.executionContext = context;
         this.rollupBatchWriter = writer;

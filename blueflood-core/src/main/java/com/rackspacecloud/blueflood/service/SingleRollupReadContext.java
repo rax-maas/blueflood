@@ -90,4 +90,15 @@ public class SingleRollupReadContext {
     public RollupType getRollupType() {
         return rollupType;
     }
+
+    // returns a string that will be the same between all rollups that can be read as a batch
+    // Everything *except* locator must be identical for two contexts to be grouped as part of a read batch
+    public String getBatchGroupingIdentifier() {
+        return new StringBuilder()
+                .append(rollupGranularity.name())
+                .append(rollupType.name())
+                .append(rollupClass.getSimpleName())
+                .append(range.hashCode())
+                .toString();
+    }
 }
