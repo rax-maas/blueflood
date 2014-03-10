@@ -49,6 +49,7 @@ public class SingleRollupWriteContext {
 
     public SingleRollupWriteContext(Rollup rollup, SingleRollupReadContext singleRollupReadContext, ColumnFamily<Locator, Long> dstCF) {
         this(rollup, singleRollupReadContext.getLocator(), singleRollupReadContext.getRollupGranularity(), dstCF, singleRollupReadContext.getRange().getStart());
+        this.timingContext.close();
         this.timingContext = singleRollupReadContext.getExecuteTimerContext();
     }
 
