@@ -38,6 +38,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
+import org.apache.avro.reflect.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,6 +222,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return columns;
     }
 
+    @Nullable
     public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, final Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
         return getDataToRoll(type, new ArrayList<Locator>(){{ add(locator); }}, range, cf).get(locator);
     }
