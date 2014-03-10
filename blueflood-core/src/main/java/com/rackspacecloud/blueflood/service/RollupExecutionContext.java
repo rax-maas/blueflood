@@ -26,12 +26,12 @@ public class RollupExecutionContext {
     }
 
     public void decrementReadCounter(long count) {
-        readCounter.addAndGet((-1) * count);
+        readCounter.addAndGet(-count);
         owner.interrupt();
     }
 
     void decrementWriteCounter(long count) {
-        writeCounter.addAndGet((-1) * count);
+        writeCounter.addAndGet(-count);
         owner.interrupt();
     }
 
