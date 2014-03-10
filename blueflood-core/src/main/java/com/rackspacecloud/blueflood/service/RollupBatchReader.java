@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class RollupBatchReader {
-    private static final Logger log = LoggerFactory.getLogger(RollupBatchWriter.class);
+    private static final Logger log = LoggerFactory.getLogger(RollupBatchReader.class);
 
     private final ThreadPoolExecutor executor;
     private final RollupExecutionContext context;
