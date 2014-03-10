@@ -25,12 +25,13 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 // Reads prerequisite data for reading a rollup. i.e., RollupType
 public class RollupPreReadRunnable implements Runnable {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(RollupPreReadRunnable.class);
+    private static final Logger log = LoggerFactory.getLogger(RollupPreReadRunnable.class);
     protected final long startWait;
     private final RollupExecutionContext executionContext;
     private final SingleRollupReadContext singleRollupReadContext;
