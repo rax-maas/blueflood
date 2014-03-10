@@ -36,6 +36,11 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     private final RollupBatchWriter rollupBatchWriter;
     private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Read Per Batch");
     private static final Timer batchReadTimer = Metrics.timer(RollupService.class, "Rollup Batch Read");
+    private Rollup.Type rollupComputer;
+    private Range range;
+    private Class<T> rollupClass;
+    private CassandraModel.MetricColumnFamily cf;
+    private CassandraModel.MetricColumnFamily dstCF;
 
     public RollupBatchReadRunnable(List<SingleRollupReadContext> readContexts, RollupExecutionContext context, RollupBatchWriter writer) {
         // All read contexts MUST be identical besides the locator
@@ -46,21 +51,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
 
     @Override
     public void run() {
-        if (readContexts.size() == 0) throw new RuntimeException("Invalid count of readContexts of 0");
-        SingleRollupReadContext readContext = readContexts.get(0);
-        Class<T> rollupClass = (Class<T>) readContext.getRollupClass();
-        Range range = readContext.getRange();
-        Granularity rollupGranularity = readContext.getRollupGranularity();
-        Granularity sourceGranularity;
-        try {
-            sourceGranularity = rollupGranularity.finer();
-        } catch (GranularityException e) {
-            throw new RuntimeException("Cannot rollup to " + rollupGranularity + " as it has no finer source data", e);
-        }
-        CassandraModel.MetricColumnFamily cf = CassandraModel.getColumnFamily(rollupClass, sourceGranularity);
-        CassandraModel.MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, rollupGranularity);
-        Rollup.Type rollupComputer = getRollupComputer(readContext.getRollupType(), sourceGranularity);
-
+        validateAndSetState();
         Timer.Context ctx = batchReadTimer.time();
 
         ArrayList<Locator> locators = new ArrayList<Locator>() {{
@@ -89,6 +80,29 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         ctx.stop();
     }
 
+    private void validateAndSetState() throws RuntimeException {
+        if (readContexts.size() == 0) throw new RuntimeException("Invalid count of readContexts of 0");
+        SingleRollupReadContext readContext = readContexts.get(0);
+
+        if (readContext.getRollupType() == null) {
+            throw new RuntimeException("Rollup type found as null. RollupPreRead should have set this to a value for context: " + readContext);
+        }
+
+        Granularity rollupGranularity = readContext.getRollupGranularity();
+        Granularity sourceGranularity;
+        try {
+            sourceGranularity = rollupGranularity.finer();
+        } catch (GranularityException e) {
+            throw new RuntimeException("Cannot rollup to " + rollupGranularity + " as it has no finer source data", e);
+        }
+
+        rollupClass = (Class<T>) readContext.getRollupClass();
+        range = readContext.getRange();
+        cf = CassandraModel.getColumnFamily(rollupClass, sourceGranularity);
+        dstCF = CassandraModel.getColumnFamily(rollupClass, rollupGranularity);
+        rollupComputer = getRollupComputer(readContext.getRollupType(), sourceGranularity);
+    }
+
     private static void stopTimers(List<SingleRollupReadContext> contexts) {
         // Stops all timers that are tracking end-to-end rollup execution times.
         for (SingleRollupReadContext context : contexts) {
@@ -115,5 +129,4 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         }
         throw new IllegalArgumentException(String.format("Cannot compute rollups for %s from %s", srcType.name(), srcGran.shortName()));
     }
-
 }
