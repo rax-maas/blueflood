@@ -61,8 +61,6 @@ public class Metrics {
         appender.activateOptions();
         LogManager.getRootLogger().addAppender(appender);
 
-
-
         if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
             Graphite graphite = new Graphite(new InetSocketAddress(config.getStringProperty(CoreConfig.GRAPHITE_HOST), config.getIntegerProperty(CoreConfig.GRAPHITE_PORT)));
 
