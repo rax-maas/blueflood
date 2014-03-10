@@ -24,6 +24,8 @@ import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
     private final RollupExecutionContext executionContext;
     private final List<SingleRollupReadContext> readContexts;
     private final RollupBatchWriter rollupBatchWriter;
+    private static final Logger log = LoggerFactory.getLogger(RollupBatchReadRunnable.class);
     private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Read Per Batch");
     private static final Timer batchReadTimer = Metrics.timer(RollupService.class, "Rollup Batch Read");
     private Rollup.Type rollupComputer;
@@ -51,7 +54,14 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
 
     @Override
     public void run() {
-        validateAndSetState();
+        try {
+            validateAndSetState();
+        } catch (RuntimeException e) {
+            log.error("Error with rollup read batch.", e);
+            executionContext.decrementReadCounter((long)readContexts.size());
+            throw e;
+        }
+
         Timer.Context ctx = batchReadTimer.time();
 
         ArrayList<Locator> locators = new ArrayList<Locator>() {{
@@ -84,8 +94,8 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         if (readContexts.size() == 0) throw new RuntimeException("Invalid count of readContexts of 0");
         SingleRollupReadContext readContext = readContexts.get(0);
 
-        if (readContext.getRollupType() == null) {
-            throw new RuntimeException("Rollup type found as null. RollupPreRead should have set this to a value for context: " + readContext);
+        if (readContext.getRollupType() == null || readContext.getRollupClass() == null) {
+            throw new RuntimeException("Rollup type/class found as null. RollupPreRead should have set this to a value for context: " + readContext);
         }
 
         Granularity rollupGranularity = readContext.getRollupGranularity();
