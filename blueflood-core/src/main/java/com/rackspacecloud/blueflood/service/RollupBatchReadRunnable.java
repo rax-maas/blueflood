@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -49,9 +50,16 @@ public class RollupBatchReadRunnable<T extends Rollup> implements Runnable {
         SingleRollupReadContext readContext = readContexts.get(0);
         Class<T> rollupClass = (Class<T>) readContext.getRollupClass();
         Range range = readContext.getRange();
-        CassandraModel.MetricColumnFamily cf = CassandraModel.getColumnFamily(rollupClass, readContext.getSourceGranularity());
-        CassandraModel.MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, readContext.getRollupGranularity());
-        Rollup.Type rollupComputer = getRollupComputer(readContext.getRollupType(), readContext.getSourceGranularity());
+        Granularity rollupGranularity = readContext.getRollupGranularity();
+        Granularity sourceGranularity;
+        try {
+            sourceGranularity = rollupGranularity.finer();
+        } catch (GranularityException e) {
+            throw new RuntimeException("Cannot rollup to " + rollupGranularity + " as it has no finer source data", e);
+        }
+        CassandraModel.MetricColumnFamily cf = CassandraModel.getColumnFamily(rollupClass, sourceGranularity);
+        CassandraModel.MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, rollupGranularity);
+        Rollup.Type rollupComputer = getRollupComputer(readContext.getRollupType(), sourceGranularity);
 
         Timer.Context ctx = batchReadTimer.time();
 

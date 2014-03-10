@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
@@ -37,16 +36,19 @@ public class SingleRollupReadContext {
     
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
-    private final Granularity srcGranularity;
     private RollupType rollupType;
     private Class<? extends Rollup> rollupClass;
     private Timer.Context timingContext = null;
 
-    public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) throws GranularityException {
+    public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
         this.locator = locator;
         this.range = rangeToRead;
         this.rollupGranularity = rollupGranularity;
-        this.srcGranularity = rollupGranularity.finer();
+    }
+
+    void setRollupType(RollupType rollupType) {
+        this.rollupType = rollupType;
+        this.rollupClass = RollupType.classOf(rollupType, rollupGranularity);
     }
 
     Timer.Context getExecuteTimerContext() {
@@ -73,18 +75,8 @@ public class SingleRollupReadContext {
         return this.locator;
     }
 
-    void setRollupType(RollupType rollupType) {
-        this.rollupType = rollupType;
-        this.rollupClass = RollupType.classOf(rollupType, rollupGranularity);
-    }
-
     public Class<? extends Rollup> getRollupClass() {
         return rollupClass;
-    }
-
-
-    public Granularity getSourceGranularity() {
-        return srcGranularity;
     }
 
     public RollupType getRollupType() {
