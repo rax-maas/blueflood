@@ -16,14 +16,14 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class NoRouteHandler implements HttpRequestHandler {
 
     @Override
-    public void handle(ChannelHandlerContext context, HttpRequest request) {
+    public void handle(ChannelHandlerContext context, FullHttpRequest request) {
         HttpResponder.respond(context, request, HttpResponseStatus.NOT_FOUND);
     }
 }

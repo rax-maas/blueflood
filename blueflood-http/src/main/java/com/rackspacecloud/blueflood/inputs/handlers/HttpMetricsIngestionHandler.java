@@ -32,9 +32,9 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+//import io.netty.buffer.ChannelBuffers;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,12 +62,12 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+        final String tenantId = request.headers().get("tenantId");
         JSONMetricsContainer jsonMetricsContainer = null;
 
         final Timer.Context timerContext = handlerTimer.time();
-        final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
+        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
         try {
             List<JSONMetricsContainer.JSONMetric> jsonMetrics =
                     mapper.readValue(
@@ -129,10 +129,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(messageBody.getBytes(Constants.DEFAULT_CHARSET));
         }
         HttpResponder.respond(channel, request, response);
     }

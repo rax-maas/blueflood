@@ -36,15 +36,12 @@ import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class HttpRollupsQueryHandler extends RollupHandler
             implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
@@ -106,9 +103,9 @@ public class HttpRollupsQueryHandler extends RollupHandler
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
-        final String metricName = request.getHeader("metricName");
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+        final String tenantId = request.headers().get("tenantId");
+        final String metricName = request.headers().get("metricName");
 
         if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
@@ -152,10 +149,11 @@ public class HttpRollupsQueryHandler extends RollupHandler
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
                              HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            //response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(messageBody.getBytes(Constants.DEFAULT_CHARSET));
         }
         HttpResponder.respond(channel, request, response);
     }

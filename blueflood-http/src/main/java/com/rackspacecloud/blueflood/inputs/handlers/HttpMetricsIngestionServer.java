@@ -33,14 +33,17 @@ import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.jboss.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+//import org.jboss.netty.bootstrap.ServerBootstrap;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
-import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
+
+//
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.*;
 
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
@@ -84,12 +91,13 @@ public class HttpMetricsIngestionServer {
             return;
         }
         
-        RouteMatcher router = new RouteMatcher();
+        final RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
+        /*
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
@@ -97,6 +105,29 @@ public class HttpMetricsIngestionServer {
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        */
+
+        EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
+        ServerBootstrap b = new ServerBootstrap();
+        b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
+        b.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        b.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
+            @Override
+            protected void initChannel(NioServerSocketChannel nioServerSocketChannel) throws Exception {
+                nioServerSocketChannel.pipeline().addLast("decoder", new HttpRequestDecoder());
+                nioServerSocketChannel.pipeline().addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH));
+                nioServerSocketChannel.pipeline().addLast("inflater", new HttpContentDecompressor());
+                nioServerSocketChannel.pipeline().addLast("encoder", new HttpResponseEncoder());
+                nioServerSocketChannel.pipeline().addLast("handler", new QueryStringDecoderAndRouter(router));
+
+            }
+
+        });
+
+
+
+
     }
     
     private void buildProcessingChains() {
@@ -165,13 +196,15 @@ public class HttpMetricsIngestionServer {
         public ChannelPipeline getPipeline() throws Exception {
             final ChannelPipeline pipeline = pipeline();
 
+            /*
             pipeline.addLast("decoder", new HttpRequestDecoder());
             pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("inflater", new HttpContentDecompressor());
             pipeline.addLast("encoder", new HttpResponseEncoder());
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
-
+            */
             return pipeline;
         }
     }
+
 }

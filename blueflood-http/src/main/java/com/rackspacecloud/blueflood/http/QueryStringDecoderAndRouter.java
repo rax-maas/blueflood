@@ -16,17 +16,14 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.DefaultHttpRequest;
 
-public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
+public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
 
@@ -34,6 +31,7 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
         this.router = router;
     }
 
+    /*
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         Object msg = e.getMessage();
@@ -49,5 +47,15 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
         log.warn("Exception event received: ", e.getCause());
+    }
+    */
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        if(msg instanceof DefaultHttpRequest) {
+            final DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
+            router.route(channelHandlerContext, HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request));
+
+        }
     }
 }

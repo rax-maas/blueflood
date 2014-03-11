@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 
 import java.util.Set;
 
@@ -31,7 +31,7 @@ public class UnsupportedMethodHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext context, HttpRequest request) {
+    public void handle(ChannelHandlerContext context, FullHttpRequest request) {
         final Set<String> supportedMethods = routeMatcher.getSupportedMethodsForURL(request.getUri());
 
         StringBuilder result = new StringBuilder();
@@ -40,7 +40,7 @@ public class UnsupportedMethodHandler implements HttpRequestHandler {
             result.append(",");
         }
         final String methodsAllowed =  result.length() > 0 ? result.substring(0, result.length() - 1): "";
-        response.setHeader("Allow", methodsAllowed);
+        response.headers().set("Allow", methodsAllowed);
         HttpResponder.respond(context, request, response);
     }
 }

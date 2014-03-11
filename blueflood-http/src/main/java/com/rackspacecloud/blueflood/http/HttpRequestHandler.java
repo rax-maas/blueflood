@@ -16,9 +16,9 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
 
 public interface HttpRequestHandler {
-    public void handle(ChannelHandlerContext ctx, HttpRequest request);
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request);
 }
