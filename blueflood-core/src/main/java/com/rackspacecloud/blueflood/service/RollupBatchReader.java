@@ -70,7 +70,7 @@ public class RollupBatchReader {
         }
     }
 
-    private String getLargestQueueKey() {
+    private synchronized String getLargestQueueKey() {
         String biggest = null;
         Integer biggestSize = 0;
         Multiset<String> keys = rollupQueues.keys();
@@ -84,7 +84,7 @@ public class RollupBatchReader {
         return biggest;
     }
 
-    public void drainBatches() {
+    public synchronized void drainBatches() {
         for (String queueKey : rollupQueues.keySet()) {
             drainBatch(queueKey);
         }
