@@ -138,7 +138,7 @@ public class RollupTool {
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
             System.out.println("Calculating rollups for " + gran.name() + ". Reading from: " + srcCF.getName() + ". Writing to: " + dstCF.getName());
             //Get Rollup Computer
-            Rollup.Type rollupComputer = RollupRunnable.getRollupComputer(rollupType, gran.finer());
+            Rollup.Type rollupComputer = RollupBatchReadRunnable.getRollupComputer(rollupType, gran.finer());
             //This needs some explanation: Here we take slots in the gran to which we are rolling up i.e dstgran
             //Then for each slot we grab the data from the srcCF, thus automatically grabbing the sub-slots in the finer gran
             //Also, we always use the supplied time range to find snapped times, because a rollup gran is always a multiple

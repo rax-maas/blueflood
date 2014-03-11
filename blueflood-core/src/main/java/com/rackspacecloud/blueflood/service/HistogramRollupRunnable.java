@@ -63,7 +63,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                     singleRollupReadContext.getLocator()});
         }
 
-        Timer.Context timerContext = singleRollupReadContext.getExecuteTimer().time();
+        Timer.Context readAndCalcTimer = calcTimer.time();
         try {
             // Read data and compute rollup
             Points<HistogramRollup> input;
@@ -75,7 +75,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
 
             if (rollupType != RollupType.BF_BASIC) { // Do not compute histogram for statsd metrics.
                 executionContext.decrementReadCounter();
-                timerContext.stop();
+                readAndCalcTimer.stop();
                 return;
             }
 
@@ -86,19 +86,14 @@ public class HistogramRollupRunnable extends RollupRunnable {
                 srcCF = CassandraModel.CF_METRICS_HIST_5M;
             }
 
-            Timer.Context calcrollupContext = calcTimer.time();
-            try {
-                input = AstyanaxReader.getInstance().getDataToRoll(
-                            HistogramRollup.class,
-                            singleRollupReadContext.getLocator(),
-                            singleRollupReadContext.getRange(),
-                            srcCF);
+            input = AstyanaxReader.getInstance().getDataToRoll(
+                    HistogramRollup.class,
+                    singleRollupReadContext.getLocator(),
+                    singleRollupReadContext.getRange(),
+                    srcCF);
 
-                // next, compute the rollup.
-                rollup =  RollupRunnable.getRollupComputer(RollupType.BF_HISTOGRAMS, srcGran).compute(input);
-            } finally {
-                calcrollupContext.stop();
-            }
+            // next, compute the rollup.
+            rollup =  RollupBatchReadRunnable.getRollupComputer(RollupType.BF_HISTOGRAMS, srcGran).compute(input);
 
             if (rollup != null) {
                 rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
@@ -109,7 +104,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
                     + ", Source Granularity: " + srcGran.name());
         } finally {
             executionContext.decrementReadCounter();
-            timerContext.stop();
+            readAndCalcTimer.stop();
         }
     }
 }
