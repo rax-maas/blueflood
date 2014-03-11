@@ -48,7 +48,7 @@ public class RollupBatchReader {
 
         // enqueue MIN_SIZE batches only if the threadpool is unsaturated. else, enqueue when we have >= MAX_SIZE pending
         if (rollupQueues.get(key).size() >= ROLLUP_BATCH_MIN_SIZE) {
-            if (executor.getActiveCount() < executor.getPoolSize() || rollupQueues.get(key).size() >= ROLLUP_BATCH_MAX_SIZE) {
+            if (executor.getActiveCount() < executor.getMaximumPoolSize() || rollupQueues.get(key).size() >= ROLLUP_BATCH_MAX_SIZE) {
                 drainBatch();
             }
         }
