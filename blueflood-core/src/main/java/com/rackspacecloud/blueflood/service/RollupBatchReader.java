@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -85,7 +86,8 @@ public class RollupBatchReader {
     }
 
     public synchronized void drainBatches() {
-        for (String queueKey : rollupQueues.keySet()) {
+        // make a new hashset to avoid concurrentmodificationexception
+        for (String queueKey : new HashSet<String>(rollupQueues.keySet())) {
             drainBatch(queueKey);
         }
     }
