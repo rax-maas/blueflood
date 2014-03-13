@@ -74,7 +74,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private boolean shouldPersist(Metric metric) {
         try {
-            final Metric.DataType metricType = metric.getType();
+            final Metric.DataType metricType = metric.getDataType();
             final MetricsPersistenceOptimizer optimizer =
                     MetricsPersistenceOptimizerFactory.getOptimizer(metricType);
 

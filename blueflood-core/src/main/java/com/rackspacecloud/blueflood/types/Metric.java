@@ -24,14 +24,14 @@ public class Metric implements IMetric {
     private final Object metricValue;
     private final long collectionTime;
     private int ttlSeconds;
-    private final DataType metricType;
+    private final DataType dataType;
     private final String unit;
 
     public Metric(Locator locator, Object metricValue, long collectionTime, TimeValue ttl, String unit) {
         this.locator = locator;
         this.metricValue = metricValue;
         this.collectionTime = collectionTime;
-        this.metricType = DataType.getMetricType(metricValue);
+        this.dataType = DataType.getMetricType(metricValue);
         this.unit = unit;
 
         setTtl(ttl);
@@ -45,8 +45,8 @@ public class Metric implements IMetric {
         return metricValue;
     }
 
-    public DataType getType() {
-        return metricType;
+    public DataType getDataType() {
+        return dataType;
     }
 
     public int getTtlInSeconds() {
@@ -97,7 +97,7 @@ public class Metric implements IMetric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit == null ? "" : unit.toString());
+        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, dataType, ttlSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {
