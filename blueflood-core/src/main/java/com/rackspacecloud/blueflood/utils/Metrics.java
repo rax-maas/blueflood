@@ -32,6 +32,7 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.log4j.LogManager;
 
 import javax.management.MBeanServer;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -65,27 +66,33 @@ public class Metrics {
         LogManager.getRootLogger().addAppender(appender);
 
         if (!config.getStringProperty(CoreConfig.RIEMANN_HOST).equals("")) {
-            Riemann riemann = new Riemann(config.getStringProperty(CoreConfig.RIEMANN_HOST), config.getIntegerProperty(CoreConfig.RIEMANN_PORT));
+            RiemannReporter tmpreporter;
+            try {
+                Riemann riemann = new Riemann(config.getStringProperty(CoreConfig.RIEMANN_HOST), config.getIntegerProperty(CoreConfig.RIEMANN_PORT));
 
-            reporter1 = RiemannReporter
-                    .forRegistry(registry)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .convertRatesTo(TimeUnit.SECONDS);
-            if (!config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR).isEmpty()) {
-                reporter1.useSeparatored(config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR));
-            }
-            if (!config.getStringProperty(CoreConfig.RIEMANN_TTL).isEmpty()) {
-                reporter1.withTtl(config.getFloatProperty(CoreConfig.RIEMANN_TTL));
-            }
-            if (!config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST).isEmpty()) {
-                reporter1.localHosted(config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST));
-            }
-            if (!config.getStringProperty(CoreConfig.RIEMANN_TAGS).isEmpty()) {
-                reporter1.tags(config.getListProperty(CoreConfig.RIEMANN_TAGS));
-            }
-            reporter1.build(riemann);
+                RiemannReporter.Builder builder = RiemannReporter
+                        .forRegistry(registry)
+                        .convertDurationsTo(TimeUnit.MILLISECONDS)
+                        .convertRatesTo(TimeUnit.SECONDS);
+                if (!config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR).isEmpty()) {
+                    builder.useSeparator(config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_TTL).isEmpty()) {
+                    builder.withTtl(config.getFloatProperty(CoreConfig.RIEMANN_TTL));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST).isEmpty()) {
+                    builder.localHost(config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_TAGS).isEmpty()) {
+                    builder.tags(config.getListProperty(CoreConfig.RIEMANN_TAGS));
+                }
+                tmpreporter = builder.build(riemann);
 
-            reporter1.start(30l, TimeUnit.SECONDS);
+                tmpreporter.start(30l, TimeUnit.SECONDS);
+            } catch (IOException e) {
+                tmpreporter = null;
+            }
+            reporter1 = tmpreporter;
         } else {
             reporter1 = null;
         }
