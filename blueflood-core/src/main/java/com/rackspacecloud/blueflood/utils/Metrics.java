@@ -18,6 +18,8 @@ package com.rackspacecloud.blueflood.utils;
 
 
 import com.codahale.metrics.*;
+import com.codahale.metrics.riemann.Riemann;
+import com.codahale.metrics.riemann.RiemannReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.jvm.BufferPoolMetricSet;
@@ -30,6 +32,7 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.log4j.LogManager;
 
 import javax.management.MBeanServer;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -40,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 public class Metrics {
     private static final MetricRegistry registry = new MetricRegistry();
     private static final GraphiteReporter reporter;
+    private static final RiemannReporter reporter1;
     private static final JmxReporter reporter2;
     private static final String JVM_PREFIX = "jvm";
 
@@ -60,6 +64,38 @@ public class Metrics {
         InstrumentedAppender appender = new InstrumentedAppender(registry);
         appender.activateOptions();
         LogManager.getRootLogger().addAppender(appender);
+
+        if (!config.getStringProperty(CoreConfig.RIEMANN_HOST).equals("")) {
+            RiemannReporter tmpreporter;
+            try {
+                Riemann riemann = new Riemann(config.getStringProperty(CoreConfig.RIEMANN_HOST), config.getIntegerProperty(CoreConfig.RIEMANN_PORT));
+
+                RiemannReporter.Builder builder = RiemannReporter
+                        .forRegistry(registry)
+                        .convertDurationsTo(TimeUnit.MILLISECONDS)
+                        .convertRatesTo(TimeUnit.SECONDS);
+                if (!config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR).isEmpty()) {
+                    builder.useSeparator(config.getStringProperty(CoreConfig.RIEMANN_SEPARATOR));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_TTL).isEmpty()) {
+                    builder.withTtl(config.getFloatProperty(CoreConfig.RIEMANN_TTL));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST).isEmpty()) {
+                    builder.localHost(config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST));
+                }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_TAGS).isEmpty()) {
+                    builder.tags(config.getListProperty(CoreConfig.RIEMANN_TAGS));
+                }
+                tmpreporter = builder.build(riemann);
+
+                tmpreporter.start(30l, TimeUnit.SECONDS);
+            } catch (IOException e) {
+                tmpreporter = null;
+            }
+            reporter1 = tmpreporter;
+        } else {
+            reporter1 = null;
+        }
 
         if (!config.getStringProperty(CoreConfig.GRAPHITE_HOST).equals("")) {
             Graphite graphite = new Graphite(new InetSocketAddress(config.getStringProperty(CoreConfig.GRAPHITE_HOST), config.getIntegerProperty(CoreConfig.GRAPHITE_PORT)));
