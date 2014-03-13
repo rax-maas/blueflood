@@ -74,7 +74,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private boolean shouldPersist(Metric metric) {
         try {
-            final Metric.DataType metricType = metric.getDataType();
+            final DataType metricType = metric.getDataType();
             final MetricsPersistenceOptimizer optimizer =
                     MetricsPersistenceOptimizerFactory.getOptimizer(metricType);
 
@@ -203,8 +203,8 @@ public class AstyanaxWriter extends AstyanaxIO {
                     boolean shouldPersist = true;
                     // todo: MetricsPersistenceOptimizerFactory interface needs to be retooled to accept IMetric
                     if (metric instanceof Metric) {
-                        final boolean isString = Metric.DataType.isStringMetric(metric.getMetricValue());
-                        final boolean isBoolean = Metric.DataType.isBooleanMetric(metric.getMetricValue());
+                        final boolean isString = DataType.isStringMetric(metric.getMetricValue());
+                        final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
                         
                         
                         if (!isString && !isBoolean)

@@ -31,7 +31,7 @@ import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.RollupType;
 
 import java.util.*;
@@ -107,10 +107,10 @@ public class AstyanaxIO {
         return keyspace;
     }
 
-    protected AbstractSerializer serializerFor(RollupType rollupType, Metric.DataType dataType, Granularity gran) {
-        if (dataType.equals(Metric.DataType.STRING)) {
+    protected AbstractSerializer serializerFor(RollupType rollupType, DataType dataType, Granularity gran) {
+        if (dataType.equals(DataType.STRING)) {
             return StringSerializer.get();
-        } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
+        } else if (dataType.equals(DataType.BOOLEAN)) {
             return BooleanSerializer.get();
         } else {
            return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
