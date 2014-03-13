@@ -91,15 +91,15 @@ public class UDPMetricSerialization {
             size += CodedOutputStream.computeRawVarint32Size(metric.getTtlInSeconds());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getUnit());
             if (metric.getDataType().equals(Metric.DataType.STRING))
-                size += CodedOutputStream.computeStringSizeNoTag((String)metric.getValue());
+                size += CodedOutputStream.computeStringSizeNoTag((String)metric.getMetricValue());
             if (metric.getDataType().equals(Metric.DataType.INT))
-                size += CodedOutputStream.computeRawVarint32Size((Integer) metric.getValue());
+                size += CodedOutputStream.computeRawVarint32Size((Integer) metric.getMetricValue());
             if (metric.getDataType().equals(Metric.DataType.LONG))
-                size += CodedOutputStream.computeRawVarint64Size((Long) metric.getValue());
+                size += CodedOutputStream.computeRawVarint64Size((Long) metric.getMetricValue());
             if (metric.getDataType().equals(Metric.DataType.DOUBLE))
-                size += CodedOutputStream.computeDoubleSizeNoTag((Double) metric.getValue());
+                size += CodedOutputStream.computeDoubleSizeNoTag((Double) metric.getMetricValue());
             if (metric.getDataType().equals(Metric.DataType.BOOLEAN))
-                size += CodedOutputStream.computeBoolSizeNoTag((Boolean) metric.getValue());
+                size += CodedOutputStream.computeBoolSizeNoTag((Boolean) metric.getMetricValue());
         }
         
         return size;
@@ -113,15 +113,15 @@ public class UDPMetricSerialization {
         out.writeRawVarint32(metric.getTtlInSeconds());
         out.writeStringNoTag(metric.getUnit());
         if (metric.getDataType().equals(Metric.DataType.STRING))
-            out.writeStringNoTag((String) metric.getValue());
+            out.writeStringNoTag((String) metric.getMetricValue());
         else if (metric.getDataType().equals(Metric.DataType.INT))
-            out.writeRawVarint32((Integer)metric.getValue());
+            out.writeRawVarint32((Integer)metric.getMetricValue());
         else if (metric.getDataType().equals(Metric.DataType.LONG))
-            out.writeRawVarint64((Long)metric.getValue());
+            out.writeRawVarint64((Long)metric.getMetricValue());
         else if (metric.getDataType().equals(Metric.DataType.DOUBLE))
-            out.writeDoubleNoTag((Double) metric.getValue());
+            out.writeDoubleNoTag((Double) metric.getMetricValue());
         else if (metric.getDataType().equals(Metric.DataType.BOOLEAN))
-            out.writeBoolNoTag((Boolean) metric.getValue());
+            out.writeBoolNoTag((Boolean) metric.getMetricValue());
     }
     
     // sneaky, but avoids a copy.

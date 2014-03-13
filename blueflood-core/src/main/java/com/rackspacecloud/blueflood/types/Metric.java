@@ -41,7 +41,7 @@ public class Metric implements IMetric {
         return locator;
     }
 
-    public Object getValue() {
+    public Object getMetricValue() {
         return metricValue;
     }
 

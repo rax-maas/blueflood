@@ -94,8 +94,8 @@ public class StatsdHttpIngestionTests {
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {
         for (PreaggregatedMetric metric : metrics) {
-            AbstractSerializer serializer = NumericSerializer.serializerFor(metric.getValue().getClass());
-            serializer.toByteBuffer(metric.getValue());
+            AbstractSerializer serializer = NumericSerializer.serializerFor(metric.getMetricValue().getClass());
+            serializer.toByteBuffer(metric.getMetricValue());
         }
     }
 }

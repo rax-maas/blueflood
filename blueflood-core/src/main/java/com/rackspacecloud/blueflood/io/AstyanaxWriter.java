@@ -143,9 +143,9 @@ public class AstyanaxWriter extends AstyanaxIO {
             metric.setTtl(STRING_TTL);
             String persist;
             if (isString) {
-                persist = (String) metric.getValue();
+                persist = (String) metric.getMetricValue();
             } else { //boolean
-                persist = String.valueOf(metric.getValue());
+                persist = String.valueOf(metric.getMetricValue());
             }
             mutationBatch.withRow(CassandraModel.CF_METRICS_STRING, metric.getLocator())
                     .putColumn(metric.getCollectionTime(), persist, metric.getTtlInSeconds());
@@ -153,7 +153,7 @@ public class AstyanaxWriter extends AstyanaxIO {
             try {
                 mutationBatch.withRow(CassandraModel.CF_METRICS_FULL, metric.getLocator())
                         .putColumn(metric.getCollectionTime(),
-                                metric.getValue(),
+                                metric.getMetricValue(),
                                 NumericSerializer.serializerFor(Object.class),
                                 metric.getTtlInSeconds());
             } catch (RuntimeException e) {
@@ -203,8 +203,8 @@ public class AstyanaxWriter extends AstyanaxIO {
                     boolean shouldPersist = true;
                     // todo: MetricsPersistenceOptimizerFactory interface needs to be retooled to accept IMetric
                     if (metric instanceof Metric) {
-                        final boolean isString = Metric.DataType.isStringMetric(metric.getValue());
-                        final boolean isBoolean = Metric.DataType.isBooleanMetric(metric.getValue());
+                        final boolean isString = Metric.DataType.isStringMetric(metric.getMetricValue());
+                        final boolean isBoolean = Metric.DataType.isBooleanMetric(metric.getMetricValue());
                         
                         
                         if (!isString && !isBoolean)
@@ -217,8 +217,8 @@ public class AstyanaxWriter extends AstyanaxIO {
                     if (shouldPersist) {
                         mutation.putColumn(
                                 metric.getCollectionTime(),
-                                metric.getValue(),
-                                (AbstractSerializer) (NumericSerializer.serializerFor(metric.getValue().getClass())),
+                                metric.getMetricValue(),
+                                (AbstractSerializer) (NumericSerializer.serializerFor(metric.getMetricValue().getClass())),
                                 metric.getTtlInSeconds());
                     }
                 }

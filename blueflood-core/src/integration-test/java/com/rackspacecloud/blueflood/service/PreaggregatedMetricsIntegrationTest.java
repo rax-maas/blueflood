@@ -78,7 +78,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
 
         Assert.assertEquals(1, points.getPoints().size());
-        Assert.assertEquals(metric.getValue(), points.getPoints().get(ts).getData());
+        Assert.assertEquals(metric.getMetricValue(), points.getPoints().get(ts).getData());
     }
     
     @Test
