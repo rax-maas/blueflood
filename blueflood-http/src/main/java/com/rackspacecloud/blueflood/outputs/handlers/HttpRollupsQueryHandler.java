@@ -34,9 +34,8 @@ import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
+import com.codahale.metrics.Timer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
@@ -54,8 +53,8 @@ public class HttpRollupsQueryHandler extends RollupHandler
     private final BasicRollupsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
-    private final Timer httpMetricsFetchTimer = Metrics.newTimer(HttpRollupsQueryHandler.class,
-            "Handle HTTP request for metrics", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private final Timer httpMetricsFetchTimer = Metrics.timer(HttpRollupsQueryHandler.class,
+            "Handle HTTP request for metrics");
 
     public HttpRollupsQueryHandler() {
         this.serializer = new JSONBasicRollupsOutputSerializer();
@@ -119,7 +118,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
 
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
 
-        final TimerContext httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
+        final Timer.Context httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
 
