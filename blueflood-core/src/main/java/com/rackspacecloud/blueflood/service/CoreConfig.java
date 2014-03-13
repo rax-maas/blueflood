@@ -67,13 +67,13 @@ public enum CoreConfig implements ConfigDefaults {
 
     INTERNAL_API_CLUSTER("127.0.0.1:50020,127.0.0.1:50020"),
 
-    RIEMANN_HOST(""),
+    RIEMANN_HOST(""), //string: address of riemann server where events should be sent.
     RIEMANN_PORT("5555"),
-    RIEMANN_PREFIX(""),
-    RIEMANN_LOCALHOST(""),
-    RIEMANN_TAGS(""),
-    RIEMANN_SEPARATOR(""),
-    RIEMANN_TTL(""),
+    RIEMANN_PREFIX(""), //string: prefix metric names with this. useful for telling metrics from backfiller vs normal BF instance. (RIEMANN_LOCALHOST and RIEMANN_TAGS are better though)
+    RIEMANN_LOCALHOST(""), //string: name of the server blueflood is running on.
+    RIEMANN_TAGS(""), //comma-delimited list of strings: tags to append to metric events. ex- blueflood,ingest
+    RIEMANN_SEPARATOR(""), //string: separator between metric name components. if set to "|" would result in: prefix|metric_name|rate_5m
+    RIEMANN_TTL(""), //float: number of seconds until metric TTLs out of riemann's index
 
     GRAPHITE_HOST(""),
     GRAPHITE_PORT("2003"),
