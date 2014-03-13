@@ -35,9 +35,8 @@ import com.rackspacecloud.blueflood.types.BatchMetricsQuery;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
+import com.codahale.metrics.Timer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
@@ -54,8 +53,8 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
     private final BatchedMetricsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
-    private final Timer httpBatchMetricsFetchTimer = Metrics.newTimer(HttpMultiRollupsQueryHandler.class,
-            "Handle HTTP batch request for metrics", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    private final Timer httpBatchMetricsFetchTimer = Metrics.timer(HttpMultiRollupsQueryHandler.class,
+            "Handle HTTP batch request for metrics");
     private final ThreadPoolExecutor executor;
     private final TimeValue queryTimeout;
     private final int maxMetricsPerRequest;
@@ -110,7 +109,7 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
 
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
 
-        final TimerContext httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
+        final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
             BatchMetricsQuery query = new BatchMetricsQuery(locators, params.getRange(), params.getGranularity());
