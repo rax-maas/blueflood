@@ -23,7 +23,7 @@ public class Metric implements IMetric {
     private final Locator locator;
     private final Object metricValue;
     private final long collectionTime;
-    private int ttlSeconds;
+    private int ttlInSeconds;
     private final DataType dataType;
     private final String unit;
 
@@ -50,7 +50,7 @@ public class Metric implements IMetric {
     }
 
     public int getTtlInSeconds() {
-        return ttlSeconds;
+        return ttlInSeconds;
     }
 
     public long getCollectionTime() {
@@ -79,7 +79,7 @@ public class Metric implements IMetric {
                     ", provided: " + ttl.toSeconds());
         }
 
-        ttlSeconds = (int) ttl.toSeconds();
+        ttlInSeconds = (int) ttl.toSeconds();
     }
 
     public void setTtlInSeconds(int ttlInSeconds) {
@@ -88,7 +88,7 @@ public class Metric implements IMetric {
                     ", provided: " + ttlInSeconds);
         }
 
-        ttlSeconds = ttlInSeconds;
+        this.ttlInSeconds = ttlInSeconds;
     }
     
     public RollupType getRollupType() {
@@ -97,11 +97,26 @@ public class Metric implements IMetric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, dataType, ttlSeconds, unit == null ? "" : unit.toString());
+        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, dataType, ttlInSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {
         return (ttlInSeconds < Integer.MAX_VALUE && ttlInSeconds > 0);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Metric)) {
+            return false;
+        }
+        Metric other = (Metric) o;
+        if (locator.equals(other.getLocator()) &&
+                collectionTime == other.getCollectionTime() &&
+                ttlInSeconds == other.getTtlInSeconds() &&
+                dataType.equals(other.getDataType()) &&
+                unit.equals(other.getUnit())) {
+            return true;
+        }
+        return false;
+    }
 }
