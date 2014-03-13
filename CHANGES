@@ -23,3 +23,4 @@
      * New default is "GEOMETRIC". 1.x behavior can be preserved by setting the value to "LINEAR". Also available is "LESSTHANEQUAL"
  * Added blueflood-cloudfiles module. If enabled, will upload json dumps of all rollups to Rackspace CloudFiles.
    * See CloudfilesConfig.java for configuration options.
+ * Added a metrics reporter for sending metrics to a Riemann server.
