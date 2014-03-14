@@ -52,7 +52,10 @@ public enum HttpConfig implements ConfigDefaults {
 
     // Timeout (in seconds) for batch query. This value depends on number of threads, read latency per
     // metric and max metrics allowed per batch query.
-    BATCH_QUERY_TIMEOUT("20");  // 20s
+    BATCH_QUERY_TIMEOUT("20"),  // 20s
+
+    // Comma separated list of tenants who are allowed to submit on behalf of other tenants.
+    AUTHORIZED_AGENT_TENANTS("");
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());
