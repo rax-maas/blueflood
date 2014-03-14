@@ -32,6 +32,7 @@
     <module>blueflood-statsd</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
+    <module>blueflood-kafka-http</module>
   </modules>
 
   <description>
