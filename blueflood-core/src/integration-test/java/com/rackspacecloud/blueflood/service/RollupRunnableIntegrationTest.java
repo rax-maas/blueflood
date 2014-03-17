@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
@@ -108,7 +107,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testNormalMetrics() throws IOException, GranularityException {
+    public void testNormalMetrics() throws IOException {
         // full res has 5 samples.
         Assert.assertEquals(5, reader.getDataToRoll(SimpleNumber.class,
                                                     normalLocator,
@@ -123,16 +122,11 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
-        rec.incrementReadCounter();
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupBatchReader batchReader = new RollupBatchReader(new ThreadPoolBuilder().build(), rec, batchWriter);
-
-        RollupPreReadRunnable rr = new RollupPreReadRunnable(rec, rc, batchReader);
-
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
 
-        while (!(rec.doneReading() && rec.doneWriting())) {
-            batchReader.drainBatch();
+        while (!rec.doneReading() && !rec.doneWriting()) {
             batchWriter.drainBatch();
             try {
                 Thread.sleep(1000l);
@@ -148,26 +142,26 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testCounterRollup() throws IOException, GranularityException {
+    public void testCounterRollup() throws IOException {
         testRolledupMetric(counterLocator, CounterRollup.class, CounterRollup.class);
     }
     
     @Test
-    public void testGaugeRollup() throws IOException, GranularityException {
+    public void testGaugeRollup() throws IOException {
         testRolledupMetric(gaugeLocator, GaugeRollup.class, GaugeRollup.class);
     }
     
     @Test
-    public void testTimerRollup() throws IOException, GranularityException {
+    public void testTimerRollup() throws IOException {
         testRolledupMetric(timerLocator, TimerRollup.class, TimerRollup.class);
     }
     
     @Test
-    public void testSetRollup() throws IOException, GranularityException {
+    public void testSetRollup() throws IOException {
         testRolledupMetric(setLocator, SetRollup.class, SetRollup.class);
     }
     
-    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException, GranularityException {
+    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 
         // full res has 5 samples.
         Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
@@ -182,24 +176,18 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
-        rec.incrementReadCounter();
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupBatchReader batchReader = new RollupBatchReader(new ThreadPoolBuilder().build(), rec, batchWriter);
-
-        RollupPreReadRunnable rr = new RollupPreReadRunnable(rec, rc, batchReader);
-
-
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
-
-        while (!(rec.doneReading() && rec.doneWriting())) {
-            batchReader.drainBatch();
+        
+        // assert something in 5m for this locator.
+        while (!rec.doneReading() && !rec.doneWriting()) {
             batchWriter.drainBatch();
             try {
                 Thread.sleep(1000l);
             } catch (InterruptedException e) {
             }
         }
-
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,
