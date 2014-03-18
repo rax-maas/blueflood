@@ -19,13 +19,18 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * HTTP Ingestion Service.
  */
 public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
+
     public void startService(ScheduleContext context) {
         server = new HttpMetricsIngestionServer(context);
+        if(tenantRegexPattern != null) {
+            server.setTenantRegexForDroppingMetrics(tenantRegexPattern);
+        }
     }
 }

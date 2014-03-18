@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -66,9 +67,11 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
-    
-    private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
-    private AsyncChain<String, List<Boolean>> statsdProcessorChain;
+
+    private AsyncChain<MetricsCollection, Boolean> defaultProcessorChain;
+    private AsyncChain<String, Boolean> statsdProcessorChain;
+
+    private Pattern metricsDroppingTenantRegex = null;
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
@@ -173,5 +176,9 @@ public class HttpMetricsIngestionServer {
 
             return pipeline;
         }
+    }
+
+    public void setTenantRegexForDroppingMetrics(Pattern regex) {
+        this.metricsDroppingTenantRegex = regex;
     }
 }
