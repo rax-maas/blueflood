@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
@@ -50,20 +51,32 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private final TypeFactory typeFactory;
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TimeValue timeout;
+    private final Pattern tenantRegexForMetricsDropping;
 
     // Metrics
     private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
 
-    public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
+    public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout, Pattern tenantRegexForMetricsDropping) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
         this.processorChain = processorChain;
+        this.tenantRegexForMetricsDropping = tenantRegexForMetricsDropping;
     }
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
+
+        if(tenantRegexForMetricsDropping != null) {
+            if(tenantRegexForMetricsDropping.matcher(tenantId).matches()) {
+                log.debug("Dropped metrics while HTTP ingestion for tenant %s", tenantId);
+                // Not sure if we want to send this message back.
+                sendResponse(ctx, request, "Metrics dropped", HttpResponseStatus.OK);
+                return;
+            }
+        }
+
         JSONMetricsContainer jsonMetricsContainer = null;
 
         final Timer.Context timerContext = handlerTimer.time();

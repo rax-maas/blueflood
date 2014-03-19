@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
@@ -29,6 +30,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.regex.Pattern;
 
 /**
  * fetches locators for a given slot and feeds a worker queue with rollup work. When those are all done notifies the
@@ -78,6 +80,7 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
         Set<Locator> locators = new HashSet<Locator>();
+        Pattern metricDroppingRegex = null;
 
         try {
             locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
@@ -85,7 +88,19 @@ class LocatorFetchRunnable implements Runnable {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
+
+        if(Configuration.getInstance().getStringProperty(Constants.TENANT_REGEX_FOR_DROPPING_METRICS) != null) {
+            String pattern = Configuration.getInstance().getStringProperty(Constants.TENANT_REGEX_FOR_DROPPING_METRICS);
+            metricDroppingRegex = Pattern.compile(pattern);
+        }
+
         for (Locator locator : locators) {
+
+            if(metricDroppingRegex != null && metricDroppingRegex.matcher(locator.getTenantId()).matches()) {
+                log.debug("Skipping rollup for locator {}", locator);
+                continue;
+            }
+
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {

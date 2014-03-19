@@ -40,8 +40,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
+import com.rackspacecloud.blueflood.io.Constants;
 
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
@@ -58,6 +59,7 @@ public class HttpHandlerIntegrationTest {
 
     @BeforeClass
     public static void setUp() {
+        Configuration.getInstance().setStringPropertyUnsafe(Constants.TENANT_REGEX_FOR_DROPPING_METRICS, "^(hybrid):.*$");
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
@@ -118,9 +120,34 @@ public class HttpHandlerIntegrationTest {
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
+    @Test
+    public void testDroppingMetrics() throws Exception {
+        HttpPost post = new HttpPost(getMetricsURIHybrid());
+        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData(),
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        BufferedReader breader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while((line = breader.readLine()) != null)
+            sb.append(line);
+        breader.close();
+        Assert.assertEquals(sb.toString(), "Metrics dropped");
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+    }
+
     private URI getMetricsURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                                              .setPort(httpPort).setPath("/v1.0/acTEST/experimental/metrics");
+        return builder.build();
+    }
+
+    private URI getMetricsURIHybrid() throws URISyntaxException {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v1.0/hybrid:1234/experimental/metrics");
         return builder.build();
     }
 

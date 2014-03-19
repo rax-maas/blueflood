@@ -68,18 +68,19 @@ public class HttpMetricsIngestionServer {
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
 
-    private AsyncChain<MetricsCollection, Boolean> defaultProcessorChain;
-    private AsyncChain<String, Boolean> statsdProcessorChain;
+    private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
+    private AsyncChain<String, List<Boolean>> statsdProcessorChain;
 
-    private Pattern metricsDroppingTenantRegex = null;
+    private Pattern tenantRegexForMetricsDropping;
 
-    public HttpMetricsIngestionServer(ScheduleContext context) {
+    public HttpMetricsIngestionServer(ScheduleContext context, Pattern tenantRegexForMetricsDropping) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
+        this.tenantRegexForMetricsDropping = tenantRegexForMetricsDropping;
         
         buildProcessingChains();
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
@@ -89,7 +90,7 @@ public class HttpMetricsIngestionServer {
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout, tenantRegexForMetricsDropping));
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
@@ -178,7 +179,4 @@ public class HttpMetricsIngestionServer {
         }
     }
 
-    public void setTenantRegexForDroppingMetrics(Pattern regex) {
-        this.metricsDroppingTenantRegex = regex;
-    }
 }

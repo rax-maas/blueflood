@@ -112,4 +112,8 @@ public class Configuration {
         list.removeAll(Arrays.asList("", null));
         return list;
     }
+    // Used only for tests
+    public void setStringPropertyUnsafe(String property, String value) {
+        props.put(property, value);
+    }
 }
