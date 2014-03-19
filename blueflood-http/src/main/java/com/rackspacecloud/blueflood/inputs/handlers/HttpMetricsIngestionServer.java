@@ -178,5 +178,4 @@ public class HttpMetricsIngestionServer {
             return pipeline;
         }
     }
-
 }

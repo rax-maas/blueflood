@@ -136,7 +136,6 @@ public class HttpHandlerIntegrationTest {
         breader.close();
         Assert.assertEquals(sb.toString(), "Metrics dropped");
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
-
     }
 
     private URI getMetricsURI() throws URISyntaxException {

@@ -23,7 +23,6 @@ import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
  */
 public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
-
     public void startService(ScheduleContext context) {
         server = new HttpMetricsIngestionServer(context, tenantRegexForMetricsDropping);
     }
