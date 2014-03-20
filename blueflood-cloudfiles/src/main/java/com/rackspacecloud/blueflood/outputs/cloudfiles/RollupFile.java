@@ -65,9 +65,7 @@ public class RollupFile implements Comparable {
      * @return The path to the remote file.
      */
     public String getRemoteName() {
-        java.util.Date time = new java.util.Date(timestamp);
-        String str = new SimpleDateFormat("yyyyMMdd_").format(time);
-        return str + Configuration.getInstance().getStringProperty(CoreConfig.SHARDS) + "_" + getName();
+        return System.currentTimeMillis() + "_" + System.getenv("HOSTNAME");
     }
 
     /**
