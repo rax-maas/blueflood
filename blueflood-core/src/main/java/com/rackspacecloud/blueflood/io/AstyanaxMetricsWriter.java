@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 public class AstyanaxMetricsWriter implements IMetricsWriter {
-    private static final AstyanaxMetricsWriter instance = new AstyanaxMetricsWriter();
-
     @Override
     public void insertFullMetrics(Collection<Metric> metrics) throws IOException {
         try {
@@ -42,9 +40,5 @@ public class AstyanaxMetricsWriter implements IMetricsWriter {
         } catch (ConnectionException e) {
             throw new IOException(e);
         }
-    }
-
-    public static AstyanaxMetricsWriter getInstance() {
-        return instance;
     }
 }
