@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.service.KafkaProducerConfig;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Properties;
 
 public class KafkaProducer {
     private static final KafkaProducer instance = new KafkaProducer();
@@ -35,22 +35,11 @@ public class KafkaProducer {
 
     }
 
-    private static final Properties configProperties;
-
-    static {
-        configProperties = new Properties();
-
-        configProperties.put("metadata.broker.list", "localhost:9092");
-        configProperties.put("serializer.class", "com.rackspacecloud.blueflood.io.serializers.MetricsBatchSerializer");
-        configProperties.put("producer.type", "sync");
-        configProperties.put("request.required.acks", "1");
-    }
-
     //Accessor method to get Kafka Instance
-    public static KafkaProducer getInstance() throws IOException {
-        if (producer == null){
+    public static synchronized KafkaProducer getInstance() throws IOException {
+        if (producer == null) {
             try {
-                getProducer();
+                createProducer();
             }  catch (IOException e){
                 log.error("Error encountered while instantiating the Kafka producer");
                 throw e;
@@ -61,21 +50,19 @@ public class KafkaProducer {
     }
 
     //Internal method to instantiate the Kafka producer
-    private static void getProducer() throws IOException {
-        ProducerConfig config = new ProducerConfig(configProperties);
+    private static synchronized void createProducer() throws IOException {
+        ProducerConfig config = new ProducerConfig(KafkaProducerConfig.asKafkaProperties());
 
         producer = new Producer<String, MetricsCollection>(config);
     }
 
-    public void pushFullResBatch(MetricsCollection batch) {
+    public void pushFullResBatch(MetricsCollection batch) throws IOException {
         KeyedMessage<String, MetricsCollection> data = new KeyedMessage<String, MetricsCollection>("metrics_full", batch);
-        System.out.println("about to send some data");
-
-        try {producer.send(data);} catch (Exception e) {
-            System.out.println("GOT AN EXCEPITON SENDING");
-            e.printStackTrace();
-            System.out.println(e);
+        try {
+            producer.send(data);
+        } catch (Exception e) {
+            log.error("Problem encountered while pushing data to kafka.", e);
+            throw new IOException(e);
         }
-        System.out.println("Sent that data");
     }
 }
