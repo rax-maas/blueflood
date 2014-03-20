@@ -25,10 +25,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class KafkaMetricsWriter implements IMetricsWriter {
-    private static final KafkaMetricsWriter instance = new KafkaMetricsWriter();
     private final KafkaProducer kafka;
 
-    private KafkaMetricsWriter() {
+    public KafkaMetricsWriter() {
         try {
             kafka = KafkaProducer.getInstance();
         } catch (IOException e) {
@@ -44,9 +43,5 @@ public class KafkaMetricsWriter implements IMetricsWriter {
     @Override
     public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException {
         kafka.pushPreaggregatedBatch(metrics);
-    }
-
-    public static KafkaMetricsWriter getInstance() {
-        return instance;
     }
 }

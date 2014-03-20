@@ -17,6 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 public interface IngestionService {
-    public void startService(ScheduleContext context);
+    public void startService(ScheduleContext context) throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }
 

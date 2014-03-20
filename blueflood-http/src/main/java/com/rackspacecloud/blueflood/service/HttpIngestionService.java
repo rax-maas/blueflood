@@ -17,14 +17,17 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
-import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 
 /**
  * HTTP Ingestion Service.
  */
 public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
-    public void startService(ScheduleContext context) {
-        server = new HttpMetricsIngestionServer(context, AstyanaxMetricsWriter.getInstance());
+    public void startService(ScheduleContext context) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        Configuration conf = Configuration.getInstance();
+        ClassLoader loader = IMetricsWriter.class.getClassLoader();
+        Class IMetricsWriterImpl = loader.loadClass(conf.getStringProperty(CoreConfig.IMETRICS_WRITER));
+        server = new HttpMetricsIngestionServer(context, (IMetricsWriter)IMetricsWriterImpl.newInstance());
     }
 }

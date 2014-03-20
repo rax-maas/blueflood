@@ -22,9 +22,6 @@ import com.rackspacecloud.blueflood.types.Metric;
 import java.io.IOException;
 import java.util.Collection;
 
-/**
- * Created by jburkhart on 3/14/14.
- */
 public interface IMetricsWriter {
     void insertFullMetrics(Collection<Metric> metrics) throws IOException;
     void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException;
