@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.service.KafkaProducerConfig;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
@@ -35,22 +36,11 @@ public class KafkaProducer {
 
     }
 
-    private static final Properties configProperties;
-
-    static {
-        configProperties = new Properties();
-
-        configProperties.put("metadata.broker.list", "localhost:9092");
-        configProperties.put("serializer.class", "com.rackspacecloud.blueflood.io.serializers.IMetricKafkaSerializer");
-        configProperties.put("producer.type", "sync");
-        configProperties.put("request.required.acks", "1");
-    }
-
     //Accessor method to get Kafka Instance
-    public static KafkaProducer getInstance() throws IOException {
-        if (producer == null){
+    public static synchronized KafkaProducer getInstance() throws IOException {
+        if (producer == null) {
             try {
-                getProducer();
+                createProducer();
             }  catch (IOException e){
                 log.error("Error encountered while instantiating the Kafka producer");
                 throw e;
@@ -61,33 +51,31 @@ public class KafkaProducer {
     }
 
     //Internal method to instantiate the Kafka producer
-    private static void getProducer() throws IOException {
-        ProducerConfig config = new ProducerConfig(configProperties);
+    private static synchronized void createProducer() throws IOException {
+        ProducerConfig config = new ProducerConfig(KafkaProducerConfig.asKafkaProperties());
 
         producer = new Producer<String, IMetric>(config);
     }
 
-    public void pushFullResBatch(Collection<IMetric> batch) {
+    public void pushFullResBatch(Collection<IMetric> batch) throws IOException {
         pushBatchToTopic(batch, "metrics_full");
     }
 
-    public void pushPreaggregatedBatch(Collection<IMetric> batch) {
+    public void pushPreaggregatedBatch(Collection<IMetric> batch) throws IOException {
         pushBatchToTopic(batch, "metrics_preaggregated");
     }
 
-    private void pushBatchToTopic(Collection<IMetric> batch, String topic) {
+    private void pushBatchToTopic(Collection<IMetric> batch, String topic) throws IOException {
         List<KeyedMessage<String, IMetric>> ls = new ArrayList<KeyedMessage<String, IMetric>>();
         for (IMetric iMetric : batch) {
             ls.add(new KeyedMessage<String, IMetric>(topic, iMetric));
         }
 
-        System.out.println("about to send some data");
-
-        try {producer.send(ls);} catch (Exception e) {
-            System.out.println("GOT AN EXCEPTION SENDING");
-            e.printStackTrace();
-            System.out.println(e);
+        try {
+            producer.send(ls);
+        } catch (Exception e) {
+            log.error("Problem encountered while pushing data to kafka.", e);
+            throw new IOException(e);
         }
-        System.out.println("Sent that data");
     }
 }
