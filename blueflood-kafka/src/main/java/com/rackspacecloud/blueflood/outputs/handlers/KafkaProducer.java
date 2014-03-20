@@ -28,7 +28,7 @@ import java.io.IOException;
 
 public class KafkaProducer {
     private static final KafkaProducer instance = new KafkaProducer();
-    private static Producer<String, MetricsCollection> producer;
+    private Producer<String, MetricsCollection> producer = null;
     private static final Logger log = LoggerFactory.getLogger(KafkaProducer.class);
 
     private KafkaProducer() {
@@ -37,9 +37,9 @@ public class KafkaProducer {
 
     //Accessor method to get Kafka Instance
     public static synchronized KafkaProducer getInstance() throws IOException {
-        if (producer == null) {
+        if (instance.producer == null) {
             try {
-                createProducer();
+                instance.createProducer();
             }  catch (IOException e){
                 log.error("Error encountered while instantiating the Kafka producer");
                 throw e;
@@ -50,7 +50,7 @@ public class KafkaProducer {
     }
 
     //Internal method to instantiate the Kafka producer
-    private static synchronized void createProducer() throws IOException {
+    private synchronized void createProducer() throws IOException {
         ProducerConfig config = new ProducerConfig(KafkaProducerConfig.asKafkaProperties());
 
         producer = new Producer<String, MetricsCollection>(config);
