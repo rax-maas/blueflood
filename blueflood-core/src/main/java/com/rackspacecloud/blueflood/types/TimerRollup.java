@@ -22,10 +22,10 @@ public class TimerRollup implements Rollup, IBasicRollup {
      * the value would be 5.
      */
     private int sampleCount = 0;
-    private AbstractRollupStat min = new MinValue();
-    private AbstractRollupStat max = new MaxValue();
-    private AbstractRollupStat average = new Average();
-    private AbstractRollupStat variance = new Variance();
+    private MinValue min = new MinValue();
+    private MaxValue max = new MaxValue();
+    private Average average = new Average();
+    private Variance variance = new Variance();
     
     // to support percentiles, we will overload the count and treat it as sum.
     private Map<String, Percentile> percentiles = new HashMap<String, Percentile>();
@@ -54,7 +54,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return this;
     }
     
-    public TimerRollup withMinValue(AbstractRollupStat min) {
+    public TimerRollup withMinValue(MinValue min) {
         this.min = min;
         return this;
     }
@@ -64,7 +64,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return this;
     }
     
-    public TimerRollup withMaxValue(AbstractRollupStat max) {
+    public TimerRollup withMaxValue(MaxValue max) {
         this.max = max;
         return this;
     }
@@ -74,7 +74,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return this;
     }
     
-    public TimerRollup withAverage(AbstractRollupStat average) {
+    public TimerRollup withAverage(Average average) {
         this.average = average;
         return this;
     }
@@ -84,7 +84,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return this;
     }
     
-    public TimerRollup withVariance(AbstractRollupStat variance) {
+    public TimerRollup withVariance(Variance variance) {
         this.variance = variance;
         return this;
     }
@@ -114,6 +114,16 @@ public class TimerRollup implements Rollup, IBasicRollup {
         
         public Percentile(Number mean) {
             // longs and doubles only please.
+            this.mean = maybePromote(mean);
+        }
+
+        // Jackson deserialization
+        public Percentile(Double mean) {
+            this.mean = maybePromote(mean);
+        }
+
+        // Jackson deserialization
+        public Percentile(Long mean) {
             this.mean = maybePromote(mean);
         }
         
@@ -175,7 +185,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         Map<String, Percentile> otherPct = other.getPercentiles();
         Set<String> allKeys = Sets.union(otherPct.keySet(), this.getPercentiles().keySet());
         if (allKeys.size() != this.getPercentiles().size()) return false;
-        
+
         for (Map.Entry<String, Percentile> otherEntry : otherPct.entrySet())
             if (!otherEntry.getValue().equals(this.getPercentiles().get(otherEntry.getKey())))
                 return false;

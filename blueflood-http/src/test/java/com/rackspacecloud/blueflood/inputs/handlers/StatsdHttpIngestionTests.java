@@ -19,7 +19,9 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.io.serializers.IMetricSerializer;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -88,6 +90,19 @@ public class StatsdHttpIngestionTests {
         Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, bundle.getTimers());
         Assert.assertEquals(4, timers.size());
         ensureSerializability(timers);
+    }
+
+    @Test
+    public void testConversionToMetricsCollection() {
+        MetricsCollection c = new MetricsCollection();
+        c.add(PreaggregateConversions.buildMetricsCollection(bundle));
+        IMetricSerializer ser = new IMetricSerializer();
+
+        try {
+            System.out.println(ser.getObjectMapper().writeValueAsString(c));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics

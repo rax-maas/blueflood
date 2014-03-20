@@ -16,21 +16,19 @@
 
 package com.rackspacecloud.blueflood.io.serializers;
 
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class MetricDeserializer extends JsonDeserializer<Metric> {
+public class PreaggregatedMetricDeserializer extends org.codehaus.jackson.map.JsonDeserializer<com.rackspacecloud.blueflood.types.PreaggregatedMetric> {
     private static final Set<String> validFields = new HashSet<String>(){{
         add("class");
         add("metricValue");
@@ -43,7 +41,7 @@ public class MetricDeserializer extends JsonDeserializer<Metric> {
 
 
     @Override
-    public Metric deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public PreaggregatedMetric deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         Object metricValue = null;
         Long collectionTime = null;
         Long ttlInSeconds = null;
@@ -61,10 +59,13 @@ public class MetricDeserializer extends JsonDeserializer<Metric> {
 
             if (validFields.contains(fieldName)) {
                 if (fieldName.equals("class")) {
-                    if (!jp.getText().equals("raw")) {
-                        throw new IOException("Metric.class deserialization requires field 'class' to be 'raw'");
+                    if (!jp.getText().equals("preaggregated")) {
+                        throw new IOException("Preaggregated deserialization requires field 'class' to be 'preaggregated'");
                     }
                 } else if (fieldName.equals("metricValue")) {
+                    System.out.println("METRIC VALUE IS " + jp.getCurrentToken());
+//                    jp.getCurrentToken().equals(JsonToken.VALUE_EMBEDDED_OBJECT)
+                    Object o = jp.getEmbeddedObject();
                     if (jp.getCurrentToken().isNumeric()) {
                         metricValue = jp.getNumberValue();
                     } else if (jp.getCurrentToken().equals(JsonToken.VALUE_FALSE)) {
@@ -95,7 +96,8 @@ public class MetricDeserializer extends JsonDeserializer<Metric> {
         }
 
         Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-        Metric m = new Metric(locator, metricValue, collectionTime, new TimeValue(ttlInSeconds, TimeUnit.SECONDS), unit);
-        return m;
+        Rollup rollup = new CounterRollup();
+        PreaggregatedMetric pm = new PreaggregatedMetric(collectionTime, locator, new TimeValue(ttlInSeconds, TimeUnit.SECONDS), rollup);
+        return pm;
     }
 }

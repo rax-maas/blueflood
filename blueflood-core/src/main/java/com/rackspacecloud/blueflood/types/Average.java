@@ -33,6 +33,17 @@ public class Average extends AbstractRollupStat {
 
     }
 
+    public Average(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    public Average(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
+
     public Average(int count, Object value) {
         this();
 

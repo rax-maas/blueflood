@@ -45,7 +45,10 @@ public class KafkaMetricsWriter implements IMetricsWriter {
 
     @Override
     public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException {
-        throw new IOException("Not yet implemented");
+        MetricsCollection m = new MetricsCollection();
+        m.add(metrics);
+        kafka.pushPreaggregatedBatch(m);
+//        throw new IOException("Not yet implemented");
     }
 
     public static KafkaMetricsWriter getInstance() {

@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
@@ -24,11 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class KafkaProducer {
     private static final KafkaProducer instance = new KafkaProducer();
-    private static Producer<String, MetricsCollection> producer;
+    private static Producer<String, IMetric> producer;
     private static final Logger log = LoggerFactory.getLogger(KafkaProducer.class);
 
     private KafkaProducer() {
@@ -41,7 +44,7 @@ public class KafkaProducer {
         configProperties = new Properties();
 
         configProperties.put("metadata.broker.list", "localhost:9092");
-        configProperties.put("serializer.class", "com.rackspacecloud.blueflood.io.serializers.MetricsBatchSerializer");
+        configProperties.put("serializer.class", "com.rackspacecloud.blueflood.io.serializers.IMetricKafkaSerializer");
         configProperties.put("producer.type", "sync");
         configProperties.put("request.required.acks", "1");
     }
@@ -64,18 +67,32 @@ public class KafkaProducer {
     private static void getProducer() throws IOException {
         ProducerConfig config = new ProducerConfig(configProperties);
 
-        producer = new Producer<String, MetricsCollection>(config);
+        producer = new Producer<String, IMetric>(config);
     }
 
     public void pushFullResBatch(MetricsCollection batch) {
-        KeyedMessage<String, MetricsCollection> data = new KeyedMessage<String, MetricsCollection>("metrics_full", batch);
+        pushBatchToTopic(batch, "metrics_full");
+    }
+
+    public void pushPreaggregatedBatch(MetricsCollection batch) {
+        pushBatchToTopic(batch, "metrics_preaggregated");
+    }
+
+    private void pushBatchToTopic(MetricsCollection batch, String topic) {
+        //        KeyedMessage<String, MetricsCollection> data = new KeyedMessage<String, MetricsCollection>("metrics_full", batch);
+        List<KeyedMessage<String, IMetric>> ls = new ArrayList<KeyedMessage<String, IMetric>>();
+        for (IMetric iMetric : batch.toMetrics()) {
+            ls.add(new KeyedMessage<String, IMetric>(topic, iMetric));
+        }
+
         System.out.println("about to send some data");
 
-        try {producer.send(data);} catch (Exception e) {
+        try {producer.send(ls);} catch (Exception e) {
             System.out.println("GOT AN EXCEPITON SENDING");
             e.printStackTrace();
             System.out.println(e);
         }
         System.out.println("Sent that data");
+
     }
 }

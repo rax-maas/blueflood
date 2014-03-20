@@ -29,6 +29,16 @@ public class MaxValue extends AbstractRollupStat {
         this.setLongValue(0);
     }
 
+    public MaxValue(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    public MaxValue(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
     @Override
     void handleFullResMetric(Object o) throws RuntimeException {
         if (o instanceof Double) {
