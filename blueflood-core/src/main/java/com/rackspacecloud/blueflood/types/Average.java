@@ -43,7 +43,6 @@ public class Average extends AbstractRollupStat {
         this.setDoubleValue(value);
     }
 
-
     public Average(int count, Object value) {
         this();
 

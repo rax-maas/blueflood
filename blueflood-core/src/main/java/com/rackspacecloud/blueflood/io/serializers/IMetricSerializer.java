@@ -62,10 +62,8 @@ public class IMetricSerializer {
         metricModule.setMixInAnnotation(TimerRollup.class, TimerRollupMixin.class);
         metricModule.addSerializer(AbstractRollupStat.class, new AbstractRollupStatSerializer());
         metricModule.setMixInAnnotation(TimerRollup.Percentile.class, PercentileMixin.class);
-//        metricModule.addSerializer(SimpleNumber.class, new SimpleNumberSerializer());
         metricModule.addDeserializer(Metric.class, new MetricDeserializer());
         metricModule.addDeserializer(GaugeRollup.class, new GaugeRollupDeserializer());
-//        metricModule.addDeserializer(PreaggregatedMetric.class, new PreaggregatedMetricDeserializer());
 
         mapper.setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -118,18 +116,13 @@ public class IMetricSerializer {
 
         @JsonProperty("max")
         abstract MaxValue getMaxValue();
-
     }
 
     @JsonIgnoreProperties({ "minValue", "maxValue", "rollupType" })
-    abstract class TimerRollupMixin {
-
-    }
+    abstract class TimerRollupMixin { }
 
     @JsonIgnoreProperties({ "latestValue", "rollupType" })
-    abstract class GaugeRollupMixin {
-
-    }
+    abstract class GaugeRollupMixin { }
 
     abstract class AbstractRollupStatMixin {
         @JsonIgnore

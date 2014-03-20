@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.MetricsCollection;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
@@ -25,9 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class KafkaProducer {
     private static final KafkaProducer instance = new KafkaProducer();
@@ -70,29 +67,27 @@ public class KafkaProducer {
         producer = new Producer<String, IMetric>(config);
     }
 
-    public void pushFullResBatch(MetricsCollection batch) {
+    public void pushFullResBatch(Collection<IMetric> batch) {
         pushBatchToTopic(batch, "metrics_full");
     }
 
-    public void pushPreaggregatedBatch(MetricsCollection batch) {
+    public void pushPreaggregatedBatch(Collection<IMetric> batch) {
         pushBatchToTopic(batch, "metrics_preaggregated");
     }
 
-    private void pushBatchToTopic(MetricsCollection batch, String topic) {
-        //        KeyedMessage<String, MetricsCollection> data = new KeyedMessage<String, MetricsCollection>("metrics_full", batch);
+    private void pushBatchToTopic(Collection<IMetric> batch, String topic) {
         List<KeyedMessage<String, IMetric>> ls = new ArrayList<KeyedMessage<String, IMetric>>();
-        for (IMetric iMetric : batch.toMetrics()) {
+        for (IMetric iMetric : batch) {
             ls.add(new KeyedMessage<String, IMetric>(topic, iMetric));
         }
 
         System.out.println("about to send some data");
 
         try {producer.send(ls);} catch (Exception e) {
-            System.out.println("GOT AN EXCEPITON SENDING");
+            System.out.println("GOT AN EXCEPTION SENDING");
             e.printStackTrace();
             System.out.println(e);
         }
         System.out.println("Sent that data");
-
     }
 }
