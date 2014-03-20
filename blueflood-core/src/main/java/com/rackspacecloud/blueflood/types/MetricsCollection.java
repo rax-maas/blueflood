@@ -33,10 +33,6 @@ public class MetricsCollection {
         metrics.addAll(other);
     }
 
-    public void addImpl(Collection<? extends IMetric> other) {
-        metrics.addAll(other);
-    }
-
     public Collection<IMetric> toMetrics() {
         return metrics;
     }
