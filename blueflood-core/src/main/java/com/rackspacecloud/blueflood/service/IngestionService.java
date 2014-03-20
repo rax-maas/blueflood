@@ -16,7 +16,9 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
+
 public interface IngestionService {
-    public void startService(ScheduleContext context) throws ClassNotFoundException, IllegalAccessException, InstantiationException;
+    public void startService(ScheduleContext context, IMetricsWriter writer);
 }
 
