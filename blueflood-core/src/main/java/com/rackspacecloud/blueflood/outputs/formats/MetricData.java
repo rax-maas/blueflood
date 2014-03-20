@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.formats;
 
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.RollupType;
 
@@ -60,10 +60,10 @@ public class MetricData {
             return name;
         }
 
-        public static Type from(RollupType rollupType, Metric.DataType dataType) {
-            if (dataType.equals(Metric.DataType.STRING)) {
+        public static Type from(RollupType rollupType, DataType dataType) {
+            if (dataType.equals(DataType.STRING)) {
                 return STRING;
-            } else if (dataType.equals(Metric.DataType.BOOLEAN)) {
+            } else if (dataType.equals(DataType.BOOLEAN)) {
                 return BOOLEAN;
             } else {
                 if (rollupType == RollupType.BF_HISTOGRAMS) {

@@ -16,9 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -43,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -100,7 +97,7 @@ public class ElasticIO implements DiscoveryIO {
             if (metric.getUnit() != null) { // metric units may be null
                 info.put(UNIT.toString(), metric.getUnit());
             }
-            info.put(TYPE.toString(), metric.getType());
+            info.put(TYPE.toString(), metric.getDataType());
             md.withAnnotation(info);
             bulk.add(createSingleRequest(md));
         }

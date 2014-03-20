@@ -36,7 +36,7 @@ public class StringMetricsPersistenceOptimizer implements
 
     @Override
     public boolean shouldPersist(Metric metric) throws Exception {
-        String currentValue = String.valueOf(metric.getValue());
+        String currentValue = String.valueOf(metric.getMetricValue());
         final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
 
         return lastValue == null || !currentValue.equals(lastValue);

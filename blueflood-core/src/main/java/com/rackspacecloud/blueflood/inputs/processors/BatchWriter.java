@@ -46,16 +46,16 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private final Timer writeDurationTimer = Metrics.timer(BatchWriter.class, "Write Duration");
     private final Meter exceededScribeProcessingTime = Metrics.meter(BatchWriter.class, "Write Duration Exceeded Timeout");
-    private final TimeValue scribeTimeout;
+    private final TimeValue timeout;
     private final Counter bufferedMetrics;
     private final IngestionContext context;
     
     private final AstyanaxWriter writer;
     
-    public BatchWriter(ThreadPoolExecutor threadPool, AstyanaxWriter writer, TimeValue scribeTimeout, Counter bufferedMetrics, IngestionContext context) {
+    public BatchWriter(ThreadPoolExecutor threadPool, AstyanaxWriter writer, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
         super(threadPool);
         this.writer = writer;
-        this.scribeTimeout = scribeTimeout;
+        this.timeout = timeout;
         this.bufferedMetrics = bufferedMetrics;
         this.context = context;
     }
@@ -64,8 +64,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
         
         final CountDownLatch shortLatch = new CountDownLatch(input.size());
         final AtomicBoolean successfullyPersisted = new AtomicBoolean(true);
-        
-        
+
         final AtomicBoolean writeTimedOut = new AtomicBoolean(false);
         final long writeStartTime = System.currentTimeMillis();
         final Timer.Context actualWriteCtx = writeDurationTimer.time();
@@ -112,7 +111,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                         shortLatch.countDown();
                         bufferedMetrics.dec(batch.size());
                         
-                        if (System.currentTimeMillis() - writeStartTime > scribeTimeout.toMillis()) {
+                        if (System.currentTimeMillis() - writeStartTime > timeout.toMillis()) {
                             writeTimedOut.set(true);
                         }
                         done();
@@ -127,7 +126,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
     
                         if (writeTimedOut.get()) {
                             exceededScribeProcessingTime.mark();
-                            getLogger().error("Exceeded scribe timeout " + scribeTimeout.toString() + " before persisting " +
+                            getLogger().error("Exceeded scribe timeout " + timeout.toString() + " before persisting " +
                                     "all metrics for scribe batch " + batchId);
                         }
     

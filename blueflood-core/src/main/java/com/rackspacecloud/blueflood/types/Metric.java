@@ -23,15 +23,15 @@ public class Metric implements IMetric {
     private final Locator locator;
     private final Object metricValue;
     private final long collectionTime;
-    private int ttlSeconds;
-    private final DataType metricType;
+    private int ttlInSeconds;
+    private final DataType dataType;
     private final String unit;
 
     public Metric(Locator locator, Object metricValue, long collectionTime, TimeValue ttl, String unit) {
         this.locator = locator;
         this.metricValue = metricValue;
         this.collectionTime = collectionTime;
-        this.metricType = DataType.getMetricType(metricValue);
+        this.dataType = DataType.getMetricType(metricValue);
         this.unit = unit;
 
         setTtl(ttl);
@@ -41,16 +41,16 @@ public class Metric implements IMetric {
         return locator;
     }
 
-    public Object getValue() {
+    public Object getMetricValue() {
         return metricValue;
     }
 
-    public DataType getType() {
-        return metricType;
+    public DataType getDataType() {
+        return dataType;
     }
 
     public int getTtlInSeconds() {
-        return ttlSeconds;
+        return ttlInSeconds;
     }
 
     public long getCollectionTime() {
@@ -79,7 +79,7 @@ public class Metric implements IMetric {
                     ", provided: " + ttl.toSeconds());
         }
 
-        ttlSeconds = (int) ttl.toSeconds();
+        ttlInSeconds = (int) ttl.toSeconds();
     }
 
     public void setTtlInSeconds(int ttlInSeconds) {
@@ -88,7 +88,7 @@ public class Metric implements IMetric {
                     ", provided: " + ttlInSeconds);
         }
 
-        ttlSeconds = ttlInSeconds;
+        this.ttlInSeconds = ttlInSeconds;
     }
     
     public RollupType getRollupType() {
@@ -97,71 +97,26 @@ public class Metric implements IMetric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, metricType, ttlSeconds, unit == null ? "" : unit.toString());
+        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, dataType, ttlInSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {
         return (ttlInSeconds < Integer.MAX_VALUE && ttlInSeconds > 0);
     }
 
-    // todo: bust out into a separate file.
-    public static class DataType {
-        private final String type;
-
-        // todo: we need to get rid of this and have a static method that returns the singleton instances below.
-        public DataType(String type) {
-            this.type = type;
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Metric)) {
+            return false;
         }
-
-        public final static DataType STRING = new DataType("S");
-        public final static DataType INT = new DataType("I");
-        public final static DataType LONG = new DataType("L");
-        public final static DataType DOUBLE = new DataType("D");
-        public final static DataType BOOLEAN = new DataType("B");
-
-        public static DataType getMetricType(Object metricValue) {
-            if (metricValue instanceof String) {
-                return STRING;
-            } else if (metricValue instanceof Integer) {
-                return INT;
-            } else if (metricValue instanceof Long) {
-                return LONG;
-            } else if (metricValue instanceof Double) {
-                return DOUBLE;
-            } else if (metricValue instanceof Boolean) {
-                return BOOLEAN;
-            } else {
-                throw new RuntimeException("Unknown metric value type");
-            }
+        Metric other = (Metric) o;
+        if (locator.equals(other.getLocator()) &&
+                collectionTime == other.getCollectionTime() &&
+                ttlInSeconds == other.getTtlInSeconds() &&
+                dataType.equals(other.getDataType()) &&
+                unit.equals(other.getUnit())) {
+            return true;
         }
-
-        public static boolean isNumericMetric(Object metricValue) {
-            final DataType metricType = getMetricType(metricValue);
-            return metricType == DataType.INT || metricType == DataType.LONG || metricType == DataType.DOUBLE;
-        }
-
-        public static boolean isStringMetric(Object metricValue) {
-            final DataType metricType = getMetricType(metricValue);
-            return metricType == DataType.STRING;
-        }
-
-        public static boolean isBooleanMetric(Object metricValue) {
-            final DataType metricType = getMetricType(metricValue);
-            return metricType == DataType.BOOLEAN;
-        }
-
-        public static boolean isKnownMetricType(DataType incoming) {
-            return incoming.equals(STRING) || incoming.equals(INT) || incoming.equals(LONG) || incoming.equals(DOUBLE)
-                    || incoming.equals(BOOLEAN);
-        }
-
-        @Override
-        public String toString() {
-            return type;
-        }
-
-        public boolean equals(DataType other) {
-            return type.equals(other.type);
-        }
+        return false;
     }
 }

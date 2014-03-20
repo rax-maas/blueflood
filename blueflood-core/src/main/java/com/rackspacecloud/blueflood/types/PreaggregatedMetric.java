@@ -44,6 +44,6 @@ public class PreaggregatedMetric implements IMetric {
     public Locator getLocator() { return locator; }
     public long getCollectionTime() { return collectionTime; }
     public int getTtlInSeconds() { return (int)ttl.toSeconds(); }
-    public Object getValue() { return value; }
+    public Object getMetricValue() { return value; }
     public void setTtlInSeconds(int seconds) { ttl = new TimeValue(seconds, TimeUnit.SECONDS); }
 }

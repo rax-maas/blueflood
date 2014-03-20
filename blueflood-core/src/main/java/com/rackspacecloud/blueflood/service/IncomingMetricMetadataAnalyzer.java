@@ -84,7 +84,7 @@ public class IncomingMetricMetadataAnalyzer {
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
 
         IncomingMetricException typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
-                metric.getType().toString());
+                metric.getDataType().toString());
         IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
                 metric.getUnit());
 
