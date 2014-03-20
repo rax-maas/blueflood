@@ -77,7 +77,6 @@ class LocatorFetchRunnable implements Runnable {
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
-        final RollupBatchReader rollupBatchReader = new RollupBatchReader(rollupReadExecutor, executionContext, rollupBatchWriter);
         Set<Locator> locators = new HashSet<Locator>();
 
         try {
@@ -86,16 +85,14 @@ class LocatorFetchRunnable implements Runnable {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
-
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
-                rollupReadExecutor.execute(new RollupPreReadRunnable(executionContext, singleRollupReadContext, rollupBatchReader));
+                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
-
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.markUnsuccessful(any);
@@ -128,10 +125,10 @@ class LocatorFetchRunnable implements Runnable {
         
         // now wait until ctx is drained. someone needs to be notified.
         log.debug("Waiting for rollups to finish for " + parentSlotKey);
-        while (!executionContext.done()) {
-            // gets any remaining rollups enqueued for io. should be no-op after being called once
-            rollupBatchReader.drainBatches();
-            rollupBatchWriter.drainBatch();
+        while (!executionContext.doneReading() || !executionContext.doneWriting()) {
+            if (executionContext.doneReading()) {
+                rollupBatchWriter.drainBatch(); // gets any remaining rollups enqueued for write. should be no-op after being called once
+            }
             try {
                 Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS);
             } catch (InterruptedException ex) {

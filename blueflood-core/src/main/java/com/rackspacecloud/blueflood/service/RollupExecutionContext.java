@@ -16,22 +16,13 @@ public class RollupExecutionContext {
         this.writeCounter = new AtomicLong(0L);
     }
 
-    public String toString() {
-        return "Pending reads: " + readCounter.get() + " writes: " + writeCounter.get() + " -- Success: " + successful.get();
-    }
-
     void decrementReadCounter() {
         readCounter.decrementAndGet();
         owner.interrupt(); // this is what interrupts that long sleep in LocatorFetchRunnable.
     }
 
-    public void decrementReadCounter(long count) {
-        readCounter.addAndGet(-count);
-        owner.interrupt();
-    }
-
     void decrementWriteCounter(long count) {
-        writeCounter.addAndGet(-count);
+        writeCounter.addAndGet((-1) * count);
         owner.interrupt();
     }
 
@@ -49,10 +40,6 @@ public class RollupExecutionContext {
 
     boolean doneWriting() {
         return writeCounter.get() == 0;
-    }
-
-    boolean done() {
-        return doneReading() && doneWriting();
     }
 
     boolean wasSuccessful() {

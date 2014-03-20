@@ -18,12 +18,15 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
+import com.netflix.astyanax.model.ColumnFamily;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.RollupType;
-import com.rackspacecloud.blueflood.utils.Metrics;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class keeps track of what is happening in an rollup for a specific metric.
@@ -31,32 +34,20 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 public class SingleRollupReadContext {
     private final Locator locator;
     private final Range range;
-    private static final Timer endToEndTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
+    private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
     
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
-    private RollupType rollupType;
-    private Class<? extends Rollup> rollupClass;
-    private Timer.Context timingContext = null;
 
     public SingleRollupReadContext(Locator locator, Range rangeToRead, Granularity rollupGranularity) {
         this.locator = locator;
         this.range = rangeToRead;
         this.rollupGranularity = rollupGranularity;
     }
-
-    void setRollupType(RollupType rollupType) {
-        this.rollupType = rollupType;
-        this.rollupClass = RollupType.classOf(rollupType, rollupGranularity);
-    }
-
-    Timer.Context getExecuteTimerContext() {
-        // This is pretty hacky, the way we pass this around. tracks end-to-end rollup execution time.
-        if (timingContext == null) {
-            timingContext = endToEndTimer.time();
-        }
-        return timingContext;
+    
+    Timer getExecuteTimer() {
+        return executeTimer;
     }
 
     Histogram getWaitHist() {
@@ -73,24 +64,5 @@ public class SingleRollupReadContext {
 
     Locator getLocator() {
         return this.locator;
-    }
-
-    public Class<? extends Rollup> getRollupClass() {
-        return rollupClass;
-    }
-
-    public RollupType getRollupType() {
-        return rollupType;
-    }
-
-    // returns a string that will be the same between all rollups that can be read as a batch
-    // Everything *except* locator must be identical for two contexts to be grouped as part of a read batch
-    public String getBatchGroupingIdentifier() {
-        return new StringBuilder()
-                .append(rollupGranularity.name())
-                .append(rollupType.name())
-                .append(rollupClass.getSimpleName())
-                .append(range.hashCode())
-                .toString();
     }
 }

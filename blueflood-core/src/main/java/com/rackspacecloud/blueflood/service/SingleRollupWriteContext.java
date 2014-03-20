@@ -16,12 +16,11 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 public class SingleRollupWriteContext {
     private final Rollup rollup;
@@ -29,13 +28,6 @@ public class SingleRollupWriteContext {
     private final Long timestamp;
     private final ColumnFamily<Locator, Long> destinationCF;
     private final Granularity granularity;
-    private Timer.Context timingContext;
-    private static final Timer testTimer;
-
-    static {// all for tests...
-        final MetricRegistry metrics = new MetricRegistry();
-        testTimer = metrics.timer("test");
-    }
 
     // public only for tests
     public SingleRollupWriteContext(Rollup rollup, Locator locator, Granularity granularity, ColumnFamily<Locator, Long> destCf, Long timestamp) {
@@ -44,13 +36,10 @@ public class SingleRollupWriteContext {
         this.granularity = granularity;
         this.destinationCF = destCf;
         this.timestamp = timestamp;
-        this.timingContext = testTimer.time();
     }
 
     public SingleRollupWriteContext(Rollup rollup, SingleRollupReadContext singleRollupReadContext, ColumnFamily<Locator, Long> dstCF) {
         this(rollup, singleRollupReadContext.getLocator(), singleRollupReadContext.getRollupGranularity(), dstCF, singleRollupReadContext.getRange().getStart());
-        this.timingContext.close();
-        this.timingContext = singleRollupReadContext.getExecuteTimerContext();
     }
 
     public Rollup getRollup() {
@@ -70,8 +59,4 @@ public class SingleRollupWriteContext {
     }
     
     public Granularity getGranularity() { return granularity; }
-
-    public Timer.Context getExecuteTimerContext() {
-        return timingContext;
-    }
 }
