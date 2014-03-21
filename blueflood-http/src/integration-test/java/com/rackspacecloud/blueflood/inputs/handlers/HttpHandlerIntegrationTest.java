@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
+import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -39,7 +40,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -47,6 +47,8 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.zip.GZIPOutputStream;
+
+import static org.mockito.Mockito.*;
 
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
@@ -62,7 +64,7 @@ public class HttpHandlerIntegrationTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
         httpIngestionService = new HttpIngestionService();
-        httpIngestionService.startService(context);
+        httpIngestionService.startService(context, new AstyanaxMetricsWriter());
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
