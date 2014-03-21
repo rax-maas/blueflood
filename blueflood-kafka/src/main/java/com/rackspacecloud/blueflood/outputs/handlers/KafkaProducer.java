@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.service.KafkaProducerConfig;
+import com.rackspacecloud.blueflood.types.IMetric;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class KafkaProducer {
     private static final KafkaProducer instance = new KafkaProducer();
@@ -42,7 +44,7 @@ public class KafkaProducer {
             try {
                 instance.createProducer();
             }  catch (IOException e){
-                log.error("Error encountered while instantiating the Kafka producer");
+                log.error("Error encountered while instantiating the Kafka producer", e);
                 throw e;
             }
         }
@@ -53,16 +55,20 @@ public class KafkaProducer {
     //Internal method to instantiate the Kafka producer
     private synchronized void createProducer() throws IOException {
         ProducerConfig config = new ProducerConfig(KafkaProducerConfig.asKafkaProperties());
-
-        producer = new Producer<String, IMetric>(config);
+        try {
+            producer = new Producer<String, IMetric>(config);
+        } catch (Exception e) {
+            log.error("Error instantiating producer", e);
+            throw new IOException(e);
+        }
     }
 
     public void pushFullResBatch(Collection<IMetric> batch) throws IOException {
-        pushBatchToTopic(batch, "metrics_full");
+        pushBatchToTopic(batch, "metrics");
     }
 
     public void pushPreaggregatedBatch(Collection<IMetric> batch) throws IOException {
-        pushBatchToTopic(batch, "metrics_preaggregated");
+        pushBatchToTopic(batch, "metrics");
     }
 
     private void pushBatchToTopic(Collection<IMetric> batch, String topic) throws IOException {
