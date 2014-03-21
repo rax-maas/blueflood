@@ -21,12 +21,12 @@ import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelPipeline;
+//import io.netty.channel.ChannelPipelineFactory;
+//import io.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,14 +53,17 @@ public class HttpMetricDataQueryServer {
         router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
+        /*
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
                         Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
+        */
     }
 
+    /*
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
         private RouteMatcher router;
 
@@ -79,4 +82,5 @@ public class HttpMetricDataQueryServer {
             return pipeline;
         }
     }
+    */
 }

@@ -33,16 +33,12 @@ import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-//import org.jboss.netty.bootstrap.ServerBootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +49,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static org.jboss.netty.channel.Channels.pipeline;
-
-//
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 
@@ -80,53 +73,55 @@ public class HttpMetricsIngestionServer {
     public HttpMetricsIngestionServer(ScheduleContext context) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
         
         buildProcessingChains();
+
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
             log.error("Processor chains were not set up propertly");
             return;
         }
-        
+
+        bootStrapServer();
+    }
+
+    private ChannelFuture bootStrapServer() {
         final RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        /*
-        ServerBootstrap server = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
 
-        server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
-        */
+        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
+        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
         EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
-        ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
-        b.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
-        b.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
-            @Override
-            protected void initChannel(NioServerSocketChannel nioServerSocketChannel) throws Exception {
-                nioServerSocketChannel.pipeline().addLast("decoder", new HttpRequestDecoder());
-                nioServerSocketChannel.pipeline().addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH));
-                nioServerSocketChannel.pipeline().addLast("inflater", new HttpContentDecompressor());
-                nioServerSocketChannel.pipeline().addLast("encoder", new HttpResponseEncoder());
-                nioServerSocketChannel.pipeline().addLast("handler", new QueryStringDecoderAndRouter(router));
-
-            }
-
-        });
-
-
-
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
+            b.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
+                @Override
+                protected void initChannel(NioServerSocketChannel nioServerSocketChannel) throws Exception {
+                    nioServerSocketChannel.pipeline()
+                            .addLast("decoder", new HttpRequestDecoder())
+                            .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
+                            .addLast("inflater", new HttpContentDecompressor())
+                            .addLast("encoder", new HttpResponseEncoder())
+                            .addLast("handler", new QueryStringDecoderAndRouter(router));
+                }
+            });
+            ChannelFuture f = b.bind(new InetSocketAddress(httpIngestHost, httpIngestPort)).sync();
+            return f.channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            log.error("Http Ingest Server interrupted while waiting for channel to close");
+            throw new RuntimeException(e);
+        } finally {
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
 
     }
     
@@ -184,27 +179,4 @@ public class HttpMetricsIngestionServer {
                 .withFunction(batchSplitter)
                 .withFunction(batchWriter);
     }
-
-    private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
-        private RouteMatcher router;
-
-        public MetricsHttpServerPipelineFactory(RouteMatcher router) {
-            this.router = router;
-        }
-
-        @Override
-        public ChannelPipeline getPipeline() throws Exception {
-            final ChannelPipeline pipeline = pipeline();
-
-            /*
-            pipeline.addLast("decoder", new HttpRequestDecoder());
-            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
-            pipeline.addLast("inflater", new HttpContentDecompressor());
-            pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
-            */
-            return pipeline;
-        }
-    }
-
 }

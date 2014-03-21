@@ -16,9 +16,9 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpVersion;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,7 +29,7 @@ public class HttpRequestWithDecodedQueryParamsTest {
 
     @Test
     public void testQueryParamsDecode() {
-        final DefaultHttpRequest defaultRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
+        final DefaultFullHttpRequest defaultRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
                 "http://localhost/v1.0/ac98760XYZ/experimental/metric_views/metXYZ?from=12345&to=56789&points=100"
                 + "&foo=x,y,z&foo=p");
         final HTTPRequestWithDecodedQueryParams requestWithParams =

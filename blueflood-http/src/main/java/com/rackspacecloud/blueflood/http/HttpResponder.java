@@ -25,19 +25,17 @@ import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
-    private static final DefaultHttpResponse defaultResponse = new DefaultHttpResponse(HTTP_1_1,
-            HttpResponseStatus.OK);
-
+    private static final DefaultFullHttpResponse defaultResponse = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
 
     public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status) {
         defaultResponse.setStatus(status);
         respond(ctx, req, defaultResponse);
     }
 
-    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponse res) {
-        /*
-           This block contained 0 content length setting.
-         */
+    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
+        if(res.content() != null) {
+            HttpHeaders.setContentLength(res, res.content().readableBytes());
+        }
 
         // Send the response and close the connection if necessary.
         ChannelFuture f = ctx.write(res);

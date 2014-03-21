@@ -34,9 +34,11 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
@@ -83,9 +85,9 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
-        final String metricName = request.getHeader("metricName");
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+        final String tenantId = request.headers().get("tenantId");
+        final String metricName = request.headers().get("metricName");
 
         if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
@@ -123,12 +125,14 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                               HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, CharsetUtil.UTF_8);
+            response.content().writeBytes(buffer);
+            buffer.release();
         }
         HttpResponder.respond(channel, request, response);
     }

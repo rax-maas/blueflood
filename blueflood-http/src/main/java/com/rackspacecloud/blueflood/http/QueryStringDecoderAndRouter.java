@@ -21,9 +21,9 @@ import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.QueryStringDecoder;
 
-public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler {
+public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<DefaultFullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
 
@@ -31,31 +31,16 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler {
         this.router = router;
     }
 
-    /*
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        Object msg = e.getMessage();
-        if (msg instanceof DefaultHttpRequest) {
-            final DefaultHttpRequest request = (DefaultHttpRequest) msg;
-            router.route(ctx, HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request));
-        } else {
-            log.error("Ignoring non HTTP message {}, from {}", e.getMessage(), e.getRemoteAddress());
-            throw new Exception("Non-HTTP message from " + e.getRemoteAddress());
-        }
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, DefaultFullHttpRequest request) throws Exception {
+        System.out.println("received request "+request);
+        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        router.route(channelHandlerContext, request.setUri(decoder.path()));
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-        log.warn("Exception event received: ", e.getCause());
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.warn("Exception event received: ", cause.getCause());
     }
-    */
 
-    @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
-        if(msg instanceof DefaultHttpRequest) {
-            final DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
-            router.route(channelHandlerContext, HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request));
-
-        }
-    }
 }

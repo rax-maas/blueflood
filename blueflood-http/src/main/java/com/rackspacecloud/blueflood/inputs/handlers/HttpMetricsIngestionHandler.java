@@ -32,7 +32,6 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
-//import io.netty.buffer.ChannelBuffers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
@@ -128,7 +127,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         }
     }
 
-    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+    public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody, HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {

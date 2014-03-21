@@ -23,11 +23,11 @@ import java.util.Set;
 
 public class UnsupportedMethodHandler implements HttpRequestHandler {
     private final RouteMatcher routeMatcher;
-    private final HttpResponse response;
+    private final FullHttpResponse response;
 
     public UnsupportedMethodHandler(RouteMatcher router) {
         this.routeMatcher = router;
-        this.response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
+        this.response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
     }
 
     @Override

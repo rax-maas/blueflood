@@ -34,9 +34,9 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,12 +62,12 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     // our own stuff.
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         
         final Timer.Context timerContext = handlerTimer.time();
         
         // this is all JSON.
-        final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
+        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
         try {
             // block until things get ingested.
             ListenableFuture<List<Boolean>> futures = processorChain.apply(body);

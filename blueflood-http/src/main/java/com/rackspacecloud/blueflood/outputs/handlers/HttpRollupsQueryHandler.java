@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONBasicRollupsOutputSerializer;
@@ -36,8 +35,11 @@ import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,13 +149,14 @@ public class HttpRollupsQueryHandler extends RollupHandler
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                              HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            //response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
-            response.content().writeBytes(messageBody.getBytes(Constants.DEFAULT_CHARSET));
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, CharsetUtil.UTF_8);
+            response.content().writeBytes(buffer);
+            buffer.release();
         }
         HttpResponder.respond(channel, request, response);
     }
