@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
@@ -51,10 +52,10 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     
-    private AsyncChain<String, Boolean> processorChain;
+    private AsyncChain<String, List<Boolean>> processorChain;
     private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler(AsyncChain<String, Boolean> processorChain, TimeValue timeout) {
+    public HttpStatsDIngestionHandler(AsyncChain<String,List<Boolean>> processorChain, TimeValue timeout) {
         this.processorChain = processorChain;
         this.timeout = timeout;
     }
@@ -69,8 +70,16 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
             // block until things get ingested.
-            processorChain.apply(body).get(timeout.getValue(), timeout.getUnit());
+            ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
+            List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+            for (Boolean persisted : persisteds) {
+                if (!persisted) {
+                    HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return;
+                }
+            }
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+
         } catch (JsonParseException ex) {
             log.error("BAD JSON: %s", body);
             log.error(ex.getMessage(), ex);
