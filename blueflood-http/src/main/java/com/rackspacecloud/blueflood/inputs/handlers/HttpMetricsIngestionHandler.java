@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
@@ -49,14 +50,14 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     private final ObjectMapper mapper;
     private final TypeFactory typeFactory;
-    private final AsyncChain<MetricsCollection, Boolean> processorChain;
+    private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TimeValue timeout;
 
     // Metrics
     private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
     private static final HashSet<String> AUTHORIZED_AGENT_TENANTS = new HashSet<String>(Configuration.getInstance().getListProperty("AUTHORIZED_AGENT_TENANTS"));
 
-    public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, Boolean> processorChain, TimeValue timeout) {
+    public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
@@ -117,7 +118,14 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         collection.add(new ArrayList<IMetric>(containerMetrics));
 
         try {
-            processorChain.apply(collection).get(timeout.getValue(), timeout.getUnit());
+            ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
+            List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+            for (Boolean persisted : persisteds) {
+                if (!persisted) {
+                    sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return;
+                }
+            }
             sendResponse(ctx, request, null, HttpResponseStatus.OK);
         } catch (TimeoutException e) {
             sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);

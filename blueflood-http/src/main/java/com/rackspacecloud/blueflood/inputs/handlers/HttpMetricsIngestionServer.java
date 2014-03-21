@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -66,8 +67,8 @@ public class HttpMetricsIngestionServer {
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
     
-    private AsyncChain<MetricsCollection, Boolean> defaultProcessorChain;
-    private AsyncChain<String, Boolean> statsdProcessorChain;
+    private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
+    private AsyncChain<String, List<Boolean>> statsdProcessorChain;
     private IMetricsWriter writer;
     
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
@@ -140,13 +141,13 @@ public class HttpMetricsIngestionServer {
                 true
         ).withLogger(log);
         
-        this.defaultProcessorChain = new AsyncChain<MetricsCollection, Boolean>()
+        this.defaultProcessorChain = new AsyncChain<MetricsCollection, List<Boolean>>()
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(batchWriter);
         
-        this.statsdProcessorChain = new AsyncChain<String, Boolean>()
+        this.statsdProcessorChain = new AsyncChain<String, List<Boolean>>()
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
                 .withFunction(typeAndUnitProcessor)
