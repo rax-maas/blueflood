@@ -16,15 +16,11 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.SocketAddress;
 
 public class RouteMatcherTest {
     private RouteMatcher routeMatcher;
@@ -136,34 +132,4 @@ public class RouteMatcherTest {
             testRouteHandlerCalled = true;
         }
     }
-
-    /*
-    private class TestMessageEvent implements MessageEvent {
-        Object message;
-
-        public TestMessageEvent(HttpRequest fakeRequest) {
-            this.message = fakeRequest;
-        }
-
-        @Override
-        public Object getMessage() {
-            return this.message;
-        }
-
-        @Override
-        public SocketAddress getRemoteAddress() {
-            return null;  //To change body of implemented methods use File | Settings | File Templates.
-        }
-
-        @Override
-        public Channel getChannel() {
-            return null;  //To change body of implemented methods use File | Settings | File Templates.
-        }
-
-        @Override
-        public ChannelFuture getFuture() {
-            return null;  //To change body of implemented methods use File | Settings | File Templates.
-        }
-    }
-    */
 }
