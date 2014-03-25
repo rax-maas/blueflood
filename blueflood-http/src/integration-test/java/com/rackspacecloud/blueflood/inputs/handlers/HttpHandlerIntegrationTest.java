@@ -86,7 +86,6 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testBadRequests() throws Exception {
         HttpPost post = new HttpPost(getMetricsURI());
-        System.out.println("Executing post");
         HttpResponse response = client.execute(post);  // no body
         Assert.assertEquals(response.getStatusLine().getStatusCode(), 400);
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
