@@ -26,6 +26,8 @@ import java.io.IOException;
 public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
     public void startService(ScheduleContext context) {
+        System.out.println("Starting the Http Ingestion Service");
         server = new HttpMetricsIngestionServer(context);
+        server.start();
     }
 }

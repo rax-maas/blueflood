@@ -33,7 +33,7 @@ public class HttpRequestWithDecodedQueryParamsTest {
                 "http://localhost/v1.0/ac98760XYZ/experimental/metric_views/metXYZ?from=12345&to=56789&points=100"
                 + "&foo=x,y,z&foo=p");
         final HTTPRequestWithDecodedQueryParams requestWithParams =
-                HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(defaultRequest);
+                new HTTPRequestWithDecodedQueryParams(defaultRequest);
 
         Map<String, List<String>> queryParams = requestWithParams.getQueryParams();
         Assert.assertEquals(4, queryParams.size());

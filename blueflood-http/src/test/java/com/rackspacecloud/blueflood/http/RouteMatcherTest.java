@@ -15,11 +15,10 @@
  */
 
 package com.rackspacecloud.blueflood.http;
-/*
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.MessageEvent;
 import io.netty.handler.codec.http.*;
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,49 +65,49 @@ public class RouteMatcherTest {
 
         FullHttpRequest modifiedReq = testPattern("/metrics/:metricId", "/metrics/foo");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(1, modifiedReq.getHeaders().size());
-        Assert.assertEquals("metricId", modifiedReq.getHeaders().get(0).getKey());
-        Assert.assertEquals("foo", modifiedReq.getHeaders().get(0).getValue());
+        Assert.assertEquals(1, modifiedReq.headers().entries().size());
+        Assert.assertEquals("metricId", modifiedReq.headers().entries().get(0).getKey());
+        Assert.assertEquals("foo", modifiedReq.headers().entries().get(0).getValue());
         testRouteHandlerCalled = false;
 
         modifiedReq = testPattern("/tenants/:tenantId/entities/:entityId", "/tenants/acFoo/entities/enBar");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(2, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("tenantId").equals("acFoo"));
-        Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
+        Assert.assertEquals(2, modifiedReq.headers().entries().size());
+        Assert.assertTrue(modifiedReq.headers().get("tenantId").equals("acFoo"));
+        Assert.assertTrue(modifiedReq.headers().get("entityId").equals("enBar"));
         testRouteHandlerCalled = false;
 
         modifiedReq = testPattern("/tenants/:tenantId/entities/:entityId/checks/:checkId/metrics/:metricId/plot",
                 "/tenants/acFoo/entities/enBar/checks/chFoo/metrics/myMetric/plot");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(4, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("tenantId").equals("acFoo"));
-        Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
-        Assert.assertTrue(modifiedReq.getHeader("entityId").equals("enBar"));
-        Assert.assertTrue(modifiedReq.getHeader("checkId").equals("chFoo"));
-        Assert.assertTrue(modifiedReq.getHeader("metricId").equals("myMetric"));
+        Assert.assertEquals(4, modifiedReq.headers().entries().size());
+        Assert.assertTrue(modifiedReq.headers().get("tenantId").equals("acFoo"));
+        Assert.assertTrue(modifiedReq.headers().get("entityId").equals("enBar"));
+        Assert.assertTrue(modifiedReq.headers().get("entityId").equals("enBar"));
+        Assert.assertTrue(modifiedReq.headers().get("checkId").equals("chFoo"));
+        Assert.assertTrue(modifiedReq.headers().get("metricId").equals("myMetric"));
         testRouteHandlerCalled = false;
 
         modifiedReq = testPattern("/software/:name/:version", "/software/blueflood/v0.1");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(2, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("name").equals("blueflood"));
-        Assert.assertTrue(modifiedReq.getHeader("version").equals("v0.1"));
+        Assert.assertEquals(2, modifiedReq.headers().entries().size());
+        Assert.assertTrue(modifiedReq.headers().get("name").equals("blueflood"));
+        Assert.assertTrue(modifiedReq.headers().get("version").equals("v0.1"));
         testRouteHandlerCalled = false;
 
         // trailing slash
         modifiedReq = testPattern("/software/:name/:version/", "/software/blueflood/v0.1/");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(2, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("name").equals("blueflood"));
-        Assert.assertTrue(modifiedReq.getHeader("version").equals("v0.1"));
+        Assert.assertEquals(2, modifiedReq.headers().entries().size());
+        Assert.assertTrue(modifiedReq.headers().get("name").equals("blueflood"));
+        Assert.assertTrue(modifiedReq.headers().get("version").equals("v0.1"));
         testRouteHandlerCalled = false;
 
         modifiedReq = testPattern("/:name/:version","/blueflood/v0.1");
         Assert.assertTrue(testRouteHandlerCalled);
-        Assert.assertEquals(2, modifiedReq.getHeaders().size());
-        Assert.assertTrue(modifiedReq.getHeader("name").equals("blueflood"));
-        Assert.assertTrue(modifiedReq.getHeader("version").equals("v0.1"));
+        Assert.assertEquals(2, modifiedReq.headers().entries().size());
+        Assert.assertTrue(modifiedReq.headers().get("name").equals("blueflood"));
+        Assert.assertTrue(modifiedReq.headers().get("version").equals("v0.1"));
         testRouteHandlerCalled = false;
     }
 
@@ -125,19 +124,20 @@ public class RouteMatcherTest {
     }
 
     private class TestRouteHandler implements HttpRequestHandler {
-        private HttpRequest request = null;
+        private FullHttpRequest request = null;
+
+        public FullHttpRequest getRequest() {
+            return request;
+        }
 
         @Override
-        public void handle(ChannelHandlerContext ctx, HttpRequest req) {
+        public void handle(ChannelHandlerContext ctx, FullHttpRequest req) {
             request = req;
             testRouteHandlerCalled = true;
         }
-
-        public HttpRequest getRequest() {
-            return request;
-        }
     }
 
+    /*
     private class TestMessageEvent implements MessageEvent {
         Object message;
 
@@ -165,5 +165,5 @@ public class RouteMatcherTest {
             return null;  //To change body of implemented methods use File | Settings | File Templates.
         }
     }
+    */
 }
-*/

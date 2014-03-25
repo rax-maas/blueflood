@@ -22,18 +22,16 @@ import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelPipeline;
-//import io.netty.channel.ChannelPipelineFactory;
-//import io.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
-
-import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
@@ -46,41 +44,33 @@ public class HttpMetricDataQueryServer {
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
 
-        RouteMatcher router = new RouteMatcher();
+        final RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
         router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
         router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
-        /*
-        ServerBootstrap server = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
-        server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
-        */
-    }
 
-    /*
-    private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
-        private RouteMatcher router;
-
-        public MetricsHttpServerPipelineFactory(RouteMatcher router) {
-            this.router = router;
-        }
-
-        @Override
-        public ChannelPipeline getPipeline() throws Exception {
-            final ChannelPipeline pipeline = pipeline();
-
-            pipeline.addLast("decoder", new HttpRequestDecoder());
-            pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
-
-            return pipeline;
+        EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel nioServerSocketChannel) throws Exception {
+                            nioServerSocketChannel.pipeline()
+                                    .addLast("decoder", new HttpRequestDecoder())
+                                    .addLast("encoder", new HttpResponseEncoder())
+                                    .addLast("handler", new QueryStringDecoderAndRouter(router));
+                        }
+                    });
+            b.bind(new InetSocketAddress(httpQueryHost, httpQueryPort)).sync();
+        } catch (InterruptedException e) {
+            log.error("Http Query Server interrupted while binding to {}", new InetSocketAddress(httpQueryHost, httpQueryPort));
+            throw new RuntimeException(e);
         }
     }
-    */
 }

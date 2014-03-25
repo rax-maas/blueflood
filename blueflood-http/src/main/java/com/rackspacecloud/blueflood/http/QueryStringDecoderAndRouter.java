@@ -17,13 +17,13 @@
 package com.rackspacecloud.blueflood.http;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.QueryStringDecoder;
 
-public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<DefaultFullHttpRequest> {
+public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
 
@@ -32,15 +32,24 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Def
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, DefaultFullHttpRequest request) throws Exception {
-        System.out.println("received request "+request);
-        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
-        router.route(channelHandlerContext, request.setUri(decoder.path()));
+    public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        //if (msg instanceof HttpRequest) {
+            DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
+            router.route(channelHandlerContext, new HTTPRequestWithDecodedQueryParams(request).getDecodedRequest());
+        //} else {
+           // log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
+           //throw new Exception("Non-HTTP message from " + channelHandlerContext.channel().remoteAddress());
+        //}
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.warn("Exception event received: ", cause.getCause());
+        cause.printStackTrace();
+        ctx.close();
     }
 
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
 }

@@ -38,8 +38,11 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,9 +69,12 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
+    private static final int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
+    private static final int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
+    private RouteMatcher router;
 
     public HttpMetricsIngestionServer(ScheduleContext context) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
@@ -83,46 +89,36 @@ public class HttpMetricsIngestionServer {
             return;
         }
 
-        bootStrapServer();
-    }
-
-    private ChannelFuture bootStrapServer() {
-        final RouteMatcher router = new RouteMatcher();
+        router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+    }
 
+    public void start() {
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
-
         EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
         EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
         try {
             ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
-            b.childHandler(new ChannelInitializer<NioServerSocketChannel>() {
-                @Override
-                protected void initChannel(NioServerSocketChannel nioServerSocketChannel) throws Exception {
-                    nioServerSocketChannel.pipeline()
-                            .addLast("decoder", new HttpRequestDecoder())
-                            .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
-                            .addLast("inflater", new HttpContentDecompressor())
-                            .addLast("encoder", new HttpResponseEncoder())
-                            .addLast("handler", new QueryStringDecoderAndRouter(router));
-                }
+            b.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel nioServerSocketChannel) throws Exception {
+                            nioServerSocketChannel.pipeline()
+                                    .addLast("decoder", new HttpRequestDecoder())
+                                    .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
+                                    .addLast("inflater", new HttpContentDecompressor())
+                                    .addLast("encoder", new HttpResponseEncoder())
+                                    .addLast("handler", new QueryStringDecoderAndRouter(router));
+                        }
             });
-            ChannelFuture f = b.bind(new InetSocketAddress(httpIngestHost, httpIngestPort)).sync();
-            return f.channel().closeFuture().sync();
+            b.bind(new InetSocketAddress(httpIngestHost, httpIngestPort)).sync();
         } catch (InterruptedException e) {
-            log.error("Http Ingest Server interrupted while waiting for channel to close");
+            log.error("Http Ingest Server interrupted while binding to {}", new InetSocketAddress(httpIngestHost, httpIngestPort));
             throw new RuntimeException(e);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
-
     }
     
     private void buildProcessingChains() {
