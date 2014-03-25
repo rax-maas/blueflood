@@ -33,13 +33,13 @@ public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
-        //if (msg instanceof HttpRequest) {
+        if (msg instanceof HttpRequest) {
             DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
             router.route(channelHandlerContext, new HTTPRequestWithDecodedQueryParams(request).getDecodedRequest());
-        //} else {
-           // log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
-           //throw new Exception("Non-HTTP message from " + channelHandlerContext.channel().remoteAddress());
-        //}
+        } else {
+            log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
+            throw new Exception("Non-HTTP message from " + channelHandlerContext.channel().remoteAddress());
+        }
     }
 
     @Override
