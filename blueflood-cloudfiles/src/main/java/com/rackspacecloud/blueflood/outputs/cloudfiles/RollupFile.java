@@ -18,6 +18,8 @@ package com.rackspacecloud.blueflood.outputs.cloudfiles;
 
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 import com.rackspacecloud.blueflood.outputs.serializers.RollupEventSerializer;
+import com.rackspacecloud.blueflood.service.CloudfilesConfig;
+import com.rackspacecloud.blueflood.service.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +68,7 @@ public class RollupFile implements Comparable {
     public String getRemoteName() {
         Date time = new Date(timestamp);
         String formattedTime = new SimpleDateFormat("yyyyMMdd_").format(time);
-        return formattedTime + System.currentTimeMillis() + "_" + System.getenv("HOSTNAME");
+        return formattedTime + System.currentTimeMillis() + "_" + Configuration.getInstance().getStringProperty(CloudfilesConfig.CLOUDFILES_HOST_UNIQUE_IDENTIFIER);
     }
 
     /**
