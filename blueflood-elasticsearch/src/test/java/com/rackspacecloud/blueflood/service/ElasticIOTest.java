@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.io.Constants;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -109,7 +108,7 @@ public class ElasticIOTest {
         esSetup.terminate();
     }
 
-    @Ignore @Test
+    @Test
     public void testNoCrossTenantResults() {
         List<ElasticIO.Result> results = elasticIO.search(new ElasticIO.Discovery(TENANT_A, "*"));
         Assert.assertEquals(NUM_DOCS, results.size());
@@ -119,7 +118,7 @@ public class ElasticIOTest {
         }
     }
 
-    @Ignore @Test
+    @Test
     public void testWildcard() {
         ElasticIO.Result entry;
         List<ElasticIO.Result> results;
