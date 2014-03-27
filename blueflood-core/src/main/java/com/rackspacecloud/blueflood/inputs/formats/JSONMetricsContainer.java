@@ -37,10 +37,16 @@ public class JSONMetricsContainer {
         if (jsonMetrics == null || jsonMetrics.isEmpty()) {
             return null;
         }
-
         final List<Metric> metrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
-            final Locator locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
+            Locator locator;
+            if (jsonMetric instanceof ScopedJSONMetric) {
+                ScopedJSONMetric scopedMetric = (ScopedJSONMetric)jsonMetric;
+                locator = Locator.createLocatorFromPathComponents(scopedMetric.getTenantId(), jsonMetric.getMetricName());
+            } else {
+                locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
+            }
+
             final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                     new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
             metrics.add(metric);
@@ -97,4 +103,13 @@ public class JSONMetricsContainer {
             this.ttlInSeconds = ttlInSeconds;
         }
     }
+
+    public static class ScopedJSONMetric extends JSONMetric {
+        private String tenantId;
+
+        public String getTenantId() { return tenantId; }
+
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    }
+
 }
