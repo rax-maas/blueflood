@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONBasicRollupsOutputSerializer;
@@ -151,7 +152,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, CharsetUtil.UTF_8);
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
             response.content().writeBytes(buffer);
             buffer.release();
         }

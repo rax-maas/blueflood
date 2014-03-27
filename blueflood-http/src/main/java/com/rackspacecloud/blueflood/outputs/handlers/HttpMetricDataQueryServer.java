@@ -39,21 +39,18 @@ public class HttpMetricDataQueryServer {
     private final int httpQueryPort;
     private final String httpQueryHost;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
+    int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
+    int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
+    private RouteMatcher router;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
+        initRouteMatcher();
+    }
 
-        final RouteMatcher router = new RouteMatcher();
-        router.get("/v1.0", new DefaultHandler());
-        router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
-        router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
-        router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
-
+    public void start() {
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
-
         EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
         EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
         try {
@@ -75,5 +72,13 @@ public class HttpMetricDataQueryServer {
             log.error("Http Query Server interrupted while binding to {}", new InetSocketAddress(httpQueryHost, httpQueryPort));
             throw new RuntimeException(e);
         }
+    }
+
+    private void initRouteMatcher() {
+        this.router = new RouteMatcher();
+        this.router.get("/v1.0", new DefaultHandler());
+        this.router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
+        this.router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
+        this.router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
     }
 }

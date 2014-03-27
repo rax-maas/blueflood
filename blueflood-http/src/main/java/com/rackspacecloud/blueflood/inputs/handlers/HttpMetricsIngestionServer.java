@@ -33,16 +33,12 @@ import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,13 +82,10 @@ public class HttpMetricsIngestionServer {
 
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
             log.error("Processor chains were not set up propertly");
-            return;
+            throw new RuntimeException("Ingestion Processor chains were not initialized properly");
         }
 
-        router = new RouteMatcher();
-        router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+        initRouteMatcher();
     }
 
     public void start() {
@@ -174,5 +167,12 @@ public class HttpMetricsIngestionServer {
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(batchWriter);
+    }
+
+    private void initRouteMatcher() {
+        this.router = new RouteMatcher();
+        this.router.get("/v1.0", new DefaultHandler());
+        this.router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+        this.router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
     }
 }

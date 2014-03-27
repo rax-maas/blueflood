@@ -36,9 +36,12 @@ import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
@@ -151,8 +154,9 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            //response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
-            response.content().writeBytes(messageBody.getBytes(Constants.DEFAULT_CHARSET));
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
+            response.content().writeBytes(buffer);
+            buffer.release();
         }
         HttpResponder.respond(channel, request, response);
     }

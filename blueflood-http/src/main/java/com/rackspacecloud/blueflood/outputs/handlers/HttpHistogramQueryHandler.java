@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -131,7 +132,7 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, CharsetUtil.UTF_8);
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
             response.content().writeBytes(buffer);
             buffer.release();
         }
