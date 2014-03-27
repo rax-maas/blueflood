@@ -66,7 +66,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         JSONMetricsContainer jsonMetricsContainer = null;
 
         final Timer.Context timerContext = handlerTimer.time();
-        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
+        byte[] readableByteArray = new byte[request.content().readableBytes()];
+        request.content().readBytes(readableByteArray);
+        String body = new String(readableByteArray, Constants.DEFAULT_CHARSET);
+        System.out.println("Received request body as : "+body);
         try {
             List<JSONMetricsContainer.JSONMetric> jsonMetrics =
                     mapper.readValue(
@@ -76,18 +79,22 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                     );
             jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
         } catch (JsonParseException e) {
+            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             log.warn("Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
             return;
         } catch (JsonMappingException e) {
+            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             log.warn("Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
             return;
         } catch (IOException e) {
+            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             log.warn("IO Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
             return;
         } catch (Exception e) {
+            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             log.warn("Other exception while trying to parse content", e);
             sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
             return;

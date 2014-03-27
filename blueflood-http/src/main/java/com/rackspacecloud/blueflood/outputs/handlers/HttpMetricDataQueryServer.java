@@ -27,6 +27,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private final String httpQueryHost;
+    private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -63,6 +65,7 @@ public class HttpMetricDataQueryServer {
                         protected void initChannel(SocketChannel nioServerSocketChannel) throws Exception {
                             nioServerSocketChannel.pipeline()
                                     .addLast("decoder", new HttpRequestDecoder())
+                                    .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
                                     .addLast("encoder", new HttpResponseEncoder())
                                     .addLast("handler", new QueryStringDecoderAndRouter(router));
                         }

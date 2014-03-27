@@ -110,6 +110,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         final String metricName = request.headers().get("metricName");
 
         if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
+            System.err.println("Missing query params");
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
@@ -120,6 +121,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         final Timer.Context httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
+            System.out.println("Received request for "+params.getGranularity()+params.isGetByPoints());
 
             JSONObject metricData;
             if (params.isGetByPoints()) {
@@ -136,6 +138,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
+            System.out.println("Exception encountered in query handler" + e.getStackTrace());
             log.error(e.getMessage(), e);
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {

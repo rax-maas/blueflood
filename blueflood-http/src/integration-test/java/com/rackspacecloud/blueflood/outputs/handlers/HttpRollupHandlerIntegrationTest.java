@@ -187,6 +187,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private void testHappyCaseHTTPRequest() throws Exception {
         HttpGet get = new HttpGet(getMetricsQueryURI());
+        System.out.println("Sending a query request" + get.toString());
         HttpResponse response = client.execute(get);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }

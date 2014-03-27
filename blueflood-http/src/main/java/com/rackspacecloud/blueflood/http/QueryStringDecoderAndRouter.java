@@ -37,7 +37,7 @@ public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
             router.route(channelHandlerContext, new HTTPRequestWithDecodedQueryParams(request).getDecodedRequest());
         } else {
             log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
-            throw new Exception("Non-HTTP message from " + channelHandlerContext.channel().remoteAddress());
+            throw new Exception("Non-HTTP message " + msg + " from " + channelHandlerContext.channel().remoteAddress());
         }
     }
 

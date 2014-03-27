@@ -85,7 +85,9 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             return;
         }
 
-        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
+        byte[] readableByteArray = new byte[request.content().readableBytes()];
+        request.content().readBytes(readableByteArray);
+        String body = new String(readableByteArray, Constants.DEFAULT_CHARSET);
 
         if (body == null || body.isEmpty()) {
             sendResponse(ctx, request, "Invalid body. Expected JSON array of metrics.",
@@ -120,6 +122,7 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
+            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
