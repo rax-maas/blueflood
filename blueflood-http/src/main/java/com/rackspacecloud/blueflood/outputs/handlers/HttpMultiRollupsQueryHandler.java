@@ -20,7 +20,6 @@ import com.google.gson.*;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
@@ -79,7 +78,9 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         final String tenantId = request.headers().get("tenantId");
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
+        Map<String, List<String>> queryParams = new QueryStringDecoder(request.getUri()).parameters();
+
+        if(queryParams.isEmpty()) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
@@ -109,11 +110,9 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-
         final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
-            RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
+            RollupsQueryParams params = PlotRequestParser.parseParams(queryParams);
             BatchMetricsQuery query = new BatchMetricsQuery(locators, params.getRange(), params.getGranularity());
             Map<Locator, MetricData> results = new BatchMetricsQueryHandler(executor, AstyanaxReader.getInstance())
                                                         .execute(query, queryTimeout);
@@ -122,7 +121,6 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
-            System.out.println("Exception encountered in ingestion handler" + e.getStackTrace());
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);

@@ -24,10 +24,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -42,6 +40,8 @@ import io.netty.util.CharsetUtil;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequestHandler {
     private final JSONHistogramOutputSerializer serializer;
@@ -89,17 +89,18 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
         final String tenantId = request.headers().get("tenantId");
         final String metricName = request.headers().get("metricName");
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
+        Map<String, List<String>> queryParams = new QueryStringDecoder(request.getUri()).parameters();
+
+        if(queryParams.isEmpty()) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
         final Timer.Context histFetchTimerContext = histFetchTimer.time();
 
         try {
-            RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
+            RollupsQueryParams params = PlotRequestParser.parseParams(queryParams);
 
             JSONObject metricData;
             if (params.isGetByPoints()) {

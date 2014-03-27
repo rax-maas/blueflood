@@ -34,7 +34,7 @@ public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
         if (msg instanceof HttpRequest) {
             DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
-            router.route(channelHandlerContext, new HTTPRequestWithDecodedQueryParams(request).getDecodedRequest());
+            router.route(channelHandlerContext, request);
         } else {
             log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
             throw new Exception("Non-HTTP message " + msg + " from " + channelHandlerContext.channel().remoteAddress());

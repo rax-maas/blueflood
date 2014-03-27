@@ -22,7 +22,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -108,21 +107,17 @@ public class HttpRollupsQueryHandler extends RollupHandler
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         final String tenantId = request.headers().get("tenantId");
         final String metricName = request.headers().get("metricName");
+        Map<String, List<String>> queryParams = new QueryStringDecoder(request.getUri()).parameters();
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
-            System.err.println("Missing query params");
+        if (queryParams.isEmpty()) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-
         final Timer.Context httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
-            RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
-            System.out.println("Received request for "+params.getGranularity()+params.isGetByPoints());
-
+            RollupsQueryParams params = PlotRequestParser.parseParams(queryParams);
             JSONObject metricData;
             if (params.isGetByPoints()) {
                 metricData = GetDataByPoints(tenantId, metricName, params.getRange().getStart(),
@@ -138,7 +133,6 @@ public class HttpRollupsQueryHandler extends RollupHandler
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
-            System.out.println("Exception encountered in query handler" + e.getStackTrace());
             log.error(e.getMessage(), e);
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {

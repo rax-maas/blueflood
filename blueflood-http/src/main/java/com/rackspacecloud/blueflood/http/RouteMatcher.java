@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.http;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,7 @@ public class RouteMatcher {
 
     public void route(ChannelHandlerContext context, FullHttpRequest request) {
         final String method = request.getMethod().name();
-        final String URI = request.getUri();
+        final String URI = new QueryStringDecoder(request.getUri()).path();
 
         // Method not implemented for any resource. So return 501.
         if (method == null || !implementedVerbs.contains(method)) {
@@ -167,7 +168,7 @@ public class RouteMatcher {
     }
 
     private FullHttpRequest updateRequestHeaders(FullHttpRequest request, PatternRouteBinding binding) {
-        Matcher m = binding.pattern.matcher(request.getUri());
+        Matcher m = binding.pattern.matcher(new QueryStringDecoder(request.getUri()).path());
         if (m.matches()) {
             Map<String, String> headers = new HashMap<String, String>(m.groupCount());
             if (binding.paramsPositionMap != null) {
