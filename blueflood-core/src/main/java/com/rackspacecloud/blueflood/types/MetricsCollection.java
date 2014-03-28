@@ -33,6 +33,10 @@ public class MetricsCollection {
         metrics.addAll(other);
     }
 
+    public void add(IMetric metric) {
+        metrics.add(metric);
+    }
+
     public Collection<IMetric> toMetrics() {
         return metrics;
     }
