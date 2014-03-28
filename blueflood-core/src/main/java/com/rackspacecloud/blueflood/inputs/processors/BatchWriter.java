@@ -120,16 +120,17 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                 
                 private void done() {
                     if (shortLatch.getCount() == 0) {
+                        getLogger().debug("Successfully persisted all metrics for batch " + batchId);
                         actualWriteCtx.stop();
     
                         if (writeTimedOut.get()) {
                             exceededScribeProcessingTime.mark();
-                            getLogger().error("Exceeded scribe timeout " + timeout.toString() + " before persisting " +
-                                    "all metrics for scribe batch " + batchId);
+                            getLogger().error("Exceeded timeout " + timeout.toString() + " before persisting " +
+                                    "all metrics for batch " + batchId);
                         }
     
                         if (!successfullyPersisted.get()) {
-                            getLogger().warn("Did not persist all metrics successfully for scribe batch " + batchId);
+                            getLogger().warn("Did not persist all metrics successfully for batch " + batchId);
                         }
                     }
                 }
