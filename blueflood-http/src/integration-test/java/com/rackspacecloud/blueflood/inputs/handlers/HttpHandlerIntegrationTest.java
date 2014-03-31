@@ -149,6 +149,53 @@ public class HttpHandlerIntegrationTest {
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
+    @Test
+    public void testMultiTenantFailureWithoutHeader() throws Exception {
+        // 400 if sending for other tenants without being authorized agent and without X-MultiTenant header
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/not-agent/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testMultiTenantFailureWithHeader() throws Exception {
+        // 400 if sending for other tenants without being authorized agent and with X-MultiTenant header
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/not-agent/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("X-MultiTenant", "true");
+        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testMultiTenantFailureWithoutTenant() throws Exception {
+        // 400 if sending for other tenants without actually stamping a tenant id on the incoming metrics
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/agent/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        post.addHeader("X-MultiTenant", "true");
+        String content = JSONMetricsContainerTest.generateJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+    }
+
     private URI getMetricsURI() throws URISyntaxException {
         return getMetricsURIBuilder().build();
     }
