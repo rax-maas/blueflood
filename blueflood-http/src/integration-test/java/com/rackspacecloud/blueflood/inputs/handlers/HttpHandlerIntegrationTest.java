@@ -75,7 +75,7 @@ public class HttpHandlerIntegrationTest {
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
@@ -115,21 +115,24 @@ public class HttpHandlerIntegrationTest {
         baos.close();
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
     @Test
     public void testMultiTenantBatching() throws Exception{
-        URIBuilder builder = getMetricsURIBuilder().addParameter("X-MultiTenant", "True")
+        URIBuilder builder = getMetricsURIBuilder()
                 .setPath("/v1.0/agent/experimental/metrics");
         HttpPost post = new HttpPost(builder.build());
+        post.addHeader("X-MultiTenant", "true");
         String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
         HttpEntity entity = new StringEntity(content,
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+
+
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
