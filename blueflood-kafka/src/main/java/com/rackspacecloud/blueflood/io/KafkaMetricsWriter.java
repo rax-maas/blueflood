@@ -37,11 +37,13 @@ public class KafkaMetricsWriter implements IMetricsWriter {
 
     @Override
     public void insertFullMetrics(Collection<Metric> metrics) throws IOException {
+        System.out.println("inserting full res metrics into kafka");
         kafka.pushFullResBatch(new ArrayList<IMetric>(metrics));
     }
 
     @Override
     public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException {
+        System.out.println("inserting preagg metrics into kafka");
         kafka.pushPreaggregatedBatch(metrics);
     }
 }
