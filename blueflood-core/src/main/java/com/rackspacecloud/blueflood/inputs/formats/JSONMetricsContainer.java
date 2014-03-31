@@ -33,6 +33,18 @@ public class JSONMetricsContainer {
         this.jsonMetrics = metrics;
     }
 
+    public boolean isValid() {
+        // Validate that any ScopedJSONMetric is actually scoped to a tenant.
+        for (JSONMetric jsonMetric : this.jsonMetrics) {
+            if (jsonMetric instanceof ScopedJSONMetric) {
+                if (((ScopedJSONMetric) jsonMetric).getTenantId() == null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
     public List<Metric> toMetrics() {
         if (jsonMetrics == null || jsonMetrics.isEmpty()) {
             return null;

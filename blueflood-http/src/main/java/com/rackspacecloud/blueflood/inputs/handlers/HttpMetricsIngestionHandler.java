@@ -86,6 +86,11 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                                     JSONMetricFormatClass)
                     );
             jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
+            if (!jsonMetricsContainer.isValid()) {
+                log.warn("No tenant found on JSON objects for multi-tenant submission.");
+                sendResponse(ctx, request, "Missing/Invalid tenantId key on individual metrics", HttpResponseStatus.BAD_REQUEST);
+                return;
+            }
         } catch (JsonParseException e) {
             log.warn("Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
