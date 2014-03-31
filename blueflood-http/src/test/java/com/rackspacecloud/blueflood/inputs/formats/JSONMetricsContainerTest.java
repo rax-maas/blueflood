@@ -59,8 +59,8 @@ public class JSONMetricsContainerTest {
         Assert.assertEquals("S", metricsCollection.get(1).getDataType().toString());
     }
 
-    public static String generateJSONMetricsData() throws Exception {
-        List<Object> metricsList = new ArrayList<Object>();
+    public static List<Map<String, Object>> generateMetricsData() throws Exception {
+        List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
 
         // Long metric value
         Map<String, Object> testMetric = new TreeMap<String, Object>();
@@ -79,10 +79,27 @@ public class JSONMetricsContainerTest {
         testMetric.put("metricValue", "Website is up");
         testMetric.put("collectionTime", 1234567890L);
         metricsList.add(testMetric);
+        return metricsList;
+    }
 
-        mapper.writeValue(writer, metricsList);
+    public static String generateJSONMetricsData() throws Exception {
+        mapper.writeValue(writer, generateMetricsData());
         final String jsonString = writer.toString();
 
         return jsonString;
+    }
+
+    public static String generateMultitenantJSONMetricsData() throws Exception {
+        List<Map<String, Object>> dataOut = new ArrayList<Map<String, Object>>();
+        for (Map<String, Object> stringObjectMap : generateMetricsData()) {
+            stringObjectMap.put("tenantId", "tenantOne");
+            dataOut.add(stringObjectMap);
+        }
+        for (Map<String, Object> stringObjectMap : generateMetricsData()) {
+            stringObjectMap.put("tenantId", "tenantTwo");
+            dataOut.add(stringObjectMap);
+        }
+
+        return mapper.writeValueAsString(dataOut);
     }
 }

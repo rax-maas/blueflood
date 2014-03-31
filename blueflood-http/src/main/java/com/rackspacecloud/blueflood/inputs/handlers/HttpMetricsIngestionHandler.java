@@ -23,6 +23,8 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -40,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -53,6 +56,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     // Metrics
     private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
+    private static final HashSet<String> AUTHORIZED_AGENT_TENANTS = new HashSet<String>(Configuration.getInstance().getListProperty(HttpConfig.AUTHORIZED_AGENT_TENANTS));
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -69,11 +73,17 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
+            Class JSONMetricFormatClass;
+            if (AUTHORIZED_AGENT_TENANTS.contains(tenantId) && request.getHeader("X-MultiTenant") != null) {
+                JSONMetricFormatClass = JSONMetricsContainer.ScopedJSONMetric.class;
+            } else {
+                JSONMetricFormatClass = JSONMetricsContainer.JSONMetric.class;
+            }
             List<JSONMetricsContainer.JSONMetric> jsonMetrics =
                     mapper.readValue(
                             body,
                             typeFactory.constructCollectionType(List.class,
-                                    JSONMetricsContainer.JSONMetric.class)
+                                    JSONMetricFormatClass)
                     );
             jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
         } catch (JsonParseException e) {
