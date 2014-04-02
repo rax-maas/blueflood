@@ -23,31 +23,7 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.module.SimpleModule;
 
-import java.io.IOException;
-
 public class IMetricSerializer {
-
-    public byte[] toBytes(IMetric m) {
-        try {
-            return getObjectMapper().writeValueAsBytes(m);
-        } catch (IOException e) {
-            System.out.println("ERROR WITH SERIALIZATION");
-            e.printStackTrace();
-            return null;   // TODO
-        }
-    }
-
-    public IMetric fromBytes(byte[] bytes) {
-        ObjectMapper mapper = getObjectMapper();
-        try {
-            //TODO handle error
-            return mapper.readValue(bytes, IMetric.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public ObjectMapper getObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule metricModule = new SimpleModule("IMetricSerializerModule", new Version(1, 0, 0, null));

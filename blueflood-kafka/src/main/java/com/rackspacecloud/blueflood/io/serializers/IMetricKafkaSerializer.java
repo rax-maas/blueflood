@@ -20,9 +20,37 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import kafka.serializer.Decoder;
 import kafka.serializer.Encoder;
 import kafka.utils.VerifiableProperties;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class IMetricKafkaSerializer extends IMetricSerializer implements Encoder<IMetric>, Decoder<IMetric> {
+    private static final Logger log = LoggerFactory.getLogger(IMetricKafkaSerializer.class);
+
     public IMetricKafkaSerializer(VerifiableProperties properties) {
         super();
+    }
+
+    @SuppressWarnings("unused")
+    public byte[] toBytes(IMetric m) {
+        try {
+            return getObjectMapper().writeValueAsBytes(m);
+        } catch (IOException e) {
+            log.warn("IOException during serialization of " + m, e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public IMetric fromBytes(byte[] bytes) {
+        ObjectMapper mapper = getObjectMapper();
+        try {
+            return mapper.readValue(bytes, IMetric.class);
+        } catch (IOException e) {
+            log.warn("IOException during deserialization of " + bytes, e);
+            return null;
+        }
     }
 }

@@ -19,12 +19,16 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.outputs.handlers.KafkaProducer;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class KafkaMetricsWriter implements IMetricsWriter {
+    private static final Logger log = LoggerFactory.getLogger(KafkaMetricsWriter.class);
+
     private final KafkaProducer kafka;
 
     public KafkaMetricsWriter() {
@@ -37,13 +41,13 @@ public class KafkaMetricsWriter implements IMetricsWriter {
 
     @Override
     public void insertFullMetrics(Collection<Metric> metrics) throws IOException {
-        System.out.println("inserting full res metrics into kafka");
+        log.debug("inserting full res metrics into kafka");
         kafka.pushFullResBatch(new ArrayList<IMetric>(metrics));
     }
 
     @Override
     public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException {
-        System.out.println("inserting preagg metrics into kafka");
+        log.debug("inserting preagg metrics into kafka");
         kafka.pushPreaggregatedBatch(metrics);
     }
 }

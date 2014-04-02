@@ -63,9 +63,6 @@ public class PreaggregatedMetricDeserializer extends org.codehaus.jackson.map.Js
                         throw new IOException("Preaggregated deserialization requires field 'class' to be 'preaggregated'");
                     }
                 } else if (fieldName.equals("metricValue")) {
-                    System.out.println("METRIC VALUE IS " + jp.getCurrentToken());
-//                    jp.getCurrentToken().equals(JsonToken.VALUE_EMBEDDED_OBJECT)
-                    Object o = jp.getEmbeddedObject();
                     if (jp.getCurrentToken().isNumeric()) {
                         metricValue = jp.getNumberValue();
                     } else if (jp.getCurrentToken().equals(JsonToken.VALUE_FALSE)) {
