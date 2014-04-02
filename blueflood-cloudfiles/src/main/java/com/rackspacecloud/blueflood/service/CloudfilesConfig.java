@@ -23,7 +23,8 @@ public enum CloudfilesConfig implements ConfigDefaults {
     CLOUDFILES_ZONE("IAD"),
     CLOUDFILES_MAX_BUFFER_AGE("3600000"), // 1000*60*60 = 60 minutes
     CLOUDFILES_MAX_BUFFER_SIZE("104857600"), // 1024*1024*100 = 100MB
-    CLOUDFILES_BUFFER_DIR("./CLOUDFILES_BUFFER");
+    CLOUDFILES_BUFFER_DIR("./CLOUDFILES_BUFFER"),
+    CLOUDFILES_HOST_UNIQUE_IDENTIFIER("bf-host");
 
     static {
         Configuration.getInstance().loadDefaults(CloudfilesConfig.values());
