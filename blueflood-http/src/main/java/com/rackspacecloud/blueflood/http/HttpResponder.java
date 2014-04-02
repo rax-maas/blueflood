@@ -33,12 +33,11 @@ public class HttpResponder {
     }
 
     public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
-        if(res.content() != null) {
+        if (res.content() != null) {
             HttpHeaders.setContentLength(res, res.content().readableBytes());
         }
-
         // Send the response and close the connection if necessary.
-        ChannelFuture f = ctx.write(res);
+        ChannelFuture f = ctx.writeAndFlush(res);
         if (!isKeepAlive(req)) {
             f.addListener(ChannelFutureListener.CLOSE);
         }

@@ -28,6 +28,8 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -131,9 +133,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody, HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
-
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.content().writeBytes(messageBody.getBytes(Constants.DEFAULT_CHARSET));
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
+            response.content().writeBytes(buffer);
+            buffer.release();
         }
         HttpResponder.respond(channel, request, response);
     }

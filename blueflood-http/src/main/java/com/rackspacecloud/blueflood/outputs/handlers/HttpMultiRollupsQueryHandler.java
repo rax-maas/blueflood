@@ -152,7 +152,6 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
     private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                               HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
-
         if (messageBody != null && !messageBody.isEmpty()) {
             ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
             response.content().writeBytes(buffer);

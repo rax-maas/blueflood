@@ -43,7 +43,7 @@ public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        log.warn("Exception event received: ", cause.getCause());
         ctx.close();
     }
 
