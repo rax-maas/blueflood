@@ -56,7 +56,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     // Metrics
     private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
-    private static final HashSet<String> AUTHORIZED_AGENT_TENANTS = new HashSet<String>(Configuration.getInstance().getListProperty(HttpConfig.AUTHORIZED_AGENT_TENANTS));
+    private static final HashSet<String> ROLE_MULTISUBMIT_TENANTS = new HashSet<String>(Configuration.getInstance().getListProperty(HttpConfig.ROLE_MULTISUBMIT_TENANTS));
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -74,7 +74,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
             Class JSONMetricFormatClass;
-            if (AUTHORIZED_AGENT_TENANTS.contains(tenantId) && request.getHeader("X-MultiTenant") != null) {
+            if (ROLE_MULTISUBMIT_TENANTS.contains(tenantId) && request.getHeader("X-MultiTenant") != null) {
                 JSONMetricFormatClass = JSONMetricsContainer.ScopedJSONMetric.class;
             } else {
                 JSONMetricFormatClass = JSONMetricsContainer.JSONMetric.class;

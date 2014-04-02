@@ -25,5 +25,5 @@
    * See CloudfilesConfig.java for configuration options.
  * Added a metrics reporter for sending metrics to a Riemann server.
  * Added multi-tenant ingestion
-   * Tenants listed under the AUTHORIZED_AGENT_TENANTS config value can submit metrics on behalf of other tenants.
+   * Tenants listed under the ROLE_MULTISUBMIT_TENANTS config value can submit metrics on behalf of other tenants.
    * This is done with a normal metrics submission POST that contains an 'X-MultiTenant' header and a 'tenantId' key on each json metric.

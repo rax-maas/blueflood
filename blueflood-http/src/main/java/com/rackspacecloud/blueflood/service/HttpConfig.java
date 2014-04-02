@@ -56,7 +56,7 @@ public enum HttpConfig implements ConfigDefaults {
 
     // Comma separated list of tenant ids which are allowed to submit data on behalf of other tenants.
     // Useful when auth is handled at a proxy layer before reaching blueflood.
-    AUTHORIZED_AGENT_TENANTS("agent");
+    ROLE_MULTISUBMIT_TENANTS("agent");
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());
