@@ -131,7 +131,6 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
 
-
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         // assert that the update method on the ScheduleContext object was called and completed successfully
