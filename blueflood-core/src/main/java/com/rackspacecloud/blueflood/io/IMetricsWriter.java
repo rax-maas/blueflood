@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2014 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.service;
+package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
 
-/**
- * HTTP Ingestion Service.
- */
-public class HttpIngestionService implements IngestionService {
-    private HttpMetricsIngestionServer server;
-    public void startService(ScheduleContext context, IMetricsWriter writer) {
-        server = new HttpMetricsIngestionServer(context, writer);
-    }
+import java.io.IOException;
+import java.util.Collection;
+
+public interface IMetricsWriter {
+    void insertFullMetrics(Collection<Metric> metrics) throws IOException;
+    void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException;
 }
