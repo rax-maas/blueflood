@@ -29,6 +29,16 @@ public class MinValue extends AbstractRollupStat {
         this.setLongValue(0);
     }
 
+    public MinValue(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    public MinValue(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
     @Override
     void handleFullResMetric(Object o) throws RuntimeException {
         if (o instanceof Double) {

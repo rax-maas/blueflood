@@ -46,6 +46,11 @@ public class Variance extends AbstractRollupStat {
         this.isRollup = false;
     }
 
+    public Variance(double value) {
+        this.populationVariance = value;
+        this.setDoubleValue(value);
+    }
+
     @Override
     public boolean equals(Object otherObject) {
         compute();

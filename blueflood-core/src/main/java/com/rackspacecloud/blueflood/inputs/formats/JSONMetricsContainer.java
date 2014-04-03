@@ -48,7 +48,6 @@ public class JSONMetricsContainer {
         if (jsonMetrics == null || jsonMetrics.isEmpty()) {
             return null;
         }
-
         final List<Metric> metrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
             Locator locator;
@@ -133,4 +132,13 @@ public class JSONMetricsContainer {
             return (tenantId != null && super.isValid());
         }
     }
+
+    public static class ScopedJSONMetric extends JSONMetric {
+        private String tenantId;
+
+        public String getTenantId() { return tenantId; }
+
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    }
+
 }

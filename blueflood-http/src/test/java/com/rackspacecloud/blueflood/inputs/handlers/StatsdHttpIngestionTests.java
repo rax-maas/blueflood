@@ -89,7 +89,7 @@ public class StatsdHttpIngestionTests {
         Assert.assertEquals(4, timers.size());
         ensureSerializability(timers);
     }
-    
+
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2014 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
+import com.rackspacecloud.blueflood.inputs.handlers.KafkaHandler;
+import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 
-/**
- * HTTP Ingestion Service.
- */
-public class HttpIngestionService implements IngestionService {
-    private HttpMetricsIngestionServer server;
+public class KafkaIngestionService implements IngestionService {
+    private KafkaHandler ingestor;
     public void startService(ScheduleContext context, IMetricsWriter writer) {
-        server = new HttpMetricsIngestionServer(context, writer);
+        // TODO: figure out a way of having separate writers for separate ingestion services.
+        ingestor = new KafkaHandler(context, new AstyanaxMetricsWriter());
     }
 }
