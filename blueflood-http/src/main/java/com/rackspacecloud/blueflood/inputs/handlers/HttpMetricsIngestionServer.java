@@ -102,7 +102,7 @@ public class HttpMetricsIngestionServer {
                             nioServerSocketChannel.pipeline()
                                     .addLast("decoder", new HttpRequestDecoder())
                                     .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
-                                    .addLast("inflater", new HttpContentDecompressor())
+                                    //.addLast("inflater", new HttpContentDecompressor())
                                     .addLast("encoder", new HttpResponseEncoder())
                                     .addLast("handler", new QueryStringDecoderAndRouter(router));
                         }

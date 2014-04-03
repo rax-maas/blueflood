@@ -98,7 +98,7 @@ public class HttpHandlerIntegrationTest {
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
-    @Test
+    @Ignore @Test
     public void testCompressedRequests() throws Exception{
         HttpPost post = new HttpPost(getMetricsURI());
         String content = JSONMetricsContainerTest.generateJSONMetricsData();
