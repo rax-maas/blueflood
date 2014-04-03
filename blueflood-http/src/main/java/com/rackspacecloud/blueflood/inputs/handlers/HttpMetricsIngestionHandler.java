@@ -46,8 +46,8 @@ import java.util.concurrent.TimeoutException;
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
 
-    private final ObjectMapper mapper;
-    private final TypeFactory typeFactory;
+    protected final ObjectMapper mapper;
+    protected final TypeFactory typeFactory;
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TimeValue timeout;
 
@@ -61,6 +61,16 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         this.processorChain = processorChain;
     }
 
+    protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
+        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        body,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+        return new JSONMetricsContainer(tenantId, jsonMetrics);
+    }
+
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
@@ -69,13 +79,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-            List<JSONMetricsContainer.JSONMetric> jsonMetrics =
-                    mapper.readValue(
-                            body,
-                            typeFactory.constructCollectionType(List.class,
-                                    JSONMetricsContainer.JSONMetric.class)
-                    );
-            jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
+            jsonMetricsContainer = createContainer(body, tenantId);
+            if (!jsonMetricsContainer.isValid()) {
+                throw new IOException("Invalid JSONMetricsContainer");
+            }
         } catch (JsonParseException e) {
             log.warn("Exception parsing content", e);
             sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);

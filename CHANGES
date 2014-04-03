@@ -24,3 +24,6 @@
  * Added blueflood-cloudfiles module. If enabled, will upload json dumps of all rollups to Rackspace CloudFiles.
    * See CloudfilesConfig.java for configuration options.
  * Added a metrics reporter for sending metrics to a Riemann server.
+ * Added multi-tenant ingestion
+   * This is done by posting metrics to the tenantId of 'multitenant' (/v1.0/multitenant/experimental/metrics)
+   * You must include a 'tenantId' key on each metric when using this endpoint.

@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.inputs.formats;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,16 @@ public class JSONMetricsContainer {
         this.jsonMetrics = metrics;
     }
 
+    public boolean isValid() {
+        // Validate that any ScopedJSONMetric is actually scoped to a tenant.
+        for (JSONMetric jsonMetric : this.jsonMetrics) {
+            if (!jsonMetric.isValid()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public List<Metric> toMetrics() {
         if (jsonMetrics == null || jsonMetrics.isEmpty()) {
             return null;
@@ -40,7 +51,14 @@ public class JSONMetricsContainer {
 
         final List<Metric> metrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
-            final Locator locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
+            Locator locator;
+            if (jsonMetric instanceof ScopedJSONMetric) {
+                ScopedJSONMetric scopedMetric = (ScopedJSONMetric)jsonMetric;
+                locator = Locator.createLocatorFromPathComponents(scopedMetric.getTenantId(), jsonMetric.getMetricName());
+            } else {
+                locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
+            }
+
             final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                     new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
             metrics.add(metric);
@@ -95,6 +113,24 @@ public class JSONMetricsContainer {
 
         public void setTtlInSeconds(int ttlInSeconds) {
             this.ttlInSeconds = ttlInSeconds;
+        }
+
+        @JsonIgnore
+        public boolean isValid() {
+            return true;
+        }
+    }
+
+    public static class ScopedJSONMetric extends JSONMetric {
+        private String tenantId;
+
+        public String getTenantId() { return tenantId; }
+
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+        @JsonIgnore
+        public boolean isValid() {
+            return (tenantId != null && super.isValid());
         }
     }
 }

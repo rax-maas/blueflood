@@ -39,7 +39,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -47,6 +46,8 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.zip.GZIPOutputStream;
+
+import static org.mockito.Mockito.*;
 
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
@@ -74,7 +75,7 @@ public class HttpHandlerIntegrationTest {
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         // assert that the update method on the ScheduleContext object was called and completed successfully
         // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
@@ -114,14 +115,74 @@ public class HttpHandlerIntegrationTest {
         baos.close();
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 200);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
+    @Test
+    public void testMultiTenantBatching() throws Exception{
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/multitenant/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+        // assert that the update method on the ScheduleContext object was called and completed successfully
+        // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
+        final Locator locator = Locator.createLocatorFromPathComponents("tenantOne", "mzord.duration");
+        Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
+                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points.getPoints().size());
+
+        final Locator locatorTwo = Locator.createLocatorFromPathComponents("tenantTwo", "mzord.duration");
+        Points<SimpleNumber> pointsTwo = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
+                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, pointsTwo.getPoints().size());
+
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
+    public void testMultiTenantFailureForSingleTenantHandler() throws Exception {
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/not-multi/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testMultiTenantFailureWithoutTenant() throws Exception {
+        // 400 if sending for other tenants without actually stamping a tenant id on the incoming metrics
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v1.0/multitenant/experimental/metrics");
+        HttpPost post = new HttpPost(builder.build());
+        String content = JSONMetricsContainerTest.generateJSONMetricsData();
+        HttpEntity entity = new StringEntity(content,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+    }
+
     private URI getMetricsURI() throws URISyntaxException {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                                             .setPort(httpPort).setPath("/v1.0/acTEST/experimental/metrics");
-        return builder.build();
+        return getMetricsURIBuilder().build();
+    }
+
+    private URIBuilder getMetricsURIBuilder() throws URISyntaxException {
+        return new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v1.0/acTEST/experimental/metrics");
     }
 
     @AfterClass
