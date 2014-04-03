@@ -80,14 +80,18 @@ public class HttpMetricsIngestionServer {
         
         buildProcessingChains();
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
-            log.error("Processor chains were not set up propertly");
+            log.error("Processor chains were not set up properly");
             return;
         }
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
+
+        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(

@@ -23,8 +23,6 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -42,27 +40,35 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
 
-    private final ObjectMapper mapper;
-    private final TypeFactory typeFactory;
+    protected final ObjectMapper mapper;
+    protected final TypeFactory typeFactory;
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TimeValue timeout;
 
     // Metrics
     private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
-    private static final HashSet<String> ROLE_MULTISUBMIT_TENANTS = new HashSet<String>(Configuration.getInstance().getListProperty(HttpConfig.ROLE_MULTISUBMIT_TENANTS));
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
         this.processorChain = processorChain;
+    }
+
+    protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
+        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        body,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+        return new JSONMetricsContainer(tenantId, jsonMetrics);
     }
 
     @Override
@@ -73,23 +79,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-            Class JSONMetricFormatClass;
-            if (ROLE_MULTISUBMIT_TENANTS.contains(tenantId) && request.getHeader("X-MultiTenant") != null) {
-                JSONMetricFormatClass = JSONMetricsContainer.ScopedJSONMetric.class;
-            } else {
-                JSONMetricFormatClass = JSONMetricsContainer.JSONMetric.class;
-            }
-            List<JSONMetricsContainer.JSONMetric> jsonMetrics =
-                    mapper.readValue(
-                            body,
-                            typeFactory.constructCollectionType(List.class,
-                                    JSONMetricFormatClass)
-                    );
-            jsonMetricsContainer = new JSONMetricsContainer(tenantId, jsonMetrics);
+            jsonMetricsContainer = createContainer(body, tenantId);
             if (!jsonMetricsContainer.isValid()) {
-                log.warn("No tenant found on JSON objects for multi-tenant submission.");
-                sendResponse(ctx, request, "Missing/Invalid tenantId key on individual metrics", HttpResponseStatus.BAD_REQUEST);
-                return;
+                throw new IOException("Invalid JSONMetricsContainer");
             }
         } catch (JsonParseException e) {
             log.warn("Exception parsing content", e);
