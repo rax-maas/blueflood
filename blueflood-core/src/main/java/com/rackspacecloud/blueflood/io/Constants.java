@@ -55,6 +55,8 @@ public class Constants {
     
     public static final int DEFAULT_SAMPLE_INTERVAL = 30; // seconds.
 
+    public static final String TENANT_REGEX_FOR_DROPPING_METRICS = "TENANT_REGEX_FOR_DROPPING_METRICS";
+
     // ensure that some yahoo did not set FullResSerializer.CUR_VERSION to an invalid value (for backwards compatibility
     // with old unversioned serializations).
     static {

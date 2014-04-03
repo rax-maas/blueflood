@@ -16,7 +16,14 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.Constants;
+
+import java.util.regex.Pattern;
+
 public interface IngestionService {
+    String pattern = Configuration.getInstance().getStringProperty(Constants.TENANT_REGEX_FOR_DROPPING_METRICS);
+    Pattern tenantRegexForMetricsDropping = pattern == null ? null : Pattern.compile(pattern);
+
     public void startService(ScheduleContext context);
 }
 
