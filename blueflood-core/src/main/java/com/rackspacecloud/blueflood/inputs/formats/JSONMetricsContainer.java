@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.inputs.formats;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,16 @@ public class JSONMetricsContainer {
     public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
         this.tenantId = tenantId;
         this.jsonMetrics = metrics;
+    }
+
+    public boolean isValid() {
+        // Validate that any ScopedJSONMetric is actually scoped to a tenant.
+        for (JSONMetric jsonMetric : this.jsonMetrics) {
+            if (!jsonMetric.isValid()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public List<Metric> toMetrics() {
@@ -101,6 +112,24 @@ public class JSONMetricsContainer {
 
         public void setTtlInSeconds(int ttlInSeconds) {
             this.ttlInSeconds = ttlInSeconds;
+        }
+
+        @JsonIgnore
+        public boolean isValid() {
+            return true;
+        }
+    }
+
+    public static class ScopedJSONMetric extends JSONMetric {
+        private String tenantId;
+
+        public String getTenantId() { return tenantId; }
+
+        public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+        @JsonIgnore
+        public boolean isValid() {
+            return (tenantId != null && super.isValid());
         }
     }
 
