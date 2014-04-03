@@ -29,6 +29,18 @@ public class MaxValue extends AbstractRollupStat {
         this.setLongValue(0);
     }
 
+    @SuppressWarnings("unused") // used by Jackson
+    public MaxValue(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    @SuppressWarnings("unused") // used by Jackson
+    public MaxValue(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
     @Override
     void handleFullResMetric(Object o) throws RuntimeException {
         if (o instanceof Double) {
