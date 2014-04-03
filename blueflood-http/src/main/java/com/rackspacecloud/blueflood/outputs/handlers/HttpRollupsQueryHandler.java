@@ -22,7 +22,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -36,15 +35,15 @@ import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class HttpRollupsQueryHandler extends RollupHandler
             implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
@@ -106,22 +105,20 @@ public class HttpRollupsQueryHandler extends RollupHandler
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
-        final String metricName = request.getHeader("metricName");
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+        final String tenantId = request.headers().get("tenantId");
+        final String metricName = request.headers().get("metricName");
+        Map<String, List<String>> queryParams = new QueryStringDecoder(request.getUri()).parameters();
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
+        if (queryParams.isEmpty()) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-
         final Timer.Context httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
-            RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
-
+            RollupsQueryParams params = PlotRequestParser.parseParams(queryParams);
             JSONObject metricData;
             if (params.isGetByPoints()) {
                 metricData = GetDataByPoints(tenantId, metricName, params.getRange().getStart(),
@@ -150,12 +147,13 @@ public class HttpRollupsQueryHandler extends RollupHandler
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                              HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            ByteBuf buffer = Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET);
+            response.content().writeBytes(buffer);
+            buffer.release();
         }
         HttpResponder.respond(channel, request, response);
     }

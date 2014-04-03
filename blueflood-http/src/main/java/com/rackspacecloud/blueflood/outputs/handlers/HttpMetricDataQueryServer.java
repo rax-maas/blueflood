@@ -21,62 +21,64 @@ import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
-
-import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private final String httpQueryHost;
+    private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
+    int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
+    int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
+    private RouteMatcher router;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
-
-        RouteMatcher router = new RouteMatcher();
-        router.get("/v1.0", new DefaultHandler());
-        router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
-        router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
-        router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
-
-        log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
-        ServerBootstrap server = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
-        server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
+        initRouteMatcher();
     }
 
-    private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
-        private RouteMatcher router;
-
-        public MetricsHttpServerPipelineFactory(RouteMatcher router) {
-            this.router = router;
+    public void start() {
+        log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
+        EventLoopGroup bossGroup = new NioEventLoopGroup(acceptThreads);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreads);
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel nioServerSocketChannel) throws Exception {
+                            nioServerSocketChannel.pipeline()
+                                    .addLast("decoder", new HttpRequestDecoder())
+                                    .addLast("chunkaggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH))
+                                    .addLast("encoder", new HttpResponseEncoder())
+                                    .addLast("handler", new QueryStringDecoderAndRouter(router));
+                        }
+                    });
+            b.bind(new InetSocketAddress(httpQueryHost, httpQueryPort)).sync();
+        } catch (InterruptedException e) {
+            log.error("Http Query Server interrupted while binding to {}", new InetSocketAddress(httpQueryHost, httpQueryPort));
+            throw new RuntimeException(e);
         }
+    }
 
-        @Override
-        public ChannelPipeline getPipeline() throws Exception {
-            final ChannelPipeline pipeline = pipeline();
-
-            pipeline.addLast("decoder", new HttpRequestDecoder());
-            pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
-
-            return pipeline;
-        }
+    private void initRouteMatcher() {
+        this.router = new RouteMatcher();
+        this.router.get("/v1.0", new DefaultHandler());
+        this.router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
+        this.router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
+        this.router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
     }
 }

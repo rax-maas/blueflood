@@ -16,17 +16,13 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
+public class QueryStringDecoderAndRouter extends ChannelInboundHandlerAdapter {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
 
@@ -35,19 +31,24 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        Object msg = e.getMessage();
-        if (msg instanceof DefaultHttpRequest) {
-            final DefaultHttpRequest request = (DefaultHttpRequest) msg;
-            router.route(ctx, HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request));
+    public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+        if (msg instanceof HttpRequest) {
+            DefaultFullHttpRequest request = (DefaultFullHttpRequest) msg;
+            router.route(channelHandlerContext, request);
         } else {
-            log.error("Ignoring non HTTP message {}, from {}", e.getMessage(), e.getRemoteAddress());
-            throw new Exception("Non-HTTP message from " + e.getRemoteAddress());
+            log.error("Ignoring non HTTP message {}, from {}", msg, channelHandlerContext.channel().remoteAddress());
+            throw new Exception("Non-HTTP message " + msg + " from " + channelHandlerContext.channel().remoteAddress());
         }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-        log.warn("Exception event received: ", e.getCause());
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.warn("Exception event received: ", cause.getCause());
+        ctx.close();
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.flush();
     }
 }

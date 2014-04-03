@@ -133,7 +133,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
-      <version>4.0.8.Final</version>
+      <version>4.0.17.Final</version>
     </dependency>
 
     <dependency>
@@ -164,6 +164,12 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>4.2.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jzlib</artifactId>
+      <version>1.1.2</version>
     </dependency>
 
     <!-- testing dependencies -->

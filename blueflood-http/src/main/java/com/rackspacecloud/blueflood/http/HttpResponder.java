@@ -16,35 +16,28 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
-    private static final DefaultHttpResponse defaultResponse = new DefaultHttpResponse(HTTP_1_1,
-            HttpResponseStatus.OK);
+    private static final DefaultFullHttpResponse defaultResponse = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
 
-
-    public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponseStatus status) {
+    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status) {
         defaultResponse.setStatus(status);
         respond(ctx, req, defaultResponse);
     }
 
-    public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
-        if (res.getContent() != null) {
-            setContentLength(res, res.getContent().readableBytes());
+    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
+        if (res.content() != null) {
+            HttpHeaders.setContentLength(res, res.content().readableBytes());
         }
-
         // Send the response and close the connection if necessary.
-        ChannelFuture f = ctx.getChannel().write(res);
+        ChannelFuture f = ctx.writeAndFlush(res);
         if (!isKeepAlive(req)) {
             f.addListener(ChannelFutureListener.CLOSE);
         }

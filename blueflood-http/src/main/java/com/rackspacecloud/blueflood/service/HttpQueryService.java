@@ -27,5 +27,6 @@ public class HttpQueryService implements QueryService {
     private HttpMetricDataQueryServer server;
     public void startService() {
         server = new HttpMetricDataQueryServer();
+        server.start();
     }
 }
