@@ -28,7 +28,7 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -69,14 +69,16 @@ public class HttpMetricsIngestionServer {
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
+    private IMetricsWriter writer;
 
-    public HttpMetricsIngestionServer(ScheduleContext context) {
+    public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.context = context;
+        this.writer = writer;
         
         buildProcessingChains();
         if (defaultProcessorChain == null || statsdProcessorChain == null) {
@@ -118,21 +120,21 @@ public class HttpMetricsIngestionServer {
                 new ThreadPoolBuilder().withName("Metric batching").build(),
                 BATCH_SIZE
         ).withLogger(log);
-        
+
         batchWriter = new BatchWriter(
-            new ThreadPoolBuilder()
-                .withName("Metric Batch Writing")
-                .withCorePoolSize(WRITE_THREADS)
-                .withMaxPoolSize(WRITE_THREADS)
-                .withUnboundedQueue()
-                .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
-                .build(),
-            AstyanaxWriter.getInstance(),
-            timeout,
-            bufferedMetrics,
-            context
+                new ThreadPoolBuilder()
+                        .withName("Metric Batch Writing")
+                        .withCorePoolSize(WRITE_THREADS)
+                        .withMaxPoolSize(WRITE_THREADS)
+                        .withUnboundedQueue()
+                        .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                        .build(),
+                writer,
+                timeout,
+                bufferedMetrics,
+                context
         ).withLogger(log);
-        
+
         // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
         MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
                 new TimeValue(48, TimeUnit.HOURS),

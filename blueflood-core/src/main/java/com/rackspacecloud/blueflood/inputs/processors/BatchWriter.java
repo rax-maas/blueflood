@@ -22,8 +22,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -50,9 +49,9 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
     private final Counter bufferedMetrics;
     private final IngestionContext context;
     
-    private final AstyanaxWriter writer;
+    private final IMetricsWriter writer;
     
-    public BatchWriter(ThreadPoolExecutor threadPool, AstyanaxWriter writer, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
+    public BatchWriter(ThreadPoolExecutor threadPool, IMetricsWriter writer, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
         super(threadPool);
         this.writer = writer;
         this.timeout = timeout;
@@ -74,8 +73,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
         for (List<IMetric> metrics: input) {
             final int batchId = batchIdGenerator.next();
             final List<IMetric> batch = metrics;
-            
-            
+
             ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
                 public Boolean call() throws Exception {
                     try {
@@ -93,9 +91,9 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                                 preagMetrics.add(m);
                         }
                         if (simpleMetrics.size() > 0)
-                            writer.insertFull(simpleMetrics);
+                            writer.insertFullMetrics(simpleMetrics);
                         if (preagMetrics.size() > 0)
-                            writer.insertMetrics(preagMetrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+                            writer.insertPreaggreatedMetrics(preagMetrics);
                         
                         // marks this shard dirty, so rollup nodes know to pick up the work.
                         for (IMetric metric : batch) {
@@ -122,16 +120,17 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                 
                 private void done() {
                     if (shortLatch.getCount() == 0) {
+                        getLogger().debug("Successfully persisted all metrics for batch " + batchId);
                         actualWriteCtx.stop();
-    
+
                         if (writeTimedOut.get()) {
                             exceededScribeProcessingTime.mark();
-                            getLogger().error("Exceeded scribe timeout " + timeout.toString() + " before persisting " +
-                                    "all metrics for scribe batch " + batchId);
+                            getLogger().error("Exceeded timeout " + timeout.toString() + " before persisting " +
+                                    "all metrics for batch " + batchId);
                         }
     
                         if (!successfullyPersisted.get()) {
-                            getLogger().warn("Did not persist all metrics successfully for scribe batch " + batchId);
+                            getLogger().warn("Did not persist all metrics successfully for batch " + batchId);
                         }
                     }
                 }
