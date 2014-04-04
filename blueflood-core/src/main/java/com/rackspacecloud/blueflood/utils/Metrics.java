@@ -83,6 +83,9 @@ public class Metrics {
                 if (!config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST).isEmpty()) {
                     builder.localHost(config.getStringProperty(CoreConfig.RIEMANN_LOCALHOST));
                 }
+                if (!config.getStringProperty(CoreConfig.RIEMANN_PREFIX).isEmpty()) {
+                    builder.prefixedWith(config.getStringProperty(CoreConfig.RIEMANN_PREFIX));
+                }
                 if (!config.getStringProperty(CoreConfig.RIEMANN_TAGS).isEmpty()) {
                     builder.tags(config.getListProperty(CoreConfig.RIEMANN_TAGS));
                 }
