@@ -45,8 +45,8 @@ public class IMetricSerializerTest {
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, counterReserialized);
         String preagg = mapper.writeValueAsString(m);
-        Assert.assertTrue(preagg.startsWith(START_STRING));
-        Assert.assertTrue(preagg.endsWith(END_STRING));
+        Assert.assertTrue(preagg, preagg.startsWith(START_STRING));
+        Assert.assertTrue(preagg, preagg.endsWith(END_STRING));
     }
 
     @Test
@@ -62,8 +62,8 @@ public class IMetricSerializerTest {
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, gaugeReserialized);
         String preagg = mapper.writeValueAsString(m);
-        Assert.assertTrue(preagg.startsWith(START_STRING));
-        Assert.assertTrue(preagg.endsWith(END_STRING));
+        Assert.assertTrue(preagg, preagg.startsWith(START_STRING));
+        Assert.assertTrue(preagg, preagg.endsWith(END_STRING));
     }
 
     @Test
@@ -79,8 +79,8 @@ public class IMetricSerializerTest {
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, setReserialized);
         String preagg = mapper.writeValueAsString(m);
-        Assert.assertTrue(preagg.startsWith(START_STRING));
-        Assert.assertTrue(preagg.endsWith(END_STRING));
+        Assert.assertTrue(preagg, preagg.startsWith(START_STRING));
+        Assert.assertTrue(preagg, preagg.endsWith(END_STRING));
     }
 
     @Test
@@ -96,8 +96,8 @@ public class IMetricSerializerTest {
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, timerReserialized);
         String preagg = mapper.writeValueAsString(m);
-        Assert.assertTrue(preagg.startsWith(START_STRING));
-        Assert.assertTrue(preagg.endsWith(END_STRING));
+        Assert.assertTrue(preagg, preagg.startsWith(START_STRING));
+        Assert.assertTrue(preagg, preagg.endsWith(END_STRING));
     }
 
     @Test
