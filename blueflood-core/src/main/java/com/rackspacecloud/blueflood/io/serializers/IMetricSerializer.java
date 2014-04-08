@@ -49,7 +49,7 @@ public class IMetricSerializer {
         return mapper;
     }
 
-
+    @JsonPropertyOrder(alphabetic=true)
     @JsonTypeInfo(
             use = JsonTypeInfo.Id.NAME,
             include = JsonTypeInfo.As.PROPERTY,
@@ -109,12 +109,14 @@ public class IMetricSerializer {
         abstract boolean isFloatingPoint();
     }
 
+    @JsonPropertyOrder(alphabetic=true)
     @JsonIgnoreProperties({ "ttl", "value", "type", "rollupType" })
     abstract class PreaggMetricMixin { }
 
     @JsonIgnoreProperties({ "stringRep" })
     abstract class LocatorMixin { }
 
+    @JsonPropertyOrder(alphabetic=true)
     @JsonTypeInfo(
             use = JsonTypeInfo.Id.NAME,
             include = JsonTypeInfo.As.PROPERTY,
