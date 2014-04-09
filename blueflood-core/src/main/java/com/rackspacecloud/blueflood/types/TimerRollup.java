@@ -22,10 +22,10 @@ public class TimerRollup implements Rollup, IBasicRollup {
      * the value would be 5.
      */
     private int sampleCount = 0;
-    private AbstractRollupStat min = new MinValue();
-    private AbstractRollupStat max = new MaxValue();
-    private AbstractRollupStat average = new Average();
-    private AbstractRollupStat variance = new Variance();
+    private MinValue min = new MinValue();
+    private MaxValue max = new MaxValue();
+    private Average average = new Average();
+    private Variance variance = new Variance();
     
     // to support percentiles, we will overload the count and treat it as sum.
     private Map<String, Percentile> percentiles = new HashMap<String, Percentile>();
@@ -53,8 +53,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
         this.sampleCount = sampleCount;
         return this;
     }
-    
-    public TimerRollup withMinValue(AbstractRollupStat min) {
+
+    public TimerRollup withMinValue(MinValue min) {
         this.min = min;
         return this;
     }
@@ -63,8 +63,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
         AbstractRollupStat.set(this.min, num);
         return this;
     }
-    
-    public TimerRollup withMaxValue(AbstractRollupStat max) {
+
+    public TimerRollup withMaxValue(MaxValue max) {
         this.max = max;
         return this;
     }
@@ -73,8 +73,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
         AbstractRollupStat.set(this.max, num);
         return this;
     }
-    
-    public TimerRollup withAverage(AbstractRollupStat average) {
+
+    public TimerRollup withAverage(Average average) {
         this.average = average;
         return this;
     }
@@ -83,8 +83,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
         AbstractRollupStat.set(this.average, average);
         return this;
     }
-    
-    public TimerRollup withVariance(AbstractRollupStat variance) {
+
+    public TimerRollup withVariance(Variance variance) {
         this.variance = variance;
         return this;
     }
@@ -116,7 +116,17 @@ public class TimerRollup implements Rollup, IBasicRollup {
             // longs and doubles only please.
             this.mean = maybePromote(mean);
         }
-        
+
+        @SuppressWarnings("unused") // used by Jackson
+        public Percentile(Double mean) {
+            this.mean = maybePromote(mean);
+        }
+
+        @SuppressWarnings("unused") // used by Jackson
+        public Percentile(Long mean) {
+            this.mean = maybePromote(mean);
+        }
+
         public boolean equals(Object obj) {
             if (!(obj instanceof Percentile)) return false;
             Percentile other = (Percentile)obj;

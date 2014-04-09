@@ -33,6 +33,18 @@ public class Average extends AbstractRollupStat {
 
     }
 
+    @SuppressWarnings("unused") // used by Jackson
+    public Average(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    @SuppressWarnings("unused") // used by Jackson
+    public Average(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
     public Average(int count, Object value) {
         this();
 

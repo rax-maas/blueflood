@@ -29,6 +29,18 @@ public class MinValue extends AbstractRollupStat {
         this.setLongValue(0);
     }
 
+    @SuppressWarnings("unused") // used by Jackson
+    public MinValue(long value) {
+        this();
+        this.setLongValue(value);
+    }
+
+    @SuppressWarnings("unused") // used by Jackson
+    public MinValue(double value) {
+        this();
+        this.setDoubleValue(value);
+    }
+
     @Override
     void handleFullResMetric(Object o) throws RuntimeException {
         if (o instanceof Double) {
