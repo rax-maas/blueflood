@@ -2,7 +2,6 @@ language: java
 jdk:
   - oraclejdk7
   - openjdk7
-  - openjdk6
 
 install:
   - mvn install -Dmaven.test.skip
@@ -10,6 +9,7 @@ install:
 script: 
   - mvn verify -Pcassandra-1.1
   - mvn verify -Pcassandra-1.2,skip-unit-tests
+  - mvn verify -Pcassandra-2.0,skip-unit-tests
 
 notifications:
   irc: "irc.freenode.net#blueflood"
