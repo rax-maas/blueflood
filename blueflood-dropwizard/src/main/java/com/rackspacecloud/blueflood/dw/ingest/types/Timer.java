@@ -17,7 +17,7 @@ public class Timer {
     private final Number avg;
     private final Number median;
     private final Number std;
-    private final Map<String, Percentile> percentiles;
+    private final Map<String, Number> percentiles;
     private final Map<String, Number> histogram;
     private final String tenant;
     
@@ -31,7 +31,7 @@ public class Timer {
             @JsonProperty("avg") Number avg,
             @JsonProperty("median") Number median,
             @JsonProperty("std") Number std,
-            @JsonProperty("percentiles") Map<String, Percentile> percentiles,
+            @JsonProperty("percentiles") Map<String, Number> percentiles,
             @JsonProperty("histogram") Map<String, Number> histogram,
             @JsonProperty("tenant") String tenant) {
         this.name = name;
@@ -76,7 +76,7 @@ public class Timer {
     public Number getStd() { return std; }
     
     @JsonProperty
-    public Map<String, Percentile> getPercentiles() { return Bundle.safeUnmodifiableMap(percentiles); }
+    public Map<String, Number> getPercentiles() { return Bundle.safeUnmodifiableMap(percentiles); }
     
     @JsonProperty
     public Map<String, Number> getHistogram() { return Bundle.safeUnmodifiableMap(histogram); }

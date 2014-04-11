@@ -68,7 +68,7 @@ public class Marshal {
             Locator locator = Locator.createLocatorFromPathComponents(tenantId == null ? g.getTenant() : tenantId, splitForLocator(g.getName()));
             Points<SimpleNumber> points = new Points<SimpleNumber>();
             points.add(new Points.Point<SimpleNumber>(bundle.getCollectionTime(), new SimpleNumber(g.getValue())));
-            Rollup rollup = GaugeRollup.buildRollupFromRawSamples(points);
+            Rollup rollup = GaugeRollup.buildFromRawSamples(points);
             PreaggregatedMetric metric = new PreaggregatedMetric(bundle.getCollectionTime(), locator, DEFAULT_PREAG_TTL, rollup);
             metrics.add(metric);
         }
@@ -106,11 +106,8 @@ public class Marshal {
                     .withVariance(Math.pow(t.getStd().doubleValue(), 2d));
             
             // percentiles.
-            for (Map.Entry<String, Percentile> entry : t.getPercentiles().entrySet()) {
-                // discard max and sum
-                if (entry.getValue().getAvg() != null) {
-                    rollup.setPercentile(entry.getKey(), entry.getValue().getAvg());
-                }
+            for (Map.Entry<String, Number> entry : t.getPercentiles().entrySet()) {
+                rollup.setPercentile(entry.getKey(), entry.getValue());
             }
             
             // histograms are ignored.

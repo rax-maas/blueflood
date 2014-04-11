@@ -11,7 +11,7 @@ public class Gauge {
     private final Number value;
     private final String tenant;
     
-    public Gauge(@JsonProperty("name") String name, @JsonProperty("name") Number value, @JsonProperty("tenant") String tenant) {
+    public Gauge(@JsonProperty("name") String name, @JsonProperty("value") Number value, @JsonProperty("tenant") String tenant) {
         this.name = name;
         this.value = value;
         this.tenant = tenant;
