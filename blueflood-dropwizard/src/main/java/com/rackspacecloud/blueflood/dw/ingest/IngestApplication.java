@@ -69,7 +69,7 @@ public class IngestApplication extends Application<IngestConfiguration> {
         
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
-        final BasicIngestResource basicIngestResource = new BasicIngestResource(rollupContext, writer);
+        final BasicIngestResource basicIngestResource = new BasicIngestResource(ingestConfiguration, rollupContext, writer);
         
         // register resources.
         environment.healthChecks().register("not-doa", notDOA);

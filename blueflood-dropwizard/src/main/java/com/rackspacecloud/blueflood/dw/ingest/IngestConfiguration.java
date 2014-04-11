@@ -32,7 +32,8 @@ public class IngestConfiguration extends Configuration {
     @NotEmpty 
     private String metricsWriterClass = "com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter";
     
-    
+    // this tenants can perform scoped ingestion.
+    private List<String> scopingTenants = Lists.newArrayList();
     
     @JsonProperty
     public String getHost() { return host; }
@@ -93,4 +94,10 @@ public class IngestConfiguration extends Configuration {
 
     @JsonProperty
     public void setShardPullPeriod(int shardPullPeriod) { this.shardPullPeriod = shardPullPeriod; }
+
+    @JsonProperty
+    public List<String> getScopingTenants() { return scopingTenants; }
+
+    @JsonProperty
+    public void setScopingTenants(List<String> scopingTenants) { this.scopingTenants = scopingTenants; }
 }

@@ -4,3 +4,6 @@ cassandraHosts:
  - 127.0.0.1:19180
  - 127.0.0.1:19180
 metricsWriterClass: "com.rackspacecloud.blueflood.dw.fake.FakeMetricsWriter"
+scopingTenants:
+ - CAN_SCOPE_01
+ - CAN_SCOPE_02

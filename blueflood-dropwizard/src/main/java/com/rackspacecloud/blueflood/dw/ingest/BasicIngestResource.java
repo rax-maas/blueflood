@@ -31,11 +31,13 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class BasicIngestResource {
     
-    private IMetricsWriter writer;
-    private ScheduleContext context;
+    private final IMetricsWriter writer;
+    private final ScheduleContext context;
+    private final IngestConfiguration configuration;
     
     
-    public BasicIngestResource(ScheduleContext context, IMetricsWriter writer) {
+    public BasicIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer) {
+        this.configuration = configuration;
         this.context = context;
         this.writer = writer;
     }
@@ -80,7 +82,14 @@ public class BasicIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("basic/scoped")
-    public IngestResponseRepresentation saveBasicMultiTenantMetrics(final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
+    public IngestResponseRepresentation saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
+        
+        if (!configuration.getScopingTenants().contains(tenantId)) {
+            throw new WebApplicationException(Response
+                    .status(Response.Status.FORBIDDEN)
+                    .header("X-Reason", "Tenant does not have rights to this resource")
+                    .build());
+        }
         
         // if any metrics are missing a tenant, fail.
         for (BasicMetric bm : metrics) {
@@ -127,7 +136,14 @@ public class BasicIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("aggregated/scoped")
-    public IngestResponseRepresentation savePreagMultiTenantMetrics(final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
+    public IngestResponseRepresentation savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
+        
+        if (!configuration.getScopingTenants().contains(tenantId)) {
+            throw new WebApplicationException(Response
+                    .status(Response.Status.FORBIDDEN)
+                    .header("X-Reason", "Tenant does not have rights to this resource")
+                    .build());
+        }
         
         // if any metric is missing a tenant, fail.
         for (Gauge g : bundle.getGauges()) {
