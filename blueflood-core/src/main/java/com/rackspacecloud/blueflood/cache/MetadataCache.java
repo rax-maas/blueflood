@@ -19,10 +19,9 @@ package com.rackspacecloud.blueflood.cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -42,6 +42,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
+    private MetadataIO io = new AstyanaxMetadataIO();
     private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
@@ -73,6 +74,11 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 .recordStats()
                 .build(loader);
     }
+    
+    public void setIO(MetadataIO io) {
+        this.io = io;
+        cache.invalidateAll();
+    }
 
     public static MetadataCache getInstance() {
         return INSTANCE;
@@ -84,21 +90,6 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
     public static MetadataCache createLoadingCacheInstance(TimeValue expiration, int concurrency) {
         return new MetadataCache(expiration, concurrency);
-    }
-
-    public static MetadataCache createInMemoryCacheInstance(TimeValue expiration, int concurrency) {
-        return new MetadataCache(expiration, concurrency) {
-            @Override
-            public void databasePut(Locator locator, String key, String value) throws CacheException {
-                // no op.
-            }
-
-            @Override
-            public String databaseLoad(Locator locator, String key) throws CacheException {
-                // nothing there.
-                return NULL;
-            }
-        };
     }
 
     public boolean containsKey(Locator locator, String key) {
@@ -148,21 +139,19 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         cache.invalidate(new CacheKey(locator, key));
     }
 
-    public void databasePut(Locator locator, String key, String value) throws CacheException {
+    private void databasePut(Locator locator, String key, String value) throws CacheException {
         try {
-            AstyanaxWriter.getInstance().writeMetadataValue(locator, key, value);
-        } catch (RuntimeException ex) {
-            throw new CacheException(ex);
-        } catch (ConnectionException ex) {
+            io.write(locator, key, value);
+        } catch (IOException ex) {
             throw new CacheException(ex);
         }
     }
 
     // implements the CacheLoader interface.
-    public String databaseLoad(Locator locator, String key) throws CacheException {
+    private String databaseLoad(Locator locator, String key) throws CacheException {
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
-            Map<String, String> metadata = AstyanaxReader.getInstance().getMetadataValues(locator);
+            Map<String, String> metadata = io.getAllValues(locator);
             if (metadata == null || metadata.isEmpty()) {
                 cache.put(cacheKey, NULL);
                 return NULL;
@@ -183,7 +172,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             }
 
             return value;
-        } catch (RuntimeException ex) {
+        } catch (IOException ex) {
             throw new CacheException(ex);
         }
     }
