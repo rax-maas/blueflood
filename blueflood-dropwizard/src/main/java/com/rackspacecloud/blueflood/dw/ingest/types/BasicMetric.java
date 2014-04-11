@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.dw.ingest;
+package com.rackspacecloud.blueflood.dw.ingest.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,6 +15,9 @@ public class BasicMetric {
     private List<String> tags;
     private Map<String, String> metadata;
     private String unit = null;
+    
+    // only used in multi-tenant ingestion.
+    private String tenant;
 
     public BasicMetric() {
     }
@@ -76,4 +79,10 @@ public class BasicMetric {
 
     @JsonProperty
     public void setUnit(String unit) { this.unit = unit; }
+
+    @JsonProperty
+    public String getTenant() { return tenant; }
+
+    @JsonProperty
+    public void setTenant(String tenant) { this.tenant = tenant; }
 }
