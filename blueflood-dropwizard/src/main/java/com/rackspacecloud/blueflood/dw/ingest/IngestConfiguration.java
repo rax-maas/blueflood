@@ -19,6 +19,9 @@ public class IngestConfiguration extends Configuration {
     @NotEmpty
     private List<String> cassandraHosts = Lists.newArrayList("127.0.0.1:19180");
     
+    @NotEmpty 
+    private String metricsWriterClass = "com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter";
+    
     @JsonProperty
     public String getHost() { return host; }
     
@@ -36,6 +39,10 @@ public class IngestConfiguration extends Configuration {
     
     @JsonProperty
     public List<String> getCassandraHosts() { return Collections.unmodifiableList(cassandraHosts); }
-    
-    
+
+    @JsonProperty
+    public String getMetricsWriterClass() { return metricsWriterClass; }
+
+    @JsonProperty
+    public void setMetricsWriterClass(String metricsWriterClass) { this.metricsWriterClass = metricsWriterClass; }
 }

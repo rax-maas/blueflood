@@ -14,6 +14,7 @@ public class BasicMetric {
     private String metricName;
     private List<String> tags;
     private Map<String, String> metadata;
+    private String unit = null;
 
     public BasicMetric() {
     }
@@ -69,4 +70,10 @@ public class BasicMetric {
 
     @JsonProperty
     public void setMetadata(Map<String, String> metadata) { this.metadata = metadata; }
+
+    @JsonProperty
+    public String getUnit() { return unit; }
+
+    @JsonProperty
+    public void setUnit(String unit) { this.unit = unit; }
 }

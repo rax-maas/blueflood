@@ -35,6 +35,8 @@
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
+                <!-- exclude our classes for now. makes for easier debugging. -->
+                <exclude>com/rackspacecloud/blueflood/dw/**</exclude>
               </excludes>
             </filter>
           </filters>

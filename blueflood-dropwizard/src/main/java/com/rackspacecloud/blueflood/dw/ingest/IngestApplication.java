@@ -1,6 +1,8 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
-import com.sun.jersey.api.core.ResourceConfig;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.utils.Util;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -17,6 +19,7 @@ public class IngestApplication extends Application<IngestConfiguration> {
         for (String className : preLoadClasses) {
             Class.forName(className);
         }
+        
         
         new IngestApplication().run(args);
     }
@@ -36,10 +39,17 @@ public class IngestApplication extends Application<IngestConfiguration> {
 
     @Override
     public void run(IngestConfiguration ingestConfiguration, Environment environment) throws Exception {
+        final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
+        ClassLoader loader = IMetricsWriter.class.getClassLoader();
+        Class writerImpl = loader.loadClass(ingestConfiguration.getMetricsWriterClass());
+        IMetricsWriter writer = (IMetricsWriter) writerImpl.newInstance();
+        
+        //todo: start shard state push/pull service.
+        //todo: abstraction for shard state read/write
         
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
-        final BasicIngestResource basicIngestResource = new BasicIngestResource();
+        final BasicIngestResource basicIngestResource = new BasicIngestResource(rollupContext, writer);
         
         // register resources.
         environment.healthChecks().register("not-doa", notDOA);
