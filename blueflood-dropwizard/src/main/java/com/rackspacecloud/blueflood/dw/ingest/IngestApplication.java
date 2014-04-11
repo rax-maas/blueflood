@@ -1,6 +1,9 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
+import com.google.common.base.Joiner;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.utils.Util;
 import io.dropwizard.Application;
@@ -39,6 +42,20 @@ public class IngestApplication extends Application<IngestConfiguration> {
 
     @Override
     public void run(IngestConfiguration ingestConfiguration, Environment environment) throws Exception {
+        
+        // a little bit of backwards compatibility. Take values out of the configuration for this webapp and force them
+        // into the traditional blueflood configuration.
+        System.setProperty(CoreConfig.CASSANDRA_HOSTS.name(), Joiner.on(",").join(ingestConfiguration.getCassandraHosts()));
+        System.setProperty(CoreConfig.CASSANDRA_REQUEST_TIMEOUT.name(), Integer.toString(ingestConfiguration.getCassandraRequestTimeout()));
+        System.setProperty(CoreConfig.CASSANDRA_MAX_RETRIES.name(), Integer.toString(ingestConfiguration.getCassandraMaxRetries()));
+        System.setProperty(CoreConfig.DEFAULT_CASSANDRA_PORT.name(), Integer.toString(ingestConfiguration.getCassandraDefaultPort()));
+        System.setProperty(CoreConfig.ROLLUP_KEYSPACE.name(), ingestConfiguration.getRollupKeyspace());
+        System.setProperty(CoreConfig.SHARD_PUSH_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPushPeriod()));
+        System.setProperty(CoreConfig.SHARD_PULL_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPullPeriod()));
+        System.setProperty(CoreConfig.IMETRICS_WRITER.name(), ingestConfiguration.getMetricsWriterClass());
+        Configuration.getInstance().init();
+        
+        
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
         ClassLoader loader = IMetricsWriter.class.getClassLoader();
         Class writerImpl = loader.loadClass(ingestConfiguration.getMetricsWriterClass());
