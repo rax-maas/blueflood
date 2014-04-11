@@ -42,24 +42,6 @@ public class BasicIngestResource {
         this.writer = writer;
     }
     
-    // gotta love javas type erasure...
-    
-    private void updateContext1(Collection<IMetric> metrics) {
-        ShardUpdates updates = new ShardUpdates();
-        for (IMetric m : metrics) {
-            updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
-        }
-        updates.flush(context);
-    }
-    
-    private void updateContext2(Collection<Metric> metrics) {
-        ShardUpdates updates = new ShardUpdates();
-        for (IMetric m : metrics) {
-            updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
-        }
-        updates.flush(context);
-    }
-    
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
@@ -67,8 +49,10 @@ public class BasicIngestResource {
     public IngestResponseRepresentation saveBasicMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         try {
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, tenantId);
+            preProcess(newMetrics);
             writer.insertFullMetrics(newMetrics);
-            updateContext2(newMetrics);
+            updateContext(newMetrics);
+            postProcess(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -103,8 +87,10 @@ public class BasicIngestResource {
         
         try {
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, null);
+            preProcess(newMetrics);
             writer.insertFullMetrics(newMetrics);
-            updateContext2(newMetrics);
+            updateContext(newMetrics);
+            postProcess(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -121,8 +107,10 @@ public class BasicIngestResource {
     public IngestResponseRepresentation savePreagMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         try {
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, tenantId);
+            preProcess(newMetrics);
             writer.insertPreaggreatedMetrics(newMetrics);
-            updateContext1(newMetrics);
+            updateContext(newMetrics);
+            postProcess(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -184,8 +172,10 @@ public class BasicIngestResource {
         
         try {
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, null);
+            preProcess(newMetrics);
             writer.insertPreaggreatedMetrics(newMetrics);
-            updateContext1(newMetrics);
+            updateContext(newMetrics);
+            postProcess(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -194,4 +184,15 @@ public class BasicIngestResource {
         
         return new IngestResponseRepresentation("OK accepted");
     }
+    
+    private void updateContext(Collection<? extends IMetric> metrics) {
+        ShardUpdates updates = new ShardUpdates();
+        for (IMetric m : metrics) {
+            updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
+        }
+        updates.flush(context);
+    }
+    
+    public void preProcess(Collection<? extends IMetric> metrics) {}
+    public void postProcess(Collection<? extends IMetric> metrics) {}
 }
