@@ -3,7 +3,6 @@
 
 Here's what still needs to be done:
 
-- Shard state managmement
 - Instrumentation
 
 ## Building

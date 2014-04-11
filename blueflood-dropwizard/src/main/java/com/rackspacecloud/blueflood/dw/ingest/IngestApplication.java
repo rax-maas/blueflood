@@ -53,16 +53,19 @@ public class IngestApplication extends Application<IngestConfiguration> {
         System.setProperty(CoreConfig.SHARD_PUSH_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPushPeriod()));
         System.setProperty(CoreConfig.SHARD_PULL_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPullPeriod()));
         System.setProperty(CoreConfig.IMETRICS_WRITER.name(), ingestConfiguration.getMetricsWriterClass());
+        System.setProperty(CoreConfig.INGEST_MODE.name(), Boolean.TRUE.toString());
         Configuration.getInstance().init();
         
-        
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
+        
+        // construct the ingestion writer.
         ClassLoader loader = IMetricsWriter.class.getClassLoader();
         Class writerImpl = loader.loadClass(ingestConfiguration.getMetricsWriterClass());
         IMetricsWriter writer = (IMetricsWriter) writerImpl.newInstance();
         
-        //todo: start shard state push/pull service.
-        //todo: abstraction for shard state read/write
+        // state management for active shards, slots, etc.
+        StateManager stateManager = new StateManager(rollupContext);
+        environment.lifecycle().manage(stateManager);
         
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();

@@ -10,6 +10,9 @@ import com.rackspacecloud.blueflood.dw.ingest.types.Set;
 import com.rackspacecloud.blueflood.dw.ingest.types.Timer;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.Util;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -21,6 +24,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 @Path("/v1.0/{tenantId}/ingest")
@@ -36,13 +40,33 @@ public class BasicIngestResource {
         this.writer = writer;
     }
     
+    // gotta love javas type erasure...
+    
+    private void updateContext1(Collection<IMetric> metrics) {
+        ShardUpdates updates = new ShardUpdates();
+        for (IMetric m : metrics) {
+            updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
+        }
+        updates.flush(context);
+    }
+    
+    private void updateContext2(Collection<Metric> metrics) {
+        ShardUpdates updates = new ShardUpdates();
+        for (IMetric m : metrics) {
+            updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
+        }
+        updates.flush(context);
+    }
+    
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("basic")
     public IngestResponseRepresentation saveBasicMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         try {
-            writer.insertFullMetrics(Marshal.remarshal(metrics, tenantId));
+            Collection<Metric> newMetrics = Marshal.remarshal(metrics, tenantId);
+            writer.insertFullMetrics(newMetrics);
+            updateContext2(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -69,7 +93,9 @@ public class BasicIngestResource {
         }
         
         try {
-            writer.insertFullMetrics(Marshal.remarshal(metrics, null));
+            Collection<Metric> newMetrics = Marshal.remarshal(metrics, null);
+            writer.insertFullMetrics(newMetrics);
+            updateContext2(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -85,7 +111,9 @@ public class BasicIngestResource {
     @Path("aggregated")
     public IngestResponseRepresentation savePreagMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         try {
-            writer.insertPreaggreatedMetrics(Marshal.remarshal(bundle, tenantId));
+            Collection<IMetric> newMetrics = Marshal.remarshal(bundle, tenantId);
+            writer.insertPreaggreatedMetrics(newMetrics);
+            updateContext1(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
@@ -139,7 +167,9 @@ public class BasicIngestResource {
         }
         
         try {
-            writer.insertPreaggreatedMetrics(Marshal.remarshal(bundle, null));
+            Collection<IMetric> newMetrics = Marshal.remarshal(bundle, null);
+            writer.insertPreaggreatedMetrics(newMetrics);
+            updateContext1(newMetrics);
         } catch (IOException ex) {
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
