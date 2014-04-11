@@ -29,9 +29,9 @@
     <module>blueflood-udp</module>
     <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
-    <module>blueflood-statsd</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
+    <module>blueflood-dropwizard</module>
   </modules>
 
   <description>
@@ -49,6 +49,7 @@
     <cassandra.skip>true</cassandra.skip>
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
+    <slf4j.version>1.7.6</slf4j.version>
   </properties>
 
   <build>

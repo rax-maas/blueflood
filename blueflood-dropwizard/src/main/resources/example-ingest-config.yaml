@@ -1,0 +1,5 @@
+host: localhost
+port: 19000
+cassandraHosts:
+ - 127.0.0.1:19180
+ - 127.0.0.1:19180
