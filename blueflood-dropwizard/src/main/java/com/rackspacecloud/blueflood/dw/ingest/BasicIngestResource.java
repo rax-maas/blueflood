@@ -39,8 +39,6 @@ public class BasicIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     public IngestResponseRepresentation storeMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
-        IngestResponseRepresentation response = new IngestResponseRepresentation();
-        
         try {
             writer.insertFullMetrics(remarshall(metrics, tenantId));
         } catch (IOException ex) {
@@ -48,7 +46,8 @@ public class BasicIngestResource {
         }
         
         // todo: block until the commitReceipt proves durable.
-        response.setMessage("OK accepted");
+        
+        IngestResponseRepresentation response = new IngestResponseRepresentation("OK accepted");
         return response;
     }
     
