@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Bundle {
-    private final long collectionTime;
+public class Bundle implements ICollectionTime {
+    private long collectionTime;
     private final List<Gauge> gauges;
     private final List<Counter> counters;
     private final List<Timer> timers;
@@ -33,6 +33,11 @@ public class Bundle {
     @JsonProperty
     public long getCollectionTime() {
         return collectionTime;
+    }
+    
+    @JsonProperty
+    public void setCollectionTime(long time) {
+        collectionTime = time;
     }
 
     @JsonProperty

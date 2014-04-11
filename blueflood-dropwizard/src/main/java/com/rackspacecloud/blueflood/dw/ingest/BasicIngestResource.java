@@ -5,6 +5,7 @@ import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
 import com.rackspacecloud.blueflood.dw.ingest.types.Bundle;
 import com.rackspacecloud.blueflood.dw.ingest.types.Counter;
 import com.rackspacecloud.blueflood.dw.ingest.types.Gauge;
+import com.rackspacecloud.blueflood.dw.ingest.types.ICollectionTime;
 import com.rackspacecloud.blueflood.dw.ingest.types.Marshal;
 import com.rackspacecloud.blueflood.dw.ingest.types.Set;
 import com.rackspacecloud.blueflood.dw.ingest.types.Timer;
@@ -48,6 +49,7 @@ public class BasicIngestResource {
     @Path("basic")
     public IngestResponseRepresentation saveBasicMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         try {
+            maybeForceCollectionTimes(System.currentTimeMillis(), metrics);
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, tenantId);
             preProcess(newMetrics);
             writer.insertFullMetrics(newMetrics);
@@ -86,6 +88,7 @@ public class BasicIngestResource {
         }
         
         try {
+            maybeForceCollectionTimes(System.currentTimeMillis(), metrics);
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, null);
             preProcess(newMetrics);
             writer.insertFullMetrics(newMetrics);
@@ -106,6 +109,7 @@ public class BasicIngestResource {
     @Path("aggregated")
     public IngestResponseRepresentation savePreagMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         try {
+            maybeForceCollectionTimes(System.currentTimeMillis(), bundle);
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, tenantId);
             preProcess(newMetrics);
             writer.insertPreaggreatedMetrics(newMetrics);
@@ -171,6 +175,7 @@ public class BasicIngestResource {
         }
         
         try {
+            maybeForceCollectionTimes(System.currentTimeMillis(), bundle);
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, null);
             preProcess(newMetrics);
             writer.insertPreaggreatedMetrics(newMetrics);
@@ -191,6 +196,22 @@ public class BasicIngestResource {
             updates.update(m.getCollectionTime(), Util.computeShard(m.getLocator().toString()));
         }
         updates.flush(context);
+    }
+    
+    private void maybeForceCollectionTimes(long when, Collection<? extends ICollectionTime> metrics) {
+        if (!configuration.getForceNewCollectionTime())
+            return;
+        
+        for (ICollectionTime metric : metrics) {
+            metric.setCollectionTime(when);
+        }
+    }
+    
+    private void maybeForceCollectionTimes(long when, ICollectionTime metric) {
+        if (!configuration.getForceNewCollectionTime())
+            return;
+        
+        metric.setCollectionTime(when);
     }
     
     public void preProcess(Collection<? extends IMetric> metrics) {}

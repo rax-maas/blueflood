@@ -32,6 +32,9 @@ public class IngestConfiguration extends Configuration {
     @NotEmpty 
     private String metricsWriterClass = "com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter";
     
+    // debug setting where the API endpoint ignore collection times passed in.
+    private boolean forceNewCollectionTime = false;
+    
     // this tenants can perform scoped ingestion.
     private List<String> scopingTenants = Lists.newArrayList();
     
@@ -100,4 +103,10 @@ public class IngestConfiguration extends Configuration {
 
     @JsonProperty
     public void setScopingTenants(List<String> scopingTenants) { this.scopingTenants = scopingTenants; }
+
+    @JsonProperty
+    public boolean getForceNewCollectionTime() { return forceNewCollectionTime; }
+
+    @JsonProperty
+    public void setforceNewCollectionTime(boolean forceNewCollectionTime) { this.forceNewCollectionTime = forceNewCollectionTime; }
 }

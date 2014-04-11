@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class BasicMetric {
+public class BasicMetric implements ICollectionTime {
 
     private long collectionTime;
     private int ttlInSeconds;
