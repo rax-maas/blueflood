@@ -70,10 +70,12 @@ public class IngestApplication extends Application<IngestConfiguration> {
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
         final BasicIngestResource basicIngestResource = new BasicIngestResource(ingestConfiguration, rollupContext, writer);
+        final LegacyBasicIngestResource legacyResource = new LegacyBasicIngestResource(ingestConfiguration, rollupContext, writer);
         
         // register resources.
         environment.healthChecks().register("not-doa", notDOA);
         environment.jersey().register(basicIngestResource);
+        environment.jersey().register(legacyResource);
         
         // set a filter that does the local durablity (later)
         //environment.jersey().enable(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS);

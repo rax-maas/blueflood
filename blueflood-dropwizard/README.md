@@ -5,6 +5,11 @@ Here's what still needs to be done:
 
 - Instrumentation
 
+Some things that would be totally awesome:
+
+- Java driver based implementation of IMetricsWriter. Eventually this could be accompanied by Java driver-backed
+  version of the MetadataCache class.
+
 ## Building
 
 JAVA_HOME=WHERE_YOUR_JAVA_7_LIVES mvn clean package -Pcassandra-1.2,skip-unit-tests,skip-integration-tests
