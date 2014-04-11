@@ -49,7 +49,7 @@ public class IngestApplication extends Application<IngestConfiguration> {
         System.setProperty(CoreConfig.CASSANDRA_REQUEST_TIMEOUT.name(), Integer.toString(ingestConfiguration.getCassandraRequestTimeout()));
         System.setProperty(CoreConfig.CASSANDRA_MAX_RETRIES.name(), Integer.toString(ingestConfiguration.getCassandraMaxRetries()));
         System.setProperty(CoreConfig.DEFAULT_CASSANDRA_PORT.name(), Integer.toString(ingestConfiguration.getCassandraDefaultPort()));
-        System.setProperty(CoreConfig.ROLLUP_KEYSPACE.name(), ingestConfiguration.getRollupKeyspace());
+        System.setProperty(CoreConfig.ROLLUP_KEYSPACE.name(), ingestConfiguration.getRollupKeyspace().toLowerCase());
         System.setProperty(CoreConfig.SHARD_PUSH_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPushPeriod()));
         System.setProperty(CoreConfig.SHARD_PULL_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPullPeriod()));
         System.setProperty(CoreConfig.IMETRICS_WRITER.name(), ingestConfiguration.getMetricsWriterClass());
