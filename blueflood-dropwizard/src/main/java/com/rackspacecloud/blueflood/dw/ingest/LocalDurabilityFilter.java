@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+/** at some point in the future this can send data to kafka, a commit log, whatever. */
 public class LocalDurabilityFilter implements ContainerRequestFilter {
     
     private static final Logger log = LoggerFactory.getLogger(LocalDurabilityFilter.class);
@@ -22,8 +23,6 @@ public class LocalDurabilityFilter implements ContainerRequestFilter {
     public LocalDurabilityFilter() {
         
     }
-    
-    
     
     @Override
     public ContainerRequest filter(ContainerRequest request) {
@@ -48,7 +47,7 @@ public class LocalDurabilityFilter implements ContainerRequestFilter {
                 
                 buf.flip();
                 // all of buf.remaining() is ready to be serialized.
-                // todo: send to the commit log, add the receipt as a header.
+                // todo: send to the durability object, add the receipt as a header.
                 
                 // we need to put the input back so it can be read.
                 request.setEntityInputStream(new ByteArrayInputStream(jsonBytes));
@@ -63,4 +62,6 @@ public class LocalDurabilityFilter implements ContainerRequestFilter {
         
         return request;
     }
+    
+    
 }

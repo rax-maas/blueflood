@@ -45,9 +45,9 @@ public class IngestApplication extends Application<IngestConfiguration> {
         environment.healthChecks().register("not-doa", notDOA);
         environment.jersey().register(basicIngestResource);
         
-        // set a filter that does the commit log.
-        environment.jersey().enable(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS);
-        environment.jersey().property(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, LocalDurabilityFilter.class.getName());
+        // set a filter that does the local durablity (later)
+        //environment.jersey().enable(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS);
+        //environment.jersey().property(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, LocalDurabilityFilter.class.getName());
         
 
     }

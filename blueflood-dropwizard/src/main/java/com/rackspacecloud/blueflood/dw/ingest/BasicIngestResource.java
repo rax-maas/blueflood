@@ -23,6 +23,10 @@ public class BasicIngestResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public IngestResponseRepresentation storeMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         IngestResponseRepresentation response = new IngestResponseRepresentation();
+        
+        // todo: asynchronously write to cassandra
+        
+        // todo: block until the commitReceipt proves durable.
         response.setMessage("OK good");
         return response;
     }
