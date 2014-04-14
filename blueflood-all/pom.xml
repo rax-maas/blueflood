@@ -72,12 +72,6 @@
     </dependency>
 
     <dependency>
-      <artifactId>blueflood-statsd</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <artifactId>blueflood-kafka</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
@@ -88,6 +82,14 @@
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
     </dependency>
+    
+    <dependency>
+      <artifactId>blueflood-io-datastax</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    
+    
   </dependencies>
 
 </project>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <parent>
+    <artifactId>blueflood</artifactId>
+    <groupId>com.rackspacecloud</groupId>
+    <version>2.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>Blueflood IO Bindings for Datastax Java Driver</name>
+  <artifactId>blueflood-io-datastax</artifactId>
+  <packaging>jar</packaging>
+
+
+  <build>
+    <plugins>
+
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <dependency>
+      <artifactId>blueflood-core</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+
+  </dependencies>
+
+</project>
