@@ -10,6 +10,8 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
+import java.io.IOException;
+
 
 public class IngestApplication extends Application<IngestConfiguration> {
     private static final String NAME = "blueflood-ingest";
@@ -39,10 +41,9 @@ public class IngestApplication extends Application<IngestConfiguration> {
     @Override
     public void initialize(Bootstrap<IngestConfiguration> ingestConfigurationBootstrap) {
     }
-
-    @Override
-    public void run(IngestConfiguration ingestConfiguration, Environment environment) throws Exception {
-        
+    
+    // resets the traditional BF configuation object with values from the YAML configuration.
+    public static void overrideBluefloodConfiguration(IngestConfiguration ingestConfiguration) throws IOException {
         // a little bit of backwards compatibility. Take values out of the configuration for this webapp and force them
         // into the traditional blueflood configuration.
         System.setProperty(CoreConfig.CASSANDRA_HOSTS.name(), Joiner.on(",").join(ingestConfiguration.getCassandraHosts()));
@@ -55,7 +56,10 @@ public class IngestApplication extends Application<IngestConfiguration> {
         System.setProperty(CoreConfig.IMETRICS_WRITER.name(), ingestConfiguration.getMetricsWriterClass());
         System.setProperty(CoreConfig.INGEST_MODE.name(), Boolean.TRUE.toString());
         Configuration.getInstance().init();
-        
+    }
+
+    @Override
+    public void run(IngestConfiguration ingestConfiguration, Environment environment) throws Exception {
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
         
         // construct the ingestion writer.
