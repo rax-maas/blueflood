@@ -35,9 +35,6 @@ public class IngestConfiguration extends Configuration {
     // debug setting where the API endpoint ignore collection times passed in.
     private boolean forceNewCollectionTime = false;
     
-    // this tenants can perform scoped ingestion.
-    private List<String> scopingTenants = Lists.newArrayList();
-    
     @JsonProperty
     public String getHost() { return host; }
     
@@ -97,12 +94,6 @@ public class IngestConfiguration extends Configuration {
 
     @JsonProperty
     public void setShardPullPeriod(int shardPullPeriod) { this.shardPullPeriod = shardPullPeriod; }
-
-    @JsonProperty
-    public List<String> getScopingTenants() { return scopingTenants; }
-
-    @JsonProperty
-    public void setScopingTenants(List<String> scopingTenants) { this.scopingTenants = scopingTenants; }
 
     @JsonProperty
     public boolean getForceNewCollectionTime() { return forceNewCollectionTime; }

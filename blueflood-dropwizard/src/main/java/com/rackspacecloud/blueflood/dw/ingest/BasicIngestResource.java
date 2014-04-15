@@ -70,13 +70,6 @@ public class BasicIngestResource {
     @Path("basic/scoped")
     public IngestResponseRepresentation saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         
-        if (!configuration.getScopingTenants().contains(tenantId)) {
-            throw new WebApplicationException(Response
-                    .status(Response.Status.FORBIDDEN)
-                    .header("X-Reason", "Tenant does not have rights to this resource")
-                    .build());
-        }
-        
         // if any metrics are missing a tenant, fail.
         for (BasicMetric bm : metrics) {
             if (bm.getTenant() == null || bm.getTenant().trim().length() == 0) {
@@ -129,13 +122,6 @@ public class BasicIngestResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("aggregated/scoped")
     public IngestResponseRepresentation savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
-        
-        if (!configuration.getScopingTenants().contains(tenantId)) {
-            throw new WebApplicationException(Response
-                    .status(Response.Status.FORBIDDEN)
-                    .header("X-Reason", "Tenant does not have rights to this resource")
-                    .build());
-        }
         
         // if any metric is missing a tenant, fail.
         for (Gauge g : bundle.getGauges()) {
