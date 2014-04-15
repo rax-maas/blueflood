@@ -21,6 +21,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
 
+@Deprecated
 @Path("/v1.0/{tenantId}/experimental/metrics")
 @Produces(MediaType.APPLICATION_JSON)
 public class LegacyBasicIngestResource extends BasicIngestResource {
