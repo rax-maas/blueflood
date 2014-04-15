@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.google.common.base.Joiner;
+import com.rackspacecloud.blueflood.dw.ingest.types.MultiTenantIngestResource;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -74,12 +75,12 @@ public class IngestApplication extends Application<IngestConfiguration> {
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
         final BasicIngestResource basicIngestResource = new BasicIngestResource(ingestConfiguration, rollupContext, writer);
-        final LegacyBasicIngestResource legacyResource = new LegacyBasicIngestResource(ingestConfiguration, rollupContext, writer);
+        final MultiTenantIngestResource mtIngestResource = new MultiTenantIngestResource(ingestConfiguration, rollupContext, writer);
         
         // register resources.
         environment.healthChecks().register("not-doa", notDOA);
         environment.jersey().register(basicIngestResource);
-        environment.jersey().register(legacyResource);
+        environment.jersey().register(mtIngestResource);
         
         // set a filter that does the local durablity (later)
         //environment.jersey().enable(ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS);
