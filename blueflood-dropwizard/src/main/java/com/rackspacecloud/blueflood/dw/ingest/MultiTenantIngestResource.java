@@ -1,8 +1,17 @@
-package com.rackspacecloud.blueflood.dw.ingest.types;
+package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.codahale.metrics.annotation.Timed;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.dw.ingest.AbstractIngestResource;
 import com.rackspacecloud.blueflood.dw.ingest.IngestConfiguration;
 import com.rackspacecloud.blueflood.dw.ingest.IngestResponseRepresentation;
+import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
+import com.rackspacecloud.blueflood.dw.ingest.types.Bundle;
+import com.rackspacecloud.blueflood.dw.ingest.types.Counter;
+import com.rackspacecloud.blueflood.dw.ingest.types.Gauge;
+import com.rackspacecloud.blueflood.dw.ingest.types.Marshal;
+import com.rackspacecloud.blueflood.dw.ingest.types.Set;
+import com.rackspacecloud.blueflood.dw.ingest.types.Timer;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -23,8 +32,8 @@ import java.util.List;
 @Path("/2.0/ingest")
 public class MultiTenantIngestResource extends AbstractIngestResource {
 
-    public MultiTenantIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer) {
-        super(configuration, context, writer);
+    public MultiTenantIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer, MetadataCache cache) {
+        super(configuration, context, writer, cache);
     }
 
     @POST
@@ -46,6 +55,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         try {
             maybeForceCollectionTimes(System.currentTimeMillis(), metrics);
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, null);
+            processTypeAndUnit(newMetrics);
             preProcess(newMetrics);
             insertFullMetrics(newMetrics);
             updateContext(newMetrics);

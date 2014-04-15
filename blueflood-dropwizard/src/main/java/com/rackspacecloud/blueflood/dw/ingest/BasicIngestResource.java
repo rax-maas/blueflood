@@ -1,20 +1,14 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.codahale.metrics.annotation.Timed;
-import com.rackspacecloud.blueflood.dw.ingest.types.AbstractIngestResource;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
 import com.rackspacecloud.blueflood.dw.ingest.types.Bundle;
-import com.rackspacecloud.blueflood.dw.ingest.types.Counter;
-import com.rackspacecloud.blueflood.dw.ingest.types.Gauge;
-import com.rackspacecloud.blueflood.dw.ingest.types.ICollectionTime;
 import com.rackspacecloud.blueflood.dw.ingest.types.Marshal;
-import com.rackspacecloud.blueflood.dw.ingest.types.Set;
-import com.rackspacecloud.blueflood.dw.ingest.types.Timer;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.utils.Util;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -33,8 +27,8 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class BasicIngestResource extends AbstractIngestResource {
     
-    public BasicIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer) {
-        super(configuration, context, writer);
+    public BasicIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer, MetadataCache cache) {
+        super(configuration, context, writer, cache);
     }
     
     @POST
@@ -45,6 +39,7 @@ public class BasicIngestResource extends AbstractIngestResource {
         try {
             maybeForceCollectionTimes(System.currentTimeMillis(), metrics);
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, tenantId);
+            processTypeAndUnit(newMetrics);
             preProcess(newMetrics);
             insertFullMetrics(newMetrics);
             updateContext(newMetrics);

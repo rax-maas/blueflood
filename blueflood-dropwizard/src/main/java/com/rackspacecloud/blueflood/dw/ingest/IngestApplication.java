@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.google.common.base.Joiner;
-import com.rackspacecloud.blueflood.dw.ingest.types.MultiTenantIngestResource;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -72,10 +72,20 @@ public class IngestApplication extends Application<IngestConfiguration> {
         StateManager stateManager = new StateManager(rollupContext);
         environment.lifecycle().manage(stateManager);
         
+        MetadataCache cache = MetadataCache.getInstance();
+        
         // create resources.
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
-        final BasicIngestResource basicIngestResource = new BasicIngestResource(ingestConfiguration, rollupContext, writer);
-        final MultiTenantIngestResource mtIngestResource = new MultiTenantIngestResource(ingestConfiguration, rollupContext, writer);
+        final BasicIngestResource basicIngestResource = new BasicIngestResource(
+                ingestConfiguration,
+                rollupContext,
+                writer,
+                cache);
+        final MultiTenantIngestResource mtIngestResource = new MultiTenantIngestResource(
+                ingestConfiguration,
+                rollupContext,
+                writer,
+                cache);
         
         // register resources.
         environment.healthChecks().register("not-doa", notDOA);
