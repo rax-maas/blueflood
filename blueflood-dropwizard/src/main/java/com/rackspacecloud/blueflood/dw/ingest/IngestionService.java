@@ -90,7 +90,8 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
         }     
     }
     
-    private static String makeSafeYamlList(String s, String delimiter) {
+    // todo: move to common place.
+    public static String makeSafeYamlList(String s, String delimiter) {
         String[] parts = s.split(delimiter, -1);
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
