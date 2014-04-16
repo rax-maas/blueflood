@@ -18,12 +18,18 @@ import java.util.Map;
 
 public class IngestionService implements com.rackspacecloud.blueflood.service.IngestionService {
     private static final String YAML = 
-            "host: %s\n"+
-            "port: %d\n"+
-            "cassandraHosts:[%s],\n"+
+            "server:\n"+
+            "  applicationConnectors:\n"+
+            "    - type: http\n"+
+            "      bindHost: %s\n"+
+            "      port: %s\n"+
+            "  adminConnectors:\n"+
+            "    - type: http\n"+
+            "      bindHost: %s\n"+
+            "      port: %s\n"+
+            "cassandraHosts: [%s]\n"+
             "rollupKeyspace: %s\n"+
             "metricsWriterClass: \"%s\"\n"+
-            "scopingTenants:[%s]\n"+
             "forceNewCollectionTime: %s";
 
     public IngestionService() {
@@ -45,10 +51,11 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
                         // gotta use strings, because I don't want to depend on the http module.
                         config.getStringProperty("HTTP_INGESTION_HOST"),
                         config.getStringProperty("HTTP_INGESTION_PORT"),
-                        config.getStringProperty(CoreConfig.CASSANDRA_HOSTS),
+                        config.getStringProperty("HTTP_INGESTION_HOST"),
+                        Integer.toString(Integer.parseInt(config.getStringProperty("HTTP_INGESTION_PORT"))+1),
+                        makeSafeYamlList(config.getStringProperty(CoreConfig.CASSANDRA_HOSTS), ","),
                         config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE),
                         config.getStringProperty(CoreConfig.IMETRICS_WRITER),
-                        "THERE_ARE_NONE",
                         "false");
                 return new ByteArrayInputStream(replaced.getBytes(Charsets.UTF_8));
             }
@@ -61,6 +68,7 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
         //namespaceAttrs.put("file", null);
         namespaceAttrs.put("command", "server");
         namespaceAttrs.put("version", null);
+        namespaceAttrs.put("file", "/this/path/does/not/matter");
         Namespace namespace = new Namespace(namespaceAttrs);
         
         ServerCommand<IngestConfiguration> serverCommand = new ServerCommand<IngestConfiguration>(ingestApplication);
@@ -71,5 +79,18 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
             throw new RuntimeException(ex);
         }
            
+    }
+    
+    private static String makeSafeYamlList(String s, String delimiter) {
+        String[] parts = s.split(delimiter, -1);
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (sb.length() == 0) {
+                sb = sb.append(String.format("\"%s\"", part));
+            } else {
+                sb = sb.append(String.format(",\"%s\"", part));
+            }
+        }
+        return sb.toString();
     }
 }

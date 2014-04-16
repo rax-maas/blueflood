@@ -10,12 +10,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class IngestConfiguration extends Configuration {
-    
-    private int port = 19000;
-    
-    @NotEmpty
-    private String host = "localhost";
-    
     @NotEmpty
     private List<String> cassandraHosts = Lists.newArrayList("127.0.0.1:19180");
     
@@ -34,18 +28,7 @@ public class IngestConfiguration extends Configuration {
     
     // debug setting where the API endpoint ignore collection times passed in.
     private boolean forceNewCollectionTime = false;
-    
-    @JsonProperty
-    public String getHost() { return host; }
-    
-    @JsonProperty
-    public void setHost(String s) { this.host = s; }
-    
-    @JsonProperty
-    public int getPort() { return port; }
-    
-    @JsonProperty
-    public void setPort(int i) { this.port = i; }
+   
     
     @JsonProperty
     public void setCassandraHosts(List<String> l) { this.cassandraHosts = l; }
