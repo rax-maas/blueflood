@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.dw.ingest;
+package com.rackspacecloud.blueflood.dw;
 
 import com.codahale.metrics.health.HealthCheck;
 
