@@ -1,8 +1,5 @@
 package com.rackspacecloud.blueflood.dw.query;
 
-import com.fasterxml.jackson.databind.ser.BeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.PropertyFilter;
 import com.rackspacecloud.blueflood.dw.NotDOAHealthCheck;
 import com.rackspacecloud.blueflood.dw.StateManager;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -40,11 +37,11 @@ public class QueryApplication extends Application<QueryConfiguration> {
         environment.getObjectMapper().setFilters(new MetricFilterProvider());
         
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
-        final SingleQueryResource singleQueryResource = new SingleQueryResource();
+        final QueryResource queryResource = new QueryResource();
         
         // register
         environment.healthChecks().register("not-doa", notDOA);
-        environment.jersey().register(singleQueryResource);
+        environment.jersey().register(queryResource);
         
     }
 }
