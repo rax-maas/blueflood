@@ -61,7 +61,6 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
             }
         });
         
-        
         ingestApplication.initialize(bootstrap);
         
         final Map<String, Object> namespaceAttrs = new HashMap<String, Object>();
@@ -77,8 +76,7 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
             serverCommand.run(bootstrap, namespace);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
-        }
-           
+        }     
     }
     
     private static String makeSafeYamlList(String s, String delimiter) {
