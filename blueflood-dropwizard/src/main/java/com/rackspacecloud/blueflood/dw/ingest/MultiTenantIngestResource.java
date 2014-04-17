@@ -39,7 +39,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("basic")
-    public SimpleResponse saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
+    public void saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         
         // if any metrics are missing a tenant, fail.
         for (BasicMetric bm : metrics) {
@@ -65,14 +65,14 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         // todo: block until the commitReceipt is verified durable.
         
-        return new SimpleResponse("OK accepted");
+        //return new SimpleResponse("OK accepted");
     }
     
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("aggregated")
-    public SimpleResponse savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
+    public void savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         
         // if any metric is missing a tenant, fail.
         for (Gauge g : bundle.getGauges()) {
@@ -124,6 +124,5 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         // todo: block for commit receipt.
         
-        return new SimpleResponse("OK accepted");
     }
 }

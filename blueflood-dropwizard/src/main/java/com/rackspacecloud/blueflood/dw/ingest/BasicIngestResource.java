@@ -35,7 +35,7 @@ public class BasicIngestResource extends AbstractIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("basic")
-    public SimpleResponse saveBasicMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
+    public void saveBasicMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         try {
             maybeForceCollectionTimes(System.currentTimeMillis(), metrics);
             Collection<Metric> newMetrics = Marshal.remarshal(metrics, tenantId);
@@ -49,15 +49,13 @@ public class BasicIngestResource extends AbstractIngestResource {
         }
         
         // todo: block until the commitReceipt proves durable.
-        
-        return new SimpleResponse("OK accepted");
     }
     
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("aggregated")
-    public SimpleResponse savePreagMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
+    public void savePreagMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         try {
             maybeForceCollectionTimes(System.currentTimeMillis(), bundle);
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, tenantId);
@@ -70,8 +68,6 @@ public class BasicIngestResource extends AbstractIngestResource {
         }
         
         // todo: block for commitReceipt
-        
-        return new SimpleResponse("OK accepted");
     }
     
 }
