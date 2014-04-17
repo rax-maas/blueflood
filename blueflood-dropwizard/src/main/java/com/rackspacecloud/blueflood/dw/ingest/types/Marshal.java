@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class Marshal {
     private static final TimeValue DEFAULT_PREAG_TTL = new TimeValue(48, TimeUnit.HOURS);
     
+    // tenantId can be null!
     public static Collection<Metric> remarshal(Collection<BasicMetric> basicMetrics, String tenantId) {
         List<Metric> metrics = new ArrayList<Metric>(basicMetrics.size());
         for (BasicMetric bm : basicMetrics) {
@@ -34,6 +35,7 @@ public class Marshal {
         return metrics;
     }
     
+    // tenantId can be null!
     public static Collection<IMetric> remarshal(Bundle bundle, String tenantId) throws IOException {
         List<IMetric> metrics = new ArrayList<IMetric>();
         metrics.addAll(remarshalCounters(bundle, tenantId));
@@ -43,6 +45,7 @@ public class Marshal {
         return metrics;
     }
     
+    // tenantId can be null!
     private static Collection<PreaggregatedMetric> remarshalCounters(Bundle bundle, String tenantId) {
         final Collection<Counter> counters = bundle.getCounters();
         final List<PreaggregatedMetric> metrics = new ArrayList<PreaggregatedMetric>(counters.size());
@@ -61,6 +64,7 @@ public class Marshal {
         return metrics;
     }
     
+    // tenantId can be null!
     private static Collection<PreaggregatedMetric> remarshalGauges(Bundle bundle, String tenantId) throws IOException {
         final Collection<Gauge> gauges = bundle.getGauges();
         final List<PreaggregatedMetric> metrics = new ArrayList<PreaggregatedMetric>(gauges.size());
@@ -75,6 +79,7 @@ public class Marshal {
         return metrics;
     }
     
+    // tenantId can be null!
     private static Collection<PreaggregatedMetric> remarshalSets(Bundle bundle, String tenantId) {
         final Collection<Set> sets = bundle.getSets();
         final List<PreaggregatedMetric> metrics = new ArrayList<PreaggregatedMetric>(sets.size());
@@ -90,6 +95,7 @@ public class Marshal {
         return metrics;
     }
     
+    // tenantId can be null!
     private static Collection<PreaggregatedMetric> remarshalTimers(Bundle bundle, String tenantId) {
         final Collection<Timer> timers = bundle.getTimers();
         final List<PreaggregatedMetric> metrics = new ArrayList<PreaggregatedMetric>(timers.size());
