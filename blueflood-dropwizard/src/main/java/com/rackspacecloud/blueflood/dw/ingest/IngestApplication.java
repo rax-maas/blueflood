@@ -17,16 +17,7 @@ import java.io.IOException;
 public class IngestApplication extends Application<IngestConfiguration> {
     private static final String NAME = "blueflood-ingest";
     
-    public static void main(String[] args) throws Exception {
-        String[] preLoadClasses = {
-                "javax.servlet.Filter",
-                "javax.servlet.DispatcherType",
-        };
-        for (String className : preLoadClasses) {
-            Class.forName(className);
-        }
-        
-        
+    public static void main(String[] args) throws Exception {        
         new IngestApplication().run(args);
     }
 
