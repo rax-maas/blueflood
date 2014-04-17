@@ -2,9 +2,6 @@ package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.codahale.metrics.annotation.Timed;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.dw.ingest.AbstractIngestResource;
-import com.rackspacecloud.blueflood.dw.ingest.IngestConfiguration;
-import com.rackspacecloud.blueflood.dw.ingest.IngestResponseRepresentation;
 import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
 import com.rackspacecloud.blueflood.dw.ingest.types.Bundle;
 import com.rackspacecloud.blueflood.dw.ingest.types.Counter;
@@ -42,14 +39,14 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("basic")
-    public IngestResponseRepresentation saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
+    public SimpleResponse saveBasicMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, List<BasicMetric> metrics) {
         
         // if any metrics are missing a tenant, fail.
         for (BasicMetric bm : metrics) {
             if (bm.getTenant() == null || bm.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .entity(new IngestResponseRepresentation("One or more metrics does not specify tenant"))
+                        .entity(new SimpleResponse("One or more metrics does not specify tenant"))
                         .build());
             }
         }
@@ -68,14 +65,14 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         // todo: block until the commitReceipt is verified durable.
         
-        return new IngestResponseRepresentation("OK accepted");
+        return new SimpleResponse("OK accepted");
     }
     
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("aggregated")
-    public IngestResponseRepresentation savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
+    public SimpleResponse savePreagMultiTenantMetrics(final @PathParam("tenantId") String tenantId, final @QueryParam("commitReceipt") String commitReceipt, Bundle bundle) {
         
         // if any metric is missing a tenant, fail.
         for (Gauge g : bundle.getGauges()) {
@@ -127,6 +124,6 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         // todo: block for commit receipt.
         
-        return new IngestResponseRepresentation("OK accepted");
+        return new SimpleResponse("OK accepted");
     }
 }

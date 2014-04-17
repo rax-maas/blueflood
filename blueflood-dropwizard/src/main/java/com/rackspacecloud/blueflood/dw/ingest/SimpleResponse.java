@@ -3,12 +3,12 @@ package com.rackspacecloud.blueflood.dw.ingest;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class IngestResponseRepresentation {
+public class SimpleResponse {
     
     private final String message;
     
     @JsonCreator
-    public IngestResponseRepresentation(@JsonProperty("message") String message) {
+    public SimpleResponse(@JsonProperty("message") String message) {
         this.message = message;
     }
     
