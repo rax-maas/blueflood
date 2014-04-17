@@ -49,7 +49,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             if (bm.getTenant() == null || bm.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .header("X-Reason", "One or more metrics does not specify tenant")
+                        .entity(new IngestResponseRepresentation("One or more metrics does not specify tenant"))
                         .build());
             }
         }
@@ -82,7 +82,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             if (g.getTenant() == null || g.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .header("X-Reason", "One ore more metrics does not specify tenant")
+                        .entity("One ore more metrics does not specify tenant")
                         .build());
             }
         }
@@ -91,7 +91,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             if (s.getTenant() == null || s.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .header("X-Reason", "One ore more metrics does not specify tenant")
+                        .entity("One ore more metrics does not specify tenant")
                         .build());
             }
         }
@@ -100,7 +100,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             if (c.getTenant() == null || c.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .header("X-Reason", "One ore more metrics does not specify tenant")
+                        .entity("One ore more metrics does not specify tenant")
                         .build());
             }
         }
