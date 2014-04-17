@@ -1,5 +1,8 @@
 package com.rackspacecloud.blueflood.dw.query;
 
+import com.fasterxml.jackson.databind.ser.BeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.PropertyFilter;
 import com.rackspacecloud.blueflood.dw.NotDOAHealthCheck;
 import com.rackspacecloud.blueflood.dw.StateManager;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -32,6 +35,9 @@ public class QueryApplication extends Application<QueryConfiguration> {
         environment.lifecycle().manage(stateManager);
         
         // should not need a metadata cache.
+        
+        // allows us to limit returned fields based on the "select" parameter.
+        environment.getObjectMapper().setFilters(new MetricFilterProvider());
         
         final NotDOAHealthCheck notDOA = new NotDOAHealthCheck();
         final SingleQueryResource singleQueryResource = new SingleQueryResource();
