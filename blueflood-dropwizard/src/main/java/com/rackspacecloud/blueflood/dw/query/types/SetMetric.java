@@ -8,7 +8,7 @@ public class SetMetric extends Metric {
     public static final String COUNT = "count";
     
     @JsonProperty(COUNT)
-    public void setDistinctValues(int count) {
+    public void setCount(int count) {
         this.put(COUNT, count);
     }
     
