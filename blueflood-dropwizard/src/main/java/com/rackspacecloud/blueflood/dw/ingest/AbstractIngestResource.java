@@ -58,23 +58,27 @@ public abstract class AbstractIngestResource /*implements IMetricsWriter*/ {
     }
     
     // this only happens on basic full resolution data.
-    protected final void processTypeAndUnit(Collection<Metric> metrics) {
-        for (Metric m : metrics) {
+    protected final void processTypeAndUnit(Collection<? extends IMetric> metrics) {
+        for (IMetric m : metrics) {
             try {
                 String existingType = cache.get(m.getLocator(), DATA_TYPE_CACHE_KEY);
                 String existingUnit = cache.get(m.getLocator(), UNIT_CACHE_KEY);
-                cache.put(m.getLocator(), DATA_TYPE_CACHE_KEY, m.getDataType().toString());
                 
-                if (m.getUnit() != null) {
-                    cache.put(m.getLocator(), UNIT_CACHE_KEY, m.getUnit());
-                }
-                
-                // log mismatches.
-                if (existingType != null && !existingType.equals(m.getDataType().toString())) {
-                    log.warn("Types changed for {}. From {} to {}", new Object[] {m.getLocator().toString(), existingType, m.getDataType().toString()});
-                }
-                if (existingUnit != null && !existingUnit.equals(m.getUnit())) {
-                    log.warn("Units changed for {}. From {} to {}", new Object[] {m.getLocator().toString(), existingUnit, m.getUnit()});
+                if (m instanceof Metric) {
+                    Metric mm = (Metric)m;
+                    cache.put(m.getLocator(), DATA_TYPE_CACHE_KEY, mm.getDataType().toString());
+                    
+                    if (mm.getUnit() != null) {
+                        cache.put(m.getLocator(), UNIT_CACHE_KEY, mm.getUnit());
+                    }
+                    
+                    // log mismatches.
+                    if (existingType != null && !existingType.equals(mm.getDataType().toString())) {
+                        log.warn("Types changed for {}. From {} to {}", new Object[] {m.getLocator().toString(), existingType, mm.getDataType().toString()});
+                    }
+                    if (existingUnit != null && !existingUnit.equals(mm.getUnit())) {
+                        log.warn("Units changed for {}. From {} to {}", new Object[] {m.getLocator().toString(), existingUnit, mm.getUnit()});
+                    }
                 }
             
                 cache.put(m.getLocator(), ROLLUP_TYPE_CACHE_KEY, m.getRollupType().toString());

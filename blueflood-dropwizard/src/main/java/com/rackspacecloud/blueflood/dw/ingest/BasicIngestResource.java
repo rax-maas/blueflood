@@ -59,6 +59,7 @@ public class BasicIngestResource extends AbstractIngestResource {
         try {
             maybeForceCollectionTimes(System.currentTimeMillis(), bundle);
             Collection<IMetric> newMetrics = Marshal.remarshal(bundle, tenantId);
+            processTypeAndUnit(newMetrics);
             preProcess(newMetrics);
             insertPreaggreatedMetrics(newMetrics);
             updateContext(newMetrics);
