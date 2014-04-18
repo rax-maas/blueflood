@@ -64,8 +64,6 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         }
         
         // todo: block until the commitReceipt is verified durable.
-        
-        //return new SimpleResponse("OK accepted");
     }
     
     @POST
@@ -106,7 +104,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             if (t.getTenant() == null || t.getTenant().trim().length() == 0) {
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
-                        .header("X-Reason", "One ore more metrics does not specify tenant")
+                        .entity("One ore more metrics does not specify tenant")
                         .build());
             }
         }
