@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.annotation.Timed;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
@@ -9,6 +10,7 @@ import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -26,6 +28,8 @@ import java.util.List;
 @Path("/v2.0/{tenantId}/ingest")
 @Produces(MediaType.APPLICATION_JSON)
 public class BasicIngestResource extends AbstractIngestResource {
+    
+    private final Meter err5xxMeter = Metrics.meter(BasicIngestResource.class, "5xx Errors");
     
     public BasicIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer, MetadataCache cache) {
         super(configuration, context, writer, cache);
@@ -45,6 +49,7 @@ public class BasicIngestResource extends AbstractIngestResource {
             updateContext(newMetrics);
             postProcess(newMetrics);
         } catch (IOException ex) {
+            err5xxMeter.mark();
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
         
@@ -65,6 +70,7 @@ public class BasicIngestResource extends AbstractIngestResource {
             updateContext(newMetrics);
             postProcess(newMetrics);
         } catch (IOException ex) {
+            err5xxMeter.mark();
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
         

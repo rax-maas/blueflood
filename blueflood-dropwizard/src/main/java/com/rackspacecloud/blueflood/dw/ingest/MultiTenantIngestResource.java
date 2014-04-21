@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.annotation.Timed;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.dw.ingest.types.BasicMetric;
@@ -13,6 +14,7 @@ import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -30,6 +32,9 @@ import java.util.List;
 @Path("/v2.0/ingest")
 @Produces(MediaType.APPLICATION_JSON)
 public class MultiTenantIngestResource extends AbstractIngestResource {
+    
+    private final Meter err4xxMeter = Metrics.meter(MultiTenantIngestResource.class, "4xx Errors");
+    private final Meter err5xxMeter = Metrics.meter(MultiTenantIngestResource.class, "5xx Errors");
 
     public MultiTenantIngestResource(IngestConfiguration configuration, ScheduleContext context, IMetricsWriter writer, MetadataCache cache) {
         super(configuration, context, writer, cache);
@@ -44,6 +49,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         // if any metrics are missing a tenant, fail.
         for (BasicMetric bm : metrics) {
             if (bm.getTenant() == null || bm.getTenant().trim().length() == 0) {
+                err4xxMeter.mark();
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity(new SimpleResponse("One or more metrics does not specify tenant"))
@@ -60,6 +66,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             updateContext(newMetrics);
             postProcess(newMetrics);
         } catch (IOException ex) {
+            err5xxMeter.mark();
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
         
@@ -75,6 +82,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         // if any metric is missing a tenant, fail.
         for (Gauge g : bundle.getGauges()) {
             if (g.getTenant() == null || g.getTenant().trim().length() == 0) {
+                err4xxMeter.mark();
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity("One ore more metrics does not specify tenant")
@@ -84,6 +92,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         for (Set s : bundle.getSets()) {
             if (s.getTenant() == null || s.getTenant().trim().length() == 0) {
+                err4xxMeter.mark();
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity("One ore more metrics does not specify tenant")
@@ -93,6 +102,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         for (Counter c : bundle.getCounters()) {
             if (c.getTenant() == null || c.getTenant().trim().length() == 0) {
+                err4xxMeter.mark();
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity("One ore more metrics does not specify tenant")
@@ -102,6 +112,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
         
         for (Timer t : bundle.getTimers()) {
             if (t.getTenant() == null || t.getTenant().trim().length() == 0) {
+                err4xxMeter.mark();
                 throw new WebApplicationException(Response
                         .status(Response.Status.BAD_REQUEST)
                         .entity("One ore more metrics does not specify tenant")
@@ -117,6 +128,7 @@ public class MultiTenantIngestResource extends AbstractIngestResource {
             updateContext(newMetrics);
             postProcess(newMetrics);
         } catch (IOException ex) {
+            err5xxMeter.mark();
             throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
         
