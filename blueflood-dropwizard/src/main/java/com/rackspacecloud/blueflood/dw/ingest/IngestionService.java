@@ -1,10 +1,12 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import io.dropwizard.cli.ServerCommand;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.setup.Bootstrap;
@@ -41,7 +43,16 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
         final Configuration config = Configuration.getInstance();
         
         final IngestApplication ingestApplication = new IngestApplication();
-        final Bootstrap<IngestConfiguration> bootstrap = new Bootstrap<IngestConfiguration>(ingestApplication);
+        final Bootstrap<IngestConfiguration> bootstrap = new Bootstrap<IngestConfiguration>(ingestApplication) {
+            
+            // we want to bring our own MetricRegistry. The only downside to this is that we miss a few JVM metrics
+            // that get registered by DW. See https://github.com/dropwizard/dropwizard/pull/548 for more info.
+            @Override
+            public MetricRegistry getMetricRegistry() {
+                return Metrics.getRegistry();
+            }
+        };
+        
         bootstrap.setConfigurationSourceProvider(new ConfigurationSourceProvider() {
             @Override
             public InputStream open(String path) throws IOException {
