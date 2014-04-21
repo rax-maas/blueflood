@@ -1,9 +1,11 @@
 package com.rackspacecloud.blueflood.dw.query;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
 import com.rackspacecloud.blueflood.dw.ingest.IngestionService;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import io.dropwizard.cli.ServerCommand;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.setup.Bootstrap;
@@ -36,7 +38,16 @@ public class QueryService implements com.rackspacecloud.blueflood.service.QueryS
         final Configuration config = Configuration.getInstance();
         
         final QueryApplication queryApplication = new QueryApplication();
-        final Bootstrap<QueryConfiguration> bootstrap = new Bootstrap<QueryConfiguration>(queryApplication);
+        final Bootstrap<QueryConfiguration> bootstrap = new Bootstrap<QueryConfiguration>(queryApplication) {
+            
+            // we want to bring our own MetricRegistry. The only downside to this is that we miss a few JVM metrics
+            // that get registered by DW. See https://github.com/dropwizard/dropwizard/pull/548 for more info.
+            @Override
+            public MetricRegistry getMetricRegistry() {
+                return Metrics.getRegistry();
+            }
+            
+        };
         bootstrap.setConfigurationSourceProvider(new ConfigurationSourceProvider() {
             @Override
             public InputStream open(String path) throws IOException {
