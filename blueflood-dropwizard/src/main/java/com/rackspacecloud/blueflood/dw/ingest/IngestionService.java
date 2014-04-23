@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
+import com.rackspacecloud.blueflood.dw.logging.LogSettings;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -32,14 +33,26 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
             "cassandraHosts: [%s]\n"+
             "rollupKeyspace: %s\n"+
             "metricsWriterClass: \"%s\"\n"+
-            "forceNewCollectionTime: %s";
+            "forceNewCollectionTime: %s\n";
 
     public IngestionService() {
     }
 
     @Override
     public void startService(ScheduleContext context, IMetricsWriter writer) {
-     
+        final StringBuilder logBuilder = new StringBuilder();
+        
+        // if a logging configuration is specified, convert it into logback format and append it to the YAML.
+        try {
+            LogSettings logSettings = new LogSettings();
+            
+            logBuilder.append(LogSettings.toDropwizardFormat(logSettings));
+            
+        } catch (IOException ex) {
+            // lo log settings. logging isn't configured yet, so we can't let anybody know. :(
+            System.out.println("Logging appears to be unconfigured");
+        }
+        
         final Configuration config = Configuration.getInstance();
         
         final IngestApplication ingestApplication = new IngestApplication();
@@ -68,6 +81,10 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
                         config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE),
                         config.getStringProperty(CoreConfig.IMETRICS_WRITER),
                         "false");
+                
+                if (logBuilder.length() > 0) {
+                    replaced += logBuilder.toString();
+                }
                 return new ByteArrayInputStream(replaced.getBytes(Charsets.UTF_8));
             }
         });
