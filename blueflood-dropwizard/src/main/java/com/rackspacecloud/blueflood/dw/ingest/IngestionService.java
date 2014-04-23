@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
-import com.rackspacecloud.blueflood.dw.LogSettings;
+import com.rackspacecloud.blueflood.dw.logging.LogSettings;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;

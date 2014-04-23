@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.dw;
 
+import com.rackspacecloud.blueflood.dw.logging.LogSettings;
 import junit.framework.Assert;
 import org.junit.Test;
 
