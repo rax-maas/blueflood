@@ -17,7 +17,7 @@ public class TestLogSettings {
     
     @Test
     public void testConsoleOnly() throws IOException {
-        LogSettings settings = load("blueflood-dropwizard/src/test/resources/console-only.properties");
+        LogSettings settings = load("src/test/resources/console-only.properties");
         
         Assert.assertTrue(settings.hasConsoleAppender());
         Assert.assertFalse(settings.hasFileAppender());
@@ -25,7 +25,7 @@ public class TestLogSettings {
     
     @Test
     public void testFileOnly() throws IOException {
-        LogSettings settings = load("blueflood-dropwizard/src/test/resources/file-only.properties");
+        LogSettings settings = load("src/test/resources/file-only.properties");
         
         Assert.assertFalse(settings.hasConsoleAppender());
         Assert.assertTrue(settings.hasFileAppender());
@@ -33,7 +33,7 @@ public class TestLogSettings {
     
     @Test
     public void testBoth() throws IOException {
-        LogSettings settings = load("blueflood-dropwizard/src/test/resources/both.properties");
+        LogSettings settings = load("src/test/resources/both.properties");
                 
         Assert.assertTrue(settings.hasConsoleAppender());
         Assert.assertTrue(settings.hasFileAppender());
