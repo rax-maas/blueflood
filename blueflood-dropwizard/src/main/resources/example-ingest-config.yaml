@@ -1,12 +1,29 @@
-host: localhost
-port: 19000
+server:
+  applicationConnectors:
+    - type: http
+      bindHost: 127.0.0.1
+      port: 19000
+  adminConnectors:
+    - type: http
+      bindHost: 127.0.0.1
+      port: 19010
+populateBluefloodConfigurationSettings: false
 cassandraHosts:
  - 127.0.0.1:19180
  - 127.0.0.1:19180
 rollupKeyspace: data
-#metricsWriterClass: "com.rackspacecloud.blueflood.dw.fake.FakeMetricsWriter"
 metricsWriterClass: "com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"
-scopingTenants:
- - CAN_SCOPE_01
- - CAN_SCOPE_02
 forceNewCollectionTime: true
+riemann:
+  enabled: false
+  host: 127.0.0.1
+  port: 5555
+  prefix: foo
+  localhost: 127.0.0.1
+  tags: [zee, fee, bee]
+  separator: "."
+  ttl: 604800
+graphite:
+  enabled: false
+  host: 127.0.0.1
+  port: 2003

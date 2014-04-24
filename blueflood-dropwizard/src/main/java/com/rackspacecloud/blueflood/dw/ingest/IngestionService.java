@@ -29,6 +29,7 @@ public class IngestionService implements com.rackspacecloud.blueflood.service.In
             "    - type: http\n"+
             "      bindHost: %s\n"+
             "      port: %s\n"+
+            "populateBluefloodConfigurationSettings: false\n"+
             "cassandraHosts: [%s]\n"+
             "rollupKeyspace: %s\n"+
             "metricsWriterClass: \"%s\"\n"+
