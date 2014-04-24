@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.google.common.base.Joiner;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.dw.logging.LogAppenderFactory;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -32,6 +33,20 @@ public class IngestApplication extends Application<IngestConfiguration> {
 
     @Override
     public void initialize(Bootstrap<IngestConfiguration> ingestConfigurationBootstrap) {
+        
+        // possibly initialize custom logging appenders.
+        for (LogAppenderFactory factoryDesc : LogAppenderFactory.all()) {
+            if (System.getProperty(factoryDesc.getVmFlag()) != null) {
+                try {
+                    ingestConfigurationBootstrap
+                            .getObjectMapper()
+                            .getSubtypeResolver()
+                            .registerSubtypes(Class.forName(factoryDesc.getAppenderClassName()));
+                } catch (ClassNotFoundException ex) {
+                    System.err.println(String.format("Could not register logging for: %s", factoryDesc.getAppenderClassName()));
+                }
+            }
+        }
     }
     
     // resets the traditional BF configuation object with values from the YAML configuration.

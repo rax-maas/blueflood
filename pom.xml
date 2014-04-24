@@ -41,6 +41,7 @@
   <url>http://blueflood.io</url>
 
   <properties>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -17,6 +17,20 @@ JAVA_HOME=WHERE_YOUR_JAVA_7_LIVES mvn clean package -Pcassandra-1.2,skip-unit-te
 This creates an uber jar with everything BUT the com.rackspacecloud.blueflood.dw.* classes. That way, you can do dev
 work in your IDE, compile just those files and not have to rebuild the whole jar. It saves time.
 
+## More Loggers
+
+Dropwizard only ships with log appenders for FILE, CONSOLE and SYSLOG logging.
+
+We have added a few custom logging appenders that you are free to use.
+You just need to create configuration for them in your config.yaml and enable them from the command line.
+Just use these VM arguments:
+
+For airbrake reporting:  `-Dbf.logging.airbrake`
+
+For zeroMQ+logstash reporting: `-Dbf.logging.zmq-logstash`
+
+Sample configuration can be found in this module under `src/main/resources/example-ingest-config.yaml`
+
 ## Running
 
 I have included a handy configuration in src/main/resources/example-ingest-config.yaml
