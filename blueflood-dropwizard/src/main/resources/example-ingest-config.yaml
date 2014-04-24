@@ -1,5 +1,13 @@
-host: localhost
-port: 19000
+server:
+  applicationConnectors:
+    - type: http
+      bindHost: 127.0.0.1
+      port: 19000
+  adminConnectors:
+    - type: http
+      bindHost: 127.0.0.1
+      port: 19010
+populateBluefloodConfigurationSettings: false
 cassandraHosts:
  - 127.0.0.1:19180
  - 127.0.0.1:19180
