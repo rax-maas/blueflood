@@ -230,7 +230,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         );
         
         @Override
-        public void write(Locator locator, String key, String value) throws IOException {
+        public void put(Locator locator, String key, String value) throws IOException {
             backingTable.put(locator, key, value);
         }
 

@@ -141,7 +141,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
     private void databasePut(Locator locator, String key, String value) throws CacheException {
         try {
-            io.write(locator, key, value);
+            io.put(locator, key, value);
         } catch (IOException ex) {
             throw new CacheException(ex);
         }

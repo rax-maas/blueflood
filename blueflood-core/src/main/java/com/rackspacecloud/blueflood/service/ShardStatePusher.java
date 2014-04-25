@@ -45,14 +45,14 @@ public class ShardStatePusher extends ShardStateWorker {
                 Map<Granularity, Map<Integer, UpdateStamp>> slotTimes = shardStateManager.getDirtySlotsToPersist(shard);
                 if (slotTimes != null) {
                     try {
-                        io.persistShardState(shard, slotTimes);
+                        io.putShardState(shard, slotTimes);
                     } catch (IOException ex) {
-                        log.error("Could not write shard state to the database (shard " + shard + "). " + ex.getMessage(), ex);
+                        log.error("Could not put shard state to the database (shard " + shard + "). " + ex.getMessage(), ex);
                     }
                 }
             }
         } catch (RuntimeException ex) {
-            log.error("Could not write shard states to the database. " + ex.getMessage(), ex);
+            log.error("Could not put shard states to the database. " + ex.getMessage(), ex);
         } finally {
             ctx.stop();
         }

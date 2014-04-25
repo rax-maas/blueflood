@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public interface MetadataIO {
-    public void write(Locator locator, String key, String value) throws IOException;
+    public void put(Locator locator, String key, String value) throws IOException;
     public Map<String, String> getAllValues(Locator locator) throws IOException;
     
     // only used in unit tests.

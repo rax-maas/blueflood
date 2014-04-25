@@ -23,7 +23,7 @@ public class AstyanaxShardStateIO implements ShardStateIO {
     }
 
     @Override
-    public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
+    public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
         try {
             writer.persistShardState(shard, slotTimes);
         } catch (ConnectionException ex) {

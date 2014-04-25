@@ -178,7 +178,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 33).equals(ctxB.getSlotStamps(Granularity.MIN_5, 33)));
         
         // this is where the syncing should happen. Order is important for a valid test.  A contains the updates, so
-        // I want to write that one first.  B contains old data and it gets written second.  Part of what I'm verifying
+        // I want to put that one first.  B contains old data and it gets written second.  Part of what I'm verifying
         // is that B doesn't overwrite A with data that is obviously old.
         
         // A pushes updated data
@@ -334,7 +334,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         @Override
-        public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
+        public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
             map.put(shard, slotTimes);
         }
     }

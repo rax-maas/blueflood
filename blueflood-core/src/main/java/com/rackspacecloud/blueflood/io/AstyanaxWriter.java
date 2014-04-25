@@ -308,7 +308,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                                 serializer,
                                 ttl);
             } catch (RuntimeException ex) {
-                // let's not let stupidness prevent the rest of this write.
+                // let's not let stupidness prevent the rest of this put.
                 log.warn(String.format("Cannot save %s", writeContext.getLocator().toString()), ex);
             }
         }

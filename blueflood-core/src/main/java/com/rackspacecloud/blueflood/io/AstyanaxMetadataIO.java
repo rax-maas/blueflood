@@ -11,7 +11,7 @@ public class AstyanaxMetadataIO implements MetadataIO {
     public AstyanaxMetadataIO() { }
     
     @Override
-    public void write(Locator locator, String key, String value) throws IOException {
+    public void put(Locator locator, String key, String value) throws IOException {
         try {
             AstyanaxWriter.getInstance().writeMetadataValue(locator, key, value);
         } catch (RuntimeException ex) {
