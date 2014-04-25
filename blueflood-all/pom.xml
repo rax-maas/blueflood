@@ -84,7 +84,7 @@
     </dependency>
     
     <dependency>
-      <artifactId>blueflood-io-datastax</artifactId>
+      <artifactId>blueflood-dropwizard</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
     </dependency>
