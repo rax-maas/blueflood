@@ -35,13 +35,13 @@ logging:
       env: gdusbabek
       apiKey: YOUR_API_KEY_GOES_HERE
     - type: rax-logstash-zmq
-        enabled: false
-        socketType: PUSHPULL
-        endpoints: tcp://127.0.0.1:2120
-        bindConnect: CONNECT
-        linger: 1000
-        sendHWM: 1000
-        customFields: "{\"host\":\"gdusbabek.local\",\"type\":\"dev\",\"instance\":0}"
+      enabled: false
+      socketType: PUSHPULL
+      endpoints: tcp://127.0.0.1:2120
+      bindConnect: CONNECT
+      linger: 1000
+      sendHWM: 1000
+      customFields: "{\"host\":\"gdusbabek.local\",\"type\":\"dev\",\"instance\":0}"
     - type: console
       threshold: DEBUG
       target: stdout

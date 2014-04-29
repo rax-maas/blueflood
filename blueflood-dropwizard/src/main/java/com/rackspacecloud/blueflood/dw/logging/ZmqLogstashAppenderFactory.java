@@ -16,6 +16,10 @@ import net.logstash.logback.layout.LogstashLayout;import java.lang.Override;impo
 @JsonTypeName("rax-logstash-zmq")
 public class ZmqLogstashAppenderFactory extends AbstractAppenderFactory {
 
+    private static final String HOST = "host";
+    private static final String INSTANCE_TYPE = "instanceType";
+    private static final String INSTANCE = "instance";
+    
     private String socketType;
     private String endpoints;
     private String bindConnect;
@@ -106,5 +110,15 @@ public class ZmqLogstashAppenderFactory extends AbstractAppenderFactory {
     public String getCustomFields() { return customFields; }
 
     @JsonProperty
-    public void setCustomFields(String customFields) { this.customFields = customFields; }
+    public void setCustomFields(String customFields) {
+        
+        // perform some replacements.
+        for (String prop : new String[]{HOST, INSTANCE_TYPE, INSTANCE}) {
+            if (System.getProperty(prop) != null) {
+                customFields = customFields.replace("${" + prop + "}", System.getProperty(prop));
+            }    
+        }
+        
+        this.customFields = customFields; 
+    }
 }
