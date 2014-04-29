@@ -31,7 +31,7 @@
     <module>blueflood-http</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
-    <module>blueflood-dropwizard</module>
+    <module>blueflood-io-datastax</module>
   </modules>
 
   <description>

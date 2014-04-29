@@ -34,7 +34,7 @@ public class RollupExecutionContextTest {
         myRollupContext.decrementReadCounter();
         Assert.assertTrue(myRollupContext.doneReading());
 
-        // validate write behavior
+        // validate put behavior
         Assert.assertTrue(myRollupContext.doneWriting());
         myRollupContext.incrementWriteCounter();
         myRollupContext.incrementWriteCounter();

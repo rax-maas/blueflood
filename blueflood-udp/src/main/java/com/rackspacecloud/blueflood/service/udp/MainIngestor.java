@@ -59,7 +59,7 @@ public class MainIngestor {
     // build a SEDA chain that will process datagrams.
     private static AsyncChain<DatagramPacket, ?> buildProcessor(ScheduleContext context) {
 
-        // this will eventually take a UDP packet, deserialize it and write it to the database. Each w
+        // this will eventually take a UDP packet, deserialize it and put it to the database. Each w
         AsyncChain<DatagramPacket, Object> processor = new AsyncChain<DatagramPacket, Object>()
 
                 // this stage deserializes the UDP datagrams. since the serialization is at our discretion (and

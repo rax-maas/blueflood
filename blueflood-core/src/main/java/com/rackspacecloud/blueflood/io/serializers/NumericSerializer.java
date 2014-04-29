@@ -144,7 +144,7 @@ public class NumericSerializer {
         }
     }
     
-    // write out a number prefaced only by a type.
+    // put out a number prefaced only by a type.
     private static void putUnversionedDoubleOrLong(Number number, CodedOutputStream out) throws IOException {
         if (number instanceof Double) {
             out.writeRawByte(Constants.B_DOUBLE);
