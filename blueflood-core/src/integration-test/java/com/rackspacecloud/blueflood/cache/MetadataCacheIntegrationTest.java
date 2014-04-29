@@ -46,6 +46,16 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     public MetadataCacheIntegrationTest(MetadataIO io) {
         this.io = io;
     }
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        
+        // equivalent of database truncate.
+        if (io instanceof InMemoryMetadataIO) {
+            ((InMemoryMetadataIO)io).backingTable.clear();
+        }
+    }
     
     @Test
     public void testPut() throws Exception {
