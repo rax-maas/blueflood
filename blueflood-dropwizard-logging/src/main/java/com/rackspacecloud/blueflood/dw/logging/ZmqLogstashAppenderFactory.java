@@ -11,7 +11,9 @@ import com.stuartwarren.logit.logback.ZmqAppender;
 import io.dropwizard.logging.AbstractAppenderFactory;
 import io.dropwizard.validation.ValidationMethod;
 import net.logstash.logback.encoder.LogstashEncoder;
-import net.logstash.logback.layout.LogstashLayout;import java.lang.Override;import java.lang.String;
+import net.logstash.logback.layout.LogstashLayout;import java.lang.Override;
+
+import java.lang.String;
 
 @JsonTypeName("rax-logstash-zmq")
 public class ZmqLogstashAppenderFactory extends AbstractAppenderFactory {

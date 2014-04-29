@@ -5,8 +5,8 @@ import java.util.List;
 
 public class LogAppenderFactory {
     private static final List<LogAppenderFactory> ALL = new ArrayList<LogAppenderFactory>() {{
-        add(new LogAppenderFactory("com.rackspacecloud.blueflood.dw.logging.AirbrakeAppenderFactory", "bf.logging.airbrake"));
-        add(new LogAppenderFactory("com.rackspacecloud.blueflood.dw.logging.ZmqLogstashAppenderFactory", "bf.logging.zmq-logstash"));
+        add(new LogAppenderFactory("AirbrakeAppenderFactory", "bf.logging.airbrake"));
+        add(new LogAppenderFactory("ZmqLogstashAppenderFactory", "bf.logging.zmq-logstash"));
     }};
     
     public static Iterable<LogAppenderFactory> all() { return ALL; }

@@ -32,6 +32,7 @@
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
     <module>blueflood-dropwizard</module>
+    <module>blueflood-dropwizard-logging</module>
   </modules>
 
   <description>
@@ -51,6 +52,7 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
     <slf4j.version>1.7.6</slf4j.version>
+    <dropwizard.version>0.7.0</dropwizard.version>
   </properties>
 
   <build>
