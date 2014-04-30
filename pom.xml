@@ -33,6 +33,7 @@
     <module>blueflood-cloudfiles</module>
     <module>blueflood-dropwizard</module>
     <module>blueflood-dropwizard-logging</module>
+    <module>blueflood-io-datastax</module>
   </modules>
 
   <description>

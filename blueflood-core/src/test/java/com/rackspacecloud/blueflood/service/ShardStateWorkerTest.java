@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.base.Ticker;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import junit.framework.Assert;
@@ -29,6 +30,11 @@ public class ShardStateWorkerTest {
             @Override
             void performOperation() {
                 counter.incrementAndGet();
+            }
+
+            @Override
+            public void setIO(ShardStateIO io) {
+                // doesn't use IO, so no-op.
             }
         };
         

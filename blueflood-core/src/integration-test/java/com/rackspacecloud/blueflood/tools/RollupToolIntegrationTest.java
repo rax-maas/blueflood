@@ -45,7 +45,7 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
         super.setUp();
         final TimeValue ttl = new TimeValue(48, TimeUnit.HOURS);
 
-        // write some full resolution data.
+        // put some full resolution data.
         Collection<IMetric> normalMetrics = new ArrayList<IMetric>();
         long time = Granularity.MIN_5.milliseconds()/2;
 

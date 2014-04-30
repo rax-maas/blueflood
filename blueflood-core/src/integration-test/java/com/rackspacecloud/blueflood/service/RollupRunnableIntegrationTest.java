@@ -63,7 +63,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         cache.put(setLocator, cacheKey, RollupType.SET.name());
         // do not put normalLocator in the cache. it will constitute a miss.
         
-        // write some full resolution data.
+        // put some full resolution data.
         Collection<IMetric> preaggregatedMetrics = new ArrayList<IMetric>();
         Collection<IMetric> normalMetrics = new ArrayList<IMetric>();
         

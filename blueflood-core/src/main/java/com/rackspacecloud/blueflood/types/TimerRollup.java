@@ -207,7 +207,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         for (Map.Entry<Long, Points.Point<TimerRollup>> item : points.entrySet()) {
             TimerRollup rollup = item.getValue().getData();
             
-            // todo: put this calculation in a static method and write tests for it.
+            // todo: put this calculation in a static method and put tests for it.
             long count = this.getCount() + rollup.getCount();
             double time = Util.safeDiv((double) getCount(), this.rate) + Util.safeDiv((double) rollup.getCount(), rollup.rate);
             this.rate = Util.safeDiv((double) count, time);

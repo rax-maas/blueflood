@@ -17,19 +17,22 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ShardStatePusher extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePusher.class);
+    
+    private ShardStateIO io = new AstyanaxShardStateIO();
 
     public ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager) {
         super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PUSH_PERIOD), TimeUnit.MILLISECONDS));
@@ -38,21 +41,24 @@ public class ShardStatePusher extends ShardStateWorker {
     public void performOperation() {
         Timer.Context ctx = timer.time();
         try {
-            AstyanaxWriter writer = AstyanaxWriter.getInstance();
             for (int shard : allShards) {
                 Map<Granularity, Map<Integer, UpdateStamp>> slotTimes = shardStateManager.getDirtySlotsToPersist(shard);
                 if (slotTimes != null) {
                     try {
-                        writer.persistShardState(shard, slotTimes);
-                    } catch (ConnectionException ex) {
-                        log.error("Could not write shard state to the database (shard " + shard + "). " + ex.getMessage(), ex);
+                        io.putShardState(shard, slotTimes);
+                    } catch (IOException ex) {
+                        log.error("Could not put shard state to the database (shard " + shard + "). " + ex.getMessage(), ex);
                     }
                 }
             }
         } catch (RuntimeException ex) {
-            log.error("Could not write shard states to the database. " + ex.getMessage(), ex);
+            log.error("Could not put shard states to the database. " + ex.getMessage(), ex);
         } finally {
             ctx.stop();
         }
+    }
+    
+    public void setIO(ShardStateIO io) {
+        this.io = io;
     }
 }

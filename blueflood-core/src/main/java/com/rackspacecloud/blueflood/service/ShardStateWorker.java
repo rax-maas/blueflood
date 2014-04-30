@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.*;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -103,6 +104,7 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     }
     
     abstract void performOperation();
+    public abstract void setIO(ShardStateIO io);
    
     //
     // JMX methods

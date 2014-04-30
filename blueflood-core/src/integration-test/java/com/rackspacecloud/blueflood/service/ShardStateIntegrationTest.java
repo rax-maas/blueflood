@@ -16,22 +16,37 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+@RunWith(Parameterized.class)
 public class ShardStateIntegrationTest extends IntegrationTestBase {
+    
+    private ShardStateIO io;
+    
+    public ShardStateIntegrationTest(ShardStateIO io) {
+        this.io = io;    
+    }
 
     @Test
     public void testSingleShardManager() {
@@ -40,6 +55,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctx = new ScheduleContext(time, shards);
         ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
         ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
+        
+        pull.setIO(io);
+        push.setIO(io);
+        
         
         for (long t = time; t < time + 10000000; t += 1000) {
             ctx.update(t + 0, 1);
@@ -107,6 +126,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ShardStateWorker pushB = new ShardStatePusher(allShards, ctxB.getShardStateManager());
         ShardStateWorker pullB = new ShardStatePuller(allShards, ctxB.getShardStateManager());
         
+        pushA.setIO(io);
+        pullA.setIO(io);
+        pushB.setIO(io);
+        pullB.setIO(io);
+        
         // send a few updates to all contexts.
         for (ScheduleContext ctx : new ScheduleContext[] { ctxA, ctxB }) {
             for (long t = time; t < time + 10000000; t += 1000) {
@@ -154,7 +178,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 33).equals(ctxB.getSlotStamps(Granularity.MIN_5, 33)));
         
         // this is where the syncing should happen. Order is important for a valid test.  A contains the updates, so
-        // I want to write that one first.  B contains old data and it gets written second.  Part of what I'm verifying
+        // I want to put that one first.  B contains old data and it gets written second.  Part of what I'm verifying
         // is that B doesn't overwrite A with data that is obviously old.
         
         // A pushes updated data
@@ -187,6 +211,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctxA = new ScheduleContext(time, shardsA);
         ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager());
         ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager());
+        
+        pushA.setIO(io);
+        pullA.setIO(io);
         
         // update.
         time += 1000;
@@ -235,6 +262,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Thread pushPull = new Thread() { public void run() {
             ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
             ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
+            
+            push.setIO(io);
+            pull.setIO(io);
             push.setPeriod(1);
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();
@@ -273,5 +303,39 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
         Assert.assertNull(errBucket[0]);
         Assert.assertNull(errBucket[1]);
+    }
+    
+    @Parameterized.Parameters
+    public static Collection<Object[]> getDifferentShardStateIOInstances() {
+        List<Object[]> instances = new ArrayList<Object[]>();
+        instances.add(new Object[] { new AstyanaxShardStateIO() });
+        instances.add(new Object[] { new InMemoryShardStateIO() });
+        return instances;
+    }
+    
+    private static class InMemoryShardStateIO implements ShardStateIO {
+        
+        private Map<Integer, Map<Granularity, Map<Integer, UpdateStamp>>> map = new HashMap<Integer, Map<Granularity, Map<Integer, UpdateStamp>>>();
+        
+        @Override
+        public Collection<SlotState> getShardState(int shard) throws IOException {
+            Map<Granularity, Map<Integer, UpdateStamp>> updates = map.get(shard);
+            if (updates == null) {
+                return new ArrayList<SlotState>();
+            } else {
+                List<SlotState> states = new ArrayList<SlotState>();
+                for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> e0 : updates.entrySet()) {
+                    for (Map.Entry<Integer, UpdateStamp> e1 : e0.getValue().entrySet()) {
+                        states.add(new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState()));
+                    }
+                }
+                return states;
+            }
+        }
+
+        @Override
+        public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
+            map.put(shard, slotTimes);
+        }
     }
 }

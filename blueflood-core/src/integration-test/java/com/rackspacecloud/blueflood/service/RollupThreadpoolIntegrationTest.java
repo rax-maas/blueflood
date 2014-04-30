@@ -48,7 +48,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         // work.
         long time = 1234;
 
-        // now we need to write data that will generate an enormous amount of locators.
+        // now we need to put data that will generate an enormous amount of locators.
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
         final int NUM_LOCATORS = 5000;
