@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.dw.NotDOAHealthCheck;
 import com.rackspacecloud.blueflood.dw.StateManager;
+import com.rackspacecloud.blueflood.dw.logging.LogAppenderFactory;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -34,6 +35,20 @@ public class IngestApplication extends Application<IngestConfiguration> {
 
     @Override
     public void initialize(Bootstrap<IngestConfiguration> ingestConfigurationBootstrap) {
+        
+        // possibly initialize custom logging appenders.
+        for (LogAppenderFactory factoryDesc : LogAppenderFactory.all()) {
+            if (System.getProperty(factoryDesc.getVmFlag()) != null) {
+                try {
+                    ingestConfigurationBootstrap
+                            .getObjectMapper()
+                            .getSubtypeResolver()
+                            .registerSubtypes(Class.forName(factoryDesc.getAppenderClassName()));
+                } catch (ClassNotFoundException ex) {
+                    System.err.println(String.format("Could not register logging for: %s", factoryDesc.getAppenderClassName()));
+                }
+            }
+        }
     }
     
     // resets the traditional BF configuation object with values from the YAML configuration.
@@ -49,11 +64,36 @@ public class IngestApplication extends Application<IngestConfiguration> {
         System.setProperty(CoreConfig.SHARD_PULL_PERIOD.name(), Integer.toString(ingestConfiguration.getShardPullPeriod()));
         System.setProperty(CoreConfig.IMETRICS_WRITER.name(), ingestConfiguration.getMetricsWriterClass());
         System.setProperty(CoreConfig.INGEST_MODE.name(), Boolean.TRUE.toString());
+        
+        // pass along the riemann config.
+        if (ingestConfiguration.getRiemann() != null && ingestConfiguration.getRiemann().isEnabled()) {
+            System.setProperty(CoreConfig.RIEMANN_HOST.name(), ingestConfiguration.getRiemann().getHost());
+            System.setProperty(CoreConfig.RIEMANN_PORT.name(), Integer.toString(ingestConfiguration.getRiemann().getPort()));
+            System.setProperty(CoreConfig.RIEMANN_PREFIX.name(), ingestConfiguration.getRiemann().getPrefix());
+            System.setProperty(CoreConfig.RIEMANN_LOCALHOST.name(), ingestConfiguration.getRiemann().getLocalhost());
+            System.setProperty(CoreConfig.RIEMANN_TAGS.name(), Joiner.on(",").join(ingestConfiguration.getRiemann().getTags()));
+            System.setProperty(CoreConfig.RIEMANN_SEPARATOR.name(), ingestConfiguration.getRiemann().getSeparator());
+            System.setProperty(CoreConfig.RIEMANN_TTL.name(), Integer.toString(ingestConfiguration.getRiemann().getTtl()));
+        }
+        
+        // pass along the graphite config.
+        if (ingestConfiguration.getGraphite() != null && ingestConfiguration.getGraphite().isEnabled()) {
+            System.setProperty(CoreConfig.GRAPHITE_HOST.name(), ingestConfiguration.getGraphite().getHost());
+            System.setProperty(CoreConfig.GRAPHITE_PORT.name(), Integer.toString(ingestConfiguration.getGraphite().getPort()));
+            System.setProperty(CoreConfig.GRAPHITE_HOST.name(), ingestConfiguration.getGraphite().getPrefix());
+        }
+        
         Configuration.getInstance().init();
     }
 
     @Override
     public void run(IngestConfiguration ingestConfiguration, Environment environment) throws Exception {
+        
+        // should we inject the Dropwizard config into Blueflood? 
+        if (ingestConfiguration.isPopulateBluefloodConfigurationSettings()) {
+            overrideBluefloodConfiguration(ingestConfiguration);
+        }
+        
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
         
         // construct the ingestion writer.

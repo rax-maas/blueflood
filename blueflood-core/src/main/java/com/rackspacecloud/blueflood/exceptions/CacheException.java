@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.exceptions;
 
+// todo: consider just dropping this for IOException.
 public class CacheException extends Exception {
     public CacheException(Throwable cause) {
         super(cause);

@@ -100,7 +100,7 @@ public class ScheduleContext implements IngestionContext {
             int slot = g.slot(millis);
 
             if (isManaged) {
-                synchronized (scheduledSlots) { //write
+                synchronized (scheduledSlots) { //put
                     if (scheduledSlots.remove(g.formatLocatorKey(slot, shard)) && log.isDebugEnabled()) {
                         log.debug("descheduled " + g.formatLocatorKey(slot, shard));// don't worry about orderedScheduledSlots
                     }
@@ -223,7 +223,7 @@ public class ScheduleContext implements IngestionContext {
             UpdateStamp stamp = shardStateManager.getUpdateStamp(shard, gran, slot);
             shardStateManager.setAllCoarserSlotsDirtyForSlot(shard, gran, slot);
             // Update the stamp to Rolled state if and only if the current state is running.
-            // If the current state is active, it means we received a delayed write which toggled the status to Active.
+            // If the current state is active, it means we received a delayed put which toggled the status to Active.
             if (stamp.getState() == UpdateStamp.State.Running) {
                 stamp.setState(UpdateStamp.State.Rolled);
                 stamp.setTimestamp(getCurrentTimeMillis());

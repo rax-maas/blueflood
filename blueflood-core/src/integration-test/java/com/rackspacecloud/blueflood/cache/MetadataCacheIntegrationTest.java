@@ -16,38 +16,77 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.base.Supplier;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
+import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@RunWith(Parameterized.class)
 public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
+    private final MetadataIO io;
+    
+    public MetadataCacheIntegrationTest(MetadataIO io) {
+        this.io = io;
+    }
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        
+        // equivalent of database truncate.
+        if (io instanceof InMemoryMetadataIO) {
+            ((InMemoryMetadataIO)io).backingTable.clear();
+        }
+    }
+    
     @Test
     public void testPut() throws Exception {
         assertNumberOfRows("metrics_metadata", 0);
         
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(io);
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "chk", "mz", "met");
         cache.put(loc1, "metaA", "some string");
         cache.put(loc1, "metaB", "fooz");
         cache.put(loc1, "metaC", "some other string");
 
-        assertNumberOfRows("metrics_metadata", 1);
+        if (io instanceof AstyanaxMetadataIO)
+            assertNumberOfRows("metrics_metadata", 1);
+        else
+            Assert.assertEquals(1, io.getNumberOfRowsTest());
         
         cache.put(loc2, "metaA", "hello");
-        assertNumberOfRows("metrics_metadata", 2);
+        
+        if (io instanceof AstyanaxMetadataIO)
+            assertNumberOfRows("metrics_metadata", 2);
+        else
+            Assert.assertEquals(2, io.getNumberOfRowsTest());
     }
 
     @Test
     public void testGetNull() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache1.setIO(io);
         Assert.assertNull(cache1.get(loc1, "foo"));
         Assert.assertNull(cache1.get(loc1, "foo"));
     }
@@ -58,6 +97,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Locator loc2 = Locator.createLocatorFromPathComponents("acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I
 
         MetadataCache cache = MetadataCache.getInstance();
+        cache.setIO(io);
 
         cache.put(loc1, MetricMetadata.UNIT.name().toLowerCase(), "foo");
         String str = cache.get(loc2, MetricMetadata.TYPE.name().toLowerCase(), String.class);
@@ -69,6 +109,9 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         MetadataCache cache2 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        
+        cache1.setIO(io);
+        cache2.setIO(io);
         
         // put in one, read in both.
         Class<String> expectedClass = String.class;
@@ -100,6 +143,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     public void testPutsAreNotDuplicative() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache1.setIO(io);
         String key = "metaA";
         String v1 = new String("Hello");
         String v2 = new String("Hello");
@@ -116,6 +160,9 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         MetadataCache cache2 = MetadataCache.createLoadingCacheInstance(new TimeValue(3, TimeUnit.SECONDS), 1);
+        
+        cache1.setIO(io);
+        cache2.setIO(io);
         
         // update in 1, should read out of both.
         Class<String> expectedClass = String.class;
@@ -141,11 +188,78 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     @Test
     public void testTypedGet() throws Exception {
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(io);
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
         String expectedString = "expected";
         
         cache.put(loc1, "str", expectedString);
 
         Assert.assertEquals(expectedString, cache.get(loc1, "str", String.class));
+    }
+    
+    @Test
+    public void testIOReplacement() throws Exception {
+        
+        // create the replacement IO.
+        final MetadataIO mapIO = new InMemoryMetadataIO();
+        final MetadataIO astIO = new AstyanaxMetadataIO();
+        
+        final MetadataCache cache = MetadataCache.getInstance();
+        cache.setIO(astIO);
+        
+        // DO NOT SET USING LOCAL IO INSTANCE!!!!
+        
+        // put an get a value with the old IO
+        Locator loc = Locator.createLocatorFromPathComponents("io_replacment", "a", "b", "c");
+        Assert.assertNull(cache.get(loc, "foo"));
+        cache.put(loc, "foo", "bar");
+        Assert.assertNotNull(cache.get(loc, "foo"));
+        Assert.assertEquals("bar", cache.get(loc, "foo"));
+        
+        // replace the IO, ensure there is nothing there, do a put and get, verify they are different than from before.
+        cache.setIO(mapIO);
+        Assert.assertNull(cache.get(loc, "foo"));
+        cache.put(loc, "foo", "baz");
+        Assert.assertNotNull(cache.get(loc, "foo"));
+        Assert.assertEquals("baz", cache.get(loc, "foo"));
+        
+        // put the old IO back. this should result in the old value being read from the cache.
+        cache.setIO(astIO);
+        Assert.assertEquals("bar", cache.get(loc, "foo"));
+    }
+    
+    private static class InMemoryMetadataIO implements MetadataIO {
+        private final Table<Locator, String, String> backingTable = Tables.newCustomTable(
+            Maps.<Locator, Map<String, String>>newHashMap(),
+            new Supplier<Map<String, String>>() {
+                @Override
+                public Map<String, String> get() {
+                    return Maps.newHashMap();
+                }
+            }
+        );
+        
+        @Override
+        public void put(Locator locator, String key, String value) throws IOException {
+            backingTable.put(locator, key, value);
+        }
+
+        @Override
+        public Map<String, String> getAllValues(Locator locator) throws IOException {
+            return backingTable.row(locator);
+        }
+
+        @Override
+        public int getNumberOfRowsTest() throws IOException {
+            return backingTable.rowKeySet().size();
+        }
+    }
+    
+    @Parameterized.Parameters
+    public static Collection<Object[]> getIOs() {
+        List<Object[]> ios = new ArrayList<Object[]>();
+        ios.add(new Object[] { new AstyanaxMetadataIO() });
+        ios.add(new Object[] { new InMemoryMetadataIO() });
+        return ios;
     }
 }

@@ -17,7 +17,8 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ShardStatePuller extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePuller.class);
+    
+    private ShardStateIO io = new AstyanaxShardStateIO();
 
     public ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager) {
         super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PULL_PERIOD), TimeUnit.MILLISECONDS));
@@ -34,11 +37,10 @@ public class ShardStatePuller extends ShardStateWorker {
 
     public void performOperation() {
         Timer.Context ctx = timer.time();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
         for (int shard : shardStateManager.getManagedShards()) {
 
             try {
-                Collection<SlotState> slotStates = reader.getShardState(shard);
+                Collection<SlotState> slotStates = io.getShardState(shard);
                 for (SlotState slotState : slotStates) {
                     shardStateManager.updateSlotOnRead(shard, slotState);
                 }
@@ -48,5 +50,9 @@ public class ShardStatePuller extends ShardStateWorker {
             }
         }
         ctx.stop();
+    }
+    
+    public void setIO(ShardStateIO io) {
+        this.io = io;
     }
 }

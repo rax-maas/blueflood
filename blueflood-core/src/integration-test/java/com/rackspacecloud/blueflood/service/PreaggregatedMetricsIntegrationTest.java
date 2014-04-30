@@ -70,7 +70,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     @Test
     public void testFullReadWrite() throws Exception {
         long ts = timestamp.incrementAndGet();
-        Locator locator = Locator.createLocatorFromPathComponents("12345", "test", "full", "read", "write");
+        Locator locator = Locator.createLocatorFromPathComponents("12345", "test", "full", "read", "put");
         IMetric metric = new PreaggregatedMetric(ts, locator, ttl, simple);
 
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
@@ -85,7 +85,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     public void testHigherGranReadWrite() throws Exception {
         final long ts = timestamp.incrementAndGet();
         final long rollupTs = ts + 100;
-        Locator locator = Locator.createLocatorFromPathComponents("12345", "test", "rollup", "read", "write");
+        Locator locator = Locator.createLocatorFromPathComponents("12345", "test", "rollup", "read", "put");
         IMetric metric = new PreaggregatedMetric(ts, locator, ttl, simple);
         
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
@@ -122,7 +122,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Locator locator = Locator.createLocatorFromPathComponents("12345", "test", "ttl");
         IMetric metric = new PreaggregatedMetric(ts, locator, new TimeValue(2, TimeUnit.SECONDS), simple);
         
-        // write it
+        // put it
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         
         // read it quickly.

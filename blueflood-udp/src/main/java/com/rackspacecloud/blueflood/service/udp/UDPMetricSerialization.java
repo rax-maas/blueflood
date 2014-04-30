@@ -127,7 +127,7 @@ public class UDPMetricSerialization {
     
     // sneaky, but avoids a copy.
     // this makes the assumption that the entire buffer is interesting or has been written to.
-    // if allocate N bytes but only write N-M bytes, you still get all N bytes back from getUnderlyingBuffer().
+    // if allocate N bytes but only put N-M bytes, you still get all N bytes back from getUnderlyingBuffer().
     private static class AccessibleByteArrayOutputStream extends ByteArrayOutputStream {
         public AccessibleByteArrayOutputStream(int size) {
             super(size);
