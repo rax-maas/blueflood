@@ -31,6 +31,8 @@
     <module>blueflood-http</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
+    <module>blueflood-dropwizard</module>
+    <module>blueflood-dropwizard-logging</module>
     <module>blueflood-io-datastax</module>
   </modules>
 
@@ -41,6 +43,7 @@
   <url>http://blueflood.io</url>
 
   <properties>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -50,6 +53,7 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
     <slf4j.version>1.7.6</slf4j.version>
+    <dropwizard.version>0.7.0</dropwizard.version>
   </properties>
 
   <build>
