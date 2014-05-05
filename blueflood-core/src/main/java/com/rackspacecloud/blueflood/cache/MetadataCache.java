@@ -16,7 +16,8 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-import com.codahale.metrics.Timer;
+
+import com.codahale.metrics.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
@@ -52,14 +53,20 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
     private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
-    private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
+    private static final TimeValue defaultExpiration = new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.META_CACHE_RETENION_IN_MINUTES), TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
-    
     private MetadataIO io = new AstyanaxMetadataIO();
     private static Timer cacheSaveTimer = Metrics.timer(MetadataCache.class, "Persistence Save");
     private static Timer cacheLoadTimer = Metrics.timer(MetadataCache.class, "Persistence Load");
-    
+    private static final Histogram nullsInCache = Metrics.histogram(MetadataCache.class, "Putting Nulls in cache");
+    private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
+    private final Gauge cacheSizeGauge = new Gauge<Long>() {
+        @Override
+        public Long getValue() {
+            return cache.size();
+        }
+    };
 
     private MetadataCache(TimeValue expiration, int concurrency) {
         try {
@@ -85,6 +92,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 .concurrencyLevel(concurrency)
                 .recordStats()
                 .build(loader);
+
+        Metrics.getRegistry().register(MetricRegistry.name(MetadataCache.class), this.cacheSizeGauge);
     }
     
     public void setIO(MetadataIO io) {
@@ -186,6 +195,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         // always put new value in the cache. it keeps reads from happening.
         cache.put(cacheKey, value);
         if (oldValue == null || !oldValue.equals(value)) {
+            updatedMetricMeter.mark();
             databasePut(locator, key, value);
             return true;
         } else {
@@ -212,6 +222,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             Map<String, String> metadata = io.getAllValues(locator);
             if (metadata == null || metadata.isEmpty()) {
                 cache.put(cacheKey, NULL);
+                nullsInCache.update(1);
                 return NULL;
             }
 
@@ -226,6 +237,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
             if (value == null) {
                 cache.put(cacheKey, NULL);
+                nullsInCache.update(1);
                 value = NULL;
             }
 
