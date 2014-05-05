@@ -109,7 +109,7 @@ public enum CoreConfig implements ConfigDefaults {
 
     IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
 
-    META_CACHE_RETENION_IN_MINUTES("10");
+    META_CACHE_RETENTION_IN_MINUTES("10");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

@@ -47,11 +47,14 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private MetadataIO io = new AstyanaxMetadataIO();
     private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
-    private static final TimeValue defaultExpiration = new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.META_CACHE_RETENION_IN_MINUTES), TimeUnit.MINUTES);
+    private static final TimeValue defaultExpiration = new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.META_CACHE_RETENTION_IN_MINUTES), TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
-    private static final Histogram nullsInCache = Metrics.histogram(MetadataCache.class, "Putting Nulls in cache");
+    private static final Counter nullsInCache = Metrics.counter(MetadataCache.class, "Putting Nulls in cache");
     private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
+    private static final Histogram totalMetadataSize = Metrics.histogram(MetadataCache.class, "Metadata row size");
+    private static final Timer cacheGetTimer = Metrics.timer(MetadataCache.class, "Metadata get from DB timer");
+    private static final Timer cachePutTimer = Metrics.timer(MetadataCache.class, "Metadata put into DB timer");
     private final Gauge cacheSizeGauge = new Gauge<Long>() {
         @Override
         public Long getValue() {
@@ -109,6 +112,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     }
 
     public String get(Locator locator, String key) throws CacheException {
+        Timer.Context cacheGetTimerContext = cacheGetTimer.time();
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
             String result = cache.get(cacheKey);
@@ -119,6 +123,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             }
         } catch (ExecutionException ex) {
             throw new CacheException(ex);
+        } finally {
+            cacheGetTimerContext.stop();
         }
     }
 
@@ -134,17 +140,22 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // returns true if updated.
     public boolean put(Locator locator, String key, String value) throws CacheException {
         if (value == null) return false;
-        CacheKey cacheKey = new CacheKey(locator, key);
-        String oldValue = cache.getIfPresent(cacheKey);
-        // don't care if oldValue == EMPTY.
-        // always put new value in the cache. it keeps reads from happening.
-        cache.put(cacheKey, value);
-        if (oldValue == null || !oldValue.equals(value)) {
-            updatedMetricMeter.mark();
-            databasePut(locator, key, value);
-            return true;
-        } else {
-            return false;
+        Timer.Context cachePutTimerContext = MetadataCache.cachePutTimer.time();
+        try {
+            CacheKey cacheKey = new CacheKey(locator, key);
+            String oldValue = cache.getIfPresent(cacheKey);
+            // don't care if oldValue == EMPTY.
+            // always put new value in the cache. it keeps reads from happening.
+            cache.put(cacheKey, value);
+            if (oldValue == null || !oldValue.equals(value)) {
+                updatedMetricMeter.mark();
+                databasePut(locator, key, value);
+                return true;
+            } else {
+                return false;
+            }
+        } finally {
+            cachePutTimerContext.stop();
         }
     }
 
@@ -167,22 +178,27 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             Map<String, String> metadata = io.getAllValues(locator);
             if (metadata == null || metadata.isEmpty()) {
                 cache.put(cacheKey, NULL);
-                nullsInCache.update(1);
+                nullsInCache.inc();
                 return NULL;
             }
 
+            int metadataRowSize = 0;
             // prepopulate all other metadata other than the key we called the method with
             for (Map.Entry<String, String> meta : metadata.entrySet()) {
+                metadataRowSize += meta.getKey().getBytes().length;
+                if (meta.getValue() != null)
+                    metadataRowSize += meta.getValue().getBytes().length;
                 if (meta.getKey().equals(key)) continue;
                 CacheKey metaKey = new CacheKey(locator, meta.getKey());
                 cache.put(metaKey, meta.getValue());
             }
+            totalMetadataSize.update(metadataRowSize);
 
             String value = metadata.get(key);
 
             if (value == null) {
                 cache.put(cacheKey, NULL);
-                nullsInCache.update(1);
+                nullsInCache.inc();
                 value = NULL;
             }
 
