@@ -238,7 +238,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             int metadataRowSize = 0;
             // prepopulate all other metadata other than the key we called the method with
             for (Map.Entry<String, String> meta : metadata.entrySet()) {
-                metadataRowSize += meta.getKey().getBytes().length;
+                metadataRowSize += meta.getKey().getBytes().length + locator.toString().getBytes().length;
                 if (meta.getValue() != null)
                     metadataRowSize += meta.getValue().getBytes().length;
                 if (meta.getKey().equals(key)) continue;
