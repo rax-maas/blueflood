@@ -107,7 +107,9 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter");
+    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
+
+    META_CACHE_RETENION_IN_MINUTES("10");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
