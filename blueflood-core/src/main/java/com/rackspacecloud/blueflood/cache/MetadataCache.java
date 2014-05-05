@@ -53,8 +53,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private static final Counter nullsInCache = Metrics.counter(MetadataCache.class, "Putting Nulls in cache");
     private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
     private static final Histogram totalMetadataSize = Metrics.histogram(MetadataCache.class, "Metadata row size");
-    private static final Timer cacheGetTimer = Metrics.timer(MetadataCache.class, "Metadata get from DB timer");
-    private static final Timer cachePutTimer = Metrics.timer(MetadataCache.class, "Metadata put into DB timer");
+    private static final Timer cacheGetTimer = Metrics.timer(MetadataCache.class, "Metadata get timer");
+    private static final Timer cachePutTimer = Metrics.timer(MetadataCache.class, "Metadata put timer");
     private final Gauge cacheSizeGauge = new Gauge<Long>() {
         @Override
         public Long getValue() {
