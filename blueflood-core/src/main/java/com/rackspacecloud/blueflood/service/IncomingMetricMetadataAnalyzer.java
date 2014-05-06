@@ -77,7 +77,7 @@ public class IncomingMetricMetadataAnalyzer {
     }
 
     private Collection<IncomingMetricException> checkMetric(Metric metric) throws CacheException {
-        if (metric == null) {
+        if (metric == null || Configuration.getInstance().getBooleanProperty(CoreConfig.DISABLE_TYPE_UNIT_PROCESSING_CACHE_READ)) {
             return null;
         }
 
