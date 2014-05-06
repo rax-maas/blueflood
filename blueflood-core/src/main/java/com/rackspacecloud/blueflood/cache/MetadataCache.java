@@ -86,8 +86,11 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 .concurrencyLevel(concurrency)
                 .recordStats()
                 .build(loader);
-
-        Metrics.getRegistry().register(MetricRegistry.name(MetadataCache.class, "Cache Size"), this.cacheSizeGauge);
+        try {
+            Metrics.getRegistry().register(MetricRegistry.name(MetadataCache.class, "Cache Size"), this.cacheSizeGauge);
+        } catch (Exception e) {
+            // pass
+        }
     }
     
     public void setIO(MetadataIO io) {
