@@ -87,7 +87,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 .recordStats()
                 .build(loader);
 
-        Metrics.getRegistry().register(MetricRegistry.name(MetadataCache.class), this.cacheSizeGauge);
+        Metrics.getRegistry().register(MetricRegistry.name(MetadataCache.class, "Cache Size"), this.cacheSizeGauge);
     }
     
     public void setIO(MetadataIO io) {
