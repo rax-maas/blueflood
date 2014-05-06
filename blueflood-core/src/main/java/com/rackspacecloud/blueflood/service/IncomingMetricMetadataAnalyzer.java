@@ -43,6 +43,11 @@ public class IncomingMetricMetadataAnalyzer {
     
     public Collection<IncomingMetricException> scanMetrics(Collection<IMetric> metrics) {
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
+
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.DISABLE_TYPE_UNIT_PROCESSING_CACHE_READ)) {
+            return problems;
+        }
+
         for (IMetric metric : metrics) {
             try {
                 if (metric instanceof Metric) {
@@ -77,7 +82,7 @@ public class IncomingMetricMetadataAnalyzer {
     }
 
     private Collection<IncomingMetricException> checkMetric(Metric metric) throws CacheException {
-        if (metric == null || Configuration.getInstance().getBooleanProperty(CoreConfig.DISABLE_TYPE_UNIT_PROCESSING_CACHE_READ)) {
+        if (metric == null) {
             return null;
         }
 
