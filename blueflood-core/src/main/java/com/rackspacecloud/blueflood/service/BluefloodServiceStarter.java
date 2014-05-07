@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
@@ -24,7 +25,15 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
@@ -241,6 +250,41 @@ public class BluefloodServiceStarter {
 
         // check that we have cassandra hosts
         validateCassandraHosts();
+        
+        // possibly load the metadata cache
+        boolean usePersistedCache = Configuration.getInstance().getBooleanProperty(CoreConfig.METADATA_CACHE_PERSISTENCE_ENABLED);
+        if (usePersistedCache) {
+            String path = Configuration.getInstance().getStringProperty(CoreConfig.METADATA_CACHE_PERSISTENCE_PATH);
+            final File cacheLocation = new File(path);
+            if (cacheLocation.exists()) {
+                try {
+                    DataInputStream in = new DataInputStream(new FileInputStream(cacheLocation));
+                    MetadataCache.getInstance().load(in);
+                    in.close();
+                } catch (IOException ex) {
+                    log.error(ex.getMessage(), ex);
+                }
+            } else {
+                log.info("Wanted to load metadata cache, but it did not exist: " + path);
+            }
+            
+            Timer cachePersistenceTimer = new Timer("Metadata-Cache-Persistence");
+            int savePeriodMins = Configuration.getInstance().getIntegerProperty(CoreConfig.METADATA_CACHE_PERSISTNECE_PERIOD_MINS);
+            cachePersistenceTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                DataOutputStream out = new DataOutputStream(new FileOutputStream(cacheLocation, false));
+                                MetadataCache.getInstance().save(out);
+                                out.close();
+                            } catch (IOException ex) {
+                                log.error(ex.getMessage(), ex);
+                            }
+                        }
+                    }, 
+                    TimeUnit.MINUTES.toMillis(savePeriodMins),
+                    TimeUnit.MINUTES.toMillis(savePeriodMins));
+        }
 
         // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
         new RestartGauge(Metrics.getRegistry(), RollupService.class);
