@@ -26,15 +26,10 @@ public class ShardStateWorkerTest {
         });
         
         final AtomicInteger counter = new AtomicInteger(0);
-        final ShardStateWorker worker = new ShardStateWorker(allShards, manager, new TimeValue(100, TimeUnit.MILLISECONDS)) {
+        final ShardStateWorker worker = new ShardStateWorker(allShards, manager, new TimeValue(100, TimeUnit.MILLISECONDS), null) {
             @Override
             void performOperation() {
                 counter.incrementAndGet();
-            }
-
-            @Override
-            public void setIO(ShardStateIO io) {
-                // doesn't use IO, so no-op.
             }
         };
         

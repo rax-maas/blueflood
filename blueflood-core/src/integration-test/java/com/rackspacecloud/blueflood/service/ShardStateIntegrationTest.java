@@ -53,12 +53,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         long time = 1234000L;
         Collection<Integer> shards = Lists.newArrayList(1, 2, 3, 4);
         ScheduleContext ctx = new ScheduleContext(time, shards);
-        ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
-        ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
-        
-        pull.setIO(io);
-        push.setIO(io);
-        
+        ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), this.io);
+        ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), this.io);
         
         for (long t = time; t < time + 10000000; t += 1000) {
             ctx.update(t + 0, 1);
@@ -121,15 +117,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctxA = new ScheduleContext(time, shardsA);
         ScheduleContext ctxB = new ScheduleContext(time, shardsB);
 
-        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager());
-        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager());
-        ShardStateWorker pushB = new ShardStatePusher(allShards, ctxB.getShardStateManager());
-        ShardStateWorker pullB = new ShardStatePuller(allShards, ctxB.getShardStateManager());
-        
-        pushA.setIO(io);
-        pullA.setIO(io);
-        pushB.setIO(io);
-        pullB.setIO(io);
+        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
+        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
+        ShardStateWorker pushB = new ShardStatePusher(allShards, ctxB.getShardStateManager(), this.io);
+        ShardStateWorker pullB = new ShardStatePuller(allShards, ctxB.getShardStateManager(), this.io);
         
         // send a few updates to all contexts.
         for (ScheduleContext ctx : new ScheduleContext[] { ctxA, ctxB }) {
@@ -209,11 +200,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }};
         
         ScheduleContext ctxA = new ScheduleContext(time, shardsA);
-        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager());
-        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager());
-        
-        pushA.setIO(io);
-        pullA.setIO(io);
+        ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
+        ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
         
         // update.
         time += 1000;
@@ -260,11 +248,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final CountDownLatch latch = new CountDownLatch(2);
         final Throwable[] errBucket = new Throwable[2];
         Thread pushPull = new Thread() { public void run() {
-            ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager());
-            ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager());
+            ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), ShardStateIntegrationTest.this.io);
+            ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), ShardStateIntegrationTest.this.io);
             
-            push.setIO(io);
-            pull.setIO(io);
             push.setPeriod(1);
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();

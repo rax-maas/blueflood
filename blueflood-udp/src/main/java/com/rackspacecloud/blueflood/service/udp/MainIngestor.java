@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.service.udp;
 
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -45,7 +46,7 @@ public class MainIngestor {
         startIngestion(rollupContext, new InetSocketAddress(host, port));
 
         // save shard state to/from the database.
-        new ShardStateServices(rollupContext).start();
+        new ShardStateServices(rollupContext, new AstyanaxShardStateIO()).start();
     }
 
     private static void startIngestion(ScheduleContext context, SocketAddress listenAddress) {

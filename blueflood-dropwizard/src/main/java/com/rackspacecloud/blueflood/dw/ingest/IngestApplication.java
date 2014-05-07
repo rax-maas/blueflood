@@ -3,7 +3,10 @@ package com.rackspacecloud.blueflood.dw.ingest;
 import com.google.common.base.Joiner;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.dw.logging.LogAppenderFactory;
+import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
@@ -99,8 +102,10 @@ public class IngestApplication extends Application<IngestConfiguration> {
         Class writerImpl = loader.loadClass(ingestConfiguration.getMetricsWriterClass());
         IMetricsWriter writer = (IMetricsWriter) writerImpl.newInstance();
         
+        
         // state management for active shards, slots, etc.
-        StateManager stateManager = new StateManager(rollupContext);
+        ShardStateIO shardstateIO = new AstyanaxShardStateIO(); // todo: use configuration setting.
+        StateManager stateManager = new StateManager(rollupContext, shardstateIO);
         environment.lifecycle().manage(stateManager);
         
         MetadataCache cache = MetadataCache.getInstance();
