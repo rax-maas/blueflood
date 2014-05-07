@@ -20,6 +20,9 @@ import com.codahale.metrics.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
@@ -34,9 +37,15 @@ import org.slf4j.LoggerFactory;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -108,6 +117,42 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
     public static MetadataCache createLoadingCacheInstance(TimeValue expiration, int concurrency) {
         return new MetadataCache(expiration, concurrency);
+    }
+    
+    public void save(DataOutputStream out) throws IOException {
+        
+        // convert to a table. this avoids us writing out the locator over and over.
+        Map<CacheKey, String> map = new HashMap<CacheKey, String>(cache.asMap());
+        Table<Locator, String, String> table = HashBasedTable.create();
+        for (Map.Entry<CacheKey, String> entry : map.entrySet()) {
+            table.put(entry.getKey().locator, entry.getKey().keyString, entry.getValue());
+        }
+        
+        Set<Locator> rowKeys = table.rowKeySet();
+        out.writeInt(rowKeys.size());
+        
+        for (Locator locator : rowKeys) {
+            out.writeUTF(locator.toString());
+            
+            // how many key/value pairs are there?
+            Map<String, String> pairs = table.row(locator);
+            out.writeInt(pairs.size());
+            for (Map.Entry<String, String> entry : pairs.entrySet()) {
+                out.writeUTF(entry.getKey());
+                out.writeUTF(entry.getValue());
+            }
+        }
+    }
+    
+    public void load(DataInputStream in) throws IOException {
+        int numLocators = in.readInt();
+        for (int locIndex = 0; locIndex < numLocators; locIndex++) {
+            Locator locator = Locator.createLocatorFromDbKey(in.readUTF());
+            int numPairs = in.readInt();
+            for (int pairIndex = 0; pairIndex < numPairs; pairIndex++) {
+                cache.put(new CacheKey(locator, in.readUTF()), in.readUTF());
+            }
+        }
     }
 
     public boolean containsKey(Locator locator, String key) {
