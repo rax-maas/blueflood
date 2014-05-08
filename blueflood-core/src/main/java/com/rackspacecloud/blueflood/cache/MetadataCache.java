@@ -16,11 +16,11 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.codahale.metrics.Timer;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
@@ -28,6 +28,7 @@ import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +39,6 @@ import javax.management.ObjectName;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,12 +50,16 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: give each cache a name.
 
     private final com.google.common.cache.LoadingCache<CacheKey, String> cache;
-    private MetadataIO io = new AstyanaxMetadataIO();
     private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
     private static final TimeValue defaultExpiration = new TimeValue(10, TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
+    
+    private MetadataIO io = new AstyanaxMetadataIO();
+    private static Timer cacheSaveTimer = Metrics.timer(MetadataCache.class, "Persistence Save");
+    private static Timer cacheLoadTimer = Metrics.timer(MetadataCache.class, "Persistence Load");
+    
 
     private MetadataCache(TimeValue expiration, int concurrency) {
         try {
@@ -103,37 +106,47 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     
     public void save(DataOutputStream out) throws IOException {
         
+        Timer.Context ctx = cacheSaveTimer.time();
+        try {
         // convert to a table. this avoids us writing out the locator over and over.
-        Map<CacheKey, String> map = new HashMap<CacheKey, String>(cache.asMap());
-        Table<Locator, String, String> table = HashBasedTable.create();
-        for (Map.Entry<CacheKey, String> entry : map.entrySet()) {
-            table.put(entry.getKey().locator, entry.getKey().keyString, entry.getValue());
-        }
-        
-        Set<Locator> rowKeys = table.rowKeySet();
-        out.writeInt(rowKeys.size());
-        
-        for (Locator locator : rowKeys) {
-            out.writeUTF(locator.toString());
-            
-            // how many key/value pairs are there?
-            Map<String, String> pairs = table.row(locator);
-            out.writeInt(pairs.size());
-            for (Map.Entry<String, String> entry : pairs.entrySet()) {
-                out.writeUTF(entry.getKey());
-                out.writeUTF(entry.getValue());
+            Map<CacheKey, String> map = new HashMap<CacheKey, String>(cache.asMap());
+            Table<Locator, String, String> table = HashBasedTable.create();
+            for (Map.Entry<CacheKey, String> entry : map.entrySet()) {
+                table.put(entry.getKey().locator, entry.getKey().keyString, entry.getValue());
             }
+            
+            Set<Locator> rowKeys = table.rowKeySet();
+            out.writeInt(rowKeys.size());
+            
+            for (Locator locator : rowKeys) {
+                out.writeUTF(locator.toString());
+                
+                // how many key/value pairs are there?
+                Map<String, String> pairs = table.row(locator);
+                out.writeInt(pairs.size());
+                for (Map.Entry<String, String> entry : pairs.entrySet()) {
+                    out.writeUTF(entry.getKey());
+                    out.writeUTF(entry.getValue());
+                }
+            }
+        } finally {
+            ctx.stop();
         }
     }
     
     public void load(DataInputStream in) throws IOException {
-        int numLocators = in.readInt();
-        for (int locIndex = 0; locIndex < numLocators; locIndex++) {
-            Locator locator = Locator.createLocatorFromDbKey(in.readUTF());
-            int numPairs = in.readInt();
-            for (int pairIndex = 0; pairIndex < numPairs; pairIndex++) {
-                cache.put(new CacheKey(locator, in.readUTF()), in.readUTF());
+        Timer.Context ctx = cacheLoadTimer.time();
+        try {
+            int numLocators = in.readInt();
+            for (int locIndex = 0; locIndex < numLocators; locIndex++) {
+                Locator locator = Locator.createLocatorFromDbKey(in.readUTF());
+                int numPairs = in.readInt();
+                for (int pairIndex = 0; pairIndex < numPairs; pairIndex++) {
+                    cache.put(new CacheKey(locator, in.readUTF()), in.readUTF());
+                }
             }
+        } finally {
+            ctx.stop();
         }
     }
 
