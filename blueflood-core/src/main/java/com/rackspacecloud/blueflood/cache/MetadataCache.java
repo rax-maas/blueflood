@@ -89,7 +89,6 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private final Queue<CacheKey> metaWrites; // Guarantees FIFO writes
     private static final Timer batchedWritesTimerMetric = Metrics.timer(MetadataCache.class, "Metadata batched writes timer");
 
-
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
     private static final Counter nullsInCache = Metrics.counter(MetadataCache.class, "Putting Nulls in cache");
     private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
