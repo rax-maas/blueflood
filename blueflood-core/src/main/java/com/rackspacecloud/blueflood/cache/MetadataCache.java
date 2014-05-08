@@ -57,8 +57,6 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private static final Boolean batchedReadWrites = Configuration.getInstance().getBooleanProperty(
             CoreConfig.META_CACHE_BATCHED_READ_WRITES);
 
-
-
     // Specific to batched meta reads
 
     private static final Integer batchedReadsThreshold = Configuration.getInstance().getIntegerProperty(
