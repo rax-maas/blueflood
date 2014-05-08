@@ -17,9 +17,13 @@
 package com.rackspacecloud.blueflood.cache;
 
 import com.codahale.metrics.*;
+import com.codahale.metrics.Timer;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
@@ -36,9 +40,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBean {
     // todo: give each cache a name.
@@ -47,8 +50,48 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private MetadataIO io = new AstyanaxMetadataIO();
     private static final String NULL = "null".intern();
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
-    private static final TimeValue defaultExpiration = new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.META_CACHE_RETENTION_IN_MINUTES), TimeUnit.MINUTES);
-    private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_SCRIBE_WRITE_THREADS);
+    private static final TimeValue defaultExpiration = new TimeValue(Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_RETENTION_IN_MINUTES), TimeUnit.MINUTES);
+    private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_MAX_CONCURRENCY);
+    private static final Boolean batchedReadWrites = Configuration.getInstance().getBooleanProperty(
+            CoreConfig.META_CACHE_BATCHED_READ_WRITES);
+
+
+
+    // Specific to batched meta reads
+
+    private static final Integer batchedReadsThreshold = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_READS_THRESHOLD);
+    private static final Integer batchedReadsTimerConfig = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_READS_TIMER_MS);
+    private static final TimeValue batchedReadsInterval = new TimeValue(batchedReadsTimerConfig, TimeUnit.MILLISECONDS);
+    private static final Integer batchedReadsPipelineLimit = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_READS_PIPELINE_DEPTH);
+
+    private final java.util.Timer batchedReadsTimer = new java.util.Timer("MetadataBatchedReads");
+    private final ThreadPoolExecutor readThreadPoolExecutor;
+    private final Set<Locator> outstandingMetaReads;
+    private final Queue<Locator> metaReads; // Guarantees FIFO reads
+    private static final Timer batchedReadsTimerMetric = Metrics.timer(MetadataCache.class, "Metadata batched reads timer");
+
+    // Specific to batched meta writes
+
+    private static final Integer batchedWritesThreshold = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_WRITES_THRESHOLD);
+    private static final Integer batchedWritesTimerConfig = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_WRITES_TIMER_MS);
+    private static final TimeValue batchedWritesInterval = new TimeValue(batchedWritesTimerConfig, TimeUnit.MILLISECONDS);
+    private static final Integer batchedWritesPipelineLimit = Configuration.getInstance().getIntegerProperty(
+            CoreConfig.META_CACHE_BATCHED_WRITES_PIPELINE_DEPTH);
+
+    private final java.util.Timer batchedWritesTimer = new java.util.Timer("MetadataBatchedWrites");
+    private final ThreadPoolExecutor writeThreadPoolExecutor;
+    private final Set<CacheKey> outstandingMetaWrites;
+    private final Queue<CacheKey> metaWrites; // Guarantees FIFO writes
+    private static final Timer batchedWritesTimerMetric = Metrics.timer(MetadataCache.class, "Metadata batched writes timer");
+
+
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
     private static final Counter nullsInCache = Metrics.counter(MetadataCache.class, "Putting Nulls in cache");
     private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
@@ -91,6 +134,29 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         } catch (Exception e) {
             // pass
         }
+        this.outstandingMetaReads = new ConcurrentSkipListSet<Locator>();
+        this.metaReads = new ConcurrentLinkedQueue<Locator>();
+        this.readThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedReadsPipelineLimit)
+                .withMaxPoolSize(batchedReadsPipelineLimit)
+                .withUnboundedQueue().withName("MetaBatchedReadThreadPool").build();
+        this.batchedReadsTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                fetchMeta();
+            }
+        }, 0, this.batchedReadsInterval.toMillis());
+
+        this.outstandingMetaWrites = new ConcurrentSkipListSet<CacheKey>();
+        this.writeThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedWritesPipelineLimit)
+                .withMaxPoolSize(batchedWritesPipelineLimit)
+                .withUnboundedQueue().withName("MetaBatchedWritesThreadPool").build();
+        this.metaWrites = new ConcurrentLinkedQueue<CacheKey>();
+        this.batchedWritesTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                flushMeta();
+            }
+        }, 0, this.batchedWritesInterval.toMillis());
     }
     
     public void setIO(MetadataIO io) {
@@ -115,6 +181,20 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     }
 
     public String get(Locator locator, String key) throws CacheException {
+        if (!batchedReadWrites) {
+            return getImmediately(locator, key);
+        }
+
+        String val = cache.getIfPresent(new CacheKey(locator, key));
+
+        if (val == null) {
+            databaseLazyLoad(locator); // loads all meta for the locator (optimized to prevent duplicate reads)
+        }
+
+        return val;
+    }
+
+    public String getImmediately(Locator locator, String key) throws CacheException {
         Timer.Context cacheGetTimerContext = cacheGetTimer.time();
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
@@ -142,6 +222,17 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: synchronization?
     // returns true if updated.
     public boolean put(Locator locator, String key, String value) throws CacheException {
+        if (!batchedReadWrites) {
+            return putImmediately(locator, key, value);
+        }
+
+        cache.put(new CacheKey(locator, key), value);
+        databaseLazyWrite(locator, key); // Optimized to avoid duplicate writes.
+
+        return true; // TODO: revisit this
+    }
+
+    public boolean putImmediately(Locator locator, String key, String value) throws CacheException {
         if (value == null) return false;
         Timer.Context cachePutTimerContext = MetadataCache.cachePutTimer.time();
         try {
@@ -211,6 +302,66 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         }
     }
 
+    private void databaseLazyLoad(Locator locator) {
+        boolean isPresent = outstandingMetaReads.contains(locator);
+
+        if (!isPresent) {
+            metaReads.add(locator);
+            outstandingMetaReads.add(locator);
+        }
+
+        // Kickoff fetch meta if necessary
+        if (metaReads.size() > batchedReadsThreshold) {
+            fetchMeta();
+        }
+    }
+
+    private void databaseLazyWrite(Locator locator, String metaKey) {
+        CacheKey compoundKey = new CacheKey(locator, metaKey);
+        if (outstandingMetaWrites.contains(compoundKey)) {
+            return; // already queued up to write.
+        }
+
+        outstandingMetaWrites.add(compoundKey);
+        metaWrites.add(compoundKey);
+
+        if (metaWrites.size() > batchedWritesThreshold) {
+            flushMeta();
+        }
+
+        return;
+    }
+
+    private synchronized void fetchMeta() { // Only one thread should ever call into this.
+        while (!metaReads.isEmpty()) {
+            Set<Locator> batch = new HashSet<Locator>();
+
+            for (int i = 0; !metaReads.isEmpty() && i < batchedReadsThreshold; i++) {
+                batch.add(metaReads.poll()); // poll() is a destructive read (removes the head from the queue).
+            }
+
+            readThreadPoolExecutor.submit(new BatchedMetaReadsRunnable(batch));
+        }
+    }
+
+    private synchronized void flushMeta() { // Only one thread should ever call into this.
+        while (!outstandingMetaWrites.isEmpty()) {
+            Table<Locator, String, String> metaBatch = HashBasedTable.create();
+
+            for (int i = 0; !metaWrites.isEmpty() && i < batchedWritesThreshold; i++) {
+                CacheKey compoundKey = metaWrites.poll(); // destructive read.
+                Locator locator = compoundKey.locator();
+                String metaKey = compoundKey.keyString();
+                String metaVal = cache.getIfPresent(metaKey);
+                if (metaVal != null) {
+                    metaBatch.put(locator, metaKey, metaVal);
+                }
+            }
+
+            writeThreadPoolExecutor.submit(new BatchedMetaWritesRunnable(metaBatch));
+        }
+    }
+
     private final class CacheKey {
         private final Locator locator;
         private final String keyString;
@@ -247,5 +398,94 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     @Override
     public CacheStats getStats() {
         return cache.stats();
+    }
+
+    private class BatchedMetaReadsRunnable implements Runnable {
+        private final Set<Locator> locators;
+
+        public BatchedMetaReadsRunnable(Set<Locator> locators) {
+            this.locators = locators;
+        }
+
+        @Override
+        public void run() {
+            Timer.Context ctx = batchedReadsTimerMetric.time();
+            try {
+                Table<Locator, String, String> metaTable = io.getAllValues(locators);
+                int metadataRowSize = 0;
+
+                for (Locator locator : metaTable.rowKeySet()) {
+                    Map<String, String> metaMapForLocator = metaTable.row(locator);
+
+                    for (Map.Entry<String, String> meta : metaMapForLocator.entrySet()) {
+                        CacheKey metaKey = new CacheKey(locator, meta.getKey());
+                        String existing = cache.getIfPresent(metaKey);
+
+                        if (existing == null) {
+                            cache.put(metaKey, meta.getValue());
+                        }
+
+                        boolean differs = existing != null && !existing.equals(meta.getValue());
+                        if (differs) {
+                            log.warn("Meta " + meta.getKey() + " changed from " + existing + " to " + meta.getValue()
+                                    + " for locator " + locator); // delayed audit log.
+                            // In this case, do not update the cache. DB has stale data.
+                            continue;
+                        }
+
+                        metadataRowSize += meta.getKey().getBytes().length + locator.toString().getBytes().length;
+                        metadataRowSize += meta.getValue().getBytes().length;
+                    }
+
+                    // Got the meta for locator. Remove this from the place holder.
+                    outstandingMetaReads.remove(locator);
+                }
+
+                totalMetadataSize.update(metadataRowSize);
+                // Kickoff fetch meta if necessary
+                if (metaReads.size() > batchedReadsThreshold) {
+                    fetchMeta();
+                }
+            } catch (Exception ex) {
+                // Queue up the locators again (at the end)!
+                for (Locator locator : locators) {
+                    metaReads.add(locator);
+                }
+                log.error("Exception reading metadata from db (batched reads)", ex);
+            } finally {
+                ctx.stop();
+            }
+        }
+    }
+
+    private class BatchedMetaWritesRunnable implements Runnable {
+        private final Table<Locator, String, String> metaToWrite;
+
+        public BatchedMetaWritesRunnable(Table<Locator, String, String> metaToWrite) {
+            this.metaToWrite = metaToWrite;
+        }
+
+        @Override
+        public void run() {
+            Timer.Context ctx = batchedWritesTimerMetric.time();
+            try {
+                io.putAll(metaToWrite);
+            } catch (Exception ex) {
+                log.error("Exception writing metadata to db (batched writes)", ex);
+                // Queue up writes at the end.
+                for (Locator locator : metaToWrite.rowKeySet()) {
+                    Map<String, String> metaMapForLocator = metaToWrite.row(locator);
+
+                    for (Map.Entry<String, String> meta : metaMapForLocator.entrySet()) {
+                        CacheKey compoundKey = new CacheKey(locator, meta.getKey());
+                        metaWrites.add(compoundKey);
+                        // This is fine. We always read the latest value from the real cache. So we'll pull the latest
+                        // value to write.
+                    }
+                }
+            } finally {
+                ctx.stop();
+            }
+        }
     }
 }
