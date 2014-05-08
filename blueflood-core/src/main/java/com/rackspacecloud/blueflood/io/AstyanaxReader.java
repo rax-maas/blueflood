@@ -18,7 +18,9 @@ package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Table;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -86,6 +88,43 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
+    }
+
+    public Table<Locator, String, String> getMetadataValues(Set<Locator> locators) {
+        ColumnFamily CF = CassandraModel.CF_METRIC_METADATA;
+        boolean isBatch = locators.size() > 1;
+        Table<Locator, String, String> metaTable = HashBasedTable.create();
+
+        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF) : Instrumentation.getReadTimerContext(CF);
+        try {
+            // We don't paginate this call. So we should make sure the number of reads is tolerable.
+            // TODO: Think about paginating this call.
+            OperationResult<Rows<Locator, String>> query = keyspace
+                    .prepareQuery(CF)
+                    .getKeySlice(locators)
+                    .execute();
+
+            for (Row<Locator, String> row : query.getResult()) {
+                ColumnList<String> columns = row.getColumns();
+                for (Column<String> column : columns) {
+                    String metaValue = column.getValue(StringMetadataSerializer.get());
+                    String metaKey = column.getName();
+                    metaTable.put(row.getKey(), metaKey, metaValue);
+                }
+            }
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
+                Instrumentation.markNotFound(CF);
+            } else {
+                if (isBatch) { Instrumentation.markBatchReadError(e); }
+                else { Instrumentation.markReadError(e); }
+            }
+            log.warn((isBatch ? "Batch " : "") + " read query failed for column family " + CF.getName(), e);
+        } finally {
+            ctx.stop();
+        }
+
+        return metaTable;
     }
 
     /**
