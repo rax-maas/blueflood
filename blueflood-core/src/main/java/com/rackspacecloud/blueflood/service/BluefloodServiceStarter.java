@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -269,7 +268,7 @@ public class BluefloodServiceStarter {
             }
             
             Timer cachePersistenceTimer = new Timer("Metadata-Cache-Persistence");
-            int savePeriodMins = Configuration.getInstance().getIntegerProperty(CoreConfig.METADATA_CACHE_PERSISTNECE_PERIOD_MINS);
+            int savePeriodMins = Configuration.getInstance().getIntegerProperty(CoreConfig.METADATA_CACHE_PERSISTENCE_PERIOD_MINS);
             cachePersistenceTimer.schedule(new TimerTask() {
                         @Override
                         public void run() {
