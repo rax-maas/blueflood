@@ -115,6 +115,7 @@ public class HttpMetricsIngestionServer {
         typeAndUnitProcessor = new TypeAndUnitProcessor(
                 new ThreadPoolBuilder()
                         .withName("Metric type and unit processing")
+                        .withCorePoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
                         .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
                         .build(),
                 metricMetadataAnalyzer
