@@ -111,7 +111,7 @@ public enum CoreConfig implements ConfigDefaults {
     
     METADATA_CACHE_PERSISTENCE_ENABLED("false"),
     METADATA_CACHE_PERSISTENCE_PATH("/dev/null"),
-    METADATA_CACHE_PERSISTNECE_PERIOD_MINS("10");
+    METADATA_CACHE_PERSISTENCE_PERIOD_MINS("10");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
