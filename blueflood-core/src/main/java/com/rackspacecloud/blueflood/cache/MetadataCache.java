@@ -141,7 +141,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.batchedReadsTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                fetchMeta();
+                fetchMeta(true);
             }
         }, 0, this.batchedReadsInterval.toMillis());
 
@@ -153,7 +153,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.batchedWritesTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                flushMeta();
+                flushMeta(true);
             }
         }, 0, this.batchedWritesInterval.toMillis());
     }
@@ -311,7 +311,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
         // Kickoff fetch meta if necessary
         if (metaReads.size() > batchedReadsThreshold) {
-            fetchMeta();
+            fetchMeta(false);
         }
     }
 
@@ -325,13 +325,17 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         metaWrites.add(compoundKey);
 
         if (metaWrites.size() > batchedWritesThreshold) {
-            flushMeta();
+            flushMeta(false);
         }
 
         return;
     }
 
-    private synchronized void fetchMeta() { // Only one thread should ever call into this.
+    private synchronized void fetchMeta(boolean forced) { // Only one thread should ever call into this.
+        if (!forced && metaReads.size() < batchedReadsThreshold) {
+            return;
+        }
+
         while (!metaReads.isEmpty()) {
             Set<Locator> batch = new HashSet<Locator>();
 
@@ -343,7 +347,11 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         }
     }
 
-    private synchronized void flushMeta() { // Only one thread should ever call into this.
+    private synchronized void flushMeta(boolean forced) { // Only one thread should ever call into this.
+        if (!forced && metaWrites.size() < batchedWritesThreshold) {
+            return;
+        }
+
         while (!outstandingMetaWrites.isEmpty()) {
             Table<Locator, String, String> metaBatch = HashBasedTable.create();
 
@@ -443,7 +451,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 totalMetadataSize.update(metadataRowSize);
                 // Kickoff fetch meta if necessary
                 if (metaReads.size() > batchedReadsThreshold) {
-                    fetchMeta();
+                    fetchMeta(false);
                 }
             } catch (Exception ex) {
                 // Queue up the locators again (at the end)!
