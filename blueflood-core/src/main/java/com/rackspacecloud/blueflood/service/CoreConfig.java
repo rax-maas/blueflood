@@ -40,10 +40,11 @@ public enum CoreConfig implements ConfigDefaults {
     META_CACHE_MAX_CONCURRENCY("50"),
 
     // Setting this to true will enable batched meta reads and writes from db (lazy loads and writes)
-    META_CACHE_BATCHED_READ_WRITES("false"),
+    META_CACHE_BATCHED_READS("false"),
+    META_CACHE_BATCHED_WRITES("false"),
 
     META_CACHE_BATCHED_READS_THRESHOLD("100"), // how many rows to read at a time? (batch size)
-    META_CACHE_BATCHED_READS_TIMER_MS("100"),  // how often to read? (batch timer)
+    META_CACHE_BATCHED_READS_TIMER_MS("10"),  // how often to read? (batch timer) (read faster than writes)
     META_CACHE_BATCHED_READS_PIPELINE_DEPTH("10"), // how many outstanding batches? (1 thread per batch).
 
     META_CACHE_BATCHED_WRITES_THRESHOLD("100"),  // how many meta columns to write at a time? (batch size)
