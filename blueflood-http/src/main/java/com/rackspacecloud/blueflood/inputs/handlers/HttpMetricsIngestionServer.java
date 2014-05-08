@@ -66,6 +66,7 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
+    private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
@@ -113,7 +114,9 @@ public class HttpMetricsIngestionServer {
         
         typeAndUnitProcessor = new TypeAndUnitProcessor(
                 new ThreadPoolBuilder()
-                        .withName("Metric type and unit processing").build(),
+                        .withName("Metric type and unit processing")
+                        .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                        .build(),
                 metricMetadataAnalyzer
         ).withLogger(log);
         
