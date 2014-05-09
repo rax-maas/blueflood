@@ -221,19 +221,10 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     // todo: synchronization?
     // returns true if updated.
     public boolean put(Locator locator, String key, String value) throws CacheException {
-        if (!batchedWrites) {
-            return putImmediately(locator, key, value);
-        }
-
-        cache.put(new CacheKey(locator, key), value);
-        databaseLazyWrite(locator, key); // Optimized to avoid duplicate writes.
-
-        return true; // TODO: revisit this
-    }
-
-    public boolean putImmediately(Locator locator, String key, String value) throws CacheException {
         if (value == null) return false;
+
         Timer.Context cachePutTimerContext = MetadataCache.cachePutTimer.time();
+        boolean dbWrite = false;
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
             String oldValue = cache.getIfPresent(cacheKey);
@@ -241,12 +232,19 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             // always put new value in the cache. it keeps reads from happening.
             cache.put(cacheKey, value);
             if (oldValue == null || !oldValue.equals(value)) {
-                updatedMetricMeter.mark();
-                databasePut(locator, key, value);
-                return true;
-            } else {
-                return false;
+                dbWrite = true;
             }
+
+            if (dbWrite) {
+                updatedMetricMeter.mark();
+                if (!batchedWrites) {
+                    databasePut(locator, key, value);
+                } else {
+                    databaseLazyWrite(locator, key);
+                }
+            }
+
+            return dbWrite;
         } finally {
             cachePutTimerContext.stop();
         }
