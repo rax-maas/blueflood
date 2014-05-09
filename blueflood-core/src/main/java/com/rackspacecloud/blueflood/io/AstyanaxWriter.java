@@ -21,6 +21,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -172,6 +173,32 @@ public class AstyanaxWriter extends AstyanaxIO {
             Instrumentation.markWriteError(e);
             log.error("Error writing Metadata Value", e);
             throw e;
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    public void writeMetadata(Table<Locator, String, String> metaTable) throws ConnectionException {
+        ColumnFamily cf = CassandraModel.CF_METRIC_METADATA;
+        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(cf);
+        MutationBatch batch = keyspace.prepareMutationBatch();
+
+        try {
+            for (Locator locator : metaTable.rowKeySet()) {
+                Map<String, String> metaRow = metaTable.row(locator);
+                ColumnListMutation<String> mutation = batch.withRow(cf, locator);
+
+                for (Map.Entry<String, String> meta : metaRow.entrySet()) {
+                    mutation.putColumn(meta.getKey(), meta.getValue(), StringMetadataSerializer.get(), null);
+                }
+            }
+            try {
+                batch.execute();
+            } catch (ConnectionException e) {
+                Instrumentation.markWriteError(e);
+                log.error("Connection exception persisting metadata", e);
+                throw e;
+            }
         } finally {
             ctx.stop();
         }
