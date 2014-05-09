@@ -37,10 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(Parameterized.class)
@@ -288,6 +285,16 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         @Override
         public Map<String, String> getAllValues(Locator locator) throws IOException {
             return backingTable.row(locator);
+        }
+
+        @Override
+        public Table<Locator, String, String> getAllValues(Set<Locator> locators) throws IOException {
+            return null; // TODO: Fix later
+        }
+
+        @Override
+        public void putAll(Table<Locator, String, String> meta) throws IOException {
+            // pass // TODO: Fix later
         }
 
         @Override
