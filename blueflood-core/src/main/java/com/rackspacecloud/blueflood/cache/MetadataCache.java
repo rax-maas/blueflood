@@ -265,7 +265,11 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
 
     public <T> T get(Locator locator, String key, Class<T> type) throws CacheException {
         try {
-            return (T)get(locator, key);
+            String val = get(locator, key);
+            if (val == null) {
+                return null;
+            }
+            return (T) val;
         } catch (ClassCastException ex) {
             throw new CacheException(ex);
         }
