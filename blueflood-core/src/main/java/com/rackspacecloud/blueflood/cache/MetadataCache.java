@@ -269,7 +269,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             if (val == null) {
                 return null;
             }
-            return (T) get(locator, key);
+            return (T) val;
         } catch (ClassCastException ex) {
             throw new CacheException(ex);
         }
