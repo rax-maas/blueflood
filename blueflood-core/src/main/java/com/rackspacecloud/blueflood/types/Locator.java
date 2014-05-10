@@ -22,7 +22,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Locator {
+public class Locator implements Comparable<Locator> {
     private static final String metricTokenSeparator;
     private static final String metricTokenSeparatorRegex;
     private static final Logger log = LoggerFactory.getLogger(Locator.class);
@@ -75,7 +75,7 @@ public class Locator {
     public String getTenantId() {
         return this.tenantId;
     }
-    
+
     public String getMetricName() {
         return this.metricName;
     }
@@ -90,5 +90,10 @@ public class Locator {
 
     public static Locator createLocatorFromDbKey(String fullyQualifiedMetricName) throws IllegalArgumentException {
         return new Locator(fullyQualifiedMetricName);
+    }
+
+    @Override
+    public int compareTo(Locator o) {
+        return stringRep.compareTo(o.toString());
     }
 }
