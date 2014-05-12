@@ -424,7 +424,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         }
     }
 
-    private final class CacheKey {
+    private final class CacheKey implements Comparable<CacheKey> {
         private final Locator locator;
         private final String keyString;
         private final int hashCode;
@@ -454,6 +454,16 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             CacheKey other = (CacheKey)obj;
             // kind of a cop-out.
             return (locator().equals(other.locator) && keyString().equals(other.keyString()));
+        }
+
+        @Override
+        public String toString() {
+            return locator.toString() + "," + keyString;
+        }
+
+        @Override
+        public int compareTo(CacheKey o) {
+            return this.toString().compareTo(o.toString());
         }
     }
 
