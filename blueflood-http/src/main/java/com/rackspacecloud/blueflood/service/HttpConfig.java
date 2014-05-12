@@ -54,6 +54,7 @@ public enum HttpConfig implements ConfigDefaults {
     // metric and max metrics allowed per batch query.
     BATCH_QUERY_TIMEOUT("20"),  // 20s
 
+    HTTP_ROLLUP_TYPE_PERSISTENCE_THREADS("10"),
     TYPE_UNIT_PROCESSING_THREADS("10");
 
     static {

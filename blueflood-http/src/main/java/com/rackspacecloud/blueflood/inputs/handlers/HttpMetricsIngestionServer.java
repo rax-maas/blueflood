@@ -144,7 +144,11 @@ public class HttpMetricsIngestionServer {
                 new TimeValue(48, TimeUnit.HOURS),
                 Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
         rollupTypeCacher = new RollupTypeCacher(
-                new ThreadPoolBuilder().withName("Rollup type persistence").build(),
+                new ThreadPoolBuilder()
+                        .withName("Rollup type persistence")
+                        .withCorePoolSize(Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_ROLLUP_TYPE_PERSISTENCE_THREADS))
+                        .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_ROLLUP_TYPE_PERSISTENCE_THREADS))
+                        .build(),
                 rollupTypeCache,
                 true
         ).withLogger(log);
