@@ -144,7 +144,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.metaReads = new ConcurrentLinkedQueue<Locator>();
         this.readThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedReadsPipelineLimit)
                 .withMaxPoolSize(batchedReadsPipelineLimit)
-                .withUnboundedQueue().withName("MetaBatchedReadThreadPool").build();
+                .withUnboundedQueue().withName("MetaBatchedReadsThreadPool").build();
         this.batchedReadsTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -386,41 +386,45 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         return;
     }
 
-    private synchronized void fetchMeta(boolean forced) { // Only one thread should ever call into this.
-        if (!forced && metaReads.size() < batchedReadsThreshold) {
-            return;
-        }
-
-        while (!metaReads.isEmpty()) {
-            Set<Locator> batch = new HashSet<Locator>();
-
-            for (int i = 0; !metaReads.isEmpty() && i < batchedReadsThreshold; i++) {
-                batch.add(metaReads.poll()); // poll() is a destructive read (removes the head from the queue).
+    private void fetchMeta(boolean forced) { // Only one thread should ever call into this.
+        synchronized (metaReads) {
+            if (!forced && metaReads.size() < batchedReadsThreshold) {
+                return;
             }
 
-            readThreadPoolExecutor.submit(new BatchedMetaReadsRunnable(batch));
+            while (!metaReads.isEmpty()) {
+                Set<Locator> batch = new HashSet<Locator>();
+
+                for (int i = 0; !metaReads.isEmpty() && i < batchedReadsThreshold; i++) {
+                    batch.add(metaReads.poll()); // poll() is a destructive read (removes the head from the queue).
+                }
+
+                readThreadPoolExecutor.submit(new BatchedMetaReadsRunnable(batch));
+            }
         }
     }
 
-    private synchronized void flushMeta(boolean forced) { // Only one thread should ever call into this.
-        if (!forced && metaWrites.size() < batchedWritesThreshold) {
-            return;
-        }
-
-        while (!outstandingMetaWrites.isEmpty()) {
-            Table<Locator, String, String> metaBatch = HashBasedTable.create();
-
-            for (int i = 0; !metaWrites.isEmpty() && i < batchedWritesThreshold; i++) {
-                CacheKey compoundKey = metaWrites.poll(); // destructive read.
-                Locator locator = compoundKey.locator();
-                String metaKey = compoundKey.keyString();
-                String metaVal = cache.getIfPresent(metaKey);
-                if (metaVal != null) {
-                    metaBatch.put(locator, metaKey, metaVal);
-                }
+    private void flushMeta(boolean forced) { // Only one thread should ever call into this.
+        synchronized (metaWrites) {
+            if (!forced && metaWrites.size() < batchedWritesThreshold) {
+                return;
             }
 
-            writeThreadPoolExecutor.submit(new BatchedMetaWritesRunnable(metaBatch));
+            while (!outstandingMetaWrites.isEmpty()) {
+                Table<Locator, String, String> metaBatch = HashBasedTable.create();
+
+                for (int i = 0; !metaWrites.isEmpty() && i < batchedWritesThreshold; i++) {
+                    CacheKey compoundKey = metaWrites.poll(); // destructive read.
+                    Locator locator = compoundKey.locator();
+                    String metaKey = compoundKey.keyString();
+                    String metaVal = cache.getIfPresent(metaKey);
+                    if (metaVal != null) {
+                        metaBatch.put(locator, metaKey, metaVal);
+                    }
+                }
+
+                writeThreadPoolExecutor.submit(new BatchedMetaWritesRunnable(metaBatch));
+            }
         }
     }
 
