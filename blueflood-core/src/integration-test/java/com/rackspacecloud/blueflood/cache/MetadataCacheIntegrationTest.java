@@ -31,6 +31,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -227,6 +232,42 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         cache.setIO(astIO);
         Assert.assertEquals("bar", cache.get(loc, "foo"));
     }
+    
+    @Test
+    public void testPersistence() throws Exception {
+        MetadataCache cache0 = MetadataCache.createLoadingCacheInstance();
+        cache0.setIO(new InMemoryMetadataIO());
+        
+        Locator l0 = Locator.createLocatorFromPathComponents("1", "a", "b");
+        Locator l1 = Locator.createLocatorFromPathComponents("1", "c", "d");
+        cache0.put(l0, "foo" , "l0_foo");
+        cache0.put(l0, "bar", "l0_bar");
+        cache0.put(l1, "zee", "zzzzz");
+        
+        File f = File.createTempFile("metadatacache_persistence", "txt");
+        f.deleteOnExit();
+        DataOutputStream out = new DataOutputStream(new FileOutputStream(f, false));
+        
+        cache0.save(out);
+        out.close();
+        
+        MetadataCache cache1 = MetadataCache.createLoadingCacheInstance();
+        cache1.setIO(new InMemoryMetadataIO());
+        
+        // verify nothing is in the cache.
+        Assert.assertNull(cache1.get(l0, "foo"));
+        Assert.assertNull(cache1.get(l0, "bar"));
+        Assert.assertNull(cache1.get(l1, "zee"));
+        
+        // now load it.
+        DataInputStream in = new DataInputStream(new FileInputStream(f));
+        cache1.load(in);
+        
+        Assert.assertEquals("l0_foo", cache1.get(l0, "foo"));
+        Assert.assertEquals("l0_bar", cache1.get(l0, "bar"));
+        Assert.assertEquals("zzzzz", cache1.get(l1, "zee"));
+    }
+    
     
     private static class InMemoryMetadataIO implements MetadataIO {
         private final Table<Locator, String, String> backingTable = Tables.newCustomTable(
