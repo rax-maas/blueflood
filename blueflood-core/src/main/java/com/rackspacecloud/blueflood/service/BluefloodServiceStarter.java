@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -58,10 +59,13 @@ public class BluefloodServiceStarter {
             final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
 
             try {
+                final AstyanaxShardStateIO io = new AstyanaxShardStateIO();
                 final ShardStatePusher shardStatePusher = new ShardStatePusher(allShards,
-                        context.getShardStateManager());
+                        context.getShardStateManager(),
+                        io);
                 final ShardStatePuller shardStatePuller = new ShardStatePuller(allShards,
-                        context.getShardStateManager());
+                        context.getShardStateManager(),
+                        io);
 
                 final Thread shardPush = new Thread(shardStatePusher, "Shard state writer");
                 final Thread shardPull = new Thread(shardStatePuller, "Shard state reader");

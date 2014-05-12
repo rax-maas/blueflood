@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.service.ShardStateServices;
 import io.dropwizard.lifecycle.Managed;
@@ -7,8 +8,8 @@ import io.dropwizard.lifecycle.Managed;
 public class StateManager implements Managed {
     private ShardStateServices services;
     
-    public StateManager(ScheduleContext context) {
-        services = new ShardStateServices(context);
+    public StateManager(ScheduleContext context, ShardStateIO io) {
+        services = new ShardStateServices(context, io);
     }
     
     @Override

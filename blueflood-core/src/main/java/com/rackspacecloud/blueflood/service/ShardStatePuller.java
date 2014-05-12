@@ -29,10 +29,9 @@ import java.util.concurrent.TimeUnit;
 public class ShardStatePuller extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePuller.class);
     
-    private ShardStateIO io = new AstyanaxShardStateIO();
 
-    public ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager) {
-        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PULL_PERIOD), TimeUnit.MILLISECONDS));
+    public ShardStatePuller(Collection<Integer> allShards, ShardStateManager stateManager, ShardStateIO io) {
+        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PULL_PERIOD), TimeUnit.MILLISECONDS), io);
     }
 
     public void performOperation() {
@@ -40,7 +39,7 @@ public class ShardStatePuller extends ShardStateWorker {
         for (int shard : shardStateManager.getManagedShards()) {
 
             try {
-                Collection<SlotState> slotStates = io.getShardState(shard);
+                Collection<SlotState> slotStates = getIO().getShardState(shard);
                 for (SlotState slotState : slotStates) {
                     shardStateManager.updateSlotOnRead(shard, slotState);
                 }
@@ -50,9 +49,5 @@ public class ShardStatePuller extends ShardStateWorker {
             }
         }
         ctx.stop();
-    }
-    
-    public void setIO(ShardStateIO io) {
-        this.io = io;
     }
 }
