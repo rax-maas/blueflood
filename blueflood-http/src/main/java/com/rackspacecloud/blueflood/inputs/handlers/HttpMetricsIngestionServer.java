@@ -112,7 +112,8 @@ public class HttpMetricsIngestionServer {
         final AsyncFunction rollupTypeCacher;
         
         typeAndUnitProcessor = new TypeAndUnitProcessor(
-                new ThreadPoolBuilder().withName("Metric type and unit processing").build(),
+                new ThreadPoolBuilder()
+                        .withName("Metric type and unit processing").build(),
                 metricMetadataAnalyzer
         ).withLogger(log);
         
