@@ -422,7 +422,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                     CacheKey compoundKey = metaWrites.poll(); // destructive read.
                     Locator locator = compoundKey.locator();
                     String metaKey = compoundKey.keyString();
-                    String metaVal = cache.getIfPresent(metaKey);
+                    String metaVal = cache.getIfPresent(compoundKey);
                     if (metaVal != null) {
                         metaBatch.put(locator, metaKey, metaVal);
                     }
