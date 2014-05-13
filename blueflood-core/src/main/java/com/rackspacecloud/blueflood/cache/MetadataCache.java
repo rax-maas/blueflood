@@ -145,24 +145,29 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.readThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedReadsPipelineLimit)
                 .withMaxPoolSize(batchedReadsPipelineLimit)
                 .withUnboundedQueue().withName("MetaBatchedReadsThreadPool").build();
-        this.batchedReadsTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                fetchMeta(true);
-            }
-        }, 0, this.batchedReadsInterval.toMillis());
 
+        if (batchedReads) {
+            this.batchedReadsTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    fetchMeta(true);
+                }
+            }, 0, this.batchedReadsInterval.toMillis());
+        }
         this.outstandingMetaWrites = new ConcurrentSkipListSet<CacheKey>();
         this.writeThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedWritesPipelineLimit)
                 .withMaxPoolSize(batchedWritesPipelineLimit)
                 .withUnboundedQueue().withName("MetaBatchedWritesThreadPool").build();
         this.metaWrites = new ConcurrentLinkedQueue<CacheKey>();
-        this.batchedWritesTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                flushMeta(true);
-            }
-        }, 0, this.batchedWritesInterval.toMillis());
+
+        if (batchedWrites) {
+            this.batchedWritesTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    flushMeta(true);
+                }
+            }, 0, this.batchedWritesInterval.toMillis());
+        }
     }
     
     public void setIO(MetadataIO io) {
