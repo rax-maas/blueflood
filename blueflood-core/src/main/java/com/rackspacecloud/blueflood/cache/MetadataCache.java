@@ -415,7 +415,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 return;
             }
 
-            while (!outstandingMetaWrites.isEmpty()) {
+            while (!metaWrites.isEmpty()) {
                 Table<Locator, String, String> metaBatch = HashBasedTable.create();
 
                 for (int i = 0; !metaWrites.isEmpty() && i < batchedWritesThreshold; i++) {
