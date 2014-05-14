@@ -83,6 +83,8 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_MODE("true"),
     QUERY_MODE("true"),
 
+    BATCH_WRITER_THREADS("50"),
+
     METRIC_BATCH_SIZE("100"),
 
     CASSANDRA_REQUEST_TIMEOUT("10000"),
