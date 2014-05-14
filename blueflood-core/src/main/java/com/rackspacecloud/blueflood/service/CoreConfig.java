@@ -83,7 +83,7 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_MODE("true"),
     QUERY_MODE("true"),
 
-    BATCH_WRITER_THREADS("50"),
+    METRICS_BATCH_WRITER_THREADS("50"),
 
     METRIC_BATCH_SIZE("100"),
 
