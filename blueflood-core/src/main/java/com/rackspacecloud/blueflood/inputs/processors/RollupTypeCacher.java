@@ -73,7 +73,7 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
             try {
                 cache.put(metric.getLocator(), cacheKey, metric.getRollupType().toString());
             } catch (Exception ex) {
-                log.warn(ex.getMessage());
+                log.warn("Exception updating cache with rollup type ", ex);
             }
         }
     }
