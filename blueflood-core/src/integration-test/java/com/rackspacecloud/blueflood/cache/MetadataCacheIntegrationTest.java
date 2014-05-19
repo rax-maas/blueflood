@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
@@ -37,10 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(Parameterized.class)
@@ -288,6 +286,25 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         @Override
         public Map<String, String> getAllValues(Locator locator) throws IOException {
             return backingTable.row(locator);
+        }
+
+        @Override
+        public Table<Locator, String, String> getAllValues(Set<Locator> locators) throws IOException {
+            Table<Locator, String, String> results = HashBasedTable.create();
+
+            for (Locator locator : locators) {
+                Map<String, String> metaForLoc = backingTable.row(locator);
+                for (Map.Entry<String, String> meta : metaForLoc.entrySet()) {
+                    results.put(locator, meta.getKey(), meta.getValue());
+                }
+            }
+
+            return results;
+        }
+
+        @Override
+        public void putAll(Table<Locator, String, String> meta) throws IOException {
+            backingTable.putAll(meta);
         }
 
         @Override
