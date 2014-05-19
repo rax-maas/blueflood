@@ -58,10 +58,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             CoreConfig.META_CACHE_RETENTION_IN_MINUTES), TimeUnit.MINUTES);
     private static final int defaultConcurrency = Configuration.getInstance().getIntegerProperty(
             CoreConfig.META_CACHE_MAX_CONCURRENCY);
-    private static final Boolean batchedReads = Configuration.getInstance().getBooleanProperty(
-            CoreConfig.META_CACHE_BATCHED_READS);
-    private static final Boolean batchedWrites = Configuration.getInstance().getBooleanProperty(
-            CoreConfig.META_CACHE_BATCHED_WRITES);
+    private final Boolean batchedReads;
+    private final Boolean batchedWrites;
 
     // Specific to batched meta reads
 
@@ -145,6 +143,10 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
                 .withMaxPoolSize(batchedReadsPipelineLimit)
                 .withUnboundedQueue().withName("MetaBatchedReadsThreadPool").build();
 
+        this.batchedReads = Configuration.getInstance().getBooleanProperty(
+                CoreConfig.META_CACHE_BATCHED_READS);
+        this.batchedWrites = Configuration.getInstance().getBooleanProperty(
+                CoreConfig.META_CACHE_BATCHED_WRITES);
         if (batchedReads) {
             this.batchedReadsTimer.schedule(new TimerTask() {
                 @Override

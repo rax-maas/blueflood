@@ -23,6 +23,8 @@ import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
@@ -84,6 +86,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         else
             Assert.assertEquals(2, io.getNumberOfRowsTest());
     }
+
 
     @Test
     public void testGetNull() throws Exception {
@@ -207,7 +210,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         final MetadataIO mapIO = new InMemoryMetadataIO();
         final MetadataIO astIO = new AstyanaxMetadataIO();
         
-        final MetadataCache cache = MetadataCache.getInstance();
+        final MetadataCache cache = MetadataCache.createLoadingCacheInstance();
         cache.setIO(astIO);
         
         // DO NOT SET USING LOCAL IO INSTANCE!!!!
@@ -265,7 +268,6 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals("l0_bar", cache1.get(l0, "bar"));
         Assert.assertEquals("zzzzz", cache1.get(l1, "zee"));
     }
-    
     
     private static class InMemoryMetadataIO implements MetadataIO {
         private final Table<Locator, String, String> backingTable = Tables.newCustomTable(
