@@ -36,6 +36,7 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
+    private final boolean dropOlderSlots = Configuration.getInstance().getBooleanProperty(CoreConfig.DROP_OLDER_SLOTS);
     final long dropSlotsBeyondTS = Configuration.getInstance().getLongProperty(CoreConfig.DROP_SLOTS_OLDER_THAN_TS);
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
@@ -252,7 +253,7 @@ public class ShardStateManager {
                     if (timeElapsed <= maxAgeMillis) {
                         continue;
                     }
-                    if (update.getTimestamp() < dropSlotsBeyondTS) {
+                    if (dropOlderSlots && update.getTimestamp() < dropSlotsBeyondTS) {
                         catchPeriodDroppedSlots.mark();
                         continue;
                     }
