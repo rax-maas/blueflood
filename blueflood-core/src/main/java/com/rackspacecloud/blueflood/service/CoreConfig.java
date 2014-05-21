@@ -109,7 +109,7 @@ public enum CoreConfig implements ConfigDefaults {
 
     IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
 
-    DROP_SLOTS_OLDER_THAN_TS("1400612400000"); //May 20 2014 12:00:00 PM (Local) 19:00:00 (GMT)
+    DROP_SLOTS_OLDER_THAN_TS("1400526000000"); // This will be changed to May 20 2014 12:00:00 PM (Local) 19:00:00 (GMT) in prod
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
