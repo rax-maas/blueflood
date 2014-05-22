@@ -107,7 +107,11 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter");
+    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
+
+    DROP_OLDER_SLOTS("false"),
+
+    DROP_SLOTS_OLDER_THAN_TS("1400500800000"); // This will be changed to May 20 2014 12:00:00 PM (Local) 19:00:00 (GMT) in prod
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
