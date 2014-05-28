@@ -46,6 +46,8 @@ public class JSONMetricsContainerTest {
         JSONMetricsContainer jsonMetricsContainer = new JSONMetricsContainer("ac1", jsonMetrics);
 
         List<Metric> metricsCollection = jsonMetricsContainer.toMetrics();
+
+        Assert.assertTrue(metricsCollection.size() == 2);
         Assert.assertEquals("ac1.mzord.duration", metricsCollection.get(0).getLocator().toString());
         Assert.assertEquals(Long.MAX_VALUE, metricsCollection.get(0).getMetricValue());
         Assert.assertEquals(1234566, metricsCollection.get(0).getTtlInSeconds());
@@ -77,6 +79,15 @@ public class JSONMetricsContainerTest {
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");
         testMetric.put("metricValue", "Website is up");
+        testMetric.put("collectionTime", 1234567890L);
+        metricsList.add(testMetric);
+
+        // null metric value. This shouldn't be in the final list of metrics because we ignore null valued metrics.
+        testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.hipster");
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "unknown");
+        testMetric.put("metricValue", null);
         testMetric.put("collectionTime", 1234567890L);
         metricsList.add(testMetric);
         return metricsList;
