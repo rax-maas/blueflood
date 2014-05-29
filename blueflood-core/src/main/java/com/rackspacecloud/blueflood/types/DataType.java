@@ -42,7 +42,7 @@ public class DataType {
         } else if (metricValue instanceof Boolean) {
             return BOOLEAN;
         } else {
-            throw new RuntimeException("Unknown metric value type");
+            throw new RuntimeException("Unknown metric value type " + metricValue.getClass());
         }
     }
 
