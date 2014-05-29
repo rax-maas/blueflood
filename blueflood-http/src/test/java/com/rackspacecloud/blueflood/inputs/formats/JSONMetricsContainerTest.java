@@ -61,6 +61,31 @@ public class JSONMetricsContainerTest {
         Assert.assertEquals("S", metricsCollection.get(1).getDataType().toString());
     }
 
+    @Test
+    public void testBigIntHandling() {
+        String jsonBody = "[{\"collectionTime\":1401302372775,\"ttlInSeconds\":172800,\"metricValue\":18446744073709000000,\"metricName\":\"used\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = null;
+        try {
+            List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        jsonBody,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+            container = new JSONMetricsContainer("786659", jsonMetrics);
+        } catch (Exception e) {
+            Assert.fail("Jackson failed to parse a big int");
+        }
+
+        try {
+            List<Metric> metrics = container.toMetrics();
+        } catch (Exception ex) {
+            // Assert.fail()
+            // TODO: We need to start handling BigInteger types. Once that is done, we can enable this test.
+        }
+    }
+
     public static List<Map<String, Object>> generateMetricsData() throws Exception {
         List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
 
