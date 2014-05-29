@@ -106,7 +106,18 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             return;
         }
 
-        List<Metric> containerMetrics = jsonMetricsContainer.toMetrics();
+        List<Metric> containerMetrics;
+        try {
+            containerMetrics = jsonMetricsContainer.toMetrics();
+        } catch (Exception e) {
+            log.warn("Exception converting JSON container to metric objects", e);
+            // This could happen if clients send BigIntegers as metric values. BF doesn't handle them. So let's send a
+            // BAD REQUEST message until we start handling BigIntegers.
+            sendResponse(ctx, request, "Error converting JSON payload to metric objects",
+                    HttpResponseStatus.BAD_REQUEST);
+            return;
+        }
+
         if (containerMetrics == null || containerMetrics.isEmpty()) {
             sendResponse(ctx, request, null, HttpResponseStatus.OK);
             return;
