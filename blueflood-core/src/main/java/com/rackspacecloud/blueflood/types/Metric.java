@@ -18,11 +18,15 @@ package com.rackspacecloud.blueflood.types;
 
 
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class Metric implements IMetric {
+    private static final Logger log = LoggerFactory.getLogger(Metric.class);
+
     private final Locator locator;
     private Object metricValue;
     private final long collectionTime;
@@ -44,6 +48,8 @@ public class Metric implements IMetric {
         if (dataType == DataType.BIGINT) {
             BigDecimal maybeDouble = new BigDecimal((BigInteger) metricValue);
             if (maybeDouble.compareTo(DOUBLE_MAX) > 0) {
+                log.warn("BigInteger metric value " + ((BigInteger)metricValue).toString() + " for metric "
+                        + locator.toString() + " is bigger than Double.MAX_VALUE");
                 throw new RuntimeException("BigInteger cannot be force cast to double as it exceeds Double.MAX_VALUE");
             }
             this.dataType = DataType.DOUBLE;
