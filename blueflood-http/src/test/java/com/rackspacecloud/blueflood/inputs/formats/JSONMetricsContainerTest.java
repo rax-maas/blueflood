@@ -81,8 +81,7 @@ public class JSONMetricsContainerTest {
         try {
             List<Metric> metrics = container.toMetrics();
         } catch (Exception ex) {
-            // Assert.fail()
-            // TODO: We need to start handling BigInteger types. Once that is done, we can enable this test.
+            Assert.fail();
         }
     }
 
