@@ -18,14 +18,22 @@ package com.rackspacecloud.blueflood.types;
 
 
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class Metric implements IMetric {
+    private static final Logger log = LoggerFactory.getLogger(Metric.class);
+
     private final Locator locator;
-    private final Object metricValue;
+    private Object metricValue;
     private final long collectionTime;
     private int ttlInSeconds;
-    private final DataType dataType;
+    private DataType dataType;
     private final String unit;
+    private static BigDecimal DOUBLE_MAX = new BigDecimal(Double.MAX_VALUE);
 
     public Metric(Locator locator, Object metricValue, long collectionTime, TimeValue ttl, String unit) {
         this.locator = locator;
@@ -33,6 +41,20 @@ public class Metric implements IMetric {
         this.collectionTime = collectionTime;
         this.dataType = DataType.getMetricType(metricValue);
         this.unit = unit;
+
+        // TODO: Until we start handling BigInteger throughout, let's try to cast it to double if the int value is less
+        // than Double.MAX_VALUE
+
+        if (dataType == DataType.BIGINT) {
+            BigDecimal maybeDouble = new BigDecimal((BigInteger) metricValue);
+            if (maybeDouble.compareTo(DOUBLE_MAX) > 0) {
+                log.warn("BigInteger metric value " + ((BigInteger)metricValue).toString() + " for metric "
+                        + locator.toString() + " is bigger than Double.MAX_VALUE");
+                throw new RuntimeException("BigInteger cannot be force cast to double as it exceeds Double.MAX_VALUE");
+            }
+            this.dataType = DataType.DOUBLE;
+            this.metricValue = ((BigInteger) metricValue).doubleValue();
+        }
 
         setTtl(ttl);
     }
