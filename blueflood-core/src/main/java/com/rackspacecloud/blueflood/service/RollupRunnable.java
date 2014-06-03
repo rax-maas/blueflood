@@ -113,8 +113,9 @@ public class RollupRunnable implements Runnable {
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Throwable th) {
-            log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
-                    + ", Source Granularity: " + srcGran.name());
+            log.error("Rollup failed; Locator: {}, Source Granularity: {}", new Object[] {
+                    singleRollupReadContext.getLocator(),
+                    srcGran.name()});
         } finally {
             executionContext.decrementReadCounter();
             timerContext.stop();
