@@ -64,6 +64,7 @@ public class Migration {
     private static final String READ_THREADS = "readthreads";
     private static final String BATCH_SIZE = "batchsize";
     private static final String VERIFY = "verify";
+    private static final String DISCOVER = "discover";
     
     private static final PrintStream out = System.out;
     
@@ -80,6 +81,7 @@ public class Migration {
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of write threads to use. default=1").create(WRITE_THREADS));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of rows to read per query. default=100").create(BATCH_SIZE));
         cliOptions.addOption(OptionBuilder.withDescription("[optional] verify a sampling 0.5% of data copied").create(VERIFY));
+        cliOptions.addOption(OptionBuilder.withDescription("[optional] discover and query other cassandra nodes").create(DISCOVER));
     }
     
     public static void main(String args[]) {
@@ -93,15 +95,16 @@ public class Migration {
         final int batchSize = (Integer)options.get(BATCH_SIZE);
         final int skip = (Integer)options.get(SKIP);
         final int ttl = (Integer)options.get(TTL);
+        NodeDiscoveryType discovery = (NodeDiscoveryType)options.get(DISCOVER);
         
         // connect to src cluster.
         String[] srcParts = options.get(SRC).toString().split(":", -1);
-        final AstyanaxContext<Keyspace> srcContext = connect(srcParts[0], Integer.parseInt(srcParts[1]), srcParts[2], readThreads);
+        final AstyanaxContext<Keyspace> srcContext = connect(srcParts[0], Integer.parseInt(srcParts[1]), srcParts[2], readThreads, discovery);
         final Keyspace srcKeyspace = srcContext.getEntity();
         
         // connect to dst cluster.
         String[] dstParts = options.get(DST).toString().split(":", -1);
-        final AstyanaxContext<Keyspace> dstContext = connect(dstParts[0], Integer.parseInt(dstParts[1]), dstParts[2], writeThreads);
+        final AstyanaxContext<Keyspace> dstContext = connect(dstParts[0], Integer.parseInt(dstParts[1]), dstParts[2], writeThreads, discovery);
         final Keyspace dstKeyspace = dstContext.getEntity();
 
         // establish column range.
@@ -337,12 +340,11 @@ public class Migration {
         }
     }
     
-    private static AstyanaxContext<Keyspace> connect(String host, int port, String keyspace, int threads) {
+    private static AstyanaxContext<Keyspace> connect(String host, int port, String keyspace, int threads, NodeDiscoveryType discovery) {
         AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder()
                         .forKeyspace(keyspace)
                 .withAstyanaxConfiguration(new AstyanaxConfigurationImpl()
-                    .setDiscoveryType(NodeDiscoveryType.NONE))
-                    //.setDiscoveryType(NodeDiscoveryType.RING_DESCRIBE))
+                    .setDiscoveryType(discovery))
                     
                 .withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(host + ":" + keyspace)
                         .setMaxConns(threads * 2)
@@ -392,6 +394,8 @@ public class Migration {
             options.put(WRITE_THREADS, line.hasOption(WRITE_THREADS) ? Integer.parseInt(line.getOptionValue(WRITE_THREADS)) : 1);
             
             options.put(VERIFY, line.hasOption(VERIFY));
+            
+            options.put(DISCOVER, line.hasOption(DISCOVER) ? NodeDiscoveryType.RING_DESCRIBE : NodeDiscoveryType.NONE);
             
         } catch (ParseException ex) {
             HelpFormatter helpFormatter = new HelpFormatter();
