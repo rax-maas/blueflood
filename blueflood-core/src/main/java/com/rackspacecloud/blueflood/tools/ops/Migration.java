@@ -68,17 +68,17 @@ public class Migration {
     private static final PrintStream out = System.out;
     
     static {
-        cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withValueSeparator(',').withDescription("[required] Source cassandra cluster (host:port:keyspace)").create(SRC));
-        cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withValueSeparator(',').withDescription("[required] Destination cassandra cluster (host:port:keyspace)").create(DST));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ISO 6801 datetime (or millis) of when to start migrating data").create(FROM));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ISO 6801 datetime (or millis) Datetime of when to stop migrating data").create(TO));
+        cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withValueSeparator(',').withDescription("[required] Source cassandra cluster (host:port:keyspace).").create(SRC));
+        cliOptions.addOption(OptionBuilder.isRequired().hasArg(true).withValueSeparator(',').withDescription("[required] Destination cassandra cluster (host:port:keyspace).").create(DST));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ISO 6801 datetime (or millis since epoch) of when to start migrating data. defaults to one year ago.").create(FROM));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ISO 6801 datetime (or millis since epoch) Datetime of when to stop migrating data. defaults to right now.").create(TO));
         cliOptions.addOption(OptionBuilder.isRequired().hasArg().withValueSeparator(',').withDescription("[required] Which column family to migrate").create(COLUMN_FAMILY));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Number of keys to skip before processing").create(SKIP));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Maximum number of keys to process").create(LIMIT));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ttl in seconds for new data").create(TTL));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of read threads to use").create(READ_THREADS));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of write threads to use").create(WRITE_THREADS));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of rows to read per query").create(BATCH_SIZE));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Number of keys to skip before processing. default=0.").create(SKIP));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Maximum number of keys to process. default=MAX_INT.").create(LIMIT));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ttl in seconds for new data. default=FOREVAR.").create(TTL));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of read threads to use. default=1").create(READ_THREADS));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of write threads to use. default=1").create(WRITE_THREADS));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of rows to read per query. default=100").create(BATCH_SIZE));
         cliOptions.addOption(OptionBuilder.withDescription("[optional] verify a sampling 0.5% of data copied").create(VERIFY));
     }
     
