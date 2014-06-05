@@ -7,7 +7,6 @@ import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.RowCallback;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
@@ -76,7 +75,7 @@ public class Migration {
         cliOptions.addOption(OptionBuilder.isRequired().hasArg().withValueSeparator(',').withDescription("[required] Which column family to migrate").create(COLUMN_FAMILY));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Number of keys to skip before processing. default=0.").create(SKIP));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] Maximum number of keys to process. default=MAX_INT.").create(LIMIT));
-        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ttl in seconds for new data. default=FOREVAR.").create(TTL));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] ttl in seconds for new data. default=5x the default for the column family.").create(TTL));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of read threads to use. default=1").create(READ_THREADS));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of write threads to use. default=1").create(WRITE_THREADS));
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of rows to read per query. default=100").create(BATCH_SIZE));
@@ -234,12 +233,9 @@ public class Migration {
                                         MutationBatch batch = dstKeyspace.prepareMutationBatch();
                                         ColumnListMutation<Long> mutation = batch.withRow(columnFamily, locatorCapture);
 
+                                        assert ttl != 0;
                                         for (Column<Long> c : row.getColumns()) {
-                                            if (ttl == 0) {
-                                                mutation.putColumn(c.getName(), c.getByteBufferValue());
-                                            } else {
-                                                mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
-                                            }
+                                            mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
                                         }
                                         
                                         // save it, sutmit a log message to be shown later.
@@ -386,9 +382,10 @@ public class Migration {
             if (nameToCf.get(line.getOptionValue(COLUMN_FAMILY)) == null) {
                 throw new ParseException("Invalid column family");
             }
-            options.put(COLUMN_FAMILY, nameToCf.get(line.getOptionValue(COLUMN_FAMILY)));
+            CassandraModel.MetricColumnFamily columnFamily = (CassandraModel.MetricColumnFamily)nameToCf.get(line.getOptionValue(COLUMN_FAMILY)); 
+            options.put(COLUMN_FAMILY, columnFamily);
             
-            options.put(TTL, line.hasOption(TTL) ? Integer.parseInt(line.getOptionValue(TTL)) : 0);
+            options.put(TTL, line.hasOption(TTL) ? Integer.parseInt(line.getOptionValue(TTL)) : (5 * columnFamily.getDefaultTTL().toSeconds()));
             
             options.put(READ_THREADS, line.hasOption(READ_THREADS) ? Integer.parseInt(line.getOptionValue(READ_THREADS)) : 1);
             options.put(WRITE_THREADS, line.hasOption(WRITE_THREADS) ? Integer.parseInt(line.getOptionValue(WRITE_THREADS)) : 1);
