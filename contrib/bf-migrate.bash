@@ -16,6 +16,7 @@
 #      -readthreads   [optional] number of threads to use to read data. default=1
 #      -writethreads  [optional] number of threads to use to write data. default=1
 #      -verify        [optional] forces verifying that 0.5% of data is copied.
+#      -discover      [optional] will utilize other cassandra nodes as they are discovered.
 #      
 #  `skip` and `limit` are independent of each other. That is, if you set skip=N and limit=M, the first N rows are skipped
 #  and the next M rows are migrated. Skipping still forces a read, so skipping large numbers of rows will not be
