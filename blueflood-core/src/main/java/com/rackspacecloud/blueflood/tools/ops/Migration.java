@@ -238,7 +238,7 @@ public class Migration {
                                             mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
                                         }
                                         
-                                        // save it, sutmit a log message to be shown later.
+                                        // save it, submit a log message to be shown later.
                                         try {
                                             batch.execute();
                                             if (verify && random.nextFloat() < VERIFY_PERCENT) {
