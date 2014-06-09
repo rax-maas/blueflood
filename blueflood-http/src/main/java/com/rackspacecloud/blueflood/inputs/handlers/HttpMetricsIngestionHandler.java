@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
@@ -109,7 +110,15 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         List<Metric> containerMetrics;
         try {
             containerMetrics = jsonMetricsContainer.toMetrics();
+        } catch (InvalidDataException ex) {
+            // todo: we should measure these. if they spike, we track down the bad client.
+            // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
+            log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
+            sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            return;
         } catch (Exception e) {
+            // todo: when you see these in logs, go and fix them (throw InvalidDataExceptions) so they can be reduced
+            // to single-line log statements.
             log.warn("Exception converting JSON container to metric objects", e);
             // This could happen if clients send BigIntegers as metric values. BF doesn't handle them. So let's send a
             // BAD REQUEST message until we start handling BigIntegers.
