@@ -34,13 +34,20 @@ import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
+import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,10 +183,20 @@ public class HttpMetricsIngestionServer {
         public ChannelPipeline getPipeline() throws Exception {
             final ChannelPipeline pipeline = pipeline();
 
-            pipeline.addLast("decoder", new HttpRequestDecoder());
+            pipeline.addLast("decoder", new HttpRequestDecoder() {
+                
+                // if something bad happens during the decode, assume the client send bad data. return a 400.
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+                    ctx.getChannel().write(
+                            new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.BAD_REQUEST))
+                            .addListener(ChannelFutureListener.CLOSE);
+                }
+            });
             pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("inflater", new HttpContentDecompressor());
             pipeline.addLast("encoder", new HttpResponseEncoder());
+            pipeline.addLast("encoder2", new HttpResponseDecoder());
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;
