@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.types;
 
 
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,10 @@ public class Metric implements IMetric {
     public Metric(Locator locator, Object metricValue, long collectionTime, TimeValue ttl, String unit) {
         this.locator = locator;
         this.metricValue = metricValue;
+        // I dislike throwing errors in constructors, but there is no other way without resorting to a json schema.
+        if (collectionTime < 0) {
+            throw new InvalidDataException("collection time must be greater than zero");
+        }
         this.collectionTime = collectionTime;
         this.dataType = DataType.getMetricType(metricValue);
         this.unit = unit;
@@ -97,7 +102,7 @@ public class Metric implements IMetric {
 
     public void setTtl(TimeValue ttl) {
         if (!isValidTTL(ttl.toSeconds())) {
-            throw new RuntimeException("TTL supplied for metric is invalid. Required: 0 < ttl < " + Integer.MAX_VALUE +
+            throw new InvalidDataException("TTL supplied for metric is invalid. Required: 0 < ttl < " + Integer.MAX_VALUE +
                     ", provided: " + ttl.toSeconds());
         }
 
@@ -106,7 +111,7 @@ public class Metric implements IMetric {
 
     public void setTtlInSeconds(int ttlInSeconds) {
         if (!isValidTTL(ttlInSeconds)) {
-            throw new RuntimeException("TTL supplied for metric is invalid. Required: 0 < ttl < " + Integer.MAX_VALUE +
+            throw new InvalidDataException("TTL supplied for metric is invalid. Required: 0 < ttl < " + Integer.MAX_VALUE +
                     ", provided: " + ttlInSeconds);
         }
 
