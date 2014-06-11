@@ -33,6 +33,7 @@ public enum CoreConfig implements ConfigDefaults {
     DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
 
+    MAX_LOCATOR_FETCH_THREADS("2"),
     MAX_ROLLUP_READ_THREADS("20"),
     MAX_ROLLUP_WRITE_THREADS("5"),
 
