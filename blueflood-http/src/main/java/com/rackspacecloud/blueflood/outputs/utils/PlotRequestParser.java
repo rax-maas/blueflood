@@ -91,7 +91,11 @@ public class PlotRequestParser {
         Set<BasicRollupsOutputSerializer.MetricStat> stats = getStatsToFilter(select);
 
         if (points != null) {
-            return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
+            try {
+                return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
+            } catch (NumberFormatException ex) {
+                throw new InvalidRequestException("'points' param must be a valid integer");
+            }
         } else {
             return new RollupsQueryParams(fromTime, toTime, Resolution.fromString(res.get(0)), stats);
         }
