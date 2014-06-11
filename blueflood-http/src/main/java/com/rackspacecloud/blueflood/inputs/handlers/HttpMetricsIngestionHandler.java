@@ -102,7 +102,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         }
 
         if (jsonMetricsContainer == null) {
-            sendResponse(ctx, request, null, HttpResponseStatus.OK);
+            log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+            sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
@@ -119,8 +120,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         }
 
         if (containerMetrics == null || containerMetrics.isEmpty()) {
-            sendResponse(ctx, request, null, HttpResponseStatus.OK);
-            return;
+            log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+            sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
         }
 
         final MetricsCollection collection = new MetricsCollection();
