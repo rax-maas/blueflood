@@ -130,6 +130,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
         // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
         // higher.
+        Configuration config = Configuration.getInstance();
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
             "LocatorFetchThreadPool",
@@ -154,7 +155,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
         // unbounded work queue.
         final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
-        Configuration config = Configuration.getInstance();
 
         rollupReadExecutors = new InstrumentedThreadPoolExecutor(
             "RollupReadsThreadpool",
