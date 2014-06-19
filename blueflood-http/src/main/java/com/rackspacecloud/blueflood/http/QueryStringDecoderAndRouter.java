@@ -16,13 +16,8 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,5 +44,9 @@ public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
         log.warn("Exception event received: ", e.getCause());
+        // Exception received here is due to decoding errors, mostly due to bad requests
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
+        ChannelFuture f = ctx.getChannel().write(response);
+        f.addListener(ChannelFutureListener.CLOSE);
     }
 }
