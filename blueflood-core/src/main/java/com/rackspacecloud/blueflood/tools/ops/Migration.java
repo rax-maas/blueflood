@@ -67,6 +67,7 @@ public class Migration {
     private static final String BATCH_SIZE = "batchsize";
     private static final String VERIFY = "verify";
     private static final String DISCOVER = "discover";
+    private static final String RATE = "rate";
     
     private static final PrintStream out = System.out;
     
@@ -84,11 +85,16 @@ public class Migration {
         cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] number of rows to read per query. default=100").create(BATCH_SIZE));
         cliOptions.addOption(OptionBuilder.withDescription("[optional] verify a sampling 0.5% of data copied").create(VERIFY));
         cliOptions.addOption(OptionBuilder.withDescription("[optional] discover and query other cassandra nodes").create(DISCOVER));
+        cliOptions.addOption(OptionBuilder.hasArg().withDescription("[optional] maximum number of columns per/second to transfer. default=500").create(RATE));
+    }
+    
+    private static long nowInSeconds() {
+        return System.currentTimeMillis() / 1000;
     }
     
     public static void main(String args[]) {
         nullRouteAllLog4j();
-        
+
         Map<String, Object> options = parseOptions(args);
         
         final int readThreads = (Integer)options.get(READ_THREADS);
@@ -97,6 +103,7 @@ public class Migration {
         final int batchSize = (Integer)options.get(BATCH_SIZE);
         final int skip = (Integer)options.get(SKIP);
         final int ttl = (Integer)options.get(TTL);
+        final int rate = (Integer)options.get(RATE);
         NodeDiscoveryType discovery = (NodeDiscoveryType)options.get(DISCOVER);
         
         // connect to src cluster.
@@ -108,6 +115,9 @@ public class Migration {
         String[] dstParts = options.get(DST).toString().split(":", -1);
         final AstyanaxContext<Keyspace> dstContext = connect(dstParts[0], Integer.parseInt(dstParts[1]), dstParts[2], writeThreads, discovery);
         final Keyspace dstKeyspace = dstContext.getEntity();
+        
+        final AtomicLong columnsTransferred = new AtomicLong(0);
+        final long startClockTime = nowInSeconds();
 
         // establish column range.
         final ByteBufferRange range = new RangeBuilder()
@@ -242,9 +252,12 @@ public class Migration {
                                         ColumnListMutation<Long> mutation = batch.withRow(columnFamily, locatorCapture);
 
                                         assert ttl != 0;
+                                        long colCount = 0;
                                         for (Column<Long> c : row.getColumns()) {
                                             mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
+                                            colCount += 1;
                                         }
+                                        columnsTransferred.addAndGet(colCount);
                                         
                                         // save it, submit a log message to be shown later.
                                         try {
@@ -275,13 +288,21 @@ public class Migration {
                                                     }
                                                 }});
                                             }
-                                            final int rowIteration = processedKeys.incrementAndGet();
+                                            
+                                            final long fColCount = colCount;
                                             postExecutor.submit(new Runnable() {
                                                 public void run() {
-                                                    out.println(String.format("%d copied %s", rowIteration, locatorCapture.toString()));
+                                                    int rowIteration = processedKeys.incrementAndGet();
+                                                    long colsPerSecond = columnsTransferred.get() / Math.max(1, (nowInSeconds() - startClockTime));
+                                                    out.println(String.format("%d copied %d for %s (%d m/s), %d", rowIteration, fColCount, locatorCapture.toString(), colsPerSecond, columnsTransferred.get()));
                                                     heartbeat.set(System.currentTimeMillis());
                                                 }
                                             });
+                                            
+                                            // possibly throttle if we've sent a lot of columns.
+                                            while (columnsTransferred.get() / (nowInSeconds() - startClockTime) > rate) {
+                                                try { Thread.sleep(200); } catch (Exception ex) {}
+                                            }
                                         }
                                         catch (ConnectionException ex) {
                                             stopAll.set(true);
@@ -395,7 +416,7 @@ public class Migration {
             CassandraModel.MetricColumnFamily columnFamily = (CassandraModel.MetricColumnFamily)nameToCf.get(line.getOptionValue(COLUMN_FAMILY)); 
             options.put(COLUMN_FAMILY, columnFamily);
             
-            options.put(TTL, line.hasOption(TTL) ? Integer.parseInt(line.getOptionValue(TTL)) : (5 * columnFamily.getDefaultTTL().toSeconds()));
+            options.put(TTL, line.hasOption(TTL) ? Integer.parseInt(line.getOptionValue(TTL)) : (int)(5 * columnFamily.getDefaultTTL().toSeconds()));
             
             options.put(READ_THREADS, line.hasOption(READ_THREADS) ? Integer.parseInt(line.getOptionValue(READ_THREADS)) : 1);
             options.put(WRITE_THREADS, line.hasOption(WRITE_THREADS) ? Integer.parseInt(line.getOptionValue(WRITE_THREADS)) : 1);
@@ -403,6 +424,7 @@ public class Migration {
             options.put(VERIFY, line.hasOption(VERIFY));
             
             options.put(DISCOVER, line.hasOption(DISCOVER) ? NodeDiscoveryType.RING_DESCRIBE : NodeDiscoveryType.NONE);
+            options.put(RATE, line.hasOption(RATE) ? Integer.parseInt(line.getOptionValue(RATE)) : 500);
             
         } catch (ParseException ex) {
             HelpFormatter helpFormatter = new HelpFormatter();
