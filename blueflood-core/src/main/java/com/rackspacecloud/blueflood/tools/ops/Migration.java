@@ -10,6 +10,7 @@ import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
+import com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ByteBufferRange;
 import com.netflix.astyanax.model.Column;
@@ -17,6 +18,7 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
+import com.netflix.astyanax.retry.RetryNTimes;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.io.CassandraModel;
@@ -34,6 +36,7 @@ import org.apache.log4j.Logger;
 import javax.xml.bind.DatatypeConverter;
 import java.io.PrintStream;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -137,7 +140,12 @@ public class Migration {
         final Random random = new Random(System.nanoTime());
         
         // indicate what's going to happen.
-        out.println(String.format("Will process roughly %d keys from %s to %s", keyLimit, options.get(SRC), options.get(DST)));
+        out.println(String.format("Will process roughly %d keys from %s to %s for dates %s to %s", 
+                keyLimit, 
+                options.get(SRC), 
+                options.get(DST),
+                new Date((Long)options.get(FROM)),
+                new Date((Long)options.get(TO))));
         if (skip > 0) {
             out.println("Be patient while I skip " + skip + " keys");
         }
@@ -340,12 +348,14 @@ public class Migration {
         AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder()
                         .forKeyspace(keyspace)
                 .withAstyanaxConfiguration(new AstyanaxConfigurationImpl()
-                    .setDiscoveryType(discovery))
+                    .setDiscoveryType(discovery)
+                    .setRetryPolicy(new RetryNTimes(10)))
                     
                 .withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(host + ":" + keyspace)
                         .setMaxConns(threads * 2)
                         .setSeeds(host)
-                        .setPort(port))
+                        .setPort(port)
+                        .setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 1000)))
                 .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
                 .buildKeyspace(ThriftFamilyFactory.getInstance());
         context.start();
@@ -365,7 +375,7 @@ public class Migration {
             options.put(DST, line.getOptionValue(DST));
             
             // default range is one year ago until now.
-            options.put(FROM, line.hasOption(FROM) ? parseDateTime(line.getOptionValue(FROM)) : now-(365*24*60*60*1000));
+            options.put(FROM, line.hasOption(FROM) ? parseDateTime(line.getOptionValue(FROM)) : now-(365L*24L*60L*60L*1000L));
             options.put(TO, line.hasOption(TO) ? parseDateTime(line.getOptionValue(TO)) : now);
             
             options.put(LIMIT, line.hasOption(LIMIT) ? Integer.parseInt(line.getOptionValue(LIMIT)) : Integer.MAX_VALUE);
