@@ -1,7 +1,5 @@
 package com.rackspacecloud.blueflood.tools.ops;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.ColumnListMutation;
