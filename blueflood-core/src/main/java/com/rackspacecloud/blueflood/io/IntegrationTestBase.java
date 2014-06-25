@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.cache.Cache;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
@@ -29,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,6 +134,10 @@ public class IntegrationTestBase {
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
         AstyanaxWriter.getInstance().insertFull(metrics);
+        Field f = AstyanaxWriter.getInstance().getClass().getDeclaredField("insertedLocators");
+        f.setAccessible(true);
+        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) f.get(AstyanaxWriter.getInstance());
+        insertedLocators.invalidateAll();
 
         return metric;
     }
