@@ -28,9 +28,9 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -134,9 +134,7 @@ public class IntegrationTestBase {
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
         AstyanaxWriter.getInstance().insertFull(metrics);
-        Field f = AstyanaxWriter.getInstance().getClass().getDeclaredField("insertedLocators");
-        f.setAccessible(true);
-        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) f.get(AstyanaxWriter.getInstance());
+        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
         insertedLocators.invalidateAll();
 
         return metric;
