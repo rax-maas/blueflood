@@ -97,7 +97,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                         
                         // marks this shard dirty, so rollup nodes know to pick up the work.
                         for (IMetric metric : batch) {
-                            context.update(metric.getCollectionTime(), Util.computeShard(metric.getLocator().toString()));
+                            context.update(metric.getCollectionTime(), Util.getShard(metric.getLocator().toString()));
                         }
                         
                         return true;
