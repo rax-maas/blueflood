@@ -45,7 +45,7 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
 
     @Override
     public ListenableFuture<MetricsCollection> apply(MetricsCollection input) throws Exception {
-        return isAsync ? asynchronous(input) : asynchronous(input);
+        return isAsync ? asynchronous(input) : synchronous(input);
     }
     
     private ListenableFuture<MetricsCollection> asynchronous(final MetricsCollection input) {

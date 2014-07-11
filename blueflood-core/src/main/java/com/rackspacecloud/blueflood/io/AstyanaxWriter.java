@@ -132,7 +132,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
-        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
+        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.getShard(locator.toString()))
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
@@ -300,7 +300,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     protected static boolean isLocatorCurrent(Locator loc) {
-        return insertedLocators.getIfPresent(loc) != null;
+        return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
     private static void setLocatorCurrent(Locator loc) {
