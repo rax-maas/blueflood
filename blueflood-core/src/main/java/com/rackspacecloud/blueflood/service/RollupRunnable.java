@@ -112,11 +112,12 @@ public class RollupRunnable implements Runnable {
                             AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
-        } catch (Throwable th) {
-            log.error("Rollup failed; Locator: {}, Source Granularity: {}, Exception: {}", new Object[] {
+        } catch (Exception e) {
+            log.error("Rollup failed; Locator: {}, Source Granularity: {}, For period: {}", new Object[] {
                     singleRollupReadContext.getLocator(),
+                    singleRollupReadContext.getRange().toString(),
                     srcGran.name(),
-                    th});
+                    e});
         } finally {
             executionContext.decrementReadCounter();
             timerContext.stop();
