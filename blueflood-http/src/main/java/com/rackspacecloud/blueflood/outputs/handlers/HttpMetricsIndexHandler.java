@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class HttpMetricsIndexHandler implements HttpRequestHandler {
-    private static final Logger log = LoggerFactory.getLogger(HttpRollupsQueryHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpMetricsIndexHandler.class);
     private DiscoveryIO discoveryHandle;
 
     public HttpMetricsIndexHandler() {
@@ -49,7 +49,7 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             List<SearchResult> searchResults = discoveryHandle.search(tenantId, query.get(0));
             sendResponse(ctx, request, getSerializedJSON(searchResults), HttpResponseStatus.OK);
         } catch (Exception e) {
-            log.error(String.format("Exception occurred while trying to get metric index for %s", tenantId), e);
+            log.error(String.format("Exception occurred while trying to get metrics index for %s", tenantId), e);
             sendResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -57,7 +57,6 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
                               HttpResponseStatus status) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-
         if (messageBody != null && !messageBody.isEmpty()) {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
