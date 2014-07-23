@@ -117,22 +117,6 @@ public class ElasticIO implements DiscoveryIO {
     private String getIndex(String tenantId) {
         return INDEX_PREFIX + String.valueOf(Util.computeShard(tenantId));
     }
-
-    private static QueryBuilder createQuery(Discovery md) {
-        BoolQueryBuilder qb = boolQuery()
-                .must(termQuery(TENANT_ID.toString(), md.getTenantId()));
-        String metricName = md.getMetricName();
-        if (metricName.contains("*")) {
-            qb.must(wildcardQuery("RAW_" + METRIC_NAME.toString(), metricName));
-        } else {
-            qb.must(termQuery("RAW_" + METRIC_NAME.toString(), metricName));
-        }
-        for (Map.Entry<String, Object> entry : md.getAnnotation().entrySet()) {
-            qb.should(termQuery(entry.getKey(), entry.getValue()));
-        }
-        return qb;
-    }
-
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
         // complain if someone is trying to search specifically on any tenant.
@@ -142,14 +126,18 @@ public class ElasticIO implements DiscoveryIO {
         
         List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context searchTimerCtx = searchTimer.time();
-        final String queryString = String.format("%s:%s AND %s", TENANT_ID, tenant, query);
+        
+        // todo: we'll want to change this once we decide and use a query syntax in the query string.
         BoolQueryBuilder qb = boolQuery()
                 .must(termQuery(TENANT_ID.toString(), tenant))
-                .must(wildcardQuery("RAW_METRIC_NAME", query));
+                .must(
+                        query.contains("*") ?
+                                wildcardQuery("RAW_METRIC_NAME", query) :
+                                termQuery("RAW_METRIC_NAME", query)
+                );
         SearchResponse response = client.prepareSearch(getIndex(tenant))
                 .setSize(500)
                 .setVersion(true)
-//                .setQuery(QueryBuilders.queryString(queryString))
                 .setQuery(qb)
                 .execute()
                 .actionGet();
