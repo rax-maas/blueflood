@@ -32,6 +32,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,11 +55,11 @@ public class ElasticIO implements DiscoveryIO {
         TYPE,
         UNIT
     }
-
-    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);
-    private final Client client;
+    
+    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
     private static final String ES_TYPE = "metrics";
     private static final String INDEX_PREFIX = "blueflood-";
+    private final Client client;
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
 
     public static String getIndexPrefix() {
@@ -77,12 +78,12 @@ public class ElasticIO implements DiscoveryIO {
         this(manager.getClient());
     }
 
-    private static Result convertHitToMetricDiscoveryResult(SearchHit hit) {
+    private static SearchResult convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
         String metricName = (String)source.get(METRIC_NAME.toString());
         String tenantId = (String)source.get(TENANT_ID.toString());
         String unit = (String)source.get(UNIT.toString());
-        Result result = new Result(tenantId, metricName, unit);
+        SearchResult result = new SearchResult(tenantId, metricName, unit);
 
         return result;
     }
@@ -132,23 +133,34 @@ public class ElasticIO implements DiscoveryIO {
         return qb;
     }
 
-    public List<Result> search(Discovery md) {
-        List<Result> result = new ArrayList<Result>();
-        QueryBuilder query = createQuery(md);
+    
+    public List<SearchResult> search(String tenant, String query) throws Exception {
+        // complain if someone is trying to search specifically on any tenant.
+        if (query.indexOf(TENANT_ID.name()) >= 0) {
+            throw new Exception("Illegal query: " + query);
+        }
+        
+        List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context searchTimerCtx = searchTimer.time();
-        SearchResponse searchRes = client.prepareSearch(getIndex(md.getTenantId()))
+        final String queryString = String.format("%s:%s AND %s", TENANT_ID, tenant, query);
+        BoolQueryBuilder qb = boolQuery()
+                .must(termQuery(TENANT_ID.toString(), tenant))
+                .must(wildcardQuery("RAW_METRIC_NAME", query));
+        SearchResponse response = client.prepareSearch(getIndex(tenant))
                 .setSize(500)
                 .setVersion(true)
-                .setQuery(query)
+//                .setQuery(QueryBuilders.queryString(queryString))
+                .setQuery(qb)
                 .execute()
                 .actionGet();
         searchTimerCtx.stop();
-        for (SearchHit hit : searchRes.getHits().getHits()) {
-            Result entry = convertHitToMetricDiscoveryResult(hit);
-            result.add(entry);
+        for (SearchHit hit : response.getHits().getHits()) {
+            SearchResult result = convertHitToMetricDiscoveryResult(hit);
+            results.add(result);
         }
-        return result;
+        return results;
     }
+
 
     public static class Discovery {
         private Map<String, Object> annotation = new HashMap<String, Object>();
@@ -199,59 +211,6 @@ public class ElasticIO implements DiscoveryIO {
             }
             json = json.endObject();
             return json;
-        }
-    }
-
-    public static class Result {
-        private final String metricName;
-        private final String unit;
-        private final String tenantId;
-
-        public Result(String tenantId, String name, String unit) {
-            this.tenantId = tenantId;
-            this.metricName = name;
-            this.unit = unit;
-        }
-
-        public String getTenantId() {
-            return tenantId;
-        }
-        public String getMetricName() {
-            return metricName;
-        }
-        public String getUnit() {
-            return unit;
-        }
-        @Override
-        public String toString() {
-            return "Result [tenantId=" + tenantId + ", metricName=" + metricName + ", unit=" + unit + "]";
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result
-                    + ((metricName == null) ? 0 : metricName.hashCode());
-            result = prime * result + ((unit == null) ? 0 : unit.hashCode());
-            return result;
-        }
-
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            } else if (obj == null) {
-                return false;
-            } else if (!getClass().equals(obj.getClass())) {
-                return false;
-            }
-            return equals((Result) obj);
-        }
-        public boolean equals(Result other) {
-            if (this == other) {
-                return true;
-            }
-            return metricName.equals(other.metricName) && unit.equals(other.unit) && tenantId.equals(other.tenantId);
         }
     }
 }
