@@ -123,7 +123,7 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testMultiTenantBatching() throws Exception{
         URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v1.0/multitenant/experimental/metrics");
+                .setPath("/v2.0/acTest/ingest/multi");
         HttpPost post = new HttpPost(builder.build());
         String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
         HttpEntity entity = new StringEntity(content,
@@ -151,7 +151,7 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testMultiTenantFailureForSingleTenantHandler() throws Exception {
         URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v1.0/not-multi/experimental/metrics");
+                .setPath("/v2.0/acTest/ingest");
         HttpPost post = new HttpPost(builder.build());
         String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
         HttpEntity entity = new StringEntity(content,
@@ -166,7 +166,7 @@ public class HttpHandlerIntegrationTest {
     public void testMultiTenantFailureWithoutTenant() throws Exception {
         // 400 if sending for other tenants without actually stamping a tenant id on the incoming metrics
         URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v1.0/multitenant/experimental/metrics");
+                .setPath("/v2.0/acTest/ingest/multi");
         HttpPost post = new HttpPost(builder.build());
         String content = JSONMetricsContainerTest.generateJSONMetricsData();
         HttpEntity entity = new StringEntity(content,
@@ -183,7 +183,7 @@ public class HttpHandlerIntegrationTest {
 
     private URIBuilder getMetricsURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPort).setPath("/v1.0/acTEST/experimental/metrics");
+                .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
     }
 
     @AfterClass
