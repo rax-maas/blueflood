@@ -47,11 +47,11 @@ public class HttpMetricDataQueryServer {
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
 
         RouteMatcher router = new RouteMatcher();
-        router.get("/v1.0", new DefaultHandler());
-        router.get("/v1.0/:tenantId/views/:metricName", new HttpRollupsQueryHandler());
-        router.post("/v1.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
-        router.get("/v1.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
-        router.get("/v1.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
+        router.get("/v2.0", new DefaultHandler());
+        router.get("/v2.0/:tenantId/views/:metricName", new HttpRollupsQueryHandler());
+        router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
+        router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
+        router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
