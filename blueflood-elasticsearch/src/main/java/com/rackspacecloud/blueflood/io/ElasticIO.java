@@ -49,6 +49,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 
 public class ElasticIO implements DiscoveryIO {
+    public static final String INDEX_NAME = "metric_metadata";
+    
     static enum ESFieldLabel {
         METRIC_NAME,
         TENANT_ID,
@@ -58,13 +60,8 @@ public class ElasticIO implements DiscoveryIO {
     
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
     private static final String ES_TYPE = "metrics";
-    private static final String INDEX_PREFIX = "blueflood-";
     private final Client client;
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
-
-    public static String getIndexPrefix() {
-        return INDEX_PREFIX;
-    }
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -109,13 +106,10 @@ public class ElasticIO implements DiscoveryIO {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
-        return client.prepareIndex(getIndex(md.getTenantId()), ES_TYPE)
+        return client.prepareIndex(INDEX_NAME, ES_TYPE)
                 .setId(md.getDocumentId())
-                .setSource(md.createSourceContent());
-    }
-
-    private String getIndex(String tenantId) {
-        return INDEX_PREFIX + String.valueOf(Util.computeShard(tenantId));
+                .setSource(md.createSourceContent())
+                .setRouting(md.getTenantId());
     }
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
@@ -135,7 +129,7 @@ public class ElasticIO implements DiscoveryIO {
                                 wildcardQuery("RAW_METRIC_NAME", query) :
                                 termQuery("RAW_METRIC_NAME", query)
                 );
-        SearchResponse response = client.prepareSearch(getIndex(tenant))
+        SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setSize(500)
                 .setVersion(true)
                 .setQuery(qb)
