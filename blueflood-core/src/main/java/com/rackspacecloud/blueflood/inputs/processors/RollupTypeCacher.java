@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
+import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
@@ -23,6 +24,7 @@ import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +34,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
 
     private static final Logger log = LoggerFactory.getLogger(RollupTypeCacher.class);
-    private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();;
-    
+    private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
+    private final Timer asyncDurationTimer = Metrics.timer(RollupTypeCacher.class, "Async Rollup Type Cache Duration");
+    private final Timer syncDurationTimer = Metrics.timer(RollupTypeCacher.class, "Sync Rollup Type Cache Duration");
+
     private final MetadataCache cache;
     private final boolean isAsync;
     
@@ -49,21 +53,37 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
     }
     
     private ListenableFuture<MetricsCollection> asynchronous(final MetricsCollection input) {
+        final Timer.Context actualAsyncCacheContext = asyncDurationTimer.time();
+
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
                 record(input);
+                done();
+            }
+
+            private void done()
+            {
+                actualAsyncCacheContext.stop();
             }
         });
         return new NoOpFuture<MetricsCollection>(input);
     }
     
     private ListenableFuture<MetricsCollection> synchronous(final MetricsCollection input) {
+        final Timer.Context actualSyncCacheContext = syncDurationTimer.time();
+
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             @Override
             public MetricsCollection call() throws Exception {
                 record(input);
+                done();
                 return input;
+            }
+
+            private void done()
+            {
+                actualSyncCacheContext.stop();
             }
         });
     }
