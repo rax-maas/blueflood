@@ -128,8 +128,9 @@ public class ElasticIO implements DiscoveryIO {
                         query.contains("*") ?
                                 wildcardQuery("RAW_METRIC_NAME", query) :
                                 termQuery("RAW_METRIC_NAME", query)
-                );
-        SearchResponse response = client.prepareSearch(INDEX_NAME).setRouting(tenant)
+                );     
+        SearchResponse response = client.prepareSearch(INDEX_NAME)
+                .setRouting(tenant)
                 .setSize(500)
                 .setVersion(true)
                 .setQuery(qb)
