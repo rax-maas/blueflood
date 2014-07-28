@@ -1,5 +1,8 @@
 {
     "metrics": {
+        "_routing": {
+            "required": true
+        },
         "properties": {
             "TENANT_ID": {
                 "type": "string",
