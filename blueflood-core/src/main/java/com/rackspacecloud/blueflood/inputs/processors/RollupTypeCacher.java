@@ -35,8 +35,7 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
 
     private static final Logger log = LoggerFactory.getLogger(RollupTypeCacher.class);
     private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
-    private final Timer asyncDurationTimer = Metrics.timer(RollupTypeCacher.class, "Async Rollup Type Cache Duration");
-    private final Timer syncDurationTimer = Metrics.timer(RollupTypeCacher.class, "Sync Rollup Type Cache Duration");
+    private final Timer recordDurationTimer = Metrics.timer(RollupTypeCacher.class, "Record Duration");
 
     private final MetadataCache cache;
     private final boolean isAsync;
@@ -53,41 +52,36 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
     }
     
     private ListenableFuture<MetricsCollection> asynchronous(final MetricsCollection input) {
-        final Timer.Context actualAsyncCacheContext = asyncDurationTimer.time();
 
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
-                record(input);
-                done();
-            }
-
-            private void done()
-            {
-                actualAsyncCacheContext.stop();
+                recordWithTimer(input);
             }
         });
         return new NoOpFuture<MetricsCollection>(input);
     }
     
     private ListenableFuture<MetricsCollection> synchronous(final MetricsCollection input) {
-        final Timer.Context actualSyncCacheContext = syncDurationTimer.time();
-
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             @Override
             public MetricsCollection call() throws Exception {
-                record(input);
-                done();
+                recordWithTimer(input);
                 return input;
-            }
-
-            private void done()
-            {
-                actualSyncCacheContext.stop();
             }
         });
     }
     
+    private void recordWithTimer(MetricsCollection input) {
+        final Timer.Context recordDurationContext = recordDurationTimer.time();
+
+        try {
+            record(input);
+        } finally {
+            recordDurationContext.stop();
+        }
+    }
+
     private void record(MetricsCollection input) {
         for (IMetric metric : input.toMetrics()) {
             try {
