@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.Util;
 
 import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -31,8 +30,6 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,10 +49,9 @@ public class ElasticIO implements DiscoveryIO {
     public static final String INDEX_NAME = "metric_metadata";
     
     static enum ESFieldLabel {
-        METRIC_NAME,
-        TENANT_ID,
-        TYPE,
-        UNIT
+        metric_name,
+        tenantId,
+        unit
     }
     
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
@@ -77,9 +73,9 @@ public class ElasticIO implements DiscoveryIO {
 
     private static SearchResult convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
-        String metricName = (String)source.get(METRIC_NAME.toString());
-        String tenantId = (String)source.get(TENANT_ID.toString());
-        String unit = (String)source.get(UNIT.toString());
+        String metricName = (String)source.get(metric_name.toString());
+        String tenantId = (String)source.get(ESFieldLabel.tenantId.toString());
+        String unit = (String)source.get(ESFieldLabel.unit.toString());
         SearchResult result = new SearchResult(tenantId, metricName, unit);
 
         return result;
@@ -93,9 +89,8 @@ public class ElasticIO implements DiscoveryIO {
             Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
             Map<String, Object> info = new HashMap<String, Object>();
             if (metric.getUnit() != null) { // metric units may be null
-                info.put(UNIT.toString(), metric.getUnit());
+                info.put(unit.toString(), metric.getUnit());
             }
-            info.put(TYPE.toString(), metric.getDataType());
             md.withAnnotation(info);
             bulk.add(createSingleRequest(md));
         }
@@ -114,7 +109,7 @@ public class ElasticIO implements DiscoveryIO {
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
         // complain if someone is trying to search specifically on any tenant.
-        if (query.indexOf(TENANT_ID.name()) >= 0) {
+        if (query.indexOf(tenantId.name()) >= 0) {
             throw new Exception("Illegal query: " + query);
         }
         
@@ -123,11 +118,11 @@ public class ElasticIO implements DiscoveryIO {
         
         // todo: we'll want to change this once we decide and use a query syntax in the query string.
         BoolQueryBuilder qb = boolQuery()
-                .must(termQuery(TENANT_ID.toString(), tenant))
+                .must(termQuery(tenantId.toString(), tenant))
                 .must(
                         query.contains("*") ?
-                                wildcardQuery("RAW_METRIC_NAME", query) :
-                                termQuery("RAW_METRIC_NAME", query)
+                                wildcardQuery(metric_name.name(), query) :
+                                termQuery(metric_name.name(), query)
                 );
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
@@ -185,8 +180,8 @@ public class ElasticIO implements DiscoveryIO {
             XContentBuilder json;
 
             json = XContentFactory.jsonBuilder().startObject()
-                    .field(TENANT_ID.toString(), tenantId)
-                    .field(METRIC_NAME.toString(), metricName);
+                    .field(ESFieldLabel.tenantId.toString(), tenantId)
+                    .field(metric_name.toString(), metricName);
 
 
             for (Map.Entry<String, Object> entry : annotation.entrySet()) {
