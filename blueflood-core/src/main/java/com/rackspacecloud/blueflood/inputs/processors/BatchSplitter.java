@@ -38,17 +38,16 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
     }
 
     public ListenableFuture<List<List<IMetric>>> apply(final MetricsCollection input) throws Exception {
-        final Timer.Context actualSplitContext = splitDurationTimer.time();
-
         return getThreadPool().submit(new Callable<List<List<IMetric>>>() {
-            public List<List<IMetric>> call() throws Exception {
-                List<List<IMetric>> batchedMetrics = input.splitMetricsIntoBatches(batchSize);
-                done();
-                return batchedMetrics;
-            }
+            final Timer.Context actualSplitContext = splitDurationTimer.time();
 
-            private void done() {
-                actualSplitContext.stop();
+            public List<List<IMetric>> call() throws Exception {
+                try {
+                    return input.splitMetricsIntoBatches(batchSize);
+                }
+                finally {
+                    actualSplitContext.stop();
+                }
             }
         });
     }
