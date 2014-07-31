@@ -99,9 +99,9 @@ public class HttpMetricsIngestionServer {
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v1.0/:tenantId/ingest", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v1.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         router.get("/v2.0", new DefaultHandler());
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
