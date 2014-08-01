@@ -196,6 +196,7 @@ public class AstyanaxBenchmarker {
             benchmarkExecutors.submit(new Runnable() {
                 @Override
                 public void run() {
+
                     if (stopBenchmark.get())
                         printReports();
 
