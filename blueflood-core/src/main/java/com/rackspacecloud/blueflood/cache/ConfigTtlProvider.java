@@ -166,7 +166,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     }
 
     public TimeValue getConfigTTLForUserTTL(TimeValue userTTL) {
-
         for(TtlBin ttlBin : this.ttl_bins) {
             if(ttlBin.isTtlWithinBounds(userTTL))
             {
@@ -178,15 +177,40 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     }
 
     private void initializeTtlBinsList() {
+        final Configuration config = Configuration.getInstance();
+
         this.ttl_bins = new ArrayList<TtlBin>();
 
-        ttl_bins.add(new TtlBin(new TimeValue(0,TimeUnit.SECONDS), new TimeValue(5,TimeUnit.SECONDS), new TimeValue(2,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(5,TimeUnit.SECONDS), new TimeValue(15,TimeUnit.SECONDS),new TimeValue(7,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(15,TimeUnit.SECONDS), new TimeValue(30,TimeUnit.SECONDS),new TimeValue(14,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(30,TimeUnit.SECONDS), new TimeValue(5,TimeUnit.MINUTES), new TimeValue(31,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(5,TimeUnit.MINUTES), new TimeValue(20,TimeUnit.MINUTES), new TimeValue(62,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(20,TimeUnit.MINUTES), new TimeValue(1,TimeUnit.HOURS), new TimeValue(93,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(1,TimeUnit.HOURS), new TimeValue(1,TimeUnit.DAYS),new TimeValue(186,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(1,TimeUnit.DAYS), new TimeValue(Integer.MAX_VALUE,TimeUnit.DAYS),new TimeValue(Integer.MAX_VALUE,TimeUnit.DAYS)));
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND0),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND0),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_0),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND1),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND1),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_1),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND2),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND2),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_2),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND3),TimeUnit.SECONDS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND3),TimeUnit.MINUTES),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_3),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND4),TimeUnit.MINUTES),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND4),TimeUnit.MINUTES),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_4),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND5),TimeUnit.MINUTES),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND5),TimeUnit.HOURS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_5),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND6),TimeUnit.HOURS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND6),TimeUnit.DAYS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_6),TimeUnit.DAYS)));
+
+        ttl_bins.add(new TtlBin(new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_LOWER_BOUND7),TimeUnit.DAYS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_BIN_UPPER_BOUND7),TimeUnit.DAYS),
+                new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_7),TimeUnit.DAYS)));
     }
 }
