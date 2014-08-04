@@ -55,4 +55,15 @@ public class ConfigTtlProviderTest {
         Assert.assertTrue(new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS).equals(
                 ttlProvider.getTTLForStrings("acFoo")));
     }
+
+    @Test
+    public void configTTLForUserTTLReturnsExpectedValues() throws Exception {
+        final ConfigTtlProvider ttlProvider = ConfigTtlProvider.getInstance();
+
+        TimeValue userTtl = new TimeValue(0, TimeUnit.SECONDS);
+        TimeValue configTtl = ttlProvider.getConfigTTLForUserTTL(userTtl);
+        TimeValue expectedTtl = new TimeValue(0, TimeUnit.SECONDS);
+
+        Assert.assertTrue(expectedTtl.toSeconds() == configTtl.toSeconds());
+    }
 }
