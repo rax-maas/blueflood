@@ -53,7 +53,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private final TimeValue timeout;
 
     // Metrics
-    private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
+    private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
+    private static final Timer persistingTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion persisting timer");
+    private static final Timer sendResponseTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion response sending timer");
+
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -76,8 +79,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
         JSONMetricsContainer jsonMetricsContainer = null;
+        final Timer.Context jsonTimerContext = jsonTimer.time();
 
-        final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
             jsonMetricsContainer = createContainer(body, tenantId);
@@ -126,6 +129,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             sendResponse(ctx, request, "Error converting JSON payload to metric objects",
                     HttpResponseStatus.BAD_REQUEST);
             return;
+        } finally {
+            jsonTimerContext.stop();
         }
 
         if (containerMetrics == null || containerMetrics.isEmpty()) {
@@ -135,7 +140,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
         final MetricsCollection collection = new MetricsCollection();
         collection.add(new ArrayList<IMetric>(containerMetrics));
-
+        final Timer.Context persistingTimerContext = persistingTimer.time();
         try {
             ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
@@ -152,16 +157,21 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             log.error("Exception persisting metrics", e);
             sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            timerContext.stop();
+            persistingTimerContext.stop();
         }
     }
 
     public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
 
-        if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+        try {
+            if (messageBody != null && !messageBody.isEmpty()) {
+                response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            }
+            HttpResponder.respond(channel, request, response);
+        } finally {
+            sendResponseTimerContext.stop();
         }
-        HttpResponder.respond(channel, request, response);
     }
 }
