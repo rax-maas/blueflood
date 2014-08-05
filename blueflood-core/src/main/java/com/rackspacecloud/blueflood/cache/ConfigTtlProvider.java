@@ -26,7 +26,6 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProvider implements TenantTtlProvider {
@@ -35,32 +34,12 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     private final ImmutableTable<Granularity, RollupType, TimeValue> ttlMapper;
     private final TimeValue stringTTL;
     private static final ConfigTtlProvider INSTANCE = new ConfigTtlProvider();
-    private ArrayList<TtlBin> ttl_bins = new ArrayList<TtlBin>();
-
-    private class TtlBin {
-        public final TimeValue lower;
-        public final TimeValue upper;
-        public final TimeValue ttl;
-
-        public TtlBin(TimeValue low, TimeValue up, TimeValue ttl) {
-            this.lower = low;
-            this.upper = up;
-            this.ttl = ttl;
-        }
-
-        public boolean isTtlWithinBounds(TimeValue userTtl) {
-            long userTtlSeconds = userTtl.toSeconds();
-            return (this.lower.toSeconds() <= userTtlSeconds && this.upper.toSeconds() > userTtlSeconds);
-        }
-    }
 
     public static ConfigTtlProvider getInstance() {
         return INSTANCE;
     }
 
     private ConfigTtlProvider() {
-        initializeTtlBinsList();
-
         final Configuration config = Configuration.getInstance();
 
         // String rollups
@@ -163,30 +142,5 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     @Override
     public TimeValue getTTLForStrings(String tenantId) throws Exception {
         return stringTTL;
-    }
-
-    public TimeValue getConfigTTLForUserTTL(TimeValue userTTL) {
-
-        for(TtlBin ttlBin : this.ttl_bins) {
-            if(ttlBin.isTtlWithinBounds(userTTL))
-            {
-                return ttlBin.ttl;
-            }
-        }
-
-        return null;
-    }
-
-    private void initializeTtlBinsList() {
-        this.ttl_bins = new ArrayList<TtlBin>();
-
-        ttl_bins.add(new TtlBin(new TimeValue(0,TimeUnit.SECONDS), new TimeValue(5,TimeUnit.SECONDS), new TimeValue(2,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(5,TimeUnit.SECONDS), new TimeValue(15,TimeUnit.SECONDS),new TimeValue(7,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(15,TimeUnit.SECONDS), new TimeValue(30,TimeUnit.SECONDS),new TimeValue(14,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(30,TimeUnit.SECONDS), new TimeValue(5,TimeUnit.MINUTES), new TimeValue(31,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(5,TimeUnit.MINUTES), new TimeValue(20,TimeUnit.MINUTES), new TimeValue(62,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(20,TimeUnit.MINUTES), new TimeValue(1,TimeUnit.HOURS), new TimeValue(93,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(1,TimeUnit.HOURS), new TimeValue(1,TimeUnit.DAYS),new TimeValue(186,TimeUnit.DAYS)));
-        ttl_bins.add(new TtlBin(new TimeValue(1,TimeUnit.DAYS), new TimeValue(Integer.MAX_VALUE,TimeUnit.DAYS),new TimeValue(Integer.MAX_VALUE,TimeUnit.DAYS)));
     }
 }
