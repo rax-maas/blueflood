@@ -63,44 +63,42 @@ public class ConfigTtlProviderTest {
 
     @Test
     public void configTTLForUserTTLReturnsExpectedValues() throws Exception {
-        //Bucket #1
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(0,TimeUnit.SECONDS),new TimeValue(2, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(4,TimeUnit.SECONDS),new TimeValue(2, TimeUnit.DAYS)));
+        final Configuration config = Configuration.getInstance();
 
+        //Bucket #1
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(0,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_0), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(4,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_0), TimeUnit.DAYS)));
 
         //Bucket #2
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(5,TimeUnit.SECONDS),new TimeValue(7, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(14,TimeUnit.SECONDS),new TimeValue(7, TimeUnit.DAYS)));
-
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(5,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_1), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(14,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_1), TimeUnit.DAYS)));
 
         //Bucket #3
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(15,TimeUnit.SECONDS),new TimeValue(14, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(29,TimeUnit.SECONDS),new TimeValue(14, TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(15,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_2), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(29,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_2), TimeUnit.DAYS)));
 
         //Bucket #4
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(30,TimeUnit.SECONDS),new TimeValue(31, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(270,TimeUnit.SECONDS),new TimeValue(31, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(299,TimeUnit.SECONDS),new TimeValue(31, TimeUnit.DAYS)));
-
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(30,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_3), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(270,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_3), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(299,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_3), TimeUnit.DAYS)));
 
         //Bucket #5
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(5,TimeUnit.MINUTES),new TimeValue(62, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1100,TimeUnit.SECONDS),new TimeValue(62, TimeUnit.DAYS)));
-
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(5,TimeUnit.MINUTES),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_4), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1100,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_4), TimeUnit.DAYS)));
 
         //Bucket #6
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(20,TimeUnit.MINUTES),new TimeValue(93, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1700,TimeUnit.SECONDS),new TimeValue(93, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(59,TimeUnit.MINUTES),new TimeValue(93, TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(20,TimeUnit.MINUTES),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_5), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1700,TimeUnit.SECONDS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_5), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(59,TimeUnit.MINUTES),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_5), TimeUnit.DAYS)));
 
         //Bucket #7
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1,TimeUnit.HOURS),new TimeValue(186, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(14,TimeUnit.HOURS),new TimeValue(186, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(23,TimeUnit.HOURS),new TimeValue(186, TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1,TimeUnit.HOURS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_6), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(14,TimeUnit.HOURS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_6), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(23,TimeUnit.HOURS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_6), TimeUnit.DAYS)));
 
         //Bucket #8
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1,TimeUnit.DAYS),new TimeValue(Integer.MAX_VALUE, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1000,TimeUnit.DAYS),new TimeValue(Integer.MAX_VALUE, TimeUnit.DAYS)));
-        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(999999,TimeUnit.HOURS),new TimeValue(Integer.MAX_VALUE, TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1,TimeUnit.DAYS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_7), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(1000,TimeUnit.DAYS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_7), TimeUnit.DAYS)));
+        Assert.assertTrue(compareConfigTtlWithExpectedTtl(new TimeValue(999999,TimeUnit.HOURS),new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_7), TimeUnit.DAYS)));
     }
 }
