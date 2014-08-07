@@ -145,13 +145,13 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return stringTTL;
     }
 
-    public TimeValue getConfigTTLForIngestion() {
+    public static final TimeValue getConfigTTLForIngestion() {
         final Configuration config = Configuration.getInstance();
 
         return new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_CONST),TimeUnit.DAYS);
     }
 
-    public boolean areTTLsForced() {
+    public static final boolean areTTLsForced() {
         final Configuration config = Configuration.getInstance();
 
         return config.getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);

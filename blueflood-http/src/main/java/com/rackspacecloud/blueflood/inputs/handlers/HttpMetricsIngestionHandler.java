@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
@@ -114,6 +115,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         List<Metric> containerMetrics;
         try {
             containerMetrics = jsonMetricsContainer.toMetrics();
+            forceTTLsIfConfigured(containerMetrics);
         } catch (InvalidDataException ex) {
             // todo: we should measure these. if they spike, we track down the bad client.
             // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
@@ -158,6 +160,14 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             persistingTimerContext.stop();
+        }
+    }
+
+    private void forceTTLsIfConfigured(List<Metric> containerMetrics) {
+        if(ConfigTtlProvider.areTTLsForced()) {
+            for(Metric m : containerMetrics) {
+                m.setTtl(ConfigTtlProvider.getConfigTTLForIngestion());
+            }
         }
     }
 
