@@ -124,7 +124,9 @@ public class JSONMetricsContainer {
             this.collectionTime = collectionTime;
         }
 
-        public int getTtlInSeconds() {  return this.ttlInSeconds; }
+        public int getTtlInSeconds() {
+            return this.ttlInSeconds;
+        }
 
         public void setTtlInSeconds(int ttlInSeconds) {
             this.ttlInSeconds = ttlInSeconds;
