@@ -91,12 +91,13 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
         }
     }
 
-    private String getSerializedJSON(List<SearchResult> searchResults) {
+    public static String getSerializedJSON(List<SearchResult> searchResults) {
         ArrayNode resultArray = JsonNodeFactory.instance.arrayNode();
         for (SearchResult result : searchResults) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("metric", result.getMetricName());
             resultNode.put("unit", result.getUnit());
+            resultArray.add(resultNode);
         }
         return resultArray.toString();
     }

@@ -47,6 +47,11 @@ public class HttpMetricDataQueryServer {
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
 
         RouteMatcher router = new RouteMatcher();
+        router.get("/v1.0", new DefaultHandler());
+        router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
+        router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
+        router.get("/v1.0/:tenantId/experimental/views/histograms/:metricName", new HttpHistogramQueryHandler());
+
         router.get("/v2.0", new DefaultHandler());
         router.get("/v2.0/:tenantId/views/:metricName", new HttpRollupsQueryHandler());
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
