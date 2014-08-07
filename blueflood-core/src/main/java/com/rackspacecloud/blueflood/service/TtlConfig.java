@@ -55,7 +55,7 @@ public enum TtlConfig implements ConfigDefaults {
     TIMER_ROLLUPS_MIN1440("365"), // 1 year
 
     TTL_CONFIG_CONST("1"), // 1 day
-    ARE_TTLS_FORCED("false");
+    ARE_TTLS_FORCED("true");
     static {
         Configuration.getInstance().loadDefaults(TtlConfig.values());
     }

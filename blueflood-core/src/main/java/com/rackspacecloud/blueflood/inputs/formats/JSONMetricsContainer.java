@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
-import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -61,27 +60,13 @@ public class JSONMetricsContainer {
             }
 
             if (jsonMetric.getMetricValue() != null) {
-                int ttlSeconds = getTtlBasedOnConfigs(jsonMetric);
-
                 final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
-                        new TimeValue(ttlSeconds, TimeUnit.SECONDS), jsonMetric.getUnit());
+                        new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
                 metrics.add(metric);
             }
         }
 
         return metrics;
-    }
-
-    private int getTtlBasedOnConfigs(JSONMetric jsonMetric) {
-        ConfigTtlProvider configTtlProvider = ConfigTtlProvider.getInstance();
-        int ttlSeconds;
-        if (configTtlProvider.areTTLsForced()) {
-            ttlSeconds = (int)configTtlProvider.getConfigTTLForIngestion().toSeconds();
-        }
-        else {
-            ttlSeconds = jsonMetric.getTtlInSeconds();
-        }
-        return ttlSeconds;
     }
 
     // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.
