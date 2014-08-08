@@ -5,6 +5,7 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.Metric;
 
+import org.junit.Assert;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 import java.util.ArrayList;
@@ -35,18 +36,23 @@ public class DiscoveryWriterTest {
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
-
-        ListenableFuture<List<Boolean>> result = discWriter.processMetrics(testdata);
-        // wait until DiscoveryWriter finishes processing all the fake metrics
-        while (!result.isDone()) {
-           Thread.sleep(500);
+        
+        List<Metric> flatTestData = new ArrayList<Metric>();
+        for (List<Metric> list : testdata) {
+            if (list.size() == 0) continue;
+            for (Metric m : list) {
+                flatTestData.add(m);
+            }
         }
+
+        
+        ListenableFuture<Boolean> result = discWriter.processMetrics(testdata);
+        // wait until DiscoveryWriter finishes processing all the fake metrics
+        Assert.assertTrue(result.get());
 
         // verify the insertDiscovery method on all implementors of
         // DiscoveryIO has been called on all metrics
-        for (List<Metric> metrics : testdata) {
-            verify(discovererA).insertDiscovery(metrics);
-            verify(discovererB).insertDiscovery(metrics);
-        }
+        verify(discovererA).insertDiscovery(flatTestData);
+        verify(discovererB).insertDiscovery(flatTestData);
     }
 }

@@ -88,6 +88,10 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
     private static List<Metric> condense(List<List<Metric>> input) {
         List<Metric> willIndex = new ArrayList<Metric>();
         for (List<Metric> list : input) {
+            // make mockito happy.
+            if (list.size() == 0) {
+                continue;
+            }
             for (Metric m : list) {
                 if (!AstyanaxWriter.isLocatorCurrent(m.getLocator())) {
                     willIndex.add(m);
