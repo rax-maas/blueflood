@@ -164,9 +164,11 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     private void forceTTLsIfConfigured(List<Metric> containerMetrics) {
-        if(ConfigTtlProvider.areTTLsForced()) {
+        ConfigTtlProvider configTtlProvider = ConfigTtlProvider.getInstance();
+
+        if(configTtlProvider.areTTLsForced()) {
             for(Metric m : containerMetrics) {
-                m.setTtl(ConfigTtlProvider.getConfigTTLForIngestion());
+                m.setTtl(configTtlProvider.getConfigTTLForIngestion());
             }
         }
     }

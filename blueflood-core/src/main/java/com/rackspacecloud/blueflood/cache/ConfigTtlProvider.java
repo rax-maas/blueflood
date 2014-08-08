@@ -25,8 +25,6 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProvider implements TenantTtlProvider {
@@ -35,6 +33,8 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     private final ImmutableTable<Granularity, RollupType, TimeValue> ttlMapper;
     private final TimeValue stringTTL;
     private static final ConfigTtlProvider INSTANCE = new ConfigTtlProvider();
+    private static final boolean ARE_TTLS_FORCED = Configuration.getInstance().getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
+    private static final TimeValue TTL_CONFIG_FOR_INGESTION = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
 
     public static ConfigTtlProvider getInstance() {
         return INSTANCE;
@@ -145,15 +145,11 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return stringTTL;
     }
 
-    public static final TimeValue getConfigTTLForIngestion() {
-        final Configuration config = Configuration.getInstance();
-
-        return new TimeValue(config.getIntegerProperty(TtlConfig.TTL_CONFIG_CONST),TimeUnit.DAYS);
+    public TimeValue getConfigTTLForIngestion() {
+        return TTL_CONFIG_FOR_INGESTION;
     }
 
-    public static final boolean areTTLsForced() {
-        final Configuration config = Configuration.getInstance();
-
-        return config.getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
+    public boolean areTTLsForced() {
+        return ARE_TTLS_FORCED;
     }
 }
