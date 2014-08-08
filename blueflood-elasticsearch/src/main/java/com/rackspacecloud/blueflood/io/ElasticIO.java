@@ -82,6 +82,9 @@ public class ElasticIO implements DiscoveryIO {
     }
 
     public void insertDiscovery(List<Metric> batch) throws IOException {
+        if (batch.size() == 0) {
+            return;
+        }
         // TODO: check bulk insert result and retry
         BulkRequestBuilder bulk = client.prepareBulk();
         for (Metric metric : batch) {
