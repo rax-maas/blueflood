@@ -110,7 +110,7 @@ public class JSONMetricsContainer {
         }
 
         public int getTtlInSeconds() {
-            return ttlInSeconds;
+            return this.ttlInSeconds;
         }
 
         public void setTtlInSeconds(int ttlInSeconds) {
