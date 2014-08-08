@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -83,31 +84,48 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
             }
         }
     }
-
-    public ListenableFuture<List<Boolean>> processMetrics(List<List<Metric>> input) {
-        final List<ListenableFuture<Boolean>> resultFutures = new ArrayList<ListenableFuture<Boolean>>();
-        for (final List<Metric> metrics : input) {
-            ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
-                public Boolean call() throws Exception {
-                    boolean success = true;
-                        for (DiscoveryIO io : discoveryIOs) {
-                            Timer.Context actualWriteCtx = writeDurationTimers.get(io.getClass()).time();
-                            try {
-                                io.insertDiscovery(metrics);
-                            } catch (Exception ex) {
-                                getLogger().error(ex.getMessage(), ex);
-                                writeErrorMeters.get(io.getClass()).mark();
-                                success = false;
-                            } finally {
-                                actualWriteCtx.stop();
-                            }
-                        }
-                        return success;
+    
+    private static List<Metric> condense(List<List<Metric>> input) {
+        List<Metric> willIndex = new ArrayList<Metric>();
+        for (List<Metric> list : input) {
+            // make mockito happy.
+            if (list.size() == 0) {
+                continue;
+            }
+            for (Metric m : list) {
+                if (!AstyanaxWriter.isLocatorCurrent(m.getLocator())) {
+                    willIndex.add(m);
                 }
-            });
-            resultFutures.add(futureBatchResult);
+            }
         }
-        return Futures.allAsList(resultFutures);
+        return willIndex;
+    }
+    
+    
+    public ListenableFuture<Boolean> processMetrics(List<List<Metric>> input) {
+        // filter out the metrics that are current.
+        final List<Metric> willIndex = DiscoveryWriter.condense(input);
+        
+        // process en masse.
+        return getThreadPool().submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                boolean success = true;
+                for (DiscoveryIO io : discoveryIOs) {
+                    Timer.Context actualWriteCtx = writeDurationTimers.get(io.getClass()).time();
+                    try {
+                        io.insertDiscovery(willIndex);
+                    } catch (Exception ex) {
+                        getLogger().error(ex.getMessage(), ex);
+                        writeErrorMeters.get(io.getClass()).mark();
+                        success = false;
+                    } finally {
+                        actualWriteCtx.stop();
+                    }
+                }
+                return success;
+            }
+        });
     }
 
     public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
