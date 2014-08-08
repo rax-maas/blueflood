@@ -299,7 +299,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    protected static boolean isLocatorCurrent(Locator loc) {
+    public static boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
