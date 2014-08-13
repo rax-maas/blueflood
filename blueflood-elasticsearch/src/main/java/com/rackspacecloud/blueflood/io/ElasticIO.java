@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Histogram;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -57,7 +58,11 @@ public class ElasticIO implements DiscoveryIO {
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
     private static final String ES_TYPE = "metrics";
     private final Client client;
+    
+    // todo: these should be instances per client.
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
+    private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
+    private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -82,22 +87,30 @@ public class ElasticIO implements DiscoveryIO {
     }
 
     public void insertDiscovery(List<Metric> batch) throws IOException {
+        batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
         }
+        
         // TODO: check bulk insert result and retry
-        BulkRequestBuilder bulk = client.prepareBulk();
-        for (Metric metric : batch) {
-            Locator locator = metric.getLocator();
-            Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
-            Map<String, Object> info = new HashMap<String, Object>();
-            if (metric.getUnit() != null) { // metric units may be null
-                info.put(unit.toString(), metric.getUnit());
+        Timer.Context ctx = writeTimer.time();
+        try {
+            BulkRequestBuilder bulk = client.prepareBulk();
+            for (Metric metric : batch) {
+                Locator locator = metric.getLocator();
+                Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+                Map<String, Object> info = new HashMap<String, Object>();
+                if (metric.getUnit() != null) { // metric units may be null
+                    info.put(unit.toString(), metric.getUnit());
+                }
+                md.withAnnotation(info);
+                bulk.add(createSingleRequest(md));
             }
-            md.withAnnotation(info);
-            bulk.add(createSingleRequest(md));
+            bulk.execute().actionGet();
+        } finally {
+            ctx.stop();
         }
-        bulk.execute().actionGet();
+        
     }
 
     private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
