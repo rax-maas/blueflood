@@ -41,20 +41,18 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
-    private final Map<Class<? extends DiscoveryIO>, Timer> writeDurationTimers = new HashMap<Class<? extends DiscoveryIO>, Timer>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
     private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
+    private final boolean canIndex;
 
     public DiscoveryWriter(ThreadPoolExecutor threadPool) {
         super(threadPool);
         registerIOModules();
+        this.canIndex = discoveryIOs.size() > 0;
     }
 
     public void registerIO(DiscoveryIO io) {
         discoveryIOs.add(io);
-        writeDurationTimers.put(io.getClass(),
-                Metrics.timer(io.getClass(), "DiscoveryWriter Write Duration")
-                );
         writeErrorMeters.put(io.getClass(),
                 Metrics.meter(io.getClass(), "DiscoveryWriter Write Errors")
                 );
@@ -112,15 +110,12 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
             public Boolean call() throws Exception {
                 boolean success = true;
                 for (DiscoveryIO io : discoveryIOs) {
-                    Timer.Context actualWriteCtx = writeDurationTimers.get(io.getClass()).time();
                     try {
                         io.insertDiscovery(willIndex);
                     } catch (Exception ex) {
                         getLogger().error(ex.getMessage(), ex);
                         writeErrorMeters.get(io.getClass()).mark();
                         success = false;
-                    } finally {
-                        actualWriteCtx.stop();
                     }
                 }
                 return success;
@@ -129,7 +124,10 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
     }
 
     public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
-        processMetrics(input);
+        if (canIndex) {
+            processMetrics(input);
+        }
+        
         // we don't need all metrics to finish being inserted into the discovery backend
         // before moving onto the next step in the processing chain.
         return new NoOpFuture<List<List<Metric>>>(input);
