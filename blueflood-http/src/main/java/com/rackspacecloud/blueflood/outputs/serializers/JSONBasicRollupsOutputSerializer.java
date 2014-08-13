@@ -68,6 +68,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         metaObject.put("next_href", null);
         globalJSON.put("values", valuesArray);
         globalJSON.put("metadata", metaObject);
+        globalJSON.put("unit", metricData.getUnit());
 
         return globalJSON;
     }
