@@ -37,6 +37,9 @@ public enum CoreConfig implements ConfigDefaults {
     MAX_ROLLUP_READ_THREADS("20"),
     MAX_ROLLUP_WRITE_THREADS("5"),
 
+    DISCOVERY_WRITER_MIN_THREADS("5"),
+    DISCOVERY_WRITER_MAX_THREADS("10"),
+
     // Maximum threads that would access the cache concurrently
     META_CACHE_MAX_CONCURRENCY("50"),
 
