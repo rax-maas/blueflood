@@ -41,7 +41,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
-    private final Map<Class<? extends DiscoveryIO>, Timer> writeDurationTimers = new HashMap<Class<? extends DiscoveryIO>, Timer>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
     private static final Logger log = LoggerFactory.getLogger(DiscoveryWriter.class);
     private final boolean canIndex;
@@ -54,9 +53,6 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
 
     public void registerIO(DiscoveryIO io) {
         discoveryIOs.add(io);
-        writeDurationTimers.put(io.getClass(),
-                Metrics.timer(io.getClass(), "DiscoveryWriter Write Duration")
-                );
         writeErrorMeters.put(io.getClass(),
                 Metrics.meter(io.getClass(), "DiscoveryWriter Write Errors")
                 );
