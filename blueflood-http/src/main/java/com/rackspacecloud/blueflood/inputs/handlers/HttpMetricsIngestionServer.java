@@ -157,7 +157,6 @@ public class HttpMetricsIngestionServer {
             .withCorePoolSize(WRITE_THREADS)
             .withMaxPoolSize(WRITE_THREADS)
             .withUnboundedQueue()
-            .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
             .build());
 
 
