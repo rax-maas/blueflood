@@ -17,7 +17,9 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Histogram;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
+import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -25,6 +27,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 
 import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -48,6 +51,7 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 
 public class ElasticIO implements DiscoveryIO {
     public static final String INDEX_NAME = "metric_metadata";
+    private static final boolean OVERWRITE_EXISTING = Configuration.getInstance().getBooleanProperty(ElasticIOConfig.OVERWRITE_EXISTING);
     
     static enum ESFieldLabel {
         metric_name,
@@ -119,7 +123,7 @@ public class ElasticIO implements DiscoveryIO {
         }
         return client.prepareIndex(INDEX_NAME, ES_TYPE)
                 .setId(md.getDocumentId())
-                .setCreate(true)
+                .setOpType(OVERWRITE_EXISTING ? IndexRequest.OpType.CREATE : IndexRequest.OpType.INDEX)
                 .setSource(md.createSourceContent())
                 .setRouting(md.getTenantId());
     }
