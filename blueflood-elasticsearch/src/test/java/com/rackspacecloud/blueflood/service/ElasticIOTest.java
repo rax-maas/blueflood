@@ -102,6 +102,19 @@ public class ElasticIOTest {
     public void tearDown() {
         esSetup.terminate();
     }
+    
+    @Test
+    public void testReindexingIsOk() throws Exception {
+        // verify search before.
+        testWildcard();
+        
+        // re-index.
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+        
+        // verify search again.
+        testWildcard();
+    }
 
     @Test
     public void testNoCrossTenantResults() throws Exception {
