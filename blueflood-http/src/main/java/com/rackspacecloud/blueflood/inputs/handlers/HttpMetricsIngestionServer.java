@@ -154,10 +154,9 @@ public class HttpMetricsIngestionServer {
         discoveryWriter =
         new DiscoveryWriter(new ThreadPoolBuilder()
             .withName("Metric Discovery Writing")
-            .withCorePoolSize(WRITE_THREADS)
-            .withMaxPoolSize(WRITE_THREADS)
+            .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
+            .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
             .withUnboundedQueue()
-            .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
             .build());
 
 

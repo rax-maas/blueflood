@@ -120,6 +120,7 @@ public class ElasticIO implements DiscoveryIO {
         return client.prepareIndex(INDEX_NAME, ES_TYPE)
                 .setId(md.getDocumentId())
                 .setSource(md.createSourceContent())
+                .setCreate(true)
                 .setRouting(md.getTenantId());
     }
     
