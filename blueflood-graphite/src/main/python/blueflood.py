@@ -209,20 +209,6 @@ class Node:
     if len(parts) == 2:
       child.add(parts[1])
 
-  def ____add(self, name, path=None):
-    child = self.getChild(name)
-    if path:
-      parts = path.split('.', 1)
-      if len(parts) == 2:
-        child.add(parts[0], parts[1])
-      else:
-        child.add(parts[0])
-
-  def flatten(self, lst):
-    for k in self.children:
-      self.children[k].flatten(lst)
-    lst.append(self)
-
   def hasChildren(self):
     return len(self.children) > 0
 
@@ -237,10 +223,3 @@ class Tree:
       self.roots[parts[0]] = Node(None, parts[0])
     if len(parts) == 2:
       self.roots[parts[0]].add(parts[1])
-
-  def flatten(self):
-    lst = []
-    for k in self.roots:
-      self.roots[k].flatten(lst)
-    #print 'FLATTENED ' + str(len(lst))
-    return lst
