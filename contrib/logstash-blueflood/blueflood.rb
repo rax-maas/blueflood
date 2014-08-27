@@ -24,7 +24,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     require "json"
 
     @agent = FTW::Agent.new
-    @url = url+":"+port+"/v2.0/"+tenant_id+"/ingest"
+    @url = "%s:%s/v2.0/%s/ingest"%[@url,@port,@tenant_id]
 	
 	if @format == "json"
 		if @metrics.nil?
