@@ -47,13 +47,40 @@ class TenantBluefloodFinder(object):
       #print 'ADDING ' + obj['metric']
       tree.add(obj['metric'])
 
-    for node in tree.flatten():
-      if node.hasChildren():
-        #print 'BRANCH ' + node.longName
-        yield BranchNode(node.longName)
-      else:
-        #print 'LEAF ' + node.longName
-        yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
+    # split the query term into parts
+    searchPattern = query.pattern
+    node = Node('','')
+    node.children = tree.roots
+
+    # drill down into the tree
+    # match as far as possible
+    for term in searchPattern.split('.'):
+      #print 'TERM ' + term
+      for k in node.children.keys():
+        #print 'CHECK ' + k
+        if node.children[k].name == term:
+          #print 'RECURSING WITH: ' + node.children[k].longName
+          node = node.children[k]
+          break
+
+    if node.hasChildren():
+      for k in node.children.keys():
+        if node.children[k].hasChildren():
+          #print 'BRANCH ' + node.children[k].longName
+          yield BranchNode(node.children[k].longName)
+        else:
+          #print 'LEAF ' + node.children[k].longName
+          yield LeafNode(node.children[k].longName, TenantBluefloodReader(node.children[k].longName, self.tenant))
+    else:
+      yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
+
+    # for node in tree.flatten():
+    #   if node.hasChildren():
+    #     print 'BRANCH ' + node.longName
+    #     #yield BranchNode(node.longName)
+    #   else:
+    #     print 'LEAF ' + node.longName
+    #     yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
 
 
 class TenantBluefloodReader(object):
@@ -61,6 +88,7 @@ class TenantBluefloodReader(object):
   supported = True
 
   def __init__(self, metric, tenant):
+    # print 'READER ' + tenant + ' ' + metric
     self.metric = metric
     self.tenant = tenant
 
