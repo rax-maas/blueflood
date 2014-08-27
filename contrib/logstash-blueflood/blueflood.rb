@@ -11,9 +11,6 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
 
   # URL to use
   config :url, :validate => :string, :required => :true
-
-  config :content_type, :validate => :string, :default => "application/json"
-  
   config :port, :validate => :string	
   config :tenant_id, :validate => :string	
   config :json_metrics, :validate => :string
@@ -28,7 +25,6 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
 
     @agent = FTW::Agent.new
     @url = url+":"+port+"/v2.0/"+tenant_id+"/ingest"
-    @content_type = "application/json"
 	
 	if @format == "json"
 		if @metrics.nil?
@@ -48,7 +44,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     return unless output?(event)
 
     request = @agent.post(event.sprintf(@url))
-    request["Content-Type"] = @content_type
+    request["Content-Type"] = "application/json"
 	timestamp = event.sprintf("%{+%s}")
 	messages = []
 
