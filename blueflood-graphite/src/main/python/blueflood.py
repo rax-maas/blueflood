@@ -74,15 +74,6 @@ class TenantBluefloodFinder(object):
     else:
       yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
 
-    # for node in tree.flatten():
-    #   if node.hasChildren():
-    #     print 'BRANCH ' + node.longName
-    #     #yield BranchNode(node.longName)
-    #   else:
-    #     print 'LEAF ' + node.longName
-    #     yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
-
-
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant')
   supported = True
