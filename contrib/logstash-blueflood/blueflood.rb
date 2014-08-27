@@ -18,8 +18,8 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
   config :port, :validate => :string	
   config :tenant_id, :validate => :string	
   config :metrics, :validate => :string
-
-  config :format, :validate => ["json"], :default => "json"
+  config :hash_metrics, :validate => :hash, :default => {}
+  config :format, :validate => ["json","hash"], :default => "json"
 
   public
   def register
@@ -38,13 +38,26 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
 
     request = @agent.post(event.sprintf(@url))
     request["Content-Type"] = @content_type
+	timestamp = event.sprintf("%{+%s}")
+	messages = []
 
     begin
-    	puts @metrics
-	request.body = event.sprintf(@metrics)
-    	response = @agent.execute(request)
-
-      # Consume body to let this connection be reused
+    	if @format == "json"
+			puts @metrics
+			request.body = event.sprintf(@metrics)
+		else
+			@hash_metrics.each do |metric, value|
+				 @logger.debug("processing", :metric => metric, :value => value)
+				 metric = event.sprintf(metric)
+				 jsonstring = '{"collectionTime": %s, "ttlInSeconds": 172800, "metricValue": %s, "metricName": "%s"}'% [timestamp,event.sprintf(value).to_f,event.sprintf(metric)]
+				 messages << jsonstring
+				 puts jsonstring
+			end
+			request.body = messages
+		end
+	    response = @agent.execute(request)
+        
+		# Consume body to let this connection be reused
     	rbody = ""
     	response.read_body { |c| rbody << c }
     	puts rbody
