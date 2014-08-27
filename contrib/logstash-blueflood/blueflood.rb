@@ -16,7 +16,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
   
   config :port, :validate => :string	
   config :tenant_id, :validate => :string	
-  config :metrics, :validate => :string
+  config :json_metrics, :validate => :string
   config :hash_metrics, :validate => :hash, :default => {}
   config :format, :validate => ["json","hash"], :default => "json"
 
@@ -29,6 +29,18 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     @agent = FTW::Agent.new
     @url = url+":"+port+"/v2.0/"+tenant_id+"/ingest"
     @content_type = "application/json"
+	
+	if @format == "json"
+		if @metrics.nil?
+			raise "json metrics need to be set since format is json"
+		end
+	else 
+		if @format == "hash"
+			if @hash_metrics.nil?
+				raise "hash_metrics need to be set with a valid dictionary since format is hash"
+			end
+		end
+	end
   end # def register
 
   public
@@ -42,8 +54,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
 
     begin
     	if @format == "json"
-			puts @metrics
-			request.body = event.sprintf(@metrics)
+			request.body = event.sprintf(@json_metrics)
 		else
 			@hash_metrics.each do |metric, value|
 				 @logger.debug("processing", :metric => metric, :value => value)
