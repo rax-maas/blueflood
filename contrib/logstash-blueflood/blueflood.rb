@@ -5,7 +5,6 @@ require "logstash/namespace"
 class LogStash::Outputs::Http < LogStash::Outputs::Base
   # This output lets you `POST` events to a
   # Blueflood endpoint
-  #
 
   config_name "blueflood"
   milestone 1
@@ -53,7 +52,9 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
 				 messages << jsonstring
 				 puts jsonstring
 			end
-			request.body = messages
+			jsonarray = "[%s]"%messages.join(",")
+			request.body = jsonarray
+			#request.body = messages.to_json
 		end
 	    response = @agent.execute(request)
         
