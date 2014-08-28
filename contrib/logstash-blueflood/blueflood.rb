@@ -2,7 +2,7 @@
 require "logstash/outputs/base"
 require "logstash/namespace"
 
-class LogStash::Outputs::Http < LogStash::Outputs::Base
+class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
   # This output lets you `POST` events to a
   # Blueflood endpoint
 
@@ -27,7 +27,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
     @url = "%s:%s/v2.0/%s/ingest"%[@url,@port,@tenant_id]
 	
 	if @format == "json"
-		if @metrics.nil?
+		if @json_metrics.nil?
 			raise "json metrics need to be set since format is json"
 		end
 	else 
