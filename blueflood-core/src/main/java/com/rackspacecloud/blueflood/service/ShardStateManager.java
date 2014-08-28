@@ -95,7 +95,7 @@ public class ShardStateManager {
             // for updates that come by way of scribe, you'll typically see 5 as the number of updates (one for
             // each granularity).  On rollup slaves the situation is a bit different. You'll see only the slot
             // of the granularity just written to marked dirty (so 1).
-            log.trace("Found {} dirty slots for shard {}", new Object[]{numUpdates, shard});
+            log.debug("Found {} dirty slots for shard {}", new Object[]{numUpdates, shard});
             return slotTimes;
         }
         return null;
