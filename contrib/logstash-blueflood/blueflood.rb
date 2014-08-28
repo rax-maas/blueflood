@@ -29,12 +29,12 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
  
   # This setting is the port at which Blueflood listens for ingest requests.
   # Sample value: 19000
-  config :port, :validate => :string	
+  config :port, :validate => :string
   
   # This setting is the id of the tenant for which you are sending metrics
   # Blueflood is a multi-tenant metrics store. 
   # Sample Value: My company  name ie tgCompany
-  config :tenant_id, :validate => :string	
+  config :tenant_id, :validate => :string
 
   # This setting is used to send well formed json that Blueflood expects
   # Sample Value: '[{"collectionTime": 1376509892612, "ttlInSeconds": 172800, "metricValue": 66, "metricName":"example.metric.one"}]'
@@ -62,21 +62,21 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 
     @agent = FTW::Agent.new
     @url = "%s:%s/v2.0/%s/ingest"%[@url,@port,@tenant_id]
-	
-	if @format == "json"
-		if @json_metrics.nil?
-			raise "json metrics need to be set since format is json"
-		end
-		if @original_params["ttl"]
-			raise "json metrics string need to contain ttl; it can't be set from the configuration"
-		end
-	else 
-		if @format == "hash"
-			if @hash_metrics.nil?
-				raise "hash_metrics need to be set with a valid dictionary since format is hash"
-			end
-		end
-	end
+  
+  if @format == "json"
+    if @json_metrics.nil?
+      raise "json metrics need to be set since format is json"
+    end
+    if @original_params["ttl"]
+      raise "json metrics string need to contain ttl; it can't be set from the configuration"
+    end
+  else 
+    if @format == "hash"
+      if @hash_metrics.nil?
+        raise "hash_metrics need to be set with a valid dictionary since format is hash"
+      end
+    end
+  end
   end # def register
 
   public
@@ -85,32 +85,32 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 
     request = @agent.post(event.sprintf(@url))
     request["Content-Type"] = "application/json"
-	timestamp = event.sprintf("%{+%s}")
-	messages = []
-	include_metrics = ["-?\\d+(\\.\\d+)?"] #only numeric metrics for now 
-	include_metrics.collect!{|regexp| Regexp.new(regexp)}
+  timestamp = event.sprintf("%{+%s}")
+  messages = []
+  include_metrics = ["-?\\d+(\\.\\d+)?"] #only numeric metrics for now 
+  include_metrics.collect!{|regexp| Regexp.new(regexp)}
 
     begin
-    	if @format == "json"
-			request.body = event.sprintf(@json_metrics)
-		else
-			@hash_metrics.each do |metric, value|
-				 @logger.debug("processing", :metric => metric, :value => value)
-				 metric = event.sprintf(metric)
-				 next unless include_metrics.empty? || include_metrics.any? { |regexp| value.match(regexp) }
-				 jsonstring = '{"collectionTime": %s, "ttlInSeconds": %s, "metricValue": %s, "metricName": "%s"}' % [timestamp,@ttl,event.sprintf(value).to_f,event.sprintf(metric)]
-				 messages << jsonstring
-			end
-			jsonarray = "[%s]"%messages.join(",") #hack for creating the json that blueflood likes
-			request.body = jsonarray
-			#request.body = messages.to_json
-		end
-	    response = @agent.execute(request)
+      if @format == "json"
+      request.body = event.sprintf(@json_metrics)
+    else
+      @hash_metrics.each do |metric, value|
+         @logger.debug("processing", :metric => metric, :value => value)
+         metric = event.sprintf(metric)
+         next unless include_metrics.empty? || include_metrics.any? { |regexp| value.match(regexp) }
+         jsonstring = '{"collectionTime": %s, "ttlInSeconds": %s, "metricValue": %s, "metricName": "%s"}' % [timestamp,@ttl,event.sprintf(value).to_f,event.sprintf(metric)]
+         messages << jsonstring
+      end
+      jsonarray = "[%s]"%messages.join(",") #hack for creating the json that blueflood likes
+      request.body = jsonarray
+      #request.body = messages.to_json
+    end
+      response = @agent.execute(request)
         
-		# Consume body to let this connection be reused
-    	rbody = ""
-    	response.read_body { |c| rbody << c }
-    	puts rbody
+    # Consume body to let this connection be reused
+      rbody = ""
+      response.read_body { |c| rbody << c }
+      puts rbody
     rescue Exception => e
         @logger.error("Unhandled exception", :request => request.body, :response => response)#, :exception => e, :stacktrace => e.backtrace)
     end
