@@ -16,6 +16,11 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
   config :json_metrics, :validate => :string
   config :hash_metrics, :validate => :hash, :default => {}
   config :format, :validate => ["json","hash"], :default => "json"
+  
+  # Cassandra TTL, (in seconds,) to use. Only works with hash_metrics.
+  # If you are using json_metrics, that string will need to include the
+  # ttlInSeconds.
+  config :ttl, :validate => :number, :default => 172800
 
   public
   def register
@@ -29,6 +34,9 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 	if @format == "json"
 		if @json_metrics.nil?
 			raise "json metrics need to be set since format is json"
+		end
+		if @original_params["ttl"]
+			raise "json metrics string need to contain ttl; it can't be set from the configuration"
 		end
 	else 
 		if @format == "hash"
@@ -55,7 +63,7 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 			@hash_metrics.each do |metric, value|
 				 @logger.debug("processing", :metric => metric, :value => value)
 				 metric = event.sprintf(metric)
-				 jsonstring = '{"collectionTime": %s, "ttlInSeconds": 172800, "metricValue": %s, "metricName": "%s"}'% [timestamp,event.sprintf(value).to_f,event.sprintf(metric)]
+				 jsonstring = '{"collectionTime": %s, "ttlInSeconds": %s, "metricValue": %s, "metricName": "%s"}' % [timestamp,@ttl,event.sprintf(value).to_f,event.sprintf(metric)]
 				 messages << jsonstring
 				 puts jsonstring
 			end
