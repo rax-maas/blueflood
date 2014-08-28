@@ -100,7 +100,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 final boolean isBoolean = metric.isBoolean();
 
                 if (!shouldPersist(metric)) {
-                    log.debug("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
+                    log.trace("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
                     continue;
                 }
 
