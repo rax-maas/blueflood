@@ -47,6 +47,8 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
     request["Content-Type"] = "application/json"
 	timestamp = event.sprintf("%{+%s}")
 	messages = []
+	include_metrics = ["-?\\d+(\\.\\d+)?"] #only numeric metrics for now 
+	include_metrics.collect!{|regexp| Regexp.new(regexp)}
 
     begin
     	if @format == "json"
@@ -55,11 +57,11 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 			@hash_metrics.each do |metric, value|
 				 @logger.debug("processing", :metric => metric, :value => value)
 				 metric = event.sprintf(metric)
+				 next unless include_metrics.empty? || include_metrics.any? { |regexp| value.match(regexp) }
 				 jsonstring = '{"collectionTime": %s, "ttlInSeconds": 172800, "metricValue": %s, "metricName": "%s"}'% [timestamp,event.sprintf(value).to_f,event.sprintf(metric)]
 				 messages << jsonstring
-				 puts jsonstring
 			end
-			jsonarray = "[%s]"%messages.join(",")
+			jsonarray = "[%s]"%messages.join(",") #hack for creating the json that blueflood likes
 			request.body = jsonarray
 			#request.body = messages.to_json
 		end
