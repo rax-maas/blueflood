@@ -8,6 +8,7 @@ setup(
   version=version,
   url='https://github.com/rackerlabs/blueflood',
   license='APL2',
+  keywords='blueflood graphite metrics',
   author='Gary Dusbabek',
   author_email='gdusbabek@gmail.com',
   description=('A plugin for using graphite-web with the cassandra-based '
