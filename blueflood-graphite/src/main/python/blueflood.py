@@ -4,7 +4,6 @@ import re
 import time
 import requests
 import json
-from django.conf import settings
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -12,6 +11,17 @@ try:
 except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
+
+settings = {}
+def build_django_compatible_settings(config):
+  global settings
+  if config is None:
+    from django.conf import settings as dsettings
+    settings['BF_TENANT'] = dsettings.BF_TENANT
+    settings['BF_QUERY'] = dsettings.BF_QUERY[0]
+  else:
+    settings['BF_TENANT'] = config['BF_TENANT']
+    settings['BF_QUERY'] = config['BF_QUERY']
 
 # YO!
 # sudo pip install git+https://github.com/graphite-project/graphite-web.git
@@ -36,13 +46,14 @@ except ImportError:
 
 class TenantBluefloodFinder(object):
 
-  def __init__(self):
-    self.tenant = settings.BF_TENANT
+  def __init__(self, config=None):
+    build_django_compatible_settings(config)
+    self.tenant = settings['BF_TENANT']
 
   def find_nodes(self, query):
     queryDepth = len(query.pattern.split('.'))
     #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
-    client = Client(settings.BF_QUERY[0], self.tenant)
+    client = Client(settings['BF_QUERY'], self.tenant)
     values = client.findMetrics(query.pattern)
 
     for obj in values:
@@ -75,7 +86,7 @@ class TenantBluefloodReader(object):
     if not self.metric:
       return ((startTime, endTime, 1), [])
     else:
-      client = Client(settings.BF_QUERY[0], self.tenant)
+      client = Client(settings['BF_QUERY'], self.tenant)
       values = client.getValues(self.metric, startTime, endTime)
 
       # determine the step
