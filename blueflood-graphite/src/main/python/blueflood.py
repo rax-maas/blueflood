@@ -32,6 +32,7 @@ except ImportError:
 # PYTHONPATH=$PYTHONPATH:$GRAPHITE_ROOT/webapp:$PATH_TO_THIS_MODULE
 # export GRAPHITE_ROOT
 # $GRAPHITE_ROOT/bin/run-graphite-devel-server.py $GRAPHITE_ROOT
+# # curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8080/render' -d "from=-6h&until=now&target=rackspace.monitoring.entities.*.checks.agent.cpu.*.usage_average&format=json&maxDataPoints=1072"
 
 class TenantBluefloodFinder(object):
 
@@ -39,40 +40,19 @@ class TenantBluefloodFinder(object):
     self.tenant = settings.BF_TENANT
 
   def find_nodes(self, query):
-    #print 'FIND_NODES ' + query.pattern
+    queryDepth = len(query.pattern.split('.'))
+    #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
     client = Client(settings.BF_QUERY[0], self.tenant)
     values = client.findMetrics(query.pattern)
-    tree = Tree()
+
     for obj in values:
-      #print 'ADDING ' + obj['metric']
-      tree.add(obj['metric'])
-
-    # split the query term into parts
-    searchPattern = query.pattern
-    node = Node('','')
-    node.children = tree.roots
-
-    # drill down into the tree
-    # match as far as possible
-    for term in searchPattern.split('.'):
-      #print 'TERM ' + term
-      for k in node.children.keys():
-        #print 'CHECK ' + k
-        if node.children[k].name == term:
-          #print 'RECURSING WITH: ' + node.children[k].longName
-          node = node.children[k]
-          break
-
-    if node.hasChildren():
-      for k in node.children.keys():
-        if node.children[k].hasChildren():
-          #print 'BRANCH ' + node.children[k].longName
-          yield BranchNode(node.children[k].longName)
-        else:
-          #print 'LEAF ' + node.children[k].longName
-          yield LeafNode(node.children[k].longName, TenantBluefloodReader(node.children[k].longName, self.tenant))
-    else:
-      yield LeafNode(node.longName, TenantBluefloodReader(node.longName, self.tenant))
+      metric = obj['metric']
+      parts = metric.split('.')
+      metricDepth = len(parts)
+      if metricDepth > queryDepth:
+        yield BranchNode('.'.join(parts[:queryDepth]))
+      else:
+        yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant))
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant')
@@ -186,40 +166,3 @@ class Client(object):
       except ValueError:
         print 'ValueError in getValues'
         return {'values': []}
-
-class Node:
-  def __init__(self, parentName, name):
-    self.name = name
-    if parentName:
-      self.longName = parentName + '.' + name
-    else:
-      self.longName = name;
-    self.children = {}
-    #print 'NNODE ' + self.longName
-
-  def getChild(self, name):
-    if not name in self.children:
-      self.children[name] = Node(self.longName, name)
-    return self.children[name]
-
-  def add(self, path):
-    #print 'ADDING to ' + self.longName + ', ' + path
-    parts = path.split('.', 1)
-    child = self.getChild(parts[0])
-    if len(parts) == 2:
-      child.add(parts[1])
-
-  def hasChildren(self):
-    return len(self.children) > 0
-
-class Tree:
-  def __init__(self):
-    self.roots = {}
-
-  def add(self, path):
-    #print 'TREE ADD ' + path
-    parts = path.split('.' , 1)
-    if not parts[0] in self.roots:
-      self.roots[parts[0]] = Node(None, parts[0])
-    if len(parts) == 2:
-      self.roots[parts[0]].add(parts[1])
