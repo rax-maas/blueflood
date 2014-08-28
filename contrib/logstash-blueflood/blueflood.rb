@@ -25,16 +25,16 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
 
   # This setting is the url of your Blueflood instance
   # Sample value: http://127.0.0.1
-  config :url, :validate => :string, :required => :true
+  config :url, :validate => :string, :default => "localhost"
  
   # This setting is the port at which Blueflood listens for ingest requests.
   # Sample value: 19000
-  config :port, :validate => :string
+  config :port, :validate => :string, :default => "19000"
   
   # This setting is the id of the tenant for which you are sending metrics
   # Blueflood is a multi-tenant metrics store. 
   # Sample Value: My company  name ie tgCompany
-  config :tenant_id, :validate => :string
+  config :tenant_id, :validate => :string, :required => true
 
   # This setting is used to send well formed json that Blueflood expects
   # Sample Value: '[{"collectionTime": 1376509892612, "ttlInSeconds": 172800, "metricValue": 66, "metricName":"example.metric.one"}]'
