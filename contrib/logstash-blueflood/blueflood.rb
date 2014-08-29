@@ -39,21 +39,20 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
   # This setting is used to send well formed json that Blueflood expects
   # Sample Value: '[{"collectionTime": 1376509892612, "ttlInSeconds": 172800, "metricValue": 66, "metricName":"example.metric.one"}]'
   # See usage in conf file https://github.com/rackerlabs/blueflood/tree/master/contrib/logstash-blueflood/blueflood.conf
+  # Either this or :hash_metrics is required
   config :json_metrics, :validate => :string
   
   # This setting is used to send metrics as a hash of key value pairs
   # Sample Value:  [ "hosts.%{@source_host}.load_avg.1m", "%{load_avg_1m}"]
   # See usage in conf file https://github.com/rackerlabs/blueflood/tree/master/contrib/logstash-blueflood/blueflood-hash-metrics.conf
-  config :hash_metrics, :validate => :hash, :default => {}
+  # Either this or :json_metrics is required
+  config :hash_metrics, :validate => :hash
   
   # Cassandra TTL, (in seconds,) to use. Only works with hash_metrics.
   # If you are using json_metrics, that string will need to include the
   # ttlInSeconds.
   config :ttl, :validate => :number, :default => 172800
 
-  # This setting is used to specify whether the settings are json or hash
-  config :format, :validate => ["json","hash"], :default => "json"
-  
   public
   def register
     require "ftw"
@@ -63,19 +62,18 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
     @agent = FTW::Agent.new
     @url = "%s:%s/v2.0/%s/ingest"%[@url,@port,@tenant_id]
     
-    if @format == "json"
-      if @json_metrics.nil?
-        raise "json metrics need to be set since format is json"
-      end
-      if @original_params["ttl"]
-        raise "json metrics string need to contain ttl; it can't be set from the configuration"
-      end
-    else 
-      if @format == "hash"
-        if @hash_metrics.nil?
-          raise "hash_metrics need to be set with a valid dictionary since format is hash"
-        end
-      end
+    if (@json_metrics && @hash_metrics) || (@json_metrics.nil? && @hash_metrics.nil?)
+      raise "exactly one of json_metrics and hash_metrics must be set."
+    end
+    
+    if @json_metrics
+      @format = "json"
+    else
+      @format = "hash"
+    end
+    
+    if @format == "json" &&  @original_params["ttl"]
+      raise "json metrics string need to contain ttl; it can't be set from the configuration."
     end
   end # def register
 
