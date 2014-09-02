@@ -96,12 +96,11 @@ class LogStash::Outputs::Blueflood < LogStash::Outputs::Base
           @logger.debug("processing", :metric => metric, :value => value)
           metric = event.sprintf(metric)
           next unless include_metrics.empty? || include_metrics.any? { |regexp| value.match(regexp) }
-          jsonstring = '{"collectionTime": %s, "ttlInSeconds": %s, "metricValue": %s, "metricName": "%s"}' % [timestamp,@ttl,event.sprintf(value).to_f,event.sprintf(metric)]
-          messages << jsonstring
+          jsondata = {collectionTime: timestamp.to_i, ttlInSeconds: @ttl.to_i, metricValue: event.sprintf(value).to_f, metricName: event.sprintf(metric)}
+
+          messages << jsondata
         end
-        jsonarray = "[%s]"%messages.join(",") #hack for creating the json that blueflood likes
-        request.body = jsonarray
-        #request.body = messages.to_json
+        request.body = messages.to_json
       end
       response = @agent.execute(request)
       
