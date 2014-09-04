@@ -7,7 +7,7 @@ install:
   - mvn install -Dmaven.test.skip
 
 script: 
-  - mvn verify -Pcassandra-2.0,skip-unit-tests --quiet
+  - mvn verify -Pcassandra-2.0 --quiet
 
 notifications:
   irc: "irc.freenode.net#blueflood"
