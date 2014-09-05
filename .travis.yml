@@ -4,7 +4,7 @@ jdk:
   - openjdk7
 
 install:
-  - mvn install -Dmaven.test.skip -Dmaven.javadoc.skip
+  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
 
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
