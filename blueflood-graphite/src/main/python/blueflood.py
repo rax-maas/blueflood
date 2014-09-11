@@ -12,17 +12,6 @@ except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
 
-settings = {}
-def build_django_compatible_settings(config):
-  global settings
-  if config is None:
-    from django.conf import settings as dsettings
-    settings['BF_TENANT'] = dsettings.BF_TENANT
-    settings['BF_QUERY'] = dsettings.BF_QUERY[0]
-  else:
-    settings['BF_TENANT'] = config['BF_TENANT']
-    settings['BF_QUERY'] = config['BF_QUERY']
-
 # YO!
 # sudo pip install git+https://github.com/graphite-project/graphite-web.git
 # PYTHONPATH=/opt/graphite/webapp python
@@ -47,13 +36,29 @@ def build_django_compatible_settings(config):
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
-    build_django_compatible_settings(config)
-    self.tenant = settings['BF_TENANT']
+    if config is not None:
+      if 'urls' in config['blueflood']:
+        urls = config['blueflood']['urls']
+      else:
+        urls = [config['blueflood']['url'].strip('/')]
+      tenant = config['blueflood']['tenant']
+    else:
+      from django.conf import settings
+      urls = getattr(settings, 'BF_QUERY')
+      if not urls:
+        urls = [settings.BF_QUERY]
+
+      tenant = getattr(settings, 'BF_TENANT')
+      if not tenant:
+        tenant = [settings.BF_TENANT]
+
+    self.tenant = tenant
+    self.bf_query_endpoint = urls[0]
 
   def find_nodes(self, query):
     queryDepth = len(query.pattern.split('.'))
     #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
-    client = Client(settings['BF_QUERY'], self.tenant)
+    client = Client(self.bf_query_endpoint, self.tenant)
     values = client.findMetrics(query.pattern)
 
     for obj in values:
@@ -63,16 +68,17 @@ class TenantBluefloodFinder(object):
       if metricDepth > queryDepth:
         yield BranchNode('.'.join(parts[:queryDepth]))
       else:
-        yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant))
+        yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
 
 class TenantBluefloodReader(object):
-  __slots__ = ('metric', 'tenant')
+  __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
   supported = True
 
-  def __init__(self, metric, tenant):
+  def __init__(self, metric, tenant, endpoint):
     # print 'READER ' + tenant + ' ' + metric
     self.metric = metric
     self.tenant = tenant
+    self.bf_query_endpoint = endpoint
 
   def get_intervals(self):
     # todo: make this a lot smarter.
@@ -86,7 +92,7 @@ class TenantBluefloodReader(object):
     if not self.metric:
       return ((startTime, endTime, 1), [])
     else:
-      client = Client(settings['BF_QUERY'], self.tenant)
+      client = Client(self.bf_query_endpoint, self.tenant)
       values = client.getValues(self.metric, startTime, endTime)
 
       # determine the step
