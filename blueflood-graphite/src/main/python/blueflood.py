@@ -130,7 +130,7 @@ class Client(object):
 
   def findMetrics(self, query):
     payload = {'query': query}
-    r = requests.get(self.host + '/v2.0/' + self.tenant + '/metrics/search', params=payload, headers=headers)
+    r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in findMetrics ' + r.text
       return []
@@ -170,7 +170,7 @@ class Client(object):
       'resolution': res
     }
     print 'USING RES ' + res
-    r = requests.get(self.host + '/v2.0/' + self.tenant + '/views/' + metric, params=payload, headers=headers)
+    r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in getValues ' + r.text
       return {'values': []}
