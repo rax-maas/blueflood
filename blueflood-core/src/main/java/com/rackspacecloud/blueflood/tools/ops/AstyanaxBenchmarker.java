@@ -28,9 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AstyanaxBenchmarker {
     private static final Options cliOptions = new Options();
+
+    // Test Cluster, KS and CF settings. Will be created during startup and dropped during cleanup.
     private static final String CLUSTER_ID = "TEST_CLUSTER";
     private static final String KEYSPACE = "TEST_KEYSPACE";
     private static final String COLUMNFAMILY = "TEST_CF";
+
+    // astyanax connection pool settings.
     private static final String CLUSTER = "cluster";
     private static final String MAX_CONNS = "max_conns";
     private static final String POOL_TYPE = "pool_type";
@@ -94,14 +98,12 @@ public class AstyanaxBenchmarker {
             options.put(CONCURRENCY, line.hasOption(CONCURRENCY) ? Integer.parseInt(line.getOptionValue(CONCURRENCY)) : 10);
             options.put(BATCH_SIZE, line.hasOption(BATCH_SIZE) ? Integer.parseInt(line.getOptionValue(BATCH_SIZE)) : 100);
             options.put(RUN_TIME, line.hasOption(RUN_TIME) ? Long.parseLong(line.getOptionValue(RUN_TIME)) : 10000L);
-            System.out.println(line.getOptionValue(CLUSTER));
             options.put(REPLICATION_FACTOR, line.hasOption(REPLICATION_FACTOR) ? Integer.parseInt(line.getOptionValue(REPLICATION_FACTOR)) : 3);
         } catch (ParseException ex) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.printHelp("astyanax-benchmark", cliOptions);
             System.exit(-1);
         }
-
         return options;
     }
 
@@ -135,29 +137,30 @@ public class AstyanaxBenchmarker {
                 .setSeeds((String) options.get(CLUSTER))
                 .setMaxTimeoutWhenExhausted((Integer) options.get(CONN_TIMEOUT));
 
-         System.out.println(options.get(CLUSTER));
-
-
-         testContext = new AstyanaxContext.Builder()
-                .forCluster(CLUSTER_ID)
-                .forKeyspace(KEYSPACE)
-                .withConnectionPoolMonitor(new Slf4jConnectionPoolMonitorImpl())
-                .withAstyanaxConfiguration(astyanaxConfiguration)
-                .withConnectionPoolConfiguration(connectionPoolConfiguration)
-                .buildKeyspace(ThriftFamilyFactory.getInstance());
+        testContext = new AstyanaxContext.Builder()
+               .forCluster(CLUSTER_ID)
+               .forKeyspace(KEYSPACE)
+               .withConnectionPoolMonitor(new Slf4jConnectionPoolMonitorImpl())
+               .withAstyanaxConfiguration(astyanaxConfiguration)
+               .withConnectionPoolConfiguration(connectionPoolConfiguration)
+               .buildKeyspace(ThriftFamilyFactory.getInstance());
         testContext.start();
+
         keyspaceHandle = testContext.getEntity();
+
         try {
             keyspaceHandle.describeKeyspace();
         } catch (BadRequestException e) {
+            // If the describe cluster fails, it means the keyspace does not exists, so we create it.
             keyspaceHandle.createKeyspace(ImmutableMap.<String, Object>builder()
                     .put("strategy_options", ImmutableMap.<String, Object>builder()
-                            .put("replication_factor", "1")
+                            .put("replication_factor", options.get(REPLICATION_FACTOR))
                             .build())
                     .put("strategy_class", "SimpleStrategy")
                     .build()
             );
         }
+
         try {
         keyspaceHandle.createColumnFamily(testCF, null);
         } catch (BadRequestException e) {
@@ -192,7 +195,7 @@ public class AstyanaxBenchmarker {
 
         System.out.println(String.format("~\t~\t~\t Starting Astyanax benchmark for %d", timeToBenchmark));
 
-        while (!stopBenchmark.get() && !benchmarkExecutors.isShutdown()) {
+        while (!stopBenchmark.get() || !benchmarkExecutors.isShutdown()) {
             benchmarkExecutors.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -204,7 +207,7 @@ public class AstyanaxBenchmarker {
                     String rowKey = null;
                     Long value;
                     for (int i = 0; i < batch_size; i++) {
-                        rowKey = RandomStringUtils.random(80);
+                        rowKey = RandomStringUtils.randomAlphabetic(50);
                         value = randomValueGenerator.nextLong();
                         m.withRow(testCF, rowKey)
                                 .putColumn(System.currentTimeMillis(), value, null);
