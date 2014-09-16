@@ -53,7 +53,8 @@ public class AstyanaxBenchmarker {
     private static Random randomValueGenerator = new Random();
     private static int batch_size;
     private static long timeToBenchmark;
-    private static AtomicBoolean stopBenchmark = new AtomicBoolean(false);
+    private static final AtomicBoolean stopBenchmark = new AtomicBoolean(false);
+    private static final AtomicBoolean atomicPrint = new AtomicBoolean(false);
 
     private static ThreadPoolExecutor benchmarkExecutors;
 
@@ -154,7 +155,7 @@ public class AstyanaxBenchmarker {
             // If the describe cluster fails, it means the keyspace does not exists, so we create it.
             keyspaceHandle.createKeyspace(ImmutableMap.<String, Object>builder()
                     .put("strategy_options", ImmutableMap.<String, Object>builder()
-                            .put("replication_factor", options.get(REPLICATION_FACTOR))
+                            .put("replication_factor", options.get(REPLICATION_FACTOR).toString())
                             .build())
                     .put("strategy_class", "SimpleStrategy")
                     .build()
@@ -178,11 +179,8 @@ public class AstyanaxBenchmarker {
     }
 
     private static void printReports() {
-        AtomicBoolean atomicPrint = new AtomicBoolean(false);
-        if (stopBenchmark.get() && !atomicPrint.get()) {
-            atomicPrint.compareAndSet(false, true);
+        if (stopBenchmark.get() && !atomicPrint.getAndSet(true)) {
             benchmarkExecutors.shutdownNow();
-
             CountingConnectionPoolMonitor monitor = (CountingConnectionPoolMonitor) testContext.getConnectionPoolMonitor();
             String result = String.format("\t~\t~\t~\t Successes : %d \t Failures : %d \t Timeouts : %d \t Failovers : %d \t PoolExhausted %d", monitor.getOperationSuccessCount(), monitor.getOperationFailureCount()
                     , monitor.getOperationTimeoutCount(), monitor.getFailoverCount(), monitor.getPoolExhaustedTimeoutCount());
@@ -195,39 +193,43 @@ public class AstyanaxBenchmarker {
 
         System.out.println(String.format("~\t~\t~\t Starting Astyanax benchmark for %d", timeToBenchmark));
 
-        while (!stopBenchmark.get() || !benchmarkExecutors.isShutdown()) {
-            benchmarkExecutors.submit(new Runnable() {
-                @Override
-                public void run() {
+        while (!stopBenchmark.get() && !benchmarkExecutors.isShutdown()) {
+            try {
+                benchmarkExecutors.submit(new Runnable() {
+                    @Override
+                    public void run() {
 
-                    if (stopBenchmark.get())
-                        printReports();
+                        if (stopBenchmark.get())
+                            printReports();
 
-                    MutationBatch m = keyspaceHandle.prepareMutationBatch();
-                    String rowKey = null;
-                    Long value;
-                    for (int i = 0; i < batch_size; i++) {
-                        rowKey = RandomStringUtils.randomAlphabetic(50);
-                        value = randomValueGenerator.nextLong();
-                        m.withRow(testCF, rowKey)
-                                .putColumn(System.currentTimeMillis(), value, null);
-                    }
-                    try {
-                        m.execute();
-                        System.out.println("Batch inserted for rowKey " + rowKey);
-                    } catch (InterruptedOperationException e) {
-                        //pass
-                    } catch (ConnectionException e) {
-                        System.err.println("Error encountered:" + e.getStackTrace());
-                        System.exit(-1);
-                    } finally {
-                        if (System.currentTimeMillis() - startTime > timeToBenchmark) {
-                            System.out.println("Exceeded time for benchmark");
-                            stopBenchmark.set(true);
+                        MutationBatch m = keyspaceHandle.prepareMutationBatch();
+                        String rowKey = null;
+                        Long value;
+                        for (int i = 0; i < batch_size; i++) {
+                            rowKey = RandomStringUtils.randomAlphabetic(50);
+                            value = randomValueGenerator.nextLong();
+                            m.withRow(testCF, rowKey)
+                                    .putColumn(System.currentTimeMillis(), value, null);
+                        }
+                        try {
+                            m.execute();
+                            System.out.println("Batch inserted for rowKey " + rowKey);
+                        } catch (InterruptedOperationException e) {
+                            //pass
+                        } catch (ConnectionException e) {
+                            System.err.println("Error encountered:" + e.getStackTrace());
+                            System.exit(-1);
+                        } finally {
+                            if (System.currentTimeMillis() - startTime > timeToBenchmark) {
+                                System.out.println("Exceeded time for benchmark");
+                                stopBenchmark.set(true);
+                            }
                         }
                     }
-                }
-            });
+                });
+            } catch (RejectedExecutionException e) {
+                //pass
+            }
         }
     }
 }
