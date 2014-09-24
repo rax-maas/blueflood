@@ -20,7 +20,7 @@ except ImportError:
 #STORAGE_DIR='/opt/graphite/storage'
 #STORAGE_FINDERS = (
 #    'graphite.finders.standard.StandardFinder',
-#    'graphite.finders.blueflood.BluefloodFinder'
+#    'graphite.finders.blueflood.TenantBluefloodFinder'
 #)
 #BF_QUERY = [
 #  'http://127.0.0.1:19020'
@@ -106,7 +106,7 @@ class TenantBluefloodReader(object):
         step = timestamp - lastTime
         lastTime = timestamp
         minTime = min(minTime, timestamp)
-        maxTime = max(minTime, timestamp)
+        maxTime = max(maxTime, timestamp)
         valueArr.append(obj['average'])
 
       time_info = (minTime, maxTime, step)
@@ -162,14 +162,14 @@ class Client(object):
       res = 'MIN240'
     if num_points > 800:
       num_points = (stop - start) / SECONDS_IN_1440MIN
-      res = 'MIN144'
+      res = 'MIN1440'
 
     payload = {
       'from': start * 1000,
       'to': stop * 1000,
       'resolution': res
     }
-    print 'USING RES ' + res
+    #print 'USING RES ' + res
     r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in getValues ' + r.text
