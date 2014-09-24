@@ -31,6 +31,7 @@ import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -55,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
@@ -119,10 +119,10 @@ public class HttpMetricsIngestionServer {
     }
     
     private void buildProcessingChains() {
-        final AsyncFunction typeAndUnitProcessor; 
-        final AsyncFunction batchSplitter;        
-        final AsyncFunction batchWriter; 
-        final AsyncFunction rollupTypeCacher;
+        final AsyncFunction<MetricsCollection, MetricsCollection> typeAndUnitProcessor;
+        final AsyncFunction<MetricsCollection, List<List<IMetric>>> batchSplitter;
+        final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
+        final AsyncFunction<MetricsCollection, MetricsCollection> rollupTypeCacher;
         
         typeAndUnitProcessor = new TypeAndUnitProcessor(
                 new ThreadPoolBuilder()
@@ -169,22 +169,24 @@ public class HttpMetricsIngestionServer {
                 rollupTypeCache,
                 true
         ).withLogger(log);
-        
-        this.defaultProcessorChain = new AsyncChain<MetricsCollection, List<Boolean>>()
+
+        this.defaultProcessorChain = AsyncChain
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
-                .withFunction(batchWriter);
+                .withFunction(batchWriter)
+                .build();
         
-        this.statsdProcessorChain = new AsyncChain<String, List<Boolean>>()
+        this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
-                .withFunction(batchWriter);
+                .withFunction(batchWriter)
+                .build();
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {

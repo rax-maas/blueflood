@@ -26,15 +26,14 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
 
@@ -80,9 +79,9 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
             }
         }
     }
-    
-    private static List<Object> condense(List<List<IMetric>> input) {
-        List<Object> willIndex = new ArrayList<Object>();
+
+    private static List<IMetric> condense(List<List<IMetric>> input) {
+        List<IMetric> willIndex = new ArrayList<IMetric>();
         for (List<IMetric> list : input) {
             // make mockito happy.
             if (list.size() == 0) {
@@ -101,8 +100,8 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
     
     public ListenableFuture<Boolean> processMetrics(List<List<IMetric>> input) {
         // filter out the metrics that are current.
-        final List<Object> willIndex = DiscoveryWriter.condense(input);
-        
+        final List<IMetric> willIndex = DiscoveryWriter.condense(input);
+
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
             @Override

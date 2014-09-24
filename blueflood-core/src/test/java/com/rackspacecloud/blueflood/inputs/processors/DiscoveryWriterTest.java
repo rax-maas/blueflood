@@ -4,6 +4,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
+
+import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,7 +44,7 @@ public class DiscoveryWriterTest {
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         
-        List<Object> flatTestData = new ArrayList<Object>();
+        List<IMetric> flatTestData = new ArrayList<IMetric>();
         for (List<IMetric> list : testdata) {
             if (list.size() == 0) continue;
             for (IMetric m : list) {

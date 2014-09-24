@@ -167,13 +167,12 @@ public class ConcurrentStructuresTest {
         };     
         
         // set up a chain that does 4 sync transformations + 2 async transformations.  Each chain should take ~800ms online + 3000 offline.
-        final AsyncChain<Integer, Integer> chain = new AsyncChain<Integer, Integer>()
-                .withFunction(itos)
+        final AsyncChain<Integer, Integer> chain = AsyncChain.withFunction(itos)
                 .withFunction(stoi)
                 .withFunction(async)
                 .withFunction(itos)
                 .withFunction(stoi)
-                .withFunction(async);
+                .withFunction(async).build();
                 
         // integer gets incremented by 1 for each non-async stage. so for input n, we should get n+4 out.
         
@@ -257,10 +256,9 @@ public class ConcurrentStructuresTest {
             }
         };
         
-        final AsyncChain<String, String> chain = new AsyncChain<String, String>()
+        final AsyncChain<String, String> chain = AsyncChain.withFunction(simpleFunc)
                 .withFunction(simpleFunc)
-                .withFunction(simpleFunc)
-                .withFunction(latchedFunc);
+                .withFunction(latchedFunc).build();
         
         // each pass through the chain should take about 2000ms.
         
@@ -313,47 +311,16 @@ public class ConcurrentStructuresTest {
             }
         };
         
-        AsyncChain<String, String> chain = new AsyncChain<String, String>()
+        AsyncChain<String, String> chain = AsyncChain
                 .withFunction(concat)
                 .withFunction(plusOne)
                 .withFunction(concat) 
-                .withFunction(plusOne);
+                .withFunction(plusOne)
+                .build();
         
         // 1 -> 11 -> 12 -> 1212 -> 1213
         String result = chain.apply("1").get(1000, TimeUnit.SECONDS);
         Assert.assertEquals("1213", result);
-    }
-    
-    // Demonstrates a weakness in the chaining interface. We have no way to verify that inputs and outputs match
-    // their parameterized types.
-    @Test(expected = ClassCastException.class)
-    public void testMismatchedTypes() throws Exception {
-        
-        // String -> Integer.
-        AsyncFunction<String, Integer> stringToInt = new AsyncFunction<String, Integer>() {
-            @Override
-            public ListenableFuture<Integer> apply(String input) throws Exception {
-                return new NoOpFuture<Integer>(Integer.parseInt(input));
-            }
-        };
-        
-        // Integer -> String
-        AsyncFunction<Integer, String> intToString = new AsyncFunction<Integer, String>() {
-            @Override
-            public ListenableFuture<String> apply(Integer input) throws Exception {
-                return new NoOpFuture<String>(Integer.toString(input));
-            }
-        };
-        
-        // String -> Integer plus Integer -> String means outputs are String.  But this instance declares that outputs 
-        // are Integer.
-        AsyncChain<String, Integer> chain = new AsyncChain<String, Integer>()
-                .withFunction(stringToInt)
-                .withFunction(intToString);
-        
-        ListenableFuture<Integer> future = chain.apply("1");
-        // exception gets thrown on next line.
-        Integer wrongTypeResult = future.get(1, TimeUnit.SECONDS);
     }
     
 }

@@ -32,6 +32,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public class ElasticIO implements DiscoveryIO {
         return result;
     }
 
-    public void insertDiscovery(List<Object> batch) throws IOException {
+    public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
@@ -106,7 +107,6 @@ public class ElasticIO implements DiscoveryIO {
                 }
 
                 IMetric metric = (IMetric)obj;
-
                 Locator locator = metric.getLocator();
                 Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
 
