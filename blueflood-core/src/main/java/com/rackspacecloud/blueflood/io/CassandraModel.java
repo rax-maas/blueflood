@@ -19,6 +19,16 @@ public class CassandraModel {
     public static final String KEYSPACE = Configuration.getInstance().getStringProperty(CoreConfig.ROLLUP_KEYSPACE);
     public static final String CLUSTER = Configuration.getInstance().getStringProperty(CoreConfig.CLUSTER_NAME);
 
+    /**
+    * It is worth pointing out that the actual TTL value is calculated by taking the TimeValues below
+    * and multiplying by 5.  Why?  Becuase SafetyTtlProvider.java multiplies the TimeValues below by 5.
+    * 
+    * Look for a line like this (currently line 48):
+    * TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
+    *
+    * For example, TimeValue of 1 will equate to a 5 day TTL.
+    */
+
     public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily("metrics_full", new TimeValue(1, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily("metrics_5m", new TimeValue(2, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily("metrics_20m", new TimeValue(4, TimeUnit.DAYS));
