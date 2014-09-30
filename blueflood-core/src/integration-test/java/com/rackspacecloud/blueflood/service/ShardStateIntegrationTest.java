@@ -264,7 +264,6 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             count += 1;
         }
         Assert.assertEquals(5, count);
-
         // verify that scheduling doesn't find anything else.
         ctxA.scheduleSlotsOlderThan(300000);
         Assert.assertEquals(0, ctxA.getScheduledCount());
@@ -331,7 +330,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
         instances.add(new Object[] { new AstyanaxShardStateIO() });
-        // Test fails for this InMemoryShardStateIO, but I do not care for proving about this for now.
+        // Test fails for this InMemoryShardStateIO, but I do not care about this for now.
         //instances.add(new Object[] { new InMemoryShardStateIO() });
         return instances;
     }
