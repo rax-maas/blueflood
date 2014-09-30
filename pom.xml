@@ -292,5 +292,18 @@
       <email>alexander.scammon@rackspace.com</email>
     </developer>
   </developers>
+    
+  <repositories>
+    <repository>
+      <!-- mvn org.apache.maven.plugins:maven-install-plugin:2.3.1:install-file \
+           -Dfile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8.jar \
+           -DgroupId=com.stuartwarren -DartifactId=logit -Dversion=0.5.8 \
+           -DcreateChecksum=true \
+           -DpomFile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8-pom.xml \
+           -Dpackaging=jar -DlocalRepositoryPath=/Users/gdusbabek/codes/github/blueflood/maven/repo -->
+      <id>local.stuartwarren.com</id>
+      <url>file://${basedir}/../maven/repo</url>
+    </repository>
+  </repositories>
 
 </project>

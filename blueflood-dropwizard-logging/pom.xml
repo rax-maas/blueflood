@@ -75,11 +75,4 @@
     
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>stuartwarren.com</id>
-      <url>http://nexus.stuartwarren.com/nexus/content/repositories/releases/</url>
-    </repository>
-  </repositories>
-
 </project>
