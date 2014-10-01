@@ -91,13 +91,18 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Collection<Integer> managedShards = Lists.newArrayList(0);
         ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
         ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
-        ShardStateWorker pull = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
-        ShardStateWorker push = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
+        // Shard workers for rollup ctx
+        ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
+        ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
+
+        // Shard workers for ingest ctx
+        ShardStateWorker ingestPuller = new ShardStatePuller(managedShards, ingestionCtx.getShardStateManager(), this.io);
+        ShardStateWorker ingestPusher = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
 
         ingestionCtx.update(time + 30000, 0);
-        push.performOperation(); // Shard state is persisted on ingestion host
+        ingestPusher.performOperation(); // Shard state is persisted on ingestion host
 
-        pull.performOperation(); // Shard state is read on rollup host
+        rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + 600000);
         rollupCtx.scheduleSlotsOlderThan(300000);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
@@ -111,12 +116,14 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        rollupPusher.performOperation();
 
         // Delayed metric is received on ingestion host
+        ingestPuller.performOperation();
         ingestionCtx.update(time, 0);
-        push.performOperation();
+        ingestPusher.performOperation();
 
-        pull.performOperation();
+        rollupPuller.performOperation();
         rollupCtx.scheduleSlotsOlderThan(300000);
         Assert.assertEquals(rollupCtx.getScheduledCount(), 0); // Slot was never scheduled for rollup :(
     }
