@@ -1,0 +1,198 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.stuartwarren</groupId>
+  <artifactId>logit</artifactId>
+  <packaging>jar</packaging>
+  <name>LogIt</name>
+  <version>0.5.8</version>
+  <description>Java Logger to send logs in json format over zeromq</description>
+  <url>stuartwarren.com</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/stuart-warren/logit</url>
+    <connection>scm:git:https://github.com/stuart-warren/logit.git</connection>
+    <developerConnection>scm:git:https://github.com/stuart-warren/logit.git</developerConnection>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>stuart-warren</id>
+      <name>Stuart Warren</name>
+      <email>stuart@stuartwarren.com</email>
+    </developer>
+  </developers>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <java.version>1.5</java.version>
+    <project.secondaryArtifactId>tomcatvalve</project.secondaryArtifactId>
+  </properties>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.1</version>
+          <executions>
+            <execution>
+              <id>shade-secondary</id>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <!--
+              In order to log Tomcat startup using juli, Logit and it's dependencies need to be
+              on the class path pretty early. However, if the Tomcat valve class is
+              present it tries to load it's (provided by tomcat) dependecies which fail, as they
+              are loaded later. This is why we split into 2 jars.
+               -->
+              <configuration>
+                <shadedArtifactId>logit-tomcatvalve</shadedArtifactId>
+                <shadedClassifierName>tomcatvalve</shadedClassifierName>
+                <finalName>${project.artifactId}-${project.version}-${project.secondaryArtifactId}</finalName>
+                <shadedArtifactAttached>true</shadedArtifactAttached>
+                <artifactSet>
+                  <includes>
+                    <include>com.stuartwarren:*</include>
+                  </includes>
+                </artifactSet>
+                <filters>
+                  <filter>
+                    <artifact>com.stuartwarren:logit</artifact>
+                    <includes>
+                      <include>com/stuartwarren/logit/tomcatvalve/**</include>
+                    </includes>
+                  </filter>
+                </filters>
+              </configuration>
+            </execution>
+            <execution>
+              <id>shade-main</id>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <shadedArtifactId>logit-jar-with-dependencies</shadedArtifactId>
+                <shadedClassifierName>jar-with-dependencies</shadedClassifierName>
+                <finalName>${project.artifactId}-${project.version}-jar-with-dependencies</finalName>
+                <shadedArtifactAttached>true</shadedArtifactAttached>
+                <filters>
+                  <filter>
+                    <artifact>com.stuartwarren:logit</artifact>
+                    <excludes>
+                      <exclude>com/stuartwarren/logit/tomcatvalve/**</exclude>
+                    </excludes>
+                  </filter>
+                </filters>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+    	<plugin>
+    		<groupId>org.apache.maven.plugins</groupId>
+    		<artifactId>maven-shade-plugin</artifactId>
+    	</plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.13</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.zeromq</groupId>
+      <artifactId>jeromq</artifactId>
+      <version>0.3.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-catalina</artifactId>
+      <version>7.0.42</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>coyote</artifactId>
+      <version>6.0.33</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>sonatype-nexus-releases</id>
+      <name>StuartWarren Repository</name>
+      <url>http://nexus.stuartwarren.com/nexus/content/repositories/releases/</url>
+      <layout>default</layout>
+    </repository>
+    <snapshotRepository>
+      <uniqueVersion>true</uniqueVersion>
+      <id>sonatype-nexus-snapshots</id>
+      <name>StuartWarren Snapshots</name>
+      <url>http://nexus.stuartwarren.com/nexus/content/repositories/snapshots/</url>
+      <layout>default</layout>
+    </snapshotRepository>
+  </distributionManagement>
+
+</project>
