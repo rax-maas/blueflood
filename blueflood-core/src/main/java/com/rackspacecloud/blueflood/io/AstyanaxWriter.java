@@ -278,12 +278,12 @@ public class AstyanaxWriter extends AstyanaxIO {
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
                     // granularity,slot,state
                     SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
-                    mutation.putColumn(slotState, entry.getValue().getTimestamp())
+                    mutation.putColumn(slotState, entry.getValue().getTimestamp());
                             // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
                             // written. this effectively creates a check-then-set update that fails if the value currently in the
                             // database is newer.
                             // multiply by 1000 to produce microseconds from milliseconds.
-                            .setTimestamp(entry.getValue().getTimestamp() * 1000);
+                            //.setTimestamp(entry.getValue().getTimestamp() * 1000); TODO: investigate the implications of this
                 }
             }
             if (!mutationBatch.isEmpty())

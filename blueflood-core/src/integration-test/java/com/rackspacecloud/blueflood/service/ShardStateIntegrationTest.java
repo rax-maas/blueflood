@@ -24,17 +24,13 @@ import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -118,7 +114,17 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         pull.performOperation();
         rollupCtx.scheduleSlotsOlderThan(300000);
-        Assert.assertEquals(rollupCtx.getScheduledCount(), 0); // Slot was never scheduled for rollup :(
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        count = 0;
+        while (rollupCtx.getScheduledCount() > 0) {
+            String slot = rollupCtx.getNextScheduled();
+            rollupCtx.clearFromRunning(slot);
+            rollupCtx.scheduleSlotsOlderThan(300000);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
     }
 
     @Test

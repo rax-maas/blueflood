@@ -167,6 +167,7 @@ public class ShardStateManager {
             slotToUpdateStampMap = new ConcurrentHashMap<Integer, UpdateStamp>(granularity.numSlots());
         }
         protected void updateSlotOnRead(SlotState slotState) {
+
             final int slot = slotState.getSlot();
             final long timestamp = slotState.getTimestamp();
             UpdateStamp.State state = slotState.getState();
@@ -176,6 +177,9 @@ public class ShardStateManager {
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
             } else if (stamp.getTimestamp() < timestamp) {
                 // 1) if current value is older than the value being applied.
+                slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
+            } else if ((stamp.getTimestamp() != timestamp && stamp.getState().equals(UpdateStamp.State.Rolled))) {
+                // Always take an update, if the state is currently rolled. TODO: can the cases be consolidated?
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
                 // 2) if current value is same but value being applied is a remove, remove wins.
