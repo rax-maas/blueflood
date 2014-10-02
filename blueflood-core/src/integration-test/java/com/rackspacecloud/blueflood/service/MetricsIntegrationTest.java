@@ -346,7 +346,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testUpdateStampCoaelescing() throws Exception {
         final int shard = 24;
         final int slot = 16;
@@ -374,6 +374,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 
         Assert.assertNotNull(slotStateManager.getSlotStamps());
-        Assert.assertEquals(UpdateStamp.State.Rolled, slotStateManager.getSlotStamps().get(slot).getState());
+        Assert.assertEquals(UpdateStamp.State.Active    , slotStateManager.getSlotStamps().get(slot).getState());
     }
 }
