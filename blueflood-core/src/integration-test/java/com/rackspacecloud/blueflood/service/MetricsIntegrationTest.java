@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -345,7 +346,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void testUpdateStampCoaelescing() throws Exception {
         final int shard = 24;
         final int slot = 16;

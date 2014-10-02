@@ -279,11 +279,17 @@ public class AstyanaxWriter extends AstyanaxIO {
                     // granularity,slot,state
                     SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
                     mutation.putColumn(slotState, entry.getValue().getTimestamp());
+                    /*
+                      This block of code is dangerous. Consider you are getting out of order metrics M1 and M2, with collection times T1 and T2 with T2>T1, belonging to same slot
+                      Assume M2 arrives first. The slot gets marked active and rolled up and the state is set as Rolled. Now, assume M1 arrives. We update the slot state to active,
+                      set the slot timestamp to T1, and while persisting we set it, we set the column timestamp to be T1*1000, but because the T1 < T2, the new slot state will never
+                      get reflected.
+                     */
                             // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
                             // written. this effectively creates a check-then-set update that fails if the value currently in the
                             // database is newer.
                             // multiply by 1000 to produce microseconds from milliseconds.
-                            //.setTimestamp(entry.getValue().getTimestamp() * 1000); TODO: investigate the implications of this
+                            //.setTimestamp(entry.getValue().getTimestamp() * 1000);
                 }
             }
             if (!mutationBatch.isEmpty())

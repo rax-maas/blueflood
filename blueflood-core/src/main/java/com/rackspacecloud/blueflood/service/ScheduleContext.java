@@ -226,6 +226,7 @@ public class ScheduleContext implements IngestionContext {
             // If the current state is active, it means we received a delayed put which toggled the status to Active.
             if (stamp.getState() == UpdateStamp.State.Running) {
                 stamp.setState(UpdateStamp.State.Rolled);
+                // Note: Rollup state will be updated to the last ACTIVE timestamp which caused rollup process to kick in.
                 //stamp.setTimestamp(getCurrentTimeMillis());
                 stamp.setDirty(true);
             }
