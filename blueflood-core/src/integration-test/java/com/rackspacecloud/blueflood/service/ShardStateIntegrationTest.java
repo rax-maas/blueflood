@@ -337,6 +337,82 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertNull(errBucket[0]);
         Assert.assertNull(errBucket[1]);
     }
+
+    @Test
+    public void testSlotStateConvergence() throws InterruptedException {
+        long time = 1234000L;
+        Collection<Integer> shards = Lists.newArrayList(0);
+
+        // Ingestor 1
+        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards);
+        ShardStatePuller pullerIngestor1 = new ShardStatePuller(shards, ctxIngestor1.getShardStateManager(), this.io);
+        pullerIngestor1.setPeriod(100L);
+        pullerIngestor1.setActive(true);
+        ShardStatePusher pusherIngestor1 = new ShardStatePusher(shards, ctxIngestor1.getShardStateManager(), this.io);
+        pusherIngestor1.setPeriod(100L);
+        pusherIngestor1.setActive(true);
+
+        // Ingestor 2
+        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards);
+        ShardStatePuller pullerIngestor2 = new ShardStatePuller(shards, ctxIngestor2.getShardStateManager(), this.io);
+        pullerIngestor2.setPeriod(100L);
+        pullerIngestor2.setActive(true);
+        ShardStatePusher pusherIngestor2 = new ShardStatePusher(shards, ctxIngestor2.getShardStateManager(), this.io);
+        pusherIngestor2.setPeriod(100L);
+        pusherIngestor2.setActive(true);
+
+        // Rollup slave
+        ScheduleContext ctxRollup = new ScheduleContext(time, shards);
+        ShardStatePuller pullerRollup = new ShardStatePuller(shards, ctxRollup.getShardStateManager(), this.io);
+        pullerRollup.setActive(true);
+        pullerRollup.setPeriod(100L);
+        ShardStatePusher pusherRollup = new ShardStatePusher(shards, ctxRollup.getShardStateManager(), this.io);
+        pusherRollup.setPeriod(100L);
+        pusherRollup.setActive(true);
+
+        new Thread(pullerIngestor1).start();
+        new Thread(pusherIngestor1).start();
+
+        new Thread(pullerIngestor2).start();
+        new Thread(pusherIngestor2).start();
+
+        new Thread(pullerRollup).start();
+        new Thread(pusherRollup).start();
+
+        ctxIngestor1.update(time+30000, 0);
+        ctxIngestor2.update(time+60000, 0);
+
+
+        Thread.sleep(1000L);
+
+        for (Granularity gran : Granularity.rollupGranularities())
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+
+        ctxRollup.setCurrentTimeMillis(time + 600000);
+        ctxRollup.scheduleSlotsOlderThan(300000);
+        Assert.assertEquals(1, ctxRollup.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        int count = 0;
+        while (ctxRollup.getScheduledCount() > 0) {
+            String slot = ctxRollup.getNextScheduled();
+            ctxRollup.clearFromRunning(slot);
+            ctxRollup.scheduleSlotsOlderThan(300000);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+
+        Thread.sleep(10000L);
+
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+        }
+
+        Map<Integer, UpdateStamp> slotStamps = ctxRollup.getSlotStamps(Granularity.MIN_5, 0);
+        Assert.assertEquals(slotStamps.get(4).getState(), UpdateStamp.State.Rolled);
+        Assert.assertEquals(slotStamps.get(4).getTimestamp(), time+60000);
+    }
     
     @Parameterized.Parameters
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
