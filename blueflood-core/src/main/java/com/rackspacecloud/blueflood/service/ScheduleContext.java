@@ -227,7 +227,6 @@ public class ScheduleContext implements IngestionContext {
             if (stamp.getState() == UpdateStamp.State.Running) {
                 stamp.setState(UpdateStamp.State.Rolled);
                 // Note: Rollup state will be updated to the last ACTIVE timestamp which caused rollup process to kick in.
-                //stamp.setTimestamp(getCurrentTimeMillis());
                 stamp.setDirty(true);
             }
         }

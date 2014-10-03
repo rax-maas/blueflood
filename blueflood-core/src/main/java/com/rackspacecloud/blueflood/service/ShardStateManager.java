@@ -180,7 +180,6 @@ public class ShardStateManager {
           triggering the state to ACTIVE on rollup host. After this convergence is reached the last rollup time match with the last active times on all ingestor nodes.
          */
         protected void updateSlotOnRead(SlotState slotState) {
-
             final int slot = slotState.getSlot();
             final long timestamp = slotState.getTimestamp();
             UpdateStamp.State state = slotState.getState();
@@ -188,12 +187,12 @@ public class ShardStateManager {
             if (stamp == null) {
                 // haven't seen this slot before, take the update. This happens when a blueflood service is just started.
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
-            } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active)) {
+            } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active) && !stamp.isDirty()) {
                 // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and the triggering timestamp we have is greater.
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && stamp.getTimestamp() > timestamp))
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
-                // 2) if current value is same but value being applied is a remove, remove wins
+                // 2) if current value is same but value being applied is a remove, remove wins.
                 stamp.setState(UpdateStamp.State.Rolled);
             }
         }

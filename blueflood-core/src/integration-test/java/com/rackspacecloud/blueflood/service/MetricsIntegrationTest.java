@@ -29,7 +29,6 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -374,6 +373,6 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 
         Assert.assertNotNull(slotStateManager.getSlotStamps());
-        Assert.assertEquals(UpdateStamp.State.Active    , slotStateManager.getSlotStamps().get(slot).getState());
+        Assert.assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(slot).getState());
     }
 }
