@@ -187,10 +187,14 @@ public class ShardStateManager {
             if (stamp == null) {
                 // haven't seen this slot before, take the update. This happens when a blueflood service is just started.
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
-            } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active) && !stamp.isDirty()) {
-                // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and the triggering timestamp we have is greater.
-                if (!(stamp.getState().equals(UpdateStamp.State.Active) && stamp.getTimestamp() > timestamp))
+            } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active)) {
+                // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and
+                //    the triggering timestamp we have is greater or the stamp in memory is yet to be persisted i.e still dirty
+                if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
+                } else {
+                    stamp.setDirty(true); // This is crucial for convergence, we need to superimpose a higher timestamp which can be done only if we set it to dirty
+                }
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
                 // 2) if current value is same but value being applied is a remove, remove wins.
                 stamp.setState(UpdateStamp.State.Rolled);
