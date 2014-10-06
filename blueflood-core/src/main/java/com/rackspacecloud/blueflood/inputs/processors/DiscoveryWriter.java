@@ -98,7 +98,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 }
             }
         }
-        log.info("List of metrics length at the end of condense !!"+input.size());
+        log.info("List of metrics length at the end of condense"+input.size());
         return willIndex;
     }
     
