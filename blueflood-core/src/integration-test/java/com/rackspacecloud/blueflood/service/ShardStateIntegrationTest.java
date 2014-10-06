@@ -340,10 +340,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testSlotStateConvergence() throws InterruptedException {
+        int shard = 0;
         long time = 1234000L;
         long metricTimeUpdate1 = time + 30000;
         long metricsTimeUpdate2 = time + 60000;
-        Collection<Integer> shards = Lists.newArrayList(0);
+        Collection<Integer> shards = Lists.newArrayList(shard);
         List<ShardStateWorker> allWorkers = new ArrayList<ShardStateWorker>(6);
 
         // Ingestor 1
@@ -368,14 +369,14 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         allWorkers.add(pusherRollup);
 
         // Updates for same shard come for same slot on different ingestion contexts
-        ctxIngestor1.update(metricTimeUpdate1, 0);
-        ctxIngestor2.update(metricsTimeUpdate2, 0);
+        ctxIngestor1.update(metricTimeUpdate1, shard);
+        ctxIngestor2.update(metricsTimeUpdate2, shard);
 
         makeWorkersSyncState(allWorkers);
 
         // After the sync, the higher timestamp should have "won" and ACTIVE slots should have converged on both the ingestion contexts
         for (Granularity gran : Granularity.rollupGranularities())
-            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
 
         ctxRollup.setCurrentTimeMillis(time + 600000L);
         ctxRollup.scheduleSlotsOlderThan(300000L);
@@ -395,8 +396,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         // By this point of time, all contexts should have got the ROLLED state
         for (Granularity gran : Granularity.rollupGranularities()) { // Check to see if shard states are indeed matching
-            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
-            Assert.assertEquals(ctxRollup.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
         }
 
         Map<Integer, UpdateStamp> slotStamps;
@@ -405,28 +406,28 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             int slot = 0;
             if (gran == Granularity.MIN_5) slot = 4;
             if (gran == Granularity.MIN_20) slot = 1;
-            slotStamps = ctxRollup.getSlotStamps(gran, 0);
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
             Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Rolled);
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), metricsTimeUpdate2);
         }
 
         // Delayed metric test
         long delayedMetricTimestamp = time + 45000; // Notice that this is lesser than the last time we rolled the slot
-        ctxIngestor1.update(delayedMetricTimestamp, 0);
+        ctxIngestor1.update(delayedMetricTimestamp, shard);
 
         makeWorkersSyncState(allWorkers);
 
         // Shard state will be the same throughout and will be marked as ACTIVE
         for (Granularity gran : Granularity.rollupGranularities()) {
-            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
-            Assert.assertEquals(ctxRollup.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
         }
 
         for (Granularity gran : Granularity.rollupGranularities()) {
             int slot = 0;
             if (gran == Granularity.MIN_5) slot = 4;
             if (gran == Granularity.MIN_20) slot = 1;
-            slotStamps = ctxRollup.getSlotStamps(gran, 0);
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
             Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Active);
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
         }
@@ -448,15 +449,15 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         makeWorkersSyncState(allWorkers);
 
         for (Granularity gran : Granularity.rollupGranularities()) {
-            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
-            Assert.assertEquals(ctxRollup.getSlotStamps(gran, 0), ctxIngestor2.getSlotStamps(gran, 0));
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
         }
 
         for (Granularity gran : Granularity.rollupGranularities()) {
             int slot = 0;
             if (gran == Granularity.MIN_5) slot = 4;
             if (gran == Granularity.MIN_20) slot = 1;
-            slotStamps = ctxRollup.getSlotStamps(gran, 0);
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
             Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Rolled);
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
         }
@@ -476,8 +477,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
         instances.add(new Object[] { new AstyanaxShardStateIO() });
-        // Test fails for this InMemoryShardStateIO, but I do not care about this for now.
-        //instances.add(new Object[] { new InMemoryShardStateIO() });
+        instances.add(new Object[] { new InMemoryShardStateIO() });
         return instances;
     }
     
@@ -494,7 +494,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 List<SlotState> states = new ArrayList<SlotState>();
                 for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> e0 : updates.entrySet()) {
                     for (Map.Entry<Integer, UpdateStamp> e1 : e0.getValue().entrySet()) {
-                        states.add(new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState()));
+                        SlotState state = new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState());
+                        state.withTimestamp(e1.getValue().getTimestamp());
+                        states.add(state);
                     }
                 }
                 return states;
