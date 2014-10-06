@@ -99,6 +99,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     public static Bundle createBundle(String json) {
         Bundle bundle = new Gson().fromJson(json, Bundle.class);
+        log.debug("Created statsd bundle for tenant: "+bundle.getTenantId());
         return bundle;
     }
     
@@ -114,6 +115,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         public ListenableFuture<MetricsCollection> apply(Bundle input) throws Exception {
             MetricsCollection collection = new MetricsCollection();
             collection.add(PreaggregateConversions.buildMetricsCollection(input));
+            log.debug("Made collection of size: "+collection.size());
             return new NoOpFuture<MetricsCollection>(collection);
         }
     }
