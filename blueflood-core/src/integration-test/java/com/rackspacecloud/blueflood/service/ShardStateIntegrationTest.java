@@ -339,6 +339,63 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    public void testShardOperationsConcurrencyMultipleIngestors() throws InterruptedException {
+        final long tryFor = 15000;
+        final AtomicLong time = new AtomicLong(1234L);
+        final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
+        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards), new ScheduleContext(time.get(), shards));
+        final List<ShardStateWorker> workers = Lists.newArrayList(new ShardStatePusher(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePuller(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePusher(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePuller(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io));
+        final CountDownLatch latch = new CountDownLatch(2);
+        final Throwable[] errBucket = new Throwable[2];
+        Thread pushPull = new Thread() { public void run() {
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < tryFor) {
+                try {
+                    makeWorkersSyncState(workers);
+                    Thread.sleep(10L);
+                } catch (Throwable th) {
+                    th.printStackTrace();
+                    errBucket[0] = th;
+                    break;
+                }
+            }
+            latch.countDown();
+        }};
+        Thread updateIterator = new Thread() { public void run() {
+            long start = System.currentTimeMillis();
+            Random rand = new Random();
+            outer: while (System.currentTimeMillis() - start < tryFor) {
+                for (int shard : shards) {
+                    time.set(time.get() + 30000);
+                    ScheduleContext ctx = ctxs.get(rand.nextInt(2));
+                    try {
+                        ctx.update(time.get(), shard);
+                    } catch (Throwable th) {
+                        th.printStackTrace();
+                        errBucket[1] = th;
+                        break outer;
+                    }
+                }
+            }
+            latch.countDown();
+        }};
+
+        pushPull.start();
+        updateIterator.start();
+        latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
+        makeWorkersSyncState(workers);
+        Assert.assertNull(errBucket[0]);
+        Assert.assertNull(errBucket[1]);
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            for (int shard : shards)
+                Assert.assertEquals(ctxs.get(0).getSlotStamps(gran, shard), ctxs.get(1).getSlotStamps(gran, shard));
+        }
+    }
+
+    @Test
     public void testSlotStateConvergence() throws InterruptedException {
         int shard = 0;
         long time = 1234000L;
@@ -477,7 +534,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
         instances.add(new Object[] { new AstyanaxShardStateIO() });
-        instances.add(new Object[] { new InMemoryShardStateIO() });
+        // instances.add(new Object[] { new InMemoryShardStateIO() });
         return instances;
     }
     
