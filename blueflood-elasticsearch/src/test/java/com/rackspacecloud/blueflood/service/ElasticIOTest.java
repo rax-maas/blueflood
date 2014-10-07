@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -92,8 +93,8 @@ public class ElasticIOTest {
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
-        elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
-        elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+        elasticIO.insertDiscovery((List<Object>)(List<?>) createTestMetrics(TENANT_A));
+        elasticIO.insertDiscovery((List<Object>)(List<?>) createTestMetrics(TENANT_B));
 
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
