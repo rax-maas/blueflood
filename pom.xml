@@ -34,6 +34,7 @@
     <module>blueflood-dropwizard</module>
     <module>blueflood-dropwizard-logging</module>
     <module>blueflood-io-datastax</module>
+    <module>blueflood-rollupTools</module>
   </modules>
 
   <description>
