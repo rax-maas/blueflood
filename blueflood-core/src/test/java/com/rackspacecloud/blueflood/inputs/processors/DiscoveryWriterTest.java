@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.IMetric;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,16 +31,16 @@ public class DiscoveryWriterTest {
         discWriter.registerIO(discovererB);
 
         // create fake metrics to test
-        List<List<Metric>> testdata = new ArrayList<List<Metric>>();
+        List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         
-        List<Metric> flatTestData = new ArrayList<Metric>();
-        for (List<Metric> list : testdata) {
+        List<IMetric> flatTestData = new ArrayList<IMetric>();
+        for (List<IMetric> list : testdata) {
             if (list.size() == 0) continue;
-            for (Metric m : list) {
+            for (IMetric m : list) {
                 flatTestData.add(m);
             }
         }
@@ -52,7 +52,7 @@ public class DiscoveryWriterTest {
 
         // verify the insertDiscovery method on all implementors of
         // DiscoveryIO has been called on all metrics
-        verify(discovererA).insertDiscovery(flatTestData);
-        verify(discovererB).insertDiscovery(flatTestData);
+        verify(discovererA).insertDiscovery((List<Object>)(List<?>) flatTestData);
+        verify(discovererB).insertDiscovery((List<Object>)(List<?>) flatTestData);
     }
 }
