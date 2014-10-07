@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -86,7 +87,7 @@ public class ElasticIO implements DiscoveryIO {
         return result;
     }
 
-    public void insertDiscovery(List<Metric> batch) throws IOException {
+    public void insertDiscovery(List<Object> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
@@ -96,13 +97,19 @@ public class ElasticIO implements DiscoveryIO {
         Timer.Context ctx = writeTimer.time();
         try {
             BulkRequestBuilder bulk = client.prepareBulk();
-            for (Metric metric : batch) {
+            for (Object obj : batch) {
+                IMetric metric = (IMetric)obj;
+
                 Locator locator = metric.getLocator();
                 Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+
                 Map<String, Object> info = new HashMap<String, Object>();
-                if (metric.getUnit() != null) { // metric units may be null
-                    info.put(unit.toString(), metric.getUnit());
+
+
+                if (obj instanceof  Metric && getUnit((Metric)metric) != null) { // metric units may be null
+                    info.put(unit.toString(), getUnit((Metric)metric));
                 }
+
                 md.withAnnotation(info);
                 bulk.add(createSingleRequest(md));
             }
@@ -111,6 +118,10 @@ public class ElasticIO implements DiscoveryIO {
             ctx.stop();
         }
         
+    }
+
+    private String getUnit(Metric metric) {
+        return metric.getUnit();
     }
 
     private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
