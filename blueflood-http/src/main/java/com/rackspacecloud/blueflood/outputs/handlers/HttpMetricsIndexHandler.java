@@ -96,7 +96,12 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
         for (SearchResult result : searchResults) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("metric", result.getMetricName());
-            resultNode.put("unit", result.getUnit());
+            String unit = result.getUnit();
+
+            if (unit != null) {
+                resultNode.put("unit", result.getUnit());
+            }
+
             resultArray.add(resultNode);
         }
         return resultArray.toString();
