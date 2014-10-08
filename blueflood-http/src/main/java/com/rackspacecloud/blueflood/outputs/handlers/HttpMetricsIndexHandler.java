@@ -99,7 +99,8 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             String unit = result.getUnit();
 
             if (unit != null) {
-                resultNode.put("unit", result.getUnit());
+                //Preaggreated metrics do not have units. Do not want to return null units in query results.
+                resultNode.put("unit", unit);
             }
 
             resultArray.add(resultNode);

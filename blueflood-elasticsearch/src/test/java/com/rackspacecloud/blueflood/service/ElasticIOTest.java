@@ -93,7 +93,6 @@ public class ElasticIOTest {
 
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
-            //metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
             metric = new PreaggregatedMetric(0, locator, new TimeValue(1, TimeUnit.DAYS), counter);
             metrics.add(metric);
         }
