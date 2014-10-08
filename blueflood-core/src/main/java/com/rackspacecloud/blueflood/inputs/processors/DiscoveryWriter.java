@@ -69,8 +69,6 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 DiscoveryIO discoveryIOModule = (DiscoveryIO) discoveryClass.newInstance();
                 log.info("Registering metric discovery module " + module);
                 registerIO(discoveryIOModule);
-            } catch (ClassCastException e){
-                log.error("Unable to cast class: " + e);
             } catch (InstantiationException e) {
                 log.error("Unable to create instance of metric discovery class for: " + module, e);
             } catch (IllegalAccessException e) {
@@ -98,7 +96,6 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 }
             }
         }
-        log.debug("List of metrics length at the end of condense "+input.size());
         return willIndex;
     }
     
