@@ -4,6 +4,7 @@ import re
 import time
 import requests
 import json
+import auth
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -42,6 +43,8 @@ class TenantBluefloodFinder(object):
       else:
         urls = [config['blueflood']['url'].strip('/')]
       tenant = config['blueflood']['tenant']
+      username = config['blueflood']['username']
+      apikey = config['blueflood']['apikey']
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
@@ -49,11 +52,20 @@ class TenantBluefloodFinder(object):
         urls = [settings.BF_QUERY]
 
       tenant = getattr(settings, 'BF_TENANT')
+      username = getattr(settings, 'RAX_USER')
+      apikey = getattr(settings, 'RAX_API_KEY')
       if not tenant:
         tenant = [settings.BF_TENANT]
+      if not username:
+        username = [settings.RAX_USER]
+      if not apikey:
+        apikey = [settings.RAX_API_KEY]
 
+    # todo need to figure out how to set this via configuration.
+    auth.setAuth(auth.RaxAuth(username, apikey))
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
+
 
   def find_nodes(self, query):
     queryDepth = len(query.pattern.split('.'))
@@ -112,11 +124,6 @@ class TenantBluefloodReader(object):
       time_info = (minTime, maxTime, step)
       return (time_info, valueArr)
 
-headers = {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json'
-}
-
 SECONDS_IN_5MIN = 300
 SECONDS_IN_20MIN = 1200
 SECONDS_IN_60MIN = 3600
@@ -130,6 +137,9 @@ class Client(object):
 
   def findMetrics(self, query):
     payload = {'query': query}
+    headers = auth.headers()
+    if auth.isActive():
+      headers['X-Auth-Token'] = auth.getToken()
     r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in findMetrics ' + r.text
@@ -170,6 +180,9 @@ class Client(object):
       'resolution': res
     }
     #print 'USING RES ' + res
+    headers = auth.headers()
+    if auth.isActive():
+      headers['X-Auth-Token'] = auth.getToken()
     r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in getValues ' + r.text
