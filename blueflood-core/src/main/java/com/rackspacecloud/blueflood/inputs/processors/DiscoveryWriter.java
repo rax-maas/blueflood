@@ -17,8 +17,6 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
@@ -26,7 +24,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
+public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
@@ -69,6 +67,8 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 DiscoveryIO discoveryIOModule = (DiscoveryIO) discoveryClass.newInstance();
                 log.info("Registering metric discovery module " + module);
                 registerIO(discoveryIOModule);
+            } catch (ClassCastException e){
+                log.error("Unable to cast class: " + e);
             } catch (InstantiationException e) {
                 log.error("Unable to create instance of metric discovery class for: " + module, e);
             } catch (IllegalAccessException e) {
@@ -83,26 +83,28 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         }
     }
     
-    private static List<Metric> condense(List<List<Metric>> input) {
-        List<Metric> willIndex = new ArrayList<Metric>();
-        for (List<Metric> list : input) {
+    private static List<IMetric> condense(List<List<IMetric>> input) {
+        List<IMetric> willIndex = new ArrayList<IMetric>();
+        for (List<IMetric> list : input) {
             // make mockito happy.
             if (list.size() == 0) {
                 continue;
             }
-            for (Metric m : list) {
+
+            for (IMetric m : list) {
                 if (!AstyanaxWriter.isLocatorCurrent(m.getLocator())) {
                     willIndex.add(m);
                 }
             }
         }
+        log.debug("List of metrics length at the end of condense "+input.size());
         return willIndex;
     }
     
     
-    public ListenableFuture<Boolean> processMetrics(List<List<Metric>> input) {
+    public ListenableFuture<Boolean> processMetrics(List<List<IMetric>> input) {
         // filter out the metrics that are current.
-        final List<Metric> willIndex = DiscoveryWriter.condense(input);
+        final List<IMetric> willIndex = DiscoveryWriter.condense(input);
         
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
@@ -111,7 +113,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
                 boolean success = true;
                 for (DiscoveryIO io : discoveryIOs) {
                     try {
-                        io.insertDiscovery(willIndex);
+                        io.insertDiscovery((List<Object>)(List<?>) (willIndex));
                     } catch (Exception ex) {
                         getLogger().error(ex.getMessage(), ex);
                         writeErrorMeters.get(io.getClass()).mark();
@@ -123,13 +125,13 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         });
     }
 
-    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
+    public ListenableFuture<List<List<IMetric>>> apply(List<List<IMetric>> input) {
         if (canIndex) {
             processMetrics(input);
         }
         
         // we don't need all metrics to finish being inserted into the discovery backend
         // before moving onto the next step in the processing chain.
-        return new NoOpFuture<List<List<Metric>>>(input);
+        return new NoOpFuture<List<List<IMetric>>>(input);
     }
 }
