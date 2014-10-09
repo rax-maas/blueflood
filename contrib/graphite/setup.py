@@ -13,7 +13,7 @@ setup(
   author_email='gdusbabek@gmail.com',
   description=('A plugin for using graphite-web with the cassandra-based '
                'Blueflood storage backend'),
-  py_modules=('blueflood',),
+  py_modules=('blueflood','auth',),
   zip_safe=False,
   include_package_data=True,
   platforms='any',
