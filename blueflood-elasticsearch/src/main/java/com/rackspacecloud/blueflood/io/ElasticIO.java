@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -64,6 +65,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
+    private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -98,6 +100,11 @@ public class ElasticIO implements DiscoveryIO {
         try {
             BulkRequestBuilder bulk = client.prepareBulk();
             for (Object obj : batch) {
+                if (!(obj instanceof IMetric)) {
+                    classCastExceptionMeter.mark();
+                    continue;
+                }
+
                 IMetric metric = (IMetric)obj;
 
                 Locator locator = metric.getLocator();
@@ -120,7 +127,7 @@ public class ElasticIO implements DiscoveryIO {
         
     }
 
-    private String getUnit(Metric metric) {
+    private static String getUnit(Metric metric) {
         return metric.getUnit();
     }
 

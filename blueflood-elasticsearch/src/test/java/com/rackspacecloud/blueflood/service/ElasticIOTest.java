@@ -75,9 +75,9 @@ public class ElasticIOTest {
         return locators;
     }
 
-    private static List<Metric> createTestMetrics(String tenantId) {
+    private static List<Object> createTestMetrics(String tenantId) {
         Metric metric;
-        List<Metric> metrics = new ArrayList<Metric>();
+        List<Object> metrics = new ArrayList<Object>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
             metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
@@ -86,9 +86,9 @@ public class ElasticIOTest {
         return metrics;
     }
 
-    private static List<IMetric> createTestMetricsFromInterface(String tenantId) {
+    private static List<Object> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<Object> metrics = new ArrayList<Object>();
         CounterRollup counter = new CounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);
@@ -106,9 +106,9 @@ public class ElasticIOTest {
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
-        elasticIO.insertDiscovery((List<Object>)(List<?>) createTestMetrics(TENANT_A));
-        elasticIO.insertDiscovery((List<Object>)(List<?>) createTestMetrics(TENANT_B));
-        elasticIO.insertDiscovery((List<Object>)(List<?>) createTestMetricsFromInterface(TENANT_C));
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
+        elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
+        elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }

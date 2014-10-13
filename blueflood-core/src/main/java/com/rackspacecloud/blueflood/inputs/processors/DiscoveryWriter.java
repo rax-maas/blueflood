@@ -81,8 +81,8 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
         }
     }
     
-    private static List<IMetric> condense(List<List<IMetric>> input) {
-        List<IMetric> willIndex = new ArrayList<IMetric>();
+    private static List<Object> condense(List<List<IMetric>> input) {
+        List<Object> willIndex = new ArrayList<Object>();
         for (List<IMetric> list : input) {
             // make mockito happy.
             if (list.size() == 0) {
@@ -101,7 +101,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
     
     public ListenableFuture<Boolean> processMetrics(List<List<IMetric>> input) {
         // filter out the metrics that are current.
-        final List<IMetric> willIndex = DiscoveryWriter.condense(input);
+        final List<Object> willIndex = DiscoveryWriter.condense(input);
         
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
@@ -110,7 +110,7 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
                 boolean success = true;
                 for (DiscoveryIO io : discoveryIOs) {
                     try {
-                        io.insertDiscovery((List<Object>)(List<?>) (willIndex));
+                        io.insertDiscovery(willIndex);
                     } catch (Exception ex) {
                         getLogger().error(ex.getMessage(), ex);
                         writeErrorMeters.get(io.getClass()).mark();
