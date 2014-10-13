@@ -166,17 +166,35 @@ public class ShardStateManager {
             this.granularity = granularity;
             slotToUpdateStampMap = new ConcurrentHashMap<Integer, UpdateStamp>(granularity.numSlots());
         }
+        /**
+          Imagine metrics are flowing in from multiple ingestor nodes. The ingestion path updates schedule context while writing metrics to cassandra.(See BatchWriter)
+          We cannot make any ordering guarantees on the metrics. So every metric that comes in updates the slot state to its collection time.
+
+          This state gets pushed in cassandra by ShardStatePusher and read on the rollup slave. Rollup slave is going to update its state to ACTIVE as long as the timestamp does not match.
+          Rollup slave shard map can be in 3 states: 1) Active 2) Rolled 3) Running.
+          Every ACTIVE update is taken for Rolled and Running states, but if the shard map is already in an ACTIVE state, then the update happens only if the timestamp of update coming in
+          if greater than what we have.
+          On Rollup slave it means eventually when it rolls up data for the ACTIVE slot, it will be marked with the collection time belonging to a metric which was generated later.
+
+          For a case of multiple ingestors, it means eventually higher timestamp will win, and will be updated even if that ingestor did not receive metric with that timestamp and will stop
+          triggering the state to ACTIVE on rollup host. After this convergence is reached the last rollup time match with the last active times on all ingestor nodes.
+         */
         protected void updateSlotOnRead(SlotState slotState) {
             final int slot = slotState.getSlot();
             final long timestamp = slotState.getTimestamp();
             UpdateStamp.State state = slotState.getState();
             UpdateStamp stamp = slotToUpdateStampMap.get(slot);
             if (stamp == null) {
-                // haven't seen this slot before, take the update
+                // haven't seen this slot before, take the update. This happens when a blueflood service is just started.
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
-            } else if (stamp.getTimestamp() < timestamp) {
-                // 1) if current value is older than the value being applied.
-                slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
+            } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active)) {
+                // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and
+                //    the triggering timestamp we have is greater or the stamp in memory is yet to be persisted i.e still dirty
+                if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
+                    slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
+                } else {
+                    stamp.setDirty(true); // This is crucial for convergence, we need to superimpose a higher timestamp which can be done only if we set it to dirty
+                }
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
                 // 2) if current value is same but value being applied is a remove, remove wins.
                 stamp.setState(UpdateStamp.State.Rolled);
