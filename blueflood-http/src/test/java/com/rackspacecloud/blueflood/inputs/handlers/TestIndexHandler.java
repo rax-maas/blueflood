@@ -18,6 +18,7 @@ public class TestIndexHandler {
 
         String searchResultsJson = HttpMetricsIndexHandler.getSerializedJSON(results);
         Assert.assertFalse("[]".equals(searchResultsJson));
+        Assert.assertTrue(searchResultsJson.contains("unit"));
     }
 
     @Test
