@@ -23,20 +23,17 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RunWith(Parameterized.class)
@@ -83,6 +80,59 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                     Assert.assertEquals(1, ctx.getSlotStamps(g, shard).size());
             }
         }
+    }
+
+    @Test
+    public void testRollupFailureForDelayedMetrics() {
+        long time = 1234000L;
+        Collection<Integer> managedShards = Lists.newArrayList(0);
+        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
+        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
+        // Shard workers for rollup ctx
+        ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
+        ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
+
+        // Shard workers for ingest ctx
+        ShardStateWorker ingestPuller = new ShardStatePuller(managedShards, ingestionCtx.getShardStateManager(), this.io);
+        ShardStateWorker ingestPusher = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
+
+        ingestionCtx.update(time + 30000, 0);
+        ingestPusher.performOperation(); // Shard state is persisted on ingestion host
+
+        rollupPuller.performOperation(); // Shard state is read on rollup host
+        rollupCtx.setCurrentTimeMillis(time + 600000);
+        rollupCtx.scheduleSlotsOlderThan(300000);
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        int count = 0;
+        while (rollupCtx.getScheduledCount() > 0) {
+            String slot = rollupCtx.getNextScheduled();
+            rollupCtx.clearFromRunning(slot);
+            rollupCtx.scheduleSlotsOlderThan(300000);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        rollupPusher.performOperation();
+
+        // Delayed metric is received on ingestion host
+        ingestPuller.performOperation();
+        ingestionCtx.update(time, 0);
+        ingestPusher.performOperation();
+
+        rollupPuller.performOperation();
+        rollupCtx.scheduleSlotsOlderThan(300000);
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        count = 0;
+        while (rollupCtx.getScheduledCount() > 0) {
+            String slot = rollupCtx.getNextScheduled();
+            rollupCtx.clearFromRunning(slot);
+            rollupCtx.scheduleSlotsOlderThan(300000);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
     }
 
     @Test
@@ -228,7 +278,6 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             count += 1;
         }
         Assert.assertEquals(5, count);
-        
         // verify that scheduling doesn't find anything else.
         ctxA.scheduleSlotsOlderThan(300000);
         Assert.assertEquals(0, ctxA.getScheduledCount());
@@ -290,6 +339,204 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertNull(errBucket[0]);
         Assert.assertNull(errBucket[1]);
     }
+
+
+    @Test
+    public void testConvergenceForMultipleIngestors() throws InterruptedException {
+        final long tryFor = 1000;
+        final AtomicLong time = new AtomicLong(1234L);
+        final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
+        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards), new ScheduleContext(time.get(), shards));
+        final List<ShardStateWorker> workers = Lists.newArrayList(new ShardStatePusher(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePuller(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePusher(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io),
+                new ShardStatePuller(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io));
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean err = new AtomicBoolean(false);
+
+        Thread updateIterator = new Thread() { public void run() {
+            long start = System.currentTimeMillis();
+            Random rand = new Random();
+            outer: while (System.currentTimeMillis() - start < tryFor) {
+                for (int shard : shards) {
+                    time.set(time.get() + 30000);
+                    ScheduleContext ctx = ctxs.get(rand.nextInt(2));
+                    try {
+                        ctx.update(time.get(), shard);
+                    } catch (Throwable th) {
+                        th.printStackTrace();
+                        err.set(true);
+                        break outer;
+                    }
+                }
+            }
+            latch.countDown();
+        }};
+
+        updateIterator.start();
+        latch.await();
+
+        workers.get(0).performOperation();
+        workers.get(3).performOperation();
+        workers.get(2).performOperation();
+        workers.get(1).performOperation();
+        workers.get(0).performOperation();
+        workers.get(3).performOperation();
+        workers.get(2).performOperation();
+        workers.get(1).performOperation();
+
+        Assert.assertFalse(err.get());
+
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            for (int shard : shards) {
+                Assert.assertEquals(ctxs.get(0).getSlotStamps(gran, shard).size(), ctxs.get(1).getSlotStamps(gran, shard).size());
+                for (Map.Entry<Integer, UpdateStamp> entry : ctxs.get(0).getSlotStamps(gran, shard).entrySet()) {
+                    Assert.assertEquals(entry.getValue(), ctxs.get(1).getSlotStamps(gran, shard).get(entry.getKey()));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSlotStateConvergence() throws InterruptedException {
+        int shard = 0;
+        long time = 1234000L;
+        long metricTimeUpdate1 = time + 30000;
+        long metricsTimeUpdate2 = time + 60000;
+        Collection<Integer> shards = Lists.newArrayList(shard);
+        List<ShardStateWorker> allWorkers = new ArrayList<ShardStateWorker>(6);
+
+        // Ingestor 1
+        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards);
+        ShardStatePuller pullerIngestor1 = new ShardStatePuller(shards, ctxIngestor1.getShardStateManager(), this.io);
+        ShardStatePusher pusherIngestor1 = new ShardStatePusher(shards, ctxIngestor1.getShardStateManager(), this.io);
+        allWorkers.add(pullerIngestor1);
+        allWorkers.add(pusherIngestor1);
+
+        // Ingestor 2
+        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards);
+        ShardStatePuller pullerIngestor2 = new ShardStatePuller(shards, ctxIngestor2.getShardStateManager(), this.io);
+        ShardStatePusher pusherIngestor2 = new ShardStatePusher(shards, ctxIngestor2.getShardStateManager(), this.io);
+        allWorkers.add(pullerIngestor2);
+        allWorkers.add(pusherIngestor2);
+
+        // Rollup slave
+        ScheduleContext ctxRollup = new ScheduleContext(time, shards);
+        ShardStatePuller pullerRollup = new ShardStatePuller(shards, ctxRollup.getShardStateManager(), this.io);
+        ShardStatePusher pusherRollup = new ShardStatePusher(shards, ctxRollup.getShardStateManager(), this.io);
+        allWorkers.add(pullerRollup);
+        allWorkers.add(pusherRollup);
+
+        // Updates for same shard come for same slot on different ingestion contexts
+        ctxIngestor1.update(metricTimeUpdate1, shard);
+        ctxIngestor2.update(metricsTimeUpdate2, shard);
+
+        makeWorkersSyncState(allWorkers);
+
+        // After the sync, the higher timestamp should have "won" and ACTIVE slots should have converged on both the ingestion contexts
+        for (Granularity gran : Granularity.rollupGranularities())
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+
+        ctxRollup.setCurrentTimeMillis(time + 600000L);
+        ctxRollup.scheduleSlotsOlderThan(300000L);
+        Assert.assertEquals(1, ctxRollup.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        int count = 0;
+        while (ctxRollup.getScheduledCount() > 0) {
+            String slot = ctxRollup.getNextScheduled();
+            ctxRollup.clearFromRunning(slot);
+            ctxRollup.scheduleSlotsOlderThan(300000L);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+
+        makeWorkersSyncState(allWorkers);
+
+        // By this point of time, all contexts should have got the ROLLED state
+        for (Granularity gran : Granularity.rollupGranularities()) { // Check to see if shard states are indeed matching
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+        }
+
+        Map<Integer, UpdateStamp> slotStamps;
+        // Test for specific state of ROLLED. Because we have already tested that slot states are same across, it also means ROLLED has been stamped on ingestor1 and ingestor2
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            int slot = 0;
+            if (gran == Granularity.MIN_5) slot = 4;
+            if (gran == Granularity.MIN_20) slot = 1;
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
+            Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Rolled);
+            Assert.assertEquals(slotStamps.get(slot).getTimestamp(), metricsTimeUpdate2);
+        }
+
+        // Delayed metric test
+        long delayedMetricTimestamp = time + 45000; // Notice that this is lesser than the last time we rolled the slot
+        ctxIngestor1.update(delayedMetricTimestamp, shard);
+
+        makeWorkersSyncState(allWorkers);
+
+        // Shard state will be the same throughout and will be marked as ACTIVE
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+        }
+
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            int slot = 0;
+            if (gran == Granularity.MIN_5) slot = 4;
+            if (gran == Granularity.MIN_20) slot = 1;
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
+            Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Active);
+            Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
+        }
+
+        // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
+        ctxRollup.scheduleSlotsOlderThan(300000);
+        Assert.assertEquals(1, ctxRollup.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        count = 0;
+        while (ctxRollup.getScheduledCount() > 0) {
+            String slot = ctxRollup.getNextScheduled();
+            ctxRollup.clearFromRunning(slot);
+            ctxRollup.scheduleSlotsOlderThan(300000);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+
+        makeWorkersSyncState(allWorkers);
+
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+            Assert.assertEquals(ctxRollup.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
+        }
+
+        for (Granularity gran : Granularity.rollupGranularities()) {
+            int slot = 0;
+            if (gran == Granularity.MIN_5) slot = 4;
+            if (gran == Granularity.MIN_20) slot = 1;
+            slotStamps = ctxRollup.getSlotStamps(gran, shard);
+            Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Rolled);
+            Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
+        }
+    }
+
+    @After
+    public void cleanupShardStateIO () {
+        if (this.io instanceof InMemoryShardStateIO) {
+            ((InMemoryShardStateIO) this.io).cleanUp();
+        }
+    }
+
+    private void makeWorkersSyncState(List<ShardStateWorker> workers) {
+        // All states should be synced after 2 attempts, irrespective of operation ordering which is proved by shuffling of orders
+        for (int i=0; i<=2; i++) {
+            for (ShardStateWorker worker : workers) {
+                worker.performOperation();
+            }
+        }
+    }
     
     @Parameterized.Parameters
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
@@ -312,7 +559,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 List<SlotState> states = new ArrayList<SlotState>();
                 for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> e0 : updates.entrySet()) {
                     for (Map.Entry<Integer, UpdateStamp> e1 : e0.getValue().entrySet()) {
-                        states.add(new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState()));
+                        SlotState state = new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState());
+                        state.withTimestamp(e1.getValue().getTimestamp());
+                        states.add(state);
                     }
                 }
                 return states;
@@ -322,6 +571,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         @Override
         public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
             map.put(shard, slotTimes);
+        }
+
+        public void cleanUp() {
+            map.clear();
         }
     }
 }
