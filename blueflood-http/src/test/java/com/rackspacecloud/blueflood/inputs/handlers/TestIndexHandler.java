@@ -18,5 +18,16 @@ public class TestIndexHandler {
 
         String searchResultsJson = HttpMetricsIndexHandler.getSerializedJSON(results);
         Assert.assertFalse("[]".equals(searchResultsJson));
+        Assert.assertTrue(searchResultsJson.contains("unit"));
+    }
+
+    @Test
+    public void testNullUnitsDontGetAdded() {
+        List<SearchResult> results = new ArrayList<SearchResult>();
+        results.add(new SearchResult("tenant0", "a.b.c.d.foo", null));
+
+        String searchResultsJson = HttpMetricsIndexHandler.getSerializedJSON(results);
+        Assert.assertTrue(searchResultsJson.contains("a.b.c.d.foo"));
+        Assert.assertFalse(searchResultsJson.contains("unit"));
     }
 }

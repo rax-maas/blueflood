@@ -50,6 +50,12 @@ public class SearchResult {
         if (this == other) {
             return true;
         }
-        return locator.equals(other.locator) && unit.equals(other.unit);
+        boolean result = locator.equals(other.locator);
+
+        if (unit != null) {
+            result = result && unit.equals(other.unit);
+        }
+
+        return result;
     }
 }

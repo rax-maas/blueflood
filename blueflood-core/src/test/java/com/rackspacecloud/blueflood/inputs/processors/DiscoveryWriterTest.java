@@ -3,14 +3,16 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.types.Metric;
-
+import com.rackspacecloud.blueflood.types.IMetric;
 import org.junit.Assert;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 
 public class DiscoveryWriterTest {
@@ -31,16 +33,16 @@ public class DiscoveryWriterTest {
         discWriter.registerIO(discovererB);
 
         // create fake metrics to test
-        List<List<Metric>> testdata = new ArrayList<List<Metric>>();
+        List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         
-        List<Metric> flatTestData = new ArrayList<Metric>();
-        for (List<Metric> list : testdata) {
+        List<Object> flatTestData = new ArrayList<Object>();
+        for (List<IMetric> list : testdata) {
             if (list.size() == 0) continue;
-            for (Metric m : list) {
+            for (IMetric m : list) {
                 flatTestData.add(m);
             }
         }

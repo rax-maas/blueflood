@@ -17,8 +17,6 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
@@ -26,7 +24,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metric>>, List<List<Metric>>> {
+public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
@@ -83,14 +81,15 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         }
     }
     
-    private static List<Metric> condense(List<List<Metric>> input) {
-        List<Metric> willIndex = new ArrayList<Metric>();
-        for (List<Metric> list : input) {
+    private static List<Object> condense(List<List<IMetric>> input) {
+        List<Object> willIndex = new ArrayList<Object>();
+        for (List<IMetric> list : input) {
             // make mockito happy.
             if (list.size() == 0) {
                 continue;
             }
-            for (Metric m : list) {
+
+            for (IMetric m : list) {
                 if (!AstyanaxWriter.isLocatorCurrent(m.getLocator())) {
                     willIndex.add(m);
                 }
@@ -100,9 +99,9 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
     }
     
     
-    public ListenableFuture<Boolean> processMetrics(List<List<Metric>> input) {
+    public ListenableFuture<Boolean> processMetrics(List<List<IMetric>> input) {
         // filter out the metrics that are current.
-        final List<Metric> willIndex = DiscoveryWriter.condense(input);
+        final List<Object> willIndex = DiscoveryWriter.condense(input);
         
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
@@ -123,13 +122,13 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<Metri
         });
     }
 
-    public ListenableFuture<List<List<Metric>>> apply(List<List<Metric>> input) {
+    public ListenableFuture<List<List<IMetric>>> apply(List<List<IMetric>> input) {
         if (canIndex) {
             processMetrics(input);
         }
         
         // we don't need all metrics to finish being inserted into the discovery backend
         // before moving onto the next step in the processing chain.
-        return new NoOpFuture<List<List<Metric>>>(input);
+        return new NoOpFuture<List<List<IMetric>>>(input);
     }
 }
