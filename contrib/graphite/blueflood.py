@@ -43,26 +43,19 @@ class TenantBluefloodFinder(object):
       else:
         urls = [config['blueflood']['url'].strip('/')]
       tenant = config['blueflood']['tenant']
-      username = config['blueflood']['username']
-      apikey = config['blueflood']['apikey']
+      authentication_module = config['blueflood']['authentication_module']
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
-      if not urls:
-        urls = [settings.BF_QUERY]
-
       tenant = getattr(settings, 'BF_TENANT')
-      username = getattr(settings, 'RAX_USER')
-      apikey = getattr(settings, 'RAX_API_KEY')
-      if not tenant:
-        tenant = [settings.BF_TENANT]
-      if not username:
-        username = [settings.RAX_USER]
-      if not apikey:
-        apikey = [settings.RAX_API_KEY]
+      authentication_module = getattr(settings, 'BF_AUTHENTICATION_MODULE')
 
-    # todo need to figure out how to set this via configuration.
-    auth.setAuth(auth.RaxAuth(username, apikey))
+    if authentication_module:
+      module = __import__(authentication_module)
+      class_ = getattr(module, "BluefloodAuth")
+      bfauth = class_(config)
+      auth.setAuth(bfauth)
+
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
 
