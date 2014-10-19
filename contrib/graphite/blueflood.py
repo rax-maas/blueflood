@@ -61,19 +61,24 @@ class TenantBluefloodFinder(object):
 
 
   def find_nodes(self, query):
-    queryDepth = len(query.pattern.split('.'))
-    #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
-    client = Client(self.bf_query_endpoint, self.tenant)
-    values = client.findMetrics(query.pattern)
-
-    for obj in values:
-      metric = obj['metric']
-      parts = metric.split('.')
-      metricDepth = len(parts)
-      if metricDepth > queryDepth:
-        yield BranchNode('.'.join(parts[:queryDepth]))
-      else:
-        yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
+    try:
+      queryDepth = len(query.pattern.split('.'))
+      #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
+      client = Client(self.bf_query_endpoint, self.tenant)
+      values = client.findMetrics(query.pattern)
+      
+      for obj in values:
+        metric = obj['metric']
+        parts = metric.split('.')
+        metricDepth = len(parts)
+        if metricDepth > queryDepth:
+          yield BranchNode('.'.join(parts[:queryDepth]))
+        else:
+          yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
+    except Exception as e:
+     print "Exception in Blueflood find_nodes: " 
+     print e
+     raise e
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
