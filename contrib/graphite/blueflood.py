@@ -37,6 +37,7 @@ except ImportError:
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
+    print "gbjgood"
     if config is not None:
       if 'urls' in config['blueflood']:
         urls = config['blueflood']['urls']
@@ -63,7 +64,7 @@ class TenantBluefloodFinder(object):
   def find_nodes(self, query):
     try:
       queryDepth = len(query.pattern.split('.'))
-      #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
+      print 'gbj DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
       client = Client(self.bf_query_endpoint, self.tenant)
       values = client.findMetrics(query.pattern)
       
