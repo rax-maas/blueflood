@@ -140,6 +140,9 @@ class Client(object):
     if auth.isActive():
       headers['X-Auth-Token'] = auth.getToken()
     r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
+    if r.status_code is 401 and auth.isActive():
+      headers['X-Auth-Token'] = auth.getToken(True)
+      r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in findMetrics ' + r.text
       return []
@@ -183,6 +186,9 @@ class Client(object):
     if auth.isActive():
       headers['X-Auth-Token'] = auth.getToken()
     r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
+    if r.status_code is 401 and auth.isActive():
+      headers['X-Auth-Token'] = auth.getToken(True)
+      r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
     if r.status_code is not 200:
       print str(r.status_code) + ' in getValues ' + r.text
       return {'values': []}
