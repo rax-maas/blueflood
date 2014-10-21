@@ -1,4 +1,3 @@
-from mock import patch
 from unittest import TestCase
 import unittest
 
@@ -19,8 +18,7 @@ except:
         self.startTime = startTime
         self.endTime = endTime
 
-config = 
-{'blueflood': {'username': 'bf0testenv1', 'apikey': '473d1cde4e8bccf60142e23690ccc31d', 'urls': ['http://iad.metrics.api.rackspacecloud.com'], 'authentication_module': 'rax_auth', 'tenant': 836986}}
+config = {'blueflood': {'username': 'bf0testenv1', 'apikey': '473d1cde4e8bccf60142e23690ccc31d', 'urls': ['http://iad.metrics.api.rackspacecloud.com'], 'authentication_module': 'rax_auth', 'tenant': 836986}}
 
 class BluefloodTests(TestCase):
 
