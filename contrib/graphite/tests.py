@@ -19,10 +19,8 @@ except:
         self.startTime = startTime
         self.endTime = endTime
 
-config = {
-  'BF_TENANT': '000000',
-  'BF_QUERY': 'http://127.0.0.1:2500'
-}
+config = 
+{'blueflood': {'username': 'bf0testenv1', 'apikey': '473d1cde4e8bccf60142e23690ccc31d', 'urls': ['http://iad.metrics.api.rackspacecloud.com'], 'authentication_module': 'rax_auth', 'tenant': 836986}}
 
 class BluefloodTests(TestCase):
 
