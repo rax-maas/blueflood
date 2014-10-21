@@ -20,7 +20,8 @@ class BluefloodAuth(object):
     self.expirationUTC = None
 
   def getToken(self, forceNew=False):
-    if not self.expirationUTC or datetime.datetime.utcnow().replace(tzinfo=timezone('UTC')) > self.expirationUTC:
+    currentUtcTime = datetime.datetime.utcnow().replace(tzinfo=timezone('UTC'))
+    if forceNew or not self.expirationUTC or currentUtcTime > self.expirationUTC:
       self.doAuth()
     return self.token
 
@@ -30,6 +31,5 @@ class BluefloodAuth(object):
     jsonObj = r.json()
     self.token = jsonObj['access']['token']['id']
     self.expirationUTC = dateparse(jsonObj['access']['token']['expires']).replace(tzinfo=timezone('UTC'))
-    # todo mark the expiration.
     # todo handle errors
 

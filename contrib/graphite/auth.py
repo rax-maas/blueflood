@@ -18,7 +18,7 @@ auth = NoAuth()
 def isActive():
   return auth is not None
 
-def getToken():
+def getToken(forceNew=False):
   return auth.getToken()
 
 def setAuth(newAuth):
