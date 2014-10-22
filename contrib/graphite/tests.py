@@ -1,7 +1,8 @@
 from unittest import TestCase
 import unittest
+import os
 
-from blueflood import TenantBluefloodFinder
+from blueflood import TenantBluefloodFinder, auth
 
 try:
   from graphite.storage import FindQuery
@@ -18,9 +19,22 @@ except:
         self.startTime = startTime
         self.endTime = endTime
 
-rax_auth_config = {'blueflood': {'username': 'bf0testenv1', 'apikey': '473d1cde4e8bccf60142e23690ccc31d', 'urls': ['http://iad.metrics.api.rackspacecloud.com'], 'authentication_module': 'rax_auth', 'tenant': "836986"}}
+# This needs to be an env var corresponding to bf0testenv1's api key:
+api_key = os.environ['RAX_API_KEY']
 
-no_auth_config = {'blueflood': { 'urls': ['http://127.0.0.1:2500'],  'tenant': "000000"}}
+rax_auth_config = {'blueflood':
+                   {'username': 'bf0testenv1',
+                    'apikey': api_key,
+                    'urls': ['http://iad.metrics.api.rackspacecloud.com'],
+                    'authentication_module': 'rax_auth',
+                    'tenant': "836986"}}
+
+#port 2500 needs a tunnel like so:
+#ssh -L 2500:localhost:2500 app00.iad.stage.bf.k1k.me
+
+no_auth_config = {'blueflood':
+                  { 'urls': ['http://127.0.0.1:2500'],
+                    'tenant': "000000"}}
 
 class BluefloodTests(TestCase):
 
@@ -28,10 +42,17 @@ class BluefloodTests(TestCase):
     pass
 
   def test_finder(self):
+    #test rax auth
     finder = TenantBluefloodFinder(rax_auth_config)
     nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
     self.assertTrue(len(nodes) > 0)
 
+    #force re-auth
+    auth.auth.token = ""
+    nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
+    self.assertTrue(len(nodes) > 0)
+
+    #test no auth
     finder = TenantBluefloodFinder(no_auth_config)
     nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
     self.assertTrue(len(nodes) > 0)

@@ -19,7 +19,7 @@ def isActive():
   return auth is not None
 
 def getToken(forceNew=False):
-  return auth.getToken()
+  return auth.getToken(forceNew)
 
 def setAuth(newAuth):
   global auth
