@@ -49,11 +49,14 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
     private final Counter errors;
     private Gauge activeGauge;
     private Gauge periodGauge;
+    
+    private final ShardStateIO io;
 
-    ShardStateWorker(Collection<Integer> allShards, ShardStateManager shardStateManager, TimeValue period) {
+    ShardStateWorker(Collection<Integer> allShards, ShardStateManager shardStateManager, TimeValue period, ShardStateIO io) {
         this.shardStateManager = shardStateManager;
         this.allShards = Collections.unmodifiableCollection(allShards);
         this.periodMs = period.toMillis();
+        this.io = io;
         
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -103,8 +106,9 @@ abstract class ShardStateWorker implements Runnable, ShardStateWorkerMBean {
         }
     }
     
+    public ShardStateIO getIO() { return io; }
+    
     abstract void performOperation();
-    public abstract void setIO(ShardStateIO io);
    
     //
     // JMX methods

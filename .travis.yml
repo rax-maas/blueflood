@@ -4,12 +4,10 @@ jdk:
   - openjdk7
 
 install:
-  - mvn install -Dmaven.test.skip
+  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
 
 script: 
-  - mvn verify -Pcassandra-1.1 --quiet
-  - mvn verify -Pcassandra-1.2,skip-unit-tests --quiet
-  - mvn verify -Pcassandra-2.0,skip-unit-tests --quiet
+  - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
 notifications:
   irc: "irc.freenode.net#blueflood"

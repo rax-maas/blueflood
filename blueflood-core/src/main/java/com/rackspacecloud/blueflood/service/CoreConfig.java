@@ -33,10 +33,28 @@ public enum CoreConfig implements ConfigDefaults {
     DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
 
+    MAX_LOCATOR_FETCH_THREADS("2"),
     MAX_ROLLUP_READ_THREADS("20"),
     MAX_ROLLUP_WRITE_THREADS("5"),
 
-    MAX_SCRIBE_WRITE_THREADS("50"),
+    DISCOVERY_WRITER_MIN_THREADS("5"),
+    DISCOVERY_WRITER_MAX_THREADS("10"),
+
+    // Maximum threads that would access the cache concurrently
+    META_CACHE_MAX_CONCURRENCY("50"),
+
+    // Setting this to true will enable batched meta reads and writes from db (lazy loads and writes)
+    META_CACHE_BATCHED_READS("false"),
+    META_CACHE_BATCHED_WRITES("false"),
+
+    META_CACHE_BATCHED_READS_THRESHOLD("100"), // how many rows to read at a time? (batch size)
+    META_CACHE_BATCHED_READS_TIMER_MS("10"),  // how often to read? (batch timer) (read faster than writes)
+    META_CACHE_BATCHED_READS_PIPELINE_DEPTH("10"), // how many outstanding batches? (1 thread per batch).
+
+    META_CACHE_BATCHED_WRITES_THRESHOLD("100"),  // how many meta columns to write at a time? (batch size)
+    META_CACHE_BATCHED_WRITES_TIMER_MS("20"),   // how often to write? (batch timer)
+    META_CACHE_BATCHED_WRITES_PIPELINE_DEPTH("10"), // how many outstanding batches? (1 thread per batch).
+
     // Maximum timeout waiting on exhausted connection pools in milliseconds.
     // Maps directly to Astyanax's ConnectionPoolConfiguration.setMaxTimeoutWhenExhausted
     MAX_TIMEOUT_WHEN_EXHAUSTED("2000"),
@@ -83,6 +101,8 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_MODE("true"),
     QUERY_MODE("true"),
 
+    METRICS_BATCH_WRITER_THREADS("50"),
+
     METRIC_BATCH_SIZE("100"),
 
     CASSANDRA_REQUEST_TIMEOUT("10000"),
@@ -107,7 +127,12 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter");
+    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
+
+    METADATA_CACHE_PERSISTENCE_ENABLED("false"),
+    METADATA_CACHE_PERSISTENCE_PATH("/dev/null"),
+    METADATA_CACHE_PERSISTENCE_PERIOD_MINS("10"),
+    META_CACHE_RETENTION_IN_MINUTES("10");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

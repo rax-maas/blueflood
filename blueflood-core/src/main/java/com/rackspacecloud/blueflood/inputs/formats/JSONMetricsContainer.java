@@ -59,9 +59,11 @@ public class JSONMetricsContainer {
                 locator = Locator.createLocatorFromPathComponents(tenantId, jsonMetric.getMetricName());
             }
 
-            final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
-                    new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
-            metrics.add(metric);
+            if (jsonMetric.getMetricValue() != null) {
+                final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
+                        new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
+                metrics.add(metric);
+            }
         }
 
         return metrics;
@@ -108,7 +110,7 @@ public class JSONMetricsContainer {
         }
 
         public int getTtlInSeconds() {
-            return ttlInSeconds;
+            return this.ttlInSeconds;
         }
 
         public void setTtlInSeconds(int ttlInSeconds) {

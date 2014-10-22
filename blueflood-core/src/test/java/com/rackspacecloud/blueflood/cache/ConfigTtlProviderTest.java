@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProviderTest {
-
     @Test
     public void testConfigTtl() throws Exception {
         final ConfigTtlProvider ttlProvider = ConfigTtlProvider.getInstance();

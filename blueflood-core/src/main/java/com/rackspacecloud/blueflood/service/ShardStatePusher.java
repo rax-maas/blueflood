@@ -32,10 +32,8 @@ import java.util.concurrent.TimeUnit;
 public class ShardStatePusher extends ShardStateWorker {
     private static final Logger log = LoggerFactory.getLogger(ShardStatePusher.class);
     
-    private ShardStateIO io = new AstyanaxShardStateIO();
-
-    public ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager) {
-        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PUSH_PERIOD), TimeUnit.MILLISECONDS));
+    public ShardStatePusher(final Collection<Integer> allShards, ShardStateManager stateManager, ShardStateIO io) {
+        super(allShards, stateManager, new TimeValue(Configuration.getInstance().getIntegerProperty(CoreConfig.SHARD_PUSH_PERIOD), TimeUnit.MILLISECONDS), io);
     }
 
     public void performOperation() {
@@ -45,7 +43,7 @@ public class ShardStatePusher extends ShardStateWorker {
                 Map<Granularity, Map<Integer, UpdateStamp>> slotTimes = shardStateManager.getDirtySlotsToPersist(shard);
                 if (slotTimes != null) {
                     try {
-                        io.putShardState(shard, slotTimes);
+                        getIO().putShardState(shard, slotTimes);
                     } catch (IOException ex) {
                         log.error("Could not put shard state to the database (shard " + shard + "). " + ex.getMessage(), ex);
                     }
@@ -58,7 +56,4 @@ public class ShardStatePusher extends ShardStateWorker {
         }
     }
     
-    public void setIO(ShardStateIO io) {
-        this.io = io;
-    }
 }

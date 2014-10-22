@@ -16,11 +16,13 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
 
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,6 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection, List<List<IMetric>>> {
     private int batchSize;
+    private final Timer splitDurationTimer = Metrics.timer(BatchSplitter.class, "Split Duration");
 
     public BatchSplitter(ThreadPoolExecutor threadPool, int batchSize) {
         super(threadPool);
@@ -36,8 +39,15 @@ public class BatchSplitter extends AsyncFunctionWithThreadPool<MetricsCollection
 
     public ListenableFuture<List<List<IMetric>>> apply(final MetricsCollection input) throws Exception {
         return getThreadPool().submit(new Callable<List<List<IMetric>>>() {
+            final Timer.Context actualSplitContext = splitDurationTimer.time();
+
             public List<List<IMetric>> call() throws Exception {
-                return input.splitMetricsIntoBatches(batchSize);
+                try {
+                    return input.splitMetricsIntoBatches(batchSize);
+                }
+                finally {
+                    actualSplitContext.stop();
+                }
             }
         });
     }

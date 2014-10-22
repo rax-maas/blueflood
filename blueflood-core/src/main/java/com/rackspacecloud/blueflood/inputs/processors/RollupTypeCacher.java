@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
+import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
@@ -23,6 +24,7 @@ import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +34,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
 
     private static final Logger log = LoggerFactory.getLogger(RollupTypeCacher.class);
-    private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();;
-    
+    private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
+    private final Timer recordDurationTimer = Metrics.timer(RollupTypeCacher.class, "Record Duration");
+
     private final MetadataCache cache;
     private final boolean isAsync;
     
@@ -45,14 +48,15 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
 
     @Override
     public ListenableFuture<MetricsCollection> apply(MetricsCollection input) throws Exception {
-        return isAsync ? asynchronous(input) : asynchronous(input);
+        return isAsync ? asynchronous(input) : synchronous(input);
     }
     
     private ListenableFuture<MetricsCollection> asynchronous(final MetricsCollection input) {
+
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
-                record(input);
+                recordWithTimer(input);
             }
         });
         return new NoOpFuture<MetricsCollection>(input);
@@ -62,18 +66,28 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             @Override
             public MetricsCollection call() throws Exception {
-                record(input);
+                recordWithTimer(input);
                 return input;
             }
         });
     }
     
+    private void recordWithTimer(MetricsCollection input) {
+        final Timer.Context recordDurationContext = recordDurationTimer.time();
+
+        try {
+            record(input);
+        } finally {
+            recordDurationContext.stop();
+        }
+    }
+
     private void record(MetricsCollection input) {
         for (IMetric metric : input.toMetrics()) {
             try {
                 cache.put(metric.getLocator(), cacheKey, metric.getRollupType().toString());
             } catch (Exception ex) {
-                log.warn(ex.getMessage());
+                log.warn("Exception updating cache with rollup type ", ex);
             }
         }
     }

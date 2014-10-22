@@ -245,7 +245,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private URI getMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data/" + metricName)
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");
@@ -254,7 +254,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private URI getHistQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/histograms/" + metricName)
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/histograms/" + metricName)
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");
@@ -263,7 +263,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private URI getBatchMetricsQueryURI() throws Exception {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data")
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views")
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");
@@ -272,7 +272,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private URI getInvalidMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v1.0/" + tenantId + "/experimental/views/metric_data/" + metricName)
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("resolution", "full");  // Misses parameter 'to'
         return builder.build();

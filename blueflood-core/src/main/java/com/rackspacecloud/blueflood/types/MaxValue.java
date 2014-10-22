@@ -74,7 +74,7 @@ public class MaxValue extends AbstractRollupStat {
             if (this.isFloatingPoint()) {
                 double doubleValOther = val.doubleValue();
                 if (this.toDouble()< doubleValOther) {
-                    this.setLongValue((Long)o);
+                    this.setLongValue(val);
                 }
             } else {
                 this.setLongValue(Math.max(this.toLong(), val));

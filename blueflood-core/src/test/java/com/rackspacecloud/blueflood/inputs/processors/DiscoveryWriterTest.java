@@ -3,13 +3,21 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 
+import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
+
+import org.junit.Assert;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 
 public class DiscoveryWriterTest {
@@ -30,23 +38,28 @@ public class DiscoveryWriterTest {
         discWriter.registerIO(discovererB);
 
         // create fake metrics to test
-        List<List<Metric>> testdata = new ArrayList<List<Metric>>();
+        List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
         testdata.add(mock(List.class));
-
-        ListenableFuture<List<Boolean>> result = discWriter.processMetrics(testdata);
-        // wait until DiscoveryWriter finishes processing all the fake metrics
-        while (!result.isDone()) {
-           Thread.sleep(500);
+        
+        List<IMetric> flatTestData = new ArrayList<IMetric>();
+        for (List<IMetric> list : testdata) {
+            if (list.size() == 0) continue;
+            for (IMetric m : list) {
+                flatTestData.add(m);
+            }
         }
+
+        
+        ListenableFuture<Boolean> result = discWriter.processMetrics(testdata);
+        // wait until DiscoveryWriter finishes processing all the fake metrics
+        Assert.assertTrue(result.get());
 
         // verify the insertDiscovery method on all implementors of
         // DiscoveryIO has been called on all metrics
-        for (List<Metric> metrics : testdata) {
-            verify(discovererA).insertDiscovery(metrics);
-            verify(discovererB).insertDiscovery(metrics);
-        }
+        verify(discovererA).insertDiscovery(flatTestData);
+        verify(discovererB).insertDiscovery(flatTestData);
     }
 }

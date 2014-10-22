@@ -45,7 +45,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         final JSONObject metaObject = new JSONObject();
         
         // if no stats were entered, figure out what type we are dealing with and select out default stats. 
-        if (filterStats == PlotRequestParser.DEFAULT_STATS) {
+        if (metricData.getData().getPoints().size() > 0 && filterStats == PlotRequestParser.DEFAULT_STATS) {
             Class dataClass = metricData.getData().getDataClass();
             if (dataClass.equals(BasicRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_BASIC;
@@ -68,6 +68,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         metaObject.put("next_href", null);
         globalJSON.put("values", valuesArray);
         globalJSON.put("metadata", metaObject);
+        globalJSON.put("unit", metricData.getUnit());
 
         return globalJSON;
     }

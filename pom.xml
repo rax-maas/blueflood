@@ -34,6 +34,7 @@
     <module>blueflood-dropwizard</module>
     <module>blueflood-dropwizard-logging</module>
     <module>blueflood-io-datastax</module>
+    <module>blueflood-rollupTools</module>
   </modules>
 
   <description>
@@ -282,10 +283,33 @@
       <email>lakshmi.kannan@rackspace.com</email>
     </developer>
     <developer>
+      <id>jeeyoungk</id>
+      <name>Jeeyoung Kim</name>
+      <email>jeeyoungk@gmail.com</email>
+    </developer>
+    <developer>
       <id>dlobue</id>
       <name>Dominic LoBue</name>
       <email>dominic.lobue@rackspace.com</email>
     </developer>
+    <developer>
+      <id>stackedsax</id>
+      <name>Alex Scammon</name>
+      <email>alexander.scammon@rackspace.com</email>
+    </developer>
   </developers>
+    
+  <repositories>
+    <repository>
+      <!-- mvn org.apache.maven.plugins:maven-install-plugin:2.3.1:install-file \
+           -Dfile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8.jar \
+           -DgroupId=com.stuartwarren -DartifactId=logit -Dversion=0.5.8 \
+           -DcreateChecksum=true \
+           -DpomFile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8-pom.xml \
+           -Dpackaging=jar -DlocalRepositoryPath=/Users/gdusbabek/codes/github/blueflood/maven/repo -->
+      <id>local.stuartwarren.com</id>
+      <url>file://${basedir}/../maven/repo</url>
+    </repository>
+  </repositories>
 
 </project>

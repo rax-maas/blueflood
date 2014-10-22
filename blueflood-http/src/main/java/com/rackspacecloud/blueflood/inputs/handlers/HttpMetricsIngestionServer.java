@@ -24,30 +24,38 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
+import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
@@ -55,10 +63,12 @@ import static org.jboss.netty.channel.Channels.pipeline;
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
-    private static int WRITE_THREADS = 50; // metrics will be batched into this many partitions.
+    private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS); // metrics will be batched into this many partitions.
 
     private int httpIngestPort;
     private String httpIngestHost;
+    private DiscoveryWriter discoveryWriter;
+
     private TimeValue timeout;
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -66,6 +76,7 @@ public class HttpMetricsIngestionServer {
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
+    private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
@@ -88,12 +99,14 @@ public class HttpMetricsIngestionServer {
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-
         router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
-
         router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
+        router.get("/v2.0", new DefaultHandler());
+        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -106,13 +119,17 @@ public class HttpMetricsIngestionServer {
     }
     
     private void buildProcessingChains() {
-        final AsyncFunction typeAndUnitProcessor; 
-        final AsyncFunction batchSplitter;        
-        final AsyncFunction batchWriter; 
-        final AsyncFunction rollupTypeCacher;
+        final AsyncFunction<MetricsCollection, MetricsCollection> typeAndUnitProcessor;
+        final AsyncFunction<MetricsCollection, List<List<IMetric>>> batchSplitter;
+        final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
+        final AsyncFunction<MetricsCollection, MetricsCollection> rollupTypeCacher;
         
         typeAndUnitProcessor = new TypeAndUnitProcessor(
-                new ThreadPoolBuilder().withName("Metric type and unit processing").build(),
+                new ThreadPoolBuilder()
+                        .withName("Metric type and unit processing")
+                        .withCorePoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                        .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                        .build(),
                 metricMetadataAnalyzer
         ).withLogger(log);
         
@@ -127,13 +144,21 @@ public class HttpMetricsIngestionServer {
                         .withCorePoolSize(WRITE_THREADS)
                         .withMaxPoolSize(WRITE_THREADS)
                         .withUnboundedQueue()
-                        .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
                         .build(),
                 writer,
                 timeout,
                 bufferedMetrics,
                 context
         ).withLogger(log);
+
+        discoveryWriter =
+        new DiscoveryWriter(new ThreadPoolBuilder()
+            .withName("Metric Discovery Writing")
+            .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
+            .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
+            .withUnboundedQueue()
+            .build());
+
 
         // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
         MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
@@ -144,20 +169,24 @@ public class HttpMetricsIngestionServer {
                 rollupTypeCache,
                 true
         ).withLogger(log);
-        
-        this.defaultProcessorChain = new AsyncChain<MetricsCollection, List<Boolean>>()
+
+        this.defaultProcessorChain = AsyncChain
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
-                .withFunction(batchWriter);
+                .withFunction(discoveryWriter)
+                .withFunction(batchWriter)
+                .build();
         
-        this.statsdProcessorChain = new AsyncChain<String, List<Boolean>>()
+        this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
-                .withFunction(batchWriter);
+                .withFunction(discoveryWriter)
+                .withFunction(batchWriter)
+                .build();
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
@@ -171,10 +200,20 @@ public class HttpMetricsIngestionServer {
         public ChannelPipeline getPipeline() throws Exception {
             final ChannelPipeline pipeline = pipeline();
 
-            pipeline.addLast("decoder", new HttpRequestDecoder());
+            pipeline.addLast("decoder", new HttpRequestDecoder() {
+                
+                // if something bad happens during the decode, assume the client send bad data. return a 400.
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+                    ctx.getChannel().write(
+                            new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.BAD_REQUEST))
+                            .addListener(ChannelFutureListener.CLOSE);
+                }
+            });
             pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
             pipeline.addLast("inflater", new HttpContentDecompressor());
             pipeline.addLast("encoder", new HttpResponseEncoder());
+            pipeline.addLast("encoder2", new HttpResponseDecoder());
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;

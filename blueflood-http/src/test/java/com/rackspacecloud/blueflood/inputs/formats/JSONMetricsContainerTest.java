@@ -46,6 +46,8 @@ public class JSONMetricsContainerTest {
         JSONMetricsContainer jsonMetricsContainer = new JSONMetricsContainer("ac1", jsonMetrics);
 
         List<Metric> metricsCollection = jsonMetricsContainer.toMetrics();
+
+        Assert.assertTrue(metricsCollection.size() == 2);
         Assert.assertEquals("ac1.mzord.duration", metricsCollection.get(0).getLocator().toString());
         Assert.assertEquals(Long.MAX_VALUE, metricsCollection.get(0).getMetricValue());
         Assert.assertEquals(1234566, metricsCollection.get(0).getTtlInSeconds());
@@ -57,6 +59,30 @@ public class JSONMetricsContainerTest {
         Assert.assertEquals("Website is up", metricsCollection.get(1).getMetricValue());
         Assert.assertEquals("unknown", metricsCollection.get(1).getUnit());
         Assert.assertEquals("S", metricsCollection.get(1).getDataType().toString());
+    }
+
+    @Test
+    public void testBigIntHandling() {
+        String jsonBody = "[{\"collectionTime\":1401302372775,\"ttlInSeconds\":172800,\"metricValue\":18446744073709000000,\"metricName\":\"used\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = null;
+        try {
+            List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        jsonBody,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+            container = new JSONMetricsContainer("786659", jsonMetrics);
+        } catch (Exception e) {
+            Assert.fail("Jackson failed to parse a big int");
+        }
+
+        try {
+            List<Metric> metrics = container.toMetrics();
+        } catch (Exception ex) {
+            Assert.fail();
+        }
     }
 
     public static List<Map<String, Object>> generateMetricsData() throws Exception {
@@ -77,6 +103,15 @@ public class JSONMetricsContainerTest {
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");
         testMetric.put("metricValue", "Website is up");
+        testMetric.put("collectionTime", 1234567890L);
+        metricsList.add(testMetric);
+
+        // null metric value. This shouldn't be in the final list of metrics because we ignore null valued metrics.
+        testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.hipster");
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "unknown");
+        testMetric.put("metricValue", null);
         testMetric.put("collectionTime", 1234567890L);
         metricsList.add(testMetric);
         return metricsList;

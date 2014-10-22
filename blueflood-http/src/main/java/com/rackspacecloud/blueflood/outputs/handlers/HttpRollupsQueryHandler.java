@@ -137,7 +137,8 @@ public class HttpRollupsQueryHandler extends RollupHandler
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
-            log.error(e.getMessage(), e);
+            // let's not log the full exception, just the message.
+            log.warn(e.getMessage());
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);

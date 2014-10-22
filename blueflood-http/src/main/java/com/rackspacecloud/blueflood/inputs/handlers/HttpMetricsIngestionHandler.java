@@ -18,7 +18,9 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
@@ -52,7 +54,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private final TimeValue timeout;
 
     // Metrics
-    private static final Timer handlerTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP metrics ingestion timer");
+    private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
+    private static final Timer persistingTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion persisting timer");
+    private static final Timer sendResponseTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion response sending timer");
+
 
     public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -75,8 +80,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
         JSONMetricsContainer jsonMetricsContainer = null;
+        final Timer.Context jsonTimerContext = jsonTimer.time();
 
-        final Timer.Context timerContext = handlerTimer.time();
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
             jsonMetricsContainer = createContainer(body, tenantId);
@@ -102,19 +107,42 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         }
 
         if (jsonMetricsContainer == null) {
-            sendResponse(ctx, request, null, HttpResponseStatus.OK);
+            log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+            sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        List<Metric> containerMetrics = jsonMetricsContainer.toMetrics();
-        if (containerMetrics == null || containerMetrics.isEmpty()) {
-            sendResponse(ctx, request, null, HttpResponseStatus.OK);
+        List<Metric> containerMetrics;
+        try {
+            containerMetrics = jsonMetricsContainer.toMetrics();
+            forceTTLsIfConfigured(containerMetrics);
+        } catch (InvalidDataException ex) {
+            // todo: we should measure these. if they spike, we track down the bad client.
+            // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
+            log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
+            sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
+        } catch (Exception e) {
+            // todo: when you see these in logs, go and fix them (throw InvalidDataExceptions) so they can be reduced
+            // to single-line log statements.
+            log.warn("Exception converting JSON container to metric objects", e);
+            // This could happen if clients send BigIntegers as metric values. BF doesn't handle them. So let's send a
+            // BAD REQUEST message until we start handling BigIntegers.
+            sendResponse(ctx, request, "Error converting JSON payload to metric objects",
+                    HttpResponseStatus.BAD_REQUEST);
+            return;
+        } finally {
+            jsonTimerContext.stop();
+        }
+
+        if (containerMetrics == null || containerMetrics.isEmpty()) {
+            log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+            sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
         }
 
         final MetricsCollection collection = new MetricsCollection();
         collection.add(new ArrayList<IMetric>(containerMetrics));
-
+        final Timer.Context persistingTimerContext = persistingTimer.time();
         try {
             ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
@@ -131,16 +159,31 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             log.error("Exception persisting metrics", e);
             sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            timerContext.stop();
+            persistingTimerContext.stop();
+        }
+    }
+
+    private void forceTTLsIfConfigured(List<Metric> containerMetrics) {
+        ConfigTtlProvider configTtlProvider = ConfigTtlProvider.getInstance();
+
+        if(configTtlProvider.areTTLsForced()) {
+            for(Metric m : containerMetrics) {
+                m.setTtl(configTtlProvider.getConfigTTLForIngestion());
+            }
         }
     }
 
     public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
 
-        if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+        try {
+            if (messageBody != null && !messageBody.isEmpty()) {
+                response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            }
+            HttpResponder.respond(channel, request, response);
+        } finally {
+            sendResponseTimerContext.stop();
         }
-        HttpResponder.respond(channel, request, response);
     }
 }

@@ -17,11 +17,14 @@
 package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
@@ -31,11 +34,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(Parameterized.class)
@@ -81,6 +86,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         else
             Assert.assertEquals(2, io.getNumberOfRowsTest());
     }
+
 
     @Test
     public void testGetNull() throws Exception {
@@ -204,7 +210,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         final MetadataIO mapIO = new InMemoryMetadataIO();
         final MetadataIO astIO = new AstyanaxMetadataIO();
         
-        final MetadataCache cache = MetadataCache.getInstance();
+        final MetadataCache cache = MetadataCache.createLoadingCacheInstance();
         cache.setIO(astIO);
         
         // DO NOT SET USING LOCAL IO INSTANCE!!!!
@@ -228,6 +234,41 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals("bar", cache.get(loc, "foo"));
     }
     
+    @Test
+    public void testPersistence() throws Exception {
+        MetadataCache cache0 = MetadataCache.createLoadingCacheInstance();
+        cache0.setIO(new InMemoryMetadataIO());
+        
+        Locator l0 = Locator.createLocatorFromPathComponents("1", "a", "b");
+        Locator l1 = Locator.createLocatorFromPathComponents("1", "c", "d");
+        cache0.put(l0, "foo" , "l0_foo");
+        cache0.put(l0, "bar", "l0_bar");
+        cache0.put(l1, "zee", "zzzzz");
+        
+        File f = File.createTempFile("metadatacache_persistence", "txt");
+        f.deleteOnExit();
+        DataOutputStream out = new DataOutputStream(new FileOutputStream(f, false));
+        
+        cache0.save(out);
+        out.close();
+        
+        MetadataCache cache1 = MetadataCache.createLoadingCacheInstance();
+        cache1.setIO(new InMemoryMetadataIO());
+        
+        // verify nothing is in the cache.
+        Assert.assertNull(cache1.get(l0, "foo"));
+        Assert.assertNull(cache1.get(l0, "bar"));
+        Assert.assertNull(cache1.get(l1, "zee"));
+        
+        // now load it.
+        DataInputStream in = new DataInputStream(new FileInputStream(f));
+        cache1.load(in);
+        
+        Assert.assertEquals("l0_foo", cache1.get(l0, "foo"));
+        Assert.assertEquals("l0_bar", cache1.get(l0, "bar"));
+        Assert.assertEquals("zzzzz", cache1.get(l1, "zee"));
+    }
+    
     private static class InMemoryMetadataIO implements MetadataIO {
         private final Table<Locator, String, String> backingTable = Tables.newCustomTable(
             Maps.<Locator, Map<String, String>>newHashMap(),
@@ -247,6 +288,25 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         @Override
         public Map<String, String> getAllValues(Locator locator) throws IOException {
             return backingTable.row(locator);
+        }
+
+        @Override
+        public Table<Locator, String, String> getAllValues(Set<Locator> locators) throws IOException {
+            Table<Locator, String, String> results = HashBasedTable.create();
+
+            for (Locator locator : locators) {
+                Map<String, String> metaForLoc = backingTable.row(locator);
+                for (Map.Entry<String, String> meta : metaForLoc.entrySet()) {
+                    results.put(locator, meta.getKey(), meta.getValue());
+                }
+            }
+
+            return results;
+        }
+
+        @Override
+        public void putAll(Table<Locator, String, String> meta) throws IOException {
+            backingTable.putAll(meta);
         }
 
         @Override

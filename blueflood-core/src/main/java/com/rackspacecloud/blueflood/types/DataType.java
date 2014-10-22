@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import java.math.BigInteger;
+
 public class DataType {
     private final String type;
 
@@ -29,6 +31,7 @@ public class DataType {
     public final static DataType LONG = new DataType("L");
     public final static DataType DOUBLE = new DataType("D");
     public final static DataType BOOLEAN = new DataType("B");
+    public final static DataType BIGINT = new DataType("BI");
 
     public static DataType getMetricType(Object metricValue) {
         if (metricValue instanceof String) {
@@ -41,8 +44,10 @@ public class DataType {
             return DOUBLE;
         } else if (metricValue instanceof Boolean) {
             return BOOLEAN;
+        } else if (metricValue instanceof BigInteger) {
+            return BIGINT;
         } else {
-            throw new RuntimeException("Unknown metric value type");
+            throw new RuntimeException("Unknown metric value type " + metricValue.getClass());
         }
     }
 

@@ -45,7 +45,7 @@ public class HttpResponder {
 
         // Send the response and close the connection if necessary.
         ChannelFuture f = ctx.getChannel().write(res);
-        if (!isKeepAlive(req)) {
+        if (req == null || !isKeepAlive(req)) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
     }

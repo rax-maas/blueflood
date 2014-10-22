@@ -21,6 +21,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -99,7 +100,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 final boolean isBoolean = metric.isBoolean();
 
                 if (!shouldPersist(metric)) {
-                    log.debug("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
+                    log.trace("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
                     continue;
                 }
 
@@ -131,7 +132,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // numeric only!
     private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
-        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.computeShard(locator.toString()))
+        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.getShard(locator.toString()))
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
@@ -172,6 +173,32 @@ public class AstyanaxWriter extends AstyanaxIO {
             Instrumentation.markWriteError(e);
             log.error("Error writing Metadata Value", e);
             throw e;
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    public void writeMetadata(Table<Locator, String, String> metaTable) throws ConnectionException {
+        ColumnFamily cf = CassandraModel.CF_METRIC_METADATA;
+        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(cf);
+        MutationBatch batch = keyspace.prepareMutationBatch();
+
+        try {
+            for (Locator locator : metaTable.rowKeySet()) {
+                Map<String, String> metaRow = metaTable.row(locator);
+                ColumnListMutation<String> mutation = batch.withRow(cf, locator);
+
+                for (Map.Entry<String, String> meta : metaRow.entrySet()) {
+                    mutation.putColumn(meta.getKey(), meta.getValue(), StringMetadataSerializer.get(), null);
+                }
+            }
+            try {
+                batch.execute();
+            } catch (ConnectionException e) {
+                Instrumentation.markWriteError(e);
+                log.error("Connection exception persisting metadata", e);
+                throw e;
+            }
         } finally {
             ctx.stop();
         }
@@ -251,12 +278,14 @@ public class AstyanaxWriter extends AstyanaxIO {
                 for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
                     // granularity,slot,state
                     SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
-                    mutation.putColumn(slotState, entry.getValue().getTimestamp())
-                            // notice the sleight-of-hand here. The column timestamp is getting set to be the timestamp that is being
-                            // written. this effectively creates a check-then-set update that fails if the value currently in the
-                            // database is newer.
-                            // multiply by 1000 to produce microseconds from milliseconds.
-                            .setTimestamp(entry.getValue().getTimestamp() * 1000);
+                    mutation.putColumn(slotState, entry.getValue().getTimestamp());
+                    /*
+                      Note: we used to set the timestamp of the column to entry.getValue().getTimestamp() * 1000 over here.
+                      This block of code is dangerous. Consider you are getting out of order metrics M1 and M2, with collection times T1 and T2 with T2>T1, belonging to same slot
+                      Assume M2 arrives first. The slot gets marked active and rolled up and the state is set as Rolled. Now, assume M1 arrives. We update the slot state to active,
+                      set the slot timestamp to T1, and while persisting we set it, we set the column timestamp to be T1*1000, but because the T1 < T2, the new slot state will never
+                      get reflected.
+                     */
                 }
             }
             if (!mutationBatch.isEmpty())
@@ -272,8 +301,8 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    protected static boolean isLocatorCurrent(Locator loc) {
-        return insertedLocators.getIfPresent(loc) != null;
+    public static boolean isLocatorCurrent(Locator loc) {
+        return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
     private static void setLocatorCurrent(Locator loc) {

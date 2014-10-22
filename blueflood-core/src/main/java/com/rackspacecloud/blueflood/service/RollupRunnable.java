@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -48,8 +49,8 @@ public class RollupRunnable implements Runnable {
     protected final long startWait;
 
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
+    private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
 
-    
     public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
@@ -71,7 +72,7 @@ public class RollupRunnable implements Runnable {
 
 
         if (log.isDebugEnabled()) {
-            log.debug("Executing rollup from {} for {} {}", new Object[] {
+            log.trace("Executing rollup from {} for {} {}", new Object[] {
                     srcGran.shortName(),
                     singleRollupReadContext.getRange().toString(),
                     singleRollupReadContext.getLocator()});
@@ -97,6 +98,11 @@ public class RollupRunnable implements Runnable {
                 input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
                         singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
 
+                if (input.isEmpty()) {
+                    noPointsToCalculateRollup.mark();
+                    return;
+                }
+
                 // next, compute the rollup.
                 rollup =  RollupRunnable.getRollupComputer(rollupType, srcGran).compute(input);
             } finally {
@@ -112,9 +118,12 @@ public class RollupRunnable implements Runnable {
                             AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
-        } catch (Throwable th) {
-            log.error("Rollup failed; Locator : ", singleRollupReadContext.getLocator()
-                    + ", Source Granularity: " + srcGran.name());
+        } catch (Exception e) {
+            log.error("Rollup failed; Locator: {}, Source Granularity: {}, For period: {}", new Object[] {
+                    singleRollupReadContext.getLocator(),
+                    singleRollupReadContext.getRange().toString(),
+                    srcGran.name(),
+                    e});
         } finally {
             executionContext.decrementReadCounter();
             timerContext.stop();

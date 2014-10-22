@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +18,13 @@ public class ShardStateServices {
     private final ShardStatePusher pusher;
     private final ShardStatePuller puller;
 
-    public ShardStateServices(ScheduleContext context) {
+    public ShardStateServices(ScheduleContext context, ShardStateIO io) {
         this.context = context;
 
         // these threads are responsible for sending/receiving schedule context state to/from the database.
         final Collection<Integer> allShards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-        pusher = new ShardStatePusher(allShards, context.getShardStateManager());
-        puller = new ShardStatePuller(allShards, context.getShardStateManager());
+        pusher = new ShardStatePusher(allShards, context.getShardStateManager(), io);
+        puller = new ShardStatePuller(allShards, context.getShardStateManager(), io);
 
         pusher.setActive(false);
         puller.setActive(false);
