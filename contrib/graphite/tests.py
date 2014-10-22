@@ -46,6 +46,17 @@ class BluefloodTests(TestCase):
     nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
     self.assertTrue(len(nodes) > 0)
 
+  def setup_UTC_mock(self):
+    #setup a mock that forces expiration
+    self.origGetCurrentUTC = type(auth.auth).getCurrentUTC
+    this = self
+    def mockGetCurrentUTC(self):
+      return this.origGetCurrentUTC(self) + datetime.timedelta(days=1)
+    type(auth.auth).getCurrentUTC = mockGetCurrentUTC
+
+  def unset_UTC_mock(self):
+    type(auth.auth).getCurrentUTC = self.origGetCurrentUTC
+
   def test_finder(self):
     #test rax auth
     finder = TenantBluefloodFinder(rax_auth_config)
@@ -57,15 +68,12 @@ class BluefloodTests(TestCase):
 
     #test expired UTC
     old_token = auth.auth.token
-    origGetCurrentUTC = type(auth.auth).getCurrentUTC
-    def mockGetCurrentUTC(self):
-      return origGetCurrentUTC(self) + datetime.timedelta(days=1)
-    type(auth.auth).getCurrentUTC = mockGetCurrentUTC
+    self.setup_UTC_mock()
     self.run_find(finder)
+    self.unset_UTC_mock()
     new_token = auth.auth.token
     # Should be a new instance of the same token,(we forced expiration)
     self.assertTrue(old_token is not new_token and old_token == new_token)
-    type(auth.auth).getCurrentUTC = origGetCurrentUTC
 
     #test no auth
     finder = TenantBluefloodFinder(no_auth_config)
