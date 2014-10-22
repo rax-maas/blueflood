@@ -2,6 +2,8 @@ package com.rackspacecloud.blueflood.dw.query;
 
 import com.rackspacecloud.blueflood.dw.NotDOAHealthCheck;
 import com.rackspacecloud.blueflood.dw.StateManager;
+import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.utils.Util;
 import io.dropwizard.Application;
@@ -28,7 +30,8 @@ public class QueryApplication extends Application<QueryConfiguration> {
         final ScheduleContext rollupContext = new ScheduleContext(System.currentTimeMillis(), Util.parseShards("NONE"));
         
         // shard state management.
-        StateManager stateManager = new StateManager(rollupContext);
+        ShardStateIO shardstateIO = new AstyanaxShardStateIO(); // todo: use configuration setting.
+        StateManager stateManager = new StateManager(rollupContext, shardstateIO);
         environment.lifecycle().manage(stateManager);
         
         // should not need a metadata cache.
