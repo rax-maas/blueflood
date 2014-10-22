@@ -37,19 +37,20 @@ except ImportError:
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
-    print "gbjgood"
+    authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
         urls = config['blueflood']['urls']
       else:
         urls = [config['blueflood']['url'].strip('/')]
       tenant = config['blueflood']['tenant']
-      authentication_module = config['blueflood']['authentication_module']
+      if 'authentication_module' in config['blueflood']:
+        authentication_module = config['blueflood']['authentication_module']
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
       tenant = getattr(settings, 'BF_TENANT')
-      authentication_module = getattr(settings, 'BF_AUTHENTICATION_MODULE')
+      authentication_module = getattr(settings, 'BF_AUTHENTICATION_MODULE', None)
 
     if authentication_module:
       module = __import__(authentication_module)
@@ -64,7 +65,7 @@ class TenantBluefloodFinder(object):
   def find_nodes(self, query):
     try:
       queryDepth = len(query.pattern.split('.'))
-      print 'gbj DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
+      #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
       client = Client(self.bf_query_endpoint, self.tenant)
       values = client.findMetrics(query.pattern)
       
@@ -144,7 +145,7 @@ class Client(object):
       headers['X-Auth-Token'] = auth.getToken(True)
       r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
     if r.status_code is not 200:
-      print str(r.status_code) + ' in findMetrics ' + r.text
+      print str(r.status_code) + ' in findMetrics ' + r.url + ' ' + r.text
       return []
     else:
       try:
