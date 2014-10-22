@@ -1,6 +1,7 @@
 from unittest import TestCase
 import unittest
 import os
+import datetime
 
 from blueflood import TenantBluefloodFinder, auth
 
@@ -41,21 +42,34 @@ class BluefloodTests(TestCase):
   def test_conf(self):
     pass
 
+  def run_find(self, finder):
+    nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
+    self.assertTrue(len(nodes) > 0)
+
   def test_finder(self):
     #test rax auth
     finder = TenantBluefloodFinder(rax_auth_config)
-    nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
-    self.assertTrue(len(nodes) > 0)
+    self.run_find(finder)
 
     #force re-auth
     auth.auth.token = ""
-    nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
-    self.assertTrue(len(nodes) > 0)
+    self.run_find(finder)
+
+    #test expired UTC
+    old_token = auth.auth.token
+    origGetCurrentUTC = type(auth.auth).getCurrentUTC
+    def mockGetCurrentUTC(self):
+      return origGetCurrentUTC(self) + datetime.timedelta(days=1)
+    type(auth.auth).getCurrentUTC = mockGetCurrentUTC
+    self.run_find(finder)
+    new_token = auth.auth.token
+    # Should be a new instance of the same token,(we forced expiration)
+    self.assertTrue(old_token is not new_token and old_token == new_token)
+    type(auth.auth).getCurrentUTC = origGetCurrentUTC
 
     #test no auth
     finder = TenantBluefloodFinder(no_auth_config)
-    nodes = list(finder.find_nodes(FindQuery('rackspace.*', 0, 100)))
-    self.assertTrue(len(nodes) > 0)
+    self.run_find(finder)
 
 if __name__ == '__main__':
   unittest.main()

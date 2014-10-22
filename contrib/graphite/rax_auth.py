@@ -19,8 +19,11 @@ class BluefloodAuth(object):
 
     self.expirationUTC = None
 
+  def getCurrentUTC(self):
+    return datetime.datetime.utcnow().replace(tzinfo=timezone('UTC'))
+
   def getToken(self, forceNew):
-    currentUtcTime = datetime.datetime.utcnow().replace(tzinfo=timezone('UTC'))
+    currentUtcTime = self.getCurrentUTC()
     if forceNew or not self.expirationUTC or currentUtcTime > self.expirationUTC:
       self.doAuth()
     return self.token
