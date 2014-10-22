@@ -75,9 +75,9 @@ public class ElasticIOTest {
         return locators;
     }
 
-    private static List<Object> createTestMetrics(String tenantId) {
+    private static List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;
-        List<Object> metrics = new ArrayList<Object>();
+        List<IMetric> metrics = new ArrayList<IMetric>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
             metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
@@ -86,9 +86,9 @@ public class ElasticIOTest {
         return metrics;
     }
 
-    private static List<Object> createTestMetricsFromInterface(String tenantId) {
+    private static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
-        List<Object> metrics = new ArrayList<Object>();
+        List<IMetric> metrics = new ArrayList<IMetric>();
         CounterRollup counter = new CounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);
