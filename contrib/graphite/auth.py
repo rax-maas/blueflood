@@ -9,18 +9,18 @@ class NoAuth(object):
   def __init__(self):
     self.token = ''
 
-  def getToken(self, forceNew=False):
+  def get_token(self, force_new=False):
     return self.token
 
 
 auth = NoAuth()
 
-def isActive():
+def is_active():
   return auth is not None
 
-def getToken(forceNew=False):
-  return auth.getToken(forceNew)
+def get_token(force_new=False):
+  return auth.get_token(force_new)
 
-def setAuth(newAuth):
+def set_auth(new_auth):
   global auth
-  auth = newAuth
+  auth = new_auth

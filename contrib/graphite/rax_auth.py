@@ -17,22 +17,21 @@ class BluefloodAuth(object):
       self.username = getattr(settings, 'RAX_USER')
       self.apikey = getattr(settings, 'RAX_API_KEY')
 
-    self.expirationUTC = None
+    self.expiration_UTC = None
 
-  def getCurrentUTC(self):
+  def get_current_UTC(self):
     return datetime.datetime.utcnow().replace(tzinfo=timezone('UTC'))
 
-  def getToken(self, forceNew):
-    currentUtcTime = self.getCurrentUTC()
-    if forceNew or not self.expirationUTC or currentUtcTime > self.expirationUTC:
-      self.doAuth()
+  def get_token(self, force_new):
+    if force_new or not self.expiration_UTC or self.get_current_UTC() > self.expiration_UTC:
+      self.do_auth()
     return self.token
 
-  def doAuth(self):
+  def do_auth(self):
     payload = '{"auth":{"RAX-KSKEY:apiKeyCredentials"{"username":"%s","apiKey":"%s"}}}' % (self.username, self.apiKey)
     r = requests.post(IDENTITY_ENDPOINT + 'tokens', data=payload, headers=auth.headers())
     jsonObj = r.json()
     self.token = jsonObj['access']['token']['id']
-    self.expirationUTC = dateparse(jsonObj['access']['token']['expires']).replace(tzinfo=timezone('UTC'))
+    self.expiration_UTC = dateparse(jsonObj['access']['token']['expires']).replace(tzinfo=timezone('UTC'))
     # todo handle errors
 
