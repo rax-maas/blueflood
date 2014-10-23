@@ -56,7 +56,7 @@ class TenantBluefloodFinder(object):
       module = __import__(authentication_module)
       class_ = getattr(module, "BluefloodAuth")
       bfauth = class_(config)
-      auth.setAuth(bfauth)
+      auth.set_auth(bfauth)
 
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
@@ -64,17 +64,17 @@ class TenantBluefloodFinder(object):
 
   def find_nodes(self, query):
     try:
-      queryDepth = len(query.pattern.split('.'))
-      #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
+      query_depth = len(query.pattern.split('.'))
+      #print 'DAS QUERY ' + str(query_depth) + ' ' + query.pattern
       client = Client(self.bf_query_endpoint, self.tenant)
-      values = client.findMetrics(query.pattern)
+      values = client.find_metrics(query.pattern)
       
       for obj in values:
         metric = obj['metric']
         parts = metric.split('.')
-        metricDepth = len(parts)
-        if metricDepth > queryDepth:
-          yield BranchNode('.'.join(parts[:queryDepth]))
+        metric_depth = len(parts)
+        if metric_depth > query_depth:
+          yield BranchNode('.'.join(parts[:query_depth]))
         else:
           yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
     except Exception as e:
@@ -99,30 +99,30 @@ class TenantBluefloodReader(object):
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
 
-  def fetch(self, startTime, endTime):
+  def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
     if not self.metric:
-      return ((startTime, endTime, 1), [])
+      return ((start_time, end_time, 1), [])
     else:
       client = Client(self.bf_query_endpoint, self.tenant)
-      values = client.getValues(self.metric, startTime, endTime)
+      values = client.get_values(self.metric, start_time, end_time)
 
       # determine the step
       minTime = 0x7fffffffffffffff
       maxTime = 0
       lastTime = 0
       step = 1
-      valueArr = []
+      value_arr = []
       for obj in values:
         timestamp = obj['timestamp'] / 1000
         step = timestamp - lastTime
         lastTime = timestamp
         minTime = min(minTime, timestamp)
         maxTime = max(maxTime, timestamp)
-        valueArr.append(obj['average'])
+        value_arr.append(obj['average'])
 
       time_info = (minTime, maxTime, step)
-      return (time_info, valueArr)
+      return (time_info, value_arr)
 
 SECONDS_IN_5MIN = 300
 SECONDS_IN_20MIN = 1200
@@ -135,22 +135,22 @@ class Client(object):
     self.host = host
     self.tenant = tenant
 
-  def makeRequest(self, url, payload, headers):
-    if auth.isActive():
-      headers['X-Auth-Token'] = auth.getToken(False)
+  def make_request(self, url, payload, headers):
+    if auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(False)
     r = requests.get(url, params=payload, headers=headers)
-    if r.status_code == 401 and auth.isActive():
-      headers['X-Auth-Token'] = auth.getToken(True)
+    if r.status_code == 401 and auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(True)
       r = requests.get(url, params=payload, headers=headers)
     return r
 
 
-  def findMetrics(self, query):
+  def find_metrics(self, query):
     payload = {'query': query}
     headers = auth.headers()
-    r = self.makeRequest("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), payload, headers)
+    r = self.make_request("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), payload, headers)
     if r.status_code != 200:
-      print str(r.status_code) + ' in findMetrics ' + r.url + ' ' + r.text
+      print str(r.status_code) + ' in find_metrics ' + r.url + ' ' + r.text
       return []
     else:
       try:
@@ -161,7 +161,7 @@ class Client(object):
       except ValueError:
         return ['there was an error']
 
-  def getValues(self, metric, start, stop):
+  def get_values(self, metric, start, stop):
     # make an educated guess about the likely number of data points returned.
     num_points = (stop - start) / 60
     res = 'FULL'
@@ -189,9 +189,9 @@ class Client(object):
     }
     #print 'USING RES ' + res
     headers = auth.headers()
-    r = self.makeRequest("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers)
+    r = self.make_request("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers)
     if r.status_code != 200:
-      print str(r.status_code) + ' in getValues ' + r.text
+      print str(r.status_code) + ' in get_values ' + r.text
       return {'values': []}
     else:
       try:
@@ -200,5 +200,5 @@ class Client(object):
         # parse that json yo
         return json.loads(r.text)['values']
       except ValueError:
-        print 'ValueError in getValues'
+        print 'ValueError in get_values'
         return {'values': []}

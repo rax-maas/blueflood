@@ -49,21 +49,21 @@ class BluefloodTests(TestCase):
 
   def setup_UTC_mock(self):
     #setup a mock that forces expiration
-    self.origGetCurrentUTC = type(auth.auth).getCurrentUTC
-    self.origDoAuth = type(auth.auth).doAuth
+    self.orig_get_current_UTC = type(auth.auth).get_current_UTC
+    self.orig_do_auth = type(auth.auth).do_auth
     this = self
     self.authCount = 0
-    def mockGetCurrentUTC(self):
-      return this.origGetCurrentUTC(self) + datetime.timedelta(days=1)
-    def mockDoAuth(self):
+    def mock_get_current_UTC(self):
+      return this.orig_get_current_UTC(self) + datetime.timedelta(days=1)
+    def mock_do_auth(self):
       this.authCount += 1
-      this.origDoAuth(self)
-    type(auth.auth).getCurrentUTC = mockGetCurrentUTC
-    type(auth.auth).doAuth = mockDoAuth
+      this.orig_do_auth(self)
+    type(auth.auth).get_current_UTC = mock_get_current_UTC
+    type(auth.auth).do_auth = mock_do_auth
 
   def unset_UTC_mock(self):
-    type(auth.auth).getCurrentUTC = self.origGetCurrentUTC
-    type(auth.auth).doAuth = self.origDoAuth
+    type(auth.auth).get_current_UTC = self.orig_get_current_UTC
+    type(auth.auth).do_auth = self.orig_do_auth
 
   def test_finder(self):
     #test no auth
