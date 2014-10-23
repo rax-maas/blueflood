@@ -23,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,10 @@ public class ScheduleContext implements IngestionContext {
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
         this(currentTimeMillis, managedShards);
-        this.lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
+        ZKBasedShardLockManager lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
+        lockManager.init(new TimeValue(5, TimeUnit.SECONDS));
+        this.lockManager = lockManager;
+
     }
 
     public void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
