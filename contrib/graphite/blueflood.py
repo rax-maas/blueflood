@@ -13,26 +13,7 @@ except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
 
-# YO!
-# sudo pip install git+https://github.com/graphite-project/graphite-web.git
-# PYTHONPATH=/opt/graphite/webapp python
-
-# edit graphite-web/webapp/graphite/local_settings.py
-#STORAGE_DIR='/opt/graphite/storage'
-#STORAGE_FINDERS = (
-#    'graphite.finders.standard.StandardFinder',
-#    'graphite.finders.blueflood.TenantBluefloodFinder'
-#)
-#BF_QUERY = [
-#  'http://127.0.0.1:19020'
-#]
-#
-# #!/bin/bash
-# GRAPHITE_ROOT=/home/gdusbabek/graphite-web
-# PYTHONPATH=$PYTHONPATH:$GRAPHITE_ROOT/webapp:$PATH_TO_THIS_MODULE
-# export GRAPHITE_ROOT
-# $GRAPHITE_ROOT/bin/run-graphite-devel-server.py $GRAPHITE_ROOT
-# # curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8080/render' -d "from=-6h&until=now&target=rackspace.monitoring.entities.*.checks.agent.cpu.*.usage_average&format=json&maxDataPoints=1072"
+# curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
 class TenantBluefloodFinder(object):
 
