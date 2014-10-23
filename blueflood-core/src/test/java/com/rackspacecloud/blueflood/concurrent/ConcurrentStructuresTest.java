@@ -21,8 +21,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -122,13 +124,15 @@ public class ConcurrentStructuresTest {
         
         // should get hit twice per task. we'll do two tasks, so 4x total.
         final CountDownLatch asyncLatch = new CountDownLatch(4);
+        final CountDownLatch syncLatch = new CountDownLatch(6); // twice per task, so 6x total.
+        final CountDownLatch asyncBarrier =new CountDownLatch(1);
         
         AsyncFunctionWithThreadPool<Integer, String> itos = new AsyncFunctionWithThreadPool<Integer, String>(poolBuilder.withName("itos").build()) {
             @Override
             public ListenableFuture<String> apply(final Integer input) throws Exception {
                 return getThreadPool().submit(new Callable<String>() {
                     public String call() throws Exception {
-                        Thread.sleep(200);
+                        syncLatch.countDown();
                         return Integer.toString(input + 1);
                     }
                 });
@@ -142,7 +146,7 @@ public class ConcurrentStructuresTest {
                 getThreadPool().submit(new Runnable() {
                     public void run() {
                         try { 
-                            Thread.sleep(1500);
+                            asyncBarrier.await();
                             asyncLatch.countDown();
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
@@ -159,7 +163,7 @@ public class ConcurrentStructuresTest {
             public ListenableFuture<Integer> apply(final String input) throws Exception {
                 return getThreadPool().submit(new Callable<Integer>() {
                     public Integer call() throws Exception {
-                        Thread.sleep(200);
+                        syncLatch.countDown();
                         return Integer.parseInt(input) + 1;
                     }
                 });
@@ -179,19 +183,13 @@ public class ConcurrentStructuresTest {
         // send two things through. since the pools can handle >1 thread, we should get answers at about the same time.
         final int n1 = 5;
         final int m1 = 10;
-        
-        final CountDownLatch incrementLatch = new CountDownLatch(2);
-        final AtomicInteger result = new AtomicInteger(0);
+        final CountDownLatch threadWait = new CountDownLatch(2);
         
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    int tn1 = chain.apply(n1).get();
-                    while (tn1 > 0) {
-                        result.incrementAndGet();
-                        tn1 -= 1;
-                    }
-                    incrementLatch.countDown();
+                    chain.apply(n1).get();
+                    threadWait.countDown();
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -201,30 +199,41 @@ public class ConcurrentStructuresTest {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    int tm1 = chain.apply(m1).get();
-                    while (tm1 > 0) {
-                        result.incrementAndGet();
-                        tm1 -= 1;
-                    }
-                    incrementLatch.countDown();
+                    chain.apply(m1).get();
+                    threadWait.countDown();
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
             }
         }).start();
         
-        // wait for sync tasks to compleate 200ms * 4 = about 800 ms.
-        incrementLatch.await(2, TimeUnit.SECONDS);
+        // Wait up to 30s for the chains to run. They should not take nearly that long.
+        // doing a single 30s wait was not working for TravisCI. Something was causing something to something somewhere.
+        boolean finishedChain = false;
+        for (int i = 0; i < 30; i++) {
+            if (!threadWait.await(1, TimeUnit.SECONDS)) {
+                System.out.println(String.format("chains not finished. tasks remaining: %d", syncLatch.getCount()));
+                Thread.yield();
+            } else {
+                finishedChain = true;
+                break;
+            }
+        }
+        if (!finishedChain) {
+            throw new AssertionError(String.format("Chain work did not complete. sync tasks remaining:%d", syncLatch.getCount()));
+        }
         
-        // result should be n1 + 4 + m1 + 4;
-        Assert.assertEquals(n1 + m1 + 4 + 4, result.get());
-        
-        // there were 3800 ms of work on the async processor though. that should still be churning though.
+        // at this point all the synchronous work should have finished and non of the asynchronous work started.
+        Assert.assertEquals(0, syncLatch.getCount());
         Assert.assertTrue(asyncLatch.getCount() > 0);
         
-        Assert.assertTrue(asyncLatch.await(4, TimeUnit.SECONDS));
+        // start the async work.
+        asyncBarrier.countDown();
+        
+        Assert.assertTrue(asyncLatch.await(30, TimeUnit.SECONDS));
         
         // everything is done now.
+        Assert.assertEquals(0, asyncLatch.getCount());
     }
     
     @Test
