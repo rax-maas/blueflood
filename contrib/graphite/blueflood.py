@@ -13,74 +13,57 @@ except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
 
-# YO!
-# sudo pip install git+https://github.com/graphite-project/graphite-web.git
-# PYTHONPATH=/opt/graphite/webapp python
-
-# edit graphite-web/webapp/graphite/local_settings.py
-#STORAGE_DIR='/opt/graphite/storage'
-#STORAGE_FINDERS = (
-#    'graphite.finders.standard.StandardFinder',
-#    'graphite.finders.blueflood.TenantBluefloodFinder'
-#)
-#BF_QUERY = [
-#  'http://127.0.0.1:19020'
-#]
-#
-# #!/bin/bash
-# GRAPHITE_ROOT=/home/gdusbabek/graphite-web
-# PYTHONPATH=$PYTHONPATH:$GRAPHITE_ROOT/webapp:$PATH_TO_THIS_MODULE
-# export GRAPHITE_ROOT
-# $GRAPHITE_ROOT/bin/run-graphite-devel-server.py $GRAPHITE_ROOT
-# # curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8080/render' -d "from=-6h&until=now&target=rackspace.monitoring.entities.*.checks.agent.cpu.*.usage_average&format=json&maxDataPoints=1072"
+# curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
+    authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
         urls = config['blueflood']['urls']
       else:
         urls = [config['blueflood']['url'].strip('/')]
       tenant = config['blueflood']['tenant']
-      username = config['blueflood']['username']
-      apikey = config['blueflood']['apikey']
+      if 'authentication_module' in config['blueflood']:
+        authentication_module = config['blueflood']['authentication_module']
+        authentication_class = config['blueflood']['authentication_class']
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
-      if not urls:
-        urls = [settings.BF_QUERY]
-
       tenant = getattr(settings, 'BF_TENANT')
-      username = getattr(settings, 'RAX_USER')
-      apikey = getattr(settings, 'RAX_API_KEY')
-      if not tenant:
-        tenant = [settings.BF_TENANT]
-      if not username:
-        username = [settings.RAX_USER]
-      if not apikey:
-        apikey = [settings.RAX_API_KEY]
+      authentication_module = getattr(settings, 'BF_AUTHENTICATION_MODULE', None)
+      authentication_class = getattr(settings, 'BF_AUTHENTICATION_CLASS', None)
 
-    # todo need to figure out how to set this via configuration.
-    auth.setAuth(auth.RaxAuth(username, apikey))
+    if authentication_module:
+      module = __import__(authentication_module)
+      class_ = getattr(module, authentication_class)
+      bfauth = class_(config)
+      auth.set_auth(bfauth)
+
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
 
 
   def find_nodes(self, query):
-    queryDepth = len(query.pattern.split('.'))
-    #print 'DAS QUERY ' + str(queryDepth) + ' ' + query.pattern
-    client = Client(self.bf_query_endpoint, self.tenant)
-    values = client.findMetrics(query.pattern)
-
-    for obj in values:
-      metric = obj['metric']
-      parts = metric.split('.')
-      metricDepth = len(parts)
-      if metricDepth > queryDepth:
-        yield BranchNode('.'.join(parts[:queryDepth]))
-      else:
-        yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
+    try:
+      query_depth = len(query.pattern.split('.'))
+      #print 'DAS QUERY ' + str(query_depth) + ' ' + query.pattern
+      client = Client(self.bf_query_endpoint, self.tenant)
+      values = client.find_metrics(query.pattern)
+      
+      for obj in values:
+        metric = obj['metric']
+        parts = metric.split('.')
+        metric_depth = len(parts)
+        if metric_depth > query_depth:
+          yield BranchNode('.'.join(parts[:query_depth]))
+        else:
+          yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
+    except Exception as e:
+     print "Exception in Blueflood find_nodes: " 
+     print e
+     raise e
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
@@ -99,30 +82,30 @@ class TenantBluefloodReader(object):
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
 
-  def fetch(self, startTime, endTime):
+  def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
     if not self.metric:
-      return ((startTime, endTime, 1), [])
+      return ((start_time, end_time, 1), [])
     else:
       client = Client(self.bf_query_endpoint, self.tenant)
-      values = client.getValues(self.metric, startTime, endTime)
+      values = client.get_values(self.metric, start_time, end_time)
 
       # determine the step
       minTime = 0x7fffffffffffffff
       maxTime = 0
       lastTime = 0
       step = 1
-      valueArr = []
+      value_arr = []
       for obj in values:
         timestamp = obj['timestamp'] / 1000
         step = timestamp - lastTime
         lastTime = timestamp
         minTime = min(minTime, timestamp)
         maxTime = max(maxTime, timestamp)
-        valueArr.append(obj['average'])
+        value_arr.append(obj['average'])
 
       time_info = (minTime, maxTime, step)
-      return (time_info, valueArr)
+      return (time_info, value_arr)
 
 SECONDS_IN_5MIN = 300
 SECONDS_IN_20MIN = 1200
@@ -135,14 +118,22 @@ class Client(object):
     self.host = host
     self.tenant = tenant
 
-  def findMetrics(self, query):
+  def make_request(self, url, payload, headers):
+    if auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(False)
+    r = requests.get(url, params=payload, headers=headers)
+    if r.status_code == 401 and auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(True)
+      r = requests.get(url, params=payload, headers=headers)
+    return r
+
+
+  def find_metrics(self, query):
     payload = {'query': query}
     headers = auth.headers()
-    if auth.isActive():
-      headers['X-Auth-Token'] = auth.getToken()
-    r = requests.get("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), params=payload, headers=headers)
-    if r.status_code is not 200:
-      print str(r.status_code) + ' in findMetrics ' + r.text
+    r = self.make_request("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), payload, headers)
+    if r.status_code != 200:
+      print str(r.status_code) + ' in find_metrics ' + r.url + ' ' + r.text
       return []
     else:
       try:
@@ -153,7 +144,7 @@ class Client(object):
       except ValueError:
         return ['there was an error']
 
-  def getValues(self, metric, start, stop):
+  def get_values(self, metric, start, stop):
     # make an educated guess about the likely number of data points returned.
     num_points = (stop - start) / 60
     res = 'FULL'
@@ -181,11 +172,9 @@ class Client(object):
     }
     #print 'USING RES ' + res
     headers = auth.headers()
-    if auth.isActive():
-      headers['X-Auth-Token'] = auth.getToken()
-    r = requests.get("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), params=payload, headers=headers)
-    if r.status_code is not 200:
-      print str(r.status_code) + ' in getValues ' + r.text
+    r = self.make_request("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers)
+    if r.status_code != 200:
+      print str(r.status_code) + ' in get_values ' + r.text
       return {'values': []}
     else:
       try:
@@ -194,5 +183,5 @@ class Client(object):
         # parse that json yo
         return json.loads(r.text)['values']
       except ValueError:
-        print 'ValueError in getValues'
+        print 'ValueError in get_values'
         return {'values': []}
