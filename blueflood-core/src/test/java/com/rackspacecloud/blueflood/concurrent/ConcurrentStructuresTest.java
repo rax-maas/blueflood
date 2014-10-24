@@ -209,9 +209,10 @@ public class ConcurrentStructuresTest {
         
         // Wait up to 30s for the chains to run. They should not take nearly that long.
         // doing a single 30s wait was not working for TravisCI. Something was causing something to something somewhere.
+        
         boolean finishedChain = false;
         for (int i = 0; i < 30; i++) {
-            if (!threadWait.await(1, TimeUnit.SECONDS)) {
+            if (!threadWait.await(1, TimeUnit.SECONDS) && syncLatch.getCount() > 0) {
                 System.out.println(String.format("chains not finished. tasks remaining: %d", syncLatch.getCount()));
                 Thread.yield();
             } else {
