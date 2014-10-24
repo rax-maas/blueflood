@@ -27,15 +27,17 @@ class TenantBluefloodFinder(object):
       tenant = config['blueflood']['tenant']
       if 'authentication_module' in config['blueflood']:
         authentication_module = config['blueflood']['authentication_module']
+        authentication_class = config['blueflood']['authentication_class']
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
       tenant = getattr(settings, 'BF_TENANT')
       authentication_module = getattr(settings, 'BF_AUTHENTICATION_MODULE', None)
+      authentication_class = getattr(settings, 'BF_AUTHENTICATION_CLASS', None)
 
     if authentication_module:
       module = __import__(authentication_module)
-      class_ = getattr(module, "BluefloodAuth")
+      class_ = getattr(module, authentication_class)
       bfauth = class_(config)
       auth.set_auth(bfauth)
 

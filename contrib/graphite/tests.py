@@ -5,24 +5,32 @@ import datetime
 
 from blueflood import TenantBluefloodFinder, auth
 
-#To run this test you need to set up the ssh tunnel and environment var as
-# described below
+#To run these test you need to set up the environment vars below
+try:
+  auth_api_key = os.environ['AUTH_API_KEY']
+  auth_user_name = os.environ['AUTH_USER_NAME']
+  auth_tenant = os.environ['AUTH_TENANT']
+  auth_url = os.environ['AUTH_URL']
+  auth_config = {'blueflood':
+                 {'authentication_module': 'rax_auth',
+                  'authentication_class': 'BluefloodAuth',
+                  'username': auth_user_name,
+                  'apikey': auth_api_key,
+                  'urls': [auth_url],
+                  'tenant': auth_tenant}}
+except:
+  print "Auth env undefined, not running auth tests"
+  auth_config = None
 
-# This needs to be an env var corresponding to bf0testenv1's api key:
-api_key = os.environ['RAX_API_KEY']
-
-#port 2500 needs a tunnel like so:
-#ssh -L 2500:localhost:2500 app00.iad.stage.bf.k1k.me
-no_auth_config = {'blueflood':
-                  { 'urls': ['http://127.0.0.1:2500'],
-                    'tenant': "000000"}}
-
-rax_auth_config = {'blueflood':
-                   {'username': 'bf0testenv1',
-                    'apikey': api_key,
-                    'urls': ['http://iad.metrics.api.rackspacecloud.com'],
-                    'authentication_module': 'rax_auth',
-                    'tenant': "836986"}}
+try:
+  no_auth_tenant = os.environ['NO_AUTH_TENANT']
+  no_auth_url = os.environ['NO_AUTH_URL']
+  no_auth_config = {'blueflood':
+                    { 'urls': [no_auth_url],
+                      'tenant': no_auth_tenant}}
+except:
+  print "NO_AUTH env undefined, not running no_auth tests"
+  no_auth_config = None
 
 try:
   from graphite.storage import FindQuery
@@ -66,23 +74,25 @@ class BluefloodTests(TestCase):
     type(auth.auth).do_auth = self.orig_do_auth
 
   def test_finder(self):
-    #test no auth
-    finder = TenantBluefloodFinder(no_auth_config)
-    self.run_find(finder)
+    if no_auth_config:
+      print "\nRunning NO_AUTH tests"
+      finder = TenantBluefloodFinder(no_auth_config)
+      self.run_find(finder)
 
-    #test rax auth
-    finder = TenantBluefloodFinder(rax_auth_config)
-    self.run_find(finder)
+    if auth_config:
+      print "\nRunning AUTH tests"
+      finder = TenantBluefloodFinder(auth_config)
+      self.run_find(finder)
 
-    #force re-auth
-    auth.auth.token = ""
-    self.run_find(finder)
-
-    #test expired UTC
-    self.setup_UTC_mock()
-    self.run_find(finder)
-    self.unset_UTC_mock()
-    self.assertTrue(self.authCount == 1)
+      #force re-auth
+      auth.auth.token = ""
+      self.run_find(finder)
+      
+      #test expired UTC
+      self.setup_UTC_mock()
+      self.run_find(finder)
+      self.unset_UTC_mock()
+      self.assertTrue(self.authCount == 1)
 
 if __name__ == '__main__':
   unittest.main()
