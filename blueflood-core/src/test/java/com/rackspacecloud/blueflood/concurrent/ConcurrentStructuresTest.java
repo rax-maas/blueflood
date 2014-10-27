@@ -20,15 +20,15 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConcurrentStructuresTest {
+    private static final Logger logger = LoggerFactory.getLogger(ConcurrentStructuresTest.class);
     
     @Test
     public void testNoOpFutureNotifiesWithoutGetCall() throws InterruptedException {
@@ -125,7 +125,7 @@ public class ConcurrentStructuresTest {
         // should get hit twice per task. we'll do two tasks, so 4x total.
         final CountDownLatch asyncLatch = new CountDownLatch(4);
         final CountDownLatch syncLatch = new CountDownLatch(6); // twice per task, so 6x total.
-        final CountDownLatch asyncBarrier =new CountDownLatch(1);
+        final CountDownLatch asyncBarrier = new CountDownLatch(1);
         
         AsyncFunctionWithThreadPool<Integer, String> itos = new AsyncFunctionWithThreadPool<Integer, String>(poolBuilder.withName("itos").build()) {
             @Override
@@ -213,7 +213,7 @@ public class ConcurrentStructuresTest {
         boolean finishedChain = false;
         for (int i = 0; i < 30; i++) {
             if (!threadWait.await(1, TimeUnit.SECONDS) && syncLatch.getCount() > 0) {
-                System.out.println(String.format("chains not finished. tasks remaining: %d", syncLatch.getCount()));
+                logger.debug(String.format("chains not finished. tasks remaining: %d", syncLatch.getCount()));
                 Thread.yield();
             } else {
                 finishedChain = true;
