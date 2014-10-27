@@ -1,4 +1,3 @@
-// Copyright 2014 Square, Inc.
 package com.rackspacecloud.blueflood.utils;
 
 import com.google.common.io.Files;
@@ -12,7 +11,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 /**
- * Test Server for zookeeper.
+ * Test Server for zookeeper. Allows you to instantiate a zookeeper instance.
  */
 public class ZookeeperTestServer {
     private volatile File dataDir;
