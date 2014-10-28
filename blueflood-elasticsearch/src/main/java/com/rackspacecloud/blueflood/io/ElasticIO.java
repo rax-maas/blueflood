@@ -161,7 +161,7 @@ public class ElasticIO implements DiscoveryIO {
                 );
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
-                .setSize(500)
+                .setSize(100000)
                 .setVersion(true)
                 .setQuery(qb)
                 .execute()
