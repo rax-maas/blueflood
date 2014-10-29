@@ -30,7 +30,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.internal.util.reflection.Whitebox;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -174,5 +173,13 @@ public class IntegrationTestBase {
 
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
         return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    protected Metric getStringmetricWithGivenValue(final Locator locator, long timestamp, String value) {
+        return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    protected Metric getMetricWithGivenValue(final Locator locator, long timestamp, int value) {
+        return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 }

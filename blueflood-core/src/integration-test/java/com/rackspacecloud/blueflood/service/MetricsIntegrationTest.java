@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -265,6 +266,71 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    public void testStringMetricsWithSameValueAreNotPersisted() throws Exception {
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        String sameValue = getRandomStringMetricValue();
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(getStringmetricWithGivenValue(locator, curMillis, sameValue));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+
+        Assert.assertTrue(actualTimestamps.size() == 1);
+        for(long ts : actualTimestamps) {
+            Assert.assertEquals(ts, baseMillis);
+            break;
+        }
+    }
+
+    @Test
+    public void testNumericMetricsAreAlwaysPersisted() throws Exception {
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        int sameValue = getRandomIntMetricValue();
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(getMetricWithGivenValue(locator, curMillis,sameValue));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator, new Range(baseMillis, lastMillis),
+                CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
+        actualTimestamps = points.getPoints().keySet();
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
+    }
+
+    @Test
     public void testConsecutiveWriteAndRead() throws ConnectionException, IOException {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -281,7 +347,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             writer.insertFull(metrics);
             metrics.clear();
         }
-        
+
         int count = 0;
             ColumnFamily<Locator, Long> CF_metrics_full = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator,
