@@ -131,7 +131,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
         // higher.
         Configuration config = Configuration.getInstance();
-        rollupDelayMillis = config.getLongProperty("rollupDelayMillis");
+        rollupDelayMillis = config.getLongProperty("ROLLUP_DELAY_MILLIS");
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
             "LocatorFetchThreadPool",
