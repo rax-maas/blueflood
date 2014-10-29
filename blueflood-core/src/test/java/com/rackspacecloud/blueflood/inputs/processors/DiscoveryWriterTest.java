@@ -4,13 +4,20 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
+
+import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Metric;
 
 import org.junit.Assert;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 
 public class DiscoveryWriterTest {
@@ -52,7 +59,7 @@ public class DiscoveryWriterTest {
 
         // verify the insertDiscovery method on all implementors of
         // DiscoveryIO has been called on all metrics
-        verify(discovererA).insertDiscovery((List<Object>)(List<?>) flatTestData);
-        verify(discovererB).insertDiscovery((List<Object>)(List<?>) flatTestData);
+        verify(discovererA).insertDiscovery(flatTestData);
+        verify(discovererB).insertDiscovery(flatTestData);
     }
 }

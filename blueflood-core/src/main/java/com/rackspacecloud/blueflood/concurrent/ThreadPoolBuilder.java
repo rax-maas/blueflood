@@ -104,8 +104,8 @@ public class ThreadPoolBuilder {
         }
         String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
         final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
-                    new LinkedBlockingQueue<Runnable>();
-        
+                    new SynchronousQueue<Runnable>();
+
         return new InstrumentedThreadPoolExecutor(
                 metricName,
                 corePoolSize,

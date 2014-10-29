@@ -61,18 +61,19 @@ public class MainIngestor {
     private static AsyncChain<DatagramPacket, ?> buildProcessor(ScheduleContext context) {
 
         // this will eventually take a UDP packet, deserialize it and put it to the database. Each w
-        AsyncChain<DatagramPacket, Object> processor = new AsyncChain<DatagramPacket, Object>()
+        AsyncChain<DatagramPacket, ?> processor =
 
                 // this stage deserializes the UDP datagrams. since the serialization is at our discretion (and
                 // your's too), it just matters that you are able to end up with a collection of
                 // com.rackspacecloud.blueflood.types.Metric.
-                .withFunction(new DeserializeAndReleaseFunc(new ThreadPoolBuilder().withName("Packet Deserializer").build()))
+                AsyncChain.withFunction(new DeserializeAndReleaseFunc(new ThreadPoolBuilder().withName("Packet Deserializer").build()))
 
                 // this this stage writes a single metrics to the database.
                 .withFunction(new SimpleMetricWriter(new ThreadPoolBuilder().withName("Database Writer").build()))
 
                 // this stage updates the context, which eventually gets push to the database.
-                .withFunction(new ContextUpdater(new ThreadPoolBuilder().withName("Context Updater").build(), context));
+                .withFunction(new ContextUpdater(new ThreadPoolBuilder().withName("Context Updater").build(), context))
+                .build();
 
         return processor;
     }

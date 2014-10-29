@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -31,6 +32,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -64,6 +66,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
+    private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -87,7 +90,7 @@ public class ElasticIO implements DiscoveryIO {
         return result;
     }
 
-    public void insertDiscovery(List<Object> batch) throws IOException {
+    public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
@@ -98,8 +101,12 @@ public class ElasticIO implements DiscoveryIO {
         try {
             BulkRequestBuilder bulk = client.prepareBulk();
             for (Object obj : batch) {
-                IMetric metric = (IMetric)obj;
+                if (!(obj instanceof IMetric)) {
+                    classCastExceptionMeter.mark();
+                    continue;
+                }
 
+                IMetric metric = (IMetric)obj;
                 Locator locator = metric.getLocator();
                 Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
 
@@ -120,7 +127,7 @@ public class ElasticIO implements DiscoveryIO {
         
     }
 
-    private String getUnit(Metric metric) {
+    private static String getUnit(Metric metric) {
         return metric.getUnit();
     }
 
@@ -154,7 +161,7 @@ public class ElasticIO implements DiscoveryIO {
                 );
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
-                .setSize(500)
+                .setSize(100000)
                 .setVersion(true)
                 .setQuery(qb)
                 .execute()

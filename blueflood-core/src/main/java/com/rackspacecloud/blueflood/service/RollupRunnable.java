@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -48,8 +49,8 @@ public class RollupRunnable implements Runnable {
     protected final long startWait;
 
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
+    private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
 
-    
     public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
@@ -96,6 +97,11 @@ public class RollupRunnable implements Runnable {
                 // first, get the points.
                 input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
                         singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
+
+                if (input.isEmpty()) {
+                    noPointsToCalculateRollup.mark();
+                    return;
+                }
 
                 // next, compute the rollup.
                 rollup =  RollupRunnable.getRollupComputer(rollupType, srcGran).compute(input);
