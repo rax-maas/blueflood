@@ -68,7 +68,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
-    // written in the last 10 minutes, don't bother.
+    // seen within the last 10 minutes, don't bother.
     private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
