@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
-import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
@@ -71,7 +70,6 @@ public class HttpMetricsIngestionServer {
     private ScheduleContext context;
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
-    private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
@@ -114,13 +112,7 @@ public class HttpMetricsIngestionServer {
     }
     
     private void buildProcessingChains() {
-        final AsyncFunction<MetricsCollection, List<List<IMetric>>> batchSplitter;
         final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
-        
-        batchSplitter = new BatchSplitter(
-                new ThreadPoolBuilder().withName("Metric batching").build(),
-                BATCH_SIZE
-        ).withLogger(log);
 
         batchWriter = new BatchWriter(
                 new ThreadPoolBuilder()
@@ -146,8 +138,8 @@ public class HttpMetricsIngestionServer {
 
         // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
 
-        this.defaultProcessorChain = AsyncChain
-                .withFunction(batchSplitter)
+/*
+        this.defaultProcessorChain = (AsyncChain<MetricsCollection, List<Boolean>>)AsyncChain
                 .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
                 .build();
@@ -155,10 +147,10 @@ public class HttpMetricsIngestionServer {
         this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
-                .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
                 .build();
+*/
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
