@@ -28,7 +28,6 @@ import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
-import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -70,13 +69,10 @@ public class HttpMetricsIngestionServer {
     private DiscoveryWriter discoveryWriter;
 
     private TimeValue timeout;
-    private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
-            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
     private ScheduleContext context;
     private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
-    private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
@@ -119,24 +115,15 @@ public class HttpMetricsIngestionServer {
     }
     
     private void buildProcessingChains() {
-        final AsyncFunction<MetricsCollection, MetricsCollection> typeAndUnitProcessor;
         final AsyncFunction<MetricsCollection, List<List<IMetric>>> batchSplitter;
         final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
         final AsyncFunction<MetricsCollection, MetricsCollection> rollupTypeCacher;
         
-        typeAndUnitProcessor = new TypeAndUnitProcessor(
-                new ThreadPoolBuilder()
-                        .withName("Metric type and unit processing")
-                        .withCorePoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
-                        .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
-                        .build(),
-                metricMetadataAnalyzer
-        ).withLogger(log);
-        
         batchSplitter = new BatchSplitter(
                 new ThreadPoolBuilder().withName("Metric batching").build(),
                 BATCH_SIZE
-        ).withLogger(log);
+        );
+	((BatchSplitter)batchSplitter).withLogger(log);
 
         batchWriter = new BatchWriter(
                 new ThreadPoolBuilder()
@@ -149,7 +136,8 @@ public class HttpMetricsIngestionServer {
                 timeout,
                 bufferedMetrics,
                 context
-        ).withLogger(log);
+        );
+	((BatchWriter)batchWriter).withLogger(log);
 
         discoveryWriter =
         new DiscoveryWriter(new ThreadPoolBuilder()
@@ -168,10 +156,10 @@ public class HttpMetricsIngestionServer {
                 new ThreadPoolBuilder().withName("Rollup type persistence").build(),
                 rollupTypeCache,
                 true
-        ).withLogger(log);
+        );
+        ((RollupTypeCacher)rollupTypeCacher).withLogger(log);
 
         this.defaultProcessorChain = AsyncChain
-                .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
@@ -181,7 +169,6 @@ public class HttpMetricsIngestionServer {
         this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
-                .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)

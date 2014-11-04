@@ -16,9 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,7 +26,14 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+public class TypeAndUnitProcessor extends FunctionWithThreadPool<MetricsCollection, MetricsCollection> {
         
     final IncomingMetricMetadataAnalyzer metricMetadataAnalyzer;
     
@@ -36,7 +42,7 @@ public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCol
         this.metricMetadataAnalyzer = metricMetadataAnalyzer;
     }
     
-    public ListenableFuture<MetricsCollection> apply(final MetricsCollection input) throws Exception {
+    public void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
                 Collection<IncomingMetricException> problems = metricMetadataAnalyzer.scanMetrics(input.toMetrics());
@@ -46,9 +52,35 @@ public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCol
                 return input;
             }
         });
-        
-        // this one is asynchronous. so we let it do its job offline in the threadpool, but return a future that is
-        // immediately done.
-        return new NoOpFuture<MetricsCollection>(input);
     }
+
+static public void main2(String args[]) throws Exception
+{
+    TypeAndUnitProcessor typeAndUnitProcessor;
+    IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
+            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
+
+    typeAndUnitProcessor = 
+        new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10), metricMetadataAnalyzer);
 }
+static public void main(String args[]) throws Exception
+{
+    TypeAndUnitProcessor typeAndUnitProcessor;
+    IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
+            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
+    Logger log = LoggerFactory.getLogger(TypeAndUnitProcessor.class);
+
+    typeAndUnitProcessor = 
+            new TypeAndUnitProcessor(new ThreadPoolBuilder()
+                .withName("Metric type and unit processing")
+                .withCorePoolSize(10)
+                .withMaxPoolSize(10)
+                .build(),
+                metricMetadataAnalyzer
+            );
+    typeAndUnitProcessor.withLogger(log);
+
+}
+
+}
+
