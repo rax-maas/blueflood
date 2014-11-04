@@ -278,6 +278,16 @@
       <email>chinmay.gupte@rackspace.com</email>
     </developer>
     <developer>
+       <id>tilogaat</id>
+       <name>Tilottama Gaat</name>
+       <email>tilottama.gaat@rackspace.com</email>
+    </developer>
+    <developer>
+     <id>georgejahad</id>
+     <name>George Jahad</name>
+     <email>george.jahad@rackspace.com</email>
+    </developer>
+    <developer>
       <id>lakshmi-kannan</id>
       <name>Lakshmi Kannan</name>
       <email>lakshmi.kannan@rackspace.com</email>
@@ -296,16 +306,6 @@
       <id>stackedsax</id>
       <name>Alex Scammon</name>
       <email>alexander.scammon@rackspace.com</email>
-    </developer>
-    <developer>
-      <id>tilogaat</id>
-      <name>Tilottama Gaat</name>
-      <email>tilottama.gaat@rackspace.com</email>
-    </developer>
-    <developer>
-        <id>georgejahad</id>
-        <name>George Jahad</name>
-        <email>george.jahad@rackspace.com</email>
     </developer>
   </developers>
     
