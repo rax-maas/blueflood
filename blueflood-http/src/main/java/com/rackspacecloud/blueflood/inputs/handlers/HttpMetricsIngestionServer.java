@@ -24,7 +24,6 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
@@ -64,7 +63,6 @@ public class HttpMetricsIngestionServer {
 
     private int httpIngestPort;
     private String httpIngestHost;
-    private DiscoveryWriter discoveryWriter;
 
     private TimeValue timeout;
     private ScheduleContext context;
@@ -127,27 +125,17 @@ public class HttpMetricsIngestionServer {
                 context
         ).withLogger(log);
 
-        discoveryWriter =
-        new DiscoveryWriter(new ThreadPoolBuilder()
-            .withName("Metric Discovery Writing")
-            .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
-            .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
-            .withUnboundedQueue()
-            .build());
-
 
         // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
 
 /*
         this.defaultProcessorChain = (AsyncChain<MetricsCollection, List<Boolean>>)AsyncChain
-                .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
                 .build();
         
         this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
-                .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
                 .build();
 */

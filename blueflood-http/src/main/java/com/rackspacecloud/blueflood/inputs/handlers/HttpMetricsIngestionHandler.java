@@ -27,6 +27,7 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -60,6 +61,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TypeAndUnitProcessor typeAndUnitProcessor;
     private final RollupTypeCacher rollupTypeCacher;
+    private final DiscoveryWriter discoveryWriter;
     private final TimeValue timeout;
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -94,6 +96,16 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 new ThreadPoolBuilder().withName("Rollup type persistence").build(),
                 rollupTypeCache);
         rollupTypeCacher.withLogger(log);
+
+        discoveryWriter =
+        new DiscoveryWriter(new ThreadPoolBuilder()
+            .withName("Metric Discovery Writing")
+            .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
+            .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
+            .withUnboundedQueue()
+            .build());
+        discoveryWriter.withLogger(log);
+
 
     }
 
