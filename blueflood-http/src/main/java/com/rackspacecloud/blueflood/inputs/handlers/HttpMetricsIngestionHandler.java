@@ -64,6 +64,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
     private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
+    private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
 
     // Metrics
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
@@ -176,6 +177,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         try {
             typeAndUnitProcessor.apply(collection);
             rollupTypeCacher.apply(collection);
+            List<List<IMetric>> batches  = collection.splitMetricsIntoBatches(BATCH_SIZE);
             ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
 	    log.error("gbjfixingHandler2\n");
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
