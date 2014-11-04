@@ -175,11 +175,7 @@ public class IntegrationTestBase {
         return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 
-    protected Metric getStringmetricWithGivenValue(final Locator locator, long timestamp, String value) {
-        return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
-    }
-
-    protected Metric getMetricWithGivenValue(final Locator locator, long timestamp, int value) {
+    protected static <T> Metric makeMetric(final Locator locator, long timestamp, T value) {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 }

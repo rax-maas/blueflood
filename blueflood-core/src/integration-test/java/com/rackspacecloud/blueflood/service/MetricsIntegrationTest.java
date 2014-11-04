@@ -283,7 +283,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
             expectedTimestamps.add(curMillis);
             List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(getStringmetricWithGivenValue(locator, curMillis, sameValue));
+            metrics.add(makeMetric(locator,curMillis,sameValue));
             writer.insertFull(metrics);
         }
 
@@ -298,6 +298,44 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(ts, baseMillis);
             break;
         }
+    }
+
+    @Test
+    public void testStringMetricsWithDifferentValuesArePersisted() throws Exception {
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        String firstValue = getRandomStringMetricValue();
+        String secondValue = getRandomStringMetricValue();
+
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            String value = null;
+            if (i % 2 == 0) {
+                value = firstValue;
+            }
+            else {
+                value = secondValue;
+            }
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator, curMillis, value));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
     @Test
@@ -317,7 +355,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
             expectedTimestamps.add(curMillis);
             List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(getMetricWithGivenValue(locator, curMillis,sameValue));
+            metrics.add(makeMetric(locator, curMillis,sameValue));
             writer.insertFull(metrics);
         }
 
@@ -327,6 +365,76 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator, new Range(baseMillis, lastMillis),
                 CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         actualTimestamps = points.getPoints().keySet();
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
+    }
+
+    @Test
+    public void testBooleanMetricsWithSameValueAreNotPersisted() throws Exception {
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        boolean sameValue = true;
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator,curMillis,sameValue));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+
+        Assert.assertTrue(actualTimestamps.size() == 1);
+        for(long ts : actualTimestamps) {
+            Assert.assertEquals(ts, baseMillis);
+            break;
+        }
+    }
+
+    @Test
+    public void testBooleanMetricsWithDifferentValuesArePersisted() throws Exception {
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            boolean value;
+            if (i % 2 == 0) {
+                value = true;
+            }
+            else {
+                value = false;
+            }
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator, curMillis, value));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
         Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
