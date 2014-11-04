@@ -18,8 +18,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -35,7 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
+public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
@@ -121,13 +120,9 @@ public class DiscoveryWriter extends AsyncFunctionWithThreadPool<List<List<IMetr
         });
     }
 
-    public ListenableFuture<List<List<IMetric>>> apply(List<List<IMetric>> input) {
+    public void apply(List<List<IMetric>> input) {
         if (canIndex) {
             processMetrics(input);
         }
-        
-        // we don't need all metrics to finish being inserted into the discovery backend
-        // before moving onto the next step in the processing chain.
-        return new NoOpFuture<List<List<IMetric>>>(input);
     }
 }
