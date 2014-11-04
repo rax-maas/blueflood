@@ -27,7 +27,6 @@ import com.rackspacecloud.blueflood.http.RouteMatcher;
 import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchSplitter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
-import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -117,13 +116,11 @@ public class HttpMetricsIngestionServer {
     private void buildProcessingChains() {
         final AsyncFunction<MetricsCollection, List<List<IMetric>>> batchSplitter;
         final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
-        final AsyncFunction<MetricsCollection, MetricsCollection> rollupTypeCacher;
         
         batchSplitter = new BatchSplitter(
                 new ThreadPoolBuilder().withName("Metric batching").build(),
                 BATCH_SIZE
-        );
-	((BatchSplitter)batchSplitter).withLogger(log);
+        ).withLogger(log);
 
         batchWriter = new BatchWriter(
                 new ThreadPoolBuilder()
@@ -136,8 +133,7 @@ public class HttpMetricsIngestionServer {
                 timeout,
                 bufferedMetrics,
                 context
-        );
-	((BatchWriter)batchWriter).withLogger(log);
+        ).withLogger(log);
 
         discoveryWriter =
         new DiscoveryWriter(new ThreadPoolBuilder()
@@ -149,18 +145,8 @@ public class HttpMetricsIngestionServer {
 
 
         // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
-        MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
-                new TimeValue(48, TimeUnit.HOURS),
-                Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
-        rollupTypeCacher = new RollupTypeCacher(
-                new ThreadPoolBuilder().withName("Rollup type persistence").build(),
-                rollupTypeCache,
-                true
-        );
-        ((RollupTypeCacher)rollupTypeCacher).withLogger(log);
 
         this.defaultProcessorChain = AsyncChain
-                .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
@@ -169,7 +155,6 @@ public class HttpMetricsIngestionServer {
         this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
-                .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
                 .withFunction(batchWriter)
