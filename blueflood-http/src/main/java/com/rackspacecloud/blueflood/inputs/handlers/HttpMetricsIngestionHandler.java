@@ -18,7 +18,10 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
@@ -30,6 +33,8 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -51,7 +56,11 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
+    private final TypeAndUnitProcessor typeAndUnitProcessor;
     private final TimeValue timeout;
+    private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
+            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
+    private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
 
     // Metrics
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
@@ -64,6 +73,15 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
         this.processorChain = processorChain;
+
+        this.typeAndUnitProcessor = 
+            new TypeAndUnitProcessor(new ThreadPoolBuilder()
+                .withName("Metric type and unit processing")
+                .withCorePoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                .build(),
+                metricMetadataAnalyzer);
+        typeAndUnitProcessor.withLogger(log);
     }
 
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
@@ -144,7 +162,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         collection.add(new ArrayList<IMetric>(containerMetrics));
         final Timer.Context persistingTimerContext = persistingTimer.time();
         try {
+            typeAndUnitProcessor.apply(collection);
             ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
+	    log.error("gbjfixingHandler\n");
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
