@@ -19,8 +19,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
+public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, MetricsCollection> {
 
     private static final Logger log = LoggerFactory.getLogger(RollupTypeCacher.class);
     private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
@@ -46,28 +45,24 @@ public class RollupTypeCacher extends AsyncFunctionWithThreadPool<MetricsCollect
         this.isAsync = async;
     }
 
-    @Override
-    public ListenableFuture<MetricsCollection> apply(MetricsCollection input) throws Exception {
-        return isAsync ? asynchronous(input) : synchronous(input);
+    public void apply(MetricsCollection input) throws Exception {
+        isAsync ? asynchronous(input) : synchronous(input);
     }
     
-    private ListenableFuture<MetricsCollection> asynchronous(final MetricsCollection input) {
-
+    private void asynchronous(final MetricsCollection input) {
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
                 recordWithTimer(input);
             }
         });
-        return new NoOpFuture<MetricsCollection>(input);
-    }
+l    }
     
-    private ListenableFuture<MetricsCollection> synchronous(final MetricsCollection input) {
+    private void synchronous(final MetricsCollection input) {
         return getThreadPool().submit(new Callable<MetricsCollection>() {
             @Override
             public MetricsCollection call() throws Exception {
                 recordWithTimer(input);
-                return input;
             }
         });
     }

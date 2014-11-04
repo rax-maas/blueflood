@@ -81,7 +81,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                         // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
                         // susses out the string and boolean metrics for a different path, then segregates the Metric
                         // and Preaggregated metrics and writes them to the appropriate column families.
-		      getLogger().error("gbjFixing\n");
+		      getLogger().error("gbjFixing2\n");
 
                         Collection<Metric> simpleMetrics = new ArrayList<Metric>();
                         Collection<IMetric> preagMetrics = new ArrayList<IMetric>();

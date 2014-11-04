@@ -27,6 +27,8 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
+import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
+import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -34,7 +36,6 @@ import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.service.*;
-import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -57,6 +58,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     protected final TypeFactory typeFactory;
     private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
     private final TypeAndUnitProcessor typeAndUnitProcessor;
+    private final RollupTypeCacher rollupTypeCacher;
     private final TimeValue timeout;
     private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -82,6 +84,16 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 .build(),
                 metricMetadataAnalyzer);
         typeAndUnitProcessor.withLogger(log);
+
+        MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+                new TimeValue(48, TimeUnit.HOURS),
+                Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
+        rollupTypeCacher = new RollupTypeCacher(
+                new ThreadPoolBuilder().withName("Rollup type persistence").build(),
+                rollupTypeCache,
+                true);
+        rollupTypeCacher.withLogger(log);
+
     }
 
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
@@ -163,8 +175,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final Timer.Context persistingTimerContext = persistingTimer.time();
         try {
             typeAndUnitProcessor.apply(collection);
+            rollupTypeCacher.apply(collection);
             ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
-	    log.error("gbjfixingHandler\n");
+	    log.error("gbjfixingHandler2\n");
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {

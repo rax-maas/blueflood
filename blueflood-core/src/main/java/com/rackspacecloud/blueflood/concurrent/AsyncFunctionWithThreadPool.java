@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.concurrent;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.slf4j.Logger;
 
 /**
  * Does asynchronous work using a specified threadpool.
@@ -30,4 +31,9 @@ public abstract class AsyncFunctionWithThreadPool<I, O> extends FunctionWithThre
         super(executor);
     }
     public abstract ListenableFuture<O> apply(I input) throws Exception;
+    @Override
+    public <I, O> AsyncFunctionWithThreadPool<I, O> withLogger(Logger log) {
+        this.log = log;
+        return (AsyncFunctionWithThreadPool<I,O>) this;
+    }
 }

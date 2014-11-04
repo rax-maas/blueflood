@@ -31,6 +31,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.util.concurrent.AsyncFunction;
+
 
 
 public class TypeAndUnitProcessor extends FunctionWithThreadPool<MetricsCollection, MetricsCollection> {
@@ -63,7 +65,7 @@ static public void main2(String args[]) throws Exception
     typeAndUnitProcessor = 
         new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10), metricMetadataAnalyzer);
 }
-static public void main(String args[]) throws Exception
+static public void main3(String args[]) throws Exception
 {
     TypeAndUnitProcessor typeAndUnitProcessor;
     IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
@@ -79,6 +81,46 @@ static public void main(String args[]) throws Exception
                 metricMetadataAnalyzer
             );
     typeAndUnitProcessor.withLogger(log);
+
+}
+static public void main(String args[]) throws Exception
+{
+    TypeAndUnitProcessor typeAndUnitProcessor;
+    IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
+            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
+    Logger log = LoggerFactory.getLogger(TypeAndUnitProcessor.class);
+/*
+    AsyncFunction<MetricsCollection, MetricsCollection> t =
+        new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10), metricMetadataAnalyzer)
+            .withLogger(log);
+
+
+    FunctionWithThreadPool<MetricsCollection, MetricsCollection> t =
+        new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10), metricMetadataAnalyzer)
+            .withLogger(log);
+
+    typeAndUnitProcessor = 
+            new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10),
+                metricMetadataAnalyzer
+            );
+    typeAndUnitProcessor.withLogger(log);
+
+    typeAndUnitProcessor = 
+            new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10),
+                metricMetadataAnalyzer
+            ).<MetricsCollection, MetricsCollection>withLogger(log);
+
+    FunctionWithThreadPool<MetricsCollection, MetricsCollection> t2 =
+            new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10),
+                metricMetadataAnalyzer
+            ).<MetricsCollection, MetricsCollection>withLogger(log);
+
+*/
+
+    FunctionWithThreadPool<MetricsCollection, MetricsCollection> t2 =
+            new TypeAndUnitProcessor(new ScheduledThreadPoolExecutor(10),
+                metricMetadataAnalyzer
+            ).withLogger(log);
 
 }
 
