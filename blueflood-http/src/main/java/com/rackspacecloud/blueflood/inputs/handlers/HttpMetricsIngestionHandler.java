@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
@@ -90,8 +91,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
         rollupTypeCacher = new RollupTypeCacher(
                 new ThreadPoolBuilder().withName("Rollup type persistence").build(),
-                rollupTypeCache,
-                true);
+                rollupTypeCache);
         rollupTypeCacher.withLogger(log);
 
     }

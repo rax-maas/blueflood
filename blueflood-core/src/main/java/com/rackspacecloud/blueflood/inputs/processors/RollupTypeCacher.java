@@ -37,36 +37,21 @@ public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, 
     private final Timer recordDurationTimer = Metrics.timer(RollupTypeCacher.class, "Record Duration");
 
     private final MetadataCache cache;
-    private final boolean isAsync;
     
-    public RollupTypeCacher(ThreadPoolExecutor executor, MetadataCache cache, boolean async) {
+    public RollupTypeCacher(ThreadPoolExecutor executor, MetadataCache cache) {
         super(executor);
         this.cache = cache;
-        this.isAsync = async;
     }
 
-    public void apply(MetricsCollection input) throws Exception {
-        isAsync ? asynchronous(input) : synchronous(input);
-    }
-    
-    private void asynchronous(final MetricsCollection input) {
+    public void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
                 recordWithTimer(input);
             }
         });
-l    }
-    
-    private void synchronous(final MetricsCollection input) {
-        return getThreadPool().submit(new Callable<MetricsCollection>() {
-            @Override
-            public MetricsCollection call() throws Exception {
-                recordWithTimer(input);
-            }
-        });
     }
-    
+
     private void recordWithTimer(MetricsCollection input) {
         final Timer.Context recordDurationContext = recordDurationTimer.time();
 
