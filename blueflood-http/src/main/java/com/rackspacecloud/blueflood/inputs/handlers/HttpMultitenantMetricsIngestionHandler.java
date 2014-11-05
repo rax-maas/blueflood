@@ -16,10 +16,10 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
-import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.service.ScheduleContext;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 
@@ -28,8 +28,8 @@ import java.util.List;
 
 public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestionHandler {
 
-    public HttpMultitenantMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
-        super(processorChain, timeout);
+    public HttpMultitenantMetricsIngestionHandler(ScheduleContext context, IMetricsWriter writer) {
+        super(context, writer);
     }
 
     @Override
