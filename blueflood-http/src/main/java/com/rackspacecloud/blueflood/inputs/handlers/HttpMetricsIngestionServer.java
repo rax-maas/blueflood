@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.codahale.metrics.Counter;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
@@ -24,7 +23,6 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -58,46 +56,30 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
-    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
-    private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS); // metrics will be batched into this many partitions.
-
     private int httpIngestPort;
     private String httpIngestHost;
 
-    private TimeValue timeout;
-    private ScheduleContext context;
-    private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionServer.class, "Buffered Metrics");
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
-    private IMetricsWriter writer;
 
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
-        this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
-        this.context = context;
-        this.writer = writer;
-        
-        buildProcessingChains();
-        if (defaultProcessorChain == null || statsdProcessorChain == null) {
-            log.error("Processor chains were not set up properly");
-            return;
-        }
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(context, writer));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(context, writer));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain));
 
         router.get("/v2.0", new DefaultHandler());
-        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(context, writer));
+        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(context, writer));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -107,38 +89,6 @@ public class HttpMetricsIngestionServer {
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
-    }
-    
-    private void buildProcessingChains() {
-        final AsyncFunction<List<List<IMetric>>, List<Boolean>> batchWriter;
-
-        batchWriter = new BatchWriter(
-                new ThreadPoolBuilder()
-                        .withName("Metric Batch Writing")
-                        .withCorePoolSize(WRITE_THREADS)
-                        .withMaxPoolSize(WRITE_THREADS)
-                        .withUnboundedQueue()
-                        .build(),
-                writer,
-                timeout,
-                bufferedMetrics,
-                context
-        ).withLogger(log);
-
-
-        // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
-
-/*
-        this.defaultProcessorChain = (AsyncChain<MetricsCollection, List<Boolean>>)AsyncChain
-                .withFunction(batchWriter)
-                .build();
-        
-        this.statsdProcessorChain = AsyncChain
-                .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
-                .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
-                .withFunction(batchWriter)
-                .build();
-*/
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {

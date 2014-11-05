@@ -53,11 +53,9 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     
     private AsyncChain<String, List<Boolean>> processorChain;
-    private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler(AsyncChain<String,List<Boolean>> processorChain, TimeValue timeout) {
+    public HttpStatsDIngestionHandler(AsyncChain<String,List<Boolean>> processorChain) {
         this.processorChain = processorChain;
-        this.timeout = timeout;
     }
     
     // our own stuff.
@@ -71,6 +69,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         try {
             // block until things get ingested.
             ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
+	    /*
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
@@ -78,6 +77,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
                     return;
                 }
             }
+	    */
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
 
         } catch (JsonParseException ex) {
