@@ -17,6 +17,8 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +38,15 @@ public class StringMetricsPersistenceOptimizer implements
 
     @Override
     public boolean shouldPersist(Metric metric) throws Exception {
-        String currentValue = String.valueOf(metric.getMetricValue());
-        final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
-
-        return lastValue == null || !currentValue.equals(lastValue);
+        boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+        
+        if(areStringMetricsDropped) {
+           return false;
+        }
+        else {
+            String currentValue = String.valueOf(metric.getMetricValue());
+            final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
+            return lastValue == null || !currentValue.equals(lastValue);
+        }
     }
 }
