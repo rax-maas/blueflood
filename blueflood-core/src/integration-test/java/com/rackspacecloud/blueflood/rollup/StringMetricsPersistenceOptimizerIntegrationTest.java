@@ -16,11 +16,14 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
-import com.rackspacecloud.blueflood.types.Locator;
+import com.netflix.astyanax.MutationBatch;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.netflix.astyanax.MutationBatch;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,13 +35,14 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
     private MetricsPersistenceOptimizer metricsOptimizer;
     private Locator locator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomDim", "randomMetric");
     private Locator otherLocator = Locator.createLocatorFromPathComponents("randomAccount", "randomEntity", "randomCheck", "randomBooleanMetric");
-
+    private boolean areStringMetricsDropped;
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
         metricsOptimizer = new StringMetricsPersistenceOptimizer();
         populateMetricsFull();
+        areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     }
 
     /**
@@ -125,5 +129,42 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
         // shouldPersist should now be true as we do not have the same metric
         // as the one in the database
         Assert.assertEquals(true, shouldPersist);
+    }
+
+    @Test
+    public void testShouldPersistIfConfigValueFalse() throws Exception {
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(), "false");
+        final Locator dummyLocator = Locator.createLocatorFromDbKey("acct.ent.check.dim.metric");
+        final long collectionTimeInSecs = 45678;
+        final String testMetric = "HTTP GET failed";
+        final Metric newMetric = new Metric(dummyLocator, testMetric, collectionTimeInSecs,
+                new TimeValue(2, TimeUnit.DAYS), "unknown");
+
+        boolean shouldPersist = metricsOptimizer.shouldPersist(newMetric);
+
+        // shouldPersist should return true as cassandra doesn't have any
+        // metrics for this locator yet
+        Assert.assertEquals(true, shouldPersist);
+    }
+
+    @Test
+    public void testShouldNotPersistIfConfigValueTrue() throws Exception {
+        final Locator dummyLocator = Locator.createLocatorFromDbKey("acct.ent.check.dim.metric");
+        final long collectionTimeInSecs = 45678;
+        final String testMetric = "HTTP GET failed";
+        final Metric newMetric = new Metric(dummyLocator, testMetric, collectionTimeInSecs,
+                new TimeValue(2, TimeUnit.DAYS), "unknown");
+
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(), "true");
+        boolean shouldPersist = metricsOptimizer.shouldPersist(newMetric);
+
+        // shouldPersist should return true as cassandra doesn't have any
+        // metrics for this locator yet
+        Assert.assertEquals(false, shouldPersist);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),String.valueOf(areStringMetricsDropped));
     }
 }
