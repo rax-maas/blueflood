@@ -31,16 +31,25 @@ public class StringMetricsPersistenceOptimizer implements
         MetricsPersistenceOptimizer {
     private static final Logger log = LoggerFactory.getLogger(
             StringMetricsPersistenceOptimizer.class);
+    private static boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
 
     public StringMetricsPersistenceOptimizer() {
         // left empty
     }
 
+    //to be called from tests
+    public static void stringMetricsAreDropped() {
+        areStringMetricsDropped = true;
+    }
+
+    //to be invoked only from tests
+    public static void stringMetricsDroppedIsReset() {
+        areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+    }
+
     @Override
     public boolean shouldPersist(Metric metric) throws Exception {
-        boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
-        
-        if(areStringMetricsDropped) {
+        if (areStringMetricsDropped) {
            return false;
         }
         else {

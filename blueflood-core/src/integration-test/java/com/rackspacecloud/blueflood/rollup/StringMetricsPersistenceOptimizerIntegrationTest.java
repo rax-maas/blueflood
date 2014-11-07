@@ -133,7 +133,6 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
     @Test
     public void testShouldPersistIfConfigValueFalse() throws Exception {
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(), "false");
         final Locator dummyLocator = Locator.createLocatorFromDbKey("acct.ent.check.dim.metric");
         final long collectionTimeInSecs = 45678;
         final String testMetric = "HTTP GET failed";
@@ -153,9 +152,9 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
         final long collectionTimeInSecs = 45678;
         final String testMetric = "HTTP GET failed";
         final Metric newMetric = new Metric(dummyLocator, testMetric, collectionTimeInSecs,
-                new TimeValue(2, TimeUnit.DAYS), "unknown");
 
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(), "true");
+        new TimeValue(2, TimeUnit.DAYS), "unknown");
+        StringMetricsPersistenceOptimizer.stringMetricsAreDropped();
         boolean shouldPersist = metricsOptimizer.shouldPersist(newMetric);
 
         // shouldPersist should return true as cassandra doesn't have any
@@ -165,6 +164,6 @@ public class StringMetricsPersistenceOptimizerIntegrationTest extends
 
     @After
     public void tearDown() throws Exception {
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),String.valueOf(areStringMetricsDropped));
+        StringMetricsPersistenceOptimizer.stringMetricsDroppedIsReset();
     }
 }
