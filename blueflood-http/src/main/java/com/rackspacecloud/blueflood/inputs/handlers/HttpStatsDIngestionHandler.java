@@ -23,14 +23,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -53,11 +53,13 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
-
-    private AsyncChain<String, List<Boolean>> processorChain;
     
-    public HttpStatsDIngestionHandler(AsyncChain<String,List<Boolean>> processorChain) {
-        this.processorChain = processorChain;
+    private final HttpMetricsIngestionHandler.Processor processor;
+    private final TimeValue timeout;
+    
+    public HttpStatsDIngestionHandler(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
+        this.timeout = timeout;
+        this.processor = new HttpMetricsIngestionHandler.Processor(context, writer, timeout);
     }
     
     // our own stuff.
@@ -71,8 +73,10 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         try {
 	    // block until things get ingested.
             requestCount.inc();
-            ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
-	    /*
+            // block until things get ingested.
+            MetricsCollection collection = new MetricsCollection();
+            collection.add(PreaggregateConversions.buildMetricsCollection(createBundle(body)));
+            ListenableFuture<List<Boolean>> futures = processor.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
@@ -80,7 +84,6 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
                     return;
                 }
             }
-	    */
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
 
         } catch (JsonParseException ex) {
@@ -105,23 +108,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         Bundle bundle = new Gson().fromJson(json, Bundle.class);
         return bundle;
     }
-    
-    public static class MakeBundle implements AsyncFunction<String, Bundle> {
-        @Override
-        public ListenableFuture<Bundle> apply(String input) throws Exception {
-            return new NoOpFuture<Bundle>(createBundle(input));
-        }
-    }
-    
-    public static class MakeCollection implements AsyncFunction<Bundle, MetricsCollection> {
-        @Override
-        public ListenableFuture<MetricsCollection> apply(Bundle input) throws Exception {
-            MetricsCollection collection = new MetricsCollection();
-            collection.add(PreaggregateConversions.buildMetricsCollection(input));
-            return new NoOpFuture<MetricsCollection>(collection);
-        }
-    }
-    
+
     public static class WriteMetrics extends AsyncFunctionWithThreadPool<Collection<IMetric>, Boolean> {
         private final AstyanaxWriter writer;
         

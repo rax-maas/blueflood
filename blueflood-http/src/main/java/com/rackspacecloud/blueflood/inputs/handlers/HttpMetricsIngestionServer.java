@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.common.util.concurrent.AsyncFunction;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
@@ -56,30 +55,30 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
+    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private int httpIngestPort;
     private String httpIngestHost;
 
+    private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
     
-    private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
-    private AsyncChain<String, List<Boolean>> statsdProcessorChain;
-
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
+        this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(context, writer));
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(context, writer));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(statsdProcessorChain));
+        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(context, writer, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(context, writer, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(context, writer, timeout));
 
         router.get("/v2.0", new DefaultHandler());
-        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(context, writer));
-        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(context, writer));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain));
+        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(context, writer, timeout));
+        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(context, writer, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(context, writer, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
