@@ -28,8 +28,6 @@ import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -52,12 +50,12 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     
-    private final HttpMetricsIngestionHandler.Processor processor;
+    private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
+    public HttpStatsDIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        this.processor = processor;
         this.timeout = timeout;
-        this.processor = new HttpMetricsIngestionHandler.Processor(context, writer, timeout);
     }
     
     // our own stuff.

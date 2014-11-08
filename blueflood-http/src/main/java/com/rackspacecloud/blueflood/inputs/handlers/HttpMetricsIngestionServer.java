@@ -16,12 +16,17 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.google.common.util.concurrent.AsyncFunction;
+import com.codahale.metrics.Counter;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
+import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
+import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
+import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -58,6 +63,7 @@ public class HttpMetricsIngestionServer {
     private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
     private int httpIngestPort;
     private String httpIngestHost;
+    private Processor processor;
 
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
@@ -68,17 +74,18 @@ public class HttpMetricsIngestionServer {
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
-        
+        this.processor = new Processor(context, writer, timeout);
+
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(context, writer, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(context, writer, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(context, writer, timeout));
+        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(processor, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(processor, timeout));
 
         router.get("/v2.0", new DefaultHandler());
-        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(context, writer, timeout));
-        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(context, writer, timeout));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(context, writer, timeout));
+        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -118,6 +125,76 @@ public class HttpMetricsIngestionServer {
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;
+        }
+    }
+    static class Processor {
+        private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
+        private static int WRITE_THREADS = 
+            Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS); // metrics will be batched into this many partitions.
+
+        private final TypeAndUnitProcessor typeAndUnitProcessor;
+        private final RollupTypeCacher rollupTypeCacher;
+        private final DiscoveryWriter discoveryWriter;
+        private final BatchWriter batchWriter;
+        private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
+            new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
+        private int HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS = 
+            Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS);
+        private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionHandler.class, "Buffered Metrics");
+        private final TimeValue timeout;
+
+        Processor(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
+            this.timeout = timeout;
+
+            typeAndUnitProcessor = new TypeAndUnitProcessor(
+                new ThreadPoolBuilder()
+                    .withName("Metric type and unit processing")
+                    .withCorePoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                    .withMaxPoolSize(HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS)
+                    .build(),
+                    metricMetadataAnalyzer);
+            typeAndUnitProcessor.withLogger(log);
+
+            batchWriter = new BatchWriter(
+                    new ThreadPoolBuilder()
+                            .withName("Metric Batch Writing")
+                            .withCorePoolSize(WRITE_THREADS)
+                            .withMaxPoolSize(WRITE_THREADS)
+                            .withUnboundedQueue()
+                            .build(),
+                    writer,
+                    timeout,
+                    bufferedMetrics,
+                    context
+            );
+            batchWriter.withLogger(log);
+
+            discoveryWriter =
+            new DiscoveryWriter(new ThreadPoolBuilder()
+                .withName("Metric Discovery Writing")
+                .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
+                .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
+                .withUnboundedQueue()
+                .build());
+            discoveryWriter.withLogger(log);
+
+            // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
+            MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
+                    new TimeValue(48, TimeUnit.HOURS),
+                    Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
+            rollupTypeCacher = new RollupTypeCacher(
+                    new ThreadPoolBuilder().withName("Rollup type persistence").build(),
+                    rollupTypeCache);
+            rollupTypeCacher.withLogger(log);
+    
+
+        }
+        ListenableFuture<List<Boolean>> apply(MetricsCollection collection) throws Exception {
+            typeAndUnitProcessor.apply(collection);
+            rollupTypeCacher.apply(collection);
+            List<List<IMetric>> batches = collection.splitMetricsIntoBatches(BATCH_SIZE);
+            discoveryWriter.apply(batches);
+            return batchWriter.apply(batches);
         }
     }
 }

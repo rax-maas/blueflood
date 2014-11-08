@@ -18,8 +18,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -29,8 +27,8 @@ import java.util.List;
 
 public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestionHandler {
 
-    public HttpMultitenantMetricsIngestionHandler(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
-        super(context, writer, timeout);
+    public HttpMultitenantMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        super(processor, timeout);
     }
 
     @Override
