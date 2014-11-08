@@ -155,7 +155,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         final Timer.Context persistingTimerContext = persistingTimer.time();
         try {
             ListenableFuture<List<Boolean>> futures = processor.apply(collection);
-	    log.error("gbjfixingHandler4\n");
+	    log.error("gbjfixingHandler5\n");
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
