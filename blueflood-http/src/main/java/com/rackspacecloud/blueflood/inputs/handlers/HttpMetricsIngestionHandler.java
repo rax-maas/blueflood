@@ -23,7 +23,6 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
@@ -63,7 +62,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     protected final TypeFactory typeFactory;
     private final TimeValue timeout;
     private final Processor processor;
-    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
 
     // Metrics
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
@@ -71,10 +69,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion response sending timer");
 
 
-    public HttpMetricsIngestionHandler(ScheduleContext context, IMetricsWriter writer) {
+    public HttpMetricsIngestionHandler(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
-        this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
+        this.timeout = timeout;
         this.processor = new Processor(context, writer, timeout);
     }
 
