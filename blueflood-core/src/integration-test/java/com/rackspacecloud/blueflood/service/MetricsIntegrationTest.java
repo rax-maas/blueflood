@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,7 +41,8 @@ import java.util.concurrent.TimeUnit;
  * Some of these tests here were horribly contrived to mimic behavior in Writer. The problem with this approach is that
  * when logic in Writer changes, these tests can break unless the logic is changed here too. */
 public class MetricsIntegrationTest extends IntegrationTestBase {
-    
+
+    private static boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     // returns a collection all checks that were written at some point.
     // this was a lot cooler back when the slot changed with time.
     private Collection<Locator> writeLocatorsOnly(int hours) throws Exception {
@@ -262,6 +264,74 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator, new Range(baseMillis, lastMillis),
                 CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         actualTimestamps = points.getPoints().keySet();
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
+    }
+
+    @Test
+    public void testStringMetricsIfSoConfiguredAreAlwaysDropped() throws Exception {
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"true");
+        Configuration.getInstance().init();
+
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+
+        Assert.assertTrue(actualTimestamps.size() == 0);
+    }
+
+    @Test
+    public void testStringMetricsIfSoConfiguredArePersistedAsExpected() throws Exception {
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"false");
+        Configuration.getInstance().init();
+
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+
         Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
@@ -548,5 +618,11 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         Assert.assertNotNull(slotStateManager.getSlotStamps());
         Assert.assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(slot).getState());
+    }
+
+    @After
+    public void TearDown() throws Exception{
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),String.valueOf(areStringMetricsDropped));
+        Configuration.getInstance().init();
     }
 }
