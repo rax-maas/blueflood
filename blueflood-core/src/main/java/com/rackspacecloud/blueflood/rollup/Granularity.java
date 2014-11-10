@@ -21,9 +21,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
 
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * 1440m    [ not enough space to show the relationship, but there would be 6 units of the 240m ranges in 1 1440m range.
@@ -165,60 +163,6 @@ public final class Granularity {
         long rangeStart = referenceMillis - slotDiff * milliseconds();
         return new Range(rangeStart, rangeStart + milliseconds() - 1);
     }
-    
-    // return all the locator keys of this slot and its finer children, recursively.
-    public Set<String> getChildrenKeys(int slot, int shard) {
-        HashSet<String> set = new HashSet<String>();
-        try {
-            Granularity finer = finer();
-            int factor = finer.numSlots() / numSlots();
-            // basically this: add all the keys this slot maps to in the finer granularity,
-            // then add their children too.
-            for (int i = 0; i < factor; i++) {
-                int childSlot = slot * factor + i;
-                set.add(finer.formatLocatorKey(childSlot, shard));
-                set.addAll(finer.getChildrenKeys(childSlot, shard));
-            }
-            return set;
-        } catch (GranularityException ex) {
-            return set;
-        }
-    }
-    
-    /** iterates over locator keys (gran + slot) for a given time range */
-    Iterable<String> locatorKeys(final int shard, final long start, final long stop) {
-        return new Iterable<String>() {
-            private final int startSlot = slot(snapMillis(start));
-            // stop slot is determined by 
-            private final int stopSlot = slot(snapMillis(stop + milliseconds)); 
-            
-            public Iterator<String> iterator() {
-                return new Iterator<String>() {
-                    
-                    private int cur = startSlot;
-                    
-                    public boolean hasNext() {
-                        if (startSlot <= stopSlot)
-                            return cur < stopSlot;
-                        else {
-                            if (cur >= startSlot)
-                                return cur < numSlots;
-                            else
-                                return cur < stopSlot;
-                        }
-                    }
-
-                    public String next() {
-                        String v = formatLocatorKey(cur, shard);
-                        cur = (cur + 1) % numSlots;
-                        return v;
-                    }
-
-                    public void remove() { throw new RuntimeException("Not supported"); }
-                };
-            }
-        };
-    }
 
     /**
      * Return granularity that maps most closely to requested number of points based on
@@ -358,29 +302,6 @@ public final class Granularity {
             if (g.name().equals(s) || g.shortName().equals(s))
                 return g;
         return null;
-    }
-    
-    // this is the key used in metrics_meta and metrics_locator. returns an intern()ed string (there will only be about
-    // 5900 of them and I'd like to be able to do == comparisons).
-    public String formatLocatorKey(int slot, int shard) {   
-        return String.format("%s,%d,%d", name(), slot, shard).intern(); 
-    }
-    
-    // get granularity from a locator key.
-    public static Granularity granularityFromKey(String key) {
-        for (Granularity g : granularities)
-            if (key.startsWith(g.name() + ","))
-                return g;
-        throw new RuntimeException("Unexpected granularity: " + key);
-    }
-    
-    public static int shardFromKey(String s) {
-        return Integer.parseInt(s.substring(s.lastIndexOf(",") + 1));
-    }
-    
-    // get slot from locator key.  todo: needs tests.
-    public static int slotFromKey(String s) {
-        return Integer.parseInt(s.split(",")[1]);
     }
 
     @Override

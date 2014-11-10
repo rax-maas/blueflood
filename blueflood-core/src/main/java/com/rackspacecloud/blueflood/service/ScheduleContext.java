@@ -149,7 +149,8 @@ public class ScheduleContext implements IngestionContext {
                         }
 
                         for (Integer slot : slotsToWorkOn) {
-                            if (areChildKeysOrSelfKeyScheduledOrRunning(shard, g, slot)) {
+                            SlotKey slotKey = SlotKey.of(g, slot, shard);
+                            if (areChildKeysOrSelfKeyScheduledOrRunning(slotKey)) {
                                 continue;
                             }
                             SlotKey key = SlotKey.of(g, slot, shard);
@@ -163,21 +164,13 @@ public class ScheduleContext implements IngestionContext {
         }
     }
 
-    /**
-     * Determines whether the given slot key is eligible for execution, by checking for the slot keys.
-     * @param shard shard being checked.
-     * @param g granularity being checked.
-     * @param slot slot being checked.
-     * @return
-     */
-    private boolean areChildKeysOrSelfKeyScheduledOrRunning(int shard, Granularity g, int slot) {
+    private boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
-        Collection<String> ineligibleKeys = shardStateManager.getSlotStateManager(shard, g).getChildAndSelfKeysForSlot(slot);
+        Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();
 
         // if any ineligible keys are running or scheduled to run, do not schedule this key.
-        for (String badKey : ineligibleKeys) {
-            SlotKey parsed = SlotKey.parse(badKey);
-            if (runningSlots.keySet().contains(parsed) || scheduledSlots.contains(parsed)) {
+        for (SlotKey childrenKey : ineligibleKeys) {
+            if (runningSlots.keySet().contains(childrenKey) || scheduledSlots.contains(childrenKey)) {
                 return true;
             }
         }
@@ -242,14 +235,10 @@ public class ScheduleContext implements IngestionContext {
     
     // remove rom the list of running slots.
     void clearFromRunning(SlotKey slotKey) {
-        int shard = slotKey.getShard();
         synchronized (runningSlots) {
             runningSlots.remove(slotKey);
-            int slot = slotKey.getSlot();
-            Granularity gran = slotKey.getGranularity();
-
-            UpdateStamp stamp = shardStateManager.getUpdateStamp(shard, gran, slot);
-            shardStateManager.setAllCoarserSlotsDirtyForSlot(shard, gran, slot);
+            UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
+            shardStateManager.setAllCoarserSlotsDirtyForSlot(slotKey);
             // Update the stamp to Rolled state if and only if the current state is running.
             // If the current state is active, it means we received a delayed put which toggled the status to Active.
             if (stamp.getState() == UpdateStamp.State.Running) {

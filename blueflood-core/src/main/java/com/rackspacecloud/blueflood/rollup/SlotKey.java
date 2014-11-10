@@ -2,7 +2,17 @@
 package com.rackspacecloud.blueflood.rollup;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.Constants;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Immutable data structure representing the current slot being checked. 3-tuple of (shard, slot, granularity).
@@ -63,6 +73,29 @@ public final class SlotKey {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    public Collection<SlotKey> getChildrenKeys() {
+        if (granularity == Granularity.FULL) {
+            return ImmutableList.of();
+        }
+
+        List<SlotKey> result = new ArrayList<SlotKey>();
+        Granularity finer;
+        try {
+            finer = granularity.finer();
+        } catch (GranularityException e) {
+            throw new AssertionError("Should not occur.");
+        }
+
+        int factor = finer.numSlots() / granularity.numSlots();
+        for (int i = 0; i < factor; i++) {
+            int childSlot = slot * factor + i;
+            SlotKey child = SlotKey.of(finer, childSlot, shard);
+            result.add(child);
+            result.addAll(child.getChildrenKeys());
+        }
+        return result;
     }
 
     /**
