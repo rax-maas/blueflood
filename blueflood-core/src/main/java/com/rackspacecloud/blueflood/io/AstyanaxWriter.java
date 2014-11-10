@@ -40,9 +40,7 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class AstyanaxWriter extends AstyanaxIO {
@@ -71,8 +69,11 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private boolean shouldPersistStringMetric(Metric metric) {
         final boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+        final String tenantIdsKept = Configuration.getInstance().getStringProperty(CoreConfig.TENANTIDS_TO_KEEP);
+        Set<String> keptTenantIds = new HashSet<String>(Arrays.asList(tenantIdsKept.split(",")));
+        String tenantId = metric.getLocator().getTenantId();
 
-        if(areStringMetricsDropped) {
+        if(areStringMetricsDropped && !keptTenantIds.contains(tenantId) ) {
             return false;
         }
         else {
