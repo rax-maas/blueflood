@@ -303,6 +303,43 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
+    public void testStringMetricsIfSoConfiguredAreNotDroppedForKeptTenantIds() throws Exception {
+        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"true");
+
+
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+        final String acctId = "ac" + IntegrationTestBase.randString(8);
+        final String metricName = "fooService,barServer," + randString(8);
+
+        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        System.setProperty(CoreConfig.TENANTIDS_TO_KEEP.name(),locator.getTenantId());
+        Configuration.getInstance().init();
+
+        Set<Long> expectedTimestamps = new HashSet<Long>();
+        // insert something every 30s for 5 mins.
+        for (int i = 0; i < 10; i++) {
+            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+
+            expectedTimestamps.add(curMillis);
+            List<Metric> metrics = new ArrayList<Metric>();
+            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
+            writer.insertFull(metrics);
+        }
+
+        Set<Long> actualTimestamps = new HashSet<Long>();
+        // get back the cols that were written from start to stop.
+
+        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
+        actualTimestamps = data.getData().getPoints().keySet();
+
+        Assert.assertEquals(expectedTimestamps, actualTimestamps);
+    }
+
+    @Test
     //In this test, string metrics are not configured to be dropped so they are persisted.
     public void testStringMetricsIfSoConfiguredArePersistedAsExpected() throws Exception {
         System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"false");
