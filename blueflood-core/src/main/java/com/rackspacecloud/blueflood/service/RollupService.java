@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class RollupService implements Runnable, RollupServiceMBean {
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
-    private static final long ROLLUP_DELAY_MILLIS = 1000 * 60 * 5; // 5 minutes.
+    private final long rollupDelayMillis;
 
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
@@ -131,6 +131,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
         // higher.
         Configuration config = Configuration.getInstance();
+        rollupDelayMillis = config.getLongProperty("ROLLUP_DELAY_MILLIS");
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
             "LocatorFetchThreadPool",
@@ -184,7 +185,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     final void poll() {
         Timer.Context timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
-        context.scheduleSlotsOlderThan(ROLLUP_DELAY_MILLIS);
+        context.scheduleSlotsOlderThan(rollupDelayMillis);
         timer.stop();
     }
 

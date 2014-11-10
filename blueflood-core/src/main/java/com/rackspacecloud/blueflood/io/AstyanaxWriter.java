@@ -33,7 +33,9 @@ import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
+import com.rackspacecloud.blueflood.service.SlotState;
+import com.rackspacecloud.blueflood.service.UpdateStamp;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -64,23 +66,16 @@ public class AstyanaxWriter extends AstyanaxIO {
     
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
-    // written in the last 10 minutes, don't bother.
-    private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterWrite(10,
+    // seen within the last 10 minutes, don't bother.
+    private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
 
     private boolean shouldPersistStringMetric(Metric metric) {
-        final boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+        String currentValue = String.valueOf(metric.getMetricValue());
+        final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
 
-        if(areStringMetricsDropped) {
-            return false;
-        }
-        else {
-            String currentValue = String.valueOf(metric.getMetricValue());
-            final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
-
-            return lastValue == null || !currentValue.equals(lastValue);
-        }
+        return lastValue == null || !currentValue.equals(lastValue);
     }
 
     private boolean shouldPersist(Metric metric) {

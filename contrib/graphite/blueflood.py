@@ -89,6 +89,8 @@ class TenantBluefloodReader(object):
     else:
       client = Client(self.bf_query_endpoint, self.tenant)
       values = client.get_values(self.metric, start_time, end_time)
+      # value keys in order of preference.
+      value_res_order = ['average', 'latest', 'numPoints']
 
       # determine the step
       minTime = 0x7fffffffffffffff
@@ -102,7 +104,9 @@ class TenantBluefloodReader(object):
         lastTime = timestamp
         minTime = min(minTime, timestamp)
         maxTime = max(maxTime, timestamp)
-        value_arr.append(obj['average'])
+        present_keys = [_ for _ in value_res_order if _ in obj]
+        if present_keys:
+            value_arr.append(obj[present_keys[0]])
 
       time_info = (minTime, maxTime, step)
       return (time_info, value_arr)
