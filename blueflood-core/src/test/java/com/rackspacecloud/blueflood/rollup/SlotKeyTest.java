@@ -6,9 +6,16 @@ import org.junit.Test;
 public class SlotKeyTest {
     @Test
     public void test_parse() {
-        SlotKey.parse("metrics_1440m,10,A");
-    }
+        SlotKey parsed = SlotKey.parse("metrics_1440m,10,20");
+        Assert.assertEquals(parsed.getGranularity(), Granularity.MIN_1440);
+        Assert.assertEquals(parsed.getSlot(), 10);
+        Assert.assertEquals(parsed.getShard(), 20);
 
+        // invalid results
+        Assert.assertNull(SlotKey.parse("metrics_6m,10,20"));
+        Assert.assertNull(SlotKey.parse("metrics_1440m,200,20"));
+        Assert.assertNull(SlotKey.parse("metrics_1440m,10,128"));
+    }
 
     @Test
     public void test_getChildrenKeys() {

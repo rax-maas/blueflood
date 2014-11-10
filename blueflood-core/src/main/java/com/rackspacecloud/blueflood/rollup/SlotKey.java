@@ -29,7 +29,7 @@ public final class SlotKey {
         Preconditions.checkArgument(shard >= 0, "shard");
         Preconditions.checkArgument(shard < Constants.NUMBER_OF_SHARDS, "shard");
         Preconditions.checkArgument(slot >= 0, "slot");
-        Preconditions.checkArgument(slot < Granularity.BASE_SLOTS_PER_GRANULARITY, "slot");
+        Preconditions.checkArgument(slot < granularity.numSlots(), "slot");
 
         this.shard = shard;
         this.slot = slot;
@@ -56,6 +56,8 @@ public final class SlotKey {
      * Given the encoded slot key, returns the java object of it.
      * For the valid slot keys, this function is inverse of {@link #toString()}.
      * @return decoded {@link SlotKey}, <code>null</code> if it's an invalid slotkey.
+     *
+     * This function is mostly used in the tests.
      */
     public static SlotKey parse(String string) {
         String[] tokens = string.split(",");
@@ -70,7 +72,7 @@ public final class SlotKey {
             int slot = Integer.parseInt(tokens[1]);
             int shard = Integer.parseInt(tokens[2]);
             return of(granularity, slot, shard);
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
