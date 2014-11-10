@@ -135,8 +135,7 @@ public enum CoreConfig implements ConfigDefaults {
     META_CACHE_RETENTION_IN_MINUTES("10"),
     
     // how long we typically wait to schedule a rollup.
-    ROLLUP_DELAY_MILLIS("300000"),
-    STRING_METRICS_DROPPED("false");
+    ROLLUP_DELAY_MILLIS("300000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
