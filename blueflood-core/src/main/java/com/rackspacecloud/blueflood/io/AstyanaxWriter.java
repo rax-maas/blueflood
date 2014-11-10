@@ -33,9 +33,7 @@ import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
-import com.rackspacecloud.blueflood.service.SlotState;
-import com.rackspacecloud.blueflood.service.UpdateStamp;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -72,10 +70,17 @@ public class AstyanaxWriter extends AstyanaxIO {
 
 
     private boolean shouldPersistStringMetric(Metric metric) {
-        String currentValue = String.valueOf(metric.getMetricValue());
-        final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
+        final boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
 
-        return lastValue == null || !currentValue.equals(lastValue);
+        if(areStringMetricsDropped) {
+            return false;
+        }
+        else {
+            String currentValue = String.valueOf(metric.getMetricValue());
+            final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
+
+            return lastValue == null || !currentValue.equals(lastValue);
+        }
     }
 
     private boolean shouldPersist(Metric metric) {
