@@ -17,17 +17,27 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Meter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 // keeps track of dirty slots in memory. Operations must be threadsafe.
@@ -37,13 +47,13 @@ import java.util.concurrent.TimeUnit;
  * Each node is responsible for sharded slots (time ranges) of rollups.  This class keeps track of the execution of
  * those rollups and the states they are in.  
  * 
- * When syncrhonizing multiple collections, do it in this order: scheduled, running, updatemap. 
+ * When synchronizing multiple collections, do it in this order: scheduled -> running.
  */
 public class ScheduleContext implements IngestionContext {
     private static final Logger log = LoggerFactory.getLogger(ScheduleContext.class);
 
     private final ShardStateManager shardStateManager;
-    private long scheduleTime = 0L;
+    private transient long scheduleTime = 0L;
     
     // these shards have been scheduled in the last 10 minutes.
     private final Cache<Integer, Long> recentlyScheduledShards = CacheBuilder.newBuilder()
@@ -57,18 +67,18 @@ public class ScheduleContext implements IngestionContext {
 
     // these are all the slots that are scheduled to run in no particular order. the collection is synchronized to 
     // control updates.
-    private final Set<String> scheduledSlots = new HashSet<String>(); // Collections.synchronizedSet(new HashSet<String>());
+    private final Set<SlotKey> scheduledSlots = new HashSet<SlotKey>();
     
     // same information as scheduledSlots, but order is preserved.  The ordered property is only needed for getting the
     // the next scheduled slot, but most operations are concerned with if a slot is scheduled or not.  When you update
     // one, you must update the other.
-    private final List<String> orderedScheduledSlots = new ArrayList<String>();
+    private final List<SlotKey> orderedScheduledSlots = new ArrayList<SlotKey>();
     
     // slots that are running are not scheduled.
-    private final Map<String, Long> runningSlots = new HashMap<String, Long>();
+    private final Map<SlotKey, Long> runningSlots = new HashMap<SlotKey, Long>();
 
     // shard lock manager
-    private ShardLockManager lockManager;
+    private final ShardLockManager lockManager;
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
         this.scheduleTime = currentTimeMillis;
@@ -77,7 +87,8 @@ public class ScheduleContext implements IngestionContext {
     }
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
-        this(currentTimeMillis, managedShards);
+        this.scheduleTime = currentTimeMillis;
+        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
         ZKBasedShardLockManager lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
         lockManager.init(new TimeValue(5, TimeUnit.SECONDS));
         this.lockManager = lockManager;
@@ -90,14 +101,16 @@ public class ScheduleContext implements IngestionContext {
     public ShardStateManager getShardStateManager() {
         return this.shardStateManager;
     }
-    
-    // marks slots dirty. -- This is ONLY called on a subset of host environments where Blueflood runs
-    // -- it runs on scribe nodes, not dcass nodes
+
+    /**
+     * {@inheritDoc}
+     */
     public void update(long millis, int shard) {
         // there are two update paths. for managed shards, we must guard the scheduled and running collections.  but
         // for unmanaged shards, we just let the update happen uncontested.
-        if (log.isTraceEnabled())
+        if (log.isTraceEnabled()) {
             log.trace("Updating {} to {}", shard, millis);
+        }
         boolean isManaged = shardStateManager.contains(shard);
         for (Granularity g : Granularity.rollupGranularities()) {
             ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, g);
@@ -105,8 +118,9 @@ public class ScheduleContext implements IngestionContext {
 
             if (isManaged) {
                 synchronized (scheduledSlots) { //put
-                    if (scheduledSlots.remove(g.formatLocatorKey(slot, shard)) && log.isDebugEnabled()) {
-                        log.debug("descheduled " + g.formatLocatorKey(slot, shard));// don't worry about orderedScheduledSlots
+                    SlotKey key = SlotKey.of(g, slot, shard);
+                    if (scheduledSlots.remove(key) && log.isDebugEnabled()) {
+                        log.debug("descheduled {}.", key);// don't worry about orderedScheduledSlots
                     }
                 }
             }
@@ -138,7 +152,7 @@ public class ScheduleContext implements IngestionContext {
                             if (areChildKeysOrSelfKeyScheduledOrRunning(shard, g, slot)) {
                                 continue;
                             }
-                            String key = g.formatLocatorKey(slot, shard);
+                            SlotKey key = SlotKey.of(g, slot, shard);
                             scheduledSlots.add(key);
                             orderedScheduledSlots.add(key);
                             recentlyScheduledShards.put(shard, scheduleTime);
@@ -149,14 +163,24 @@ public class ScheduleContext implements IngestionContext {
         }
     }
 
+    /**
+     * Determines whether the given slot key is eligible for execution, by checking for the slot keys.
+     * @param shard shard being checked.
+     * @param g granularity being checked.
+     * @param slot slot being checked.
+     * @return
+     */
     private boolean areChildKeysOrSelfKeyScheduledOrRunning(int shard, Granularity g, int slot) {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<String> ineligibleKeys = shardStateManager.getSlotStateManager(shard, g).getChildAndSelfKeysForSlot(slot);
 
         // if any ineligible keys are running or scheduled to run, do not schedule this key.
-        for (String badKey : ineligibleKeys)
-            if (runningSlots.keySet().contains(badKey) || scheduledSlots.contains(badKey))
+        for (String badKey : ineligibleKeys) {
+            SlotKey parsed = SlotKey.parse(badKey);
+            if (runningSlots.keySet().contains(parsed) || scheduledSlots.contains(parsed)) {
                 return true;
+            }
+        }
 
         return false;
     }
@@ -172,15 +196,15 @@ public class ScheduleContext implements IngestionContext {
     
     // returns the next scheduled key. It has a few side effects: 1) it resets update tracking for that slot, 2) it adds
     // the key to the set of running rollups.
-    String getNextScheduled() {
+    @VisibleForTesting SlotKey getNextScheduled() {
         synchronized (scheduledSlots) {
             if (scheduledSlots.size() == 0)
                 return null;
             synchronized (runningSlots) {
-                String key = orderedScheduledSlots.remove(0);
-                int slot = Granularity.slotFromKey(key);
-                Granularity gran = Granularity.granularityFromKey(key);
-                int shard = Granularity.shardFromKey(key);
+                SlotKey key = orderedScheduledSlots.remove(0);
+                int slot = key.getSlot();
+                Granularity gran = key.getGranularity();
+                int shard = key.getShard();
                 // notice how we change the state, but the timestamp remained the same. this is important.  When the
                 // state is evaluated (i.e., in Reader.getShardState()) we need to realize that when timstamps are the
                 // same (this will happen), that a remove always wins during the coalesce.
@@ -198,12 +222,12 @@ public class ScheduleContext implements IngestionContext {
         }
     }
     
-    void pushBackToScheduled(String key, boolean rescheduleImmediately) {
+    void pushBackToScheduled(SlotKey key, boolean rescheduleImmediately) {
         synchronized (scheduledSlots) {
             synchronized (runningSlots) {
-                int slot = Granularity.slotFromKey(key);
-                Granularity gran = Granularity.granularityFromKey(key);
-                int shard = Granularity.shardFromKey(key);
+                int slot = key.getSlot();
+                Granularity gran = key.getGranularity();
+                int shard = key.getShard();
                 // no need to set dirty/clean here.
                 shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Active);
                 scheduledSlots.add(key);
@@ -217,12 +241,12 @@ public class ScheduleContext implements IngestionContext {
     }
     
     // remove rom the list of running slots.
-    void clearFromRunning(String slotKey) {
-        int shard = Granularity.shardFromKey(slotKey);
+    void clearFromRunning(SlotKey slotKey) {
+        int shard = slotKey.getShard();
         synchronized (runningSlots) {
             runningSlots.remove(slotKey);
-            int slot = Granularity.slotFromKey(slotKey);
-            Granularity gran = Granularity.granularityFromKey(slotKey);
+            int slot = slotKey.getSlot();
+            Granularity gran = slotKey.getGranularity();
 
             UpdateStamp stamp = shardStateManager.getUpdateStamp(shard, gran, slot);
             shardStateManager.setAllCoarserSlotsDirtyForSlot(shard, gran, slot);
