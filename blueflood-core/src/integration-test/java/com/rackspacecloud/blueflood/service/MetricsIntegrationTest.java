@@ -268,6 +268,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
     public void testStringMetricsIfSoConfiguredAreAlwaysDropped() throws Exception {
         System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"true");
         Configuration.getInstance().init();
@@ -302,6 +303,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, string metrics are not configured to be dropped so they are persisted.
     public void testStringMetricsIfSoConfiguredArePersistedAsExpected() throws Exception {
         System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"false");
         Configuration.getInstance().init();
@@ -336,6 +338,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, we attempt to persist the same value of String Metric every single time. Only the first one is persisted.
     public void testStringMetricsWithSameValueAreNotPersisted() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -348,6 +351,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         String sameValue = getRandomStringMetricValue();
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
+        //value remains the same
         for (int i = 0; i < 10; i++) {
             final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
 
@@ -371,6 +375,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this case, we alternate between two values for a string metric. But since the string metric does not have the same value in two
+    //consecutive writes, it's always persisted.
     public void testStringMetricsWithDifferentValuesArePersisted() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -385,6 +391,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
+        //string metric value is alternated.
         for (int i = 0; i < 10; i++) {
             final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
             String value = null;
@@ -409,6 +416,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //Numeric value is always persisted.
     public void testNumericMetricsAreAlwaysPersisted() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -421,6 +429,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         int sameValue = getRandomIntMetricValue();
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
+        //value of numeric metric remains the same, still it is always persisted
         for (int i = 0; i < 10; i++) {
             final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
             expectedTimestamps.add(curMillis);
@@ -439,6 +448,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, the same value is sent, and the metric is not persisted except for the first time.
     public void testBooleanMetricsWithSameValueAreNotPersisted() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -473,6 +483,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    //In this test, we alternately persist true and false. All the boolean metrics are persisted.
     public void testBooleanMetricsWithDifferentValuesArePersisted() throws Exception {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
