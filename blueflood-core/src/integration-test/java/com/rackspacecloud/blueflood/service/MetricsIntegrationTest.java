@@ -317,8 +317,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         HashSet<String> keptTenants = new HashSet<String>();
         keptTenants.add(locator.getTenantId());
 
-        //AstyanaxWriter.setTenantIdsKept(keptTenants);
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "keptTenantIds",keptTenants);
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "keptTenantIdsSet",keptTenants);
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.

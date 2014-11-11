@@ -53,8 +53,8 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
     private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
-    private String tenantIdsKept = Configuration.getInstance().getStringProperty(CoreConfig.TENANTIDS_TO_KEEP);
-    private Set<String> keptTenantIds = new HashSet<String>(Arrays.asList(tenantIdsKept.split(",")));
+    private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
+    private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -72,7 +72,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private boolean shouldPersistStringMetric(Metric metric) {
         String tenantId = metric.getLocator().getTenantId();
 
-        if(areStringMetricsDropped && !keptTenantIds.contains(tenantId) ) {
+        if(areStringMetricsDropped && !keptTenantIdsSet.contains(tenantId) ) {
             return false;
         }
         else {
