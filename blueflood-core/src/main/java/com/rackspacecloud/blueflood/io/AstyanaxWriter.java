@@ -52,6 +52,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
 
     private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
+    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+    private String tenantIdsKept = Configuration.getInstance().getStringProperty(CoreConfig.TENANTIDS_TO_KEEP);
+    private Set<String> keptTenantIds = new HashSet<String>(Arrays.asList(tenantIdsKept.split(",")));
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -66,11 +69,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
-
     private boolean shouldPersistStringMetric(Metric metric) {
-        final boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
-        final String tenantIdsKept = Configuration.getInstance().getStringProperty(CoreConfig.TENANTIDS_TO_KEEP);
-        Set<String> keptTenantIds = new HashSet<String>(Arrays.asList(tenantIdsKept.split(",")));
         String tenantId = metric.getLocator().getTenantId();
 
         if(areStringMetricsDropped && !keptTenantIds.contains(tenantId) ) {

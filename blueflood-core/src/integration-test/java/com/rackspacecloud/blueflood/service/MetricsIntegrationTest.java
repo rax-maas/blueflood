@@ -29,9 +29,9 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.io.IOException;
 import java.util.*;
@@ -270,8 +270,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
     public void testStringMetricsIfSoConfiguredAreAlwaysDropped() throws Exception {
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"true");
-        Configuration.getInstance().init();
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -305,8 +304,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
     public void testStringMetricsIfSoConfiguredAreNotDroppedForKeptTenantIds() throws Exception {
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"true");
-
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -316,8 +314,11 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
-        System.setProperty(CoreConfig.TENANTIDS_TO_KEEP.name(),locator.getTenantId());
-        Configuration.getInstance().init();
+        HashSet<String> keptTenants = new HashSet<String>();
+        keptTenants.add(locator.getTenantId());
+
+        //AstyanaxWriter.setTenantIdsKept(keptTenants);
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "keptTenantIds",keptTenants);
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -342,8 +343,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     //In this test, string metrics are not configured to be dropped so they are persisted.
     public void testStringMetricsIfSoConfiguredArePersistedAsExpected() throws Exception {
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),"false");
-        Configuration.getInstance().init();
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
 
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -377,6 +377,8 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     //In this test, we attempt to persist the same value of String Metric every single time. Only the first one is persisted.
     public void testStringMetricsWithSameValueAreNotPersisted() throws Exception {
+        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
+
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
@@ -666,11 +668,5 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         Assert.assertNotNull(slotStateManager.getSlotStamps());
         Assert.assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(slot).getState());
-    }
-
-    @After
-    public void TearDown() throws Exception{
-        System.setProperty(CoreConfig.STRING_METRICS_DROPPED.name(),String.valueOf(areStringMetricsDropped));
-        Configuration.getInstance().init();
     }
 }
