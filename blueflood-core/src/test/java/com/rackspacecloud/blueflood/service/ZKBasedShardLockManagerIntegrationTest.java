@@ -16,16 +16,14 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.utils.ZookeeperTestServer;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,21 +31,25 @@ import java.util.Map;
 import java.util.Set;
 
 public class ZKBasedShardLockManagerIntegrationTest {
-    private static final Logger log = LoggerFactory.getLogger("tests");
     private Set<Integer> manageShards = null;
     private ZKBasedShardLockManager lockManager;
+    private ZookeeperTestServer zkTestServer;
 
     @Before
     public void setUp() throws Exception {
+        zkTestServer = new ZookeeperTestServer();
+        zkTestServer.connect();
         manageShards = new HashSet<Integer>();
         manageShards.add(1);
-        lockManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER), manageShards);
-        lockManager.waitForQuiesceUnsafe();
+        lockManager = new ZKBasedShardLockManager(zkTestServer.getZkConnect(), manageShards);
+        Assert.assertTrue("Zookeeper connection is needed.", lockManager.waitForZKConnections(10));
+        lockManager.prefetchLocks();
     }
 
     @After
     public void tearDown() throws Exception {
         lockManager.shutdownUnsafe();
+        zkTestServer.shutdown();
     }
 
     @Test
@@ -55,13 +57,11 @@ public class ZKBasedShardLockManagerIntegrationTest {
         final int shard = 20;
 
         // internal lock object should not be present.
-        Map<Integer, InterProcessMutex> lockObjects = (Map<Integer, InterProcessMutex>) Whitebox.getInternalState
-                (lockManager, "locks");
-        Assert.assertNull(lockObjects.get(shard));
+        Assert.assertNull(lockManager.getLockUnsafe(shard));
 
         // after adding, it should be present.
         lockManager.addShard(shard);
-        Assert.assertNotNull(lockObjects.get(shard));  // assert that we have a lock object for shard "20"
+        Assert.assertNotNull(lockManager.getLockUnsafe(shard));  // assert that we have a lock object for shard "20"
 
         // but we cannot do work until the lock is acquired.
         Assert.assertFalse(lockManager.canWork(shard));
@@ -80,11 +80,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
     @Test
     public void testRemoveShard() {
         final int shard = 1;
-
-        // make sure we have acquired the lock initially.
-        Map<Integer, Object> lockObjects = (Map<Integer, Object>) Whitebox.getInternalState
-                        (lockManager, "locks");
-        Assert.assertTrue(lockObjects.get(shard) != null);  // assert that we have a lock object for shard "20"
+        Assert.assertTrue(lockManager.getLockUnsafe(shard) != null);  // assert that we have a lock object for shard "20"
         Assert.assertTrue(lockManager.canWork(shard));
         Assert.assertTrue(lockManager.holdsLockUnsafe(shard));
 
@@ -95,7 +91,7 @@ public class ZKBasedShardLockManagerIntegrationTest {
         Assert.assertFalse(lockManager.holdsLockUnsafe(shard));
         Assert.assertFalse(lockManager.canWork(shard));
 
-        Assert.assertNull(lockObjects.get(shard)); // assert that we don't have a lock object for shard "1"
+        Assert.assertNull(lockManager.getLockUnsafe(shard)); // assert that we don't have a lock object for shard "1"
     }
 
     @Test
@@ -162,7 +158,10 @@ public class ZKBasedShardLockManagerIntegrationTest {
     @Test
     public void testDuelingManagers() throws Exception {
         final int shard = 1;
-        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(Configuration.getInstance().getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER), manageShards);
+        ZKBasedShardLockManager otherManager = new ZKBasedShardLockManager(zkTestServer.getZkConnect(), manageShards);
+        Assert.assertTrue("Zookeeper connection is needed.", otherManager.waitForZKConnections(10));
+        otherManager.prefetchLocks();
+        otherManager.waitForQuiesceUnsafe();
 
         // first manager.
         Assert.assertTrue(lockManager.canWork(shard));

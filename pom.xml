@@ -34,6 +34,7 @@
     <module>blueflood-dropwizard</module>
     <module>blueflood-dropwizard-logging</module>
     <module>blueflood-io-datastax</module>
+    <module>blueflood-rollupTools</module>
   </modules>
 
   <description>
@@ -280,6 +281,11 @@
       <id>lakshmi-kannan</id>
       <name>Lakshmi Kannan</name>
       <email>lakshmi.kannan@rackspace.com</email>
+    </developer>
+    <developer>
+      <id>jeeyoungk</id>
+      <name>Jeeyoung Kim</name>
+      <email>jeeyoungk@gmail.com</email>
     </developer>
     <developer>
       <id>dlobue</id>

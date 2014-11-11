@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RunWith(Parameterized.class)
@@ -338,9 +340,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertNull(errBucket[1]);
     }
 
+
     @Test
-    public void testShardOperationsConcurrencyMultipleIngestors() throws InterruptedException {
-        final long tryFor = 15000;
+    public void testConvergenceForMultipleIngestors() throws InterruptedException {
+        final long tryFor = 1000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
         final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards), new ScheduleContext(time.get(), shards));
@@ -348,22 +351,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 new ShardStatePuller(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePusher(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePuller(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io));
-        final CountDownLatch latch = new CountDownLatch(2);
-        final Throwable[] errBucket = new Throwable[2];
-        Thread pushPull = new Thread() { public void run() {
-            long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < tryFor) {
-                try {
-                    makeWorkersSyncState(workers);
-                    Thread.sleep(10L);
-                } catch (Throwable th) {
-                    th.printStackTrace();
-                    errBucket[0] = th;
-                    break;
-                }
-            }
-            latch.countDown();
-        }};
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean err = new AtomicBoolean(false);
+
         Thread updateIterator = new Thread() { public void run() {
             long start = System.currentTimeMillis();
             Random rand = new Random();
@@ -375,7 +365,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                         ctx.update(time.get(), shard);
                     } catch (Throwable th) {
                         th.printStackTrace();
-                        errBucket[1] = th;
+                        err.set(true);
                         break outer;
                     }
                 }
@@ -383,15 +373,27 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             latch.countDown();
         }};
 
-        pushPull.start();
         updateIterator.start();
-        latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
-        makeWorkersSyncState(workers);
-        Assert.assertNull(errBucket[0]);
-        Assert.assertNull(errBucket[1]);
+        latch.await();
+
+        workers.get(0).performOperation();
+        workers.get(3).performOperation();
+        workers.get(2).performOperation();
+        workers.get(1).performOperation();
+        workers.get(0).performOperation();
+        workers.get(3).performOperation();
+        workers.get(2).performOperation();
+        workers.get(1).performOperation();
+
+        Assert.assertFalse(err.get());
+
         for (Granularity gran : Granularity.rollupGranularities()) {
-            for (int shard : shards)
-                Assert.assertEquals(ctxs.get(0).getSlotStamps(gran, shard), ctxs.get(1).getSlotStamps(gran, shard));
+            for (int shard : shards) {
+                Assert.assertEquals(ctxs.get(0).getSlotStamps(gran, shard).size(), ctxs.get(1).getSlotStamps(gran, shard).size());
+                for (Map.Entry<Integer, UpdateStamp> entry : ctxs.get(0).getSlotStamps(gran, shard).entrySet()) {
+                    Assert.assertEquals(entry.getValue(), ctxs.get(1).getSlotStamps(gran, shard).get(entry.getKey()));
+                }
+            }
         }
     }
 
@@ -520,10 +522,16 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @After
+    public void cleanupShardStateIO () {
+        if (this.io instanceof InMemoryShardStateIO) {
+            ((InMemoryShardStateIO) this.io).cleanUp();
+        }
+    }
+
     private void makeWorkersSyncState(List<ShardStateWorker> workers) {
         // All states should be synced after 2 attempts, irrespective of operation ordering which is proved by shuffling of orders
         for (int i=0; i<=2; i++) {
-            Collections.shuffle(workers, new Random(System.nanoTime()));
             for (ShardStateWorker worker : workers) {
                 worker.performOperation();
             }
@@ -534,7 +542,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
         instances.add(new Object[] { new AstyanaxShardStateIO() });
-        // instances.add(new Object[] { new InMemoryShardStateIO() });
+        instances.add(new Object[] { new InMemoryShardStateIO() });
         return instances;
     }
     
@@ -563,6 +571,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         @Override
         public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
             map.put(shard, slotTimes);
+        }
+
+        public void cleanUp() {
+            map.clear();
         }
     }
 }
