@@ -65,4 +65,13 @@ public class ConfigurationTest {
         System.setProperty("QUERY_MODULES", "a,b , c");
         Assert.assertEquals(Arrays.asList("a","b","c"), config.getListProperty(CoreConfig.QUERY_MODULES));
     }
+
+    @Test
+    public void testBooleanProperty() {
+        Configuration config = Configuration.getInstance();
+        Assert.assertEquals(config.getStringProperty("foo"), null);
+        Assert.assertFalse(config.getBooleanProperty("foo"));
+        System.setProperty("foo", "TRUE");
+        Assert.assertTrue(config.getBooleanProperty("foo"));
+    }
 }
