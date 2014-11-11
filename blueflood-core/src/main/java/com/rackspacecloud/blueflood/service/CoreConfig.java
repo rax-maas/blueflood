@@ -140,8 +140,8 @@ public enum CoreConfig implements ConfigDefaults {
     // debugging only.
     SKIP_ROLLUP_WRITES("false"),
     
-    STRING_METRICS_DROPPED("true"),
-    TENANTIDS_TO_KEEP("BOGUSTENANT123");
+    STRING_METRICS_DROPPED("false"),
+    TENANTIDS_TO_KEEP("");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
