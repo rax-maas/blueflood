@@ -109,15 +109,17 @@ public class RollupRunnable implements Runnable {
                 calcrollupContext.stop();
             }
             // now enqueue the new rollup for writing.
-            rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
+            if (!Configuration.getInstance().getBooleanProperty("SKIP_ROLLUP_WRITES")) {
+                rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
-            RollupService.lastRollupTime.set(System.currentTimeMillis());
-            //Emit a rollup event to eventemitter
-            RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
-                    new RollupEvent(singleRollupReadContext.getLocator(), rollup,
-                            AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
-                            singleRollupReadContext.getRollupGranularity().name(),
-                            singleRollupReadContext.getRange().getStart()));
+                RollupService.lastRollupTime.set(System.currentTimeMillis());
+                //Emit a rollup event to eventemitter
+                RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
+                        new RollupEvent(singleRollupReadContext.getLocator(), rollup,
+                                AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
+                                singleRollupReadContext.getRollupGranularity().name(),
+                                singleRollupReadContext.getRange().getStart()));
+            }
         } catch (Exception e) {
             log.error("Rollup failed; Locator: {}, Source Granularity: {}, For period: {}", new Object[] {
                     singleRollupReadContext.getLocator(),
