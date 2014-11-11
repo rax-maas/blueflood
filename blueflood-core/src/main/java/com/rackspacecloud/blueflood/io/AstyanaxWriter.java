@@ -33,19 +33,13 @@ import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizer;
-import com.rackspacecloud.blueflood.rollup.MetricsPersistenceOptimizerFactory;
-import com.rackspacecloud.blueflood.service.SlotState;
-import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
-import com.rackspacecloud.blueflood.service.UpdateStamp;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +52,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
 
     private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
+    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+    private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
+    private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
 
     public static AstyanaxWriter getInstance() {
         return instance;
@@ -72,18 +69,33 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
+    private boolean shouldPersistStringMetric(Metric metric) {
+        String tenantId = metric.getLocator().getTenantId();
+
+        if(areStringMetricsDropped && !keptTenantIdsSet.contains(tenantId) ) {
+            return false;
+        }
+        else {
+            String currentValue = String.valueOf(metric.getMetricValue());
+            final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
+
+            return lastValue == null || !currentValue.equals(lastValue);
+        }
+    }
 
     private boolean shouldPersist(Metric metric) {
+        boolean shouldPersistMetric = true;
         try {
             final DataType metricType = metric.getDataType();
-            final MetricsPersistenceOptimizer optimizer =
-                    MetricsPersistenceOptimizerFactory.getOptimizer(metricType);
-
-            return optimizer.shouldPersist(metric);
+            if (metricType.equals(DataType.STRING) || metricType.equals(DataType.BOOLEAN)) {
+                shouldPersistMetric = shouldPersistStringMetric(metric);
+            }
         } catch (Exception e) {
             // If we hit any exception, just persist the metric
-            return true;
+            shouldPersistMetric = true;
         }
+
+        return shouldPersistMetric;
     }
 
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be

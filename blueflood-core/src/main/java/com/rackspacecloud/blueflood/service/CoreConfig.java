@@ -138,7 +138,10 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_DELAY_MILLIS("300000"),
     
     // debugging only.
-    SKIP_ROLLUP_WRITES("false");
+    SKIP_ROLLUP_WRITES("false"),
+    
+    STRING_METRICS_DROPPED("false"),
+    TENANTIDS_TO_KEEP("");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
