@@ -168,6 +168,10 @@ public class ScheduleContext implements IngestionContext {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();
 
+        if (runningSlots.keySet().contains(slotKey) || scheduledSlots.contains(slotKey)) {
+            return true;
+        }
+
         // if any ineligible keys are running or scheduled to run, do not schedule this key.
         for (SlotKey childrenKey : ineligibleKeys) {
             if (runningSlots.keySet().contains(childrenKey) || scheduledSlots.contains(childrenKey)) {
