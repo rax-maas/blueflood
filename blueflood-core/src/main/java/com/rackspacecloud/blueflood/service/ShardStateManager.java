@@ -207,6 +207,7 @@ public class ShardStateManager {
                 stamp.setTimestamp(millis);
                 if (stamp.getState().equals(UpdateStamp.State.Rolled)) {
                     reRollupData.mark();
+                    log.info("Re-rolling slot " + slot + " for shard " + shard + " for granularity " + granularity);
                 }
                 stamp.setState(UpdateStamp.State.Active);
                 stamp.setDirty(true);
