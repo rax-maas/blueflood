@@ -3,27 +3,29 @@ package com.rackspacecloud.blueflood.service;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-// Context of execution for a single shard, representing many rollups of a given granularity.
+/**
+ * Context of execution for all the rollup running under a single slot check.
+ */
 public class RollupExecutionContext {
+    private final Thread slotCheckThread;
     private final AtomicLong readCounter;
-    private final Thread owner;
     private final AtomicLong writeCounter;
     private final AtomicBoolean successful = new AtomicBoolean(true);
 
-    public RollupExecutionContext(Thread owner) {
-        this.owner = owner;
+    public RollupExecutionContext(Thread slotCheckThread) {
+        this.slotCheckThread = slotCheckThread;
         this.readCounter = new AtomicLong(0L);
         this.writeCounter = new AtomicLong(0L);
     }
 
     void decrementReadCounter() {
         readCounter.decrementAndGet();
-        owner.interrupt(); // this is what interrupts that long sleep in LocatorFetchRunnable.
+        slotCheckThread.interrupt(); // this is what interrupts that long sleep in LocatorFetchRunnable.
     }
 
     void decrementWriteCounter(long count) {
         writeCounter.addAndGet((-1) * count);
-        owner.interrupt();
+        slotCheckThread.interrupt();
     }
 
     void incrementReadCounter() {

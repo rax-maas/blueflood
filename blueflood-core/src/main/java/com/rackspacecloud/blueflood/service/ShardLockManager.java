@@ -16,8 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
-public interface ShardLockManager {
+public interface ShardLockManager extends ShardedService {
+    /**
+     * @param shard shard in question.
+     * @return true if the shard can be worked on.
+     */
     public boolean canWork(int shard);
-    public void addShard(int shard);
-    public void removeShard(int shard);
 }

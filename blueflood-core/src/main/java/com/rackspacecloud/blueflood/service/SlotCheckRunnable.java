@@ -32,32 +32,74 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * fetches locators for a given slot and feeds a worker queue with rollup work. When those are all done notifies the
- * RollupService that slot can be removed from running.
-  */
-class LocatorFetchRunnable implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
+ * Fetches locators for a given {@link SlotKey}, feeds a worker queue with rollup work.
+ * Upon completion, notifies the {@link RollupService} that the given slot check has finished.
+ */
+class SlotCheckRunnable implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(SlotCheckRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
-    
+
+    /**
+     * Thread pool to read higher-resolution, unrolled metrics.
+     */
     private final ThreadPoolExecutor rollupReadExecutor;
+    /**
+     * Thread pool to write lower-resolution, rolled metrics.
+     */
     private final ThreadPoolExecutor rollupWriteExecutor;
+    /**
+     * Slot key of the parent (higher resolution) data being rolled.
+     */
     private final SlotKey parentSlotKey;
-    private final ScheduleContext scheduleCtx;
+    /**
+     * Used to re-schedule or de-schedule the rollups.
+     */
+    private final SlotCheckScheduler scheduleCtx;
+    /**
+     * start time of the rollups. Used to deduce the current time range for the slot.
+     */
     private final long serverTime;
+
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    /**
+     * If set, histogram rollups are enabled.
+     */
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx, SlotKey destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
+    SlotCheckRunnable(
+            long serverTime,
+            SlotCheckScheduler scheduleCtx,
+            SlotKey destSlotKey,
+            ThreadPoolExecutor rollupReadExecutor,
+            ThreadPoolExecutor rollupWriteExecutor) {
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
         this.scheduleCtx = scheduleCtx;
-        this.serverTime = scheduleCtx.getCurrentTimeMillis();
+        this.serverTime = serverTime;
     }
     
     public void run() {
         final Timer.Context timerCtx = rollupLocatorExecuteTimer.time();
+        try {
+            boolean success = performSlotCheck();
+            if (success) {
+                this.scheduleCtx.markFinished(parentSlotKey);
+            } else {
+                log.error("Performing BasicRollups for {} failed", parentSlotKey);
+                this.scheduleCtx.reschedule(parentSlotKey, false);
+            }
+        } finally {
+            timerCtx.stop();
+        }
+    }
+
+    /**
+     * Perform a single slot check.
+     * @return true if the slot check is successful, false otherwise.
+     */
+    private boolean performSlotCheck() {
         final Granularity gran = parentSlotKey.getGranularity();
         final int parentSlot = parentSlotKey.getSlot();
         final int shard = parentSlotKey.getShard();
@@ -66,26 +108,30 @@ class LocatorFetchRunnable implements Runnable {
         try {
             gran.finer();
         } catch (Exception ex) {
-            log.error("No finer granularity available than " + gran);
-            return;
+            log.error("No finer granularity available than {}.", gran);
+            return true;
         }
 
-        if (log.isTraceEnabled())
-            log.trace("Getting locators for {} {} @ {}", new Object[]{parentSlotKey, parentRange.toString(), scheduleCtx.getCurrentTimeMillis()});
-        // todo: I can see this set becoming a memory hog.  There might be a better way of doing this.
+        if (log.isTraceEnabled()) {
+            log.trace("Getting locators for {} {} @ {}", new Object[]{parentSlotKey, parentRange.toString(), serverTime});
+        }
+
         long waitStart = System.currentTimeMillis();
         int rollCount = 0;
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
+        // todo: I can see this set becoming a memory hog.  There might be a better way of doing this.
         Set<Locator> locators = new HashSet<Locator>();
 
+        // if the slot is too old, then drop it on the floor.
         try {
             locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
         } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
+
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
@@ -94,7 +140,7 @@ class LocatorFetchRunnable implements Runnable {
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
-            } catch (Throwable any) {
+            } catch (Exception any) {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.markUnsuccessful(any);
                 executionContext.decrementReadCounter();
@@ -125,31 +171,26 @@ class LocatorFetchRunnable implements Runnable {
         }
         
         // now wait until ctx is drained. someone needs to be notified.
-        log.debug("Waiting for rollups to finish for " + parentSlotKey);
+        log.debug("Waiting for rollups to finish for {}.", parentSlotKey);
         while (!executionContext.doneReading() || !executionContext.doneWriting()) {
             if (executionContext.doneReading()) {
                 rollupBatchWriter.drainBatch(); // gets any remaining rollups enqueued for put. should be no-op after being called once
             }
             try {
-                Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
+                Thread.sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
             } catch (InterruptedException ex) {
                 if (log.isTraceEnabled())
-                    log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
+                    log.trace("Woken wile waiting for rollups to coalesce for {}.", parentSlotKey);
             } finally {
                 String verb = executionContext.doneReading() ? "writing" : "reading";
                 log.debug("Still waiting for rollups to finish {} for {} {}", new Object[] {verb, parentSlotKey, System.currentTimeMillis() - waitStart });
             }
         }
-        if (log.isDebugEnabled())
-            log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
 
-        if (executionContext.wasSuccessful()) {
-            this.scheduleCtx.clearFromRunning(parentSlotKey);
-        } else {
-            log.error("Performing BasicRollups for {} failed", parentSlotKey);
-            this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
+        if (log.isDebugEnabled()) {
+            log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[]{rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
         }
 
-        timerCtx.stop();
+        return executionContext.wasSuccessful();
     }
 }

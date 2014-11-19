@@ -41,8 +41,8 @@ public interface RollupServiceMBean {
     public void setActive(boolean b);
 
     /* shard management methods  */
-    public void addShard(final Integer shard);
-    public void removeShard(final Integer shard);
+    public void addShard(int shard);
+    public void removeShard(int shard);
     public Collection<Integer> getManagedShards();
     
     public Collection<Integer> getRecentlyScheduledShards();
