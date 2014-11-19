@@ -40,7 +40,7 @@ public class ShardStateManager implements ShardedService {
      */
     private final Set<Integer> shards;
     /**
-     * Nested managers.
+     * Nested {@link ShardToGranularityMap}.
      */
     private final ImmutableMap<Integer, ShardToGranularityMap> shardToGranularityStates;
     private final Ticker serverTimeMillisecondTicker;
@@ -54,7 +54,7 @@ public class ShardStateManager implements ShardedService {
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
         for (Integer shard : shards) {
-            shards.add(shard);
+            this.shards.add(shard);
         }
         ImmutableMap.Builder<Integer, ShardToGranularityMap> builder = ImmutableMap.builder();
         for (Integer shard : ALL_SHARDS) { // Why not just do this for managed shards?
