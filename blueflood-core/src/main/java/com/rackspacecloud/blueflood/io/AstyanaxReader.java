@@ -161,6 +161,43 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     /**
+     * Method that makes the actual cassandra call to get the most recent string value for a locator
+     *
+     * @param locators  Set of locators to use.
+     * @return String most recent string value for metric.
+     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
+     */
+    public Map<Locator,String> getLastStringValues(Collection<Locator> locators) {
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
+
+        try {
+            final Map<Locator, String> rv = new HashMap<Locator,String>();
+            OperationResult<Rows<Locator, Long>>result = keyspace
+                    .prepareQuery(CassandraModel.CF_METRICS_STRING)
+                    .getKeySlice(locators)
+                    .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
+                    .execute();
+
+            for (Row<Locator, Long> row : result.getResult()) {
+                rv.put(row.getKey(),
+                       row.getColumns().getColumnByIndex(0).getStringValue());
+            }
+            return rv;
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) {
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
+            } else {
+                Instrumentation.markReadError(e);
+            }
+//            log.warn("Could not get previous string metric value for locator " +
+//                    locator, e);
+            throw new RuntimeException(e);
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    /**
      * Returns the recently seen locators, i.e. those that should be rolled up, for a given shard.
      * 'Should' means:
      *  1) A locator is capable of rollup (it is not a string/boolean metric).

@@ -69,6 +69,34 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
+    private Collection<Metric> shouldSkipBulk(Collection<Metric> metrics) {
+
+        // TODO(pquerna): add support for keptTenantIdsSet
+        Vector<Metric> rv = new Vector<Metric>();
+        Map<Locator, Metric> stringMetrics = new HashMap<Locator, Metric>();
+        Vector<Locator> stringLocators = new Vector<Locator>();
+        for (Metric metric: metrics) {
+            final DataType metricType = metric.getDataType();
+            if (metricType.equals(DataType.STRING) || metricType.equals(DataType.BOOLEAN)) {
+                stringMetrics.put(metric.getLocator(), metric);
+                stringLocators.add(metric.getLocator());
+            }
+        }
+
+        final Map<Locator,String> lastValues = AstyanaxReader.getInstance().getLastStringValues(stringLocators);
+        for (Map.Entry<Locator, String> lastValue : lastValues.entrySet()) {
+            Metric metric = stringMetrics.get(lastValue.getKey());
+            String currentValue = String.valueOf(metric.getMetricValue());
+            String last = lastValue.getValue();
+
+            if(last == null || !currentValue.equals(last)) {
+                rv.add(metric);
+            }
+        }
+
+        return rv;
+    }
+
     private boolean shouldPersistStringMetric(Metric metric) {
         String tenantId = metric.getLocator().getTenantId();
 
@@ -105,6 +133,11 @@ public class AstyanaxWriter extends AstyanaxIO {
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
+            Collection<Metric> skipMetrics = shouldSkipBulk(metrics);
+            // TODO(pquerna): O^? for remove on Collection interface? Do our collections
+            // implement this?
+            metrics.removeAll(skipMetrics);
+
             for (Metric metric: metrics) {
                 final Locator locator = metric.getLocator();
 
