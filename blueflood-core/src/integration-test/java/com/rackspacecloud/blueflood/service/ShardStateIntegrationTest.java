@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -107,7 +108,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // Simulate the hierarchical scheduling of slots
         int count = 0;
         while (rollupCtx.getScheduledCount() > 0) {
-            String slot = rollupCtx.getNextScheduled();
+            SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
             rollupCtx.scheduleSlotsOlderThan(300000);
             count += 1;
@@ -127,7 +128,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // Simulate the hierarchical scheduling of slots
         count = 0;
         while (rollupCtx.getScheduledCount() > 0) {
-            String slot = rollupCtx.getNextScheduled();
+            SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
             rollupCtx.scheduleSlotsOlderThan(300000);
             count += 1;
@@ -149,7 +150,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         UpdateStamp stamp  = slotStateManager20.getSlotStamps().get(518);
         stamp.setTimestamp(time + 3600000L); // add one hour
-        ctxA.clearFromRunning("metrics_20m,518,123");
+        ctxA.clearFromRunning(SlotKey.of(Granularity.MIN_20, 518, 123));
     }
 
     @Test
@@ -272,7 +273,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // simulate slots getting run.
         int count = 0;
         while (ctxA.getScheduledCount() > 0) {
-            String slot = ctxA.getNextScheduled();
+            SlotKey slot = ctxA.getNextScheduled();
             ctxA.clearFromRunning(slot);
             ctxA.scheduleSlotsOlderThan(300000);
             count += 1;
@@ -444,7 +445,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // Simulate the hierarchical scheduling of slots
         int count = 0;
         while (ctxRollup.getScheduledCount() > 0) {
-            String slot = ctxRollup.getNextScheduled();
+            SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
             ctxRollup.scheduleSlotsOlderThan(300000L);
             count += 1;
@@ -498,7 +499,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // Simulate the hierarchical scheduling of slots
         count = 0;
         while (ctxRollup.getScheduledCount() > 0) {
-            String slot = ctxRollup.getNextScheduled();
+            SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
             ctxRollup.scheduleSlotsOlderThan(300000);
             count += 1;

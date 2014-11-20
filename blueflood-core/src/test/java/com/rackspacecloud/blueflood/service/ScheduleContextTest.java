@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.Cache;
@@ -50,8 +51,8 @@ public class ScheduleContextTest {
     public void testSimpleUpdateAndSchedule() {
         long clock = 1234000L;
         ScheduleContext ctx = new ScheduleContext(clock, ringShards);
-        Collection<String> scheduled = new ArrayList<String>();
-        Collection<String> expected = new ArrayList<String>();
+        Collection<SlotKey> scheduled = new ArrayList<SlotKey>();
+        Collection<SlotKey> expected = new ArrayList<SlotKey>();
 
         ctx.setCurrentTimeMillis(clock); // +0m
         ctx.update(clock, ringShards.get(0));
@@ -73,11 +74,11 @@ public class ScheduleContextTest {
         // metrics_5m,4 cannot be scheduled because one of its children is scheduled.  once the child is removed and
         // scheduling is re-ran, it should appear though.  The next few lines test those assumptions.
 
-        expected.add("metrics_5m,4,0");
+        expected.add(SlotKey.parse("metrics_5m,4,0"));
         while (ctx.hasScheduled())
             scheduled.add(ctx.getNextScheduled());
         Assert.assertEquals(expected, scheduled);
-        ctx.clearFromRunning("metrics_5m,4,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_5m,4,0"));
 
         // now, time doesn't change, but we re-evaluate slots that can be scheduled.
         ctx.scheduleSlotsOlderThan(300000);
@@ -94,9 +95,9 @@ public class ScheduleContextTest {
         ctx.update(clock, ringShards.get(0));
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertTrue(ctx.getNextScheduled().equals("metrics_5m,5,0"));
+        Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,5,0"));
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_5m,5,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_5m,5,0"));
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertFalse(ctx.hasScheduled());
 
@@ -105,36 +106,36 @@ public class ScheduleContextTest {
         ctx.setCurrentTimeMillis(clock);
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertTrue(ctx.getNextScheduled().equals("metrics_5m,6,0"));
+        Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,6,0"));
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_5m,6,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_5m,6,0"));
 
         // time doesn't change, but now that all the 5m slots have been scheduled, we should start seeing coarser slots
         // available for scheduling.
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertTrue(ctx.getNextScheduled().equals("metrics_20m,1,0"));
+        Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_20m,1,0"));
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_20m,1,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_20m,1,0"));
 
         // let's finish this off...
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertEquals("metrics_60m,0,0", ctx.getNextScheduled());
+        Assert.assertEquals(SlotKey.parse("metrics_60m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_60m,0,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_60m,0,0"));
 
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertEquals("metrics_240m,0,0", ctx.getNextScheduled());
+        Assert.assertEquals(SlotKey.parse("metrics_240m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_240m,0,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_240m,0,0"));
 
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertTrue(ctx.hasScheduled());
-        Assert.assertEquals("metrics_1440m,0,0", ctx.getNextScheduled());
+        Assert.assertEquals(SlotKey.parse("metrics_1440m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
-        ctx.clearFromRunning("metrics_1440m,0,0");
+        ctx.clearFromRunning(SlotKey.parse("metrics_1440m,0,0"));
 
         ctx.scheduleSlotsOlderThan(300000);
         Assert.assertFalse(ctx.hasScheduled());
@@ -158,9 +159,9 @@ public class ScheduleContextTest {
         String prefix = "metrics_5m,";
         for (int i = 4; i <= 578; i++) {
             count++;
-            String key = ctx.getNextScheduled();
+            SlotKey key = ctx.getNextScheduled();
             Assert.assertNotNull(key);
-            Assert.assertTrue(key.startsWith(prefix));
+            Assert.assertEquals(Granularity.MIN_5, key.getGranularity());
             ctx.clearFromRunning(key);
         }
         ctx.scheduleSlotsOlderThan(300000);
@@ -169,9 +170,9 @@ public class ScheduleContextTest {
         prefix = "metrics_20m,";
         for (int i = 1; i <= 143; i++) {
             count++;
-            String key = ctx.getNextScheduled();
+            SlotKey key = ctx.getNextScheduled();
             Assert.assertNotNull(key);
-            Assert.assertTrue(key.startsWith(prefix));
+            Assert.assertEquals(Granularity.MIN_20, key.getGranularity());
             ctx.clearFromRunning(key);
         }
         ctx.scheduleSlotsOlderThan(300000);
@@ -180,9 +181,9 @@ public class ScheduleContextTest {
         prefix = "metrics_60m,";
         for (int i = 0; i <= 47; i++) {
             count++;
-            String key = ctx.getNextScheduled();
+            SlotKey key = ctx.getNextScheduled();
             Assert.assertNotNull(key);
-            Assert.assertTrue(key.startsWith(prefix));
+            Assert.assertEquals(Granularity.MIN_60, key.getGranularity());
             ctx.clearFromRunning(key);
         }
         ctx.scheduleSlotsOlderThan(300000);
@@ -191,9 +192,9 @@ public class ScheduleContextTest {
         prefix = "metrics_240m,";
         for (int i = 0; i <= 11; i++) {
             count++;
-            String key = ctx.getNextScheduled();
+            SlotKey key = ctx.getNextScheduled();
             Assert.assertNotNull(key);
-            Assert.assertTrue(key.startsWith(prefix));
+            Assert.assertEquals(Granularity.MIN_240, key.getGranularity());
             ctx.clearFromRunning(key);
         }
         ctx.scheduleSlotsOlderThan(300000);
@@ -202,9 +203,9 @@ public class ScheduleContextTest {
         prefix = "metrics_1440m,";
         for (int i = 0; i <= 1; i++) {
             count++;
-            String key = ctx.getNextScheduled();
+            SlotKey key = ctx.getNextScheduled();
             Assert.assertNotNull(key);
-            Assert.assertTrue(key.startsWith(prefix));
+            Assert.assertEquals(Granularity.MIN_1440, key.getGranularity());
             ctx.clearFromRunning(key);
         }
 
@@ -232,7 +233,7 @@ public class ScheduleContextTest {
             ctx.scheduleSlotsOlderThan(300000);
             while (ctx.hasScheduled()) {
                 count++;
-                String key = ctx.getNextScheduled();
+                SlotKey key = ctx.getNextScheduled();
                 ctx.clearFromRunning(key);
             }
         }
@@ -288,7 +289,7 @@ public class ScheduleContextTest {
             int count = 0;
             while (update.isAlive()) {
                 while (ctx.hasScheduled()) {
-                    String key = ctx.getNextScheduled();
+                    SlotKey key = ctx.getNextScheduled();
                     ctx.clearFromRunning(key);
                     count++;
                 }
@@ -348,13 +349,13 @@ public class ScheduleContextTest {
 
         Assert.assertTrue(ctxA.hasScheduled());
         while (ctxA.hasScheduled()) {
-            int nextScheduledShard = Granularity.shardFromKey(ctxA.getNextScheduled());
+            int nextScheduledShard = ctxA.getNextScheduled().getShard();
             Assert.assertTrue(shardsA.contains(nextScheduledShard));
             Assert.assertFalse(shardsB.contains(nextScheduledShard));
         }
         Assert.assertTrue(ctxB.hasScheduled());
         while (ctxB.hasScheduled()) {
-            int nextScheduledShard = Granularity.shardFromKey(ctxB.getNextScheduled());
+            int nextScheduledShard = ctxB.getNextScheduled().getShard();
             Assert.assertTrue(shardsB.contains(nextScheduledShard));
             Assert.assertFalse(shardsA.contains(nextScheduledShard));
         }

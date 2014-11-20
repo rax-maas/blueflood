@@ -20,6 +20,7 @@ import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
@@ -202,7 +203,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             // if there are schedules slots, run what we can.
             boolean rejected = false;
             while (context.hasScheduled() && !rejected && active) {
-                final String slotKey = context.getNextScheduled();
+                final SlotKey slotKey = context.getNextScheduled();
                 if (slotKey == null) { continue; }
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());

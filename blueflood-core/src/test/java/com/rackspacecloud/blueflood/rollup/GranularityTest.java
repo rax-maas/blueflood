@@ -19,14 +19,12 @@ package com.rackspacecloud.blueflood.rollup;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.types.Average;
 import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class GranularityTest {
 
@@ -178,11 +176,6 @@ public class GranularityTest {
     }
     
     @Test(expected = RuntimeException.class)
-    public void testRemoveLocatorIteratorKeysComplains() {
-        Granularity.FULL.locatorKeys(23, 0, 1000000000).iterator().remove();
-    }
-    
-    @Test(expected = RuntimeException.class)
     public void testToBeforeFromInterval() {
         Granularity.granularityFromPointsInInterval(10000000, 0, 100);
     }
@@ -246,63 +239,6 @@ public class GranularityTest {
     }
 
     @Test
-    public void testGranularityFromKey() {
-        Granularity gran;
-        String s;
-
-        s = "metrics_full,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.FULL));
-
-        s = "metrics_5m,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_5));
-
-        s = "metrics_20m,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_20));
-
-        s = "metrics_60m,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_60));
-
-        s = "metrics_240m,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_240));
-
-        s = "metrics_1440m,1,123";
-        gran = Granularity.granularityFromKey(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_1440));
-
-        try {
-            s = "metrics_1990m,1,123";
-            gran = Granularity.granularityFromKey(s);
-            Assert.fail("Should have failed");
-        }
-        catch (RuntimeException e) {
-            Assert.assertEquals("Unexpected granularity: metrics_1990m,1,123", e.getMessage());
-        }
-    }
-
-    @Test
-    public void testShardFromKey() {
-        Granularity gran = Granularity.FULL;
-        String s = gran.formatLocatorKey(1,123);
-        int myInt = Granularity.shardFromKey(s);
-        
-        Assert.assertEquals(123, myInt);
-    }
-
-    @Test
-    public void testSlotFromKey() {
-        Granularity gran = Granularity.FULL;
-        String s = gran.formatLocatorKey(1,123);
-        int myInt = Granularity.slotFromKey(s);
-        
-        Assert.assertEquals(1, myInt);
-    }
-
-    @Test
     public void testBadGranularityFromPointsInterval() {
         try {
             Granularity.granularityFromPointsInInterval(2, 1, 3);
@@ -310,40 +246,6 @@ public class GranularityTest {
         }
         catch (RuntimeException e) {
             Assert.assertEquals("Invalid interval specified for fromPointsInInterval", e.getMessage());
-        }
-    }
-
-    @Test
-    public void testLocatorKeysHasNextCurGreaterThanOrEqualToStartSlot() {
-        Granularity gran = Granularity.FULL;
-        Iterable<String> locatorKeys;
-        Iterator<String> iter;
-        String[] locatorKeysArr = new String[4032];
-        int i = 0;
-
-        //startSlot = 2, stopSlot = 1;
-        locatorKeys = gran.locatorKeys(2, 600000, 0);
-
-        iter = locatorKeys.iterator();
-
-        //hasNext will get to case where startSlot > stopSlot
-        Assert.assertTrue(iter.hasNext());
-        //cur = startSlot, so iter will go from 2 to 4032 (numSlots)
-        while (iter.hasNext()) {
-            locatorKeysArr[i] = iter.next();
-            i++;
-        }
-
-        //make sure it iterated the right number of times
-        Assert.assertNotNull(locatorKeysArr[4030]);
-        Assert.assertNull(locatorKeysArr[4031]);
-
-        try {
-            iter.remove();
-            Assert.fail("Should not have worked");
-        }
-        catch (RuntimeException e) {
-            Assert.assertEquals("Not supported", e.getMessage());
         }
     }
 

@@ -26,38 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class SlotTest {
-    private static final int shard = 0;
-    
-    @Test
-    public void testSlotIterator() {
-        long baseMillis = 1331650343000L;
-        int expectedSlot = 3634;
-        String expectedLocatorKey = Granularity.FULL.formatLocatorKey(expectedSlot, shard);
-        
-        
-        Set<String> expected = new HashSet<String>();
-        expected.add(expectedLocatorKey);
-        expected.add(Granularity.FULL.formatLocatorKey(expectedSlot + 1, shard));
-        
-        Set<String> actual = new HashSet<String>();
-        for (String i : Granularity.FULL.locatorKeys(shard, baseMillis, baseMillis + 300000))
-            actual.add(i);
-        Assert.assertEquals(expected, actual);
-        
-        actual.clear();
-        expected.clear();
-        
-        // test wrapping slots.
-        expected.add(Granularity.FULL.formatLocatorKey(Granularity.FULL.numSlots() - 2, shard));
-        expected.add(Granularity.FULL.formatLocatorKey(Granularity.FULL.numSlots() - 1, shard));
-        expected.add(Granularity.FULL.formatLocatorKey(0, shard));
-        expected.add(Granularity.FULL.formatLocatorKey(1, shard));
-        int scale = Granularity.FULL.numSlots() - expectedSlot - 2; // puts me 2 slots before the end.
-        for (String locatorKey : Granularity.FULL.locatorKeys(shard, baseMillis + (scale * 300000), baseMillis + ((scale + 3) * 300000)))
-            actual.add(locatorKey);
-        Assert.assertEquals(expected, actual);
-    }
-    
     @Test
     public void testRangeIteratorFullAnd5m() throws Exception {
         Set<Range> expectedRanges = new HashSet<Range>();
@@ -300,34 +268,5 @@ public class SlotTest {
             Range wayBeforeRange = gran.deriveRange(nowSlot + 1, now);
             Assert.assertEquals(gran.numSlots() - 1, (nowRange.start - wayBeforeRange.start) / gran.milliseconds());
         }
-    }
-   
-    @Test
-    public void testSlotChildren() {
-        // the relationship between slots plays out here.
-        
-        // full res slots have no children.
-        int expect = 0;
-        Assert.assertEquals(expect, Granularity.FULL.getChildrenKeys(4, shard).size());
-        
-        // min5 slots contain only their full res counterpart.
-        expect = expect * 1 + 1;
-        Assert.assertEquals(expect, Granularity.MIN_5.getChildrenKeys(4, shard).size());
-        
-        // min20 slots contain their 4 min5 children and full res grandchildren.
-        expect = expect * 4 + 4;
-        Assert.assertEquals(expect, Granularity.MIN_20.getChildrenKeys(4, shard).size());
-        
-        // and so on. the relationship between min60 and min20 is a factor of 3.
-        expect = expect * 3 + 3;
-        Assert.assertEquals(expect, Granularity.MIN_60.getChildrenKeys(4, shard).size());
-        
-        // min240 and min60 is a factor of 4.
-        expect = expect *4 + 4;
-        Assert.assertEquals(expect, Granularity.MIN_240.getChildrenKeys(4, shard).size());
-        
-        // min1440 and min240 is a factor of 6.
-        expect = expect * 6 + 6;
-        Assert.assertEquals(expect, Granularity.MIN_1440.getChildrenKeys(4, shard).size());
     }
 }

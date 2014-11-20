@@ -21,6 +21,7 @@ import com.codahale.metrics.Meter;
 import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
@@ -75,8 +76,9 @@ public class ShardStateManager {
         return shardToGranularityStates.get(shard).granularityToSlots.get(granularity);
     }
 
-    protected UpdateStamp getUpdateStamp(int shard, Granularity gran, int slot) {
-        return this.getSlotStateManager(shard, gran).slotToUpdateStampMap.get(slot);
+    protected UpdateStamp getUpdateStamp(SlotKey slotKey) {
+        return this.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity())
+                .slotToUpdateStampMap.get(slotKey.getSlot());
     }
 
     // Side effect: mark dirty slots as clean
@@ -105,22 +107,22 @@ public class ShardStateManager {
         getSlotStateManager(shard, slotState.getGranularity()).updateSlotOnRead(slotState);
     }
 
-    public void setAllCoarserSlotsDirtyForSlot(int shard, Granularity suppliedGranularity,
-                                               int suppliedSlot) {
+    public void setAllCoarserSlotsDirtyForSlot(SlotKey slotKey) {
         boolean done = false;
-        Granularity coarserGran = suppliedGranularity;
-        int coarserSlot = suppliedSlot;
+        Granularity coarserGran = slotKey.getGranularity();
+        int coarserSlot = slotKey.getSlot();
 
         while (!done) {
             try {
                 coarserGran = coarserGran.coarser();
                 coarserSlot = coarserGran.slotFromFinerSlot(coarserSlot);
-                ConcurrentMap<Integer, UpdateStamp> updateStampsBySlotMap = getSlotStateManager(shard, coarserGran).slotToUpdateStampMap;
+                ConcurrentMap<Integer, UpdateStamp> updateStampsBySlotMap = getSlotStateManager(slotKey.getShard(), coarserGran).slotToUpdateStampMap;
                 UpdateStamp coarseSlotStamp = updateStampsBySlotMap.get(coarserSlot);
 
                 if (coarseSlotStamp == null) {
-                    log.debug("No stamp for coarser slot: " + coarserGran.formatLocatorKey(coarserSlot, shard) +
-                        " ; supplied slot: " + suppliedGranularity.formatLocatorKey(suppliedSlot, shard));
+                    log.debug("No stamp for coarser slot: {}; supplied slot: {}",
+                            SlotKey.of(coarserGran, coarserSlot, slotKey.getShard()),
+                            slotKey);
                     updateStampsBySlotMap.putIfAbsent(coarserSlot,
                             new UpdateStamp(serverTimeMillisecondTicker.read(), UpdateStamp.State.Active, true));
                     continue;
@@ -129,10 +131,8 @@ public class ShardStateManager {
                 UpdateStamp.State coarseSlotState = coarseSlotStamp.getState();
                 if (coarseSlotState != UpdateStamp.State.Active) {
                     parentBeforeChild.mark();
-                    log.debug("Coarser slot not in active state when finer slot "
-                            + suppliedGranularity.formatLocatorKey(suppliedSlot, shard)
-                            + " just got rolled up. Marking coarser slot "
-                            + coarserGran.formatLocatorKey(coarserSlot, shard) + " dirty");
+                    log.debug("Coarser slot not in active state when finer slot {} just got rolled up. Marking coarser slot {} dirty.",
+                            slotKey, SlotKey.of(coarserGran, coarserSlot, slotKey.getShard()));
                     coarseSlotStamp.setState(UpdateStamp.State.Active);
                     coarseSlotStamp.setDirty(true);
                     coarseSlotStamp.setTimestamp(serverTimeMillisecondTicker.read());
@@ -254,13 +254,6 @@ public class ShardStateManager {
                 outputKeys.add(entry.getKey());
             }
             return outputKeys;
-        }
-
-        protected Collection<String> getChildAndSelfKeysForSlot(int slot) {
-            Collection<String> keys = new ArrayList<String>();
-            keys.addAll(this.granularity.getChildrenKeys(slot, shard));
-            keys.add(granularity.formatLocatorKey(slot, shard));
-            return keys;
         }
     }
 }
