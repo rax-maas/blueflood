@@ -115,7 +115,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         List<Metric> containerMetrics;
         try {
             containerMetrics = jsonMetricsContainer.toMetrics();
-            log.info("Received metrics for tenantId {}. Metrics: {}", tenantId, containerMetrics);
             forceTTLsIfConfigured(containerMetrics);
         } catch (InvalidDataException ex) {
             // todo: we should measure these. if they spike, we track down the bad client.
