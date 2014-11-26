@@ -91,7 +91,7 @@ public class RollupRunnable implements Runnable {
 
         try {
             Timer.Context calcrollupContext = calcTimer.time();
-            granToMeters.get(srcGran.coarser().shortName()).mark();
+            granToMeters.get(srcGran.coarser()).mark();
 
             // Read data and compute rollup
             Points input;
