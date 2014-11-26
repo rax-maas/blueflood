@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -50,6 +51,13 @@ public class RollupRunnable implements Runnable {
 
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
+    private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
+
+    static {
+        for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
+            granToMeters.put(rollupGranularity, Metrics.meter(RollupRunnable.class, String.format("%s Rollup", rollupGranularity.shortName())));
+        }
+    }
 
     public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
@@ -83,6 +91,7 @@ public class RollupRunnable implements Runnable {
 
         try {
             Timer.Context calcrollupContext = calcTimer.time();
+            granToMeters.get(srcGran.coarser().shortName()).mark();
 
             // Read data and compute rollup
             Points input;
