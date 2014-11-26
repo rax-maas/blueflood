@@ -20,6 +20,7 @@ import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
@@ -133,8 +134,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         Configuration config = Configuration.getInstance();
         rollupDelayMillis = config.getLongProperty("ROLLUP_DELAY_MILLIS");
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
-        locatorFetchExecutors = new InstrumentedThreadPoolExecutor(
-            "LocatorFetchThreadPool",
+        locatorFetchExecutors = new ThreadPoolExecutor(
             locatorFetchConcurrency, locatorFetchConcurrency,
             30, TimeUnit.SECONDS,
             new ArrayBlockingQueue<Runnable>(locatorFetchConcurrency * 5),
@@ -153,12 +153,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 super.afterExecute(r, t);
             }
         };
+        InstrumentedThreadPoolExecutor.instrument(locatorFetchExecutors, "LocatorFetchThreadPool");
 
         // unbounded work queue.
         final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
 
-        rollupReadExecutors = new InstrumentedThreadPoolExecutor(
-            "RollupReadsThreadpool",
+        rollupReadExecutors = new ThreadPoolExecutor(
+            // "RollupReadsThreadpool",
             config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
             config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
             30, TimeUnit.SECONDS,
@@ -167,8 +168,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
             new ThreadPoolExecutor.AbortPolicy()
         );
         final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
-        rollupWriteExecutors = new InstrumentedThreadPoolExecutor(
-                "RollupWritesThreadpool",
+        rollupWriteExecutors = new ThreadPoolExecutor(
+                // "RollupWritesThreadpool",
                 config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
                 config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
                 30, TimeUnit.SECONDS,
@@ -176,6 +177,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 Executors.defaultThreadFactory(),
                 new ThreadPoolExecutor.AbortPolicy()
         );
+        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
+        InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
     }
 
     public void forcePoll() {
@@ -200,7 +203,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
             // if there are schedules slots, run what we can.
             boolean rejected = false;
             while (context.hasScheduled() && !rejected && active) {
-                final String slotKey = context.getNextScheduled();
+                final SlotKey slotKey = context.getNextScheduled();
                 if (slotKey == null) { continue; }
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());

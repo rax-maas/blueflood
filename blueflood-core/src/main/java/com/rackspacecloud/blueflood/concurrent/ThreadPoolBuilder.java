@@ -21,13 +21,13 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadPoolBuilder {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolBuilder.class);
-    private static final Map<String, AtomicInteger> nameMap = new ConcurrentHashMap<String, AtomicInteger>();
+    /** Used to ensure that the thread pools have unique name. */
+    private static final ConcurrentHashMap<String, AtomicInteger> nameMap = new ConcurrentHashMap<String, AtomicInteger>();
     private static final String DEFAULT_NAME = "Threadpool";
     private int corePoolSize = 10;
     private int maxPoolSize = 10;
@@ -41,10 +41,11 @@ public class ThreadPoolBuilder {
         }
     };
 
-    private String name = DEFAULT_NAME;
+    private String threadNameFormat = null;
+    private String poolName = null;
 
     public ThreadPoolBuilder() {
-
+        withName(DEFAULT_NAME);
     }
 
     public ThreadPoolBuilder withCorePoolSize(int size) {
@@ -77,43 +78,41 @@ public class ThreadPoolBuilder {
         return this;
     }
 
+    /**
+     * Set the threadpool name. Used to generate metric names and thread names.
+     */
     public ThreadPoolBuilder withName(String name) {
         // ensure we've got a spot to put the thread id.
-        if (name.indexOf("%d") < 0) {
+        if (!name.contains("%d")) {
             name = name + "-%d";
         }
-        if (!nameMap.containsKey(name)) {
-            nameMap.put(name, new AtomicInteger(2));
+        nameMap.putIfAbsent(name, new AtomicInteger(0));
+        int id = nameMap.get(name).incrementAndGet();
+        this.poolName = String.format(name, id);
+        if (id > 1) {
+            this.threadNameFormat = name.replace("%d", id + "-%d");
         } else {
-            // unique threadpool names required for instrumentation
-            name = name.replace("%d", "" + nameMap.get(name).getAndIncrement() + "-%d");
+            this.threadNameFormat = name;
         }
-        this.name = name;
         return this;
-
     }
 
-    public ThreadPoolBuilder withExeptionHandler(Thread.UncaughtExceptionHandler exceptionHandler) {
+    public ThreadPoolBuilder withExceptionHandler(Thread.UncaughtExceptionHandler exceptionHandler) {
         this.exceptionHandler = exceptionHandler;
         return this;
     }
 
     public ThreadPoolExecutor build() {
-        if (name.equals(DEFAULT_NAME)) {
-            this.withName(name); // causes pool to have a unique name
-        }
-        String metricName = name.subSequence(0, name.length() - 3) + " work queue size"; // don't need the '-%d'
         final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
                     new SynchronousQueue<Runnable>();
 
-        return new InstrumentedThreadPoolExecutor(
-                metricName,
-                corePoolSize,
-                maxPoolSize,
-                keepAliveTime.getValue(),
-                keepAliveTime.getUnit(),
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                corePoolSize, maxPoolSize,
+                keepAliveTime.getValue(), keepAliveTime.getUnit(),
                 workQueue,
-                new ThreadFactoryBuilder().setNameFormat(name).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
+                new ThreadFactoryBuilder().setNameFormat(threadNameFormat).setPriority(Thread.NORM_PRIORITY).setUncaughtExceptionHandler(exceptionHandler).build(),
                 rejectedHandler);
+        InstrumentedThreadPoolExecutor.instrument(executor, poolName);
+        return executor;
     }
 }

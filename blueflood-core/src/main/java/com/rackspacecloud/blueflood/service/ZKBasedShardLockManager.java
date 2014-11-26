@@ -23,6 +23,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -137,18 +138,14 @@ class ZKBasedShardLockManager implements ConnectionStateListener, ShardLockManag
         this.shardLockScavengeInterval = new TimeValue(config.getLongProperty(CoreConfig.SHARD_LOCK_SCAVENGE_INTERVAL_MS),
                 TimeUnit.MILLISECONDS);
         this.defaultMaxLocksToAcquirePerCycle = config.getIntegerProperty(CoreConfig.MAX_ZK_LOCKS_TO_ACQUIRE_PER_CYCLE);
-        this.lockWorker = new InstrumentedThreadPoolExecutor("ZK Lock Worker" + (id == 0 ? "" : id),
-                1,
-                1,
-                Long.MAX_VALUE,
-                TimeUnit.DAYS,
-                new ArrayBlockingQueue<Runnable>(1000),
-                new ThreadFactory() {
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, "ZK Lock Worker " + id);
-                    }
-                },
-                new ThreadPoolExecutor.AbortPolicy());
+        this.lockWorker = new ThreadPoolBuilder()
+                .withCorePoolSize(1)
+                .withMaxPoolSize(1)
+                .withKeepAliveTime(new TimeValue(Long.MAX_VALUE, TimeUnit.DAYS))
+                .withBoundedQueue(1000)
+                .withName("ZkThreadPool")
+                .build();
+        InstrumentedThreadPoolExecutor.instrument(lockWorker, "ZkThreadPool");
     }
 
     /**

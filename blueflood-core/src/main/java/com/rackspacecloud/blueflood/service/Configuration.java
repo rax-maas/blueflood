@@ -100,8 +100,9 @@ public class Configuration {
     public boolean getBooleanProperty(Enum<? extends ConfigDefaults> name) {
         return getBooleanProperty(name.toString());
     }
+
     public boolean getBooleanProperty(String name) {
-        return getStringProperty(name).equalsIgnoreCase("true");
+        return "true".equalsIgnoreCase(getStringProperty(name));
     }
 
     public List<String> getListProperty(Enum<? extends ConfigDefaults> name) {

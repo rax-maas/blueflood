@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -40,14 +41,14 @@ class LocatorFetchRunnable implements Runnable {
     
     private final ThreadPoolExecutor rollupReadExecutor;
     private final ThreadPoolExecutor rollupWriteExecutor;
-    private final String parentSlotKey;
+    private final SlotKey parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx, String destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
+    LocatorFetchRunnable(ScheduleContext scheduleCtx, SlotKey destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
@@ -57,9 +58,9 @@ class LocatorFetchRunnable implements Runnable {
     
     public void run() {
         final Timer.Context timerCtx = rollupLocatorExecuteTimer.time();
-        final Granularity gran = Granularity.granularityFromKey(parentSlotKey);
-        final int parentSlot = Granularity.slotFromKey(parentSlotKey);
-        final int shard = Granularity.shardFromKey(parentSlotKey);
+        final Granularity gran = parentSlotKey.getGranularity();
+        final int parentSlot = parentSlotKey.getSlot();
+        final int shard = parentSlotKey.getShard();
         final Range parentRange = gran.deriveRange(parentSlot, serverTime);
 
         try {

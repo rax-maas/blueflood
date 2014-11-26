@@ -4,26 +4,44 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadPoolExecutor;
 
-public class InstrumentedThreadPoolExecutor extends ThreadPoolExecutor {
-    private final Gauge<Integer> workQueueSize;
-
-    public InstrumentedThreadPoolExecutor(String name,
-                                          int corePoolSize,
-                                          int maximumPoolSize,
-                                          long keepAliveTime,
-                                          TimeUnit unit,
-                                          final BlockingQueue<Runnable> workQueue,
-                                          ThreadFactory threadFactory,
-                                          RejectedExecutionHandler handler) {
-        super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
-        this.workQueueSize = new Gauge<Integer>() {
+public class InstrumentedThreadPoolExecutor {
+    /**
+     * Given a {@link ThreadPoolExecutor}, attach various {@link Gauge}s against its monitoring
+     * properties.
+     * @param executor {@link ThreadPoolExecutor} to monitor.
+     * @param threadPoolName a unique name for this thread pool.
+     */
+    public static void instrument(final ThreadPoolExecutor executor, String threadPoolName) {
+        MetricRegistry registry = Metrics.getRegistry();
+        registry.register(name(threadPoolName, "queue-size"), new Gauge<Integer>() {
             @Override
             public Integer getValue() {
-                return workQueue.size();
+                return executor.getQueue().size();
             }
-        };
-        Metrics.getRegistry().register(MetricRegistry.name(InstrumentedThreadPoolExecutor.class, name), this.workQueueSize);
+        });
+        registry.register(name(threadPoolName, "queue-max"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return executor.getActiveCount();
+            }
+        });
+        registry.register(name(threadPoolName, "threadpool-active"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return executor.getActiveCount();
+            }
+        });
+        registry.register(name(threadPoolName, "threadpool-max"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return executor.getMaximumPoolSize();
+            }
+        });
+    }
+
+    static String name(String threadPoolName, String suffix) {
+        return MetricRegistry.name(InstrumentedThreadPoolExecutor.class, threadPoolName, suffix);
     }
 }
