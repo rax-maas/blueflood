@@ -16,7 +16,9 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
@@ -34,6 +36,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -51,7 +54,16 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
-    
+    private static final AtomicInteger requestCount = new AtomicInteger(0);
+    static {
+        Metrics.getRegistry().register(MetricRegistry.name(HttpStatsDIngestionHandler.class, "Statsd Request Count"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return requestCount.get();
+            }
+        });
+    }
+
     private AsyncChain<String, List<Boolean>> processorChain;
     private final TimeValue timeout;
     
@@ -69,7 +81,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-            // block until things get ingested.
+	    // block until things get ingested.
+            requestCount.getAndIncrement();
             ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
@@ -93,6 +106,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             log.warn("Other exception while trying to parse content", ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
+            requestCount.getAndDecrement();
             timerContext.stop();
         }
     }
