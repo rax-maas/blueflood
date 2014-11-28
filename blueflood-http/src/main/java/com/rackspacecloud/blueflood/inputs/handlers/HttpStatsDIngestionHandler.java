@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -51,7 +52,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
-    
+    private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
+
     private AsyncChain<String, List<Boolean>> processorChain;
     private final TimeValue timeout;
     
@@ -69,7 +71,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-            // block until things get ingested.
+	    // block until things get ingested.
+            requestCount.inc();
             ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
@@ -93,6 +96,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             log.warn("Other exception while trying to parse content", ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
+            requestCount.dec();
             timerContext.stop();
         }
     }
