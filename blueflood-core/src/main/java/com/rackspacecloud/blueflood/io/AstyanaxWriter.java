@@ -16,7 +16,9 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
@@ -35,6 +37,7 @@ import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
@@ -68,6 +71,16 @@ public class AstyanaxWriter extends AstyanaxIO {
     // seen within the last 10 minutes, don't bother.
     private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
             TimeUnit.MINUTES).concurrencyLevel(16).build();
+
+    static {
+        Metrics.getRegistry().register(MetricRegistry.name(AstyanaxWriter.class, "Current Locators Count"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return insertedLocators.size();
+                    }
+                });
+    }
 
     private boolean shouldPersistStringMetric(Metric metric) {
         String tenantId = metric.getLocator().getTenantId();
