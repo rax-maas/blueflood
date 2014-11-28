@@ -73,7 +73,7 @@ public class AstyanaxWriter extends AstyanaxIO {
             TimeUnit.MINUTES).concurrencyLevel(16).build();
 
     static {
-        Metrics.getRegistry().register(MetricRegistry.name(AstyanaxWriter.class, "Current Locators"),
+        Metrics.getRegistry().register(MetricRegistry.name(AstyanaxWriter.class, "Current Locators Count"),
                 new Gauge<Long>() {
                     @Override
                     public Long getValue() {
