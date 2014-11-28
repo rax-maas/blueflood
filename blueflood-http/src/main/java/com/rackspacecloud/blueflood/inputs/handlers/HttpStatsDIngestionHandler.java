@@ -54,7 +54,6 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
 
-
     private AsyncChain<String, List<Boolean>> processorChain;
     private final TimeValue timeout;
     
