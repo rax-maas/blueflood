@@ -16,9 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.concurrent.AsyncChain;
@@ -32,7 +31,6 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -50,15 +48,8 @@ import java.util.concurrent.TimeoutException;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
-    private static final AtomicInteger requestCount = new AtomicInteger(0);
-    static {
-        Metrics.getRegistry().register(MetricRegistry.name(HttpMetricsIngestionHandler.class, "Request Count"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return requestCount.get();
-            }
-        });
-    }
+    private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
+
 
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
@@ -91,7 +82,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         try {
-            requestCount.getAndIncrement();
+            requestCount.inc();
             final String tenantId = request.getHeader("tenantId");
             JSONMetricsContainer jsonMetricsContainer = null;
             final Timer.Context jsonTimerContext = jsonTimer.time();
@@ -176,7 +167,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 persistingTimerContext.stop();
             }
         } finally {
-            requestCount.getAndDecrement();
+            requestCount.dec();
         }
     }
 
