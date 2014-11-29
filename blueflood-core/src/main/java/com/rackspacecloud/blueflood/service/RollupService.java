@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class RollupService implements Runnable, RollupServiceMBean {
+public class RollupService implements Runnable, RollupServiceMBean, ShardedService {
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
     private final long rollupDelayMillis;
 
@@ -207,13 +207,15 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 if (slotKey == null) { continue; }
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
-                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors));
+                    locatorFetchExecutors.execute(new SlotCheckRunnable(
+                            context.getCurrentTimeMillis(),
+                            context, slotKey, rollupReadExecutors, rollupWriteExecutors));
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't
                     // have enough threads allocated to processing rollups or slot checks.
                     rejectedSlotChecks.mark();
-                    context.pushBackToScheduled(slotKey, true);
+                    context.reschedule(slotKey, true);
                     rejected = true;
                 }
             }
@@ -297,7 +299,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
      *
      * @param shard shard to be added
      */
-    public void addShard(Integer shard) {
+    @Override public void addShard(int shard) {
         if (!shardStateManager.getManagedShards().contains(shard))
             context.addShard(shard);
     }
@@ -307,7 +309,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
      *
      * @param shard shard to be removed
      */
-    public void removeShard(Integer shard) {
+    @Override public void removeShard(int shard) {
         if (shardStateManager.getManagedShards().contains(shard))
             context.removeShard(shard);
     }

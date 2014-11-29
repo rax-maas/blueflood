@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -38,7 +37,6 @@ public class RollupBatchWriter {
         this.context = context;
     }
 
-
     public void enqueueRollupForWrite(SingleRollupWriteContext rollupWriteContext) {
         rollupQueue.add(rollupWriteContext);
         context.incrementWriteCounter();
@@ -52,13 +50,12 @@ public class RollupBatchWriter {
 
     public synchronized void drainBatch() {
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-        SingleRollupWriteContext ctx;
-        try {
-            for (int i=0; i<=ROLLUP_BATCH_MAX_SIZE; i++) {
-                writeContexts.add(rollupQueue.remove());
+        for (int i = 0; i <= ROLLUP_BATCH_MAX_SIZE; i++) {
+            SingleRollupWriteContext ctx = rollupQueue.poll();
+            if (ctx == null) {
+                break;
             }
-        } catch (NoSuchElementException e) {
-            // pass
+            writeContexts.add(ctx);
         }
         if (writeContexts.size() > 0) {
             executor.execute(new RollupBatchWriteRunnable(writeContexts, context));

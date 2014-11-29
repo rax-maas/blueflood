@@ -109,7 +109,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         int count = 0;
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
-            rollupCtx.clearFromRunning(slot);
+            rollupCtx.markFinished(slot);
             rollupCtx.scheduleSlotsOlderThan(300000);
             count += 1;
         }
@@ -129,7 +129,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         count = 0;
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
-            rollupCtx.clearFromRunning(slot);
+            rollupCtx.markFinished(slot);
             rollupCtx.scheduleSlotsOlderThan(300000);
             count += 1;
         }
@@ -150,7 +150,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         UpdateStamp stamp  = slotStateManager20.getSlotStamps().get(518);
         stamp.setTimestamp(time + 3600000L); // add one hour
-        ctxA.clearFromRunning(SlotKey.of(Granularity.MIN_20, 518, 123));
+        ctxA.markFinished(SlotKey.of(Granularity.MIN_20, 518, 123));
     }
 
     @Test
@@ -274,7 +274,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         int count = 0;
         while (ctxA.getScheduledCount() > 0) {
             SlotKey slot = ctxA.getNextScheduled();
-            ctxA.clearFromRunning(slot);
+            ctxA.markFinished(slot);
             ctxA.scheduleSlotsOlderThan(300000);
             count += 1;
         }
@@ -446,7 +446,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         int count = 0;
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
-            ctxRollup.clearFromRunning(slot);
+            ctxRollup.markFinished(slot);
             ctxRollup.scheduleSlotsOlderThan(300000L);
             count += 1;
         }
@@ -500,7 +500,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         count = 0;
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
-            ctxRollup.clearFromRunning(slot);
+            ctxRollup.markFinished(slot);
             ctxRollup.scheduleSlotsOlderThan(300000);
             count += 1;
         }

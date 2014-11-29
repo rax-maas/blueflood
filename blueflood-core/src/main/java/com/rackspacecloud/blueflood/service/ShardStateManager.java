@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableMap;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
@@ -31,24 +32,35 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ShardStateManager {
+public class ShardStateManager implements ShardedService {
     private static final Logger log = LoggerFactory.getLogger(ShardStateManager.class);
     private static final Set<Integer> ALL_SHARDS = new HashSet<Integer>(Util.parseShards("ALL"));
-    final Set<Integer> shards; // Managed shards
-    final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
+    /**
+     * Managed shards.
+     */
+    private final Set<Integer> shards;
+    /**
+     * Nested {@link ShardToGranularityMap}.
+     */
+    private final ImmutableMap<Integer, ShardToGranularityMap> shardToGranularityStates;
     private final Ticker serverTimeMillisecondTicker;
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
-    private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
+    private static final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
-        this.shards = new HashSet<Integer>(shards);
-        for (Integer shard : ALL_SHARDS) { // Why not just do this for managed shards?
-            shardToGranularityStates.put(shard, new ShardToGranularityMap(shard));
+        this.shards = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+        for (Integer shard : shards) {
+            this.shards.add(shard);
         }
+        ImmutableMap.Builder<Integer, ShardToGranularityMap> builder = ImmutableMap.builder();
+        for (Integer shard : ALL_SHARDS) { // Why not just do this for managed shards?
+            builder.put(shard, new ShardToGranularityMap(shard));
+        }
+        shardToGranularityStates = builder.build();
         this.serverTimeMillisecondTicker = ticker;
     }
 
@@ -56,17 +68,17 @@ public class ShardStateManager {
         return Collections.unmodifiableCollection(this.shards);
     }
 
-    protected Boolean contains(int shard) {
+    protected boolean contains(int shard) {
         return shards.size() != 0 && shards.contains(shard);
     }
 
-    protected void add(int shard) {
+    @Override public void addShard(int shard) {
         if (contains(shard))
             return;
         shards.add(shard);
     }
 
-    protected void remove(int shard) {
+    @Override public void removeShard(int shard) {
         if (!contains(shard))
             return;
         this.shards.remove(shard);
