@@ -326,18 +326,21 @@ public class RollupService implements Runnable, RollupServiceMBean {
         return context.getRecentlyScheduledShards();
     }
 
-    public synchronized Collection<String> getMetricsState(int shard, int slot) {
+    public synchronized Collection<String> getMetricsState(int shard, String gran, int slot) {
         final List<String> results = new ArrayList<String>();
+        Granularity granularity = Granularity.fromString(gran);
 
-        for (Granularity g : Granularity.rollupGranularities()) {
-            final Map<Integer, UpdateStamp> stateTimestamps = context.getSlotStamps(g, shard);
-            if (stateTimestamps == null) {
-                continue;
-            }
-            final UpdateStamp stamp = stateTimestamps.get(slot);
-            if (stamp != null) {
-                results.add(new SlotState(g, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
-            }
+        if (granularity == null)
+            return results;
+
+        final Map<Integer, UpdateStamp> stateTimestamps = context.getSlotStamps(granularity, shard);
+
+        if (stateTimestamps == null)
+            return results;
+
+        final UpdateStamp stamp = stateTimestamps.get(slot);
+        if (stamp != null) {
+            results.add(new SlotState(granularity, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
         }
 
         return results;
