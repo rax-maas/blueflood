@@ -29,6 +29,9 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * When synchronizing multiple collections, do it in this order: scheduled -> running.
  */
-public class ScheduleContext implements IngestionContext {
+public class ScheduleContext implements IngestionContext, ContextMBean {
     private static final Logger log = LoggerFactory.getLogger(ScheduleContext.class);
 
     private final ShardStateManager shardStateManager;
@@ -84,6 +87,7 @@ public class ScheduleContext implements IngestionContext {
         this.scheduleTime = currentTimeMillis;
         this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
         this.lockManager = new NoOpShardLockManager();
+        registerMBean();
     }
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
@@ -92,7 +96,7 @@ public class ScheduleContext implements IngestionContext {
         ZKBasedShardLockManager lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
         lockManager.init(new TimeValue(5, TimeUnit.SECONDS));
         this.lockManager = lockManager;
-
+        registerMBean();
     }
 
     public void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
@@ -295,5 +299,37 @@ public class ScheduleContext implements IngestionContext {
                 return ScheduleContext.this.getCurrentTimeMillis();
             }
         };
+    }
+
+    @Override
+    public Collection<String> getMetricsState(int shard, String gran, int slot) {
+        final List<String> results = new ArrayList<String>();
+        Granularity granularity = Granularity.fromString(gran);
+
+        if (granularity == null)
+            return results;
+
+        final Map<Integer, UpdateStamp> stateTimestamps = this.getSlotStamps(granularity, shard);
+
+        if (stateTimestamps == null)
+            return results;
+
+        final UpdateStamp stamp = stateTimestamps.get(slot);
+        if (stamp != null) {
+            results.add(new SlotState(granularity, slot, stamp.getState()).withTimestamp(stamp.getTimestamp()).toString());
+        }
+
+        return results;
+    }
+
+    private void registerMBean() {
+        try {
+            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", ScheduleContext.class.getSimpleName());
+            final ObjectName nameObj = new ObjectName(name);
+            mbs.registerMBean(this, nameObj);
+        } catch (Exception exc) {
+            log.error("Unable to register mbean for " + ScheduleContext.class.getSimpleName(), exc);
+        }
     }
 }
