@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * When synchronizing multiple collections, do it in this order: scheduled -> running.
  */
-public class ScheduleContext implements IngestionContext, ContextMBean {
+public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     private static final Logger log = LoggerFactory.getLogger(ScheduleContext.class);
 
     private final ShardStateManager shardStateManager;

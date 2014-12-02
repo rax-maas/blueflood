@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import java.util.Collection;
 
-public interface ContextMBean {
+public interface ScheduleContextMBean {
     /**
      * Get the metrics state currently stored by ScheduleContext
      */
