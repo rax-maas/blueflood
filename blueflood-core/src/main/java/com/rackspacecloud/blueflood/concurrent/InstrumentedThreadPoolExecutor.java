@@ -24,7 +24,7 @@ public class InstrumentedThreadPoolExecutor {
         registry.register(name(threadPoolName, "queue-max"), new Gauge<Integer>() {
             @Override
             public Integer getValue() {
-                return executor.getActiveCount();
+                return executor.getQueue().size() + executor.getQueue().remainingCapacity();
             }
         });
         registry.register(name(threadPoolName, "threadpool-active"), new Gauge<Integer>() {
