@@ -47,6 +47,5 @@ public interface RollupServiceMBean {
     
     public Collection<Integer> getRecentlyScheduledShards();
 
-    public Collection<String> getMetricsState(int shard, String gran, int slot);
     public Collection<String> getOldestUnrolledSlotPerGranularity(int shard);
 }
