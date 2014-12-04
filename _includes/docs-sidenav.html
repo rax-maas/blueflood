@@ -1,0 +1,24 @@
+{% if page.docs != 'inline' %}<p><a href="{{site.baseurl}}/docs/">Docs</a></p>{% endif %}
+<div class="bs-docs-sidebar hidden-print hidden-xs hidden-sm" role="complementary">
+  <ul class="nav bs-docs-sidenav">
+    {% assign docs = site.docs | where: 'category', 'Getting Started' | sort: 'weight' %}
+    {% for doc in docs %}
+      {% if page.docs != 'inline' %}
+      <li {% if doc.url == page.url %}class="active" id="active-menu"{% endif %}>
+        <a {% if doc.url == page.url %}class="active"{% endif %} href="{{ site.baseurl }}{{ doc.url }}">
+          {{doc.title}}
+        </a>
+      </li>
+      {% else %}
+       <li>
+         <a href="#{{ doc.title | downcase | replace: ' ', '-' }}">
+           {{ doc.title}}
+         </a>
+       </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+  <a class="back-to-top" href="#top">
+    Back to top
+  </a>
+</div>

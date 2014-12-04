@@ -1,0 +1,32 @@
+---
+layout: default
+---
+
+<div class="jumbotron text-center">
+  <div class="container">
+    <h1>{% if page.category %}{{ page.category }}{% else %}{{ page.title }}{% endif %}</h1>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm-3 sidebar">
+      {% include docs-sidenav.html %}
+    </div>
+    <div class="col-sm-9">
+      {{ page.title | prepend: '# ' | markdownify }}
+      {{ content }}
+      <hr>
+      {% assign docs = site.docs | where: 'category', 'Getting Started' | sort: 'weight' %}
+      {% for doc in docs %}
+        <div class="section">
+          <h1 id="{{ doc.title | downcase | replace: ' ', '-' }}">{{doc.title}}</h1>
+          <div class="section-content">
+            {{doc.content | markdownify }}
+          </div>
+        </div>
+        <hr>
+      {% endfor %}
+    </div>
+  </div>
+</div>

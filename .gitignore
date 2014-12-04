@@ -70,3 +70,5 @@ atlassian-ide-plugin.xml
 # Project specific gitignore #
 #######################################
 tests.log
+
+_site

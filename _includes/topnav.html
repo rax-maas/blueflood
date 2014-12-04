@@ -1,0 +1,20 @@
+<div class="navbar navbar-default" role="navigation" style="margin-bottom: 0;">
+  <div class="container-fluid" style="max-width: 1200px;">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="{{ site.baseurl }}/">Blue Flood</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      {% if site.github %}
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="{{site.github}}">Github</a></li>
+      </ul>
+      {% endif %}
+    </div><!--/.nav-collapse -->
+  </div>
+</div>
