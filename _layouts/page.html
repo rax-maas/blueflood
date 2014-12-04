@@ -1,0 +1,22 @@
+---
+layout: default
+---
+
+<div class="jumbotron text-center">
+  <div class="container">
+    <h1>{% if page.category %}{{ page.category }}{% else %}{{ page.title }}{% endif %}</h1>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm-3 sidebar">
+      {% include sidenav.html %}
+    </div>
+    <div class="col-sm-9">
+      <h1>{{page.title}}</h1>
+      {{ content }}
+      {% include pagination.html %}
+    </div>
+  </div>
+</div>

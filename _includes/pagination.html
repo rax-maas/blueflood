@@ -1,0 +1,19 @@
+<hr>
+<ul class="pager">
+  {% for doc in docs %}
+    {% if doc.url == page.url %}
+      {% unless forloop.first %}
+        <li class="previous">
+          <a href="{{ site.baseurl }}{{ prev.url }}">&larr; {{ prev.title }}</a>
+        </li>
+      {% endunless %}
+      {% unless forloop.last %}
+        {% assign next = docs[forloop.index] %}
+        <li class="next">
+          <a href="{{ site.baseurl }}{{ next.url }}">{{ next.title }} &rarr;</a>
+        </li>
+      {% endunless %}
+    {% endif %}
+    {% assign prev = doc %}
+  {% endfor %}
+</ul>
