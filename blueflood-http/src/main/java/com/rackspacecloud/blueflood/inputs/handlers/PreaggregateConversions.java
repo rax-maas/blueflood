@@ -101,12 +101,12 @@ public class PreaggregateConversions {
             TimerRollup rollup = new TimerRollup()
                     .withCount(timer.getCount().longValue())
                     .withSampleCount(1)
-                    .withAverage(resolveNumber(timer.getAvg()))
-                    .withMaxValue(resolveNumber(timer.getMax()))
-                    .withMinValue(resolveNumber(timer.getMin()))
-                    .withCountPS(timer.getRate().doubleValue())
-                    .withSum(timer.getSum().longValue()) // I wonder now if assuming sum instanceof Long is wrong.
-                    .withVariance(Math.pow(timer.getStd().doubleValue(), 2d));
+                    .withAverage(resolveNumber(timer.getAvg() == null ? 0.0d : timer.getAvg()))
+                    .withMaxValue(resolveNumber(timer.getMax() == null ? 0.0d : timer.getMax()))
+                    .withMinValue(resolveNumber(timer.getMin() == null ? 0.0d : timer.getMin()))
+                    .withCountPS(timer.getRate() == null ? 0.0d : timer.getRate().doubleValue())
+                    .withSum(timer.getSum() == null ? 0L : timer.getSum().longValue()) // I wonder now if assuming sum instanceof Long is wrong.
+                    .withVariance(Math.pow(timer.getStd() == null ? 0.0d : timer.getStd().doubleValue(), 2d));
             for (Map.Entry<String, Bundle.Percentile> entry : timer.getPercentiles().entrySet()) {
                 // throw away max and sum.
                 if (entry.getValue().getAvg() != null) {
