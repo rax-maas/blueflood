@@ -3,7 +3,9 @@ github: 'https://github.com/rackerlabs/blueflood'
 baseurl: ""
 google_analytics: "UA-42769648-1"
 highlighter: pygments
+markdown:    kramdown
 kramdown:
+  input: GFM
   toc_levels: "1..3"
 gems:
   - jekyll-redirect-from
