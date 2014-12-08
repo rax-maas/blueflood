@@ -42,7 +42,12 @@ public class ShardStateManager {
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
-    private static final Meter reRollupData = Metrics.meter(RollupService.class, "Re-rolling up a slot because of new data");
+    private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
+    static {
+        for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
+            granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
+        }
+    }
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
@@ -191,6 +196,10 @@ public class ShardStateManager {
                 // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and
                 //    the triggering timestamp we have is greater or the stamp in memory is yet to be persisted i.e still dirty
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
+                    // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
+                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp))
+                        granToReRollMeters.get(granularity).mark();
+
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
                 } else {
                     stamp.setDirty(true); // This is crucial for convergence, we need to superimpose a higher timestamp which can be done only if we set it to dirty
@@ -205,8 +214,10 @@ public class ShardStateManager {
             if (slotToUpdateStampMap.containsKey(slot)) {
                 UpdateStamp stamp = slotToUpdateStampMap.get(slot);
                 stamp.setTimestamp(millis);
-                if (stamp.getState().equals(UpdateStamp.State.Rolled)) {
-                    reRollupData.mark();
+                // Only if we are managing the shard and rolling it up, we should emit a metric here, otherwise, it will be emitted by the rollup context which is responsible for rolling up the shard
+                if (getManagedShards().contains(shard) && Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
+                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(millis))
+                        granToReRollMeters.get(granularity).mark();
                 }
                 stamp.setState(UpdateStamp.State.Active);
                 stamp.setDirty(true);
