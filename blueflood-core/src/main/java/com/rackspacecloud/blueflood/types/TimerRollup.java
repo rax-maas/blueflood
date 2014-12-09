@@ -11,9 +11,9 @@ import java.util.*;
 
 
 public class TimerRollup implements Rollup, IBasicRollup {
-    private long sum = 0;
-    private long count = 0;
-    private double rate = 0;
+    private Long sum = (long)0;
+    private Long count = (long)0;
+    private Double rate = (double)0;
 
     /**
      * Number of pre-aggregated timers received by Blueflood
@@ -34,22 +34,22 @@ public class TimerRollup implements Rollup, IBasicRollup {
         super();
     }
     
-    public TimerRollup withSum(long sum) {
+    public TimerRollup withSum(Long sum) {
         this.sum = sum;
         return this;
     }
 
-    public TimerRollup withCount(long count) {
+    public TimerRollup withCount(Long count) {
         this.count = count;
         return this;
     }
 
-    public TimerRollup withCountPS(double count_ps) {
+    public TimerRollup withCountPS(Double count_ps) {
         this.rate = count_ps;
         return this;
     }
 
-    public TimerRollup withSampleCount(int sampleCount) {
+    public TimerRollup withSampleCount(Integer sampleCount) {
         this.sampleCount = sampleCount;
         return this;
     }
@@ -152,10 +152,10 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
     
     // per second rate.
-    public double getRate() { return rate; }
-    public long getSum() { return sum; }
+    public Double getRate() { return rate; }
+    public Long getSum() { return sum; }
     public long getCount() { return count; };
-    public int getSampleCount() { return sampleCount; }
+    public Integer getSampleCount() { return sampleCount; }
     
     public String toString() {
         return String.format("sum:%s, rate:%s, count:%s, min:%s, max:%s, avg:%s, var:%s, sample_cnt:%s, %s",

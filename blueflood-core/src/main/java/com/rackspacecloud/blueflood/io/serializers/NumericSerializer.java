@@ -339,53 +339,80 @@ public class NumericSerializer {
         out.writeRawByte(Constants.VERSION_1_TIMER);
         
         // sum, count, countps, avg, max, min, var
-        out.writeRawVarint64(rollup.getSum());
+        if (rollup.getSampleCount() != null) {
+            out.writeRawVarint64(rollup.getSum());
+        }
+
         out.writeRawVarint64(rollup.getCount());
-        out.writeDoubleNoTag(rollup.getRate());
-        out.writeRawVarint32(rollup.getSampleCount());
-        putRollupStat(rollup.getAverage(), out);
-        putRollupStat(rollup.getMaxValue(), out);
-        putRollupStat(rollup.getMinValue(), out);
-        putRollupStat(rollup.getVariance(), out);
-        
-        // percentiles.
-        Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
-        out.writeRawVarint32(percentiles.size());
-        for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
-            out.writeStringNoTag(entry.getKey());
-            putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
+
+        if (rollup.getRate() != null) {
+            out.writeDoubleNoTag(rollup.getRate());
+        }
+
+        if (rollup.getSampleCount() != null) {
+            out.writeRawVarint32(rollup.getSampleCount());
+        }
+
+        if (rollup.getAverage() != null) {
+            putRollupStat(rollup.getAverage(), out);
+        }
+
+        if(rollup.getMaxValue() != null) {
+            putRollupStat(rollup.getMaxValue(), out);
+        }
+
+        if(rollup.getMinValue() != null) {
+            putRollupStat(rollup.getMinValue(), out);
+        }
+
+        if (rollup.getVariance() != null) {
+            putRollupStat(rollup.getVariance(), out);
+        }
+
+        if(rollup.getPercentiles() != null) {
+            // percentiles.
+            Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+            out.writeRawVarint32(percentiles.size());
+            for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+                out.writeStringNoTag(entry.getKey());
+                putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
+            }
         }
     }
     
     private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
         // note: type and version have already been read.
-        final long sum = in.readRawVarint64();
+        final Long sum = in.readRawVarint64();
         final long count = in.readRawVarint64();
-        final double countPs = in.readDouble();
-        final int sampleCount = in.readRawVarint32();
+        final Double countPs = in.readDouble();
+        final Integer sampleCount = in.readRawVarint32();
         
         BasicRollup statBucket = new BasicRollup();
         
         byte statType;
         AbstractRollupStat stat;
-        
+
+        //
         // average
         statType = in.readRawByte();
         stat = getStatFromRollup(statType, statBucket);
         setStat(stat, in);
+
         // max
         statType = in.readRawByte();
         stat = getStatFromRollup(statType, statBucket);
         setStat(stat, in);
+
         // min
         statType = in.readRawByte();
         stat = getStatFromRollup(statType, statBucket);
         setStat(stat, in);
+
         // var
         statType = in.readRawByte();
         stat = getStatFromRollup(statType, statBucket);
         setStat(stat, in);
-        
+
         TimerRollup rollup = new TimerRollup()
                 .withSum(sum)
                 .withCount(count)
@@ -466,10 +493,11 @@ public class NumericSerializer {
         return basicRollup;
     }
     
-    // todo: this should return an instance instead of populate one, but will require some refatoring of 
+    // todo: this should return an instance instead of populate one, but will require some refactoring of
     // deserializeV1Rollup().
     private static void setStat(AbstractRollupStat stat, CodedInputStream in) throws IOException {
         byte metricValueType = in.readRawByte();
+
         switch (metricValueType) {
             case Constants.I64:
                 stat.setLongValue(in.readRawVarint64());

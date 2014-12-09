@@ -31,14 +31,14 @@ public class BasicRollup implements Rollup, IBasicRollup {
     private Variance variance;
     private MinValue minValue;
     private MaxValue maxValue;
-    private long count;
+    private Long count;
 
     public BasicRollup() {
         this.average = new Average();
         this.variance = new Variance();
         this.minValue = new MinValue();
         this.maxValue = new MaxValue();
-        this.count = 0;
+        this.count = (long)0;
     }
 
     @Override

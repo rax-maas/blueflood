@@ -36,13 +36,13 @@ public class TimerSerializationTest {
     public void testV1RoundTrip() throws IOException {
         // build up a Timer
         TimerRollup r0 = new TimerRollup()
-                .withSum(42)
+                .withSum((long)42)
                 .withCountPS(23.32d)
                 .withAverage(56)
                 .withVariance(853.3245d)
                 .withMinValue(2)
                 .withMaxValue(987)
-                .withCount(345);
+                .withCount((long)345);
         r0.setPercentile("foo", 741.32d);
         r0.setPercentile("bar", 0.0323d);
         

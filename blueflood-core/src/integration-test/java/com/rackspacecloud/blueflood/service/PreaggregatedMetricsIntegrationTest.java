@@ -57,7 +57,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
             .withVariance(103d)
             .withMinValue(104)
             .withMaxValue(105)
-            .withCount(106);
+            .withCount((long)106);
         simple.setPercentile("98th", 107);
         simple.setPercentile("99th", 110);
     }

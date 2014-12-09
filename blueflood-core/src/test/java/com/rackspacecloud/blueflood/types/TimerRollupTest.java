@@ -36,10 +36,10 @@ public class TimerRollupTest {
     @Test
     public void testConstantTimerRollup() throws IOException {
         // 40 samples, one per milli, each sample increments by one.  Now divide those into four parts.
-        TimerRollup tr0 = new TimerRollup().withSum(45).withCountPS(4.5d).withAverage(4).withVariance(8.25d).withMinValue(0).withMaxValue(9).withCount(10);
-        TimerRollup tr1 = new TimerRollup().withSum(145).withCountPS(4.5d).withAverage(14).withVariance(8.25d).withMinValue(10).withMaxValue(19).withCount(10);
-        TimerRollup tr2 = new TimerRollup().withSum(245).withCountPS(4.5d).withAverage(24).withVariance(8.25d).withMinValue(20).withMaxValue(29).withCount(10);
-        TimerRollup tr3 = new TimerRollup().withSum(345).withCountPS(4.5d).withAverage(34).withVariance(8.25d).withMinValue(30).withMaxValue(39).withCount(10);
+        TimerRollup tr0 = new TimerRollup().withSum((long)45).withCountPS(4.5d).withAverage(4).withVariance(8.25d).withMinValue(0).withMaxValue(9).withCount((long)10);
+        TimerRollup tr1 = new TimerRollup().withSum((long)145).withCountPS(4.5d).withAverage(14).withVariance(8.25d).withMinValue(10).withMaxValue(19).withCount((long)10);
+        TimerRollup tr2 = new TimerRollup().withSum((long)245).withCountPS(4.5d).withAverage(24).withVariance(8.25d).withMinValue(20).withMaxValue(29).withCount((long)10);
+        TimerRollup tr3 = new TimerRollup().withSum((long)345).withCountPS(4.5d).withAverage(34).withVariance(8.25d).withMinValue(30).withMaxValue(39).withCount((long)10);
         BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(0, 0, 10, 1, 1));
         BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(10, 10, 10, 1, 1));
         BasicRollup br2 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(20, 20, 10, 1, 1));
@@ -100,26 +100,26 @@ public class TimerRollupTest {
         // count_ps for this will be 200 time units / 100 samples = 2.0
         BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(p0);
         final TimerRollup tr0 = new TimerRollup()
-                .withSum(9900)
+                .withSum((long)9900)
                 .withCountPS(2.0)
                 .withAverage(99)
                 .withVariance(3333.0d)
                 .withMinValue(0)
                 .withMaxValue(198)
-                .withCount(100);
+                .withCount((long)100);
         
         // 100 time units worth of data gathered from 200 samples.
         Points<SimpleNumber> p1 = createPoints(200, 200, 200, 1, 2);
         // count_ps for this will be 200 time units / 200 samples = 1.0
         BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(p1);
         final TimerRollup tr1 = new TimerRollup()
-                .withSum(39900)
+                .withSum((long)39900)
                 .withCountPS(1.0)
                 .withAverage(399)
                 .withVariance(13333.0d)
                 .withMinValue(200)
                 .withMaxValue(598)
-                .withCount(100);
+                .withCount((long)100);
         
         // count_ps should end up being 400 time units / 300 samples = 1.33
         TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
@@ -169,8 +169,8 @@ public class TimerRollupTest {
     
     @Test
     public void testPercentiles() throws IOException {
-        final TimerRollup tr0 = new TimerRollup().withSum(0).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
-        final TimerRollup tr1 = new TimerRollup().withSum(0).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
+        final TimerRollup tr0 = new TimerRollup().withSum((long)0).withCountPS((double)0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount((long)0);
+        final TimerRollup tr1 = new TimerRollup().withSum((long)0).withCountPS((double)0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount((long)0);
         
         // populate percentiles (these are nonsensical)
         tr0.setPercentile("75", 0.1d);
