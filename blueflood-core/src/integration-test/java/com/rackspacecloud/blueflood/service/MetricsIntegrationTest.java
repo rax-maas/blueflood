@@ -227,7 +227,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         Points<BasicRollup> input = reader.getDataToRoll(BasicRollup.class, locator, range,
                 CassandraModel.getColumnFamily(BasicRollup.class, Granularity.MIN_1440));
         BasicRollup basicRollup = BasicRollup.buildRollupFromRollups(input);
-        Assert.assertEquals(60 * hours, basicRollup.getCount());
+        Assert.assertEquals((long)60 * hours, basicRollup.getCount());
 
         Points<HistogramRollup> histInput = reader.getDataToRoll(HistogramRollup.class, locator, range,
                 CassandraModel.getColumnFamily(HistogramRollup.class, Granularity.MIN_1440));

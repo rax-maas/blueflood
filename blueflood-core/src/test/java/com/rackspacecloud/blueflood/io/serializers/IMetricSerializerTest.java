@@ -92,7 +92,16 @@ public class IMetricSerializerTest {
         Assert.assertEquals(timerValue, timerSerialized);
 
         TimerRollup timerReserialized = mapper.readValue(timerSerialized, TimerRollup.class);
-        Assert.assertEquals(timerDeserialized, timerReserialized);
+        Assert.assertEquals(timerDeserialized.getAverage(), timerReserialized.getAverage());
+        Assert.assertEquals(timerDeserialized.getCount(), timerReserialized.getCount());
+        Assert.assertEquals(timerDeserialized.getMaxValue(), timerReserialized.getMaxValue());
+        Assert.assertEquals(timerDeserialized.getMinValue(), timerReserialized.getMinValue());
+        Assert.assertEquals(timerDeserialized.getPercentiles(), timerReserialized.getPercentiles());
+        Assert.assertEquals(timerDeserialized.getRate(), timerReserialized.getRate());
+        Assert.assertEquals(timerDeserialized.getSampleCount(), timerReserialized.getSampleCount());
+        Assert.assertEquals(timerDeserialized.getVariance(), timerReserialized.getVariance());
+        Assert.assertEquals(timerDeserialized.getSum(), timerReserialized.getSum());
+        Assert.assertEquals(timerDeserialized.getRollupType(), timerReserialized.getRollupType());
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, timerReserialized);
         String preagg = mapper.writeValueAsString(m);

@@ -137,11 +137,11 @@ public class FakeMetricDataGenerator {
             long timeNow = startTime + i*1000;
             TimerRollup rollup = new TimerRollup()
                 .withAverage(i)
-                .withCount(i)
+                .withCount((long)i)
                 .withCountPS(i*0.1d)
                 .withMaxValue(i)
                 .withMinValue(i)
-                .withSum(i+i)
+                .withSum((long)(i+i))
                 .withVariance(i);
             rollup.setPercentile("50", i);
             rollup.setPercentile("99", i * 2 + 1);
