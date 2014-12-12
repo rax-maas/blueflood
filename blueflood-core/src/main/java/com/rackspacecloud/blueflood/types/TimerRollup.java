@@ -35,21 +35,34 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
     
     public TimerRollup withSum(Long sum) {
+        if (sum == null) {
+            sum = (long)0;
+        }
         this.sum = sum;
         return this;
     }
 
     public TimerRollup withCount(Long count) {
+        if (count == null) {
+            count = (long)0;
+        }
         this.count = count;
         return this;
     }
 
     public TimerRollup withCountPS(Double count_ps) {
+        if (count_ps == null) {
+            count_ps = (double)0;
+        }
         this.rate = count_ps;
         return this;
     }
 
     public TimerRollup withSampleCount(Integer sampleCount) {
+        if (sampleCount == null) {
+            sampleCount = 0;
+        }
+
         this.sampleCount = sampleCount;
         return this;
     }

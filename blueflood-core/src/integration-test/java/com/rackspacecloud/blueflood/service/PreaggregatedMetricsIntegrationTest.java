@@ -78,7 +78,18 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
 
         Assert.assertEquals(1, points.getPoints().size());
-        Assert.assertEquals(metric.getMetricValue(), points.getPoints().get(ts).getData());
+        TimerRollup expected = (TimerRollup)metric.getMetricValue();
+        TimerRollup actual = points.getPoints().get(ts).getData();
+
+        Assert.assertEquals(expected.getCount(), actual.getCount());
+        Assert.assertEquals(expected.getAverage(), actual.getAverage());
+        Assert.assertEquals(expected.getMinValue(), actual.getMinValue());
+        Assert.assertEquals(expected.getMaxValue(), actual.getMaxValue());
+        Assert.assertEquals(expected.getSampleCount(), actual.getSampleCount());
+        Assert.assertEquals(expected.getPercentiles(), actual.getPercentiles());
+        Assert.assertEquals(expected.getVariance(), actual.getVariance());
+        Assert.assertEquals(expected.getRate(), actual.getRate());
+        Assert.assertEquals(expected.getRollupType(), actual.getRollupType());
     }
     
     @Test
@@ -97,8 +108,18 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         // create the rollup
         final TimerRollup rollup = TimerRollup.buildRollupFromTimerRollups(points);
         // should be the same as simple
-        Assert.assertEquals(simple, rollup);
-        
+        Assert.assertEquals(simple.getAverage(), rollup.getAverage());
+        Assert.assertEquals(simple.getCount(), rollup.getCount());
+        Assert.assertEquals(simple.getSampleCount(), rollup.getSampleCount());
+        Assert.assertEquals(simple.getAverage(), rollup.getAverage());
+        Assert.assertEquals(simple.getRate(), rollup.getRate());
+        Assert.assertEquals(simple.getPercentiles(), rollup.getPercentiles());
+        Assert.assertEquals(simple.getSum(), rollup.getSum());
+        Assert.assertEquals(simple.getMinValue(), rollup.getMinValue());
+        Assert.assertEquals(simple.getMaxValue(), rollup.getMaxValue());
+        Assert.assertEquals(simple.getVariance(), rollup.getVariance());
+
+
         // assemble it into points, but give it a new timestamp.
         points = new Points<TimerRollup>() {{
             add(new Point<TimerRollup>(rollupTs, rollup));
@@ -112,8 +133,17 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, rollups5m.getPoints().size());
         
         TimerRollup rollup5m = rollups5m.getPoints().values().iterator().next().getData();
-        // rollups should be identical since one is just a coarse rollup of the other.
-        Assert.assertEquals(rollup, rollup5m);
+        // rollups should be identical since one is just a coarse rollup of the other
+        Assert.assertEquals(rollup.getAverage(), rollup5m.getAverage());
+        Assert.assertEquals(rollup.getCount(), rollup5m.getCount());
+        Assert.assertEquals(rollup.getSampleCount(), rollup.getSampleCount());
+        Assert.assertEquals(rollup.getAverage(), rollup5m.getAverage());
+        Assert.assertEquals(rollup.getRate(), rollup5m.getRate());
+        Assert.assertEquals(rollup.getPercentiles(), rollup5m.getPercentiles());
+        Assert.assertEquals(rollup.getSum(), rollup5m.getSum());
+        Assert.assertEquals(rollup.getMinValue(), rollup5m.getMinValue());
+        Assert.assertEquals(rollup.getMaxValue(), rollup5m.getMaxValue());
+        Assert.assertEquals(rollup.getVariance(), rollup5m.getVariance());
     }
     
     @Test
