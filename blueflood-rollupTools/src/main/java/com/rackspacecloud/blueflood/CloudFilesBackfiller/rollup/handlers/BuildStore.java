@@ -48,17 +48,12 @@ public class BuildStore {
     // please getEligibleData for better understanding of what is this parameter
     private static final int RANGE_BUFFER = Configuration.getInstance().getIntegerProperty(BackFillerConfig.NUMBER_OF_BUFFERRED_SLOTS);
     private static int outOfRangeToleration = 0;
-    private static boolean DISCARD_FLAG = false;
-
     // Specifies the sorting order in TreeMap
     private static Comparator<Range> rangeComparator = new Comparator<Range>() {
         @Override public int compare(Range r1, Range r2) {
             return (int) (r1.getStart() - r2.getStart());
         }
     };
-
-
-
     /*
      * This is a concurrent version of TreeMap.
      * Reason behind using a TreeMap : We want to keep the mapping from ranges to metrics sorted
@@ -70,9 +65,10 @@ public class BuildStore {
     private static List<Range> rangesToRollup = new ArrayList<Range>();
     //Only one thread will be calling this. No need to make this thread safe. Shrinking subset of ranges within replay period
     public static List<Range> rangesStillApplicable = new LinkedList<Range>();
-    private static Meter compltedRangesReturned = Metrics.meter(BuildStore.class, "Number of Ranges filled up meter");
+    private static Meter completedRangesReturned = Metrics.meter(BuildStore.class, "Number of Ranges filled up meter");
     private static Meter metricsParsedAndMergedMeter = Metrics.meter(BuildStore.class, "Number of metrics parsed per unit time");
     private static Counter invalidMetricsCounter = Metrics.counter(BuildStore.class, "Invalid metrics found while parsing");
+    private static Meter metricCannotBeParsed = Metrics.meter(BuildStore.class, "Unable to parse metrics");
     private static final Collection<Integer> shardsToBackfill = Collections.unmodifiableCollection(
             Util.parseShards(Configuration.getInstance().getStringProperty(BackFillerConfig.SHARDS_TO_BACKFILL)));
 
@@ -100,24 +96,52 @@ public class BuildStore {
                     continue;
                 }
 
-                // todo: per-line instrumentation starts here.
-
                 CheckFromJson checkFromJson = gson.fromJson(line, CheckFromJson.class);
+
+                long timestamp = checkFromJson.getTimestamp();
+                long snappedMillis = Granularity.MIN_5.snapMillis(timestamp);
+
+                Range rangeOfThisTimestamp = new Range(snappedMillis, snappedMillis + Granularity.MIN_5.milliseconds() - 1);
+
+                //Do not add timestamps that lie out of range
+                if (!rangesToRollup.contains(rangeOfThisTimestamp)) {
+                    log.warn("Timestamp of metrics of check found lying out the range: "+rangeOfThisTimestamp+" TS: "+timestamp);
+                    line = reader.readLine();
+                    continue;
+                }
+
+                //These are out of band timestamps lying in the ranges which we have already rolled
+                if (rangesToRollup.contains(rangeOfThisTimestamp) && !rangesStillApplicable.contains(rangeOfThisTimestamp)) {
+                    log.warn("Range of timestamp of metrics of check " + checkFromJson.getCheckId() + "is out of applicable ranges");
+                    outOfRangeToleration++;
+
+                    // If we are seeing a lot of out of band metrics, something is wrong. May be metrics are back logged a lot. stop immediately. try to increase the range buffer?
+                    if (outOfRangeToleration > OUT_OF_RANGE_TOLERATION_THRESHOLD) {
+                        throw new OutOFBandException("Starting to see a lot of metrics in non-applicable ranges");
+                    }
+                    line = reader.readLine();
+                    continue;
+                }
+
                 if (!CheckFromJson.isValid(checkFromJson)) {
                     invalidMetricsCounter.inc();
                 } else {
                     for (String metricName : checkFromJson.getMetricNames()) {
+                        MetricPoint metricPoint = null;
 
-                        MetricPoint metricPoint = checkFromJson.getMetric(metricName);
-
-                        // Bail out for string metrics
-                        if(metricPoint.getType() == String.class) {
-                            line = reader.readLine();
+                        try {
+                            metricPoint = checkFromJson.getMetric(metricName);
+                        } catch (RuntimeException e) {
+                            //pass. Let the user determine if he wants to continue by just emitting a metric
+                            metricCannotBeParsed.mark();
                             continue;
                         }
 
+                        // Bail out for string metrics
+                        if (metricPoint.getType() == String.class) continue;
+
                         Locator metricLocator;
-                        if(checkFromJson.getCheckType().contains("remote")) {
+                        if (checkFromJson.getCheckType().contains("remote")) {
                             String longMetricName = String.format("%s.rackspace.monitoring.entities.%s.checks.%s.%s.%s.%s",
                                     checkFromJson.getTenantId(),
                                     checkFromJson.getEntityId(),
@@ -136,36 +160,7 @@ public class BuildStore {
                             metricLocator = Locator.createLocatorFromDbKey(longMetricName);
                         }
 
-                        if (!shardsToBackfill.contains(Util.computeShard(metricLocator.toString()))) {
-                            line = reader.readLine();
-                            continue;
-                        }
-
-                        long timestamp = checkFromJson.getTimestamp();
-                        long snappedMillis = Granularity.MIN_5.snapMillis(timestamp);
-
-                        Range rangeOfThisTimestamp = new Range(snappedMillis, snappedMillis + Granularity.MIN_5.milliseconds() - 1);
-
-                        //Do not add timestamps that lie out of range
-                        if (!rangesToRollup.contains(rangeOfThisTimestamp)) {
-                            log.warn("Timestamp of metric found lying out the range: "+rangeOfThisTimestamp+" TS: "+timestamp);
-                            line = reader.readLine();
-                            continue;
-                        }
-
-                        //These are out of band timestamps lying in the ranges which we have already rolled
-                        if (rangesToRollup.contains(rangeOfThisTimestamp) && !rangesStillApplicable.contains(rangeOfThisTimestamp)) {
-                            log.warn("Range of timestamp of metric "+ metricLocator + "is out of applicable ranges");
-                            outOfRangeToleration++;
-
-                            // If we are seeing a lot of out of band metrics, something is wrong. May be metrics are back logged a lot. stop immediately. try to increase the range buffer?
-                            if (outOfRangeToleration > OUT_OF_RANGE_TOLERATION_THRESHOLD) {
-                                throw new OutOFBandException("Starting to see a lot of metrics in non-applicable ranges");
-                            }
-
-                            line = reader.readLine();
-                            continue;
-                        }
+                        if (!shardsToBackfill.contains(Util.computeShard(metricLocator.toString()))) continue;
 
                         // The following it required because concurrent data structure provides weak consistency. For eg. Two threads both calling get will see different results. putIfAbsent provides atomic operation
                         ConcurrentHashMap<Locator, Points> tsToPoint = locatorToTimestampToPoint.get(rangeOfThisTimestamp);
@@ -189,17 +184,6 @@ public class BuildStore {
 
                         points.add(new Points.Point(timestamp, new SimpleNumber(metricPoint.getValue())));
                         metricsParsedAndMergedMeter.mark();
-
-
-                        /*
-                        if (tsToPoint.containsKey(metricLocator)) {
-                            tsToPoint.get(metricLocator).getPoints().put(timestamp, new Points.Point(timestamp, new SimpleNumber(metricPoint.getValue())));
-                        } else {
-                            Points points = new Points();
-                            points.add(new Points.Point(timestamp, new SimpleNumber(metricPoint.getValue())));
-                            tsToPoint.put(metricLocator, points);
-                        }
-                        */
                     }
                 }
 
@@ -214,13 +198,13 @@ public class BuildStore {
             FileHandler.handlerThreadPool.shutdownNow();
             throw new RuntimeException(e);
         } catch(Exception e) {
-            log.error("Exception encountered while merging file into buildstore", e);
+            log.error("Exception encountered while merging file into build store", e);
             throw new RuntimeException(e);
         }
     }
 
     public void close() {
-        // TODO : Wait for build store to get empty? But just emptying the store does not make sense to me. May be ranges have not been filled yet? Need to think of this more.
+        locatorToTimestampToPoint.clear();
     }
 
     /*
@@ -238,20 +222,10 @@ public class BuildStore {
             return null;
         } else {
             Object[] sortedKeySet = locatorToTimestampToPoint.keySet().toArray();
-            Range cutingPoint = (Range) sortedKeySet[sortedKeySet.length - RANGE_BUFFER - 1];
-            log.info("Found completed ranges upto the threshold range of {}", cutingPoint);
-            compltedRangesReturned.mark();
-            /*
-            if(!DISCARD_FLAG) {
-                DISCARD_FLAG = true;
-                Range firstExceededRange = locatorToTimestampToPoint.firstKey();
-                log.info("Discarding the completed range as it exceeded for the first time. Range:"+firstExceededRange);
-                locatorToTimestampToPoint.remove(firstExceededRange);
-                rangesStillApplicable.remove(firstExceededRange);
-                return null;
-            } */
-            return locatorToTimestampToPoint.headMap(cutingPoint, true);
+            Range cuttingPoint = (Range) sortedKeySet[sortedKeySet.length - RANGE_BUFFER - 1];
+            log.info("Found completed ranges up to the threshold range of {}", cuttingPoint);
+            completedRangesReturned.mark();
+            return locatorToTimestampToPoint.headMap(cuttingPoint, true);
         }
-
     }
 }
