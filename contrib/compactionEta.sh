@@ -5,18 +5,15 @@
 #
 # Instructions:
 #
-# a. To run for a single machine run the command below.  
-#    You can change the port, or leave blank to use the default port for nodetool:
+# a. To run for a single machine, replace 'domain.com' with the appropriate domain.  
+#    You can change the port or leave it blank to use the default port for nodetool:
 #
-#       ssh db01.iad.prod.bf.k1k.me 'bash -s' < ./compactionEta.sh [port]
+#       ssh db01.domain.com 'bash -s' < ./compactionEta.sh [port]
 #
-# b. To run for multiple machines, replace 'domain.com' with the 
-#    appropriate domain and <port> with the port that cassandra runs on.
-#    This assumes you number your hosts like my team does, but hopefully 
-#    you get the idea.
+# b. To run for multiple machines, here is a one-liner example. This assumes you number 
+#    your hosts like my team does, but hopefully you get the idea.
 #
 #       for x in {00..31}; do ssh db$(printf "%2.2d" $x).domain.com 'bash -s' < ./compactionEta.sh [port]; done
-#
 #
 # c. Or, to run on multiple machines a little faster, install GNU parallel 
 #    and run the command below. Again, replace 'domain.com' and also <start> 
