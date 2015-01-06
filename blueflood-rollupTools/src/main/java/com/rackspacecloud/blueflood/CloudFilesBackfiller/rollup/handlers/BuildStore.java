@@ -70,7 +70,7 @@ public class BuildStore {
     private static Counter invalidMetricsCounter = Metrics.counter(BuildStore.class, "Invalid metrics found while parsing");
     private static Meter metricCannotBeParsed = Metrics.meter(BuildStore.class, "Unable to parse metrics");
     private static final Collection<Integer> shardsToBackfill = Collections.unmodifiableCollection(
-            Util.parseShards(Configuration.getInstance().getStringProperty(BackFillerConfig.SHARDS_TO_BACKFILL)));
+            Util.parseShards(Configuration.getInstance().getStringProperty(BackFillerConfig.SHARDS)));
 
     static {
         for(Range range : CloudFilesManager.ranges) {
@@ -103,7 +103,7 @@ public class BuildStore {
 
                 Range rangeOfThisTimestamp = new Range(snappedMillis, snappedMillis + Granularity.MIN_5.milliseconds() - 1);
 
-                //Do not add timestamps that lie out of range
+                // Do not add timestamps that lie out of range
                 if (!rangesToRollup.contains(rangeOfThisTimestamp)) {
                     log.warn("Timestamp of metrics of check found lying out the range: "+rangeOfThisTimestamp+" TS: "+timestamp);
                     line = reader.readLine();
@@ -127,7 +127,7 @@ public class BuildStore {
                     invalidMetricsCounter.inc();
                 } else {
                     for (String metricName : checkFromJson.getMetricNames()) {
-                        MetricPoint metricPoint = null;
+                        MetricPoint metricPoint;
 
                         try {
                             metricPoint = checkFromJson.getMetric(metricName);
@@ -197,7 +197,7 @@ public class BuildStore {
             // Stop the file handler thread pool from sending data to buildstore
             FileHandler.handlerThreadPool.shutdownNow();
             throw new RuntimeException(e);
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Exception encountered while merging file into build store", e);
             throw new RuntimeException(e);
         }
@@ -216,7 +216,6 @@ public class BuildStore {
      * Also, note that returning the range, will eventually remove them from buildstore, after all rollups are completed in RollupGenerator for that range.
      */
     public static Map<Range, ConcurrentHashMap<Locator, Points>> getEligibleData() {
-
         if (locatorToTimestampToPoint.size() <= RANGE_BUFFER) {
             log.debug("Range buffer still not exceeded. Returning null data to rollup generator");
             return null;

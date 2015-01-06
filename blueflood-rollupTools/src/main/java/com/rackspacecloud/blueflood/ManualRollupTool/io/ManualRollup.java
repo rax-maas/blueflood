@@ -36,7 +36,6 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -89,7 +88,7 @@ public class ManualRollup extends AstyanaxIO {
         Function<Row<Long, Locator>, Boolean> rowFunction = new Function<Row<Long, Locator>, Boolean>() {
 
             @Override
-            public Boolean apply(@Nullable Row<Long, Locator> row) {
+            public Boolean apply(Row<Long, Locator> row) {
 
                 if (!shardsToManuallyRollup.contains(row.getKey().intValue())) {
                     log.info("\t~\t~\tSkipping shard " + row.getKey());
