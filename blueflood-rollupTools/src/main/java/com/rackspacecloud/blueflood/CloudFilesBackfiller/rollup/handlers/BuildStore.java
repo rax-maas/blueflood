@@ -46,7 +46,7 @@ public class BuildStore {
     // number of metrics coming in for ranges which we have already rolled up that can be tolerated
     private static final int OUT_OF_RANGE_TOLERATION_THRESHOLD = 10;
     // please getEligibleData for better understanding of what is this parameter
-    private static final int RANGE_BUFFER = Configuration.getInstance().getIntegerProperty(BackFillerConfig.NUMBER_OF_BUFFERRED_SLOTS);
+    private static final int RANGE_BUFFER = Configuration.getInstance().getIntegerProperty(BackFillerConfig.NUMBER_OF_BUFFERED_SLOTS);
     private static int outOfRangeToleration = 0;
     // Specifies the sorting order in TreeMap
     private static Comparator<Range> rangeComparator = new Comparator<Range>() {
