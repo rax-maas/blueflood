@@ -43,6 +43,7 @@ import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.*;
 
@@ -369,18 +370,19 @@ public class AstyanaxReader extends AstyanaxIO {
 
         for (Locator locator : locators) {
             try {
-                RollupType rollupType = null;
-                try {
-                    rollupType = RollupType.fromString((String)
+                RollupType rollupType = RollupType.fromString((String)
                             metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                }
-                catch (Exception ex) {
+
+                if (rollupType == null) {
                     rollupType = RollupType.BF_BASIC;
                 }
 
                 //TODO: If we stop processing string and boolean, we can always hardcode this to numeric
-                DataType dataType = new DataType((String)
-                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
+
+                if (dataType == null) {
+                    dataType = DataType.INT;
+                }
 
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
@@ -396,7 +398,7 @@ public class AstyanaxReader extends AstyanaxIO {
             // transform columns to MetricData
             for (Locator loc : metrics.keySet()) {
                 MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
-                if (data != null) {
+                if (data != null && !data.getData().isEmpty()) {
                     results.put(loc, data);
                 }
             }
@@ -490,7 +492,7 @@ public class AstyanaxReader extends AstyanaxIO {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
             //TODO: if we stop processing string metrics, can we get this info from somewhere else?
             //Just return type numeric by default for now
-            DataType dataType = new DataType(metaCache.get(locator, dataTypeCacheKey));
+            DataType dataType = getDataType(locator, dataTypeCacheKey);
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
@@ -499,6 +501,16 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException{
+        String meta = metaCache.get(locator, dataTypeCacheKey);
+        DataType dataType = null;
+        if (meta != null) {
+            dataType = new DataType(meta);
+        }
+
+        return dataType;
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,

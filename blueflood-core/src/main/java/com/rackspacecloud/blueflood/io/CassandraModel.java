@@ -12,6 +12,7 @@ import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
+import javax.xml.crypto.Data;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -163,14 +164,12 @@ public class CassandraModel {
     }
 
     public static ColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
+        if (dataType == null) {
+            dataType = DataType.INT;
+        }
 
-        try {
-            if (type == RollupType.BF_BASIC &&
-                    (dataType.equals(DataType.BOOLEAN) || dataType.equals(DataType.STRING))) {
-                return CF_METRICS_STRING;
-            }
-        } catch (Exception ex) {
-            return getColumnFamily(RollupType.classOf(type, gran), gran);
+        if (type == RollupType.BF_BASIC && (dataType.equals(DataType.BOOLEAN) || dataType.equals(DataType.STRING))) {
+            return CF_METRICS_STRING;
         }
 
         return getColumnFamily(RollupType.classOf(type, gran), gran);

@@ -61,19 +61,20 @@ public class MetricData {
         }
 
         public static Type from(RollupType rollupType, DataType dataType) {
-            try {
-                if (dataType.equals(DataType.STRING)) {
-                    return STRING;
-                } else if (dataType.equals(DataType.BOOLEAN)) {
-                    return BOOLEAN;
-                } else {
-                    if (rollupType == RollupType.BF_HISTOGRAMS) {
-                        return HISTOGRAM;
-                    }
+            // We no longer store datatype metadata for Numeric datatypes
+            if (dataType == null) {
+                return  NUMBER;
+            }
 
-                    return NUMBER;
+            if (dataType.equals(DataType.STRING)) {
+                return STRING;
+            } else if (dataType.equals(DataType.BOOLEAN)) {
+                return BOOLEAN;
+            } else {
+                if (rollupType == RollupType.BF_HISTOGRAMS) {
+                    return HISTOGRAM;
                 }
-            } catch (Exception ex) {
+
                 return NUMBER;
             }
         }
