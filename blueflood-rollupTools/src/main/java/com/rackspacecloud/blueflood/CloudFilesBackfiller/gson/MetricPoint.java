@@ -78,7 +78,7 @@ public class MetricPoint {
         else if (o instanceof String)
             return Long.parseLong(o.toString());
         else 
-            throw new RuntimeException("Cannot conver type");
+            throw new RuntimeException("Cannot convert type");
     }
     
     private static Integer asInteger(Object o) {
@@ -91,7 +91,7 @@ public class MetricPoint {
         else if (o instanceof String)
             return Integer.parseInt(o.toString());
         else 
-            throw new RuntimeException("Cannot conver type");
+            throw new RuntimeException("Cannot convert type");
     }
     
     private static Double asDouble(Object o) {
@@ -104,7 +104,7 @@ public class MetricPoint {
         else if (o instanceof String)
             return Double.parseDouble(o.toString());
         else 
-            throw new RuntimeException("Cannot conver type");
+            throw new RuntimeException("Cannot convert type");
     }
     
     private static String asString(Object o) {
