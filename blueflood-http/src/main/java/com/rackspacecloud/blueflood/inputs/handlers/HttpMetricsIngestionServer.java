@@ -172,7 +172,7 @@ public class HttpMetricsIngestionServer {
 
         this.defaultProcessorChain = AsyncChain
                 .withFunction(typeAndUnitProcessor)
-                .withFunction(rollupTypeCacher)
+                //.withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
                 .withFunction(discoveryWriter)
                 .withFunction(batchWriter)

@@ -22,10 +22,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
 import com.rackspacecloud.blueflood.exceptions.IncomingTypeException;
 import com.rackspacecloud.blueflood.exceptions.IncomingUnitException;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +49,12 @@ public class IncomingMetricMetadataAnalyzer {
         for (IMetric metric : metrics) {
             try {
                 if (metric instanceof Metric) {
-                    Collection<IncomingMetricException> metricProblems = checkMetric((Metric)metric);
-                    if (metricProblems != null) {
-                        problems.addAll(metricProblems);
+                    DataType datatype = ((Metric) metric).getDataType();
+                    if (datatype.equals(DataType.STRING) || datatype.equals(DataType.BOOLEAN)) {
+                        Collection<IncomingMetricException> metricProblems = checkMetric((Metric) metric);
+                        if (metricProblems != null) {
+                            problems.addAll(metricProblems);
+                        }
                     }
                 }
             } catch (CacheException ex) {
@@ -72,6 +72,7 @@ public class IncomingMetricMetadataAnalyzer {
             String existing = cache.get(locator, key, String.class);
 
             // always update the cache. it is smart enough to avoid needless writes.
+            //if (dataType.equals(DataType.STRING) }})
             cache.put(locator, key, incoming);
 
             boolean differs = existing != null && !incoming.equals(existing);

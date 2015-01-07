@@ -222,7 +222,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return columns == null ? new EmptyColumnList<Long>() : columns;
     }
 
-    private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
+    private Map<Locator, ColumnList<Long>>  getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
                                                             Range range) {
         if (range.getStart() > range.getStop()) {
             throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
@@ -326,8 +326,14 @@ public class AstyanaxReader extends AstyanaxIO {
 
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
+            //TODO: If we stop processing string metrics, we can get rid of this and always return numeric
+            //Questions: Do we care about pre-agg types
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
+
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
 
             if (type == null) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
@@ -363,10 +369,19 @@ public class AstyanaxReader extends AstyanaxIO {
 
         for (Locator locator : locators) {
             try {
-                RollupType rollupType = RollupType.fromString((String)
-                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                RollupType rollupType = null;
+                try {
+                    rollupType = RollupType.fromString((String)
+                            metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                }
+                catch (Exception ex) {
+                    rollupType = RollupType.BF_BASIC;
+                }
+
+                //TODO: If we stop processing string and boolean, we can always hardcode this to numeric
                 DataType dataType = new DataType((String)
                         metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
                 locs.add(locator);
@@ -375,7 +390,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        for (ColumnFamily CF : locatorsByCF.keySet()) {
+         for (ColumnFamily CF : locatorsByCF.keySet()) {
             List<Locator> locs = locatorsByCF.get(CF);
             Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
             // transform columns to MetricData
@@ -473,6 +488,8 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
+            //TODO: if we stop processing string metrics, can we get this info from somewhere else?
+            //Just return type numeric by default for now
             DataType dataType = new DataType(metaCache.get(locator, dataTypeCacheKey));
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
