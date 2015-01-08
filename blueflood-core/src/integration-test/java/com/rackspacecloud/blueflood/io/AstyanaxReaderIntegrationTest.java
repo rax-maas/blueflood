@@ -127,7 +127,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     @Test
     public void test_StringMetrics_WithoutMetadata_NotRetrieved() throws Exception {
         List<Locator> locatorList = new ArrayList<Locator>();
-        Metric metric = writeMetric("string_metric", "version 1.0.43342346");
+        Metric metric = writeMetric("string_metric_1", "version 1.0.43342346");
         locatorList.add(metric.getLocator());
 
         // Test batch reads
