@@ -12,7 +12,6 @@ import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
-import javax.xml.crypto.Data;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

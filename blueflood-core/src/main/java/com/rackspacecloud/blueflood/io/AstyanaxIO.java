@@ -108,16 +108,16 @@ public class AstyanaxIO {
     }
 
     protected AbstractSerializer serializerFor(RollupType rollupType, DataType dataType, Granularity gran) {
-       try {
-           if (dataType.equals(DataType.STRING)) {
-               return StringSerializer.get();
-           } else if (dataType.equals(DataType.BOOLEAN)) {
-               return BooleanSerializer.get();
-           } else {
-               return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
-           }
-       } catch (Exception ex) {
-           return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
-       }
+        if (dataType == null) {
+            return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+        }
+
+        if (dataType.equals(DataType.STRING)) {
+            return StringSerializer.get();
+        } else if (dataType.equals(DataType.BOOLEAN)) {
+            return BooleanSerializer.get();
+        } else {
+            return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+        }
     }
 }
