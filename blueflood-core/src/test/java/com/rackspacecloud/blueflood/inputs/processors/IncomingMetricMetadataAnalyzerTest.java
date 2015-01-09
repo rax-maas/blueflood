@@ -19,7 +19,7 @@ public class IncomingMetricMetadataAnalyzerTest extends IntegrationTestBase{
 
     @Test
     public void test_ScanMetrics_DoesNotStoreTypeAndUnit_ForNumericMetrics() throws Exception {
-        MetadataCache cache = MetadataCache.getInstance();
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
 
         ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
@@ -37,7 +37,7 @@ public class IncomingMetricMetadataAnalyzerTest extends IntegrationTestBase{
 
     @Test
     public void test_ScanMetricS_StoresTypeAndUnit_ForStringMetrics() throws  Exception {
-        MetadataCache cache = MetadataCache.getInstance();
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
 
         ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
