@@ -222,7 +222,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return columns == null ? new EmptyColumnList<Long>() : columns;
     }
 
-    private Map<Locator, ColumnList<Long>>  getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
+    private Map<Locator, ColumnList<Long>> getColumnsFromDB(List<Locator> locators, ColumnFamily<Locator, Long> CF,
                                                             Range range) {
         if (range.getStart() > range.getStop()) {
             throw new RuntimeException(String.format("Invalid rollup range: ", range.toString()));
