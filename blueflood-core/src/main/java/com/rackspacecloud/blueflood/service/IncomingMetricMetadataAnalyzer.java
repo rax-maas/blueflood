@@ -72,7 +72,6 @@ public class IncomingMetricMetadataAnalyzer {
             String existing = cache.get(locator, key, String.class);
 
             // always update the cache. it is smart enough to avoid needless writes.
-            //if (dataType.equals(DataType.STRING) }})
             cache.put(locator, key, incoming);
 
             boolean differs = existing != null && !incoming.equals(existing);

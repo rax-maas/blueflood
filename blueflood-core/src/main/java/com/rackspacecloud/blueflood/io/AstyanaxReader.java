@@ -43,7 +43,6 @@ import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.*;
 
@@ -335,7 +334,6 @@ public class AstyanaxReader extends AstyanaxIO {
             if (rollupType == null) {
                 rollupType = RollupType.BF_BASIC;
             }
-
             if (type == null) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
             }
@@ -372,11 +370,9 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 RollupType rollupType = RollupType.fromString((String)
                             metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-
                 if (rollupType == null) {
                     rollupType = RollupType.BF_BASIC;
                 }
-
                 //TODO: If we stop processing string and boolean, we can always hardcode this to numeric
                 DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
 
