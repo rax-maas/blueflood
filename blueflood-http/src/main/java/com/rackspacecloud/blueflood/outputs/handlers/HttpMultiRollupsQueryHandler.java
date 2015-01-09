@@ -100,6 +100,7 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
         try {
             locators = getLocatorsFromJSONBody(tenantId, body);
         } catch (Exception ex) {
+            log.debug(ex.getMessage(), ex);
             sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
         }
