@@ -21,8 +21,6 @@ import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.stub;
-import static org.mockito.Mockito.times;
-
 
 public class BatchWriterTest {
     private static TimeValue timeout = new TimeValue(5, TimeUnit.SECONDS);
@@ -60,6 +58,7 @@ public class BatchWriterTest {
         testdata.add(l4);
 
         Integer counter = 0;
+        // setup the stubs
         for (List<IMetric> l : testdata) {
             for (IMetric m : l) {
                 counter++;
