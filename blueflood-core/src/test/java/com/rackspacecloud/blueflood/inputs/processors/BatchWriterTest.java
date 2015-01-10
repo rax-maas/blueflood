@@ -9,6 +9,7 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.stub;
 
 public class BatchWriterTest {
     private static TimeValue timeout = new TimeValue(5, TimeUnit.SECONDS);
+
     static List<List<IMetric>> createTestData() {
         List<IMetric> l1 = new ArrayList<IMetric>();
         l1.add(mock(Metric.class));
@@ -56,15 +58,20 @@ public class BatchWriterTest {
         testdata.add(l3);
         testdata.add(l4);
 
+        setupLocators(testdata);
+        return testdata;
+    }
+
+    static List<List<IMetric>> setupLocators(List<List<IMetric>> testdata) {
         //setup locators
         Integer counter = 0;
         for (List<IMetric> l : testdata) {
             for (IMetric m : l) {
                 counter++;
                 stub(m.getLocator()).toReturn(Locator.createLocatorFromDbKey(counter.toString()));
+                stub(m.getCollectionTime()).toReturn(counter.longValue());
             }
         }
-        
         return testdata;
     }
 
@@ -84,12 +91,16 @@ public class BatchWriterTest {
         ListenableFuture<List<Boolean>> futures = batchWriter.apply(testdata);
         List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
 
+        //Confirm that each batch finished
         for (Boolean batchStatus : persisteds) {
             Assert.assertTrue(batchStatus);
         }
+        //Confirm that each batch was inserted
         for (List<IMetric> l : testdata) {
           verify(writer).insertFullMetrics((List<Metric>)(List<?>)l);
+          for (IMetric m : l) {
+              verify(context).update(m.getCollectionTime(), Util.getShard(m.getLocator().toString()));
+          }
         }
-
     }
 }
