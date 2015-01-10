@@ -52,7 +52,6 @@ public class BatchWriterTest {
         l4.add(mock(c));
         l4.add(mock(c));
 
-
         // create fake metrics to test
         List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
         testdata.add(l1);
@@ -60,17 +59,12 @@ public class BatchWriterTest {
         testdata.add(l3);
         testdata.add(l4);
 
-        setupLocators(testdata);
-        return testdata;
-    }
-
-    static List<List<IMetric>> setupLocators(List<List<IMetric>> testdata) {
-        //setup locators
         Integer counter = 0;
         for (List<IMetric> l : testdata) {
             for (IMetric m : l) {
                 counter++;
-                stub(m.getLocator()).toReturn(Locator.createLocatorFromDbKey(counter.toString()));
+                stub(m.getLocator()).
+                    toReturn(Locator.createLocatorFromDbKey(c.toString() + counter.toString()));
                 stub(m.getCollectionTime()).toReturn(counter.longValue());
             }
         }
@@ -116,8 +110,7 @@ public class BatchWriterTest {
         //Confirm scheduleContext was updated
         for (List<IMetric> l : allTestdata) {
             for (IMetric m : l) {
-                //Use times(2) below because each of 
-                verify(context, times(2)).update(m.getCollectionTime(), 
+                verify(context).update(m.getCollectionTime(), 
                     Util.getShard(m.getLocator().toString()));
             }
         }
