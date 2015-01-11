@@ -24,44 +24,20 @@ import static org.mockito.Mockito.stub;
 
 public class BatchWriterTest {
     private static TimeValue timeout = new TimeValue(5, TimeUnit.SECONDS);
-
+    private static final int NUM_LISTS = 4;
+    private static final int METRICS_PER_LIST = 4;
     static <T extends IMetric> List<List<IMetric>> createTestData(Class<T> c) {
-        List<IMetric> l1 = new ArrayList<IMetric>();
-        l1.add(mock(c));
-        l1.add(mock(c));
-        l1.add(mock(c));
-        l1.add(mock(c));
-
-        List<IMetric> l2 = new ArrayList<IMetric>();
-        l2.add(mock(c));
-        l2.add(mock(c));
-        l2.add(mock(c));
-        l2.add(mock(c));
-
-        List<IMetric> l3 = new ArrayList<IMetric>();
-        l3.add(mock(c));
-        l3.add(mock(c));
-        l3.add(mock(c));
-        l3.add(mock(c));
-
-        List<IMetric> l4 = new ArrayList<IMetric>();
-        l4.add(mock(c));
-        l4.add(mock(c));
-        l4.add(mock(c));
-        l4.add(mock(c));
-
         // create fake metrics to test
-        List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
-        testdata.add(l1);
-        testdata.add(l2);
-        testdata.add(l3);
-        testdata.add(l4);
-
         Integer counter = 0;
-        // setup the stubs
-        for (List<IMetric> l : testdata) {
-            for (IMetric m : l) {
+        List<List<IMetric>> testdata = new ArrayList<List<IMetric>>();
+        for (int i = 0; i < NUM_LISTS; i++) {
+            List<IMetric> l = new ArrayList<IMetric>();
+            testdata.add(l);
+            for (int j = 0; j < METRICS_PER_LIST; j++) {
                 counter++;
+                IMetric m = mock(c);
+                l.add(m);
+                // setup the metric stubs
                 stub(m.getLocator()).
                     toReturn(Locator.createLocatorFromDbKey(c.toString() + counter.toString()));
                 stub(m.getCollectionTime()).toReturn(counter.longValue());
@@ -80,7 +56,6 @@ public class BatchWriterTest {
         List<List<IMetric>> allTestdata = new ArrayList<List<IMetric>>();
         allTestdata.addAll(testdata);
         allTestdata.addAll(pTestdata);
-
         BatchWriter batchWriter = new BatchWriter(
                     new ThreadPoolBuilder().build(),
                     writer,
@@ -90,6 +65,10 @@ public class BatchWriterTest {
         
         ListenableFuture<List<Boolean>> futures = batchWriter.apply(allTestdata);
         List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+
+        //Confirm correct number of futures, (the 2 is because we have both
+        //  simple and PreaggregatedMetric's)
+        Assert.assertTrue(persisteds.size() == (NUM_LISTS * 2));
 
         //Confirm that each batch finished
         for (Boolean batchStatus : persisteds) {
@@ -108,6 +87,7 @@ public class BatchWriterTest {
 
         //Confirm scheduleContext was updated
         for (List<IMetric> l : allTestdata) {
+            Assert.assertTrue(l.size() == METRICS_PER_LIST);
             for (IMetric m : l) {
                 verify(context).update(m.getCollectionTime(), 
                     Util.getShard(m.getLocator().toString()));
