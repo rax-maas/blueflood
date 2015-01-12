@@ -7,16 +7,15 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.RollupType;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
+import static org.mockito.Mockito.verify;
 
 public class RollupTypeCacherTest {
     private static final int METRICS_PER_LIST = 4;
@@ -46,17 +45,23 @@ public class RollupTypeCacherTest {
     public void testCacher() throws Exception {
         MetricsCollection collection = createTestData();
 
-        MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
-            new TimeValue(1, TimeUnit.HOURS), 10);       
-        RollupTypeCacher rollupTypeCacher = new RollupTypeCacher(
-            new ThreadPoolBuilder().withName("rtc test").build(),
+        MetadataCache rollupTypeCache = mock(MetadataCache.class);
+        ThreadPoolExecutor tpe = 
+            new ThreadPoolBuilder().withName("rtc test").build();
+
+        RollupTypeCacher rollupTypeCacher = new RollupTypeCacher(tpe,
             rollupTypeCache);
 
         rollupTypeCacher.apply(collection);
 
+        // wait till done
+        while (tpe.getCompletedTaskCount() < 1) {
+            Thread.sleep(1);
+        }
+
         // Confirm that each metric is cached
         for (IMetric m : collection.toMetrics()) {
-            Assert.assertEquals(rollupTypeCache.get(m.getLocator(), cacheKey), 
+            verify(rollupTypeCache).put(m.getLocator(), cacheKey, 
                 m.getRollupType().toString());
         }
     }
