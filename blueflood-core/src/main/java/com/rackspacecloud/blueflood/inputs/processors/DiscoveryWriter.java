@@ -97,15 +97,15 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
     }
     
     
-    public ListenableFuture<Boolean> processMetrics(List<List<IMetric>> input) {
-        // filter out the metrics that are current.
-        final List<IMetric> willIndex = DiscoveryWriter.condense(input);
-
+    public ListenableFuture<Boolean> processMetrics(final List<List<IMetric>> input) {
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
                 boolean success = true;
+		// filter out the metrics that are current.
+		final List<IMetric> willIndex = DiscoveryWriter.condense(input);
+
                 for (DiscoveryIO io : discoveryIOs) {
                     try {
                         io.insertDiscovery(willIndex);
