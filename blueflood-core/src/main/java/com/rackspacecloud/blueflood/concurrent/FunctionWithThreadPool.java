@@ -34,7 +34,7 @@ public class FunctionWithThreadPool<I, O> {
     // listieningExecutor wraps the above executor.
     private final ListeningExecutorService listeningExecutor;
     
-    protected Logger log = LoggerFactory.getLogger(getClass());
+    private Logger log = LoggerFactory.getLogger(getClass());
     
     public FunctionWithThreadPool(ThreadPoolExecutor executor) {
         this.executor = executor;
