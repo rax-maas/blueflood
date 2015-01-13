@@ -43,6 +43,7 @@ public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, 
         this.cache = cache;
     }
 
+    @Override
     public Void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Runnable() {
             @Override

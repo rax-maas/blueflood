@@ -120,6 +120,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
         });
     }
 
+    @Override
     public Void apply(List<List<IMetric>> input) {
         if (canIndex) {
             processMetrics(input);

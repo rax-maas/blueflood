@@ -35,6 +35,7 @@ public class TypeAndUnitProcessor extends FunctionWithThreadPool<MetricsCollecti
         this.metricMetadataAnalyzer = metricMetadataAnalyzer;
     }
     
+    @Override
     public Void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {

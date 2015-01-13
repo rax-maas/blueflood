@@ -59,6 +59,7 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
         this.context = context;
     }
     
+    @Override
     public ListenableFuture<List<Boolean>> apply(List<List<IMetric>> input) throws Exception {
         
         final CountDownLatch shortLatch = new CountDownLatch(input.size());
