@@ -4,10 +4,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
@@ -59,5 +56,24 @@ public class IncomingMetricMetadataAnalyzerTest {
 
         String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
         Assert.assertEquals("somethings", unit);
+    }
+
+    @Test
+    public void test_ScanMetricS_DoesNotStoreTypeAndUnit_ForPreaggregatedMetrics() throws  Exception {
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(this.metadataIO);
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
+
+        ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
+
+        Locator locator = Locator.createLocatorFromDbKey("preag_counter");
+        metricsList.add(new PreaggregatedMetric(12300000, locator, new TimeValue(1, TimeUnit.DAYS), new CounterRollup()));
+
+        analyzer.scanMetrics(metricsList);
+        String type = cache.get(locator, MetricMetadata.TYPE.name().toLowerCase());
+        Assert.assertEquals(null, type);
+
+        String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
+        Assert.assertEquals(null, unit);
     }
 }
