@@ -68,9 +68,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-	    // block until things get ingested.
-            requestCount.inc();
             // block until things get ingested.
+            requestCount.inc();
             MetricsCollection collection = new MetricsCollection();
             collection.add(PreaggregateConversions.buildMetricsCollection(createBundle(body)));
             ListenableFuture<List<Boolean>> futures = processor.apply(collection);
