@@ -18,22 +18,21 @@ package com.rackspacecloud.blueflood.concurrent;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Does asynchronous work using a specified threadpool.
- * @param <I>
- * @param <O>
+ * @param <I> function input type.
+ * @param <O> function output type.
  */
 public class FunctionWithThreadPool<I, O> {
     
     private final ThreadPoolExecutor executor;
-    // listieningExecutor wraps the above executor.
+    /** Wraps {@link #executor}.*/
     private final ListeningExecutorService listeningExecutor;
-    
     private Logger log = LoggerFactory.getLogger(getClass());
     
     public FunctionWithThreadPool(ThreadPoolExecutor executor) {
@@ -41,9 +40,9 @@ public class FunctionWithThreadPool<I, O> {
         this.listeningExecutor = MoreExecutors.listeningDecorator(executor);
     }
     
-    public <I, O> FunctionWithThreadPool<I, O> withLogger(Logger log) {
+    public FunctionWithThreadPool<I, O> withLogger(Logger log) {
         this.log = log;
-        return (FunctionWithThreadPool<I,O>) this;
+        return this;
     }
     
     public ListeningExecutorService getThreadPool() { return listeningExecutor; }
