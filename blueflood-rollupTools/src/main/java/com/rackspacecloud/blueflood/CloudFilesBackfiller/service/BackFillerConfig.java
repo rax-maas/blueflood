@@ -36,13 +36,13 @@ public enum BackFillerConfig implements ConfigDefaults {
     REPLAY_PERIOD_START("1400122800000"),
     REPLAY_PERIOD_STOP("1400612400000"),
 
-    NUMBER_OF_BUFFERRED_SLOTS("3"),
+    NUMBER_OF_BUFFERED_SLOTS("3"),
 
     ROLLUP_THREADS("50"),
 
     BATCH_WRITER_THREADS("5"),
 
-    SHARDS_TO_BACKFILL("69,70,71,119,72,73,74,75,88,89,90,91");
+    SHARDS("69,70,71,119,72,73,74,75,88,89,90,91");
 
     static {
         Configuration.getInstance().loadDefaults(BackFillerConfig.values());

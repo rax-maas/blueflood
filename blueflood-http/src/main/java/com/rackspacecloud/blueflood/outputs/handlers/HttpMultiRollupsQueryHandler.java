@@ -41,6 +41,8 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -50,6 +52,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
+    private static final Logger log = LoggerFactory.getLogger(HttpMultiRollupsQueryHandler.class);
     private final BatchedMetricsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
     private final JsonParser parser;   // thread-safe
@@ -97,6 +100,7 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
         try {
             locators = getLocatorsFromJSONBody(tenantId, body);
         } catch (Exception ex) {
+            log.debug(ex.getMessage(), ex);
             sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
             return;
         }
@@ -120,10 +124,13 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             final String jsonStringRep = gson.toJson(element);
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
+            log.debug(e.getMessage());
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
+            log.debug(e.getMessage(), e);
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             httpBatchMetricsFetchTimerContext.stop();
