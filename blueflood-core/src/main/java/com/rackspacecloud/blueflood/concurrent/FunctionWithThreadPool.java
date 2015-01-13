@@ -28,8 +28,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @param <I> function input type.
  * @param <O> function output type.
  */
-public class FunctionWithThreadPool<I, O> {
-    
+public abstract class FunctionWithThreadPool<I, O> {
     private final ThreadPoolExecutor executor;
     /** Wraps {@link #executor}.*/
     private final ListeningExecutorService listeningExecutor;
@@ -49,6 +48,8 @@ public class FunctionWithThreadPool<I, O> {
     
     public Logger getLogger() { return log; }
 
+    public abstract O apply(I input) throws Exception;
+    
     public void setPoolSize(int size) {
         this.executor.setCorePoolSize(size);
         this.executor.setMaximumPoolSize(size);

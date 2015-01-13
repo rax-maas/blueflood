@@ -34,7 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, List<List<IMetric>>> {
+public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, Void> {
 
     private final List<DiscoveryIO> discoveryIOs = new ArrayList<DiscoveryIO>();
     private final Map<Class<? extends DiscoveryIO>, Meter> writeErrorMeters = new HashMap<Class<? extends DiscoveryIO>, Meter>();
@@ -120,9 +120,10 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
         });
     }
 
-    public void apply(List<List<IMetric>> input) {
+    public Void apply(List<List<IMetric>> input) {
         if (canIndex) {
             processMetrics(input);
         }
+	return null;
     }
 }

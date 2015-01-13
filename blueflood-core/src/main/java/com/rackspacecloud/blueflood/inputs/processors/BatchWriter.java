@@ -39,7 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, List<Boolean>> {
+public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, ListenableFuture<List<Boolean>>> {
         
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.

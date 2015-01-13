@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, MetricsCollection> {
+public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, Void> {
 
     private static final Logger log = LoggerFactory.getLogger(RollupTypeCacher.class);
     private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
@@ -43,13 +43,14 @@ public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, 
         this.cache = cache;
     }
 
-    public void apply(final MetricsCollection input) throws Exception {
+    public Void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Runnable() {
             @Override
             public void run() {
                 recordWithTimer(input);
             }
         });
+        return null;
     }
 
     private void recordWithTimer(MetricsCollection input) {
