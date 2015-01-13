@@ -23,6 +23,7 @@ public class ContextUpdater extends FunctionWithThreadPool<Collection<Metric>, L
         this.context = context;
     }
 
+    @Override
     public ListenableFuture<Collection<Metric>> apply(Collection<Metric> input) throws Exception {
         // this is a quick operation, so do not use the threadpool.  Just do the work and return a NoOpFuture.
         for (Metric metric : input) {

@@ -187,8 +187,8 @@ public class HttpMetricsIngestionServer {
                     rollupTypeCache);
             rollupTypeCacher.withLogger(log);
     
-
         }
+
         ListenableFuture<List<Boolean>> apply(MetricsCollection collection) throws Exception {
             typeAndUnitProcessor.apply(collection);
             rollupTypeCacher.apply(collection);

@@ -114,6 +114,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             this.writer = writer;
         }
 
+        @Override
         public ListenableFuture<Boolean> apply(final Collection<IMetric> input) throws Exception {
             return this.getThreadPool().submit(new Callable<Boolean>() {
                 @Override

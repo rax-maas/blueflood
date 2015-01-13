@@ -18,6 +18,7 @@ public class SimpleMetricWriter extends FunctionWithThreadPool<Collection<Metric
         super(threadPool);
     }
 
+    @Override
     public ListenableFuture<Collection<Metric>> apply(final Collection<Metric> input) throws Exception {
         return getThreadPool().submit(new Callable<Collection<Metric>>() {
             public Collection<Metric> call() throws Exception {

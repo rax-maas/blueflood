@@ -23,6 +23,7 @@ public class DeserializeAndReleaseFunc extends FunctionWithThreadPool<DatagramPa
         super(threadPool);
     }
     
+    @Override
     public ListenableFuture<Collection<Metric>> apply(final DatagramPacket input) throws Exception {
         
         // do it on the threadpool.
