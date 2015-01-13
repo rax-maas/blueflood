@@ -60,7 +60,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
-    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
+    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(1, TimeUnit.MINUTES);
     private int httpIngestPort;
     private String httpIngestHost;
     private Processor processor;
