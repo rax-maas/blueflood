@@ -106,7 +106,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         return bundle;
     }
 
-    public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, Boolean> {
+    public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, ListenableFuture<Boolean>> {
         private final AstyanaxWriter writer;
         
         public WriteMetrics(ThreadPoolExecutor executor, AstyanaxWriter writer) {

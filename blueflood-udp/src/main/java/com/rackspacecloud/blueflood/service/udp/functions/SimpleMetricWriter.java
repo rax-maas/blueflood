@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /** Writes a single metric to the database. */
-public class SimpleMetricWriter extends FunctionWithThreadPool<Collection<Metric>, Collection<Metric>> {
+public class SimpleMetricWriter extends FunctionWithThreadPool<Collection<Metric>,  ListenableFuture<Collection<Metric>>> {
     
     public SimpleMetricWriter(ThreadPoolExecutor threadPool) {
         super(threadPool);

@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Simple demonstratin of a FunctionWithThreadPool that does not use its threadpool.  It does things on
  * whichever thread apply() was called on.
  */
-public class ContextUpdater extends FunctionWithThreadPool<Collection<Metric>, Collection<Metric>> {
+public class ContextUpdater extends FunctionWithThreadPool<Collection<Metric>, ListenableFuture<Collection<Metric>>> {
     
     private final ScheduleContext context;
     

@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Deserializes a UDP packet and releases its buffer.
  */
-public class DeserializeAndReleaseFunc extends FunctionWithThreadPool<DatagramPacket, Collection<Metric>> {
+public class DeserializeAndReleaseFunc extends FunctionWithThreadPool<DatagramPacket, ListenableFuture<Collection<Metric>>> {
 
     private static final Collection<Metric> EMPTY = Collections.unmodifiableCollection(new ArrayList<Metric>());
     
