@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.service.udp.functions;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.types.Metric;
 
@@ -12,13 +12,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /** Writes a single metric to the database. */
-public class SimpleMetricWriter extends AsyncFunctionWithThreadPool<Collection<Metric>, Collection<Metric>> {
+public class SimpleMetricWriter extends FunctionWithThreadPool<Collection<Metric>, Collection<Metric>> {
     
     public SimpleMetricWriter(ThreadPoolExecutor threadPool) {
         super(threadPool);
     }
 
-    @Override
     public ListenableFuture<Collection<Metric>> apply(final Collection<Metric> input) throws Exception {
         return getThreadPool().submit(new Callable<Collection<Metric>>() {
             public Collection<Metric> call() throws Exception {

@@ -18,12 +18,11 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -107,7 +106,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         return bundle;
     }
 
-    public static class WriteMetrics extends AsyncFunctionWithThreadPool<Collection<IMetric>, Boolean> {
+    public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, Boolean> {
         private final AstyanaxWriter writer;
         
         public WriteMetrics(ThreadPoolExecutor executor, AstyanaxWriter writer) {
@@ -115,7 +114,6 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             this.writer = writer;
         }
 
-        @Override
         public ListenableFuture<Boolean> apply(final Collection<IMetric> input) throws Exception {
             return this.getThreadPool().submit(new Callable<Boolean>() {
                 @Override
