@@ -9,6 +9,9 @@ install:
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
+after_success:
+  - mvn clean cobertura:cobertura coveralls:rep
+
 notifications:
   irc: "irc.freenode.net#blueflood"
   email:
