@@ -29,13 +29,8 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
-    private static final DefaultHttpResponse defaultResponse = new DefaultHttpResponse(HTTP_1_1,
-            HttpResponseStatus.OK);
-
-
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponseStatus status) {
-        defaultResponse.setStatus(status);
-        respond(ctx, req, defaultResponse);
+        respond(ctx, req, new DefaultHttpResponse(HTTP_1_1, status));
     }
 
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
