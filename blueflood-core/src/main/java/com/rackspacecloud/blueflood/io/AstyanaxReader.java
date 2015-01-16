@@ -298,19 +298,6 @@ public class AstyanaxReader extends AstyanaxIO {
         return points;
     }
 
-    public static String getUnitString(Locator locator) {
-        String unitString = null;
-        try {
-            unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-        } catch (CacheException ex) {
-            log.warn("Cache exception reading unitString from MetadataCache: ", ex);
-        }
-        if (unitString == null) {
-            unitString = UNKNOWN;
-        }
-        return unitString;
-    }
-
     public static String getType(Locator locator) {
         String type = null;
         try {
@@ -411,7 +398,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
+        return new MetricData(histogramRollupPoints, null, MetricData.Type.HISTOGRAM);
     }
 
     // Used for string metrics
@@ -428,7 +415,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
+        return new MetricData(points, null, MetricData.Type.STRING);
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -444,7 +431,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.BOOLEAN);
+        return new MetricData(points, null, MetricData.Type.BOOLEAN);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
@@ -466,7 +453,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        return new MetricData(points, null, MetricData.Type.NUMBER);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
@@ -489,7 +476,7 @@ public class AstyanaxReader extends AstyanaxIO {
             //TODO: if we stop processing string metrics, can we get this info from somewhere else?
             //Just return type numeric by default for now
             DataType dataType = getDataType(locator, dataTypeCacheKey);
-            String unit = getUnitString(locator);
+            String unit = null;
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
             MetricData data = new MetricData(points, unit, outputType);

@@ -22,7 +22,7 @@ import com.rackspacecloud.blueflood.types.RollupType;
 
 public class MetricData {
     private final Points data;
-    private final String unit;
+    private String unit;
     private final Type type;
 
     public MetricData(Points points, String unit, Type type) {
@@ -35,8 +35,12 @@ public class MetricData {
         return data;
     }
 
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
     public String getUnit() {
-        return unit;
+        return this.unit;
     }
 
     public String getType() {
