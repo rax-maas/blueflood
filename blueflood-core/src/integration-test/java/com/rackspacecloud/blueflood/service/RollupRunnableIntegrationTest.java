@@ -26,6 +26,8 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
 
+import static org.mockito.Mockito.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -107,11 +109,11 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testNormalMetrics() throws IOException {
+    public void testNormalMetrics() throws Exception {
         // full res has 5 samples.
         Assert.assertEquals(5, reader.getDataToRoll(SimpleNumber.class,
                                                     normalLocator,
-                                                    range, 
+                                                    range,
                                                     CassandraModel.CF_METRICS_FULL).getPoints().size());
         
         // assert nothing in 5m for this locator.
@@ -124,6 +126,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
         RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
+        rr.discoveryHandler = mock(DiscoveryIO.class);
         rr.run();
 
         while (!rec.doneReading() && !rec.doneWriting()) {
@@ -133,6 +136,9 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             } catch (InterruptedException e) {
             }
         }
+
+        //Zero interactions because no current listeners for the event
+        verifyZeroInteractions(rr.discoveryHandler);
 
         // assert something in 5m for this locator.
         Assert.assertEquals(1, reader.getDataToRoll(BasicRollup.class,
@@ -179,7 +185,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
         RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
-        
+
         // assert something in 5m for this locator.
         while (!rec.doneReading() && !rec.doneWriting()) {
             batchWriter.drainBatch();
