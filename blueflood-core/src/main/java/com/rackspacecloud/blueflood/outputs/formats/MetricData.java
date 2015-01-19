@@ -61,6 +61,10 @@ public class MetricData {
         }
 
         public static Type from(RollupType rollupType, DataType dataType) {
+            if(rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
             if (dataType.equals(DataType.STRING)) {
                 return STRING;
             } else if (dataType.equals(DataType.BOOLEAN)) {

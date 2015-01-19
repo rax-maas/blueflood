@@ -108,6 +108,10 @@ public class AstyanaxIO {
     }
 
     protected AbstractSerializer serializerFor(RollupType rollupType, DataType dataType, Granularity gran) {
+        if (rollupType == null) {
+            rollupType = RollupType.BF_BASIC;
+        }
+
         if (dataType.equals(DataType.STRING)) {
             return StringSerializer.get();
         } else if (dataType.equals(DataType.BOOLEAN)) {
