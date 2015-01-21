@@ -16,6 +16,9 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.netflix.astyanax.serializers.BooleanSerializer;
+import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -93,5 +96,16 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
             MetricData metrics = results.get(locator);
             Assert.assertEquals(1, metrics.getData().getPoints().size());
         }
+    }
+
+    @Test
+    public void testNullRollupType_DoesNotReturn_StringOrBooleanSerializers() {
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+
+        AbstractSerializer serializer = reader.serializerFor(null, DataType.INT, Granularity.MIN_5);
+
+        Assert.assertTrue(serializer != null);
+        Assert.assertFalse(serializer instanceof StringSerializer);
+        Assert.assertFalse(serializer instanceof BooleanSerializer);
     }
 }
