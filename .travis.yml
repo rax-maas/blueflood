@@ -3,6 +3,8 @@ jdk:
   - oraclejdk7
   - openjdk7
 
+sudo: false
+
 install:
   - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
 
