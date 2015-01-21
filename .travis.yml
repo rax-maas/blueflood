@@ -3,6 +3,12 @@ jdk:
   - oraclejdk7
   - openjdk7
 
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.m2
+
 install:
   - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
 
