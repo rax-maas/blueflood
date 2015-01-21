@@ -80,6 +80,7 @@ public class HttpMetricsIngestionServer {
     
     private AsyncChain<MetricsCollection, List<Boolean>> defaultProcessorChain;
     private AsyncChain<String, List<Boolean>> statsdProcessorChain;
+    private AsyncChain<String, List<Boolean>> v3ProcessorChain;
     private IMetricsWriter writer;
 
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
@@ -92,7 +93,7 @@ public class HttpMetricsIngestionServer {
         this.writer = writer;
         
         buildProcessingChains();
-        if (defaultProcessorChain == null || statsdProcessorChain == null) {
+        if (defaultProcessorChain == null || statsdProcessorChain == null || v3ProcessorChain == null) {
             log.error("Processor chains were not set up properly");
             return;
         }
@@ -107,6 +108,10 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(defaultProcessorChain, timeout));
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(statsdProcessorChain, timeout));
+
+        router.get("/v3.0", new DefaultHandler());
+        router.post("/v3.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandlerv3(v3ProcessorChain, timeout));
+        router.post("/v3.0/:tenantId/ingest", new HttpMetricsIngestionHandlerv3(v3ProcessorChain, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -181,6 +186,16 @@ public class HttpMetricsIngestionServer {
         this.statsdProcessorChain = AsyncChain
                 .withFunction(new HttpStatsDIngestionHandler.MakeBundle())
                 .withFunction(new HttpStatsDIngestionHandler.MakeCollection())
+                .withFunction(typeAndUnitProcessor)
+                .withFunction(rollupTypeCacher)
+                .withFunction(batchSplitter)
+                .withFunction(discoveryWriter)
+                .withFunction(batchWriter)
+                .build();
+
+        this.v3ProcessorChain = AsyncChain
+                .withFunction(new HttpMetricsIngestionHandlerv3.MakeBundle())
+                .withFunction(new HttpMetricsIngestionHandlerv3.MakeCollection())
                 .withFunction(typeAndUnitProcessor)
                 .withFunction(rollupTypeCacher)
                 .withFunction(batchSplitter)
