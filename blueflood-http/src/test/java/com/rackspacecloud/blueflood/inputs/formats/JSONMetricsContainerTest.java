@@ -53,7 +53,7 @@ public class JSONMetricsContainerTest {
         Assert.assertEquals(1234566, metricsCollection.get(0).getTtlInSeconds());
         Assert.assertEquals(1234567890L, metricsCollection.get(0).getCollectionTime());
         Assert.assertEquals("milliseconds", metricsCollection.get(0).getUnit());
-        Assert.assertEquals("L", metricsCollection.get(0).getDataType().toString());
+        Assert.assertEquals("N", metricsCollection.get(0).getDataType().toString());
 
         Assert.assertEquals("ac1.mzord.status", metricsCollection.get(1).getLocator().toString());
         Assert.assertEquals("Website is up", metricsCollection.get(1).getMetricValue());

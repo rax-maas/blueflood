@@ -472,7 +472,7 @@ public class AstyanaxReader extends AstyanaxIO {
     private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType) {
         Instrumentation.markScanAllColumnFamilies();
 
-        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran, rollupType, DataType.DOUBLE);
+        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran, rollupType, DataType.NUMERIC);
 
         if (metricData.getData().getPoints().size() > 0) {
             return metricData;
