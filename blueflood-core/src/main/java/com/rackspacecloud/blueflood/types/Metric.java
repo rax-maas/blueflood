@@ -50,14 +50,14 @@ public class Metric implements IMetric {
         // TODO: Until we start handling BigInteger throughout, let's try to cast it to double if the int value is less
         // than Double.MAX_VALUE
 
-        if (dataType == DataType.BIGINT) {
+        if (metricValue instanceof BigInteger) {
             BigDecimal maybeDouble = new BigDecimal((BigInteger) metricValue);
             if (maybeDouble.compareTo(DOUBLE_MAX) > 0) {
                 log.warn("BigInteger metric value " + ((BigInteger)metricValue).toString() + " for metric "
                         + locator.toString() + " is bigger than Double.MAX_VALUE");
                 throw new RuntimeException("BigInteger cannot be force cast to double as it exceeds Double.MAX_VALUE");
             }
-            this.dataType = DataType.DOUBLE;
+            this.dataType = DataType.NUMERIC;
             this.metricValue = ((BigInteger) metricValue).doubleValue();
         }
 
