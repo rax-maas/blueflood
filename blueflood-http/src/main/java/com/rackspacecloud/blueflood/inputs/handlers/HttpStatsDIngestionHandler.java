@@ -90,8 +90,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             log.error(ex.getMessage(), ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (TimeoutException ex) {
-            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Timed out persisting metrics", 
-                HttpResponseStatus.GATEWAY_TIMEOUT);
+            HttpMetricsIngestionHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
             log.warn("Other exception while trying to parse content", ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);

@@ -158,8 +158,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 }
                 sendResponse(ctx, request, null, HttpResponseStatus.OK);
             } catch (TimeoutException e) {
-                sendResponse(ctx, request, "Timed out persisting metrics", 
-                    HttpResponseStatus.GATEWAY_TIMEOUT);
+                sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {
                 log.error("Exception persisting metrics", e);
                 sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
