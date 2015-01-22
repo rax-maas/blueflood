@@ -117,6 +117,10 @@ public class AstyanaxIO {
         } else if (dataType.equals(DataType.BOOLEAN)) {
             return BooleanSerializer.get();
         } else {
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
             return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
         }
     }

@@ -330,6 +330,9 @@ public class AstyanaxReader extends AstyanaxIO {
             //Questions: Do we care about pre-agg types
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
 
             if (rollupType == null) {
                 rollupType = RollupType.BF_BASIC;
@@ -373,7 +376,6 @@ public class AstyanaxReader extends AstyanaxIO {
                 if (rollupType == null) {
                     rollupType = RollupType.BF_BASIC;
                 }
-                //TODO: If we stop processing string and boolean, we can always hardcode this to numeric
                 DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
 
                 if (dataType == null) {
@@ -486,9 +488,15 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            //TODO: if we stop processing string metrics, can we get this info from somewhere else?
-            //Just return type numeric by default for now
             DataType dataType = getDataType(locator, dataTypeCacheKey);
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
+            if (dataType == null) {
+                dataType = DataType.NUMERIC;
+            }
+
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
