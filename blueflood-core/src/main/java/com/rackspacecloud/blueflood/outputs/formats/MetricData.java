@@ -61,6 +61,11 @@ public class MetricData {
         }
 
         public static Type from(RollupType rollupType, DataType dataType) {
+            // We no longer store datatype metadata for Numeric datatypes
+            if (dataType == null) {
+                return  NUMBER;
+            }
+
             if (dataType.equals(DataType.STRING)) {
                 return STRING;
             } else if (dataType.equals(DataType.BOOLEAN)) {

@@ -94,4 +94,45 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(1, metrics.getData().getPoints().size());
         }
     }
+
+    @Test
+    public void testCanRetrieveNumericMetricsEvenIfNoMetaDataStored() throws Exception {
+        // Write metrics and also persist their types.
+        List<Locator> locatorList = new ArrayList<Locator>();
+        Metric metric = writeMetric("string_metric", "version 1.0.43342346");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
+        locatorList.add(metric.getLocator());
+
+        metric = writeMetric("int_metric", 45);
+        locatorList.add(metric.getLocator());
+
+        metric = writeMetric("long_metric", 67L);
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(locatorList.size(), results.size());
+
+        for (Locator locator : locatorList) {
+            MetricData metrics = results.get(locator);
+            Assert.assertEquals(1, metrics.getData().getPoints().size());
+        }
+    }
+
+    @Test
+    public void test_StringMetrics_WithoutMetadata_NotRetrieved() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        Metric metric = writeMetric("string_metric_1", "version 1.0.43342346");
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(0, results.size());
+    }
 }
