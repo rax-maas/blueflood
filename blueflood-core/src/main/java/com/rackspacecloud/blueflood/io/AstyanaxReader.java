@@ -330,9 +330,6 @@ public class AstyanaxReader extends AstyanaxIO {
             //Questions: Do we care about pre-agg types
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            if (rollupType == null) {
-                rollupType = RollupType.BF_BASIC;
-            }
 
             if (rollupType == null) {
                 rollupType = RollupType.BF_BASIC;
