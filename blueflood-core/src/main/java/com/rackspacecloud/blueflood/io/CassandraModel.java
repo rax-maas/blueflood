@@ -164,7 +164,7 @@ public class CassandraModel {
 
     public static ColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
         if (dataType == null) {
-            dataType = DataType.INT;
+            dataType = DataType.NUMERIC;
         }
 
         if (type == RollupType.BF_BASIC && (dataType.equals(DataType.BOOLEAN) || dataType.equals(DataType.STRING))) {

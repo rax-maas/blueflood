@@ -377,7 +377,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
 
                 if (dataType == null) {
-                    dataType = DataType.INT;
+                    dataType = DataType.NUMERIC;
                 }
 
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
