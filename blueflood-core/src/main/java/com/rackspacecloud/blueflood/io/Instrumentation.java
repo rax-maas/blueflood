@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Instrumentation implements InstrumentationMBean {
     private static final Logger log = LoggerFactory.getLogger(Instrumentation.class);
@@ -44,7 +42,6 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
-    private static final Map<ColumnFamily, Meter> keyNotFoundInCFMap = new HashMap<ColumnFamily, Meter>();
 
     static {
         Class kls = Instrumentation.class;
@@ -118,46 +115,27 @@ public class Instrumentation implements InstrumentationMBean {
     }
 
     private static class ReadTimers {
-        private final Map<ColumnFamily, Timer> cfTimers = new HashMap<ColumnFamily, Timer>();
-        private final Map<ColumnFamily, Timer> cfBatchTimers = new HashMap<ColumnFamily, Timer>();
-
         public Timer.Context getTimerContext(ColumnFamily queryCF, boolean batch) {
-            final Map<ColumnFamily, Timer> map = (batch ? cfBatchTimers : cfTimers);
-            synchronized (queryCF) {
-                if (!map.containsKey(queryCF)) {
-                    final String metricName = (batch ? MetricRegistry.name("batched-", queryCF.getName()) : queryCF.getName());
-                    map.put(queryCF, Metrics.timer(Instrumentation.class, "reads", metricName));
-                }
-            }
-            return map.get(queryCF).time();
+            final String metricName = (batch ? MetricRegistry.name("batched-", queryCF.getName()) : queryCF.getName());
+
+            final Timer timer = Metrics.timer(Instrumentation.class, "reads", metricName);
+            return timer.time();
         }
     }
 
     private static class WriteTimers {
-        private final Map<ColumnFamily, Timer> cfTimers = new HashMap<ColumnFamily, Timer>();
-        private final Map<ColumnFamily, Timer> cfBatchTimers = new HashMap<ColumnFamily, Timer>();
-
         public Timer.Context getTimerContext(ColumnFamily queryCF, boolean batch) {
-            final Map<ColumnFamily, Timer> map = (batch ? cfBatchTimers : cfTimers);
-            synchronized (queryCF) {
-                if (!map.containsKey(queryCF)) {
-                    final String metricName = (batch ? MetricRegistry.name("batched", queryCF.getName()) : queryCF.getName());
-                    map.put(queryCF, Metrics.timer(Instrumentation.class, "writes", metricName));
-                }
-            }
-            return map.get(queryCF).time();
+            final String metricName = (batch ? MetricRegistry.name("batched", queryCF.getName()) : queryCF.getName());
+
+            final Timer timer = Metrics.timer(Instrumentation.class, "writes", metricName);
+            return timer.time();
         }
     }
 
     public static void markNotFound(ColumnFamily CF) {
-        synchronized (CF) {
-            Meter meter = keyNotFoundInCFMap.get(CF);
-            if (meter == null) {
-                meter = Metrics.meter(Instrumentation.class, "reads", "Not Found", CF.getName());
-                keyNotFoundInCFMap.put(CF, meter);
-            }
-            meter.mark();
-        }
+        final Meter meter = Metrics.meter(Instrumentation.class, "reads", "Not Found", CF.getName());
+        meter.mark();
+
     }
 
     public static void markScanAllColumnFamilies() {
