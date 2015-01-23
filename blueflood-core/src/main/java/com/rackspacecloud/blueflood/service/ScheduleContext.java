@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.cache.Cache;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     private static final Logger log = LoggerFactory.getLogger(ScheduleContext.class);
+    private final Timer markSlotDirtyTimer = Metrics.timer(ScheduleContext.class, "Slot Mark Dirty Duration");
 
     private final ShardStateManager shardStateManager;
     private transient long scheduleTime = 0L;
@@ -112,23 +114,28 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     public void update(long millis, int shard) {
         // there are two update paths. for managed shards, we must guard the scheduled and running collections.  but
         // for unmanaged shards, we just let the update happen uncontested.
-        if (log.isTraceEnabled()) {
-            log.trace("Updating {} to {}", shard, millis);
-        }
-        boolean isManaged = shardStateManager.contains(shard);
-        for (Granularity g : Granularity.rollupGranularities()) {
-            ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, g);
-            int slot = g.slot(millis);
+        final Timer.Context dirtyTimerCtx = markSlotDirtyTimer.time();
+        try {
+            if (log.isTraceEnabled()) {
+                log.trace("Updating {} to {}", shard, millis);
+            }
+            boolean isManaged = shardStateManager.contains(shard);
+            for (Granularity g : Granularity.rollupGranularities()) {
+                ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, g);
+                int slot = g.slot(millis);
 
-            if (isManaged) {
-                synchronized (scheduledSlots) { //put
-                    SlotKey key = SlotKey.of(g, slot, shard);
-                    if (scheduledSlots.remove(key) && log.isDebugEnabled()) {
-                        log.debug("descheduled {}.", key);// don't worry about orderedScheduledSlots
+                if (isManaged) {
+                    synchronized (scheduledSlots) { //put
+                        SlotKey key = SlotKey.of(g, slot, shard);
+                        if (scheduledSlots.remove(key) && log.isDebugEnabled()) {
+                            log.debug("descheduled {}.", key);// don't worry about orderedScheduledSlots
+                        }
                     }
                 }
+                slotStateManager.createOrUpdateForSlotAndMillisecond(slot, millis);
             }
-            slotStateManager.createOrUpdateForSlotAndMillisecond(slot, millis);
+        } finally {
+            dirtyTimerCtx.stop();
         }
     }
 
