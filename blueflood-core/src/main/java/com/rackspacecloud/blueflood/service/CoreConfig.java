@@ -24,6 +24,7 @@ public enum CoreConfig implements ConfigDefaults {
     DEFAULT_CASSANDRA_PORT("19180"),
     // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
     MAX_CASSANDRA_CONNECTIONS("75"),
+    ENABLE_TOKEN_AWARE_ROUTING("false"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
