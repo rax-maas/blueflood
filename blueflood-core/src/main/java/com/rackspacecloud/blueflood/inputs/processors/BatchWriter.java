@@ -44,6 +44,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private final Timer writeDurationTimer = Metrics.timer(BatchWriter.class, "Write Duration");
+    private final Timer batchWriteDurationTimer = Metrics.timer(BatchWriter.class, "Single Batch Write Duration");
     private final Timer slotUpdateTimer = Metrics.timer(BatchWriter.class, "Slot Update Duration");
     private final Meter exceededScribeProcessingTime = Metrics.meter(BatchWriter.class, "Write Duration Exceeded Timeout");
     private final TimeValue timeout;
@@ -77,6 +78,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
 
             ListenableFuture<Boolean> futureBatchResult = getThreadPool().submit(new Callable<Boolean>() {
                 public Boolean call() throws Exception {
+                    final Timer.Context singleBatchWriteCtx = batchWriteDurationTimer.time();
                     try {
                         // break into Metric and PreaggregatedMetric, as the put paths are somewhat different.
                         // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
@@ -112,6 +114,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
                         successfullyPersisted.set(false);
                         return false;
                     } finally {
+                        singleBatchWriteCtx.stop();
                         shortLatch.countDown();
                         bufferedMetrics.dec(batch.size());
                         
