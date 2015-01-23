@@ -167,6 +167,10 @@ public class CassandraModel {
             dataType = DataType.NUMERIC;
         }
 
+        if (type == null) {
+            type = RollupType.BF_BASIC;
+        }
+
         if (type == RollupType.BF_BASIC && (dataType.equals(DataType.BOOLEAN) || dataType.equals(DataType.STRING))) {
             return CF_METRICS_STRING;
         }

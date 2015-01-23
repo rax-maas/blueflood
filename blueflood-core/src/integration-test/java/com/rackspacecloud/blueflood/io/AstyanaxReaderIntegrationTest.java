@@ -149,4 +149,15 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Assert.assertFalse(serializer instanceof StringSerializer);
         Assert.assertFalse(serializer instanceof BooleanSerializer);
     }
+
+    @Test
+    public void testNullDataType_DoesNotReturn_StringOrBooleanSerializers() {
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+
+        AbstractSerializer serializer = reader.serializerFor(null, null, Granularity.MIN_5);
+
+        Assert.assertTrue(serializer != null);
+        Assert.assertFalse(serializer instanceof StringSerializer);
+        Assert.assertFalse(serializer instanceof BooleanSerializer);
+    }
 }

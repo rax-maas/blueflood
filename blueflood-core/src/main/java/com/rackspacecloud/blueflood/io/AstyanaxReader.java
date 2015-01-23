@@ -506,12 +506,10 @@ public class AstyanaxReader extends AstyanaxIO {
 
     private DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException{
         String meta = metaCache.get(locator, dataTypeCacheKey);
-        DataType dataType = null;
         if (meta != null) {
-            dataType = new DataType(meta);
+            return new DataType(meta);
         }
-
-        return dataType;
+        return null;
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
