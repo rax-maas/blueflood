@@ -58,8 +58,13 @@ public class ThreadPoolBuilder {
         return this;
     }
 
-    public ThreadPoolBuilder withUnboundedQueue() {
+    public ThreadPoolBuilder withSynchronousQueue() {
         this.queueSize = 0;
+        return this;
+    }
+
+    public ThreadPoolBuilder withUnboundedQueue() {
+        this.queueSize = -1;
         return this;
     }
 
@@ -103,8 +108,15 @@ public class ThreadPoolBuilder {
     }
 
     public ThreadPoolExecutor build() {
-        final BlockingQueue<Runnable> workQueue = this.queueSize > 0 ? new ArrayBlockingQueue<Runnable>(queueSize) :
-                    new SynchronousQueue<Runnable>();
+        BlockingQueue<Runnable> workQueue;
+        switch (this.queueSize) {
+            case 0: workQueue = new SynchronousQueue<Runnable>();
+                break;
+            case -1: workQueue = new LinkedBlockingQueue<Runnable>();
+                break;
+            default: workQueue = new ArrayBlockingQueue<Runnable>(queueSize);
+                break;
+        };
 
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 corePoolSize, maxPoolSize,
