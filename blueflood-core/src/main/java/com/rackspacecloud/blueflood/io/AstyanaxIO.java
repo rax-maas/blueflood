@@ -108,8 +108,12 @@ public class AstyanaxIO {
     }
 
     protected AbstractSerializer serializerFor(RollupType rollupType, DataType dataType, Granularity gran) {
+        if (rollupType == null) {
+            rollupType = RollupType.BF_BASIC;
+        }
+
         if (dataType == null) {
-            return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+            dataType = DataType.NUMERIC;
         }
 
         if (dataType.equals(DataType.STRING)) {
@@ -117,10 +121,6 @@ public class AstyanaxIO {
         } else if (dataType.equals(DataType.BOOLEAN)) {
             return BooleanSerializer.get();
         } else {
-            if (rollupType == null) {
-                rollupType = RollupType.BF_BASIC;
-            }
-
             return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
         }
     }
