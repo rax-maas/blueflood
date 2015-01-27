@@ -328,6 +328,9 @@ public class AstyanaxReader extends AstyanaxIO {
         try {
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
 
             if (type == null) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
@@ -365,6 +368,11 @@ public class AstyanaxReader extends AstyanaxIO {
             try {
                 RollupType rollupType = RollupType.fromString((String)
                         metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+
+                if (rollupType == null) {
+                    rollupType = RollupType.BF_BASIC;
+                }
+
                 DataType dataType = new DataType((String)
                         metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
@@ -473,6 +481,10 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
             DataType dataType = new DataType(metaCache.get(locator, dataTypeCacheKey));
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
