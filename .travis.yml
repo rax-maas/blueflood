@@ -10,7 +10,7 @@ cache:
     - $HOME/.m2
 
 install:
-  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
+  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
 
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
