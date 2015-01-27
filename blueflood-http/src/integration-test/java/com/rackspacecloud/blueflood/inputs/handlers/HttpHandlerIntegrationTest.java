@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -50,6 +50,11 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.mockito.Mockito.*;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
     private static HttpClientVendor vendor;
@@ -83,6 +88,35 @@ public class HttpHandlerIntegrationTest {
         final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
         Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
                 locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points.getPoints().size());
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
+    public void testHttpAggregatedIngestionHappyCase() throws Exception {
+
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_bundle.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v2.0/333333/ingest/aggregated");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+        final Locator locator = Locator.
+            createLocatorFromPathComponents("333333", "internal", "packets_received");
+        Points<CounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
+                locator, new Range(1389211220,1389211240), 
+                CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }

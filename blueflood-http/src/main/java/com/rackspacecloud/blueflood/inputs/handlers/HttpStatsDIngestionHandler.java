@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Rackspace
+ * Copyright 2014-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
@@ -53,12 +50,12 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
-
-    private AsyncChain<String, List<Boolean>> processorChain;
+    
+    private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler(AsyncChain<String,List<Boolean>> processorChain, TimeValue timeout) {
-        this.processorChain = processorChain;
+    public HttpStatsDIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        this.processor = processor;
         this.timeout = timeout;
     }
     
@@ -71,9 +68,11 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {
-	    // block until things get ingested.
+            // block until things get ingested.
             requestCount.inc();
-            ListenableFuture<List<Boolean>> futures = processorChain.apply(body);
+            MetricsCollection collection = new MetricsCollection();
+            collection.add(PreaggregateConversions.buildMetricsCollection(createBundle(body)));
+            ListenableFuture<List<Boolean>> futures = processor.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
@@ -105,24 +104,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         Bundle bundle = new Gson().fromJson(json, Bundle.class);
         return bundle;
     }
-    
-    public static class MakeBundle implements AsyncFunction<String, Bundle> {
-        @Override
-        public ListenableFuture<Bundle> apply(String input) throws Exception {
-            return new NoOpFuture<Bundle>(createBundle(input));
-        }
-    }
-    
-    public static class MakeCollection implements AsyncFunction<Bundle, MetricsCollection> {
-        @Override
-        public ListenableFuture<MetricsCollection> apply(Bundle input) throws Exception {
-            MetricsCollection collection = new MetricsCollection();
-            collection.add(PreaggregateConversions.buildMetricsCollection(input));
-            return new NoOpFuture<MetricsCollection>(collection);
-        }
-    }
-    
-    public static class WriteMetrics extends AsyncFunctionWithThreadPool<Collection<IMetric>, Boolean> {
+
+    public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, ListenableFuture<Boolean>> {
         private final AstyanaxWriter writer;
         
         public WriteMetrics(ThreadPoolExecutor executor, AstyanaxWriter writer) {
