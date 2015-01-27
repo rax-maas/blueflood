@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
@@ -53,7 +52,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
-    private final AsyncChain<MetricsCollection, List<Boolean>> processorChain;
+    private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
 
     // Metrics
@@ -62,11 +61,11 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion response sending timer");
 
 
-    public HttpMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
+    public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
-        this.processorChain = processorChain;
+        this.processor = processor;
     }
 
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
@@ -149,7 +148,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             collection.add(new ArrayList<IMetric>(containerMetrics));
             final Timer.Context persistingTimerContext = persistingTimer.time();
             try {
-                ListenableFuture<List<Boolean>> futures = processorChain.apply(collection);
+                ListenableFuture<List<Boolean>> futures = processor.apply(collection);
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -39,7 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>, List<Boolean>> {
+public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, ListenableFuture<List<Boolean>>> {
         
     private final BatchIdGenerator batchIdGenerator = new BatchIdGenerator();
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
@@ -61,6 +61,7 @@ public class BatchWriter extends AsyncFunctionWithThreadPool<List<List<IMetric>>
         this.context = context;
     }
     
+    @Override
     public ListenableFuture<List<Boolean>> apply(List<List<IMetric>> input) throws Exception {
         
         final CountDownLatch shortLatch = new CountDownLatch(input.size());

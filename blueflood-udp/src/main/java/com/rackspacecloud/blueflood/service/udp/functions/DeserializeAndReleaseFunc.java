@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.service.udp.functions;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.service.udp.UDPMetricSerialization;
 import com.rackspacecloud.blueflood.types.Metric;
 import io.netty.channel.socket.DatagramPacket;
@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Deserializes a UDP packet and releases its buffer.
  */
-public class DeserializeAndReleaseFunc extends AsyncFunctionWithThreadPool<DatagramPacket, Collection<Metric>> {
+public class DeserializeAndReleaseFunc extends FunctionWithThreadPool<DatagramPacket, ListenableFuture<Collection<Metric>>> {
 
     private static final Collection<Metric> EMPTY = Collections.unmodifiableCollection(new ArrayList<Metric>());
     
