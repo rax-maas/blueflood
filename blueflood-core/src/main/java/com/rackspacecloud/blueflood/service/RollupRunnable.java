@@ -23,6 +23,8 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -33,6 +35,7 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -52,6 +55,7 @@ public class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
     private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
+    public DiscoveryIO discoveryHandler = loadDiscoveryModule();
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -65,7 +69,38 @@ public class RollupRunnable implements Runnable {
         this.rollupBatchWriter = rollupBatchWriter;
         startWait = System.currentTimeMillis();
     }
-    
+
+    private static DiscoveryIO loadDiscoveryModule() {
+        List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
+
+        if (!modules.isEmpty() && modules.size() != 1) {
+            throw new RuntimeException("Cannot load query service with more than one discovery module");
+        }
+
+        ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
+        for (String module : modules) {
+            log.info("Loading metric discovery module " + module);
+            try {
+                Class discoveryClass = classLoader.loadClass(module);
+                log.info("Registering metric discovery module " + module);
+                return (DiscoveryIO) discoveryClass.newInstance();
+            } catch (InstantiationException e) {
+                log.error("Unable to create instance of metric discovery class for: " + module, e);
+            } catch (IllegalAccessException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            } catch (ClassNotFoundException e) {
+                log.error("Unable to locate metric discovery module: " + module, e);
+            } catch (RuntimeException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            } catch (Throwable e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            }
+        }
+
+        return null;
+    }
+
+
     public void run() {
         // done waiting.
         singleRollupReadContext.getWaitHist().update(System.currentTimeMillis() - startWait);
@@ -98,6 +133,11 @@ public class RollupRunnable implements Runnable {
             Rollup rollup = null;
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     singleRollupReadContext.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
@@ -121,10 +161,18 @@ public class RollupRunnable implements Runnable {
             rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
+
+            RollupEventEmitter ree = RollupEventEmitter.getInstance();
+
+            String unit = null;
+            if (ree.hasListeners(RollupEventEmitter.ROLLUP_EVENT_NAME)) {
+                unit = getUnits(singleRollupReadContext.getLocator().getTenantId(), singleRollupReadContext.getLocator().getMetricName());
+            }
+
             //Emit a rollup event to eventemitter
             RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
                     new RollupEvent(singleRollupReadContext.getLocator(), rollup,
-                            AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
+                            unit,
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Exception e) {
@@ -137,6 +185,21 @@ public class RollupRunnable implements Runnable {
             executionContext.decrementReadCounter();
             timerContext.stop();
         }
+    }
+
+    private String getUnits(String tenantId, String metricName) {
+        String unit = null;
+        try {
+            List<SearchResult> results = discoveryHandler.search(tenantId, metricName);
+            for (SearchResult res : results) {
+                unit = res.getUnit();
+                break;
+            }
+        } catch (Exception ex) {
+            log.info(ex.getMessage());
+        }
+
+        return unit;
     }
 
     // dertmine which DataType to use for serialization.

@@ -19,7 +19,10 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -33,6 +36,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class RollupHandler {
     private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
@@ -53,20 +60,51 @@ public class RollupHandler {
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
+    protected final DiscoveryIO discoveryHandler = loadDiscoveryModule();
+    private static final ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder().withName("MetricDataUnit Pool");
+    private static final ExecutorService executorService =  poolBuilder.build();
+
+    private static DiscoveryIO loadDiscoveryModule() {
+        List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
+
+        if (!modules.isEmpty() && modules.size() != 1) {
+            throw new RuntimeException("Cannot load query service with more than one discovery module");
+        }
+
+        ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
+        for (String module : modules) {
+            log.info("Loading metric discovery module " + module);
+            try {
+                Class discoveryClass = classLoader.loadClass(module);
+                log.info("Registering metric discovery module " + module);
+                return (DiscoveryIO) discoveryClass.newInstance();
+            } catch (InstantiationException e) {
+                log.error("Unable to create instance of metric discovery class for: " + module, e);
+            } catch (IllegalAccessException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            } catch (ClassNotFoundException e) {
+                log.error("Unable to locate metric discovery module: " + module, e);
+            } catch (RuntimeException e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            } catch (Throwable e) {
+                log.error("Error starting metric discovery module: " + module, e);
+            }
+        }
+
+        return null;
+    }
 
     protected MetricData getRollupByGranularity(
             String tenantId,
             String metricName,
-            long from,
-            long to,
-            Granularity g) {
+            final long from,
+            final long to,
+            final Granularity g) {
 
         final Timer.Context ctx = metricsFetchTimer.time();
         final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-        final MetricData metricData = AstyanaxReader.getInstance().getDatapointsForRange(
-                locator,
-                new Range(g.snapMillis(from), to),
-                g);
+
+        MetricData metricData = getMetricData(from, to, g, locator);
 
         boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString())
                 || metricData.getType().equals(MetricData.Type.HISTOGRAM.toString());
@@ -128,13 +166,37 @@ public class RollupHandler {
         return metricData;
     }
 
+    private MetricData getMetricData(long from, long to, Granularity g, Locator locator) {
+
+        String unit = null;
+        Callable<String> unitsGetter = new UnitsGetter(locator.getTenantId(),locator.getMetricName());
+        Future<String> unitsGetterFuture = executorService.submit(unitsGetter);
+
+        MetricData metricData;
+        metricData = AstyanaxReader.getInstance().getDatapointsForRange(
+                locator,
+                new Range(g.snapMillis(from), to),
+                g);
+
+        try {
+            unit = unitsGetterFuture.get();
+        } catch (InterruptedException ie) {
+            log.info(ie.getMessage());
+        } catch (ExecutionException ee) {
+            log.info(ee.getMessage());
+        }
+
+        metricData.setUnit(unit);
+        return metricData;
+    }
+
     private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
 
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
         for (Range r : ranges) {
             try {
-                MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+                MetricData data = getMetricData(r.getStart(), r.getStop(), g, locator);
                 Points dataToRoll = data.getData();
                 if (dataToRoll.isEmpty()) {
                     continue;
@@ -205,5 +267,29 @@ public class RollupHandler {
         }
 
         return data;
+    }
+
+    private class UnitsGetter implements Callable {
+        private String tenantId;
+        private String metricName;
+
+        public UnitsGetter(String tenantId, String metricName) {
+            this.tenantId = tenantId;
+            this.metricName = metricName;
+        }
+
+        public String call() {
+            String unit = null;
+            try {
+                List<SearchResult> results = discoveryHandler.search(tenantId, metricName);
+                for (SearchResult res : results) {
+                    unit = res.getUnit();
+                    break;
+                }
+            } catch (Exception ex) {
+                log.info(ex.getMessage());
+            }
+            return unit;
+        }
     }
 }

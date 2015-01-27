@@ -34,6 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.simple.JSONArray;
 import org.junit.*;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -151,7 +152,11 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private void testHTTPRollupHandlerGetByPoints(Map<Locator, Map<Granularity, Integer>> answers, Map<Granularity, Integer> points,
                                                    long from, long to) throws Exception {
+
+
         for (Locator locator : locators) {
+            setupFakeElasticIO(locator, "someunit");
+
             for (Granularity g2 : Granularity.granularities()) {
                 MetricData data = httpHandler.GetDataByPoints(
                         locator.getTenantId(),
@@ -159,9 +164,18 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis,
                         baseMillis + 86400000,
                         points.get(g2));
+                Assert.assertEquals("someunit",data.getUnit());
                 Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
             }
         }
+    }
+
+    private void setupFakeElasticIO(Locator locator, String unit) {
+        FakeElasticIO fElasticIO = new FakeElasticIO();
+        List<SearchResult> results = new ArrayList<SearchResult>();
+        results.add(new SearchResult(locator.getTenantId(), locator.getMetricName(), unit));
+        fElasticIO.result = results;
+        Whitebox.setInternalState(httpHandler, "discoveryHandler", fElasticIO);
     }
 
     private void testHTTPHandlersGetByResolution(Locator locator, Resolution resolution, long from, long to,
@@ -281,5 +295,18 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @AfterClass
     public static void shutdown() {
         vendor.shutdown();
+    }
+
+    private static class FakeElasticIO implements DiscoveryIO {
+        public List<SearchResult> result;
+
+        public void insertDiscovery(List<IMetric> metrics) {
+
+        }
+
+        public List<SearchResult> search(String tenantID, String metricEx ) {
+            return result;
+        }
+
     }
 }

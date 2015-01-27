@@ -298,19 +298,6 @@ public class AstyanaxReader extends AstyanaxIO {
         return points;
     }
 
-    public static String getUnitString(Locator locator) {
-        String unitString = null;
-        try {
-            unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-        } catch (CacheException ex) {
-            log.warn("Cache exception reading unitString from MetadataCache: ", ex);
-        }
-        if (unitString == null) {
-            unitString = UNKNOWN;
-        }
-        return unitString;
-    }
-
     public static String getType(Locator locator) {
         String type = null;
         try {
@@ -326,9 +313,14 @@ public class AstyanaxReader extends AstyanaxIO {
 
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
+            //TODO: If we stop processing string metrics, we can get rid of this and always return numeric
+            //Questions: Do we care about pre-agg types
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
 
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
             if (type == null) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
             }
@@ -364,9 +356,17 @@ public class AstyanaxReader extends AstyanaxIO {
         for (Locator locator : locators) {
             try {
                 RollupType rollupType = RollupType.fromString((String)
-                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                DataType dataType = new DataType((String)
-                        metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase()));
+                            metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                if (rollupType == null) {
+                    rollupType = RollupType.BF_BASIC;
+                }
+                //TODO: If we stop processing string and boolean, we can always hardcode this to numeric
+                DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
+
+                if (dataType == null) {
+                    dataType = DataType.INT;
+                }
+
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
                 locs.add(locator);
@@ -375,13 +375,13 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        for (ColumnFamily CF : locatorsByCF.keySet()) {
+         for (ColumnFamily CF : locatorsByCF.keySet()) {
             List<Locator> locs = locatorsByCF.get(CF);
             Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
             // transform columns to MetricData
             for (Locator loc : metrics.keySet()) {
                 MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
-                if (data != null) {
+                if (data != null && !data.getData().isEmpty()) {
                     results.put(loc, data);
                 }
             }
@@ -398,7 +398,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
+        return new MetricData(histogramRollupPoints, null, MetricData.Type.HISTOGRAM);
     }
 
     // Used for string metrics
@@ -415,7 +415,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
+        return new MetricData(points, null, MetricData.Type.STRING);
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -431,7 +431,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.BOOLEAN);
+        return new MetricData(points, null, MetricData.Type.BOOLEAN);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
@@ -453,7 +453,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        return new MetricData(points, null, MetricData.Type.NUMBER);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
@@ -473,8 +473,10 @@ public class AstyanaxReader extends AstyanaxIO {
                                                                        Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            DataType dataType = new DataType(metaCache.get(locator, dataTypeCacheKey));
-            String unit = getUnitString(locator);
+            //TODO: if we stop processing string metrics, can we get this info from somewhere else?
+            //Just return type numeric by default for now
+            DataType dataType = getDataType(locator, dataTypeCacheKey);
+            String unit = null;
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
             MetricData data = new MetricData(points, unit, outputType);
@@ -482,6 +484,16 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException{
+        String meta = metaCache.get(locator, dataTypeCacheKey);
+        DataType dataType = null;
+        if (meta != null) {
+            dataType = new DataType(meta);
+        }
+
+        return dataType;
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
