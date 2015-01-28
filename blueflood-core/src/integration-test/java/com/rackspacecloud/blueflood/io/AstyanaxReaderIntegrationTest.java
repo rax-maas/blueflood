@@ -99,7 +99,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testNullRollupType_DoesNotReturn_StringOrBooleanSerializers() {
+    public void testNullRollupType_ReturnsValidNumericSerializers() {
         AstyanaxReader reader = AstyanaxReader.getInstance();
 
         AbstractSerializer serializer = reader.serializerFor(null, DataType.INT, Granularity.MIN_5);
