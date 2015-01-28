@@ -38,7 +38,6 @@ public class MetricData {
         this.data = points;
         this.type = type;
         this.locator = locator;
-
         this.unit = retrieveUnits();
     }
 
@@ -94,5 +93,9 @@ public class MetricData {
             return "UNKNOWN";
         }
         return results.get(0).getUnit();
+    }
+
+    public static void setDiscoveryIO(DiscoveryIO dio) {
+        discoveryIO = dio;
     }
 }

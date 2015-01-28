@@ -67,6 +67,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         httpQueryService.startService();
         vendor = new HttpClientVendor();
         client = vendor.getClient();
+        FakeElasticIO fio = new FakeElasticIO("fakeunit");
+        MetricData.setDiscoveryIO(fio);
     }
 
     @Before
@@ -160,7 +162,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis,
                         baseMillis + 86400000,
                         points.get(g2));
-                Assert.assertEquals("UNKNOWN",data.getUnit());
+                Assert.assertEquals("fakeunit",data.getUnit());
                 Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
             }
         }
@@ -283,5 +285,21 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @AfterClass
     public static void shutdown() {
         vendor.shutdown();
+    }
+
+    private static class FakeElasticIO implements DiscoveryIO {
+        private String fakeUnit;
+
+        public FakeElasticIO(String fakeUnit) {
+            this.fakeUnit = fakeUnit;
+        }
+
+        public void insertDiscovery(List<IMetric> metrics) {}
+
+        public List<SearchResult> search (String tenantId, String metricName) {
+            List<SearchResult> results = new ArrayList<SearchResult>();
+            results.add(new SearchResult(tenantId,metricName,this.fakeUnit));
+            return results;
+        }
     }
 }
