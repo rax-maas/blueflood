@@ -37,16 +37,10 @@ public class DataType {
     public static DataType getMetricType(Object metricValue) {
         if (metricValue instanceof String) {
             return STRING;
-        } else if (metricValue instanceof Integer) {
-            return NUMERIC;
-        } else if (metricValue instanceof Long) {
-            return NUMERIC;
-        } else if (metricValue instanceof Double) {
+        } else if (metricValue instanceof Number) {
             return NUMERIC;
         } else if (metricValue instanceof Boolean) {
             return BOOLEAN;
-        } else if (metricValue instanceof BigInteger) {
-            return NUMERIC;
         } else {
             throw new RuntimeException("Unknown metric value type " + metricValue.getClass());
         }
