@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -29,8 +30,8 @@ public class JSONHistogramOutputSerializerTest {
     @Test
     public void testHistogramRollupsSerialization() throws SerializationException {
         final JSONHistogramOutputSerializer serializer = new JSONHistogramOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeHistogramRollupPoints(), "unknown",
-                MetricData.Type.HISTOGRAM);
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeHistogramRollupPoints(),
+                MetricData.Type.HISTOGRAM, Locator.createLocatorFromDbKey("testMetricHistograms"));
 
         JSONObject metricDataJSON = serializer.transformHistogram(metricData);
 

@@ -16,19 +16,30 @@
 
 package com.rackspacecloud.blueflood.outputs.formats;
 
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.types.DataType;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import sun.security.pkcs11.Secmod;
+
+import java.util.List;
 
 public class MetricData {
     private final Points data;
     private final String unit;
+    private final Locator locator;
     private final Type type;
+    private static DiscoveryIO discoveryIO = ModuleLoader.getInstance().loadElasticIOModule();
 
-    public MetricData(Points points, String unit, Type type) {
+    public MetricData(Points points, Type type, Locator locator) {
         this.data = points;
-        this.unit = unit;
         this.type = type;
+        this.locator = locator;
+
+        this.unit = retrieveUnits();
     }
 
     public Points getData() {
@@ -36,7 +47,7 @@ public class MetricData {
     }
 
     public String getUnit() {
-        return unit;
+        return this.unit;
     }
 
     public String getType() {
@@ -73,5 +84,15 @@ public class MetricData {
                 return NUMBER;
             }
         }
+    }
+
+    private String retrieveUnits(){
+        List<SearchResult> results = null;
+        try {
+            results = discoveryIO.search(locator.getTenantId(), locator.getMetricName());
+        } catch (Exception e) {
+            return "UNKNOWN";
+        }
+        return results.get(0).getUnit();
     }
 }

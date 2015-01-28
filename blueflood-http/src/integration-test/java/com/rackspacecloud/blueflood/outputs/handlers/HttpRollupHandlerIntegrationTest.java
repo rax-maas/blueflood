@@ -34,6 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.simple.JSONArray;
 import org.junit.*;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -159,6 +160,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis,
                         baseMillis + 86400000,
                         points.get(g2));
+                Assert.assertEquals("UNKNOWN",data.getUnit());
                 Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
             }
         }

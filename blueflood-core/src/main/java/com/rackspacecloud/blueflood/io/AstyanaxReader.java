@@ -398,7 +398,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
         Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
+        return new MetricData(histogramRollupPoints, MetricData.Type.HISTOGRAM, locator);
     }
 
     // Used for string metrics
@@ -415,7 +415,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
+        return new MetricData(points, MetricData.Type.STRING, locator);
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -431,7 +431,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.BOOLEAN);
+        return new MetricData(points, MetricData.Type.BOOLEAN,locator);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
@@ -453,7 +453,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        return new MetricData(points, MetricData.Type.NUMBER, locator);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
@@ -477,7 +477,7 @@ public class AstyanaxReader extends AstyanaxIO {
             String unit = getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
-            MetricData data = new MetricData(points, unit, outputType);
+            MetricData data = new MetricData(points,outputType, locator);
             return data;
         } catch (Exception e) {
             return null;

@@ -124,7 +124,8 @@ public class RollupRunnable implements Runnable {
             //Emit a rollup event to eventemitter
             RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
                     new RollupEvent(singleRollupReadContext.getLocator(), rollup,
-                            AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
+                            //TODO: How do we retrieve units from here
+                            null,
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Exception e) {
