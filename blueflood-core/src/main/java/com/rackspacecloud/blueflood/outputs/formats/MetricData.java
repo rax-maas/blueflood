@@ -86,7 +86,7 @@ public class MetricData {
     }
 
     private String retrieveUnits(){
-        List<SearchResult> results = null;
+        List<SearchResult> results;
         try {
             results = discoveryIO.search(locator.getTenantId(), locator.getMetricName());
         } catch (Exception e) {
