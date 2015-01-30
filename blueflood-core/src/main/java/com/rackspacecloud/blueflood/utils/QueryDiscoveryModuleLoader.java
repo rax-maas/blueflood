@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.outputs.utils;
+package com.rackspacecloud.blueflood.utils;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class DiscoveryModuleLoader {
-    private static final Logger log = LoggerFactory.getLogger(DiscoveryModuleLoader.class);
+public class QueryDiscoveryModuleLoader {
+    private static final Logger log = LoggerFactory.getLogger(QueryDiscoveryModuleLoader.class);
     private static DiscoveryIO discoveryInstance;
 
 
@@ -41,25 +41,23 @@ public class DiscoveryModuleLoader {
         }
 
         ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
-        for (String module : modules) {
-            log.info("Loading metric discovery module " + module);
-            try {
-                Class discoveryClass = classLoader.loadClass(module);
-                discoveryInstance = (DiscoveryIO) discoveryClass.newInstance();
-                log.info("Registering metric discovery module " + module);
-            } catch (InstantiationException e) {
-                log.error("Unable to create instance of metric discovery class for: " + module, e);
-            } catch (IllegalAccessException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (ClassNotFoundException e) {
-                log.error("Unable to locate metric discovery module: " + module, e);
-            } catch (RuntimeException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (Throwable e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            }
+        String module = modules.get(0);
+        log.info("Loading metric discovery module " + module);
+        try {
+            Class discoveryClass = classLoader.loadClass(module);
+            discoveryInstance = (DiscoveryIO) discoveryClass.newInstance();
+            log.info("Registering metric discovery module " + module);
+        } catch (InstantiationException e) {
+            log.error("Unable to create instance of metric discovery class for: " + module, e);
+        } catch (IllegalAccessException e) {
+            log.error("Error starting metric discovery module: " + module, e);
+        } catch (ClassNotFoundException e) {
+            log.error("Unable to locate metric discovery module: " + module, e);
+        } catch (RuntimeException e) {
+            log.error("Error starting metric discovery module: " + module, e);
+        } catch (Throwable e) {
+            log.error("Error starting metric discovery module: " + module, e);
         }
-
     }
 
     public static DiscoveryIO getDiscoveryInstance() {
