@@ -2,7 +2,7 @@
  <img src="http://i.imgur.com/dJwsM5z.gif" width="500" height="350" align=center>
 </p>
 
-# Blueflood [![Build Status](https://secure.travis-ci.org/rackerlabs/blueflood.png)](http://travis-ci.org/rackerlabs/blueflood)
+# Blueflood [![Build Status](https://secure.travis-ci.org/rackerlabs/blueflood.png)](http://travis-ci.org/rackerlabs/blueflood) [![Coverage Status](https://coveralls.io/repos/rackerlabs/blueflood/badge.svg)](https://coveralls.io/r/rackerlabs/blueflood)
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 

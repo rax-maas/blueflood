@@ -146,25 +146,39 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>cobertura-maven-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <aggregate>true</aggregate>
-          <check />
-          <formats>
-            <format>xml</format>
-            <format>html</format>
-          </formats>
-        </configuration>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.7.2.201409121644</version>
         <executions>
           <execution>
-            <phase>verify</phase>
+            <id>prepare-agent</id>
             <goals>
-              <goal>cobertura</goal>
+              <goal>prepare-agent</goal>
             </goals>
           </execution>
+          <execution>
+            <id>prepare-it-agent</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+            <configuration>
+              <propertyName>jacoco.agent.it.argLine</propertyName>
+            </configuration>
+          </execution>
         </executions>
+      </plugin>
+      
+      <plugin>
+        <groupId>org.eluder.coveralls</groupId>
+        <artifactId>coveralls-maven-plugin</artifactId>
+        <version>3.0.1</version>
+        <configuration>
+          <jacocoReports>
+            <jacocoReport>blueflood-core/target/site/jacoco-it/jacoco.xml</jacocoReport>
+            <jacocoReport>blueflood-http/target/site/jacoco-it/jacoco.xml</jacocoReport>
+          </jacocoReports>
+        </configuration>
       </plugin>
 
       <!-- Spin up Cassandra -->
@@ -343,5 +357,4 @@
       <url>file://${basedir}/../maven/repo</url>
     </repository>
   </repositories>
-
 </project>

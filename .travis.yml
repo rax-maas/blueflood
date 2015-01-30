@@ -3,11 +3,20 @@ jdk:
   - oraclejdk7
   - openjdk7
 
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.m2
+
 install:
-  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip
+  - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
 
 script: 
   - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
+
+after_success:
+  - mvn jacoco:report jacoco:report-integration coveralls:report
 
 notifications:
   irc: "irc.freenode.net#blueflood"
