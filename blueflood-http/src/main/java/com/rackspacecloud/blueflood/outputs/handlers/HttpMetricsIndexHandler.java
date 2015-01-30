@@ -6,6 +6,7 @@ import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
+import com.rackspacecloud.blueflood.outputs.utils.DiscoveryModuleLoader;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.codehaus.jackson.node.ArrayNode;
@@ -24,7 +25,7 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
     private DiscoveryIO discoveryHandle;
 
     public HttpMetricsIndexHandler() {
-        loadDiscoveryModule();
+        discoveryHandle = DiscoveryModuleLoader.getDiscoveryInstance();
     }
 
     @Override
@@ -61,34 +62,6 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
         HttpResponder.respond(channel, request, response);
-    }
-
-    private void loadDiscoveryModule() {
-        List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
-
-        if (!modules.isEmpty() && modules.size() != 1) {
-            throw new RuntimeException("Cannot load query service with more than one discovery module");
-        }
-
-        ClassLoader classLoader = DiscoveryIO.class.getClassLoader();
-        for (String module : modules) {
-            log.info("Loading metric discovery module " + module);
-            try {
-                Class discoveryClass = classLoader.loadClass(module);
-                discoveryHandle = (DiscoveryIO) discoveryClass.newInstance();
-                log.info("Registering metric discovery module " + module);
-            } catch (InstantiationException e) {
-                log.error("Unable to create instance of metric discovery class for: " + module, e);
-            } catch (IllegalAccessException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (ClassNotFoundException e) {
-                log.error("Unable to locate metric discovery module: " + module, e);
-            } catch (RuntimeException e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            } catch (Throwable e) {
-                log.error("Error starting metric discovery module: " + module, e);
-            }
-        }
     }
 
     public static String getSerializedJSON(List<SearchResult> searchResults) {

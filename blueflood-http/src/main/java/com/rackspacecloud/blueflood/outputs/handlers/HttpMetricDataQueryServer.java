@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.outputs.utils.DiscoveryModuleLoader;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -57,6 +59,8 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
+
+        DiscoveryModuleLoader.loadDiscoveryModule();
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
