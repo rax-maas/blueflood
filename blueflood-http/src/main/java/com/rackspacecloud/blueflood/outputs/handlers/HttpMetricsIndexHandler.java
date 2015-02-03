@@ -6,9 +6,7 @@ import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
-import com.rackspacecloud.blueflood.outputs.utils.DiscoveryModuleLoader;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
@@ -25,7 +23,7 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
     private DiscoveryIO discoveryHandle;
 
     public HttpMetricsIndexHandler() {
-        discoveryHandle = DiscoveryModuleLoader.getDiscoveryInstance();
+        discoveryHandle = QueryDiscoveryModuleLoader.getDiscoveryInstance();
     }
 
     @Override
