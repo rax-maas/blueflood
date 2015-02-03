@@ -36,6 +36,9 @@ public class QueryDiscoveryModuleLoader {
         }
         List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES);
 
+        if (modules.isEmpty())
+            return;
+
         if (!modules.isEmpty() && modules.size() != 1) {
             throw new RuntimeException("Cannot load query service with more than one discovery module");
         }
