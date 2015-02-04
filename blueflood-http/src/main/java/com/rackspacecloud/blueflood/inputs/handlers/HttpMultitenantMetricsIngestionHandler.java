@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Rackspace
+ * Copyright 2014-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
-import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -28,8 +27,8 @@ import java.util.List;
 
 public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestionHandler {
 
-    public HttpMultitenantMetricsIngestionHandler(AsyncChain<MetricsCollection, List<Boolean>> processorChain, TimeValue timeout) {
-        super(processorChain, timeout);
+    public HttpMultitenantMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        super(processor, timeout);
     }
 
     @Override

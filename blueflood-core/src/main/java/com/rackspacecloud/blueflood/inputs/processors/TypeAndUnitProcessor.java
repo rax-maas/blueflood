@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncFunctionWithThreadPool;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
-import com.rackspacecloud.blueflood.concurrent.NoOpFuture;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,7 +26,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCollection, MetricsCollection> {
+public class TypeAndUnitProcessor extends FunctionWithThreadPool<MetricsCollection, Void> {
         
     final IncomingMetricMetadataAnalyzer metricMetadataAnalyzer;
     
@@ -36,7 +35,8 @@ public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCol
         this.metricMetadataAnalyzer = metricMetadataAnalyzer;
     }
     
-    public ListenableFuture<MetricsCollection> apply(final MetricsCollection input) throws Exception {
+    @Override
+    public Void apply(final MetricsCollection input) throws Exception {
         getThreadPool().submit(new Callable<MetricsCollection>() {
             public MetricsCollection call() throws Exception {
                 Collection<IncomingMetricException> problems = metricMetadataAnalyzer.scanMetrics(input.toMetrics());
@@ -46,9 +46,6 @@ public class TypeAndUnitProcessor extends AsyncFunctionWithThreadPool<MetricsCol
                 return input;
             }
         });
-        
-        // this one is asynchronous. so we let it do its job offline in the threadpool, but return a future that is
-        // immediately done.
-        return new NoOpFuture<MetricsCollection>(input);
+        return null;
     }
 }

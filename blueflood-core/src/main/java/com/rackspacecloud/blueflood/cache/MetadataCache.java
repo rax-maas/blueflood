@@ -141,7 +141,9 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.metaReads = new ConcurrentLinkedQueue<Locator>();
         this.readThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedReadsPipelineLimit)
                 .withMaxPoolSize(batchedReadsPipelineLimit)
-                .withUnboundedQueue().withName("MetaBatchedReadsThreadPool").build();
+                .withBoundedQueue(Configuration.getInstance()
+                        .getIntegerProperty(CoreConfig.META_CACHE_BATCHED_READS_QUEUE_SIZE))
+                .withName("MetaBatchedReadsThreadPool").build();
 
         this.batchedReads = Configuration.getInstance().getBooleanProperty(
                 CoreConfig.META_CACHE_BATCHED_READS);
@@ -158,7 +160,9 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         this.outstandingMetaWrites = new ConcurrentSkipListSet<CacheKey>();
         this.writeThreadPoolExecutor = new ThreadPoolBuilder().withCorePoolSize(batchedWritesPipelineLimit)
                 .withMaxPoolSize(batchedWritesPipelineLimit)
-                .withUnboundedQueue().withName("MetaBatchedWritesThreadPool").build();
+                .withBoundedQueue(Configuration.getInstance()
+                        .getIntegerProperty(CoreConfig.META_CACHE_BATCHED_WRITES_QUEUE_SIZE))
+                .withName("MetaBatchedWritesThreadPool").build();
         this.metaWrites = new ConcurrentLinkedQueue<CacheKey>();
 
         if (batchedWrites) {
