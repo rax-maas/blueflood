@@ -32,20 +32,15 @@ public class DataType {
     public final static DataType DOUBLE = new DataType("D");
     public final static DataType BOOLEAN = new DataType("B");
     public final static DataType BIGINT = new DataType("BI");
+    public final static DataType NUMERIC = new DataType("N");
 
     public static DataType getMetricType(Object metricValue) {
         if (metricValue instanceof String) {
             return STRING;
-        } else if (metricValue instanceof Integer) {
-            return INT;
-        } else if (metricValue instanceof Long) {
-            return LONG;
-        } else if (metricValue instanceof Double) {
-            return DOUBLE;
+        } else if (metricValue instanceof Number) {
+            return NUMERIC;
         } else if (metricValue instanceof Boolean) {
             return BOOLEAN;
-        } else if (metricValue instanceof BigInteger) {
-            return BIGINT;
         } else {
             throw new RuntimeException("Unknown metric value type " + metricValue.getClass());
         }
@@ -53,7 +48,7 @@ public class DataType {
 
     public static boolean isNumericMetric(Object metricValue) {
         final DataType metricType = getMetricType(metricValue);
-        return metricType == DataType.INT || metricType == DataType.LONG || metricType == DataType.DOUBLE;
+        return metricType == DataType.NUMERIC;
     }
 
     public static boolean isStringMetric(Object metricValue) {
@@ -67,7 +62,7 @@ public class DataType {
     }
 
     public static boolean isKnownMetricType(DataType incoming) {
-        return incoming.equals(STRING) || incoming.equals(INT) || incoming.equals(LONG) || incoming.equals(DOUBLE)
+        return incoming.equals(STRING) || incoming.equals(NUMERIC)
                 || incoming.equals(BOOLEAN);
     }
 

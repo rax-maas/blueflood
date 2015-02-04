@@ -11,6 +11,7 @@ import io.netty.channel.socket.DatagramPacket;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -82,22 +83,23 @@ public class UDPMetricSerialization {
         
         // number of each metric.
         size += CodedOutputStream.computeRawVarint32Size(metrics.size());
-        
+
         // size of each metric.
         for (Metric metric : metrics) {
+            DataType dataType = getDataType(metric);
             size += CodedOutputStream.computeStringSizeNoTag(metric.getLocator().getTenantId());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getLocator().getMetricName());
-            size += CodedOutputStream.computeStringSizeNoTag(metric.getDataType().toString());
+            size += CodedOutputStream.computeStringSizeNoTag(dataType.toString());
             size += CodedOutputStream.computeRawVarint64Size(metric.getCollectionTime());
             size += CodedOutputStream.computeRawVarint32Size(metric.getTtlInSeconds());
             size += CodedOutputStream.computeStringSizeNoTag(metric.getUnit());
             if (metric.getDataType().equals(DataType.STRING))
                 size += CodedOutputStream.computeStringSizeNoTag((String)metric.getMetricValue());
-            if (metric.getDataType().equals(DataType.INT))
+            if (dataType.equals(DataType.INT))
                 size += CodedOutputStream.computeRawVarint32Size((Integer) metric.getMetricValue());
-            if (metric.getDataType().equals(DataType.LONG))
+            if (dataType.equals(DataType.LONG))
                 size += CodedOutputStream.computeRawVarint64Size((Long) metric.getMetricValue());
-            if (metric.getDataType().equals(DataType.DOUBLE))
+            if (dataType.equals(DataType.DOUBLE))
                 size += CodedOutputStream.computeDoubleSizeNoTag((Double) metric.getMetricValue());
             if (metric.getDataType().equals(DataType.BOOLEAN))
                 size += CodedOutputStream.computeBoolSizeNoTag((Boolean) metric.getMetricValue());
@@ -105,26 +107,44 @@ public class UDPMetricSerialization {
         
         return size;
     }
+
     private static void write(Metric metric, CodedOutputStream out) throws IOException {
-        
+
         out.writeStringNoTag(metric.getLocator().getTenantId());
         out.writeStringNoTag(metric.getLocator().getMetricName());
-        out.writeStringNoTag(metric.getDataType().toString());
+        DataType dataType = getDataType(metric);
+
+        out.writeStringNoTag(dataType.toString());
         out.writeRawVarint64(metric.getCollectionTime());
         out.writeRawVarint32(metric.getTtlInSeconds());
         out.writeStringNoTag(metric.getUnit());
         if (metric.getDataType().equals(DataType.STRING))
             out.writeStringNoTag((String) metric.getMetricValue());
-        else if (metric.getDataType().equals(DataType.INT))
+        else if (dataType.equals(DataType.INT))
             out.writeRawVarint32((Integer)metric.getMetricValue());
-        else if (metric.getDataType().equals(DataType.LONG))
-            out.writeRawVarint64((Long)metric.getMetricValue());
-        else if (metric.getDataType().equals(DataType.DOUBLE))
+        else if (dataType.equals(DataType.LONG))
+            out.writeRawVarint64((Long) metric.getMetricValue());
+        else if (dataType.equals(DataType.DOUBLE))
             out.writeDoubleNoTag((Double) metric.getMetricValue());
         else if (metric.getDataType().equals(DataType.BOOLEAN))
             out.writeBoolNoTag((Boolean) metric.getMetricValue());
     }
-    
+
+    private static DataType getDataType(Metric metric) {
+        DataType d = null;
+
+        if (metric.getMetricValue() instanceof Integer) {
+            d = DataType.INT;
+        } else if (metric.getMetricValue() instanceof Long) {
+            d = DataType.LONG;
+        } else if (metric.getMetricValue() instanceof Double) {
+            d = DataType.DOUBLE;
+        } else if (metric.getMetricValue() instanceof BigInteger) {
+            d = DataType.BIGINT;
+        }
+        return d;
+    }
+
     // sneaky, but avoids a copy.
     // this makes the assumption that the entire buffer is interesting or has been written to.
     // if allocate N bytes but only put N-M bytes, you still get all N bytes back from getUnderlyingBuffer().
