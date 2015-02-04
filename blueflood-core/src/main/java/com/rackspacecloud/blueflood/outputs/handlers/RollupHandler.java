@@ -27,17 +27,15 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.DiscoveryModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class RollupHandler {
@@ -51,7 +49,6 @@ public class RollupHandler {
     protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
     protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
     protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
-    protected final Timer metricsForCheckTimer = Metrics.timer(RollupHandler.class, "Get metrics for check");
     protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
     protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
@@ -77,7 +74,7 @@ public class RollupHandler {
 
                 @Override
                 public Object call() throws Exception {
-                    DiscoveryIO discoveryIO = DiscoveryModuleLoader.getDiscoveryInstance();
+                    DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
                     if (discoveryIO == null) {
                         log.warn("USE_ES_FOR_UNITS has been set to true, but no discovery module found." +
                                 " Please check your config");

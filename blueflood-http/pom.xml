@@ -132,6 +132,12 @@
     </dependency>
 
     <dependency>
+      <artifactId>blueflood-elasticsearch</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>4.0.8.Final</version>

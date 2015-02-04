@@ -57,7 +57,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private static DefaultHttpClient client;
 
     private HttpRollupsQueryHandler httpHandler;
-    private final Map<Locator, Map<Granularity, Integer>> answers = new HashMap<Locator, Map<Granularity,Integer>>();
+    private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
+    private final Map<Locator, String> locatorToUnit = new HashMap<Locator, String>();
 
     @BeforeClass
     public static void setUpHttp() {
@@ -115,8 +116,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         answerForStringMetric.put(Granularity.MIN_240, 1440);
         answerForStringMetric.put(Granularity.MIN_1440, 1440);
 
-        answers.put(locators[0], answerForNumericMetric);
-        answers.put(locators[1], answerForStringMetric);
+        locatorToPoints.put(locators[0], answerForNumericMetric);
+        locatorToPoints.put(locators[1], answerForStringMetric);
     }
 
     @Test
@@ -136,7 +137,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         points.put(Granularity.MIN_240, 5);
         points.put(Granularity.MIN_1440, 1);
 
-        testHTTPRollupHandlerGetByPoints(answers, points, baseMillis, baseMillis + 86400000);
+        testHTTPRollupHandlerGetByPoints(locatorToPoints, points, baseMillis, baseMillis + 86400000);
     }
 
     private void testGetRollupByResolution() throws Exception {
@@ -144,7 +145,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             for (Resolution resolution : Resolution.values()) {
                 Granularity g = Granularity.granularities()[resolution.getValue()];
                 testHTTPHandlersGetByResolution(locator, resolution, baseMillis, baseMillis + 86400000,
-                        answers.get(locator).get(g));
+                        locatorToPoints.get(locator).get(g));
             }
         }
     }
@@ -160,6 +161,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis + 86400000,
                         points.get(g2));
                 Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
+                Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
             }
         }
     }

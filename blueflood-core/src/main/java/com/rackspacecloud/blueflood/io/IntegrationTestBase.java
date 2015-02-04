@@ -29,11 +29,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.internal.util.reflection.Whitebox;
+import org.omg.CORBA.UNKNOWN;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 // todo: This was moved into a source repo becuase tests in core and cm-specific depend on it.
@@ -84,6 +84,7 @@ public class IntegrationTestBase {
 
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     private static final Random rand = new Random(System.currentTimeMillis());
+    protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
 
     protected final void assertNumberOfRows(String cf, int rows) throws Exception {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
@@ -168,14 +169,34 @@ public class IntegrationTestBase {
     }
 
     protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
-        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+        String unit = locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
+        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), unit);
     }
 
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
-        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+        String unit = locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.UNKNOWN.unit);
+        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), unit);
     }
 
     protected static <T> Metric makeMetric(final Locator locator, long timestamp, T value) {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    private enum UNIT_ENUM {
+        SECS("seconds"),
+        MSECS("milliseconds"),
+        BYTES("bytes"),
+        KILOBYTES("kilobytes"),
+        UNKNOWN("unknown");
+
+        private String unit;
+
+        private UNIT_ENUM(String unitValue) {
+            this.unit = unitValue;
+        }
+
+        private String getUnit() {
+            return unit;
+        }
     }
 }
