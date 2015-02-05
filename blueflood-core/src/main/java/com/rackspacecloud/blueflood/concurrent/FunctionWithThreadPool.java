@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.concurrent;
 
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -30,18 +28,18 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @param <I> function input type.
  * @param <O> function output type.
  */
-public abstract class AsyncFunctionWithThreadPool<I, O> implements AsyncFunction<I, O> {
+public abstract class FunctionWithThreadPool<I, O> {
     private final ThreadPoolExecutor executor;
     /** Wraps {@link #executor}.*/
     private final ListeningExecutorService listeningExecutor;
     private Logger log = LoggerFactory.getLogger(getClass());
-
-    public AsyncFunctionWithThreadPool(ThreadPoolExecutor executor) {
+    
+    public FunctionWithThreadPool(ThreadPoolExecutor executor) {
         this.executor = executor;
         this.listeningExecutor = MoreExecutors.listeningDecorator(executor);
     }
     
-    public AsyncFunctionWithThreadPool<I, O> withLogger(Logger log) {
+    public FunctionWithThreadPool<I, O> withLogger(Logger log) {
         this.log = log;
         return this;
     }
@@ -50,7 +48,7 @@ public abstract class AsyncFunctionWithThreadPool<I, O> implements AsyncFunction
     
     public Logger getLogger() { return log; }
 
-    public abstract ListenableFuture<O> apply(I input) throws Exception;
+    public abstract O apply(I input) throws Exception;
     
     public void setPoolSize(int size) {
         this.executor.setCorePoolSize(size);

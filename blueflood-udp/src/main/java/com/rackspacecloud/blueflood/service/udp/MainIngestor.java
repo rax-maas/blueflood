@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.service.udp;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -10,6 +10,7 @@ import com.rackspacecloud.blueflood.service.ShardStateServices;
 import com.rackspacecloud.blueflood.service.udp.functions.ContextUpdater;
 import com.rackspacecloud.blueflood.service.udp.functions.DeserializeAndReleaseFunc;
 import com.rackspacecloud.blueflood.service.udp.functions.SimpleMetricWriter;
+import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Util;
 import io.netty.channel.socket.DatagramPacket;
 import org.slf4j.Logger;
@@ -53,29 +54,41 @@ public class MainIngestor {
 
         // UdpListenerService is a fairly generic UDP listener. It does special things once you give it a processor.
         UdpListenerService udpListenerService = new UdpListenerService(listenAddress)
-                .withProcessor(buildProcessor(context));
+                .withProcessor(new MainMsgProcessor(context));
         udpListenerService.start();
     }
 
-    // build a SEDA chain that will process datagrams.
-    private static AsyncChain<DatagramPacket, ?> buildProcessor(ScheduleContext context) {
+    private static class MainMsgProcessor implements UdpListenerService.MsgProcessor {
+        // deserializes the UDP datagrams. since the serialization is at our discretion (and
+        // your's too), it just matters that you are able to end up with a collection of
+        // com.rackspacecloud.blueflood.types.Metric.
+        private DeserializeAndReleaseFunc dsrf;
 
-        // this will eventually take a UDP packet, deserialize it and put it to the database. Each w
-        AsyncChain<DatagramPacket, ?> processor =
+        // writes a single metrics to the database.
+        private SimpleMetricWriter smw;
 
-                // this stage deserializes the UDP datagrams. since the serialization is at our discretion (and
-                // your's too), it just matters that you are able to end up with a collection of
-                // com.rackspacecloud.blueflood.types.Metric.
-                AsyncChain.withFunction(new DeserializeAndReleaseFunc(new ThreadPoolBuilder().withName("Packet Deserializer").build()))
+        // updates the context, which eventually gets push to the database.
+        private ContextUpdater cu;
 
-                // this this stage writes a single metrics to the database.
-                .withFunction(new SimpleMetricWriter(new ThreadPoolBuilder().withName("Database Writer").build()))
+        private MainMsgProcessor(ScheduleContext context) {
+            dsrf = new DeserializeAndReleaseFunc(
+                new ThreadPoolBuilder().withName("Packet Deserializer").build());
+            smw = 
+                new SimpleMetricWriter(new ThreadPoolBuilder().withName("Database Writer").build()); 
+            
+            cu = new ContextUpdater(new ThreadPoolBuilder().
+                withName("Context Updater").build(), context);
+        }
 
-                // this stage updates the context, which eventually gets push to the database.
-                .withFunction(new ContextUpdater(new ThreadPoolBuilder().withName("Context Updater").build(), context))
-                .build();
-
-        return processor;
+        public void apply(DatagramPacket msg) {
+            try {
+                ListenableFuture<Collection<Metric>> fMetrics = dsrf.apply(msg);
+                ListenableFuture<Collection<Metric>> futures = smw.apply(fMetrics.get());
+                cu.apply(futures.get());
+            } catch (Exception e) {
+                log.error("Error on persisting msg", e);
+            }
+        }
     }
 
     // initialize the configuration and validate a few things.

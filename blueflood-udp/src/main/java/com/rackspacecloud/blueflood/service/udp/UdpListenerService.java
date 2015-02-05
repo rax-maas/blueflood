@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service.udp;
 
-import com.rackspacecloud.blueflood.concurrent.AsyncChain;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
@@ -16,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Nothing Blueflood-related happens in this class. It simple binds to a UDP port and forwards datagrams to the
- * AsyncChain that has been designated to handle them.
+ * msg processor that has been designated to handle them.
  */
 public class UdpListenerService extends SimpleChannelInboundHandler<DatagramPacket> {
     
@@ -25,14 +24,18 @@ public class UdpListenerService extends SimpleChannelInboundHandler<DatagramPack
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final SocketAddress addr;
     
-    private AsyncChain<DatagramPacket, ?> chain = null;
+    private MsgProcessor mp = null;
     
     public UdpListenerService(SocketAddress addr) {
         this.addr = addr;
     }
     
-    public UdpListenerService withProcessor(AsyncChain<DatagramPacket, ?> chain) {
-        this.chain = chain;
+    interface MsgProcessor {
+      void apply(DatagramPacket d);
+    }
+
+    public UdpListenerService withProcessor(MsgProcessor mp) {
+        this.mp = mp;
         return this;
     }
     
@@ -80,12 +83,11 @@ public class UdpListenerService extends SimpleChannelInboundHandler<DatagramPack
     
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
-        if (chain == null)
-            log.warn("No processor chain set to receive packets. Dropping.");
+        if (mp == null)
+            log.warn("No msg processor set to receive packets. Dropping.");
         else {
             msg.content().retain();
-            // technically, the chain returns a Future, but we don't really care about that.
-            chain.apply(msg);
+            mp.apply(msg);
         }
     }
 
