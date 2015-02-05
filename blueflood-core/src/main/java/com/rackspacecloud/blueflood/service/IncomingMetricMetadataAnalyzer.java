@@ -50,11 +50,9 @@ public class IncomingMetricMetadataAnalyzer {
             try {
                 if (metric instanceof Metric) {
                     DataType datatype = ((Metric) metric).getDataType();
-                    if (datatype.equals(DataType.STRING) || datatype.equals(DataType.BOOLEAN)) {
-                        Collection<IncomingMetricException> metricProblems = checkMetric((Metric) metric);
-                        if (metricProblems != null) {
-                            problems.addAll(metricProblems);
-                        }
+                    Collection<IncomingMetricException> metricProblems = checkMetric((Metric) metric);
+                    if (metricProblems != null) {
+                        problems.addAll(metricProblems);
                     }
                 }
             } catch (CacheException ex) {
@@ -95,11 +93,16 @@ public class IncomingMetricMetadataAnalyzer {
         }
 
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
+        IncomingMetricException typeProblem = null;
+        IncomingMetricException unitProblem = null;
 
-        IncomingMetricException typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
-                metric.getDataType().toString());
-        IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
-                metric.getUnit());
+        if (metric.getDataType() != DataType.NUMERIC) {
+            typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
+                    metric.getDataType().toString());
+
+            unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
+                    metric.getUnit());
+        }
 
         if (typeProblem != null) {
             problems.add(typeProblem);
