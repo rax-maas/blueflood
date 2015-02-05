@@ -326,8 +326,6 @@ public class AstyanaxReader extends AstyanaxIO {
 
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
         try {
-            //TODO: If we stop processing string metrics, we can get rid of this and always return numeric
-            //Questions: Do we care about pre-agg types
             Object type = metaCache.get(locator, dataTypeCacheKey);
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
 

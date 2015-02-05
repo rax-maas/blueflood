@@ -99,10 +99,6 @@ public class RollupRunnable implements Runnable {
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     singleRollupReadContext.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
-            if (rollupType == null) {
-                rollupType = RollupType.BF_BASIC;
-            }
-
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());

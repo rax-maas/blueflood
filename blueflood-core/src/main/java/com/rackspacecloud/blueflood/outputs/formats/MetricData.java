@@ -66,7 +66,7 @@ public class MetricData {
                 return NUMBER;
             }
 
-            if(rollupType == null) {
+            if (rollupType == null) {
                 rollupType = RollupType.BF_BASIC;
             }
 
