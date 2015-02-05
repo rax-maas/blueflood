@@ -17,18 +17,18 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.HttpQueryService;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.elasticsearch.client.Client;
 import org.junit.*;
 
 import java.net.URI;
@@ -40,11 +40,11 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
     private final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-    private static int queryPort = 20000;
-    private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
+    private static int queryPort;
+    private Map<Granularity, Integer> granToPoints = new HashMap<Granularity,Integer>();
     private HttpRollupsQueryHandler httpHandler;
     private ElasticIO elasticIO;
-    private EsSetup esSetup;
+    private static EsSetup esSetup;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
@@ -52,7 +52,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     @BeforeClass
     public static void setUpHttp() {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
-                "com.rackspacecloud.blueflood.outputs.handlers.HttpRollupHandlerWithESIntegrationTest.ElasticIOTest");
+                "com.rackspacecloud.blueflood.io.ElasticIO");
         Configuration.getInstance().setProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT.name(), "20001");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -66,6 +66,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public void setup() throws Exception {
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
@@ -82,9 +83,11 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
+        analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
         writer.insertFull(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
+        ((ElasticIO)QueryDiscoveryModuleLoader.getDiscoveryInstance()).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;
@@ -93,20 +96,12 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-        final Map<Granularity, Integer> answerForNumericMetric = new HashMap<Granularity, Integer>();
-        answerForNumericMetric.put(Granularity.FULL, 1440);
-        answerForNumericMetric.put(Granularity.MIN_5, 289);
-        answerForNumericMetric.put(Granularity.MIN_20, 73);
-        answerForNumericMetric.put(Granularity.MIN_60, 25);
-        answerForNumericMetric.put(Granularity.MIN_240, 7);
-        answerForNumericMetric.put(Granularity.MIN_1440, 2);
-
-        locatorToPoints.put(locator, answerForNumericMetric);
-    }
-
-    @After
-    public void tearDown() {
-        esSetup.terminate();
+        granToPoints.put(Granularity.FULL, 1440);
+        granToPoints.put(Granularity.MIN_5, 289);
+        granToPoints.put(Granularity.MIN_20, 73);
+        granToPoints.put(Granularity.MIN_60, 25);
+        granToPoints.put(Granularity.MIN_240, 7);
+        granToPoints.put(Granularity.MIN_1440, 2);
     }
 
     @Test
@@ -118,23 +113,37 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         points.put(Granularity.MIN_60, 23);
         points.put(Granularity.MIN_240, 5);
         points.put(Granularity.MIN_1440, 1);
-        for (Granularity g2 : Granularity.granularities()) {
+        for (Granularity gran : Granularity.granularities()) {
             MetricData data = httpHandler.GetDataByPoints(
                     locator.getTenantId(),
                     locator.getMetricName(),
                     baseMillis,
                     baseMillis + 86400000,
-                    points.get(g2));
-            Assert.assertEquals((int) locatorToPoints.get(locator).get(g2), data.getData().getPoints().size());
+                    points.get(gran));
+            Assert.assertEquals((int) granToPoints.get(gran), data.getData().getPoints().size());
             Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
         }
-        Assert.assertEquals(locatorToUnitMap.get(locator), elasticIO.search(locator.getTenantId(), locator.getMetricName()).get(0).getUnit());
-        /* TODO: Fix the test to check for simple http return status codes
+        Assert.assertFalse(MetadataCache.getInstance().containsKey(locator, MetricMetadata.UNIT.name()));
+    }
+
+    @Test
+    public void testUnknownUnit() throws Exception {
+        Locator loc = Locator.createLocatorFromPathComponents("unknown", "unit");
+        MetricData data = httpHandler.GetDataByPoints(
+                loc.getTenantId(),
+                loc.getMetricName(),
+                baseMillis,
+                baseMillis + 86400000,
+                1600);
+        Assert.assertEquals(data.getData().getPoints().size(), 0);
+        Assert.assertEquals(data.getUnit(), "unknown");
+    }
+
+    @Test
+    public void TestHttpHappyCase() throws Exception {
         HttpGet get = new HttpGet(getMetricsQueryURI());
         HttpResponse response = client.execute(get);
-        System.out.println(response.getEntity().getContent());
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        */
     }
 
     private URI getMetricsQueryURI() throws URISyntaxException {
@@ -146,18 +155,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         return builder.build();
     }
 
-    class ElasticIOTest extends ElasticIO {
-        Client esClient;
-        public ElasticIOTest() {
-            super();
-            EsSetup esSetup = new EsSetup();
-            //esSetup.execute(EsSetup.deleteAll());
-            esSetup.execute(EsSetup.createIndex(com.rackspacecloud.blueflood.io.ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-            esClient = esSetup.client();
-            setClient(esClient);
-        }
-        public Client getESClient() {
-            return esClient;
-        }
+    @After
+    public void tearDown() {
+        esSetup.terminate();
     }
 }

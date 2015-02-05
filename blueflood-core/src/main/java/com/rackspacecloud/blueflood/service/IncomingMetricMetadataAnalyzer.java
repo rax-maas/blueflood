@@ -98,14 +98,16 @@ public class IncomingMetricMetadataAnalyzer {
 
         IncomingMetricException typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
                 metric.getDataType().toString());
-        IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
-                metric.getUnit());
+        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS)) {
+            IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
+                    metric.getUnit());
+            if (unitProblem != null) {
+                problems.add(unitProblem);
+            }
+        }
 
         if (typeProblem != null) {
             problems.add(typeProblem);
-        }
-        if (unitProblem != null) {
-            problems.add(unitProblem);
         }
 
         return problems;
