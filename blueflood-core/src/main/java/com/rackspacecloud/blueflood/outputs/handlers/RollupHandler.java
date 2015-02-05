@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -29,6 +28,7 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class RollupHandler {
@@ -70,19 +71,19 @@ public class RollupHandler {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
 
         if (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS)) {
-             unitFuture = MoreExecutors.sameThreadExecutor().submit(new Callable() {
+             unitFuture = Executors.newFixedThreadPool(1).submit(new Callable() {
 
-                @Override
-                public Object call() throws Exception {
-                    DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
-                    if (discoveryIO == null) {
-                        log.warn("USE_ES_FOR_UNITS has been set to true, but no discovery module found." +
-                                " Please check your config");
-                        return null;
-                    }
-                    return discoveryIO.search(tenantId, metricName).get(0).getUnit();
-                }
-            });
+                 @Override
+                 public Object call() throws Exception {
+                     DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
+                     if (discoveryIO == null) {
+                         log.warn("USE_ES_FOR_UNITS has been set to true, but no discovery module found." +
+                                 " Please check your config");
+                         return null;
+                     }
+                     return discoveryIO.search(tenantId, metricName).get(0).getUnit();
+                 }
+             });
         }
         final MetricData metricData = AstyanaxReader.getInstance().getDatapointsForRange(
                 locator,
@@ -96,7 +97,7 @@ public class RollupHandler {
                 log.warn("Exception encountered while getting unit from ES, unit will be set to unknown in query results");
                 log.debug(e.getMessage(), e);
             }
-            metricData.setUnit(unit == null ? "unknown" : unit);
+            metricData.setUnit(unit == null ? Util.UNKNOWN : unit);
         }
 
         boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString())

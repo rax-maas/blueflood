@@ -42,6 +42,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,6 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final String dataTypeCacheKey = MetricMetadata.TYPE.toString().toLowerCase();
 
     private static final Keyspace keyspace = getKeyspace();
-    private static final String UNKNOWN = "unknown";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -310,7 +310,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 log.warn("Cache exception reading unitString from MetadataCache: ", ex);
             }
             if (unitString == null) {
-                unitString = UNKNOWN;
+                unitString = Util.UNKNOWN;
             }
         }
 
@@ -325,7 +325,7 @@ public class AstyanaxReader extends AstyanaxIO {
             log.warn("Cache exception reading type from MetadataCache. ", ex);
         }
         if (type == null) {
-            type = UNKNOWN;
+            type = Util.UNKNOWN;
         }
         return type;
     }

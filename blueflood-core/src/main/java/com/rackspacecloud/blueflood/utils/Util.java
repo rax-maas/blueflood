@@ -78,4 +78,8 @@ public class Util {
         else
             return numerator / denominator;
     }
+
+    public static String ElasticIOPath = "com.rackspacecloud.blueflood.io.ElasticIO".intern();
+
+    public static String UNKNOWN = "unknown".intern();
 }

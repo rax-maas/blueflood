@@ -27,6 +27,7 @@ import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,18 +99,18 @@ public class IncomingMetricMetadataAnalyzer {
 
         IncomingMetricException typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
                 metric.getDataType().toString());
-        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS)) {
+        if (typeProblem != null) {
+            problems.add(typeProblem);
+        }
+        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) || !Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath)) {
+            if (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) && !Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath))
+                log.warn("USE_ES_FOR_UNITS config found but ES discovery module not found in the config, will use the metadata cache for units");
             IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
                     metric.getUnit());
             if (unitProblem != null) {
                 problems.add(unitProblem);
             }
         }
-
-        if (typeProblem != null) {
-            problems.add(typeProblem);
-        }
-
         return problems;
     }
 }
