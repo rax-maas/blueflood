@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.ArrayList;

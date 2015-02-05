@@ -17,8 +17,13 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 
+import java.util.List;
 import java.util.concurrent.*;
 
 public class RollupEventEmitter extends Emitter<RollupEvent> {
@@ -26,6 +31,7 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
     public static final String ROLLUP_EVENT_NAME = "rollup".intern();
     private static ThreadPoolExecutor eventExecutors;
     private static final RollupEventEmitter instance = new RollupEventEmitter();
+    private static final DiscoveryIO discoveryHandler = ModuleLoader.getInstance().loadElasticIOModule();
 
     private RollupEventEmitter() {
         eventExecutors = new ThreadPoolBuilder()
@@ -40,6 +46,12 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
 
     @Override
     public Future emit(final String event, final RollupEvent... eventPayload) {
+        if (this.hasListeners(event)) {
+            for (RollupEvent rollupEvent : eventPayload) {
+                rollupEvent.setUnit(getUnits(rollupEvent.getLocator()));
+            }
+        }
+
         //TODO: This hack will go away after Kafka Serializer is made generic
         if(eventPayload[0].getRollup() instanceof BasicRollup) {
             return eventExecutors.submit(new Runnable() {
@@ -50,5 +62,15 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
             });
         }
         return null;
+    }
+
+    private String getUnits(Locator locator) {
+        List<SearchResult> results;
+        try {
+            results = discoveryHandler.search(locator.getTenantId(), locator.getMetricName());
+        } catch (Exception e) {
+            return "UNKNOWN";
+        }
+        return results.get(0).getUnit();
     }
 }

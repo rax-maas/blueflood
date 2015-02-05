@@ -43,8 +43,8 @@ public class BatchedMetricsJSONOutputSerializerTest {
 
         final Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
         for (int i = 0; i < 2; i++) {
-            final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
-                    MetricData.Type.NUMBER);
+            final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(),
+                    MetricData.Type.NUMBER,Locator.createLocatorFromDbKey("metricTesting"+i));
 
             metrics.put(Locator.createLocatorFromPathComponents(tenantId, String.valueOf(i)), metricData);
         }
@@ -59,7 +59,7 @@ public class BatchedMetricsJSONOutputSerializerTest {
 
         while (metricsObjects.hasNext()) {
             JSONObject singleMetricObject = metricsObjects.next();
-            Assert.assertTrue(singleMetricObject.get("unit").equals("unknown"));
+            Assert.assertTrue(singleMetricObject.get("unit").equals("UNKNOWN"));
             Assert.assertTrue(singleMetricObject.get("type").equals("number"));
             JSONArray data = (JSONArray) singleMetricObject.get("data");
             Assert.assertTrue(data != null);
