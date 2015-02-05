@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
@@ -58,7 +57,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
     private HttpRollupsQueryHandler httpHandler;
     private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
-    private final Map<Locator, String> locatorToUnit = new HashMap<Locator, String>();
 
     @BeforeClass
     public static void setUpHttp() {
@@ -86,7 +84,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
             analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
             writer.insertFull(metrics);
-
         }
 
         httpHandler = new HttpRollupsQueryHandler();
@@ -221,28 +218,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-    }
-
-    private void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
-        if (destGranularity == Granularity.FULL) {
-            throw new Exception("Can't roll up to FULL");
-        }
-
-        ColumnFamily<Locator, Long> destCF;
-        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
-                    CassandraModel.CF_METRICS_FULL);
-            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
-
-            destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
-            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
-        }
-
-        AstyanaxWriter.getInstance().insertRollups(writeContexts);
     }
 
     private URI getMetricsQueryURI() throws URISyntaxException {

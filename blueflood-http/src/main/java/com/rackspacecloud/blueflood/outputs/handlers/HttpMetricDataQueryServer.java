@@ -64,9 +64,9 @@ public class HttpMetricDataQueryServer {
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
+                    new NioServerSocketChannelFactory(
+                            Executors.newFixedThreadPool(acceptThreads),
+                            Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }

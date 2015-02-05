@@ -22,8 +22,9 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
 import org.junit.Assert;
@@ -168,13 +169,13 @@ public class IntegrationTestBase {
     }
 
     protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
-        String unit = locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
-        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), unit);
+        locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
+        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
-        String unit = locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.UNKNOWN.unit);
-        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), unit);
+        locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.UNKNOWN.unit);
+        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
     protected static <T> Metric makeMetric(final Locator locator, long timestamp, T value) {
@@ -197,5 +198,27 @@ public class IntegrationTestBase {
         private String getUnit() {
             return unit;
         }
+    }
+
+    protected void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
+        if (destGranularity == Granularity.FULL) {
+            throw new Exception("Can't roll up to FULL");
+        }
+
+        ColumnFamily<Locator, Long> destCF;
+        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
+        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
+            destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
+            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
+                    CassandraModel.CF_METRICS_FULL);
+            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
+
+            destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
+            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
+        }
+
+        AstyanaxWriter.getInstance().insertRollups(writeContexts);
     }
 }
