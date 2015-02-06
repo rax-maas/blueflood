@@ -53,7 +53,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public static void setUpHttp() {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
                 "com.rackspacecloud.blueflood.io.ElasticIO");
-        Configuration.getInstance().setProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT.name(), "20001");
+        // Configuration.getInstance().setProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT.name(), "20001");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         httpQueryService = new HttpQueryService();

@@ -38,8 +38,6 @@ import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -303,7 +301,7 @@ public class AstyanaxReader extends AstyanaxIO {
     public static String getUnitString(Locator locator) {
         String unitString = null;
         // Only grab units from cassandra, if we have to
-        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS)) {
+        if (!Util.shouldUseESForUnits()) {
             try {
                 unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
             } catch (CacheException ex) {

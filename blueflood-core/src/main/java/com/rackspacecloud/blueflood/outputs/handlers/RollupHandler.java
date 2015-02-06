@@ -70,7 +70,7 @@ public class RollupHandler {
         String unit = null;
         final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
 
-        if (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS)) {
+        if (Util.shouldUseESForUnits()) {
              unitFuture = Executors.newFixedThreadPool(1).submit(new Callable() {
 
                  @Override

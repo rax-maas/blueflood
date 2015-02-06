@@ -39,6 +39,7 @@ public class IncomingMetricMetadataAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(IncomingMetricMetadataAnalyzer.class);
     private static Timer scanMetricsTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Scan meta for metrics");
     private static Timer checkMetaTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Check meta");
+    private static Configuration config = Configuration.getInstance();
 
     private final MetadataCache cache;
     
@@ -102,8 +103,8 @@ public class IncomingMetricMetadataAnalyzer {
         if (typeProblem != null) {
             problems.add(typeProblem);
         }
-        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) || !Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath)) {
-            if (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) && !Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath))
+        if (!config.getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) || !config.getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath)) {
+            if (config.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) && !config.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath))
                 log.warn("USE_ES_FOR_UNITS config found but ES discovery module not found in the config, will use the metadata cache for units");
             IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
                     metric.getUnit());

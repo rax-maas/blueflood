@@ -258,5 +258,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @AfterClass
     public static void shutdown() {
         vendor.shutdown();
+        httpQueryService.stopService();
     }
 }

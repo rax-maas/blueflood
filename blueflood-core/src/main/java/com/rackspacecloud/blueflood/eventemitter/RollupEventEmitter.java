@@ -20,8 +20,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -52,11 +50,12 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
     @Override
     public Future emit(final String event, final RollupEvent... eventPayload) {
         //TODO: This hack will go away after Kafka Serializer is made generic
+        Future emitFuture = null;
         if(eventPayload[0].getRollup() instanceof BasicRollup && super.hasListeners(ROLLUP_EVENT_NAME)) {
-            return eventExecutors.submit(new Runnable() {
+            emitFuture = eventExecutors.submit(new Callable() {
                 @Override
-                public void run() {
-                    if (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) && Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath)) {
+                public Future call() {
+                    if (Util.shouldUseESForUnits()) {
                         QueryDiscoveryModuleLoader.loadDiscoveryModule();
                         final DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
                         // TODO: Sync for now, but we will have to make it async eventually
@@ -64,7 +63,6 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
                             @Override
                             public RollupEvent apply(RollupEvent event) {
                                 String unit;
-
                                 try {
                                     unit = discoveryIO.search(event.getLocator().getTenantId(), event.getLocator().getMetricName()).get(0).getUnit();
                                 } catch (Exception e) {
@@ -76,10 +74,10 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
                             }
                         });
                     }
-                    RollupEventEmitter.super.emit(event, eventPayload);
+                    return RollupEventEmitter.super.emit(event, eventPayload);
                 }
             });
         }
-        return null;
+        return emitFuture;
     }
 }

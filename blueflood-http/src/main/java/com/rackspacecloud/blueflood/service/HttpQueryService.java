@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 
 import java.io.IOException;
@@ -28,4 +29,7 @@ public class HttpQueryService implements QueryService {
     public void startService() {
         server = new HttpMetricDataQueryServer();
     }
+
+    @VisibleForTesting
+    public void stopService() { server.stopServer();}
 }
