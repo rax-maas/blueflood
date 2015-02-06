@@ -78,7 +78,6 @@ public class RollupRunnable implements Runnable {
             return; // no work to be done.
         }
 
-
         if (log.isDebugEnabled()) {
             log.trace("Executing rollup from {} for {} {}", new Object[] {
                     srcGran.shortName(),
@@ -98,7 +97,6 @@ public class RollupRunnable implements Runnable {
             Rollup rollup = null;
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     singleRollupReadContext.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());

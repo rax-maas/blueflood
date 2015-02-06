@@ -36,7 +36,7 @@ public class IncomingMetricMetadataAnalyzerTest {
         Assert.assertEquals(null, type);
 
         String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
-        Assert.assertEquals(null, unit);
+        Assert.assertEquals("somethings", unit);
     }
 
     @Test

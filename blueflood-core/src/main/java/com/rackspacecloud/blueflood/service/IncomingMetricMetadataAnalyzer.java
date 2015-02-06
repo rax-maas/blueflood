@@ -49,7 +49,6 @@ public class IncomingMetricMetadataAnalyzer {
         for (IMetric metric : metrics) {
             try {
                 if (metric instanceof Metric) {
-                    DataType datatype = ((Metric) metric).getDataType();
                     Collection<IncomingMetricException> metricProblems = checkMetric((Metric) metric);
                     if (metricProblems != null) {
                         problems.addAll(metricProblems);
@@ -99,10 +98,10 @@ public class IncomingMetricMetadataAnalyzer {
         if (metric.getDataType() != DataType.NUMERIC) {
             typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
                     metric.getDataType().toString());
-
-            unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
-                    metric.getUnit());
         }
+
+        unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
+                metric.getUnit());
 
         if (typeProblem != null) {
             problems.add(typeProblem);
