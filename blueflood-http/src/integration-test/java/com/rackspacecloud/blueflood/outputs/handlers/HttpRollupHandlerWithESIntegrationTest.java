@@ -43,7 +43,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     private static int queryPort;
     private Map<Granularity, Integer> granToPoints = new HashMap<Granularity,Integer>();
     private HttpRollupsQueryHandler httpHandler;
-    private ElasticIO elasticIO;
+    private static ElasticIO elasticIO;
     private static EsSetup esSetup;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
@@ -53,13 +53,17 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public static void setUpHttp() {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
                 "com.rackspacecloud.blueflood.io.ElasticIO");
-        // Configuration.getInstance().setProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT.name(), "20001");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         httpQueryService = new HttpQueryService();
         httpQueryService.startService();
         vendor = new HttpClientVendor();
         client = vendor.getClient();
+
+        esSetup = new EsSetup();
+        esSetup.execute(EsSetup.deleteAll());
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        elasticIO = new ElasticIO(esSetup.client());
     }
 
     @Before
@@ -67,11 +71,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
-
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        elasticIO = new ElasticIO(esSetup.client());
 
         final List<Metric> metrics = new ArrayList<Metric>();
         for (int i = 0; i < 1440; i++) {
@@ -155,8 +154,9 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         return builder.build();
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void tearDown() throws Exception{
         esSetup.terminate();
+        httpQueryService.stopService();
     }
 }

@@ -29,6 +29,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.channel.ServerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private final String httpQueryHost;
-    private org.jboss.netty.channel.ServerChannel serverChannel;
+    private ServerChannel serverChannel;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -70,7 +71,7 @@ public class HttpMetricDataQueryServer {
                             Executors.newFixedThreadPool(acceptThreads),
                             Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        serverChannel = (org.jboss.netty.channel.ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
+        serverChannel =  (ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
