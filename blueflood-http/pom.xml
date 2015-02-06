@@ -132,6 +132,12 @@
     </dependency>
 
     <dependency>
+      <artifactId>blueflood-elasticsearch</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>4.0.8.Final</version>
@@ -180,6 +186,14 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <version>1.8.4</version>
+      <scope>test</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.tlrx</groupId>
+      <artifactId>elasticsearch-test</artifactId>
+      <version>1.1.0</version>
       <scope>test</scope>
       <optional>true</optional>
     </dependency>

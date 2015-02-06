@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
@@ -57,7 +56,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private static DefaultHttpClient client;
 
     private HttpRollupsQueryHandler httpHandler;
-    private final Map<Locator, Map<Granularity, Integer>> answers = new HashMap<Locator, Map<Granularity,Integer>>();
+    private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
 
     @BeforeClass
     public static void setUpHttp() {
@@ -85,7 +84,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
             analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
             writer.insertFull(metrics);
-
         }
 
         httpHandler = new HttpRollupsQueryHandler();
@@ -115,8 +113,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         answerForStringMetric.put(Granularity.MIN_240, 1440);
         answerForStringMetric.put(Granularity.MIN_1440, 1440);
 
-        answers.put(locators[0], answerForNumericMetric);
-        answers.put(locators[1], answerForStringMetric);
+        locatorToPoints.put(locators[0], answerForNumericMetric);
+        locatorToPoints.put(locators[1], answerForStringMetric);
     }
 
     @Test
@@ -136,7 +134,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         points.put(Granularity.MIN_240, 5);
         points.put(Granularity.MIN_1440, 1);
 
-        testHTTPRollupHandlerGetByPoints(answers, points, baseMillis, baseMillis + 86400000);
+        testHTTPRollupHandlerGetByPoints(locatorToPoints, points, baseMillis, baseMillis + 86400000);
     }
 
     private void testGetRollupByResolution() throws Exception {
@@ -144,7 +142,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
             for (Resolution resolution : Resolution.values()) {
                 Granularity g = Granularity.granularities()[resolution.getValue()];
                 testHTTPHandlersGetByResolution(locator, resolution, baseMillis, baseMillis + 86400000,
-                        answers.get(locator).get(g));
+                        locatorToPoints.get(locator).get(g));
             }
         }
     }
@@ -160,6 +158,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
                         baseMillis + 86400000,
                         points.get(g2));
                 Assert.assertEquals((int) answers.get(locator).get(g2), data.getData().getPoints().size());
+                Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
             }
         }
     }
@@ -221,28 +220,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
-    private void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
-        if (destGranularity == Granularity.FULL) {
-            throw new Exception("Can't roll up to FULL");
-        }
-
-        ColumnFamily<Locator, Long> destCF;
-        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
-                    CassandraModel.CF_METRICS_FULL);
-            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
-
-            destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
-            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
-            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
-        }
-
-        AstyanaxWriter.getInstance().insertRollups(writeContexts);
-    }
-
     private URI getMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
@@ -281,5 +258,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @AfterClass
     public static void shutdown() {
         vendor.shutdown();
+        httpQueryService.stopService();
     }
 }

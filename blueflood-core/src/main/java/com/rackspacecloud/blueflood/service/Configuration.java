@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import java.io.IOException;
@@ -112,5 +113,10 @@ public class Configuration {
         List<String> list = Lists.newArrayList(getStringProperty(name).split("\\s*,\\s*"));
         list.removeAll(Arrays.asList("", null));
         return list;
+    }
+
+    @VisibleForTesting
+    public void setProperty(String name, String val) {
+      props.setProperty(name, val);
     }
 }

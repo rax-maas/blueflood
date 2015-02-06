@@ -16,12 +16,21 @@
 
 package com.rackspacecloud.blueflood.eventemitter;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.BasicRollup;
+import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.*;
 
 public class RollupEventEmitter extends Emitter<RollupEvent> {
+    private static final Logger log = LoggerFactory.getLogger(QueryDiscoveryModuleLoader.class);
     private static final int numberOfWorkers = 5;
     public static final String ROLLUP_EVENT_NAME = "rollup".intern();
     private static ThreadPoolExecutor eventExecutors;
@@ -41,14 +50,34 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
     @Override
     public Future emit(final String event, final RollupEvent... eventPayload) {
         //TODO: This hack will go away after Kafka Serializer is made generic
-        if(eventPayload[0].getRollup() instanceof BasicRollup) {
-            return eventExecutors.submit(new Runnable() {
+        Future emitFuture = null;
+        if(eventPayload[0].getRollup() instanceof BasicRollup && super.hasListeners(ROLLUP_EVENT_NAME)) {
+            emitFuture = eventExecutors.submit(new Callable() {
                 @Override
-                public void run() {
-                    RollupEventEmitter.super.emit(event, eventPayload);
+                public Future call() {
+                    if (Util.shouldUseESForUnits()) {
+                        QueryDiscoveryModuleLoader.loadDiscoveryModule();
+                        final DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
+                        // TODO: Sync for now, but we will have to make it async eventually
+                        Lists.transform(Arrays.asList(eventPayload), new Function<RollupEvent, RollupEvent>() {
+                            @Override
+                            public RollupEvent apply(RollupEvent event) {
+                                String unit;
+                                try {
+                                    unit = discoveryIO.search(event.getLocator().getTenantId(), event.getLocator().getMetricName()).get(0).getUnit();
+                                } catch (Exception e) {
+                                    log.warn("Exception encountered while getting units out of ES : %s", e.getMessage());
+                                    unit = Util.UNKNOWN;
+                                }
+                                event.setUnit(unit);
+                                return event;
+                            }
+                        });
+                    }
+                    return RollupEventEmitter.super.emit(event, eventPayload);
                 }
             });
         }
-        return null;
+        return emitFuture;
     }
 }

@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
@@ -28,11 +29,13 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.channel.ServerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -40,6 +43,7 @@ public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private final String httpQueryHost;
+    private ServerChannel serverChannel;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -63,11 +67,11 @@ public class HttpMetricDataQueryServer {
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
+                    new NioServerSocketChannelFactory(
+                            Executors.newFixedThreadPool(acceptThreads),
+                            Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
+        serverChannel =  (ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
@@ -86,6 +90,15 @@ public class HttpMetricDataQueryServer {
             pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
 
             return pipeline;
+        }
+    }
+
+    @VisibleForTesting
+    public void stopServer() {
+        try {
+            serverChannel.close().await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Pass
         }
     }
 }
