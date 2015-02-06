@@ -93,14 +93,13 @@ public class IncomingMetricMetadataAnalyzer {
 
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
         IncomingMetricException typeProblem = null;
-        IncomingMetricException unitProblem = null;
 
         if (metric.getDataType() != DataType.NUMERIC) {
             typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
                     metric.getDataType().toString());
         }
 
-        unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
+        IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
                 metric.getUnit());
 
         if (typeProblem != null) {
