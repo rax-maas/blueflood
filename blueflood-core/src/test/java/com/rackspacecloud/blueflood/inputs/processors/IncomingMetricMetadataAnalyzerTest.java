@@ -21,7 +21,7 @@ public class IncomingMetricMetadataAnalyzerTest {
     }
 
     @Test
-    public void test_ScanMetrics_DoesNotStoreTypeAndUnit_ForNumericMetrics() throws Exception {
+    public void test_ScanMetrics_DoesNotStoreType_ButStoresUnit_ForNumericMetrics() throws Exception {
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         cache.setIO(this.metadataIO);
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
