@@ -155,7 +155,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     }
 
     @AfterClass
-    public static void tearDown() throws Exception{
+    public static void tearDownClass() throws Exception{
         esSetup.terminate();
         httpQueryService.stopService();
     }

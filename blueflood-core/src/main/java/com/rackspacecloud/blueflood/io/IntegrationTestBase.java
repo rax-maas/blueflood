@@ -123,8 +123,8 @@ public class IntegrationTestBase {
         }
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         // meh
     }
 
