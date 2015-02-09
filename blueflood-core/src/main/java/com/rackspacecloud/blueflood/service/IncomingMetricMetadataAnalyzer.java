@@ -17,15 +17,13 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
 import com.rackspacecloud.blueflood.exceptions.IncomingTypeException;
 import com.rackspacecloud.blueflood.exceptions.IncomingUnitException;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
@@ -56,7 +54,7 @@ public class IncomingMetricMetadataAnalyzer {
         for (IMetric metric : metrics) {
             try {
                 if (metric instanceof Metric) {
-                    Collection<IncomingMetricException> metricProblems = checkMetric((Metric)metric);
+                    Collection<IncomingMetricException> metricProblems = checkMetric((Metric) metric);
                     if (metricProblems != null) {
                         problems.addAll(metricProblems);
                     }
@@ -99,15 +97,21 @@ public class IncomingMetricMetadataAnalyzer {
         }
 
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
+        IncomingMetricException typeProblem = null;
 
-        IncomingMetricException typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
-                metric.getDataType().toString());
+        if (metric.getDataType() != DataType.NUMERIC) {
+            typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
+                    metric.getDataType().toString());
+        }
+
         if (typeProblem != null) {
             problems.add(typeProblem);
         }
+
         if (!USE_ES_FOR_UNITS || !ES_MODULE_FOUND) {
-            if (USE_ES_FOR_UNITS && !ES_MODULE_FOUND)
+            if (USE_ES_FOR_UNITS && !ES_MODULE_FOUND) {
                 log.warn("USE_ES_FOR_UNITS config found but ES discovery module not found in the config, will use the metadata cache for units");
+            }
             IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
                     metric.getUnit());
             if (unitProblem != null) {
@@ -115,5 +119,15 @@ public class IncomingMetricMetadataAnalyzer {
             }
         }
         return problems;
+    }
+
+    @VisibleForTesting
+    public static void setEsForUnits(boolean setEsForUnits) {
+        USE_ES_FOR_UNITS = setEsForUnits;
+    }
+
+    @VisibleForTesting
+    public static void setEsModuleFoundForUnits(boolean setEsModuleFound) {
+        ES_MODULE_FOUND = setEsModuleFound;
     }
 }

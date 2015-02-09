@@ -20,9 +20,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +65,9 @@ public class RollupTypeCacher extends FunctionWithThreadPool<MetricsCollection, 
     private void record(MetricsCollection input) {
         for (IMetric metric : input.toMetrics()) {
             try {
-                cache.put(metric.getLocator(), cacheKey, metric.getRollupType().toString());
+                if (metric instanceof PreaggregatedMetric) {
+                    cache.put(metric.getLocator(), cacheKey, metric.getRollupType().toString());
+                }
             } catch (Exception ex) {
                 log.warn("Exception updating cache with rollup type ", ex);
             }

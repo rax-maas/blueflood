@@ -16,6 +16,9 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.netflix.astyanax.serializers.BooleanSerializer;
+import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -75,11 +78,11 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("int_metric", 45);
-        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.INT.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.NUMERIC.toString());
         locatorList.add(metric.getLocator());
 
         metric = writeMetric("long_metric", 67L);
-        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.LONG.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.NUMERIC.toString());
         locatorList.add(metric.getLocator());
 
         // Test batch reads
@@ -93,5 +96,68 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
             MetricData metrics = results.get(locator);
             Assert.assertEquals(1, metrics.getData().getPoints().size());
         }
+    }
+
+    @Test
+    public void testCanRetrieveNumericMetricsEvenIfNoMetaDataStored() throws Exception {
+        // Write metrics and also persist their types.
+        List<Locator> locatorList = new ArrayList<Locator>();
+        Metric metric = writeMetric("string_metric", "version 1.0.43342346");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
+        locatorList.add(metric.getLocator());
+
+        metric = writeMetric("int_metric", 45);
+        locatorList.add(metric.getLocator());
+
+        metric = writeMetric("long_metric", 67L);
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(locatorList.size(), results.size());
+
+        for (Locator locator : locatorList) {
+            MetricData metrics = results.get(locator);
+            Assert.assertEquals(1, metrics.getData().getPoints().size());
+        }
+    }
+
+    @Test
+    public void test_StringMetrics_WithoutMetadata_NotRetrieved() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        Metric metric = writeMetric("string_metric_1", "version 1.0.43342346");
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(0, results.size());
+    }
+
+    @Test
+    public void testNullRollupType_DoesNotReturn_StringOrBooleanSerializers() {
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+
+        AbstractSerializer serializer = reader.serializerFor(null, DataType.INT, Granularity.MIN_5);
+
+        Assert.assertTrue(serializer != null);
+        Assert.assertFalse(serializer instanceof StringSerializer);
+        Assert.assertFalse(serializer instanceof BooleanSerializer);
+    }
+
+    @Test
+    public void testNullDataType_DoesNotReturn_StringOrBooleanSerializers() {
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+
+        AbstractSerializer serializer = reader.serializerFor(null, null, Granularity.MIN_5);
+
+        Assert.assertTrue(serializer != null);
+        Assert.assertFalse(serializer instanceof StringSerializer);
+        Assert.assertFalse(serializer instanceof BooleanSerializer);
     }
 }

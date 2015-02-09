@@ -23,6 +23,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 
 public class IMetricSerializerTest {
@@ -109,5 +110,11 @@ public class IMetricSerializerTest {
         String reserialized = mapper.writeValueAsString(deserialized);
         Assert.assertEquals(metric, deserialized);
         Assert.assertEquals(serialized, reserialized);
+    }
+
+    @Test
+    public void testBigIntMetricConvertsIntoDouble() {
+        Metric metric = new Metric(goneIn, BigInteger.valueOf(12345l), 122345l,sixtySeconds,"bigguys");
+        Assert.assertTrue(metric.getMetricValue() instanceof Double);
     }
 }
