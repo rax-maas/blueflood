@@ -63,10 +63,10 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
+        EventModuleLoader.loadEventModule();
         router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler(EventModuleLoader.getInstance()));
 
         QueryDiscoveryModuleLoader.loadDiscoveryModule();
-        EventModuleLoader.loadEventModule();
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
