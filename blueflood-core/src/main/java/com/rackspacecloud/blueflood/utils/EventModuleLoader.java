@@ -19,7 +19,7 @@ public class EventModuleLoader {
     public static synchronized void loadEventModule() {
         List<String> modules = Configuration.getInstance().getListProperty(CoreConfig.EVENTS_MODULES);
 
-        if (modules.isEmpty())
+        if (modules.isEmpty() || instance != null)
             return;
 
         ClassLoader classLoader = GenericElasticSearchIO.class.getClassLoader();
