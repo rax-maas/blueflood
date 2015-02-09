@@ -22,18 +22,19 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 // todo: This was moved into a source repo becuase tests in core and cm-specific depend on it.
@@ -84,6 +85,7 @@ public class IntegrationTestBase {
 
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     private static final Random rand = new Random(System.currentTimeMillis());
+    protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
 
     protected final void assertNumberOfRows(String cf, int rows) throws Exception {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
@@ -168,14 +170,56 @@ public class IntegrationTestBase {
     }
 
     protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
-        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+        locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
+        return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
-        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+        locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.UNKNOWN.unit);
+        return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
     protected static <T> Metric makeMetric(final Locator locator, long timestamp, T value) {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    private enum UNIT_ENUM {
+        SECS("seconds"),
+        MSECS("milliseconds"),
+        BYTES("bytes"),
+        KILOBYTES("kilobytes"),
+        UNKNOWN("unknown");
+
+        private String unit;
+
+        private UNIT_ENUM(String unitValue) {
+            this.unit = unitValue;
+        }
+
+        private String getUnit() {
+            return unit;
+        }
+    }
+
+    protected void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
+        if (destGranularity == Granularity.FULL) {
+            throw new Exception("Can't roll up to FULL");
+        }
+
+        ColumnFamily<Locator, Long> destCF;
+        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
+        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
+            destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
+            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
+                    CassandraModel.CF_METRICS_FULL);
+            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
+            writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
+
+            destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
+            HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
+            writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
+        }
+
+        AstyanaxWriter.getInstance().insertRollups(writeContexts);
     }
 }

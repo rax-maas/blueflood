@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.exceptions.IncomingTypeException;
 import com.rackspacecloud.blueflood.exceptions.IncomingUnitException;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,9 @@ public class IncomingMetricMetadataAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(IncomingMetricMetadataAnalyzer.class);
     private static Timer scanMetricsTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Scan meta for metrics");
     private static Timer checkMetaTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Check meta");
+    private static Configuration config = Configuration.getInstance();
+    private static boolean USE_ES_FOR_UNITS = config.getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS);
+    private static boolean ES_MODULE_FOUND = config.getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath);
 
     private final MetadataCache cache;
     
@@ -99,16 +103,20 @@ public class IncomingMetricMetadataAnalyzer {
                     metric.getDataType().toString());
         }
 
-        IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
-                metric.getUnit());
-
         if (typeProblem != null) {
             problems.add(typeProblem);
         }
-        if (unitProblem != null) {
-            problems.add(unitProblem);
-        }
 
+        if (!USE_ES_FOR_UNITS || !ES_MODULE_FOUND) {
+            if (USE_ES_FOR_UNITS && !ES_MODULE_FOUND) {
+                log.warn("USE_ES_FOR_UNITS config found but ES discovery module not found in the config, will use the metadata cache for units");
+            }
+            IncomingMetricException unitProblem = checkMeta(metric.getLocator(), MetricMetadata.UNIT.name().toLowerCase(),
+                    metric.getUnit());
+            if (unitProblem != null) {
+                problems.add(unitProblem);
+            }
+        }
         return problems;
     }
 }

@@ -40,6 +40,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,6 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final String dataTypeCacheKey = MetricMetadata.TYPE.toString().toLowerCase();
 
     private static final Keyspace keyspace = getKeyspace();
-    private static final String UNKNOWN = "unknown";
 
     public static AstyanaxReader getInstance() {
         return INSTANCE;
@@ -300,14 +300,18 @@ public class AstyanaxReader extends AstyanaxIO {
 
     public static String getUnitString(Locator locator) {
         String unitString = null;
-        try {
-            unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-        } catch (CacheException ex) {
-            log.warn("Cache exception reading unitString from MetadataCache: ", ex);
+        // Only grab units from cassandra, if we have to
+        if (!Util.shouldUseESForUnits()) {
+            try {
+                unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
+            } catch (CacheException ex) {
+                log.warn("Cache exception reading unitString from MetadataCache: ", ex);
+            }
+            if (unitString == null) {
+                unitString = Util.UNKNOWN;
+            }
         }
-        if (unitString == null) {
-            unitString = UNKNOWN;
-        }
+
         return unitString;
     }
 
@@ -319,7 +323,7 @@ public class AstyanaxReader extends AstyanaxIO {
             log.warn("Cache exception reading type from MetadataCache. ", ex);
         }
         if (type == null) {
-            type = UNKNOWN;
+            type = Util.UNKNOWN;
         }
         return type;
     }
