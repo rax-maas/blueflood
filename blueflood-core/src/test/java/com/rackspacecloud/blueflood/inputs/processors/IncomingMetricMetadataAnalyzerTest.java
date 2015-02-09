@@ -3,11 +3,15 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 
 import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
 import junit.framework.Assert;
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -75,5 +79,61 @@ public class IncomingMetricMetadataAnalyzerTest {
 
         String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
         Assert.assertEquals(null, unit);
+    }
+
+    @Test
+    public void test_ScanMetrics_DoesNotStoreUnit_InCache_IfConfigToEsSet() throws Exception {
+
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(this.metadataIO);
+
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
+        IncomingMetricMetadataAnalyzer.setEsForUnits(true);
+        IncomingMetricMetadataAnalyzer.setEsModuleFoundForUnits(true);
+
+        ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
+
+        Locator locator = Locator.createLocatorFromDbKey("integer_metric");
+
+        metricsList.add(new Metric(locator, 123, 14200000, new TimeValue(1, TimeUnit.DAYS), "somethings"));
+        analyzer.scanMetrics(metricsList);
+
+        //type should never be stored for numeric metrics
+        String type = cache.get(locator, MetricMetadata.TYPE.name().toLowerCase());
+        Assert.assertEquals(null, type);
+
+        String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
+        Assert.assertEquals(null, unit);
+    }
+
+    @Test
+    public void test_ScanMetrics_StoresUnit_InCache_IfEsModuleNotFound() throws Exception {
+
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(this.metadataIO);
+
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
+        IncomingMetricMetadataAnalyzer.setEsForUnits(true);
+        IncomingMetricMetadataAnalyzer.setEsModuleFoundForUnits(false);
+
+        ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
+
+        Locator locator = Locator.createLocatorFromDbKey("integer_metric");
+
+        metricsList.add(new Metric(locator, 123, 14200000, new TimeValue(1, TimeUnit.DAYS), "somethings"));
+        analyzer.scanMetrics(metricsList);
+
+        //type should never be stored for numeric metrics
+        String type = cache.get(locator, MetricMetadata.TYPE.name().toLowerCase());
+        Assert.assertEquals(null, type);
+
+        String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
+        Assert.assertEquals("somethings", unit);
+    }
+
+    @After
+    public void tearDown() {
+        IncomingMetricMetadataAnalyzer.setEsForUnits(Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS));
+        IncomingMetricMetadataAnalyzer.setEsModuleFoundForUnits(Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath));
     }
 }

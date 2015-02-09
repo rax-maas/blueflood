@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.IncomingMetricException;
@@ -118,5 +119,15 @@ public class IncomingMetricMetadataAnalyzer {
             }
         }
         return problems;
+    }
+
+    @VisibleForTesting
+    public static void setEsForUnits(boolean setEsForUnits) {
+        USE_ES_FOR_UNITS = setEsForUnits;
+    }
+
+    @VisibleForTesting
+    public static void setEsModuleFoundForUnits(boolean setEsModuleFound) {
+        ES_MODULE_FOUND = setEsModuleFound;
     }
 }
