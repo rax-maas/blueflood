@@ -27,7 +27,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
+        final String tenantId = request.getHeader(Event.FieldLabels.tenantId.name());
 
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
@@ -38,7 +38,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             }
 
             if (event.getWhat().equals("")) {
-                throw new Exception("Event should contain at least 'what' field.");
+                throw new Exception(String.format("Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
             }
             searchIO.insert(tenantId, Arrays.asList(event.toMap()));
         }

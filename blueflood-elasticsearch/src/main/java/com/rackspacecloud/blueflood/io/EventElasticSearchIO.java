@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
+import com.rackspacecloud.blueflood.types.Event;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -21,19 +22,6 @@ public class EventElasticSearchIO implements GenericElasticSearchIO {
     public static final String ES_TYPE = "graphite_event";
     private final Client client;
 
-
-    static enum ESFieldLabel {
-        when,
-        what,
-        data,
-        tags,
-        tenantid
-    }
-
-    // TODO refactor me! Move out of here
-    private static final String untilQueryName = "until";
-    private static final String fromQueryName = "from";
-
     public EventElasticSearchIO() {
         this(RemoteElasticSearchServer.getInstance());
     }
@@ -47,7 +35,7 @@ public class EventElasticSearchIO implements GenericElasticSearchIO {
     @Override
     public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
         for (Map<String, Object> event : events) {
-            event.put(ESFieldLabel.tenantid.toString(), tenant);
+            event.put(Event.FieldLabels.tenantId.toString(), tenant);
             client.prepareIndex(EVENT_INDEX, ES_TYPE)
                     .setSource(event)
                     .setRouting(tenant)
@@ -59,7 +47,7 @@ public class EventElasticSearchIO implements GenericElasticSearchIO {
     @Override
     public List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception {
         BoolQueryBuilder qb = boolQuery()
-                .must(termQuery(ESFieldLabel.tenantid.toString(), tenant));
+                .must(termQuery(Event.FieldLabels.tenantId.toString(), tenant));
 
         if (query != null) {
             qb = extractQueryParameters(query, qb);
@@ -82,21 +70,21 @@ public class EventElasticSearchIO implements GenericElasticSearchIO {
     }
 
     private BoolQueryBuilder extractQueryParameters(Map<String, List<String>> query, BoolQueryBuilder qb) {
-        String tagsQuery = extractFieldFromQuery(ESFieldLabel.tags.toString(), query);
-        String untilQuery = extractFieldFromQuery(untilQueryName, query);
-        String fromQuery = extractFieldFromQuery(fromQueryName, query);
+        String tagsQuery = extractFieldFromQuery(Event.FieldLabels.tags.toString(), query);
+        String untilQuery = extractFieldFromQuery(Event.untilParameterName, query);
+        String fromQuery = extractFieldFromQuery(Event.fromParameterName, query);
 
         if (!tagsQuery.equals(""))
-            qb = qb.must(termQuery(ESFieldLabel.tags.toString(), tagsQuery));
+            qb = qb.must(termQuery(Event.FieldLabels.tags.toString(), tagsQuery));
 
         if (!untilQuery.equals("") && !fromQuery.equals("")) {
-            qb = qb.must(rangeQuery(ESFieldLabel.when.toString())
+            qb = qb.must(rangeQuery(Event.FieldLabels.when.toString())
                     .to(Long.parseLong(untilQuery))
                     .from(Long.parseLong(fromQuery)));
         } else if (!untilQuery.equals("")) {
-            qb = qb.must(rangeQuery(ESFieldLabel.when.toString()).to(Long.parseLong(untilQuery)));
+            qb = qb.must(rangeQuery(Event.FieldLabels.when.toString()).to(Long.parseLong(untilQuery)));
         } else if (!fromQuery.equals("")) {
-            qb = qb.must(rangeQuery(ESFieldLabel.when.toString()).from(Long.parseLong(fromQuery)));
+            qb = qb.must(rangeQuery(Event.FieldLabels.when.toString()).from(Long.parseLong(fromQuery)));
         }
 
         return qb;

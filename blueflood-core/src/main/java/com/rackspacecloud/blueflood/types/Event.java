@@ -9,14 +9,27 @@ public class Event {
     private String data = "";
     private String tags = "";
 
+    public static enum FieldLabels {
+        when,
+        what,
+        data,
+        tags,
+        tenantId
+    }
+
+    public static final String untilParameterName = "until";
+    public static final String fromParameterName = "from";
+    public static final String tagsParameterName = FieldLabels.tags.name();
 
     public Map<String, Object> toMap() {
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("when", getWhen());
-        map.put("what", getWhat());
-        map.put("data", getData());
-        map.put("tags", getTags());
-        return map;
+        return new HashMap<String, Object>() {
+            {
+                put(FieldLabels.when.name(), getWhen());
+                put(FieldLabels.what.name(), getWhat());
+                put(FieldLabels.data.name(), getData());
+                put(FieldLabels.tags.name(), getTags());
+            }
+        };
     }
 
     public long getWhen() {

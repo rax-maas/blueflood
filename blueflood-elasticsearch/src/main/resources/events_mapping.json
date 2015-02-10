@@ -4,7 +4,7 @@
       "required": true
     },
     "properties": {
-      "tenantid": {
+      "tenantId": {
         "type": "string",
         "index": "not_analyzed"
       },

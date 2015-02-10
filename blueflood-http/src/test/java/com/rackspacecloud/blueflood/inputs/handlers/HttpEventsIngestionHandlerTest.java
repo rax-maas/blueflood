@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.types.Event;
 import junit.framework.Assert;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -35,12 +36,15 @@ public class HttpEventsIngestionHandlerTest {
     }
 
     private Map<String, Object> createRandomEvent() {
-        Map<String, Object> event = new HashMap<String, Object>();
-        event.put("what", "1");
-        event.put("when", (long)2);
-        event.put("data", "3");
-        event.put("tags", "4");
-        return  event;
+        Event event = new Event() {
+            {
+                setWhat("1");
+                setWhen(2);
+                setData("3");
+                setTags("4");
+            }
+        };
+        return event.toMap();
     }
 
     private HttpRequest createPutOneEventRequest(Map<String, Object> event) throws IOException {
@@ -81,7 +85,7 @@ public class HttpEventsIngestionHandlerTest {
 
     @Test public void testMinimumEventPut() throws Exception {
         Map<String, Object> event = new HashMap<String, Object>();
-        event.put("data", "data");
+        event.put(Event.FieldLabels.data.name(), "data");
 
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
 
@@ -93,10 +97,10 @@ public class HttpEventsIngestionHandlerTest {
 
     @Test public void testApplyingCurrentTimeWhenEmpty() throws Exception {
         Map<String, Object> event = createRandomEvent();
-        event.remove("when");
+        event.remove(Event.FieldLabels.when.name());
         handler.handle(context, createPutOneEventRequest(event));
 
-        event.put("when", convertDateTimeToTimestamp(new DateTime()));
+        event.put(Event.FieldLabels.when.name(), convertDateTimeToTimestamp(new DateTime()));
         verify(searchIO).insert(TENANT, Arrays.asList(event));
     }
 

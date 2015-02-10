@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.types.Event;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
@@ -27,15 +28,6 @@ public class HttpEventsQueryHandlerTest {
         context = mock(ChannelHandlerContext.class);
         when(context.getChannel()).thenReturn(channel);
         when(channel.write(anyString())).thenReturn(new SucceededChannelFuture(channel));
-    }
-
-    private Map<String, Object> createRandomEvent() {
-        Map<String, Object> event = new HashMap<String, Object>();
-        event.put("what", "1");
-        event.put("when", (long)2);
-        event.put("data", "3");
-        event.put("tags", "4");
-        return  event;
     }
 
     private HttpRequest createGetRequest(String uri) {
@@ -64,16 +56,16 @@ public class HttpEventsQueryHandlerTest {
 
     @Test public void testQueryParametersParse() throws Exception {
         Map<String, List<String>> params = new HashMap<String, List<String>>();
-        params.put("until", Arrays.asList(nowTimestamp()));
+        params.put(Event.untilParameterName, Arrays.asList(nowTimestamp()));
         testQuery("?until=now", params);
 
         params.clear();
-        params.put("until", Arrays.asList(nowTimestamp()));
-        params.put("from", Arrays.asList("1422828000"));
+        params.put(Event.untilParameterName, Arrays.asList(nowTimestamp()));
+        params.put(Event.fromParameterName, Arrays.asList("1422828000"));
         testQuery("?until=now&from=1422828000", params);
 
         params.clear();
-        params.put("tags", Arrays.asList("event"));
+        params.put(Event.tagsParameterName, Arrays.asList("event"));
         testQuery("?tags=event", params);
     }
 
@@ -82,8 +74,8 @@ public class HttpEventsQueryHandlerTest {
         Map<String, List<String>> params = new HashMap<String, List<String>>();
 
         params.clear();
-        params.put("until", Arrays.asList(nowTimestamp()));
-        params.put("from", Arrays.asList(Long.toString(convertDateTimeToTimestamp(new DateTime(2014, 12, 30, 0, 0, 0, 0)))));
+        params.put(Event.untilParameterName, Arrays.asList(nowTimestamp()));
+        params.put(Event.fromParameterName, Arrays.asList(Long.toString(convertDateTimeToTimestamp(new DateTime(2014, 12, 30, 0, 0, 0, 0)))));
         testQuery("?until=now&from=00:00_2014_12_30", params);
     }
 

@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.rackspacecloud.blueflood.types.Event;
 import junit.framework.Assert;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -27,7 +28,7 @@ public class EventElasticSearchIOTest {
     @Test
     public void testNonCrossTenantSearch() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
-        query.put("tags", Arrays.asList("event"));
+        query.put(Event.tagsParameterName, Arrays.asList("event"));
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
         Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
 
@@ -44,9 +45,9 @@ public class EventElasticSearchIOTest {
     @Test
     public void testEmptyQueryParameters() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
-        query.put("tags", new ArrayList<String>());
-        query.put("from", new ArrayList<String>());
-        query.put("until", new ArrayList<String>());
+        query.put(Event.tagsParameterName, new ArrayList<String>());
+        query.put(Event.fromParameterName, new ArrayList<String>());
+        query.put(Event.untilParameterName, new ArrayList<String>());
 
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
         Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
@@ -57,15 +58,15 @@ public class EventElasticSearchIOTest {
     @Test
     public void testEventTagsOnlySearch() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
-        query.put("tags", Arrays.asList("sample"));
+        query.put(Event.tagsParameterName, Arrays.asList("sample"));
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
         Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
 
-        query.put("tags", Arrays.asList("1"));
+        query.put(Event.tagsParameterName, Arrays.asList("1"));
         results = searchIO.search(TENANT_1, query);
         Assert.assertEquals(1, results.size());
 
-        query.put("tags", Arrays.asList("database"));
+        query.put(Event.tagsParameterName, Arrays.asList("database"));
         results = searchIO.search(TENANT_1, query);
         Assert.assertEquals(0, results.size());
     }
@@ -82,21 +83,21 @@ public class EventElasticSearchIOTest {
         final int eventCountToCapture = TENANT_RANGE_EVENTS_NUM / 2;
         final int secondsDelta = 10;
         DateTime fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
-        query.put("from", Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
         List<Map<String, Object>> results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         DateTime untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
         query.clear();
-        query.put("until", Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         query.clear();
         fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * 2 - secondsDelta);
         untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS - secondsDelta);
-        query.put("from", Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
-        query.put("until", Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(1, results.size());
     }
@@ -118,16 +119,17 @@ public class EventElasticSearchIOTest {
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
-    private void createTestEvents(String tenant, int eventCount) throws Exception {
+    private void createTestEvents(final String tenant, int eventCount) throws Exception {
         ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
-        DateTime date = new DateTime();
+        final DateTime date = new DateTime();
         for (int i=0; i<eventCount; i++) {
-            Map<String, Object> event = new HashMap<String, Object>();
-            event.put("what", String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.put("when", date.getMillis() / 1000);
-            event.put("data", String.format("[%s] %s %d", tenant, "Event data sample", i));
-            event.put("tags", String.format("[%s] %s %d", tenant, "Event tags sample", i));
-            eventList.add(event);
+            Event event = new Event();
+            event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
+            event.setWhen(date.getMillis() / 1000);
+            event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
+            event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
+
+            eventList.add(event.toMap());
         }
 
         searchIO.insert(tenant, eventList);
@@ -137,12 +139,12 @@ public class EventElasticSearchIOTest {
         ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         DateTime date = new DateTime();
         for (int i=0;i<eventCount; i++) {
-            Map<String, Object> event = new HashMap<String, Object>();
-            event.put("what", "1");
-            event.put("when", date.getMillis() / 1000);
-            event.put("data", "2");
-            event.put("tags", "event");
-            eventList.add(event);
+            Event event = new Event();
+            event.setWhat("1");
+            event.setWhen(date.getMillis() / 1000);
+            event.setData("2");
+            event.setTags("event");
+            eventList.add(event.toMap());
 
             date = date.minusSeconds(stepInSeconds);
         }
