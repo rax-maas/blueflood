@@ -5,6 +5,7 @@ import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.io.Constants;
 
+import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -56,55 +57,6 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
         HttpResponder.respond(channel, request, response);
-    }
-
-    private static class Event {
-        private long when = 0;
-        private String what = "";
-        private String data = "";
-        private String tags = "";
-
-
-        public Map<String, Object> toMap() {
-            Map<String, Object> map = new HashMap<String, Object>();
-            map.put("when", getWhen());
-            map.put("what", getWhat());
-            map.put("data", getData());
-            map.put("tags", getTags());
-            return map;
-        }
-
-        public long getWhen() {
-            return when;
-        }
-
-        public void setWhen(long when) {
-            this.when = when;
-        }
-
-        public String getWhat() {
-            return what;
-        }
-
-        public void setWhat(String what) {
-            this.what = what;
-        }
-
-        public String getData() {
-            return data;
-        }
-
-        public void setData(String data) {
-            this.data = data;
-        }
-
-        public String getTags() {
-            return tags;
-        }
-
-        public void setTags(String tags) {
-            this.tags = tags;
-        }
     }
 
 }
