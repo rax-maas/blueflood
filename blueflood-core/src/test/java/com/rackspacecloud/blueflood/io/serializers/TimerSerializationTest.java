@@ -36,7 +36,7 @@ public class TimerSerializationTest {
     public void testV1RoundTrip() throws IOException {
         // build up a Timer
         TimerRollup r0 = new TimerRollup()
-                .withSum(42)
+                .withSum(42d)
                 .withCountPS(23.32d)
                 .withAverage(56)
                 .withVariance(853.3245d)

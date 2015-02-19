@@ -88,7 +88,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                     .withMaxValue(100 - i)
                     .withMinValue(100 - i - i)
                     .withAverage(i / 2)
-                    .withCountPS((double)i).withSum(2 * i)
+                    .withCountPS((double)i).withSum(Double.valueOf(2 * i))
                     .withVariance((double) i / 2d);
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);

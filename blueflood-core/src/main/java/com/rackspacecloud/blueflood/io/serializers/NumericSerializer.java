@@ -240,7 +240,7 @@ public class NumericSerializer {
             case Type.B_TIMER:
                 sz += 1; // version
                 TimerRollup rollup = (TimerRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getSum());
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
@@ -339,7 +339,7 @@ public class NumericSerializer {
         out.writeRawByte(Constants.VERSION_1_TIMER);
         
         // sum, count, countps, avg, max, min, var
-        out.writeRawVarint64(rollup.getSum());
+        out.writeDoubleNoTag(rollup.getSum());
         out.writeRawVarint64(rollup.getCount());
         out.writeDoubleNoTag(rollup.getRate());
         out.writeRawVarint32(rollup.getSampleCount());
@@ -359,7 +359,7 @@ public class NumericSerializer {
     
     private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
         // note: type and version have already been read.
-        final long sum = in.readRawVarint64();
+        final double sum = in.readDouble();
         final long count = in.readRawVarint64();
         final double countPs = in.readDouble();
         final int sampleCount = in.readRawVarint32();

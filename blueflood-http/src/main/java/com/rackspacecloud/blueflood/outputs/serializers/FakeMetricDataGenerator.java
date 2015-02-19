@@ -141,7 +141,7 @@ public class FakeMetricDataGenerator {
                 .withCountPS(i*0.1d)
                 .withMaxValue(i)
                 .withMinValue(i)
-                .withSum(i+i)
+                .withSum(Double.valueOf(i+i))
                 .withVariance(i);
             rollup.setPercentile("50", i);
             rollup.setPercentile("99", i * 2 + 1);

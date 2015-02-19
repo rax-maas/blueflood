@@ -11,7 +11,7 @@ import java.util.*;
 
 
 public class TimerRollup implements Rollup, IBasicRollup {
-    private long sum = 0;
+    private double sum = 0;
     private long count = 0;
     private double rate = 0;
 
@@ -34,7 +34,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         super();
     }
     
-    public TimerRollup withSum(long sum) {
+    public TimerRollup withSum(Double sum) {
         this.sum = sum;
         return this;
     }
@@ -153,7 +153,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
     
     // per second rate.
     public double getRate() { return rate; }
-    public long getSum() { return sum; }
+    public double getSum() { return sum; }
     public long getCount() { return count; };
     public int getSampleCount() { return sampleCount; }
     

@@ -105,7 +105,7 @@ public class PreaggregateConversions {
                     .withMaxValue(resolveNumber(timer.getMax() == null ? 0.0d : timer.getMax()))
                     .withMinValue(resolveNumber(timer.getMin() == null ? 0.0d : timer.getMin()))
                     .withCountPS(timer.getRate() == null ? 0.0d : timer.getRate().doubleValue())
-                    .withSum(timer.getSum() == null ? 0L : timer.getSum().longValue()) // I wonder now if assuming sum instanceof Long is wrong.
+                    .withSum(timer.getSum() == null ? 0L : timer.getSum().doubleValue()) // I wonder now if assuming sum instanceof Long is wrong.
                     .withVariance(Math.pow(timer.getStd() == null ? 0.0d : timer.getStd().doubleValue(), 2d));
             for (Map.Entry<String, Bundle.Percentile> entry : timer.getPercentiles().entrySet()) {
                 // throw away max and sum.

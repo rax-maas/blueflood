@@ -51,7 +51,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     public void createFixtures() throws Exception {
         simple = new TimerRollup()
             .withSampleCount(1)
-            .withSum(100L)
+            .withSum(100d)
             .withCountPS(101d)
             .withAverage(102L)
             .withVariance(103d)
