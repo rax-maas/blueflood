@@ -83,7 +83,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             HttpMetricsIngestionHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
 
         } catch (JsonParseException ex) {
-            log.error("BAD JSON: %s", body);
+            log.debug(String.format("BAD JSON: %s", body));
             log.error(ex.getMessage(), ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (ConnectionException ex) {
@@ -92,7 +92,8 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         } catch (TimeoutException ex) {
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
-            log.warn("Other exception while trying to parse content", ex);
+            log.debug(String.format("BAD JSON: %s", body));
+            log.error("Other exception while trying to parse content", ex);
             HttpMetricsIngestionHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             requestCount.dec();
