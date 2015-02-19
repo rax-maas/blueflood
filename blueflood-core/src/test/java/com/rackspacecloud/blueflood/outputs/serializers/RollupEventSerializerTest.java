@@ -61,7 +61,7 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("mean").asLong(), rollup.getAverage().toLong());
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
-        Assert.assertEquals(resultNode.get("sum").asLong(), rollup.getSum());
+        Assert.assertEquals(resultNode.get("sum").asDouble(), rollup.getSum());
         Assert.assertEquals(resultNode.get("rate").asDouble(), rollup.getRate());
     }
 
