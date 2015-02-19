@@ -34,7 +34,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         super();
     }
     
-    public TimerRollup withSum(Double sum) {
+    public TimerRollup withSum(double sum) {
         this.sum = sum;
         return this;
     }
