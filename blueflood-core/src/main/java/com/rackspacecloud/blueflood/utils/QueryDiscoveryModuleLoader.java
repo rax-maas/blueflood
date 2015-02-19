@@ -64,6 +64,10 @@ public class QueryDiscoveryModuleLoader {
     }
 
     public static DiscoveryIO getDiscoveryInstance() {
+        if (discoveryInstance == null) {
+            // Try loading the discovery module instance
+            loadDiscoveryModule();
+        }
         return discoveryInstance;
     }
 }
