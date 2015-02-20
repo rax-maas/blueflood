@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.codahale.metrics.Histogram;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
@@ -332,11 +333,35 @@ public class NumericSerializer {
         }
         return rollup;
     }
-    
-    private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
+
+    private static void serializeV1Timer(TimerRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         timerRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_TIMER);
+
+        // sum, count, countps, avg, max, min, var
+        out.writeRawVarint64((long)rollup.getSum());
+        out.writeRawVarint64(rollup.getCount());
+        out.writeDoubleNoTag(rollup.getRate());
+        out.writeRawVarint32(rollup.getSampleCount());
+        putRollupStat(rollup.getAverage(), out);
+        putRollupStat(rollup.getMaxValue(), out);
+        putRollupStat(rollup.getMinValue(), out);
+        putRollupStat(rollup.getVariance(), out);
+
+        // percentiles.
+        Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+        out.writeRawVarint32(percentiles.size());
+        for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+            out.writeStringNoTag(entry.getKey());
+            putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
+        }
+    }
+    
+    private static void serializeV2Timer(TimerRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        timerRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_2_TIMER);
         
         // sum, count, countps, avg, max, min, var
         out.writeDoubleNoTag(rollup.getSum());
@@ -356,8 +381,57 @@ public class NumericSerializer {
             putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
         }
     }
-    
+
     private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
+        // note: type and version have already been read.
+        final double sum = in.readRawVarint64();
+        final long count = in.readRawVarint64();
+        final double countPs = in.readDouble();
+        final int sampleCount = in.readRawVarint32();
+
+        BasicRollup statBucket = new BasicRollup();
+
+        byte statType;
+        AbstractRollupStat stat;
+
+        // average
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // max
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // min
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // var
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+
+        TimerRollup rollup = new TimerRollup()
+                .withSum(sum)
+                .withCount(count)
+                .withCountPS(countPs)
+                .withSampleCount(sampleCount)
+                .withAverage(statBucket.getAverage())
+                .withMaxValue(statBucket.getMaxValue())
+                .withMinValue(statBucket.getMinValue())
+                .withVariance(statBucket.getVariance());
+
+        int numPercentiles = in.readRawVarint32();
+        for (int i = 0; i < numPercentiles; i++) {
+            String name = in.readString();
+            Number mean = getUnversionedDoubleOrLong(in);
+            rollup.setPercentile(name, mean);
+        }
+
+        return rollup;
+    }
+    
+    private static TimerRollup deserializeV2Timer(CodedInputStream in) throws IOException {
         // note: type and version have already been read.
         final double sum = in.readDouble();
         final long count = in.readRawVarint64();
@@ -613,21 +687,37 @@ public class NumericSerializer {
             try {
                 byte type = typeOf(o);
                 byte[] buf = new byte[sizeOf(o, type)];
-                serializeTimer(o, buf);
+                serializeV2Timer(o, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
         }
 
+        @VisibleForTesting
+        public ByteBuffer toByteBufferWithV1Serialization(TimerRollup o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOf(o, type)];
+                serializeV1Timer(o, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+
         @Override
         public TimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
-                if (version != VERSION_1_TIMER)
+                if (version > VERSION_2_TIMER)
                     throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
-                return deserializeV1Timer(in);
+                if (version == VERSION_1_TIMER) {
+                    return deserializeV1Timer(in);
+                }
+                return deserializeV2Timer(in);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
