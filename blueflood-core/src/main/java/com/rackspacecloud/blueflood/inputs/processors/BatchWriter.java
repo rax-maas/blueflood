@@ -21,6 +21,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
@@ -63,11 +64,6 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
     
     @Override
     public ListenableFuture<List<Boolean>> apply(List<List<IMetric>> input) throws Exception {
-        
-        final CountDownLatch shortLatch = new CountDownLatch(input.size());
-        final AtomicBoolean successfullyPersisted = new AtomicBoolean(true);
-
-        final AtomicBoolean writeTimedOut = new AtomicBoolean(false);
         final long writeStartTime = System.currentTimeMillis();
         final Timer.Context actualWriteCtx = writeDurationTimer.time();
         
@@ -87,10 +83,10 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         // and Preaggregated metrics and writes them to the appropriate column families.
                         Collection<Metric> simpleMetrics = new ArrayList<Metric>();
                         Collection<IMetric> preagMetrics = new ArrayList<IMetric>();
-                        
+
                         for (IMetric m : batch) {
                             if (m instanceof Metric)
-                                simpleMetrics.add((Metric)m);
+                                simpleMetrics.add((Metric) m);
                             else if (m instanceof PreaggregatedMetric)
                                 preagMetrics.add(m);
                         }
@@ -108,49 +104,36 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         } finally {
                             dirtyTimerCtx.stop();
                         }
-                        
+
                         return true;
                     } catch (Exception ex) {
                         getLogger().error(ex.getMessage(), ex);
-                        successfullyPersisted.set(false);
+                        getLogger().warn("Did not persist all metrics successfully for batch " + batchId);
                         return false;
                     } finally {
                         singleBatchWriteCtx.stop();
-                        shortLatch.countDown();
                         bufferedMetrics.dec(batch.size());
-                        
-                        if (System.currentTimeMillis() - writeStartTime > timeout.toMillis()) {
-                            writeTimedOut.set(true);
-                        }
-                        done();
-                    }
-                    
-                    
-                }
-                
-                private void done() {
-                    if (shortLatch.getCount() == 0) {
-                        getLogger().debug("Successfully persisted all metrics for batch " + batchId);
-                        actualWriteCtx.stop();
 
-                        if (writeTimedOut.get()) {
+                        if (System.currentTimeMillis() - writeStartTime > timeout.toMillis()) {
                             exceededScribeProcessingTime.mark();
                             getLogger().error("Exceeded timeout " + timeout.toString() + " before persisting " +
                                     "all metrics for batch " + batchId);
                         }
-    
-                        if (!successfullyPersisted.get()) {
-                            getLogger().warn("Did not persist all metrics successfully for batch " + batchId);
-                        }
                     }
                 }
-                
             }); 
             
             resultFutures.add(futureBatchResult);
         }
         
-        return Futures.allAsList(resultFutures);
+        ListenableFuture<List<Boolean>> finalFuture = Futures.allAsList(resultFutures);
+        finalFuture.addListener(new Runnable() {
+            @Override
+            public void run() {
+                actualWriteCtx.stop();
+            }
+        }, MoreExecutors.sameThreadExecutor());
+        return finalFuture;
     }
     
     private static class BatchIdGenerator {

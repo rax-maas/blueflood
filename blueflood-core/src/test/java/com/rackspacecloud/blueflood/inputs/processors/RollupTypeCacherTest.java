@@ -17,27 +17,21 @@
 package com.rackspacecloud.blueflood.inputs.processors;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.types.*;
 
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
-import static org.mockito.Mockito.verify;
+
+import static org.mockito.Mockito.*;
 
 public class RollupTypeCacherTest {
     private static final int METRICS_PER_LIST = 4;
     private static final String cacheKey = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
 
-    static MetricsCollection createTestData() {
+    private static MetricsCollection createTestData() {
         // create fake metrics to test
         Integer counter = 0;
         List<IMetric> l = new ArrayList<IMetric>();
@@ -54,6 +48,21 @@ public class RollupTypeCacherTest {
         
         MetricsCollection collection = new MetricsCollection();
         collection.add(new ArrayList<IMetric>(l));
+        return collection;
+    }
+
+    private static MetricsCollection createPreaggregatedTestMetrics() {
+        List<IMetric> listMetrics = new ArrayList<IMetric>();
+        for (int j=0; j < METRICS_PER_LIST; j++) {
+            IMetric m = mock(PreaggregatedMetric.class);
+            listMetrics.add(m);
+
+            stub(m.getLocator()).toReturn(Locator.createLocatorFromDbKey("Counter" + j));
+            stub(m.getCollectionTime()).toReturn(1234500000+(long)j);
+            stub(m.getRollupType()).toReturn(RollupType.COUNTER);
+        }
+        MetricsCollection collection = new MetricsCollection();
+        collection.add(listMetrics);
         return collection;
     }
 
@@ -75,10 +84,31 @@ public class RollupTypeCacherTest {
             Thread.sleep(1);
         }
 
+        verifyZeroInteractions(rollupTypeCache);
+    }
+
+    @Test
+    public void testCacherDoesCacheRollupTypeForPreAggregatedMetrics() throws Exception {
+        MetricsCollection collection = createPreaggregatedTestMetrics();
+
+        MetadataCache rollupTypeCache = mock(MetadataCache.class);
+        ThreadPoolExecutor tpe =
+                new ThreadPoolBuilder().withName("rtc test").build();
+
+        RollupTypeCacher rollupTypeCacher = new RollupTypeCacher(tpe,
+                rollupTypeCache);
+
+        rollupTypeCacher.apply(collection);
+
+        // wait till done
+        while (tpe.getCompletedTaskCount() < 1) {
+            Thread.sleep(1);
+        }
+
         // Confirm that each metric is cached
         for (IMetric m : collection.toMetrics()) {
-            verify(rollupTypeCache).put(m.getLocator(), cacheKey, 
-                m.getRollupType().toString());
+            verify(rollupTypeCache).put(m.getLocator(), cacheKey,
+                    m.getRollupType().toString());
         }
     }
 }

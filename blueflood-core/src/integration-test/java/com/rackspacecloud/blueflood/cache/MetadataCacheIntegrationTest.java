@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -269,52 +270,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals("zzzzz", cache1.get(l1, "zee"));
     }
     
-    private static class InMemoryMetadataIO implements MetadataIO {
-        private final Table<Locator, String, String> backingTable = Tables.newCustomTable(
-            Maps.<Locator, Map<String, String>>newHashMap(),
-            new Supplier<Map<String, String>>() {
-                @Override
-                public Map<String, String> get() {
-                    return Maps.newHashMap();
-                }
-            }
-        );
-        
-        @Override
-        public void put(Locator locator, String key, String value) throws IOException {
-            backingTable.put(locator, key, value);
-        }
 
-        @Override
-        public Map<String, String> getAllValues(Locator locator) throws IOException {
-            return backingTable.row(locator);
-        }
-
-        @Override
-        public Table<Locator, String, String> getAllValues(Set<Locator> locators) throws IOException {
-            Table<Locator, String, String> results = HashBasedTable.create();
-
-            for (Locator locator : locators) {
-                Map<String, String> metaForLoc = backingTable.row(locator);
-                for (Map.Entry<String, String> meta : metaForLoc.entrySet()) {
-                    results.put(locator, meta.getKey(), meta.getValue());
-                }
-            }
-
-            return results;
-        }
-
-        @Override
-        public void putAll(Table<Locator, String, String> meta) throws IOException {
-            backingTable.putAll(meta);
-        }
-
-        @Override
-        public int getNumberOfRowsTest() throws IOException {
-            return backingTable.rowKeySet().size();
-        }
-    }
-    
     @Parameterized.Parameters
     public static Collection<Object[]> getIOs() {
         List<Object[]> ios = new ArrayList<Object[]>();

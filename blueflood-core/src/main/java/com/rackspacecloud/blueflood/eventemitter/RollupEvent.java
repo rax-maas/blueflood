@@ -22,7 +22,7 @@ import com.rackspacecloud.blueflood.types.Rollup;
 public class RollupEvent {
     private final Locator locator;
     private final Rollup rollup;
-    private final String unit;
+    private String unit;
     private final String granularityName;
     //Rollup slot in millis
     private final long timestamp;
@@ -53,5 +53,9 @@ public class RollupEvent {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
     }
 }

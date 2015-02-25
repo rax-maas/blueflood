@@ -160,7 +160,7 @@ public class HttpMetricsIngestionServer {
                             .withName("Metric Batch Writing")
                             .withCorePoolSize(WRITE_THREADS)
                             .withMaxPoolSize(WRITE_THREADS)
-                            .withUnboundedQueue()
+                            .withSynchronousQueue()
                             .build(),
                     writer,
                     timeout,

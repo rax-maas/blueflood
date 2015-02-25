@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.codahale.metrics.Meter;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
@@ -64,7 +65,7 @@ public class ElasticIO implements DiscoveryIO {
     
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
     private static final String ES_TYPE = "metrics";
-    private final Client client;
+    private Client client;
     
     // todo: these should be instances per client.
     private final Timer searchTimer = Metrics.timer(ElasticIO.class, "Search Duration");
@@ -128,7 +129,6 @@ public class ElasticIO implements DiscoveryIO {
         } finally {
             ctx.stop();
         }
-        
     }
 
     private static String getUnit(Metric metric) {
@@ -230,5 +230,10 @@ public class ElasticIO implements DiscoveryIO {
             json = json.endObject();
             return json;
         }
+    }
+
+    @VisibleForTesting
+    public void setClient(Client client) {
+        this.client = client;
     }
 }

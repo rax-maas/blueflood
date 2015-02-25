@@ -22,7 +22,7 @@ import com.rackspacecloud.blueflood.types.RollupType;
 
 public class MetricData {
     private final Points data;
-    private final String unit;
+    private String unit;
     private final Type type;
 
     public MetricData(Points points, String unit, Type type) {
@@ -43,6 +43,8 @@ public class MetricData {
         return type.toString();
     }
 
+    public void setUnit(String unit) { this.unit = unit; }
+
     public enum Type {
         NUMBER("number"),
         BOOLEAN("boolean"),
@@ -61,6 +63,15 @@ public class MetricData {
         }
 
         public static Type from(RollupType rollupType, DataType dataType) {
+            // We no longer store datatype metadata for Numeric datatypes
+            if (dataType == null) {
+                return NUMBER;
+            }
+
+            if (rollupType == null) {
+                rollupType = RollupType.BF_BASIC;
+            }
+
             if (dataType.equals(DataType.STRING)) {
                 return STRING;
             } else if (dataType.equals(DataType.BOOLEAN)) {

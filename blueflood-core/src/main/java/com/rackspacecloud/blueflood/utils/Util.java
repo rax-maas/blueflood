@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.utils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.text.DecimalFormat;
@@ -77,5 +79,14 @@ public class Util {
             return 0d;
         else
             return numerator / denominator;
+    }
+
+    public static String ElasticIOPath = "com.rackspacecloud.blueflood.io.ElasticIO".intern();
+
+    public static String UNKNOWN = "unknown".intern();
+
+    public static boolean shouldUseESForUnits() {
+        return Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) &&
+                Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(ElasticIOPath);
     }
 }
