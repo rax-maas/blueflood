@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.codahale.metrics.Histogram;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
@@ -192,6 +193,114 @@ public class NumericSerializer {
         }
     }
 
+    @VisibleForTesting
+    private static int sizeOfV1(Object o, byte type) throws IOException {
+        int sz = 0;
+        switch (type) {
+            case Constants.B_I32:
+                sz += 1 + 1; // version + type.
+                sz += CodedOutputStream.computeRawVarint32Size((Integer)o);
+                break;
+            case Constants.B_I64:
+                sz += 1 + 1; // version + type.
+                sz += CodedOutputStream.computeRawVarint64Size((Long)o);
+                break;
+            case Constants.B_DOUBLE:
+                sz += 1 + 1; // version + type.
+                sz += CodedOutputStream.computeDoubleSizeNoTag((Double)o);
+                break;
+            case Type.B_FLOAT_AS_DOUBLE:
+                sz += 1 + 1; // version + type.
+                sz += CodedOutputStream.computeDoubleSizeNoTag(((Float)o).doubleValue());
+                break;
+            case Type.B_ROLLUP:
+                sz += 1; // version
+                BasicRollup basicRollup = (BasicRollup)o;
+                sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
+                if (basicRollup.getCount() > 0) {
+                    sz += sizeOf(basicRollup.getAverage(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                }
+                break;
+            case Type.B_SET:
+                sz += 1; // version
+                SetRollup setRollup = (SetRollup)o;
+                sz += CodedOutputStream.computeRawVarint32Size(setRollup.getCount());
+                for (Integer i : setRollup.getHashes()) {
+                    sz += CodedOutputStream.computeRawVarint32Size(i);
+                }
+                break;
+            case Type.B_ROLLUP_STAT:
+                sz = 1 + 1; // type + isFP.
+                AbstractRollupStat stat = (AbstractRollupStat)o;
+                sz += stat.isFloatingPoint() ?
+                        CodedOutputStream.computeDoubleSizeNoTag(stat.toDouble()) :
+                        CodedOutputStream.computeRawVarint64Size(stat.toLong());
+                return sz;
+            case Type.B_TIMER:
+                sz += 1; // version
+                TimerRollup rollup = (TimerRollup)o;
+                sz += CodedOutputStream.computeRawVarint64Size((long) rollup.getSum());
+                sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
+                sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
+                sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
+
+                Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+                sz += CodedOutputStream.computeRawVarint32Size(rollup.getPercentiles().size());
+                for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+                    sz += CodedOutputStream.computeStringSizeNoTag(entry.getKey());
+                    Number[] pctComponents = new Number[] {
+                            entry.getValue().getMean(),
+                    };
+                    for (Number num : pctComponents) {
+                        sz += 1; // type.
+                        if (num instanceof Long || num instanceof Integer) {
+                            sz += CodedOutputStream.computeRawVarint64Size(num.longValue());
+                        } else if (num instanceof Double || num instanceof Float) {
+                            sz += CodedOutputStream.computeDoubleSizeNoTag(num.doubleValue());
+                        }
+                    }
+                }
+                return sz;
+
+            case Type.B_GAUGE:
+                // just like rollup up until a point.
+                sz += sizeOf(o, Type.B_ROLLUP);
+
+                // here's where it gets different.
+                GaugeRollup gauge = (GaugeRollup)o;
+                sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
+                sz += 1; // type of latest value.
+                if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
+                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestNumericValue().longValue());
+                else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
+                return sz;
+
+            case Type.B_COUNTER:
+                CounterRollup counter = (CounterRollup)o;
+                sz += 1; // version + rollup type.
+                sz += 1; // numeric type.
+                if (counter.getCount() instanceof Long || counter.getCount() instanceof Integer)
+                    sz += CodedOutputStream.computeRawVarint64Size(counter.getCount().longValue());
+                else if (counter.getCount() instanceof Double || counter.getCount() instanceof Float)
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getCount().doubleValue());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getRate());
+                sz += CodedOutputStream.computeRawVarint32Size(counter.getSampleCount());
+                return sz;
+            default:
+                throw new IOException("Unexpected type: " + type);
+        }
+        return sz;
+    }
+
+
     private static int sizeOf(Object o, byte type) throws IOException {
         int sz = 0;
         switch (type) {
@@ -240,7 +349,7 @@ public class NumericSerializer {
             case Type.B_TIMER:
                 sz += 1; // version
                 TimerRollup rollup = (TimerRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
+                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getSum());
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
@@ -332,14 +441,38 @@ public class NumericSerializer {
         }
         return rollup;
     }
-    
-    private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
+
+    private static void serializeV1Timer(TimerRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         timerRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_TIMER);
+
+        // sum, count, countps, avg, max, min, var
+        out.writeRawVarint64((long)rollup.getSum());
+        out.writeRawVarint64(rollup.getCount());
+        out.writeDoubleNoTag(rollup.getRate());
+        out.writeRawVarint32(rollup.getSampleCount());
+        putRollupStat(rollup.getAverage(), out);
+        putRollupStat(rollup.getMaxValue(), out);
+        putRollupStat(rollup.getMinValue(), out);
+        putRollupStat(rollup.getVariance(), out);
+
+        // percentiles.
+        Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+        out.writeRawVarint32(percentiles.size());
+        for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+            out.writeStringNoTag(entry.getKey());
+            putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
+        }
+    }
+    
+    private static void serializeV2Timer(TimerRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        timerRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_2_TIMER);
         
         // sum, count, countps, avg, max, min, var
-        out.writeRawVarint64(rollup.getSum());
+        out.writeDoubleNoTag(rollup.getSum());
         out.writeRawVarint64(rollup.getCount());
         out.writeDoubleNoTag(rollup.getRate());
         out.writeRawVarint32(rollup.getSampleCount());
@@ -356,10 +489,59 @@ public class NumericSerializer {
             putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
         }
     }
-    
+
     private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
         // note: type and version have already been read.
-        final long sum = in.readRawVarint64();
+        final double sum = in.readRawVarint64();
+        final long count = in.readRawVarint64();
+        final double countPs = in.readDouble();
+        final int sampleCount = in.readRawVarint32();
+
+        BasicRollup statBucket = new BasicRollup();
+
+        byte statType;
+        AbstractRollupStat stat;
+
+        // average
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // max
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // min
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+        // var
+        statType = in.readRawByte();
+        stat = getStatFromRollup(statType, statBucket);
+        setStat(stat, in);
+
+        TimerRollup rollup = new TimerRollup()
+                .withSum(sum)
+                .withCount(count)
+                .withCountPS(countPs)
+                .withSampleCount(sampleCount)
+                .withAverage(statBucket.getAverage())
+                .withMaxValue(statBucket.getMaxValue())
+                .withMinValue(statBucket.getMinValue())
+                .withVariance(statBucket.getVariance());
+
+        int numPercentiles = in.readRawVarint32();
+        for (int i = 0; i < numPercentiles; i++) {
+            String name = in.readString();
+            Number mean = getUnversionedDoubleOrLong(in);
+            rollup.setPercentile(name, mean);
+        }
+
+        return rollup;
+    }
+    
+    private static TimerRollup deserializeV2Timer(CodedInputStream in) throws IOException {
+        // note: type and version have already been read.
+        final double sum = in.readDouble();
         final long count = in.readRawVarint64();
         final double countPs = in.readDouble();
         final int sampleCount = in.readRawVarint32();
@@ -613,21 +795,37 @@ public class NumericSerializer {
             try {
                 byte type = typeOf(o);
                 byte[] buf = new byte[sizeOf(o, type)];
-                serializeTimer(o, buf);
+                serializeV2Timer(o, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
         }
 
+        @VisibleForTesting
+        public ByteBuffer toByteBufferWithV1Serialization(TimerRollup o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOfV1(o, type)];
+                serializeV1Timer(o, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+
         @Override
         public TimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
-                if (version != VERSION_1_TIMER)
+                if (version > VERSION_2_TIMER)
                     throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
-                return deserializeV1Timer(in);
+                if (version == VERSION_1_TIMER) {
+                    return deserializeV1Timer(in);
+                }
+                return deserializeV2Timer(in);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }

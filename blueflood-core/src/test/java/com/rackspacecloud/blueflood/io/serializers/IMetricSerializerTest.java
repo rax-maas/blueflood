@@ -86,7 +86,7 @@ public class IMetricSerializerTest {
 
     @Test
     public void testTimerSerialization() throws IOException {
-        String timerValue = "{\"type\":\"timer\",\"average\":214,\"count\":1,\"max\":214,\"min\":214,\"percentiles\":{\"98\":214,\"99\":214,\"75\":214,\"999\":214,\"50\":214},\"rate\":0.06666666666666667,\"sampleCount\":1,\"sum\":214,\"variance\":0.0}";
+        String timerValue = "{\"type\":\"timer\",\"average\":214,\"count\":1,\"max\":214,\"min\":214,\"percentiles\":{\"98\":214,\"99\":214,\"75\":214,\"999\":214,\"50\":214},\"rate\":0.06666666666666667,\"sampleCount\":1,\"sum\":214.0,\"variance\":0.0}";
 
         TimerRollup timerDeserialized = mapper.readValue(timerValue, TimerRollup.class);
         String timerSerialized = mapper.writeValueAsString(timerDeserialized);

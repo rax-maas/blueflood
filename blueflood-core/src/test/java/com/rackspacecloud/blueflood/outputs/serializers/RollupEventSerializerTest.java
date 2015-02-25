@@ -52,7 +52,7 @@ public class RollupEventSerializerTest {
         rollup.withMaxValue(20);
         rollup.withMinValue(5);
         rollup.withVariance(12);
-        rollup.withSum(10);
+        rollup.withSum(Double.valueOf(10));
         rollup.withCountPS(30);
         //Get the JSON object node from Rollup
         ObjectNode resultNode = RollupSerializationHelper.rollupToJson(rollup);
@@ -61,7 +61,7 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("mean").asLong(), rollup.getAverage().toLong());
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
-        Assert.assertEquals(resultNode.get("sum").asLong(), rollup.getSum());
+        Assert.assertEquals(resultNode.get("sum").asDouble(), rollup.getSum());
         Assert.assertEquals(resultNode.get("rate").asDouble(), rollup.getRate());
     }
 
