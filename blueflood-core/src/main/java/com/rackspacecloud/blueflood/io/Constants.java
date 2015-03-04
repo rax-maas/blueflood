@@ -31,6 +31,8 @@ public class Constants {
     public static final byte VERSION_1_ROLLUP = 0;
     public static final byte VERSION_1_HISTOGRAM = 0;
     public static final byte VERSION_1_TIMER = 0;
+    public static final byte VERSION_2_TIMER = 1;
+
     public static final byte VERSION_1_COUNTER_ROLLUP = 0;
     public static final byte VERSION_1_SET_ROLLUP = VERSION_1_ROLLUP; // don't change this.
 

@@ -108,7 +108,7 @@ public class Marshal {
                     .withMaxValue(t.getMax())
                     .withMinValue(t.getMin())
                     .withCountPS(t.getRate().doubleValue())
-                    .withSum(t.getSum().longValue())
+                    .withSum(t.getSum().doubleValue())
                     .withVariance(Math.pow(t.getStd().doubleValue(), 2d));
             
             // percentiles.

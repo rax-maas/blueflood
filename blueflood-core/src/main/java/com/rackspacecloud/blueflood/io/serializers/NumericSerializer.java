@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.codahale.metrics.Histogram;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
@@ -40,10 +41,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_FULL_RES;
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
-import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_TIMER;
 
 import static com.rackspacecloud.blueflood.io.Constants.*;
 
@@ -192,7 +189,13 @@ public class NumericSerializer {
         }
     }
 
-    private static int sizeOf(Object o, byte type) throws IOException {
+    private static int sizeOf(Object o, byte type) 
+      throws IOException {
+        return sizeOf(o, type, VERSION_2_TIMER);
+    }
+
+    private static int sizeOf(Object o, byte type, byte timerVersion) 
+      throws IOException {
         int sz = 0;
         switch (type) {
             case Constants.B_I32:
@@ -240,7 +243,14 @@ public class NumericSerializer {
             case Type.B_TIMER:
                 sz += 1; // version
                 TimerRollup rollup = (TimerRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(rollup.getSum());
+                if (timerVersion == VERSION_1_TIMER) {
+                    sz += CodedOutputStream.computeRawVarint64Size((long) rollup.getSum());
+                } else if (timerVersion == VERSION_2_TIMER) {
+
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getSum());
+                } else {
+                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)timerVersion));                    
+                }
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
@@ -332,14 +342,21 @@ public class NumericSerializer {
         }
         return rollup;
     }
-    
-    private static void serializeTimer(TimerRollup rollup, byte[] buf) throws IOException {
+
+    private static void serializeTimer(TimerRollup rollup, byte[] buf, byte timerVersion) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         timerRollupSize.update(buf.length);
-        out.writeRawByte(Constants.VERSION_1_TIMER);
+        out.writeRawByte(timerVersion);
         
         // sum, count, countps, avg, max, min, var
-        out.writeRawVarint64(rollup.getSum());
+        if (timerVersion == VERSION_1_TIMER) {
+            out.writeRawVarint64((long)rollup.getSum());
+        } else if (timerVersion == VERSION_2_TIMER) {
+            out.writeDoubleNoTag(rollup.getSum());
+        } else {
+            throw new SerializationException(String.format("Unexpected serialization version: %d", (int)timerVersion));                    
+        }
+
         out.writeRawVarint64(rollup.getCount());
         out.writeDoubleNoTag(rollup.getRate());
         out.writeRawVarint32(rollup.getSampleCount());
@@ -357,9 +374,18 @@ public class NumericSerializer {
         }
     }
     
-    private static TimerRollup deserializeV1Timer(CodedInputStream in) throws IOException {
+    private static TimerRollup deserializeTimer(CodedInputStream in, byte timerVersion) throws IOException {
         // note: type and version have already been read.
-        final long sum = in.readRawVarint64();
+        final double sum;
+        if (timerVersion == VERSION_1_TIMER) {
+             sum = in.readRawVarint64();
+        } else if (timerVersion == VERSION_2_TIMER) {
+             sum = in.readDouble();
+        } else {
+            throw new SerializationException(String.format("Unexpected serialization version: %d", (int)timerVersion));                    
+        }
+
+
         final long count = in.readRawVarint64();
         final double countPs = in.readDouble();
         final int sampleCount = in.readRawVarint32();
@@ -612,8 +638,20 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(TimerRollup o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type)];
-                serializeTimer(o, buf);
+                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
+                serializeTimer(o, buf, VERSION_2_TIMER);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @VisibleForTesting
+        public ByteBuffer toByteBufferWithV1Serialization(TimerRollup o) {
+            try {
+                byte type = typeOf(o);
+                byte[] buf = new byte[sizeOf(o, type, VERSION_1_TIMER)];
+                serializeTimer(o, buf, VERSION_1_TIMER);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
@@ -625,9 +663,7 @@ public class NumericSerializer {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
-                if (version != VERSION_1_TIMER)
-                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
-                return deserializeV1Timer(in);
+                return deserializeTimer(in, version);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
