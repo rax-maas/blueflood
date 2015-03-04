@@ -164,7 +164,7 @@ public class NumericSerializer {
     private static void serializeFullResMetric(Object o, byte[] buf) throws IOException {
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         byte type = typeOf(o);
-        fullResSize.update(sizeOf(o, type, VERSION_2_TIMER));
+        fullResSize.update(sizeOf(o, type));
         protobufOut.writeRawByte(Constants.VERSION_1_FULL_RES);
 
         switch (type) {
@@ -187,6 +187,11 @@ public class NumericSerializer {
             default:
                 throw new SerializationException(String.format("Cannot serialize %s", o.getClass().getName()));
         }
+    }
+
+    private static int sizeOf(Object o, byte type) 
+      throws IOException {
+        return sizeOf(o, type, VERSION_2_TIMER);
     }
 
     private static int sizeOf(Object o, byte type, byte timerVersion) 
@@ -214,10 +219,10 @@ public class NumericSerializer {
                 BasicRollup basicRollup = (BasicRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
                 if (basicRollup.getCount() > 0) {
-                    sz += sizeOf(basicRollup.getAverage(), Type.B_ROLLUP_STAT, timerVersion);
-                    sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT, timerVersion);
-                    sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT, timerVersion);
-                    sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT, timerVersion);
+                    sz += sizeOf(basicRollup.getAverage(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT);
+                    sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT);
                 }
                 break;
             case Type.B_SET:
@@ -249,10 +254,10 @@ public class NumericSerializer {
                 sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
-                sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT, timerVersion);
-                sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT, timerVersion);
-                sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT, timerVersion);
-                sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT, timerVersion);
+                sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
+                sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
                 
                 Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getPercentiles().size());
@@ -274,7 +279,7 @@ public class NumericSerializer {
                 
             case Type.B_GAUGE:
                 // just like rollup up until a point.
-                sz += sizeOf(o, Type.B_ROLLUP, timerVersion);
+                sz += sizeOf(o, Type.B_ROLLUP);
                 
                 // here's where it gets different.
                 GaugeRollup gauge = (GaugeRollup)o;
@@ -556,7 +561,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(Object o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(o, type)];
     
                 serializeFullResMetric(o, buf);
                 
@@ -604,7 +609,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(BasicRollup o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(o, type)];
                 serializeRollup(o, buf);
                 return ByteBuffer.wrap(buf);
             } catch(IOException e) {
@@ -653,7 +658,6 @@ public class NumericSerializer {
             }
         }
 
-
         @Override
         public TimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
@@ -672,7 +676,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(SetRollup obj) {
             try {
                 byte type = typeOf(obj);
-                byte[] buf = new byte[sizeOf(obj, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(obj, type)];
                 serializeSetRollup(obj, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
@@ -699,7 +703,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(GaugeRollup o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(o, type)];
                 serializeGauge(o, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException e) {
@@ -728,7 +732,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(CounterRollup obj) {
             try {
                 byte type = typeOf(obj);
-                byte[] buf = new byte[sizeOf(obj, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(obj, type)];
                 serializeCounterRollup(obj, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
