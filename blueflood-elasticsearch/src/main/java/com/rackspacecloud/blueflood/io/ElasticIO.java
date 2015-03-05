@@ -28,12 +28,12 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 
 import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -68,6 +68,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
     private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
+    private final Meter batchFailMeter = Metrics.meter(ElasticIO.class, "Failed Batch Writes");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -121,7 +122,11 @@ public class ElasticIO implements DiscoveryIO {
                 md.withAnnotation(info);
                 bulk.add(createSingleRequest(md));
             }
-            bulk.execute().actionGet();
+            BulkResponse result = bulk.execute().actionGet();
+            if (result.hasFailures()) {
+                batchFailMeter.mark();
+                log.error("Error writing Discovery metadata: " + result.buildFailureMessage());
+            }
         } finally {
             ctx.stop();
         }
