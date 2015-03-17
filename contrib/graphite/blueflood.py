@@ -5,6 +5,9 @@ import time
 import requests
 import json
 import auth
+import sys
+import traceback
+import remote_pdb
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -18,6 +21,8 @@ except ImportError:
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
+    print("gbj v3")
+    #remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
@@ -63,6 +68,10 @@ class TenantBluefloodFinder(object):
     except Exception as e:
      print "Exception in Blueflood find_nodes: " 
      print e
+     exc_info = sys.exc_info()
+     tb = traceback.format_exception(*exc_info)
+     for line in tb:
+       print(line)
      raise e
 
 class TenantBluefloodReader(object):
@@ -85,14 +94,18 @@ class TenantBluefloodReader(object):
   def gen_step_array(self, value_arr, min_time, max_time, data_key):
     # Just assuming minimum possible step value and 
     #  inserting None for all missing datapoints
+    print ("gbj3 ", len(value_arr), min_time, max_time, data_key)
+    if len(value_arr) > 0:
+      print("gbj33 ", value_arr[0])
+
     step_arr = []
     vs = sorted(value_arr, key=lambda x: x['timestamp'])
     for ts in range(min_time, (max_time + 1)):
-      if (len(vs) > 0) and (vs[0]['timestamp'] == ts):
-        step_arr.append(vs[0])
+      if (len(vs) > 0) and (vs[0]['timestamp']/1000 == ts):
+        step_arr.append(vs[0][data_key])
         vs = vs[1:]
       else:
-        step_arr.append({data_key: None, 'timestamp': ts})
+        step_arr.append(None)
     return (step_arr, 1)
 
   def fetch(self, start_time, end_time):
@@ -109,17 +122,22 @@ class TenantBluefloodReader(object):
       minTime = 0x7fffffffffffffff
       maxTime = 0
       value_arr = []
+      data_key = None
       for obj in values:
         present_keys = [_ for _ in value_res_order if _ in obj]
         if present_keys:
           data_key = present_keys[0]
-          value_arr.append(obj[present_keys[0]])
+          value_arr.append(obj)
           timestamp = obj['timestamp'] / 1000
           minTime = min(minTime, timestamp)
           maxTime = max(maxTime, timestamp)
       (step_arr, step) = self.gen_step_array(value_arr, minTime, 
                                              maxTime, data_key)
       time_info = (minTime, maxTime, step)
+      print("gbj4 ", time_info, len(step_arr))
+      if len(step_arr) > 0:
+        print("gbj44 ", step_arr[0])
+
       return (time_info, step_arr)
 
 SECONDS_IN_5MIN = 300
