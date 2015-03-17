@@ -82,6 +82,19 @@ class TenantBluefloodReader(object):
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
 
+  def gen_step_array(self, value_arr, min_time, max_time, data_key):
+    # Just assuming minimum possible step value and 
+    #  inserting None for all missing datapoints
+    step_arr = []
+    vs = sorted(value_arr, key=lambda x: x['timestamp'])
+    for ts in range(min_time, (max_time + 1)):
+      if (len(vs) > 0) and (vs[0]['timestamp'] == ts):
+        step_arr.append(vs[0])
+        vs = vs[1:]
+      else:
+        step_arr.append({data_key: None, 'timestamp': ts})
+    return (step_arr, 1)
+
   def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
     if not self.metric:
@@ -95,21 +108,19 @@ class TenantBluefloodReader(object):
       # determine the step
       minTime = 0x7fffffffffffffff
       maxTime = 0
-      lastTime = 0
-      step = 1
       value_arr = []
       for obj in values:
-        timestamp = obj['timestamp'] / 1000
-        step = timestamp - lastTime
-        lastTime = timestamp
-        minTime = min(minTime, timestamp)
-        maxTime = max(maxTime, timestamp)
         present_keys = [_ for _ in value_res_order if _ in obj]
         if present_keys:
-            value_arr.append(obj[present_keys[0]])
-
+          data_key = present_keys[0]
+          value_arr.append(obj[present_keys[0]])
+          timestamp = obj['timestamp'] / 1000
+          minTime = min(minTime, timestamp)
+          maxTime = max(maxTime, timestamp)
+      (step_arr, step) = self.gen_step_array(value_arr, minTime, 
+                                             maxTime, data_key)
       time_info = (minTime, maxTime, step)
-      return (time_info, value_arr)
+      return (time_info, step_arr)
 
 SECONDS_IN_5MIN = 300
 SECONDS_IN_20MIN = 1200
