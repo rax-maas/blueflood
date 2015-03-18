@@ -8,6 +8,7 @@ import auth
 import sys
 import traceback
 import remote_pdb
+import fractions
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -91,6 +92,9 @@ class TenantBluefloodReader(object):
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
 
+  def gcd_of_list(self, list):
+    return reduce(fractions.gcd, list)
+
   def gen_step_array(self, value_arr, min_time, max_time, data_key):
     # Just assuming minimum possible step value and 
     #  inserting None for all missing datapoints
@@ -98,15 +102,27 @@ class TenantBluefloodReader(object):
     if len(value_arr) > 0:
       print("gbj33 ", value_arr[0])
 
-    step_arr = []
+    if len(value_arr) == 0:
+      return([], 1)
+    
+    if len(value_arr) == 1:
+      return([value_arr[0][data_key], None], 1)
+
+    timediff_arr = []
     vs = sorted(value_arr, key=lambda x: x['timestamp'])
-    for ts in range(min_time, (max_time + 1)):
+    vs2 = vs
+    while len(vs2) > 1:
+      timediff_arr.append(vs2[1]['timestamp'] - vs2[0]['timestamp'])
+      vs2 = vs2[1:]
+    step = self.gcd_of_list(timediff_arr)/1000
+    step_arr = []
+    for ts in range(min_time, (max_time + 1), step):
       if (len(vs) > 0) and (vs[0]['timestamp']/1000 == ts):
         step_arr.append(vs[0][data_key])
         vs = vs[1:]
       else:
         step_arr.append(None)
-    return (step_arr, 1)
+    return (step_arr, step)
 
   def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
