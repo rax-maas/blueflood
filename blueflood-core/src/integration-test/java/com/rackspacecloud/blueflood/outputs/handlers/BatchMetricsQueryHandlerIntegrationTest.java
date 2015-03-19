@@ -28,7 +28,9 @@ import com.rackspacecloud.blueflood.types.BatchMetricsQuery;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.utils.RollupTestUtils;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
@@ -49,6 +51,8 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
             add(Locator.createLocatorFromPathComponents(tenantId, metricName));
             add(Locator.createLocatorFromPathComponents(tenantId, strMetricName));
     }};
+    Locator metricLocator = locators.get(0);
+    Locator strLocator = locators.get(1);
     private final Map<Locator, Map<Granularity, Integer>> answers = new HashMap<Locator, Map<Granularity,Integer>>();
 
     @Before
@@ -61,8 +65,8 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + i * 60000;
             final List<Metric> metrics = new ArrayList<Metric>();
-            final Metric metric = getRandomIntMetric(locators.get(0), curMillis);
-            final Metric stringMetric = getRandomStringmetric(locators.get(1), curMillis);
+            final Metric metric = getRandomIntMetric(metricLocator, curMillis);
+            final Metric stringMetric = getRandomStringmetric(strLocator, curMillis);
             metrics.add(metric);
             metrics.add(stringMetric);
 
@@ -95,12 +99,11 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         answerForStringMetric.put(Granularity.MIN_240, 1440);
         answerForStringMetric.put(Granularity.MIN_1440, 1440);
 
-        answers.put(locators.get(0), answerForNumericMetric);
-        answers.put(locators.get(1), answerForStringMetric);
+        answers.put(metricLocator, answerForNumericMetric);
+        answers.put(strLocator, answerForStringMetric);
     }
 
-    @Test
-    public void testBatchGet() throws Exception {
+    public void testBatchGran(Granularity gran) throws Exception {
         ThreadPoolExecutor executor = new ThreadPoolBuilder().withBoundedQueue(10)
                 .withCorePoolSize(1).withMaxPoolSize(1).withName("TestBatchQuery").build();
         BatchMetricsQueryHandler batchMetricsQueryHandler = new BatchMetricsQueryHandler(executor,
@@ -119,7 +122,6 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
             }
         });
 
-        Granularity gran = Granularity.MIN_20;
         Range range = new Range(gran.snapMillis(baseMillis), baseMillis + 86400000);
 
         final List<Locator> tooManyLocators = new ArrayList<Locator>();
@@ -148,6 +150,19 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         for (Map.Entry<Locator, MetricData> item : results.entrySet()) {
             MetricData data = item.getValue();
             Assert.assertEquals((int) answers.get(item.getKey()).get(gran), data.getData().getPoints().size());
+            //Make sure all the data are Rollups
+            if (item.getKey().equals(metricLocator)) {
+                for (Points.Point point : (Iterable<Points.Point>) 
+                        data.getData().getPoints().values()) {
+                    Assert.assertTrue(point.getData() instanceof Rollup);
+                }
+            }
         }
+    }
+
+    @Test
+    public void testBatchGet() throws Exception {
+        testBatchGran(Granularity.FULL);
+        testBatchGran(Granularity.MIN_20);
     }
 }
