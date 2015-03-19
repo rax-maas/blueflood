@@ -23,7 +23,7 @@ class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
     print("gbj v3")
-    remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
+    #remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
