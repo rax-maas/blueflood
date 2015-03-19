@@ -23,7 +23,7 @@ class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
     print("gbj v3")
-    #remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
+    remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
@@ -98,9 +98,6 @@ class TenantBluefloodReader(object):
   def gen_step_array(self, value_arr, min_time, max_time, data_key):
     # Just assuming minimum possible step value and 
     #  inserting None for all missing datapoints
-    print ("gbj3 ", len(value_arr), min_time, max_time, data_key)
-    if len(value_arr) > 0:
-      print("gbj33 ", value_arr[0])
 
     if len(value_arr) == 0:
       return([], 1)
@@ -122,6 +119,10 @@ class TenantBluefloodReader(object):
         vs = vs[1:]
       else:
         step_arr.append(None)
+    if len(step_arr) > 0:
+      print("gbj33 ", step_arr[-1])
+    if len(vs) > 0:
+      print("gbjvs error")
     return (step_arr, step)
 
   def fetch(self, start_time, end_time):
@@ -149,7 +150,8 @@ class TenantBluefloodReader(object):
           maxTime = max(maxTime, timestamp)
       (step_arr, step) = self.gen_step_array(value_arr, minTime, 
                                              maxTime, data_key)
-      time_info = (minTime, maxTime, step)
+      
+      time_info = (minTime, maxTime+step, step)
       print("gbj4 ", time_info, len(step_arr))
       if len(step_arr) > 0:
         print("gbj44 ", step_arr[0])
@@ -221,7 +223,9 @@ class Client(object):
     }
     #print 'USING RES ' + res
     headers = auth.headers()
+
     r = self.make_request("%s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers)
+    #print("gbj request %s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers, json.loads(r.text)['values'])
     if r.status_code != 200:
       print str(r.status_code) + ' in get_values ' + r.text
       return {'values': []}
