@@ -453,7 +453,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         for (Column<Long> column : results) {
             try {
-                points.add(pointFromColumn(column, gran, serializer));
+                points.add(pointFromColumn(column, serializer));
             } catch (RuntimeException ex) {
                 log.error("Problem deserializing data for " + locator + " (" + range + ") from " + CF.getName(), ex);
             }
@@ -504,14 +504,13 @@ public class AstyanaxReader extends AstyanaxIO {
 
         AbstractSerializer serializer = serializerFor(rollupType, dataType, gran);
         for (Column<Long> column : columnList) {
-            points.add(new Points.Point(column.getName(), column.getValue(serializer)));
+            points.add(pointFromColumn(column, serializer));
         }
 
         return points;
     }
 
-    // todo: don't need gran anymore.
-    private Points.Point pointFromColumn(Column<Long> column, Granularity gran, AbstractSerializer serializer) {
+    private Points.Point pointFromColumn(Column<Long> column, AbstractSerializer serializer) {
         if (serializer instanceof NumericSerializer.RawSerializer)
             return new Points.Point(column.getName(), new SimpleNumber(column.getValue(serializer)));
         else
