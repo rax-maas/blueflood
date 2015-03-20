@@ -9,6 +9,7 @@ import sys
 import traceback
 import remote_pdb
 import fractions
+import os.path
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -22,8 +23,9 @@ except ImportError:
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
-    print("gbj v3")
-    #remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
+    print("gbj v5")
+    if os.path.isfile("/root/pdb-flag"):
+      remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     authentication_module = None
     if config is not None:
       if 'urls' in config['blueflood']:
@@ -103,7 +105,7 @@ class TenantBluefloodReader(object):
       return([], 1)
     
     if len(value_arr) == 1:
-      return([value_arr[0][data_key], None], 1)
+      return([value_arr[0][data_key], None], 60)
 
     timediff_arr = []
     vs = sorted(value_arr, key=lambda x: x['timestamp'])
