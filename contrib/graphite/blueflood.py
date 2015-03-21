@@ -97,35 +97,49 @@ class TenantBluefloodReader(object):
   def gcd_of_list(self, list):
     return reduce(fractions.gcd, list)
 
-  def gen_step_array(self, value_arr, min_time, max_time, data_key):
+  def gen_step_array(self, value_arr, min_time, max_time, data_key, start_time):
     # Just assuming minimum possible step value and 
     #  inserting None for all missing datapoints
 
     if len(value_arr) == 0:
-      return([], 1)
+      return([], 1, min_time)
     
     if len(value_arr) == 1:
-      return([value_arr[0][data_key], None], 60)
+      step = 1
+      step_arr =[value_arr[0][data_key]]
+    else:
+      # get the list of intervals between points and
+      #  calculate the gcd of those to be the step interval
+      timediff_arr = []
+      vs = sorted(value_arr, key=lambda x: x['timestamp'])
+      vs2 = vs
+      while len(vs2) > 1:
+        timediff_arr.append(vs2[1]['timestamp'] - vs2[0]['timestamp'])
+        vs2 = vs2[1:]
+      step = self.gcd_of_list(timediff_arr)/1000
+      step_arr = []
+      for ts in range(min_time, (max_time + 1), step):
+        if (len(vs) > 0) and (vs[0]['timestamp']/1000 == ts):
+          step_arr.append(vs[0][data_key])
+          vs = vs[1:]
+        else:
+          step_arr.append(None)
+      if len(vs) > 0:
+        print("gbjvs error")
 
-    timediff_arr = []
-    vs = sorted(value_arr, key=lambda x: x['timestamp'])
-    vs2 = vs
-    while len(vs2) > 1:
-      timediff_arr.append(vs2[1]['timestamp'] - vs2[0]['timestamp'])
-      vs2 = vs2[1:]
-    step = self.gcd_of_list(timediff_arr)/1000
-    step_arr = []
-    for ts in range(min_time, (max_time + 1), step):
-      if (len(vs) > 0) and (vs[0]['timestamp']/1000 == ts):
-        step_arr.append(vs[0][data_key])
-        vs = vs[1:]
-      else:
-        step_arr.append(None)
+    # Need to prepend some None's because graphite-api's 
+    #  consolidate() algorithm drops some of the initial 
+    #  datapoints.  (See the "nudge" implementation here:
+    #  https://github.com/brutasse/graphite-api/blob/4445c5294115cdbaf44f1dde25474297ce6dbc0b/graphite_api/app.py#L231 )
+    
+    none_arr = []
+    for ts in range(min_time - step, start_time, -step):
+      none_arr.append(None)
+    new_min_time = ts
+
     if len(step_arr) > 0:
       print("gbj33 ", step_arr[-1])
-    if len(vs) > 0:
-      print("gbjvs error")
-    return (step_arr, step)
+    return (none_arr+step_arr, step, new_min_time)
 
   def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
@@ -150,10 +164,10 @@ class TenantBluefloodReader(object):
           timestamp = obj['timestamp'] / 1000
           minTime = min(minTime, timestamp)
           maxTime = max(maxTime, timestamp)
-      (step_arr, step) = self.gen_step_array(value_arr, minTime, 
-                                             maxTime, data_key)
+      (step_arr, step, new_min_time) = self.gen_step_array(value_arr, minTime, 
+                                                           maxTime, data_key, start_time)
       
-      time_info = (minTime, maxTime+step, step)
+      time_info = (new_min_time, maxTime+step, step)
       print("gbj4 ", time_info, len(step_arr))
       if len(step_arr) > 0:
         print("gbj44 ", step_arr[0])
