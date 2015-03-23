@@ -133,9 +133,11 @@ class TenantBluefloodReader(object):
     #  https://github.com/brutasse/graphite-api/blob/4445c5294115cdbaf44f1dde25474297ce6dbc0b/graphite_api/app.py#L231 )
     
     none_arr = []
-    for ts in range(min_time - step, start_time, -step):
+    new_min_time = min_time
+    for ts2 in range(min_time - step, start_time, -step):
       none_arr.append(None)
-    new_min_time = ts
+    if len(none_arr):
+      new_min_time = ts2
 
     if len(step_arr) > 0:
       print("gbj33 ", step_arr[-1])
