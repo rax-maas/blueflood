@@ -20,8 +20,40 @@ except ImportError:
 
 # curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
-class TenantBluefloodFinder(object):
 
+secs_per_res = {
+  'FULL': 1,
+  'MIN5': 5*60,
+  'MIN20': 20*60,
+  'MIN60': 60*60,
+  'MIN240': 240*60,
+  'MIN1440': 1440*60}
+
+def calc_res(start, stop):
+  # make an educated guess about the likely number of data points returned.
+  num_points = (stop - start) / 60
+  res = 'FULL'
+  if num_points > 60:
+    num_points = (stop - start) / secs_per_res['MIN5']
+    res = 'MIN5'
+  if num_points > 800:
+    num_points = (stop - start) / secs_per_res['MIN20']
+    res = 'MIN20'
+  if num_points > 800:
+    num_points = (stop - start) / secs_per_res['MIN60']
+    res = 'MIN60'
+  if num_points > 800:
+    num_points = (stop - start) / secs_per_res['MIN240']
+    res = 'MIN240'
+  if num_points > 800:
+    num_points = (stop - start) / secs_per_res['MIN1440']
+    res = 'MIN1440'
+  return res
+
+
+
+class TenantBluefloodFinder(object):
+  __fetch_multi__ = 'tenant_blueflood'
   def __init__(self, config=None):
     print("gbj v5")
     if os.path.isfile("/root/pdb-flag"):
@@ -76,6 +108,9 @@ class TenantBluefloodFinder(object):
      for line in tb:
        print(line)
      raise e
+
+  def fetch_multi(self, nodes, start_time, end_time):
+    paths = [node.path for node in nodes]
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
@@ -148,39 +183,17 @@ class TenantBluefloodReader(object):
     if not self.metric:
       return ((start_time, end_time, 1), [])
     else:
+      res = calc_res(start_time, end_time)
+      step = secs_per_res[res]
       client = Client(self.bf_query_endpoint, self.tenant)
-      values = client.get_values(self.metric, start_time, end_time)
-      # value keys in order of preference.
-      value_res_order = ['average', 'latest', 'numPoints']
-
-      # determine the step
-      minTime = 0x7fffffffffffffff
-      maxTime = 0
-      value_arr = []
-      data_key = None
-      for obj in values:
-        present_keys = [_ for _ in value_res_order if _ in obj]
-        if present_keys:
-          data_key = present_keys[0]
-          value_arr.append(obj)
-          timestamp = obj['timestamp'] / 1000
-          minTime = min(minTime, timestamp)
-          maxTime = max(maxTime, timestamp)
-      (step_arr, step, new_min_time) = self.gen_step_array(value_arr, minTime, 
-                                                           maxTime, data_key, start_time)
-      
-      time_info = (new_min_time, maxTime+step, step)
-      print("gbj4 ", time_info, len(step_arr))
-      if len(step_arr) > 0:
-        print("gbj44 ", step_arr[0])
-
-      return (time_info, step_arr)
-
-SECONDS_IN_5MIN = 300
-SECONDS_IN_20MIN = 1200
-SECONDS_IN_60MIN = 3600
-SECONDS_IN_240MIN = 14400
-SECONDS_IN_1440MIN = 86400
+      values = client.get_values(self.metric, start_time, end_time, res)
+      real_end_time += step
+      processed_values = client.process_path(values, start_time, real_end_time, step)
+      time_info = (start_time, real_end_time, step)
+      print("gbj4 ", time_info, len(processed_values))
+      if len(processed_values) > 0:
+        print("gbj44 ", processed_values[0])
+      return (time_info, processed_values)
 
 class Client(object):
   def __init__(self, host, tenant):
@@ -213,27 +226,7 @@ class Client(object):
       except ValueError:
         return ['there was an error']
 
-  def get_values(self, metric, start, stop):
-    # make an educated guess about the likely number of data points returned.
-    num_points = (stop - start) / 60
-    res = 'FULL'
-
-    if num_points > 800:
-      num_points = (stop - start) / SECONDS_IN_5MIN
-      res = 'MIN5'
-    if num_points > 800:
-      num_points = (stop - start) / SECONDS_IN_20MIN
-      res = 'MIN20'
-    if num_points > 800:
-      num_points = (stop - start) / SECONDS_IN_60MIN
-      res = 'MIN60'
-    if num_points > 800:
-      num_points = (stop - start) / SECONDS_IN_240MIN
-      res = 'MIN240'
-    if num_points > 800:
-      num_points = (stop - start) / SECONDS_IN_1440MIN
-      res = 'MIN1440'
-
+  def get_values(self, metric, start, stop, res):
     payload = {
       'from': start * 1000,
       'to': stop * 1000,
@@ -256,3 +249,37 @@ class Client(object):
       except ValueError:
         print 'ValueError in get_values'
         return {'values': []}
+
+  def current_datapoint_valid(self, v_iter, data_key, ts, step):
+    if (not len(v_iter)) or (not (data_key in v_iter[0])):
+      return False
+    datapoint_ts = v_iter[0]['timestamp']/1000)
+    if (ts <= datapoint_ts) and (datapoint_ts < (ts + step)):
+      return True
+    return False
+    
+  
+
+  def process_path(self, values, start_time, end_time, step):
+    value_res_order = ['average', 'latest', 'numPoints']
+    present_keys = [_ for _ in value_res_order if _ in values[0]]
+    if present_keys:
+      data_key = present_keys[0]
+
+    v_iter = values
+    ret_arr = []
+    for ts in range(start_time, end_time, step):
+      if self.current_datapoint_valid(v_iter, data_key, ts, step):
+        ret_arr.append(v_iter[0][data_key])
+      else:
+        ret_arr.append(None)
+      v_iter = v_iter[1:]
+    return ret_arr
+
+
+    
+
+class TenantBluefloodLeafNode(LeafNode):
+  __fetch_multi__ = 'tenant_blueflood'
+
+
