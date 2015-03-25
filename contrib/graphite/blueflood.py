@@ -8,8 +8,8 @@ import auth
 import sys
 import traceback
 import remote_pdb
-import fractions
 import os.path
+import itertools
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -49,6 +49,12 @@ def calc_res(start, stop):
     num_points = (stop - start) / secs_per_res['MIN1440']
     res = 'MIN1440'
   return res
+
+def grouper(iterable, n, fillvalue=None):
+  "Collect data into fixed-length chunks or blocks"
+  # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+  args = [iter(iterable)] * n
+  return itertools.izip_longest(fillvalue=fillvalue, *args)
 
 
 
@@ -109,8 +115,42 @@ class TenantBluefloodFinder(object):
        print(line)
      raise e
 
+  def get_metric_list(self, endpoint, tenant, metric_list, payload, headers):
+    url = "%s/v2.0/%s/views" % (endpoint, tenant)
+    if auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(False)
+    r = requests.post(url, params=payload, data=json.dumps(metric_list), headers=headers)
+    if r.status_code == 401 and auth.is_active():
+      headers['X-Auth-Token'] = auth.get_token(True)
+      r = requests.post(url, params=payload, data=json.dumps(metric_list), headers=headers)
+    if r.status_code != 200:
+      print("gbj bad response: ", r.status_code, tenant, metric_list)
+      return None
+    else:
+      #print("gbj met: ", r.json()['metrics'])
+      return r.json()['metrics']
+
   def fetch_multi(self, nodes, start_time, end_time):
     paths = [node.path for node in nodes]
+    res = calc_res(start_time, end_time)
+    step = secs_per_res[res]
+    payload = {
+      'from': start_time * 1000,
+      'to': end_time * 1000,
+      'resolution': res
+    }
+    headers = auth.headers()
+    real_end_time = end_time + step
+    # Limit size MPlot requests
+    groups = [filter(None,l) for l in list(grouper(paths, 40, False))]
+    responses = reduce(lambda x,y: x+y,
+                         [self.get_metric_list(self.bf_query_endpoint, 
+                                               self.tenant, g, payload, headers) 
+                          for g in groups])
+    cache = {x['metric'] : client.process_path(x['data'], start_time, real_end_time, step)
+             for x in responses}
+    time_info = (start_time, real_end_time, step)
+    return (time_info, cache)
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
@@ -129,55 +169,6 @@ class TenantBluefloodReader(object):
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
 
-  def gcd_of_list(self, list):
-    return reduce(fractions.gcd, list)
-
-  def gen_step_array(self, value_arr, min_time, max_time, data_key, start_time):
-    # Just assuming minimum possible step value and 
-    #  inserting None for all missing datapoints
-
-    if len(value_arr) == 0:
-      return([], 1, min_time)
-    
-    if len(value_arr) == 1:
-      step = 1
-      step_arr =[value_arr[0][data_key]]
-    else:
-      # get the list of intervals between points and
-      #  calculate the gcd of those to be the step interval
-      timediff_arr = []
-      vs = sorted(value_arr, key=lambda x: x['timestamp'])
-      vs2 = vs
-      while len(vs2) > 1:
-        timediff_arr.append(vs2[1]['timestamp'] - vs2[0]['timestamp'])
-        vs2 = vs2[1:]
-      step = self.gcd_of_list(timediff_arr)/1000
-      step_arr = []
-      for ts in range(min_time, (max_time + 1), step):
-        if (len(vs) > 0) and (vs[0]['timestamp']/1000 == ts):
-          step_arr.append(vs[0][data_key])
-          vs = vs[1:]
-        else:
-          step_arr.append(None)
-      if len(vs) > 0:
-        print("gbjvs error")
-
-    # Need to prepend some None's because graphite-api's 
-    #  consolidate() algorithm drops some of the initial 
-    #  datapoints.  (See the "nudge" implementation here:
-    #  https://github.com/brutasse/graphite-api/blob/4445c5294115cdbaf44f1dde25474297ce6dbc0b/graphite_api/app.py#L231 )
-    
-    none_arr = []
-    new_min_time = min_time
-    for ts2 in range(min_time - step, start_time, -step):
-      none_arr.append(None)
-    if len(none_arr):
-      new_min_time = ts2
-
-    if len(step_arr) > 0:
-      print("gbj33 ", step_arr[-1])
-    return (none_arr+step_arr, step, new_min_time)
-
   def fetch(self, start_time, end_time):
     # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
     if not self.metric:
@@ -187,7 +178,7 @@ class TenantBluefloodReader(object):
       step = secs_per_res[res]
       client = Client(self.bf_query_endpoint, self.tenant)
       values = client.get_values(self.metric, start_time, end_time, res)
-      real_end_time += step
+      real_end_time = end_time + step
       processed_values = client.process_path(values, start_time, real_end_time, step)
       time_info = (start_time, real_end_time, step)
       print("gbj4 ", time_info, len(processed_values))
@@ -253,7 +244,7 @@ class Client(object):
   def current_datapoint_valid(self, v_iter, data_key, ts, step):
     if (not len(v_iter)) or (not (data_key in v_iter[0])):
       return False
-    datapoint_ts = v_iter[0]['timestamp']/1000)
+    datapoint_ts = v_iter[0]['timestamp']/1000
     if (ts <= datapoint_ts) and (datapoint_ts < (ts + step)):
       return True
     return False
@@ -273,11 +264,11 @@ class Client(object):
         ret_arr.append(v_iter[0][data_key])
       else:
         ret_arr.append(None)
-      v_iter = v_iter[1:]
+      # We only want one datapoint for each step
+      while self.current_datapoint_valid(v_iter, 'timestamp', ts, step):
+        v_iter = v_iter[1:]
+      
     return ret_arr
-
-
-    
 
 class TenantBluefloodLeafNode(LeafNode):
   __fetch_multi__ = 'tenant_blueflood'
