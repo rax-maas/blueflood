@@ -103,7 +103,9 @@ public class ElasticIOTest {
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME).withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
@@ -166,5 +168,13 @@ public class ElasticIOTest {
                 Assert.assertTrue(results.contains(entry));
             }
         }
+    }
+
+    @Test
+    public void testGlobMatching() throws Exception {
+        List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.{three00,three01}.fourA.five0");
+        Assert.assertEquals(results.size(), 2);
+        results.contains(new SearchResult(TENANT_A, "one.two.three00.fourA.five0", UNIT));
+        results.contains(new SearchResult(TENANT_A, "one.two.three01.fourA.five0", UNIT));
     }
 }
