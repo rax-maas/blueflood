@@ -33,7 +33,7 @@ def calc_res(start, stop):
   # make an educated guess about the likely number of data points returned.
   num_points = (stop - start) / 60
   res = 'FULL'
-  if num_points > 60:
+  if num_points > 400:
     num_points = (stop - start) / secs_per_res['MIN5']
     res = 'MIN5'
   if num_points > 800:
@@ -59,9 +59,9 @@ def grouper(iterable, n, fillvalue=None):
 
 
 class TenantBluefloodFinder(object):
-  __fetch_multi__ = 'tenant_blueflood'
+  #__fetch_multi__ = 'tenant_blueflood'
   def __init__(self, config=None):
-    print("gbj v5")
+    print("gbj v6")
     if os.path.isfile("/root/pdb-flag"):
       remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     authentication_module = None
@@ -230,7 +230,7 @@ class Client(object):
     #print("gbj request %s/v2.0/%s/views/%s" % (self.host, self.tenant, metric), payload, headers, json.loads(r.text)['values'])
     if r.status_code != 200:
       print str(r.status_code) + ' in get_values ' + r.text
-      return {'values': []}
+      return []
     else:
       try:
         return r.json()['values']
@@ -239,38 +239,51 @@ class Client(object):
         return json.loads(r.text)['values']
       except ValueError:
         print 'ValueError in get_values'
-        return {'values': []}
+        return []
 
-  def current_datapoint_valid(self, v_iter, data_key, ts, step):
-    if (not len(v_iter)) or (not (data_key in v_iter[0])):
+  def current_datapoint_passed(self, v_iter, ts):
+    if not len(v_iter):
       return False
     datapoint_ts = v_iter[0]['timestamp']/1000
-    if (ts <= datapoint_ts) and (datapoint_ts < (ts + step)):
+    if (ts > datapoint_ts):
       return True
     return False
-    
-  
+
+  def current_datapoint_valid(self, v_iter, data_key, ts, step):
+    #assumes current_datapoint_passed() is true
+    if (not len(v_iter)) or not (data_key in v_iter[0]):
+      return False
+    datapoint_ts = v_iter[0]['timestamp']/1000
+    if (datapoint_ts < (ts + step)):
+      return True
+    return False
 
   def process_path(self, values, start_time, end_time, step):
+    # Graphite-api requires the points be "step" seconds apart in time
+    #  with Null's interleaved if needed
+    if not len(values):
+      return []
     value_res_order = ['average', 'latest', 'numPoints']
     present_keys = [_ for _ in value_res_order if _ in values[0]]
     if present_keys:
       data_key = present_keys[0]
-
-    v_iter = values
+    else:
+      print "No valid keys present"
+      return []
+    v_iter = sorted(values, key=lambda x: x['timestamp'])
     ret_arr = []
     for ts in range(start_time, end_time, step):
+      # Skip datapoints that have already passed
+      while self.current_datapoint_passed(v_iter, ts):
+        v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(v_iter[0][data_key])
       else:
         ret_arr.append(None)
-      # We only want one datapoint for each step
-      while self.current_datapoint_valid(v_iter, 'timestamp', ts, step):
-        v_iter = v_iter[1:]
       
     return ret_arr
 
-class TenantBluefloodLeafNode(LeafNode):
-  __fetch_multi__ = 'tenant_blueflood'
+#class TenantBluefloodLeafNode(LeafNode):
+  #__fetch_multi__ = 'tenant_blueflood'
 
 
