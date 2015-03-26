@@ -148,19 +148,21 @@ public class ElasticIO implements DiscoveryIO {
         Timer.Context multiSearchCtx = searchTimer.time();
         queryBatchHistogram.update(queries.size());
         BoolQueryBuilder bqb = boolQuery();
+        QueryBuilder qb;
+
         for (String query : queries) {
             GlobPattern pattern = new GlobPattern(query);
-            QueryBuilder qb;
-            if (pattern.hasWildcard()) {
-                qb = wildcardQuery(metric_name.name(), query);
+            if (!pattern.hasWildcard()) {
+                qb = termQuery(metric_name.name(), query);
             } else {
                 qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
             }
             bqb.should(boolQuery()
-                    .must(termQuery(tenantId.toString(), tenant))
-                    .must(qb)
+                     .must(termQuery(tenantId.toString(), tenant))
+                     .must(qb)
             );
         }
+
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
                 .setSize(100000)
