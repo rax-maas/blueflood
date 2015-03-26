@@ -106,7 +106,7 @@ public class GlobPattern {
                     hasWildcard = true;
                     continue;
                 case '{': // start of a group
-                    regex.append("(?:"); // non-capturing
+                    regex.append("("); // non-capturing
                     curlyOpen++;
                     hasWildcard = true;
                     continue;

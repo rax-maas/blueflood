@@ -152,8 +152,8 @@ public class ElasticIO implements DiscoveryIO {
         QueryBuilder qb;
 
         GlobPattern pattern = new GlobPattern(query);
-        if (pattern.hasWildcard()) {
-            qb = wildcardQuery(metric_name.name(), query);
+        if (!pattern.hasWildcard()) {
+            qb = termQuery(metric_name.name(), query);
         } else {
             qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
         }
