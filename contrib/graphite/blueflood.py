@@ -15,6 +15,14 @@ except ImportError:
 
 # curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
+SUBMETRIC_TYPES = {
+    'bf_avg': 'average',
+    'bf_variance': 'variance',
+    'bf_min': 'min',
+    'bf_max': 'max',
+    'bf_count': 'numPoints'
+}
+
 class TenantBluefloodFinder(object):
 
   def __init__(self, config=None):
@@ -59,19 +67,22 @@ class TenantBluefloodFinder(object):
         if metric_depth > query_depth:
           yield BranchNode('.'.join(parts[:query_depth]))
         else:
-          yield LeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint))
+          yield LeafNode(metric, TenantBluefloodReader(metric, 'average', self.tenant, self.bf_query_endpoint))
+          for sm_name, select in SUBMETRIC_TYPES.items():
+            yield LeafNode('.'.join([metric, sm_name]), TenantBluefloodReader(metric, select, self.tenant, self.bf_query_endpoint))
     except Exception as e:
      print "Exception in Blueflood find_nodes: " 
      print e
      raise e
 
 class TenantBluefloodReader(object):
-  __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
+  __slots__ = ('metric', 'select', 'tenant', 'bf_query_endpoint')
   supported = True
 
-  def __init__(self, metric, tenant, endpoint):
-    # print 'READER ' + tenant + ' ' + metric
+  def __init__(self, metric, select, tenant, endpoint):
+    # print 'READER ' + tenant + ' ' + metric 
     self.metric = metric
+    self.select = select
     self.tenant = tenant
     self.bf_query_endpoint = endpoint
 
@@ -88,8 +99,9 @@ class TenantBluefloodReader(object):
       return ((start_time, end_time, 1), [])
     else:
       client = Client(self.bf_query_endpoint, self.tenant)
-      values = client.get_values(self.metric, start_time, end_time)
+      values = client.get_values(self.metric, self.select, start_time, end_time)
       # value keys in order of preference.
+      print values
       value_res_order = ['average', 'latest', 'numPoints']
 
       # determine the step
@@ -104,9 +116,7 @@ class TenantBluefloodReader(object):
         lastTime = timestamp
         minTime = min(minTime, timestamp)
         maxTime = max(maxTime, timestamp)
-        present_keys = [_ for _ in value_res_order if _ in obj]
-        if present_keys:
-            value_arr.append(obj[present_keys[0]])
+        value_arr.append(obj[self.select])
 
       time_info = (minTime, maxTime, step)
       return (time_info, value_arr)
@@ -148,7 +158,7 @@ class Client(object):
       except ValueError:
         return ['there was an error']
 
-  def get_values(self, metric, start, stop):
+  def get_values(self, metric, select, start, stop):
     # make an educated guess about the likely number of data points returned.
     num_points = (stop - start) / 60
     res = 'FULL'
@@ -172,7 +182,8 @@ class Client(object):
     payload = {
       'from': start * 1000,
       'to': stop * 1000,
-      'resolution': res
+      'resolution': res,
+      'select': select
     }
     #print 'USING RES ' + res
     headers = auth.headers()
