@@ -92,7 +92,7 @@ class TenantBluefloodFinder(object):
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
     self.enable_submetrics = enable_submetrics
-    self.submetric_names = submetric_names
+    self.submetric_aliases = submetric_aliases
 
   def find_nodes(self, query):
     query_parts = query.pattern.split('.')
