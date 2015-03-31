@@ -72,7 +72,7 @@ class TenantBluefloodFinder(object):
       authentication_class =  bf_config.get('authentication_class', None)
       default_submetric = bf_config.get('default_submetric', 'average')
       enable_submetrics = bf_config.get('enable_submetrics', False)
-      submetric_aliases = bf_config.get('submetric_names', {})
+      submetric_aliases = bf_config.get('submetric_aliases', {})
     else:
       from django.conf import settings
       urls = getattr(settings, 'BF_QUERY')
@@ -81,7 +81,7 @@ class TenantBluefloodFinder(object):
       authentication_class = getattr(settings, 'BF_AUTHENTICATION_CLASS', None)
       default_submetric = getattr(settings, 'BF_DEFAULT_SUBMETRIC', 'average')
       enable_submetrics = getattr(settings, 'BF_ENABLE_SUBMETRICS', False)
-      submetric_aliases = getattr(settings, 'BF_SUBMETRIC_NAMES', {})
+      submetric_aliases = getattr(settings, 'BF_SUBMETRIC_ALIASES', {})
 
     if authentication_module:
       module = __import__(authentication_module)
