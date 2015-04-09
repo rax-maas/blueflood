@@ -7,6 +7,7 @@ import com.rackspacecloud.blueflood.types.*;
 import java.util.*;
 
 public class FixTTL {
+    // Update all the TTL's for a set of metrics over a particular time range
     public static void fixTTLs(ColumnFamily CF, String tenantID,
                                List<String> metrics, Range range, Integer newTTL)
             throws Exception {

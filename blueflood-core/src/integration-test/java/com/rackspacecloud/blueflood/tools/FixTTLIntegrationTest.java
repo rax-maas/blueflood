@@ -67,6 +67,7 @@ public class FixTTLIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testFixTTL() throws Exception {
+        // Confirm TTL's have been updated
         FixTTL.fixTTLs(CF, tenantId, paths, range, newTTL);
         Map<Locator, ColumnList<Long>> data =
                 reader.getColumnsFromDB(locators, CF, range);
