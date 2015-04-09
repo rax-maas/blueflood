@@ -59,6 +59,7 @@ public class RollupHandler {
     
     protected RollupHandler() {
         if (Util.shouldUseESForUnits()) {
+            // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
             ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
         }
     }
