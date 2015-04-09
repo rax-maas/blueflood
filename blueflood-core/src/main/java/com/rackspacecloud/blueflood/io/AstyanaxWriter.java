@@ -378,16 +378,13 @@ public class AstyanaxWriter extends AstyanaxIO {
             ctx.stop();
         }
     }
-    public void updateTTL(ColumnFamily CF, Locator l, ColumnList<Long> cols, Integer ttl) {
+    public void updateTTL(ColumnFamily CF, Locator l, ColumnList<Long> cols, Integer ttl)
+            throws Exception {
         MutationBatch batch = getKeyspace().prepareMutationBatch();
         ColumnListMutation<Long> mutation = batch.withRow(CF, l);
         for (Column<Long> c : cols) {
             mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
         }
-        try {
-            batch.execute();
-        } catch (Exception ex) {
-            log.error(ex.getMessage() + "updateTTL() failed for " + l.toString());
-        }
+        batch.execute();
     }
 }

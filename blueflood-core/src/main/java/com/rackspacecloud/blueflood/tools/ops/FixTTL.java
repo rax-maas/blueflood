@@ -4,14 +4,48 @@ import org.apache.commons.cli.*;
 import com.netflix.astyanax.model.*;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.types.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class FixTTL {
-    private static final Logger log = LoggerFactory.getLogger(FixTTL.class);
+    public static void fixTTLs(ColumnFamily CF, String tenantID,
+                               String[] metrics, Range range, Integer newTTL)
+            throws Exception {
 
-    public static void main(String args[]) {
+        List<Locator> locators = new ArrayList<Locator>();
+        for (String path: metrics) {
+            locators.add(Locator.createLocatorFromPathComponents(tenantID, path));
+        }
+
+        // Print out current TTL's, and update them
+        Map<Locator, ColumnList<Long>> data =
+                AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
+
+        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
+            Locator l = entry.getKey();
+            System.out.println("Current Locator is " + l.toString());
+            ColumnList<Long> cols = entry.getValue();
+
+            System.out.println("Number of cols is " + cols.size());
+            for (Column<Long> col: cols) {
+                System.out.println("col name is " + col.getName() + " ttl is " + col.getTtl());
+            }
+            AstyanaxWriter.getInstance().updateTTL(CF, l, cols, newTTL);
+        }
+
+        System.out.println("\n\nThe updated TTL's are:");
+        data = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
+        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
+            Locator l = entry.getKey();
+            System.out.println("Locator of updated metric is " + l.toString());
+            ColumnList<Long> cols = entry.getValue();
+            for (Column<Long> col: cols) {
+                System.out.println("col name is " + col.getName() + " new ttl is " + col.getTtl());
+            }
+        }
+        System.out.println("FixTTL done");
+    }
+
+    public static void main(String args[]) throws Exception {
         Map<String, Object> options = OptionsHandler.parseOptions(args);
         ColumnFamily CF = CassandraModel.CF_METRICS_FULL;
         Range range = new Range((Long) options.get(OptionsHandler.FROM),
@@ -19,35 +53,8 @@ public class FixTTL {
         String tenantID = (String) options.get(OptionsHandler.TENANT_ID);
         Integer newTTL = (Integer) options.get(OptionsHandler.TTL);
         String metrics[] = (String[]) options.get(OptionsHandler.METRIC_LIST);
-
-        List<Locator> locators = new ArrayList<Locator>();
-        for (String path: metrics) {
-            locators.add(Locator.createLocatorFromPathComponents(tenantID, path));
-        }
-        Map<Locator, ColumnList<Long>> data = 
-                AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
-
-        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
-            Locator l = entry.getKey();
-            log.info("Current Locator is " + l.toString());
-            ColumnList<Long> cols = entry.getValue();
-
-            log.info("Number of cols is " + cols.size());
-            for (Column<Long> col: cols) {
-                log.info("col name is " + col.getName() + " ttl is " + col.getTtl());
-            }
-            AstyanaxWriter.getInstance().updateTTL(CF, l, cols, newTTL);
-        }
-        data = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
-        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
-            Locator l = entry.getKey();
-            log.info("Locator of updated metric is " + l.toString());
-            ColumnList<Long> cols = entry.getValue();
-            for (Column<Long> col: cols) {
-                log.info("col name is " + col.getName() + " new ttl is " + col.getTtl());
-            }
-        }
-        log.info("FixTTL done");
+        fixTTLs(CF, tenantID, metrics, range, newTTL);
+        System.exit(0);
     }
 }
 
