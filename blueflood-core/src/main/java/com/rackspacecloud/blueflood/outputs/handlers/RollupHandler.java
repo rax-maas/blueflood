@@ -35,9 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class RollupHandler {
     private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
@@ -57,6 +55,14 @@ public class RollupHandler {
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
+    private ExecutorService ESUnitExecutor = null;
+    
+    protected RollupHandler() {
+        if (Util.shouldUseESForUnits()) {
+            // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
+            ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
+        }
+    }
 
     protected MetricData getRollupByGranularity(
             final String tenantId,
@@ -71,7 +77,7 @@ public class RollupHandler {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
 
         if (Util.shouldUseESForUnits()) {
-             unitFuture = Executors.newFixedThreadPool(1).submit(new Callable() {
+             unitFuture = ESUnitExecutor.submit(new Callable() {
 
                  @Override
                  public Object call() throws Exception {
