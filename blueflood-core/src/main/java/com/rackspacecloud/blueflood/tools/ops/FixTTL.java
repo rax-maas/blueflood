@@ -21,17 +21,22 @@ public class FixTTL {
         for (String path: metrics) {
             locators.add(Locator.createLocatorFromPathComponents(tenantID, path));
         }
-        Map<Locator, ColumnList<Long>> cols = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
-        for (Map.Entry<Locator, ColumnList<Long>> entry: cols.entrySet()) {
+        Map<Locator, ColumnList<Long>> data = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
+        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
             log.info("gbjcolnext " + entry.getKey().toString());
-	    
+            ColumnList<Long> cols = entry.getValue();
+            log.info("gbjcolsize is " + cols.size());
+            for (int i = 0; i < cols.size(); i++) {
+                Column<Long> col = cols.getColumnByIndex(i);
+                log.info("col name is " + col.getName() + " ttl is " + col.getTtl());
+            }
         }
-        return cols;
+        return data;
     }
 
     public static void main(String args[]) {
-              log.info("gbjgetting cols2");
-
+        log.info("gbjgetting cols2");
         getColumnDataForTenant("835990");
+        log.info("gbj done");
     }
 }
