@@ -8,7 +8,7 @@ import java.util.*;
 
 public class FixTTL {
     public static void fixTTLs(ColumnFamily CF, String tenantID,
-                               String[] metrics, Range range, Integer newTTL)
+                               List<String> metrics, Range range, Integer newTTL)
             throws Exception {
 
         List<Locator> locators = new ArrayList<Locator>();
@@ -52,7 +52,7 @@ public class FixTTL {
 				(Long) options.get(OptionsHandler.TO));
         String tenantID = (String) options.get(OptionsHandler.TENANT_ID);
         Integer newTTL = (Integer) options.get(OptionsHandler.TTL);
-        String metrics[] = (String[]) options.get(OptionsHandler.METRIC_LIST);
+        List<String> metrics = (ArrayList<String>) options.get(OptionsHandler.METRIC_LIST);
         fixTTLs(CF, tenantID, metrics, range, newTTL);
         System.exit(0);
     }
@@ -91,7 +91,8 @@ class OptionsHandler {
             }
 
             if (line.hasOption(METRIC_LIST)) {
-                options.put(METRIC_LIST, line.getOptionValue(METRIC_LIST).split(","));
+                String metrics[] = line.getOptionValue(METRIC_LIST).split(",");
+                options.put(METRIC_LIST, Arrays.asList(metrics));
             }
 
             if (line.hasOption(FROM)) {
