@@ -29,6 +29,8 @@ import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
@@ -374,6 +376,18 @@ public class AstyanaxWriter extends AstyanaxIO {
             throw e;
         } finally {
             ctx.stop();
+        }
+    }
+    public void updateTTL(ColumnFamily CF, Locator l, ColumnList<Long> cols, Integer ttl) {
+        MutationBatch batch = getKeyspace().prepareMutationBatch();
+        ColumnListMutation<Long> mutation = batch.withRow(CF, l);
+        for (Column<Long> c : cols) {
+            mutation.putColumn(c.getName(), c.getByteBufferValue(), ttl);
+        }
+        try {
+            batch.execute();
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + "updateTTL() failed for " + l.toString());
         }
     }
 }

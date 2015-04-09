@@ -23,11 +23,22 @@ public class FixTTL {
         }
         Map<Locator, ColumnList<Long>> data = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
         for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
-            log.info("gbjcolnext " + entry.getKey().toString());
+            Locator l = entry.getKey();
+            log.info("gbjcolnext " + l.toString());
             ColumnList<Long> cols = entry.getValue();
+
             log.info("gbjcolsize is " + cols.size());
-            for (int i = 0; i < cols.size(); i++) {
-                Column<Long> col = cols.getColumnByIndex(i);
+            for (Column<Long> col: cols) {
+                log.info("col name is " + col.getName() + " ttl is " + col.getTtl());
+            }
+            AstyanaxWriter.getInstance().updateTTL(CF, l, cols, 1000);
+        }
+        data = AstyanaxReader.getInstance().getColumnsFromDB(locators, CF, range);
+        for (Map.Entry<Locator, ColumnList<Long>> entry: data.entrySet()) {
+            Locator l = entry.getKey();
+            log.info("gbjcolnew " + l.toString());
+            ColumnList<Long> cols = entry.getValue();
+            for (Column<Long> col: cols) {
                 log.info("col name is " + col.getName() + " ttl is " + col.getTtl());
             }
         }
@@ -35,7 +46,7 @@ public class FixTTL {
     }
 
     public static void main(String args[]) {
-        log.info("gbjgetting cols2");
+        log.info("gbjgetting cols3");
         getColumnDataForTenant("835990");
         log.info("gbj done");
     }
