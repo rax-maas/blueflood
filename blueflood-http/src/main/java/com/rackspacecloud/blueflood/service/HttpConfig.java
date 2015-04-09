@@ -38,7 +38,12 @@ public enum HttpConfig implements ConfigDefaults {
     // Maximum number of ACCEPT threads for HTTP output
     MAX_READ_ACCEPT_THREADS("10"),
 
-    // Maximum number of WORKER threads for HTTP output (must be included in connections calculations)
+    /*
+      Maximum number of WORKER threads for HTTP output (is included in connections calculations)
+      CoreConfig.ES_UNIT_THREADS should also be adjusted corresponding to the changes in this config
+      if CoreConfig,.USE_ES_FOR_UNITS is set to true, so that the ES_UNIT threads do not become a
+      bottleneck for the netty threads
+     */
     MAX_READ_WORKER_THREADS("50"),
 
     // Maximum number of ACCEPT threads for HTTP input server
