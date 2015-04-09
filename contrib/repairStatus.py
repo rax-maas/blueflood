@@ -10,6 +10,10 @@ from datetime import datetime, timedelta
 
 
 def generate_range_repair_query(node, start_time, current_time):
+    """
+    Generate the json for an ES _count to return the number of ranges that have finished repairing
+    """
+    
     query_json = {
         "query": {
             "filtered": {
@@ -96,6 +100,10 @@ def calculate_range_repairs(host, port, node, start_time, current_time):
 
 
 def generate_total_ranges_query(node, start_time, current_time):
+    """
+    Generate the json for an ES _search to return the total number of ranges that need repairing
+    """
+
     query_json = {
         "fields": "message",
         "query": {
@@ -160,6 +168,9 @@ def calculate_total_ranges(host, port, node, start_time, current_time):
 
 
 def print_totals(node, days, total_successful_range_repairs, total_to_repair):
+    """
+    Finally, compute the percentage complete and print some status information
+    """
     percent_complete = total_successful_range_repairs * 100 / total_to_repair
     print("Checking repair messages for", node, "for the past", days, "days")
     print("Count is: " + str(total_successful_range_repairs))
