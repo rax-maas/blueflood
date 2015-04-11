@@ -44,6 +44,7 @@ public class FixTTLIntegrationTest extends IntegrationTestBase {
     private final long curMillis = 1333635148000L; // some point during 5 April 2012.
     private List<Metric> metrics = null;
     private final Range range = new Range(curMillis - 10000, curMillis + 10000);
+    private final Integer oldTTL = 60 * 60 * 24;
     private final Integer newTTL = 1234567;
     private final ColumnFamily CF = CassandraModel.CF_METRICS_FULL;
 
@@ -67,14 +68,19 @@ public class FixTTLIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testFixTTL() throws Exception {
-        // Confirm TTL's have been updated
-        FixTTL.fixTTLs(CF, tenantId, paths, range, newTTL);
+        checkTTL(true, oldTTL);
+        checkTTL(false, newTTL);
+    }
+    
+    public void checkTTL(Boolean dryRun, Integer ttl) throws Exception {
+        // Confirm TTL's have match expected values
+        FixTTL.fixTTLs(CF, tenantId, paths, range, newTTL, dryRun);
         Map<Locator, ColumnList<Long>> data =
                 reader.getColumnsFromDB(locators, CF, range);
         Column<Long> col1 = data.get(locator1).getColumnByName(curMillis);
         Column<Long> col2 = data.get(locator2).getColumnByName(curMillis);
 
-        Assert.assertEquals((int)col1.getTtl(), (int)newTTL);
-        Assert.assertEquals((int)col2.getTtl(), (int)newTTL);
+        Assert.assertEquals((int)col1.getTtl(), (int)ttl);
+        Assert.assertEquals((int)col2.getTtl(), (int)ttl);
     }
 }
