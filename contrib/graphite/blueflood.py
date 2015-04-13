@@ -29,6 +29,13 @@ secs_per_res = {
   'MIN240': 240*60,
   'MIN1440': 1440*60}
 
+def pall(fn):
+  def wrap(*args, **kwargs):
+    for v in fn(*args, **kwargs):
+      print str(v)
+      yield v
+  return wrap
+
 def calc_res(start, stop):
   # make an educated guess about the likely number of data points returned.
   num_points = (stop - start) / 60
@@ -91,39 +98,48 @@ class TenantBluefloodFinder(object):
 
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
+    self.default_submetric = default_submetric
     self.enable_submetrics = enable_submetrics
     self.submetric_aliases = submetric_aliases
 
   def find_nodes(self, query):
-    query_parts = query.pattern.split('.')
+    try:
+      print "TenantBluefloodFinder.query: " + str(query.pattern)
+      query_parts = query.pattern.split('.')
+      query_depth = len(query_parts)
+      client = BluefloodClient(self.bf_query_endpoint, self.tenant)
 
-    query_depth = len(query_parts)
+      # If searching for a.b.*, and using submetrics, we must determine if a.b
+      # exists.  If so, return leaf nodes for each submetric that is enabled
+      if self.enable_submetrics and query_parts[-1] == '*':
+        for metric in client.find_metrics('.'.join(query_parts[0:-1])):
+          metric_parts = metric.split('.')
+          for alias, _ in self.submetric_aliases.items():
+            yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]), TenantBluefloodReader(metric, self.submetric_aliases[alias], self.tenant, self.bf_query_endpoint))
 
-    client = BluefloodClient(self.bf_query_endpoint, self.tenant)
+      if self.enable_submetrics and query_parts[-1] in self.submetric_aliases:
+        for metric in client.find_metrics('.'.join(query_parts[0:-1])):
+          yield TenantBluefloodLeafNode('.'.join(query_parts), TenantBluefloodReader(metric, self.submetric_aliases[query_parts[-1]], self.tenant, self.bf_query_endpoint))
 
-    for metric in client.find_metrics(query.pattern):
-      metric_parts = metric.split('.')
+      for metric in client.find_metrics(query.pattern):
+          metric_parts = metric.split('.')
+          if query_depth < len(metric_parts):
+            yield BranchNode('.'.join(metric_parts[:query_depth]))
+          elif len(metric_parts) == query_depth:
+            # If submetrics are enabled, yield a full match as a branch node
+            if self.enable_submetrics:
+              yield BranchNode('.'.join(metric_parts[:query_depth]))
+            else:
+              yield TenantBluefloodLeafNode(metric, TenantBluefloodReader(metric, self.default_submetric, self.tenant, self.bf_query_endpoint))
 
-      if query_depth < len(metric_parts):
-        yield BranchNode('.'.join(metric_parts[:query_depth]))
-
-      elif len(metric_parts) == query_depth:
-        if self.enable_submetrics:
-          for alias, select in self.submetric_aliases.items():
-            graphite_metric = '.'.join(metric_parts + [select])
-            yield TenantBluefloodLeafNode(graphite_metric, TenantBluefloodReader(metric, select, self.tenant, self.bf_query_endpoint))
-        else:
-          yield TenantBluefloodLeafNode(graphite_metric, TenantBluefloodReader(metric, self.default_submetric, self.tenant, self.bf_query_endpoint))
-    # try:
-    #   pass
-    # except Exception as e:
-    #  print "Exception in Blueflood find_nodes: "
-    #  print e
-    #  exc_info = sys.exc_info()
-    #  tb = traceback.format_exception(*exc_info)
-    #  for line in tb:
-    #    print(line)
-    #  raise e
+    except Exception as e:
+     print "Exception in Blueflood find_nodes: "
+     print e
+     exc_info = sys.exc_info()
+     tb = traceback.format_exception(*exc_info)
+     for line in tb:
+       print(line)
+     raise e
 
   def get_metric_list(self, endpoint, tenant, metric_list, payload, headers):
     url = "%s/v2.0/%s/views" % (endpoint, tenant)
@@ -166,7 +182,7 @@ class TenantBluefloodFinder(object):
 
 
 class TenantBluefloodReader(object):
-  __slots__ = ('metric', 'tenant', 'bf_query_endpoint')
+  __slots__ = ('metric', 'submetric', 'tenant', 'bf_query_endpoint')
   supported = True
 
   def __init__(self, metric, submetric, tenant, endpoint):
@@ -216,6 +232,7 @@ class BluefloodClient(object):
 
 
   def find_metrics(self, query):
+    print "BluefloodClient.find_metrics: " + str(query)
     payload = {'query': query}
     headers = auth.headers()
     r = self.make_request("%s/v2.0/%s/metrics/search" % (self.host, self.tenant), payload, headers)
