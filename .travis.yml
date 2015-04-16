@@ -13,7 +13,7 @@ install:
   - mvn install dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
 
 script: 
-  - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
+  - mvn -e verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
 after_success:
   - mvn jacoco:report jacoco:report-integration coveralls:report
