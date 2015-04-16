@@ -191,10 +191,10 @@ public class NumericSerializer {
 
     private static int sizeOf(Object o, byte type) 
       throws IOException {
-        return sizeOf(o, type, VERSION_2_TIMER);
+        return sizeOf(o, type, VERSION_2_TIMER, VERSION_2_COUNTER_ROLLUP);
     }
 
-    private static int sizeOf(Object o, byte type, byte timerVersion) 
+    private static int sizeOf(Object o, byte type, byte timerVersion, byte counterVersion)
       throws IOException {
         int sz = 0;
         switch (type) {
@@ -300,7 +300,11 @@ public class NumericSerializer {
                 else if (counter.getCount() instanceof Double || counter.getCount() instanceof Float)
                     sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getCount().doubleValue());
                 sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getRate());
-                sz += CodedOutputStream.computeRawVarint32Size(counter.getSampleCount());
+                if (counterVersion == VERSION_1_COUNTER_ROLLUP) {
+                    sz += CodedOutputStream.computeRawVarint32Size((int)counter.getSampleCount());
+                } else {
+                    sz += CodedOutputStream.computeRawVarint64Size(counter.getSampleCount());
+                }
                 return sz;
             default:
                 throw new IOException("Unexpected type: " + type);
@@ -308,19 +312,35 @@ public class NumericSerializer {
         return sz;
     }
     
-    private static void serializeCounterRollup(CounterRollup rollup, byte[] buf) throws IOException {
+    private static void serializeV1CounterRollup(CounterRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         CounterRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_COUNTER_ROLLUP);
         putUnversionedDoubleOrLong(rollup.getCount(), out);
         out.writeDoubleNoTag(rollup.getRate());
-        out.writeRawVarint32(rollup.getSampleCount());
+        out.writeRawVarint32((int)rollup.getSampleCount());
+    }
+
+    private static void serializeV2CounterRollup(CounterRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        CounterRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_1_COUNTER_ROLLUP);
+        putUnversionedDoubleOrLong(rollup.getCount(), out);
+        out.writeDoubleNoTag(rollup.getRate());
+        out.writeRawVarint64(rollup.getSampleCount());
     }
     
     private static CounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
         Number value = getUnversionedDoubleOrLong(in);
         double rate = in.readDouble();
         int sampleCount = in.readRawVarint32();
+        return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
+    }
+
+    private static CounterRollup deserializeV2CounterRollup(CodedInputStream in) throws IOException {
+        Number value = getUnversionedDoubleOrLong(in);
+        double rate = in.readDouble();
+        long sampleCount = in.readRawVarint64();
         return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
     
@@ -638,7 +658,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBuffer(TimerRollup o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
+                byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER, VERSION_2_COUNTER_ROLLUP)];
                 serializeTimer(o, buf, VERSION_2_TIMER);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
@@ -650,7 +670,7 @@ public class NumericSerializer {
         public ByteBuffer toByteBufferWithV1Serialization(TimerRollup o) {
             try {
                 byte type = typeOf(o);
-                byte[] buf = new byte[sizeOf(o, type, VERSION_1_TIMER)];
+                byte[] buf = new byte[sizeOf(o, type, VERSION_1_TIMER, VERSION_1_COUNTER_ROLLUP)];
                 serializeTimer(o, buf, VERSION_1_TIMER);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
@@ -733,7 +753,7 @@ public class NumericSerializer {
             try {
                 byte type = typeOf(obj);
                 byte[] buf = new byte[sizeOf(obj, type)];
-                serializeCounterRollup(obj, buf);
+                serializeV2CounterRollup(obj, buf);
                 return ByteBuffer.wrap(buf);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
@@ -747,7 +767,7 @@ public class NumericSerializer {
                 byte version = in.readRawByte();
                 if (version != VERSION_1_COUNTER_ROLLUP)
                     throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
-                return deserializeV1CounterRollup(in);
+                return deserializeV2CounterRollup(in);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
