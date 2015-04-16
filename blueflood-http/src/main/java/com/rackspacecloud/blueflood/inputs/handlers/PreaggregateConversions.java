@@ -70,7 +70,7 @@ public class PreaggregateConversions {
             Rollup rollup = new CounterRollup()
                     .withCount(resolveNumber(counter.getValue()))
                     .withRate(counter.getRate().doubleValue())
-                    .withCount(sampleCount);
+                    .withSampleCount((int)sampleCount);
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }
