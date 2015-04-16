@@ -12,7 +12,7 @@ public class CounterRollup implements Rollup {
     /**
      * Number of pre-aggregated counters received by Blueflood
      */
-    private int sampleCount;
+    private long sampleCount;
     
     public CounterRollup() {
         this.rate = 0d;
@@ -29,7 +29,7 @@ public class CounterRollup implements Rollup {
         return this;
     }
 
-    public CounterRollup withSampleCount(int sampleCount) {
+    public CounterRollup withSampleCount(long sampleCount) {
         this.sampleCount = sampleCount;
         return this;
     }
@@ -42,7 +42,7 @@ public class CounterRollup implements Rollup {
         return rate;
     }
 
-    public int getSampleCount() { return sampleCount; }
+    public long getSampleCount() { return sampleCount; }
     
     private static Number promoteToDoubleOrLong(Number num) {
         if (num instanceof Float)
@@ -87,7 +87,7 @@ public class CounterRollup implements Rollup {
         
         Number count = 0L;
         double seconds = 0;
-        int sampleCount = 0;
+        long sampleCount = 0;
         for (Points.Point<CounterRollup> point : input.getPoints().values()) {
             count = sum(count, point.getData().getCount());
             sampleCount = sampleCount + point.getData().getSampleCount();
