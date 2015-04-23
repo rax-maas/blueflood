@@ -1,4 +1,4 @@
-package com.rackspacecloud.blueflood.dw.ingest;
+package com.rackspacecloud.blueflood.dw;
 
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.service.ScheduleContext;

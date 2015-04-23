@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.dw.ingest;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.dw.ShardUpdates;
 import com.rackspacecloud.blueflood.dw.ingest.types.ICollectionTime;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
