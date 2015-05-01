@@ -68,6 +68,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
     private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
+    private final Timer multiSearchTimer = Metrics.timer(ElasticIO.class, "Multi-Search Duration");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -171,6 +172,25 @@ public class ElasticIO implements DiscoveryIO {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
             results.add(result);
         }
+        return results;
+    }
+
+    public List<SearchResult> search(List<Locator> locators) {
+        List<SearchResult> results = new ArrayList<SearchResult>();
+        Timer.Context multiSearchCtx = multiSearchTimer.time();
+
+        //
+        BoolQueryBuilder qb = boolQuery();
+        SearchResponse response = client.prepareSearch(INDEX_NAME)
+                .setQuery(qb)
+                .execute()
+                .actionGet();
+        multiSearchCtx.stop();
+        for (SearchHit hit : response.getHits().getHits()) {
+            SearchResult result = convertHitToMetricDiscoveryResult(hit);
+            results.add(result);
+        }
+
         return results;
     }
 
