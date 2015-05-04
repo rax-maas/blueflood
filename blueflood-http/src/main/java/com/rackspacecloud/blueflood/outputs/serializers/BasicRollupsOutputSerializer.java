@@ -38,7 +38,10 @@ public interface BasicRollupsOutputSerializer<T> {
         AVERAGE("average") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BasicRollup)
+                //since GaugeRollup is a subclass of BasicRollup it has to come before BasicRollup
+                if (rollup instanceof GaugeRollup)
+                    return ((GaugeRollup) rollup).getAverage();
+                else if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getAverage();
                 else if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getAverage();
@@ -55,7 +58,10 @@ public interface BasicRollupsOutputSerializer<T> {
         VARIANCE("variance") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BasicRollup)
+                //since GaugeRollup is a subclass of BasicRollup it has to come before BasicRollup
+                if (rollup instanceof GaugeRollup)
+                    return ((GaugeRollup) rollup).getVariance();
+                else if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getVariance();
                 else if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getVariance();
@@ -72,7 +78,10 @@ public interface BasicRollupsOutputSerializer<T> {
         MIN("min") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BasicRollup)
+                //since GaugeRollup is a subclass of BasicRollup, it has to come before BasicRollup
+                if (rollup instanceof GaugeRollup)
+                    return ((GaugeRollup) rollup).getMinValue();
+                else if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMinValue();
                 else if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getMinValue();
@@ -89,7 +98,10 @@ public interface BasicRollupsOutputSerializer<T> {
         MAX("max") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BasicRollup)
+                //since GaugeRollup is a subclass of BasicRollup, it has to come before BasicRollup
+                if (rollup instanceof GaugeRollup)
+                    return ((GaugeRollup) rollup).getMaxValue();
+                else if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMaxValue();
                 else if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getMaxValue();

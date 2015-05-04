@@ -27,6 +27,7 @@ import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.types.TimerRollup;
+import org.elasticsearch.index.analysis.CharMatcher;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,8 +124,10 @@ public class FakeMetricDataGenerator {
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            Points.Point<GaugeRollup> point = new Points.Point<GaugeRollup>(timeNow, new GaugeRollup()
-                .withLatest(timeNow, i));
+            BasicRollup b = new BasicRollup();
+            b.setAverage(i);
+            GaugeRollup g = GaugeRollup.fromBasicRollup(b, timeNow, i);
+            Points.Point<GaugeRollup> point = new Points.Point<GaugeRollup>(timeNow, g.withLatest(timeNow, i));
             points.add(point);
         }
         return points;
