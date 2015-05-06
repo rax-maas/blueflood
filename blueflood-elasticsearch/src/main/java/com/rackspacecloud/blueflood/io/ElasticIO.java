@@ -40,10 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -144,42 +141,19 @@ public class ElasticIO implements DiscoveryIO {
     }
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
-        // complain if someone is trying to search specifically on any tenant.
-        if (query.indexOf(tenantId.name()) >= 0) {
-            throw new Exception("Illegal query: " + query);
-        }
-        
-        List<SearchResult> results = new ArrayList<SearchResult>();
-        Timer.Context searchTimerCtx = searchTimer.time();
-        
-        BoolQueryBuilder qb = boolQuery()
-                .must(termQuery(tenantId.toString(), tenant))
-                .must(
-                        query.contains("*") ?
-                                wildcardQuery(metric_name.name(), query) :
-                                termQuery(metric_name.name(), query)
-                );
-        SearchResponse response = client.prepareSearch(INDEX_NAME)
-                .setRouting(tenant)
-                .setSize(100000)
-                .setVersion(true)
-                .setQuery(qb)
-                .execute()
-                .actionGet();
-        searchTimerCtx.stop();
-        for (SearchHit hit : response.getHits().getHits()) {
-            SearchResult result = convertHitToMetricDiscoveryResult(hit);
-            results.add(result);
-        }
-        return results;
+        return search(tenant, Arrays.asList(query));
     }
 
-    public List<SearchResult> search(String tenant, List<String> queries) {
+    public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
         List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context multiSearchCtx = multiSearchTimer.time();
         BoolQueryBuilder qb = boolQuery();
 
         for (String query : queries) {
+            // complain if someone is trying to search specifically on any tenant.
+            if (query.indexOf(tenantId.name()) >= 0) {
+                throw new Exception("Illegal query: " + query);
+            }
             qb.should(boolQuery()
                     .must(termQuery(tenantId.toString(), tenant))
                     .must(

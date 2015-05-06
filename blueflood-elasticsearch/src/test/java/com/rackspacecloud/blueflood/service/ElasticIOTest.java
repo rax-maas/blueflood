@@ -41,7 +41,6 @@ public class ElasticIOTest {
     private static final int NUM_DOCS = NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size() * NUM_GRANDCHILD_ELEMENTS;
     private static final String TENANT_A = "ratanasv";
     private static final String TENANT_B = "someotherguy";
-
     private static final String TENANT_C = "someothergal";
     private static final String UNIT = "horse length";
     private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
