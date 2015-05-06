@@ -166,5 +166,20 @@ public class ElasticIOTest {
                 Assert.assertTrue(results.contains(entry));
             }
         }
+
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add("one.two.*");
+        queries.add("*.fourA.*");
+        results = elasticIO.search(tenantId, queries);
+        for (Locator locator : locators) {
+            entry =  new SearchResult(tenantId, locator.getMetricName(), unit);
+            Assert.assertTrue((results.contains(entry)));
+        }
+        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
+            for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
+                entry = createExpectedResult(tenantId, x, "A", z, unit);
+                Assert.assertTrue(results.contains(entry));
+            }
+        }
     }
 }

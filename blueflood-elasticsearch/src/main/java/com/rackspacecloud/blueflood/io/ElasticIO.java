@@ -152,7 +152,6 @@ public class ElasticIO implements DiscoveryIO {
         List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context searchTimerCtx = searchTimer.time();
         
-        // todo: we'll want to change this once we decide and use a query syntax in the query string.
         BoolQueryBuilder qb = boolQuery()
                 .must(termQuery(tenantId.toString(), tenant))
                 .must(
@@ -175,13 +174,25 @@ public class ElasticIO implements DiscoveryIO {
         return results;
     }
 
-    public List<SearchResult> search(List<Locator> locators) {
+    public List<SearchResult> search(String tenant, List<String> queries) {
         List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context multiSearchCtx = multiSearchTimer.time();
-
-        //
         BoolQueryBuilder qb = boolQuery();
+
+        for (String query : queries) {
+            qb.should(boolQuery()
+                    .must(termQuery(tenantId.toString(), tenant))
+                    .must(
+                            query.contains("*") ?
+                                    wildcardQuery(metric_name.name(), query) :
+                                    termQuery(metric_name.name(), query)
+                    ));
+        }
+
         SearchResponse response = client.prepareSearch(INDEX_NAME)
+                .setRouting(tenant)
+                .setSize(100000)
+                .setVersion(true)
                 .setQuery(qb)
                 .execute()
                 .actionGet();

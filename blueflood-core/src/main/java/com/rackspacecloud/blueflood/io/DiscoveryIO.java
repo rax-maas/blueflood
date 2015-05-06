@@ -8,5 +8,5 @@ import java.util.List;
 public interface DiscoveryIO {
     public void insertDiscovery(List<IMetric> metrics) throws Exception;
     public List<SearchResult> search(String tenant, String query) throws Exception;
-    public List<SearchResult> search(List<Locator> locators);
+    public List<SearchResult> search(String tenant, List<String> locators);
 }
