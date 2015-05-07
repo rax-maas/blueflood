@@ -51,7 +51,7 @@ def calc_res(start, stop):
 class TenantBluefloodFinder(object):
   __fetch_multi__ = 'tenant_blueflood'
   def __init__(self, config=None):
-    print("Blueflood Finder v21")
+    print("Blueflood Finder v22")
 #    if os.path.isfile("/root/pdb-flag"):
 #      import remote_pdb
 #      remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
