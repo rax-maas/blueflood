@@ -141,7 +141,9 @@ public enum CoreConfig implements ConfigDefaults {
     STRING_METRICS_DROPPED("false"),
     TENANTIDS_TO_KEEP(""),
 
-    USE_ES_FOR_UNITS("false");
+    USE_ES_FOR_UNITS("false"),
+    // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
+    ES_UNIT_THREADS("50");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
