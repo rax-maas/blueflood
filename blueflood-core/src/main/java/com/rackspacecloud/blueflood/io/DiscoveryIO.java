@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.types.IMetric;
-
 import java.util.List;
 
 public interface DiscoveryIO {

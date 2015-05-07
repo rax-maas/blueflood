@@ -33,7 +33,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -65,7 +64,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
     private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
-    private final Timer multiSearchTimer = Metrics.timer(ElasticIO.class, "Multi-Search Duration");
+    private Histogram queryBatchHistogram = Metrics.histogram(ElasticIO.class, "Query Batch Size");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -146,7 +145,8 @@ public class ElasticIO implements DiscoveryIO {
 
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
         List<SearchResult> results = new ArrayList<SearchResult>();
-        Timer.Context multiSearchCtx = multiSearchTimer.time();
+        Timer.Context multiSearchCtx = searchTimer.time();
+        queryBatchHistogram.update(queries.size());
         BoolQueryBuilder qb = boolQuery();
 
         for (String query : queries) {
