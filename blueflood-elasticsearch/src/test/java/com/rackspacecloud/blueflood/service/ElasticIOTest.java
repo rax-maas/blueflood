@@ -41,7 +41,6 @@ public class ElasticIOTest {
     private static final int NUM_DOCS = NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size() * NUM_GRANDCHILD_ELEMENTS;
     private static final String TENANT_A = "ratanasv";
     private static final String TENANT_B = "someotherguy";
-
     private static final String TENANT_C = "someothergal";
     private static final String UNIT = "horse length";
     private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
@@ -136,6 +135,48 @@ public class ElasticIOTest {
     @Test
     public void testWildcardForPreaggregatedMetric() throws Exception {
         testWildcard(TENANT_C, null);
+    }
+
+    @Test
+    public void testBatchQueryWithNoWildCards() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "one.two.three00.fourA.five1";
+        String query2 = "one.two.three01.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        Assert.assertEquals(results.size(), 2); //we searched for 2 unique metrics
+        results.contains(new SearchResult(TENANT_A, query1, UNIT));
+        results.contains(new SearchResult(TENANT_A, query2, UNIT));
+    }
+
+    @Test
+    public void testBatchQueryWithWildCards() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "one.two.three00.fourA.*";
+        String query2 = "one.two.*.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        // query1 will return 3 results, query2 will return 30 results, but we get back 32 because of intersection
+        Assert.assertEquals(results.size(), 32);
+    }
+
+    @Test
+    public void testBatchQueryWithWildCards2() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "*.two.three00.fourA.five1";
+        String query2 = "*.two.three01.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        Assert.assertEquals(results.size(), 2);
     }
 
     public void testWildcard(String tenantId, String unit) throws Exception {
