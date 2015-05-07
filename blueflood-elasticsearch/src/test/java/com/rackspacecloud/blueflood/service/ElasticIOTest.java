@@ -166,6 +166,19 @@ public class ElasticIOTest {
         Assert.assertEquals(results.size(), 32);
     }
 
+    @Test
+    public void testBatchQueryWithWildCards2() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "*.two.three00.fourA.five1";
+        String query2 = "*.two.three01.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        Assert.assertEquals(results.size(), 2);
+    }
+
     public void testWildcard(String tenantId, String unit) throws Exception {
         SearchResult entry;
         List<SearchResult> results;
