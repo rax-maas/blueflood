@@ -122,7 +122,8 @@ class TenantBluefloodFinder(object):
       query_parts = query.pattern.split('.')
       query_depth = len(query_parts)
 
-      # If searching for all submetrics aliases, (i.e <metric-name>.*),  we must confirm
+
+      #  we are searching for all submetrics aliases, (i.e <metric-name>.*),  we must confirm
       #  that <metric-name> is a valid complete metric name.
       #  If so, return leaf nodes for each submetric alias that is enabled
       if self.enable_submetrics and query_parts[-1] == '*':
@@ -199,8 +200,8 @@ class TenantBluefloodReader(object):
                                      self.enable_submetrics, self.submetric_aliases)
       node = TenantBluefloodLeafNode(self.metric, reader)
 
-      time_info, cache = client.fetch_multi([node], start_time, end_time)
-      return (time_info, cache[self.metric])
+      time_info, dictionary = client.fetch_multi([node], start_time, end_time)
+      return (time_info, dictionary[self.metric])
 
 class BluefloodClient(object):
   def __init__(self, host, tenant, enable_submetrics, submetric_aliases):
@@ -254,10 +255,14 @@ class BluefloodClient(object):
     if not data_key:
       print "No valid keys present"
       return []
-    v_iter = sorted(values, key=lambda x: x['timestamp'])
+    v_iter = values
     ret_arr = []
     for ts in range(start_time, end_time, step):
       # Skip datapoints that have already passed
+      #  NOTE/TODO: this while loop has the effect of dropping all but the first datapoint in each step
+      #  (Graphite requires exactly one datapoint/step.)  It would be better to rollup the datapoints
+      #  if there are more than one/step.  However that will only happen when we have full res metrics
+      #  with sub-second frequencies.  We believe that case is too rare to worry about right now.
       while self.current_datapoint_passed(v_iter, ts):
         v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
@@ -298,8 +303,9 @@ class BluefloodClient(object):
   def gen_keys(self, node, metrics):
     # returns metrics_key and data_key
     #  metrics_key, (the name of the metric, which varies
-    #  depending on if submetric aliases are used.
-    #
+    #   depending on if submetric aliases are used.)
+    #  data_key, (the name of the key to use for the individual datapoint
+    #   returned by BF
     metrics_key = None
     data_key = None
     if self.enable_submetrics:
@@ -313,14 +319,14 @@ class BluefloodClient(object):
       data_key = self.gen_data_key(metrics[metrics_key])
     return metrics_key, data_key
 
-  def gen_cache(self, nodes, responses, start_time, real_end_time, step):
+  def gen_dict(self, nodes, responses, start_time, real_end_time, step):
     metrics = {x['metric'] : x['data'] for x in responses}
-    cache = {}
+    dictionary = {}
     for n in nodes:
       metrics_key, data_key = self.gen_keys(n, metrics)
       if metrics_key:
-        cache[n.path] = self.process_path(metrics[metrics_key], start_time, real_end_time, step, data_key)
-    return cache
+        dictionary[n.path] = self.process_path(metrics[metrics_key], start_time, real_end_time, step, data_key)
+    return dictionary
 
   def group_has_room(self, cur_metric, cur_path, tot_len, remaining_paths):
     if cur_metric >= self.maxmetrics_per_req:
@@ -377,9 +383,9 @@ class BluefloodClient(object):
       groups = self.gen_groups(nodes)
       responses = self.gen_responses(groups, payload)
       real_end_time = end_time + step
-      cache = self.gen_cache(nodes, responses, start_time, real_end_time, step)
+      dictionary = self.gen_dict(nodes, responses, start_time, real_end_time, step)
       time_info = (start_time, real_end_time, step)
-      return (time_info, cache)
+      return (time_info, dictionary)
 
     except Exception as e:
       print "Exception in Blueflood fetch_multi: "

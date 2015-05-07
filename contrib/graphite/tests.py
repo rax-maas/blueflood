@@ -182,35 +182,35 @@ class BluefloodTests(TestCase):
     node2 = TenantBluefloodLeafNode(metric2, self.reader)
     return ([node1, node2],
             [{u'data': 
-              [{u'timestamp': fourth_timestamp, u'average': 14449.97, u'numPoints': 1}, 
-               {u'timestamp': third_timestamp, u'average': 4449.97, u'numPoints': 1}], 
+              [{u'timestamp': third_timestamp, u'average': 4449.97, u'numPoints': 1},
+               {u'timestamp': fourth_timestamp, u'average': 14449.97, u'numPoints': 1}], 
               u'metric': self.metric1, u'type': u'number', u'unit': u'unknown'}, 
              {u'data': 
-              [{u'timestamp': second_timestamp, u'average': 26421.18, u'numPoints': 1},
-               {u'timestamp': first_timestamp, u'average': 6421.18, u'numPoints': 1}], 
+              [{u'timestamp': first_timestamp, u'average': 6421.18, u'numPoints': 1},
+               {u'timestamp': second_timestamp, u'average': 26421.18, u'numPoints': 1}], 
               u'metric': self.metric2, u'type': u'number', u'unit': u'unknown'}])
     
-  def test_gen_cache(self):
+  def test_gen_dict(self):
     step = 3000
     start = 1426120000
     end = 1426147000
     nodes, responses = self.make_data(start, step)
-    cache = self.bfc.gen_cache(nodes, responses, start, end, step)
-    self.assertTrue(cache == 
+    dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
+    self.assertDictEqual(dictionary,
                     {nodes[1].path: [6421.18, None, None, None, None, None, None, None, None], 
                      nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
 
     # check that it handles unfound metric correctly
     nodes[1].path += '.dummy'
-    cache = self.bfc.gen_cache(nodes, responses, start, end, step)
-    self.assertTrue(cache == 
+    dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
+    self.assertTrue(dictionary == 
                     {nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
 
     # now with submetrics
     self.bfc.enable_submetrics = True
     nodes, responses = self.make_data(start, step)
-    cache = self.bfc.gen_cache(nodes, responses, start, end, step)
-    self.assertTrue(cache == 
+    dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
+    self.assertTrue(dictionary == 
                     {nodes[1].path: [6421.18, None, None, None, None, None, None, None, None], 
                      nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
 
@@ -332,9 +332,9 @@ class BluefloodTests(TestCase):
     nodes, responses = self.make_data(start, step)
     with requests_mock.mock() as m:
       m.post(endpoint, json={'metrics':responses}, status_code=200)
-      time_info, cache = self.finder.fetch_multi(nodes, start, end)
+      time_info, dictionary = self.finder.fetch_multi(nodes, start, end)
       self.assertSequenceEqual(time_info, (1426120000, 1426147300, 300))
-      self.assertDictEqual(cache,
+      self.assertDictEqual(dictionary,
                            {'e.f.g': 
                             [6421.18, None, None, None, None, None, None, None, None, 26421.18, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], 
                             'a.b.c': 
@@ -342,7 +342,7 @@ class BluefloodTests(TestCase):
 
       time2, seq = self.reader.fetch(start, end)
       self.assertSequenceEqual(time2, (1426120000, 1426147300, 300))
-      self.assertSequenceEqual(seq, cache[self.metric1])
+      self.assertSequenceEqual(seq, dictionary[self.metric1])
 
     with requests_mock.mock() as m:
       m.post(endpoint, json=exc_callback, status_code=200)
