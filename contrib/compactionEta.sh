@@ -34,7 +34,7 @@ SECONDS_ELAPSED=$(ps -p $(ps auxx | grep nodetool | grep compact | awk '{print $
 # If a major compaction is running, ask nodetool how far along it is
 # We will grab the largest one, assuming that it's the one we want
 if [ -z "$SECONDS_ELAPSED" ]; then 
-    echo $(hostname)": No compaction process running.  Is the node running?"
+    echo $(hostname)": Node down or not running a major compaction"
     exit 2
 else
     PERCENT_COMPLETE=$(/opt/cassandra/bin/nodetool -p $PORT compactionstats 2>/dev/null | grep 'metrics_full' | sort -n -k 5 | tail -1 | awk '{print $7}' | tr -d %)
