@@ -150,10 +150,6 @@ public class ElasticIO implements DiscoveryIO {
         BoolQueryBuilder qb = boolQuery();
 
         for (String query : queries) {
-            // complain if someone is trying to search specifically on any tenant.
-            if (query.indexOf(tenantId.name()) >= 0) {
-                throw new Exception("Illegal query: " + query);
-            }
             qb.should(boolQuery()
                     .must(termQuery(tenantId.toString(), tenant))
                     .must(

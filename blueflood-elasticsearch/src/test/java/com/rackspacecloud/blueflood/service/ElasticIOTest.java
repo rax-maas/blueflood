@@ -137,6 +137,35 @@ public class ElasticIOTest {
         testWildcard(TENANT_C, null);
     }
 
+    @Test
+    public void testBatchQueryWithNoWildCards() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "one.two.three00.fourA.five1";
+        String query2 = "one.two.three01.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        Assert.assertEquals(results.size(), 2); //we searched for 2 unique metrics
+        results.contains(new SearchResult(TENANT_A, query1, UNIT));
+        results.contains(new SearchResult(TENANT_A, query2, UNIT));
+    }
+
+    @Test
+    public void testBatchQueryWithWildCards() throws Exception {
+        String tenantId = TENANT_A;
+        String query1 = "one.two.three00.fourA.*";
+        String query2 = "one.two.*.fourA.five2";
+        List<SearchResult> results;
+        ArrayList<String> queries = new ArrayList<String>();
+        queries.add(query1);
+        queries.add(query2);
+        results = elasticIO.search(tenantId, queries);
+        // query1 will return 3 results, query2 will return 30 results, but we get back 32 because of intersection
+        Assert.assertEquals(results.size(), 32);
+    }
+
     public void testWildcard(String tenantId, String unit) throws Exception {
         SearchResult entry;
         List<SearchResult> results;
@@ -162,21 +191,6 @@ public class ElasticIOTest {
         for (int x = 10; x < 20; x++) {
             for (String y : CHILD_ELEMENTS) {
                 entry = createExpectedResult(tenantId, x, y, 2, unit);
-                Assert.assertTrue(results.contains(entry));
-            }
-        }
-
-        ArrayList<String> queries = new ArrayList<String>();
-        queries.add("one.two.*");
-        queries.add("*.fourA.*");
-        results = elasticIO.search(tenantId, queries);
-        for (Locator locator : locators) {
-            entry =  new SearchResult(tenantId, locator.getMetricName(), unit);
-            Assert.assertTrue((results.contains(entry)));
-        }
-        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
-            for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
-                entry = createExpectedResult(tenantId, x, "A", z, unit);
                 Assert.assertTrue(results.contains(entry));
             }
         }
