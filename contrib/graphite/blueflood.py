@@ -120,29 +120,40 @@ class TenantBluefloodFinder(object):
       return []
 
   def find_nodes_with_submetrics(self, query):
+    # By definition, when using submetrics, the names of all Leafnodes must end in a submetric alias
+    # BF doesn't know about the submetric aliases and so the aliases, (or globs corresponding to them,)
+    # must be truncated before querying BF.
+    # There are two cases above:
+    # 1. When you want a list of valid submetric aliases, i.e. a complete metric name followed by ".*"
+    # 2. When you have a query contains a valid submetric alias, i.e a complete metric name followed
+    #    by a valid submetric alias like "._avg"
+    # Every submetric leaf node is covered by one of the above two cases.  Everything else is a 
+    # branch node.
+
     query_parts = query.pattern.split('.')
     query_depth = len(query_parts)
 
-    #  In this if clause we are searching for complete metric names followed by a *
-    #  If so, return leaf nodes for each submetric alias that is enabled
-    if query_parts[-1] == '*':
-      for metric in self.find_metrics('.'.join(query_parts[0:-1])):
-        metric_parts = metric.split('.')
-        if self.complete(metric, query_depth):
-          for alias, _ in self.submetric_aliases.items():
-            yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
-                                          TenantBluefloodReader(metric, self.tenant, 
-                                                                self.bf_query_endpoint, 
-                                                                self.enable_submetrics, 
-                                                                self.submetric_aliases))
-        else:
-          yield BranchNode('.'.join(metric_parts[:query_depth]))
+    if query_depth > 1:
+      #  In this if clause we are searching for complete metric names
+      #  followed by a ".*". If so, we are requesting a list of submetric
+      #  names, so return leaf nodes for each submetric alias that is
+      #  enabled
+      if query_parts[-1] == '*':
+        for metric in self.find_metrics('.'.join(query_parts[0:-1])):
+          metric_parts = metric.split('.')
+          if self.complete(metric, query_depth):
+            for alias, _ in self.submetric_aliases.items():
+              yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
+                                            TenantBluefloodReader(metric, self.tenant, 
+                                                                  self.bf_query_endpoint, 
+                                                                  self.enable_submetrics, 
+                                                                  self.submetric_aliases))
 
-    #if searching for a particular submetric alias, create a leaf node for it
-    elif query_parts[-1] in self.submetric_aliases:
-      for metric in self.find_metrics('.'.join(query_parts[0:-1])):
-        if self.complete(metric, query_depth):
-          yield TenantBluefloodLeafNode('.'.join([metric, query_parts[-1]]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
+      #if searching for a particular submetric alias, create a leaf node for it
+      elif query_parts[-1] in self.submetric_aliases:
+        for metric in self.find_metrics('.'.join(query_parts[0:-1])):
+          if self.complete(metric, query_depth):
+            yield TenantBluefloodLeafNode('.'.join([metric, query_parts[-1]]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
 
     #everything else is a branch node
     for metric in self.find_metrics(query.pattern):
