@@ -27,6 +27,7 @@ import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         metaObject.put("next_href", null);
         globalJSON.put("values", valuesArray);
         globalJSON.put("metadata", metaObject);
-        globalJSON.put("unit", metricData.getUnit());
+        globalJSON.put("unit", metricData.getUnit() == null ? Util.UNKNOWN : metricData.getUnit());
 
         return globalJSON;
     }

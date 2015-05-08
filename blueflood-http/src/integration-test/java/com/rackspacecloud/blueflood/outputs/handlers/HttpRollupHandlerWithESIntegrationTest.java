@@ -135,7 +135,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
                 baseMillis + 86400000,
                 1600);
         Assert.assertEquals(data.getData().getPoints().size(), 0);
-        Assert.assertEquals(data.getUnit(), "unknown");
+        Assert.assertNull(data.getUnit());
     }
 
     @Test

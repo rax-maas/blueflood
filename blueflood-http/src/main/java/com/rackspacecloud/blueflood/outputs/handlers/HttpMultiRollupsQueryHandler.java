@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
+public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMultiRollupsQueryHandler.class);
     private final BatchedMetricsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
@@ -111,14 +111,17 @@ public class HttpMultiRollupsQueryHandler implements HttpRequestHandler {
             return;
         }
 
+        List<String> locatorStrings = new ArrayList<String>();
+        for (Locator locator : locators)
+            locatorStrings.add(locator.toString());
+
+
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
 
         final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
-            BatchMetricsQuery query = new BatchMetricsQuery(locators, params.getRange(), params.getGranularity());
-            Map<Locator, MetricData> results = new BatchMetricsQueryHandler(executor, AstyanaxReader.getInstance())
-                                                        .execute(query, queryTimeout);
+            Map<Locator, MetricData> results = getRollupByGranularity(tenantId, locatorStrings, params.getRange().getStop(), params.getRange().getStop(), params.getGranularity());
             JSONObject metrics = serializer.transformRollupData(results, params.getStats());
             final JsonElement element = parser.parse(metrics.toString());
             final String jsonStringRep = gson.toJson(element);
