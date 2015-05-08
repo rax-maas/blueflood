@@ -21,11 +21,8 @@ import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.Assert;
@@ -177,9 +174,10 @@ public class JSONBasicRollupOutputSerializerTest {
             Assert.assertEquals(1L, dataJSON.get("numPoints"));
             Assert.assertNotNull("latest");
             Assert.assertEquals(i, dataJSON.get("latest"));
-            
+            Assert.assertNotNull("average");
+            Assert.assertEquals(new Average(i), dataJSON.get("average"));
+
             // other fields were filtered out.
-            Assert.assertNull(dataJSON.get(MetricStat.AVERAGE.toString()));
             Assert.assertNull(dataJSON.get(MetricStat.VARIANCE.toString()));
             Assert.assertNull(dataJSON.get(MetricStat.MIN.toString()));
             Assert.assertNull(dataJSON.get(MetricStat.MAX.toString()));

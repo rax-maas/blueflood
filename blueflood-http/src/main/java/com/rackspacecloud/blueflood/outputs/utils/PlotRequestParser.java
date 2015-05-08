@@ -45,6 +45,7 @@ public class PlotRequestParser {
         
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.LATEST);
+        DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
         
         DEFAULT_SET.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         
@@ -70,7 +71,6 @@ public class PlotRequestParser {
         if (points == null && res == null) {
             throw new InvalidRequestException("Either 'points' or 'resolution' is required.");
         }
-
         if (points != null && points.size() != 1) {
             throw new InvalidRequestException("Invalid parameter: points=" + points);
         } else if (res != null && res.size() != 1) {
