@@ -68,7 +68,10 @@ public class AstyanaxIO {
     private static AstyanaxConfigurationImpl createPreferredAstyanaxConfiguration() {
         AstyanaxConfigurationImpl astyconfig = new AstyanaxConfigurationImpl()
                 .setDiscoveryType(NodeDiscoveryType.NONE)
-                .setConnectionPoolType(ConnectionPoolType.ROUND_ROBIN);
+                .setConnectionPoolType(
+                        config.getBooleanProperty(CoreConfig.ENABLE_TOKEN_AWARE_ROUTING) ?
+                                ConnectionPoolType.TOKEN_AWARE :
+                                ConnectionPoolType.ROUND_ROBIN);
 
         int numRetries = config.getIntegerProperty(CoreConfig.CASSANDRA_MAX_RETRIES);
         if (numRetries > 0) {
