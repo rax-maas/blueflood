@@ -387,7 +387,7 @@ public class AstyanaxReader extends AstyanaxIO {
             // transform columns to MetricData
             for (Locator loc : metrics.keySet()) {
                 MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
-                if (data != null && !data.getData().isEmpty()) {
+                if (data != null && data.getData() != null) {
                     results.put(loc, data);
                 }
             }

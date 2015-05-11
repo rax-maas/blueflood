@@ -136,7 +136,8 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
                 metric.getCollectionTime() + 100000), Granularity.FULL);
 
-        Assert.assertEquals(0, results.size());
+        Assert.assertEquals(1, results.size());
+        Assert.assertTrue(results.get(metric.getLocator()).getData().isEmpty());
     }
 
     @Test

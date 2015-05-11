@@ -145,10 +145,12 @@ public class BatchMetricsQueryHandlerIntegrationTest extends IntegrationTestBase
         // Test happy case. 5s is plenty of time to read two metrics.
         // Use the same executor. We shouldn't see issues.
         results = batchMetricsQueryHandler.execute(query, new TimeValue(5, TimeUnit.SECONDS));
-        Assert.assertEquals(locators.size(), results.size());
+        Assert.assertEquals(tooManyLocators.size(), results.size());
 
         for (Map.Entry<Locator, MetricData> item : results.entrySet()) {
             MetricData data = item.getValue();
+            if (!answers.containsKey(item.getKey()))
+                continue;
             Assert.assertEquals((int) answers.get(item.getKey()).get(gran), data.getData().getPoints().size());
             //Make sure all the data are Rollups
             if (item.getKey().equals(metricLocator)) {
