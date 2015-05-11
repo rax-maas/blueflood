@@ -218,4 +218,25 @@ public class ElasticIOTest {
         results.contains(new SearchResult(TENANT_A, "one.two.three00.fourA.five0", UNIT));
         results.contains(new SearchResult(TENANT_A, "one.two.three01.fourA.five0", UNIT));
     }
+
+    @Test
+    public void testGlobMatching2() throws Exception {
+        List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0?.fourA.five0");
+        List<SearchResult> results2 = elasticIO.search(TENANT_A, "one.two.three0[0-9].fourA.five0");
+        Assert.assertEquals(10, results.size());
+        for (SearchResult result : results) {
+            Assert.assertTrue(result.getMetricName().startsWith("one.two.three"));
+            Assert.assertEquals(result.getTenantId(), TENANT_A);
+            results2.contains(result);
+        }
+    }
+
+    @Test
+    public void testGlobMatching3() throws Exception {
+        List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0[01].fourA.five0");
+        Assert.assertEquals(2, results.size());
+        for (SearchResult result : results) {
+            Assert.assertTrue(result.getMetricName().equals("one.two.three00.fourA.five0") || result.getMetricName().equals("one.two.three01.fourA.five0"));
+        }
+    }
 }
