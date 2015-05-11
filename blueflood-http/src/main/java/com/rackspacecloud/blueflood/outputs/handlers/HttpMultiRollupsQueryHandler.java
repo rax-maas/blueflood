@@ -115,9 +115,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
         for (Locator locator : locators)
             locatorStrings.add(locator.toString());
 
-
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-
         final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
