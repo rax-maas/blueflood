@@ -121,7 +121,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
         final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
-            Map<Locator, MetricData> results = getRollupByGranularity(tenantId, locatorStrings, params.getRange().getStop(), params.getRange().getStop(), params.getGranularity());
+            Map<Locator, MetricData> results = getRollupByGranularity(tenantId, locatorStrings, params.getRange().getStart(), params.getRange().getStop(), params.getGranularity());
             JSONObject metrics = serializer.transformRollupData(results, params.getStats());
             final JsonElement element = parser.parse(metrics.toString());
             final String jsonStringRep = gson.toJson(element);

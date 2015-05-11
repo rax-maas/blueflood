@@ -105,14 +105,14 @@ public class RollupHandler {
         if (unitFuture != null) {
             try {
                 unit = unitFuture.get();
+                for (SearchResult searchResult : unit) {
+                    Locator locator = Locator.createLocatorFromPathComponents(searchResult.getTenantId(), searchResult.getMetricName());
+                    if (metricDataMap.containsKey(locator))
+                        metricDataMap.get(locator).setUnit(searchResult.getUnit());
+                }
             } catch (Exception e) {
                 log.warn("Exception encountered while getting units from ES, unit will be set to unknown in query results");
                 log.debug(e.getMessage(), e);
-            }
-            for (SearchResult searchResult : unit) {
-                Locator locator = Locator.createLocatorFromPathComponents(searchResult.getTenantId(), searchResult.getMetricName());
-                if (metricDataMap.containsKey(locator))
-                    metricDataMap.get(locator).setUnit(searchResult.getUnit());
             }
         }
 
