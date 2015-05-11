@@ -309,7 +309,8 @@ class BluefloodTests(TestCase):
                2, [self.metric1])
 
     query_test("a.b.*", 
-               [{u'metric': self.metric1, u'unit': u'percent'}],
+               [{u'metric': self.metric1, u'unit': u'percent'},
+                {u'metric': 'a.bb.c', u'unit': u'percent'}],
                3, [self.metric1])
 
     query_test("a.b.c", 
@@ -317,7 +318,8 @@ class BluefloodTests(TestCase):
                3, [self.metric1])
 
     query_test("a.b.c.*", 
-               [{u'metric': self.metric1, u'unit': u'percent'}],
+               [{u'metric': self.metric1, u'unit': u'percent'},
+                {u'metric': (self.metric1 + 'd'), u'unit': u'percent'}],
                4, [self.metric1 + '.' + self.alias_key])
 
     query_test("a.b.c._avg", 

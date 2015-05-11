@@ -8,6 +8,7 @@ import auth
 import sys
 import traceback
 import os.path
+import fnmatch
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -51,7 +52,7 @@ def calc_res(start, stop):
 class TenantBluefloodFinder(object):
   __fetch_multi__ = 'tenant_blueflood'
   def __init__(self, config=None):
-    print("Blueflood Finder v22")
+    print("Blueflood Finder v25")
     if config is not None:
       bf_config = config.get('blueflood', {})
       urls = bf_config.get('urls', bf_config.get('url', '').strip('/'))
@@ -85,11 +86,13 @@ class TenantBluefloodFinder(object):
 
   def complete(self, metric, query_depth):
     metric_parts = metric.split('.')
-    if query_depth < len(metric_parts):
-      return False
-    if self.enable_submetrics and (query_depth == len(metric_parts)):
-      return False
-    return True
+    if self.enable_submetrics:
+      complete_len = query_depth - 1
+    else:
+      complete_len = query_depth 
+    return (len(metric_parts) == complete_len)
+
+
 
   def make_request(self, url, payload, headers):
     if auth.is_active():
@@ -128,34 +131,40 @@ class TenantBluefloodFinder(object):
 
     query_parts = query.pattern.split('.')
     query_depth = len(query_parts)
+    complete_pattern = '.'.join(query_parts[0:-1])
 
-    if query_depth > 1:
+    if (query_depth > 1) and (query_parts[-1] == '*'):
       #  In this if clause we are searching for complete metric names
       #  followed by a ".*". If so, we are requesting a list of submetric
       #  names, so return leaf nodes for each submetric alias that is
       #  enabled
-      if query_parts[-1] == '*':
-        for metric in self.find_metrics('.'.join(query_parts[0:-1])):
-          metric_parts = metric.split('.')
-          if self.complete(metric, query_depth):
-            for alias, _ in self.submetric_aliases.items():
-              yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
-                                            TenantBluefloodReader(metric, self.tenant, 
-                                                                  self.bf_query_endpoint, 
-                                                                  self.enable_submetrics, 
-                                                                  self.submetric_aliases))
+      new_pattern = complete_pattern + '*'
+      for metric in self.find_metrics(new_pattern):
+        metric_parts = metric.split('.')
+        if self.complete(metric, query_depth) and fnmatch.fnmatchcase(metric, complete_pattern):
+          for alias, _ in self.submetric_aliases.items():
+            yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
+                                          TenantBluefloodReader(metric, self.tenant, 
+                                                                self.bf_query_endpoint, 
+                                                                self.enable_submetrics, 
+                                                                self.submetric_aliases))
+        else:
+          if fnmatch.fnmatchcase(metric, query.pattern):
+            yield BranchNode('.'.join(metric_parts[:query_depth]))
 
-      #if searching for a particular submetric alias, create a leaf node for it
-      elif query_parts[-1] in self.submetric_aliases:
-        for metric in self.find_metrics('.'.join(query_parts[0:-1])):
-          if self.complete(metric, query_depth):
-            yield TenantBluefloodLeafNode('.'.join([metric, query_parts[-1]]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
+
+    #if searching for a particular submetric alias, create a leaf node for it
+    elif (query_depth > 1) and (query_parts[-1] in self.submetric_aliases):
+      for metric in self.find_metrics(complete_pattern):
+        if self.complete(metric, query_depth):
+          yield TenantBluefloodLeafNode('.'.join([metric, query_parts[-1]]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
 
     #everything else is a branch node
-    for metric in self.find_metrics(query.pattern):
-      metric_parts = metric.split('.')
-      if not self.complete(metric, query_depth):
-        yield BranchNode('.'.join(metric_parts[:query_depth]))
+    else: 
+      for metric in self.find_metrics(query.pattern):
+        metric_parts = metric.split('.')
+        if not self.complete(metric, query_depth):
+          yield BranchNode('.'.join(metric_parts[:query_depth]))
 
   def find_nodes_without_submetrics(self, query):
     query_parts = query.pattern.split('.')
