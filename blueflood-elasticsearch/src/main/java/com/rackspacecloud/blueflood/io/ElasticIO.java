@@ -41,10 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -67,6 +64,7 @@ public class ElasticIO implements DiscoveryIO {
     private final Timer writeTimer = Metrics.timer(ElasticIO.class, "Write Duration");
     private final Histogram batchHistogram = Metrics.histogram(ElasticIO.class, "Batch Sizes");
     private Meter classCastExceptionMeter = Metrics.meter(ElasticIO.class, "Failed Cast to IMetric");
+    private Histogram queryBatchHistogram = Metrics.histogram(ElasticIO.class, "Query Batch Size");
 
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -142,25 +140,29 @@ public class ElasticIO implements DiscoveryIO {
     }
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
-        // complain if someone is trying to search specifically on any tenant.
-        if (query.indexOf(tenantId.name()) >= 0) {
-            throw new Exception("Illegal query: " + query);
-        }
-        
+        return search(tenant, Arrays.asList(query));
+    }
+
+    public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
         List<SearchResult> results = new ArrayList<SearchResult>();
-        Timer.Context searchTimerCtx = searchTimer.time();
+
+        Timer.Context multiSearchCtx = searchTimer.time();
+        queryBatchHistogram.update(queries.size());
+        BoolQueryBuilder bqb = boolQuery();
         QueryBuilder qb;
 
-        GlobPattern pattern = new GlobPattern(query);
-        if (!pattern.hasWildcard()) {
-            qb = termQuery(metric_name.name(), query);
-        } else {
-            qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
+        for (String query : queries) {
+            GlobPattern pattern = new GlobPattern(query);
+            if (!pattern.hasWildcard()) {
+                qb = termQuery(metric_name.name(), query);
+            } else {
+                qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
+            }
+            bqb.should(boolQuery()
+                    .must(termQuery(tenantId.toString(), tenant))
+                    .must(qb));
         }
 
-        BoolQueryBuilder bqb = boolQuery()
-                .must(termQuery(tenantId.toString(), tenant))
-                .must(qb);
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
                 .setSize(100000)
@@ -168,11 +170,12 @@ public class ElasticIO implements DiscoveryIO {
                 .setQuery(bqb)
                 .execute()
                 .actionGet();
-        searchTimerCtx.stop();
+        multiSearchCtx.stop();
         for (SearchHit hit : response.getHits().getHits()) {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
             results.add(result);
         }
+
         return results;
     }
 

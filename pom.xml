@@ -31,8 +31,6 @@
     <module>blueflood-http</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
-    <module>blueflood-dropwizard</module>
-    <module>blueflood-dropwizard-logging</module>
     <module>blueflood-io-datastax</module>
     <module>blueflood-rollupTools</module>
   </modules>
@@ -54,7 +52,6 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
     <slf4j.version>1.7.6</slf4j.version>
-    <dropwizard.version>0.7.0</dropwizard.version>
   </properties>
 
   <build>
@@ -358,17 +355,4 @@
         <email>george.jahad@rackspace.com</email>
     </developer>
   </developers>
-    
-  <repositories>
-    <repository>
-      <!-- mvn org.apache.maven.plugins:maven-install-plugin:2.3.1:install-file \
-           -Dfile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8.jar \
-           -DgroupId=com.stuartwarren -DartifactId=logit -Dversion=0.5.8 \
-           -DcreateChecksum=true \
-           -DpomFile=/Users/gdusbabek/codes/github/blueflood/maven/logit-0.5.8-pom.xml \
-           -Dpackaging=jar -DlocalRepositoryPath=/Users/gdusbabek/codes/github/blueflood/maven/repo -->
-      <id>local.stuartwarren.com</id>
-      <url>file://${basedir}/../maven/repo</url>
-    </repository>
-  </repositories>
 </project>
