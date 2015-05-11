@@ -121,16 +121,20 @@ class TenantBluefloodFinder(object):
   def find_nodes_with_submetrics(self, query):
     # By definition, when using submetrics, the names of all Leafnodes must end in a submetric alias
     # BF doesn't know about the submetric aliases and so the aliases, (or globs corresponding to them,)
-    # must be truncated before querying BF.
+    # must be massaged before querying BF.
     # There are two cases above:
+
     # 1. When you want a list of valid submetric aliases, i.e. a complete metric name followed by ".*"
     # 2. When you have a query contains a valid submetric alias, i.e a complete metric name followed
     #    by a valid submetric alias like "._avg"
+
     # Every submetric leaf node is covered by one of the above two cases.  Everything else is a 
     # branch node.
 
     query_parts = query.pattern.split('.')
     query_depth = len(query_parts)
+
+    # The pattern which all complete metrics will match
     complete_pattern = '.'.join(query_parts[0:-1])
 
     if (query_depth > 1) and (query_parts[-1] == '*'):
@@ -138,6 +142,9 @@ class TenantBluefloodFinder(object):
       #  followed by a ".*". If so, we are requesting a list of submetric
       #  names, so return leaf nodes for each submetric alias that is
       #  enabled
+      
+      # First modify the pattern to get a superset that includes already complete
+      #  submetrics
       new_pattern = complete_pattern + '*'
       for metric in self.find_metrics(new_pattern):
         metric_parts = metric.split('.')
@@ -149,6 +156,7 @@ class TenantBluefloodFinder(object):
                                                                 self.enable_submetrics, 
                                                                 self.submetric_aliases))
         else:
+          # Make sure the branch nodes match the original pattern
           if fnmatch.fnmatchcase(metric, query.pattern):
             yield BranchNode('.'.join(metric_parts[:query_depth]))
 
@@ -290,6 +298,7 @@ class BluefloodClient(object):
     v_iter = values
     ret_arr = []
     for ts in range(start_time, end_time, step):
+
       # Skip datapoints that have already passed
       #  NOTE/TODO: this while loop has the effect of dropping all but the first datapoint in each step
       #  (Graphite requires exactly one datapoint/step.)  It would be better to rollup the datapoints
@@ -307,7 +316,7 @@ class BluefloodClient(object):
   def get_multi_endpoint(self, endpoint, tenant):
     return "%s/v2.0/%s/views" % (endpoint, tenant)
 
-  def get_metric_list(self, endpoint, tenant, metric_list, payload, headers):
+  def get_metric_data(self, endpoint, tenant, metric_list, payload, headers):
     #Generate Multiplot query to get metrics in list
     url = self.get_multi_endpoint(endpoint,tenant)
     if auth.is_active():
@@ -317,7 +326,7 @@ class BluefloodClient(object):
       headers['X-Auth-Token'] = auth.get_token(True)
       r = requests.post(url, params=payload, data=json.dumps(metric_list), headers=headers)
     if r.status_code != 200:
-      print("get_metric_list failed; response: ", r.status_code, tenant, metric_list)
+      print("get_metric_data failed; response: ", r.status_code, tenant, metric_list)
       return None
     else:
       return r.json()['metrics']
@@ -400,7 +409,7 @@ class BluefloodClient(object):
     #converts groups of requests into a single list of responses
     headers = auth.headers()
     responses = reduce(lambda x,y: x+y,
-                     [self.get_metric_list(self.host,
+                     [self.get_metric_data(self.host,
                                            self.tenant, g, payload, headers)
                       for g in groups])
     responses = responses or []
