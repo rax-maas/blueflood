@@ -67,7 +67,7 @@ public class RollupHandler {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
             ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
         }
-        RollupsOnReadExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
+        RollupsOnReadExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS));
     }
 
 
@@ -121,6 +121,7 @@ public class RollupHandler {
             }
         }
 
+        // Now do rollups on read asynchronously
         final CountDownLatch waitLatch = new CountDownLatch(metricDataMap.size()); //TODO Fix the synchronization here
         for (final Map.Entry<Locator, MetricData> metricData: metricDataMap.entrySet()) {
             RollupsOnReadExecutor.submit(new Runnable() {
