@@ -199,6 +199,7 @@ public class RollupHandler {
         try {
             aggregateFuture.get(rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit());
         } catch (Exception e) {
+            aggregateFuture.cancel(true);
             log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
         }
         return metricDataMap;
