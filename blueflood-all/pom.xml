@@ -82,12 +82,6 @@
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
     </dependency>
-    
-    <dependency>
-      <artifactId>blueflood-dropwizard</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${project.version}</version>
-    </dependency>
 
     <dependency>
       <artifactId>blueflood-rollupTools</artifactId>
