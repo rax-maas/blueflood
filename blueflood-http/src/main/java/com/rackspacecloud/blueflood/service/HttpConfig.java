@@ -56,11 +56,7 @@ public enum HttpConfig implements ConfigDefaults {
     MAX_BATCH_READ_REQUESTS_TO_QUEUE("10"),
 
     // Maximum number of threads in type and unit processor threadpool
-    HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10"),
-
-    // Timeout (in seconds) for batch query. This value depends on number of threads, read latency per
-    // metric and max metrics allowed per batch query.
-    BATCH_QUERY_TIMEOUT("20");  // 20s
+    HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10");
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());

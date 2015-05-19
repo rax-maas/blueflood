@@ -32,6 +32,7 @@ import com.rackspacecloud.blueflood.outputs.serializers.JSONBasicRollupsOutputSe
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -88,7 +89,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
                                       int points) throws SerializationException {
         rollupsByPointsMeter.mark();
         Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
-        return getRollupByGranularity(tenantId, metric, from, to, g);
+        return getRollupByGranularity(tenantId, Arrays.asList(metric), from, to, g).get(Locator.createLocatorFromPathComponents(tenantId, metric));
     }
 
     @Override
@@ -102,7 +103,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             resolution = Resolution.FULL;
         }
         Granularity g = Granularity.granularities()[resolution.getValue()];
-        return getRollupByGranularity(tenantId, metric, from, to, g);
+        return getRollupByGranularity(tenantId, Arrays.asList(metric), from, to, g).get(Locator.createLocatorFromPathComponents(tenantId, metric));
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -135,7 +136,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
                 baseMillis + 86400000,
                 1600);
         Assert.assertEquals(data.getData().getPoints().size(), 0);
-        Assert.assertEquals(data.getUnit(), "unknown");
+        Assert.assertEquals(data.getUnit(), Util.UNKNOWN);
     }
 
     @Test
