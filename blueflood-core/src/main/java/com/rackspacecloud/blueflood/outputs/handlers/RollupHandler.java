@@ -63,7 +63,7 @@ public class RollupHandler {
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
-    private ListeningExecutorService RollupsOnReadExecutor = null;
+    private ListeningExecutorService rollupsOnReadExecutor = null;
 
     private TimeValue rollupOnReadTimeout = new TimeValue(5, TimeUnit.SECONDS); //Hard-coded for now, make configurable if need be
     
@@ -72,7 +72,7 @@ public class RollupHandler {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
             ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
         }
-        RollupsOnReadExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS)));
+        rollupsOnReadExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS)));
     }
 
 
@@ -130,9 +130,9 @@ public class RollupHandler {
         ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
         for (final Map.Entry<Locator, MetricData> metricData: metricDataMap.entrySet()) {
             futures.add(
-                RollupsOnReadExecutor.submit(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
+                    rollupsOnReadExecutor.submit(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() {
                             boolean isRollable = metricData.getValue().getType().equals(MetricData.Type.NUMBER.toString())
                                     || metricData.getValue().getType().equals(MetricData.Type.HISTOGRAM.toString());
                             Boolean retValue = false;
@@ -193,7 +193,7 @@ public class RollupHandler {
                             }
                             return retValue;
                         }
-                }));
+                    }));
         }
         ListenableFuture<List<Boolean>> aggregateFuture = Futures.allAsList(futures);
         try {
