@@ -60,6 +60,8 @@ public class RollupHandler {
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
+    private static final Meter exceededQueryTimeout = Metrics.meter(RollupHandler.class, "Batched Metrics Query Duration Exceeded Timeout");
+    private static final Histogram queriesSizeHist = Metrics.histogram(RollupHandler.class, "Total queries");
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
@@ -91,6 +93,8 @@ public class RollupHandler {
         for (String metric : metrics) {
             locators.add(Locator.createLocatorFromPathComponents(tenantId, metric));
         }
+
+        queriesSizeHist.update(locators.size());
 
         if (Util.shouldUseESForUnits()) {
              unitsFuture = ESUnitExecutor.submit(new Callable() {
@@ -184,7 +188,6 @@ public class RollupHandler {
                                 retValue = true;
                                 rollupsCalcCtx.stop();
                             }
-                            ctx.stop();
 
                             if (g == Granularity.FULL) {
                                 numFullPointsReturned.update(metricData.getValue().getData().getPoints().size());
@@ -200,8 +203,10 @@ public class RollupHandler {
             aggregateFuture.get(rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit());
         } catch (Exception e) {
             aggregateFuture.cancel(true);
+            exceededQueryTimeout.mark();
             log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
         }
+        ctx.stop();
         return metricDataMap;
     }
 
