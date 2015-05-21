@@ -20,6 +20,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -38,7 +39,7 @@ public class BatchedMetricsJSONOutputSerializer extends JSONBasicRollupsOutputSe
         for (Map.Entry<Locator, MetricData> one : metricData.entrySet()) {
             final JSONObject singleMetricJSON = new JSONObject();
             singleMetricJSON.put("metric", one.getKey().getMetricName());
-            singleMetricJSON.put("unit", one.getValue().getUnit());
+            singleMetricJSON.put("unit", one.getValue().getUnit() == null ? Util.UNKNOWN : one.getValue().getUnit());
             singleMetricJSON.put("type", one.getValue().getType());
             JSONArray values = transformDataToJSONArray(one.getValue(), filterStats);
             singleMetricJSON.put("data", values);
@@ -49,3 +50,4 @@ public class BatchedMetricsJSONOutputSerializer extends JSONBasicRollupsOutputSe
         return globalJSON;
     }
 }
+

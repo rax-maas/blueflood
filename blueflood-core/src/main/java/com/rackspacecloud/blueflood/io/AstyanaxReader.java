@@ -299,7 +299,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public static String getUnitString(Locator locator) {
-        String unitString = null;
+        String unitString = Util.UNKNOWN;
         // Only grab units from cassandra, if we have to
         if (!Util.shouldUseESForUnits()) {
             try {
@@ -387,7 +387,7 @@ public class AstyanaxReader extends AstyanaxIO {
             // transform columns to MetricData
             for (Locator loc : metrics.keySet()) {
                 MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
-                if (data != null && !data.getData().isEmpty()) {
+                if (data != null && data.getData() != null) {
                     results.put(loc, data);
                 }
             }
