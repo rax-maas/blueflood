@@ -55,6 +55,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer," + randString(8);
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
+        final long offset = 15*60*1000; // offset for generating missing rollups
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
         List<String> locatorList = new ArrayList<String>();
         locatorList.add(metricName);
@@ -63,7 +64,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
 
         // Generate 5m rollups with missing ranges on the left
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis + 15*60*1000, endMillis)) {
+        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis + offset, endMillis)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
@@ -94,6 +95,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer2," + randString(8);
         final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
+        final long offset = 15*60*1000; // offset for generating missing rollups
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
         List<String> locatorList = new ArrayList<String>();
         locatorList.add(metricName);
@@ -102,7 +104,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
 
         // Generate 5m rollups with missing ranges on the left
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis+ + 15*60*1000)) {
+        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis+ + offset)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
