@@ -69,7 +69,7 @@ public class RollupHandler {
 
     private TimeValue rollupOnReadTimeout = new TimeValue(5, TimeUnit.SECONDS); //Hard-coded for now, make configurable if need be
     
-    protected RollupHandler() {
+    public RollupHandler() {
         if (Util.shouldUseESForUnits()) {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
             ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
@@ -78,7 +78,7 @@ public class RollupHandler {
     }
 
 
-    protected Map<Locator, MetricData> getRollupByGranularity(
+    public Map<Locator, MetricData> getRollupByGranularity(
             final String tenantId,
             final List<String> metrics,
             final long from,

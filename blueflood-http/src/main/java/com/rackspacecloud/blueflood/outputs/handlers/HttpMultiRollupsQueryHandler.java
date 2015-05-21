@@ -135,8 +135,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
         Iterator<JsonElement> it = metrics.iterator();
         while (it.hasNext()) {
             JsonElement metricElement = it.next();
-            String loc = Locator.createLocatorFromPathComponents(tenantId, metricElement.getAsString()).toString();
-            locators.add(loc);
+            locators.add( metricElement.getAsString());
         }
 
         return locators;
