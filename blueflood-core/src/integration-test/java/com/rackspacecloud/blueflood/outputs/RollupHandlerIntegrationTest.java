@@ -104,7 +104,7 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
 
         // Generate 5m rollups with missing ranges on the left
         ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis+ + offset)) {
+        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis -  offset)) {
             // each range should produce one average
             Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);

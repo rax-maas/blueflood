@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
@@ -67,14 +68,21 @@ public class RollupHandler {
     private ExecutorService ESUnitExecutor = null;
     private ListeningExecutorService rollupsOnReadExecutor = null;
 
-    private TimeValue rollupOnReadTimeout = new TimeValue(5, TimeUnit.SECONDS); //Hard-coded for now, make configurable if need be
+    private TimeValue rollupOnReadTimeout = new TimeValue(10, TimeUnit.SECONDS); //Hard-coded for now, make configurable if need be
     
     public RollupHandler() {
         if (Util.shouldUseESForUnits()) {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
-            ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
+            int ESthreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS);
+            ESUnitExecutor = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(ESthreadCount)
+                    .withMaxPoolSize(ESthreadCount).withName("Rolluphandler ES executors").build();
         }
-        rollupsOnReadExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS)));
+        ThreadPoolExecutor RollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withName("Rollups on Read Executors").build();
+        rollupsOnReadExecutor = MoreExecutors.listeningDecorator(RollupsOnReadExecutors);
     }
 
 
