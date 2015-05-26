@@ -29,7 +29,7 @@ else
 fi
 
 # First we'll grab the seconds elapsed since a major compaction was started
-SECONDS_ELAPSED=$(ps -p $(ps auxx | grep nodetool | grep compact | awk '{print $2}') -o etimes= 2>/dev/null)
+SECONDS_ELAPSED=$(ps -p $(ps auxx | grep -E 'jolokia|nodetool' | grep -i compact | awk '{print $2}') -o etimes= 2>/dev/null)
 
 # If a major compaction is running, ask nodetool how far along it is
 # We will grab the largest one, assuming that it's the one we want
