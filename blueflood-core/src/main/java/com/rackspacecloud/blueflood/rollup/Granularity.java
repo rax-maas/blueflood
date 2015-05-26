@@ -16,12 +16,14 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
+import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.RollupType;
 
-import java.util.Iterator;
+import java.util.Calendar;
 
 /**
  * 1440m    [ not enough space to show the relationship, but there would be 6 units of the 240m ranges in 1 1440m range.
@@ -45,14 +47,17 @@ public final class Granularity {
     public static final Granularity MIN_60 = new Granularity("metrics_60m", 3600000, (BASE_SLOTS_PER_GRANULARITY / 12), "60m");
     public static final Granularity MIN_240 = new Granularity("metrics_240m", 14400000, (BASE_SLOTS_PER_GRANULARITY / 48), "240m");
     public static final Granularity MIN_1440 = new Granularity("metrics_1440m", 86400000, (BASE_SLOTS_PER_GRANULARITY / 288), "1440m");
-    
-    private static final Granularity LAST = MIN_1440;
-    
+
     private static final Granularity[] granularities = new Granularity[] { FULL, MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 }; // order is important.
+
+    public static final Granularity LAST = MIN_1440;
+
     private static final Granularity[] rollupGranularities = new Granularity[] { MIN_5, MIN_20, MIN_60, MIN_240, MIN_1440 }; // order is important.
     
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
-    
+
+    private static SafetyTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
+
     // simple counter for all instances, since there will be very few.
     private final int index;
     
@@ -173,7 +178,7 @@ public final class Granularity {
      * @param points count of desired data points
      * @return
      */
-    public static Granularity granularityFromPointsInInterval(long from, long to, int points) {
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points) {
         if (from >= to) {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
@@ -181,13 +186,13 @@ public final class Granularity {
         double requestedDuration = to - from;
 
         if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("GEOMETRIC"))
-            return granularityFromPointsGeometric(requestedDuration, points);
+            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
         else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LINEAR"))
             return granularityFromPointsLinear(requestedDuration, points);
         else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LESSTHANEQUAL"))
             return granularityFromPointsLessThanEqual(requestedDuration, points);
 
-        return granularityFromPointsGeometric(requestedDuration, points);
+        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
     }
 
     /**
@@ -248,11 +253,27 @@ public final class Granularity {
      *
      * @param requestedDuration (milliseconds)
      */
-    private static Granularity granularityFromPointsGeometric(double requestedDuration, int requestedPoints) {
+    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
 
         for (Granularity g : Granularity.granularities()) {
+            long ttl;
+            try {
+                ttl = (long)TTL_PROVIDER.getTTL(
+                        tenantid,
+                        g,
+                        RollupType.BF_BASIC).toMillis();
+            } catch (Exception ex) {
+                ttl = SafetyTtlProvider.getInstance().getSafeTTL(
+                        g,
+                        RollupType.BF_BASIC).toMillis();
+            }
+
+            if (to < Calendar.getInstance().getTimeInMillis() - ttl) {
+                continue;
+            }
+
             // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
             // period and go from there.
             long period = (g == Granularity.FULL) ? GET_BY_POINTS_ASSUME_INTERVAL : g.milliseconds();
@@ -274,6 +295,11 @@ public final class Granularity {
                 break;
             }
         }
+
+        if (gran == null) {
+            gran = Granularity.LAST;
+        }
+
         return gran;
     }
 
