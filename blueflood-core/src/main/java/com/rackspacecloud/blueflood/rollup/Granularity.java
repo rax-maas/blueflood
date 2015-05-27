@@ -261,17 +261,7 @@ public final class Granularity {
         }
 
         for (Granularity g : Granularity.granularities()) {
-            long ttl;
-            try {
-                ttl = (long)TTL_PROVIDER.getTTL(
-                        tenantid,
-                        g,
-                        RollupType.BF_BASIC).toMillis();
-            } catch (Exception ex) {
-                ttl = SafetyTtlProvider.getInstance().getSafeTTL(
-                        g,
-                        RollupType.BF_BASIC).toMillis();
-            }
+            long ttl = getTTL(tenantid, g);
 
             if (to < Calendar.getInstance().getTimeInMillis() - ttl) {
                 continue;
@@ -304,6 +294,21 @@ public final class Granularity {
         }
 
         return gran;
+    }
+
+    private static long getTTL(String tenantid, Granularity g) {
+        long ttl;
+        try {
+            ttl = (long)TTL_PROVIDER.getTTL(
+                    tenantid,
+                    g,
+                    RollupType.BF_BASIC).toMillis();
+        } catch (Exception ex) {
+            ttl = SafetyTtlProvider.getInstance().getSafeTTL(
+                    g,
+                    RollupType.BF_BASIC).toMillis();
+        }
+        return ttl;
     }
 
     /** calculate the full/5m slot based on 4032 slots of 300000 milliseconds per slot. */
