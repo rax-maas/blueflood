@@ -36,13 +36,11 @@ import org.junit.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
-    private final long baseMillis = 1335820166000L;
+    // A timestamp 2 days ago
+    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
     private final String strMetricName = "strMet_" + IntegrationTestBase.randString(8);
@@ -75,7 +73,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
 
         // insert something every 1m for 24h
         for (int i = 0; i < 1440; i++) {
-            final long curMillis = baseMillis + i * 60000;
+            final long curMillis = baseMillis + (i * 60000);
             final List<Metric> metrics = new ArrayList<Metric>();
             final Metric metric = getRandomIntMetric(locators[0], curMillis);
             final Metric stringMetric = getRandomStringmetric(locators[1], curMillis);

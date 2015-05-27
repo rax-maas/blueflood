@@ -36,7 +36,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase {
-    private final long baseMillis = 1335820166000L;
+    //A time stamp 2 days ago
+    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
     private final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
