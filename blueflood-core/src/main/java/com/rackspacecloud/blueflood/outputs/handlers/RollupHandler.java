@@ -83,11 +83,11 @@ public class RollupHandler {
                     .withMaxPoolSize(ESthreadCount).withName("Rolluphandler ES executors").build();
         }
         if (!Configuration.getInstance().getBooleanProperty(CoreConfig.PERFORM_ROLLUPS_ON_READ_SYNC)) {
-            ThreadPoolExecutor RollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
+            ThreadPoolExecutor rollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Rollups on Read Executors").build();
-            rollupsOnReadExecutor = MoreExecutors.listeningDecorator(RollupsOnReadExecutors);
+            rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
         }
     }
 
