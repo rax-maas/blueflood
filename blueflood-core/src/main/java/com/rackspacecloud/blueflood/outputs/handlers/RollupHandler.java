@@ -147,7 +147,7 @@ public class RollupHandler {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
             }
-        } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false){
+        } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
             ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 futures.add(
