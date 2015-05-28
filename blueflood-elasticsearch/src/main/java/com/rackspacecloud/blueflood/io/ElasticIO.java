@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
 import com.codahale.metrics.Timer;
@@ -37,6 +38,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +47,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class ElasticIO implements DiscoveryIO {
     public static final String INDEX_NAME = "metric_metadata";
@@ -150,25 +150,29 @@ public class ElasticIO implements DiscoveryIO {
 
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
         List<SearchResult> results = new ArrayList<SearchResult>();
+
         Timer.Context multiSearchCtx = searchTimer.time();
         queryBatchHistogram.update(queries.size());
-        BoolQueryBuilder qb = boolQuery();
+        BoolQueryBuilder bqb = boolQuery();
+        QueryBuilder qb;
 
         for (String query : queries) {
-            qb.should(boolQuery()
+            GlobPattern pattern = new GlobPattern(query);
+            if (!pattern.hasWildcard()) {
+                qb = termQuery(metric_name.name(), query);
+            } else {
+                qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
+            }
+            bqb.should(boolQuery()
                     .must(termQuery(tenantId.toString(), tenant))
-                    .must(
-                            query.contains("*") ?
-                                    wildcardQuery(metric_name.name(), query) :
-                                    termQuery(metric_name.name(), query)
-                    ));
+                    .must(qb));
         }
 
         SearchResponse response = client.prepareSearch(INDEX_NAME)
                 .setRouting(tenant)
                 .setSize(100000)
                 .setVersion(true)
-                .setQuery(qb)
+                .setQuery(bqb)
                 .execute()
                 .actionGet();
         multiSearchCtx.stop();

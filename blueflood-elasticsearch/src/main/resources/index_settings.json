@@ -1,0 +1,27 @@
+{
+    "index": {
+        "analysis": {
+            "analyzer": {
+                "prefix-test-analyzer": {
+                    "filter": "dotted",
+                    "tokenizer": "prefix-test-tokenizer",
+                    "type": "custom"
+                }
+            },
+            "filter": {
+                "dotted": {
+                    "patterns": [
+                        "([^.]+)"
+                    ],
+                    "type": "pattern_capture"
+                }
+            },
+            "tokenizer": {
+                "prefix-test-tokenizer": {
+                    "delimiter": ".",
+                    "type": "path_hierarchy"
+                }
+            }
+        }
+    }
+}
