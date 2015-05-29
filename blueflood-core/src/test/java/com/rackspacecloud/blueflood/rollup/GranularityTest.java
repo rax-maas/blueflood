@@ -28,31 +28,31 @@ import java.util.Map;
 
 public class GranularityTest {
 
-    //final long baseMillis = 1335820166000L;
     final long fromBaseMillis = Calendar.getInstance().getTimeInMillis();
     final long toBaseMillis = fromBaseMillis+ 604800000;
+    final long milliSecondsInADay = 86400 * 1000;
 
     //An old timestamp that signifies ttld out data.
     // 619200000 is 8 days, just 1 day more than 7 days ie ttl limit of full gran
-    final long oldToBaseMillis_FullGran = fromBaseMillis - 619200000;
+    final long oldFromBaseMillis_FullGran = fromBaseMillis - (8 * milliSecondsInADay);
     // 15 days old from toTimeStamp.
-    final long oldFromBaseMillis_FullGran = oldToBaseMillis_FullGran - 604800000;
+    final long oldToBaseMillis_FullGran = oldFromBaseMillis_FullGran + (7 * milliSecondsInADay);
 
     // A 16 days old time stamp beyond the ttl of 5m granularity
-    final long oldToBaseMillis_5m = fromBaseMillis - 1382400000;
-    final long oldFromBaseMillis_5m = oldToBaseMillis_5m - 604800000;
+    final long oldFromBaseMillis_5m = fromBaseMillis - (16 * milliSecondsInADay);
+    final long oldToBaseMillis_5m = oldFromBaseMillis_5m + (7 * milliSecondsInADay);
 
     // A 30 days old time stamp beyond the ttl of 20m granularity
-    final long oldToBaseMillis_20m = fromBaseMillis - 2592000000L;
-    final long oldFromBaseMillis_20m = oldToBaseMillis_20m - 604800000;
+    final long oldFromBaseMillis_20m = fromBaseMillis - (30 * milliSecondsInADay);
+    final long oldToBaseMillis_20m = oldFromBaseMillis_20m + (7 * milliSecondsInADay);
 
     // A 160 days old time stamp beyond the ttl of 60m granularity
-    final long oldToBaseMillis_60m = fromBaseMillis - 14256000000L;
-    final long oldFromBaseMillis_60m = oldToBaseMillis_60m - 604800000;
+    final long oldFromBaseMillis_60m = fromBaseMillis - (160 * milliSecondsInADay);
+    final long oldToBaseMillis_60m = oldFromBaseMillis_60m + (7 * milliSecondsInADay);
 
     //A 400 day old time stamp beyond the ttl of 240m granularity
-    final long oldToBaseMillis_240m = fromBaseMillis - 34560000000L;
-    final long oldFromBaseMillis_240m = oldToBaseMillis_240m - 604800000;
+    final long oldFromBaseMillis_240m = fromBaseMillis - (400 * milliSecondsInADay);
+    final long oldToBaseMillis_240m = oldFromBaseMillis_240m + (7 * milliSecondsInADay);
 
 
     @Test

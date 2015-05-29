@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
+import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -56,7 +57,8 @@ public final class Granularity {
     
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
 
-    private static SafetyTtlProvider TTL_PROVIDER;
+    private static SafetyTtlProvider SAFETY_TTL_PROVIDER;
+    private static ConfigTtlProvider CONFIG_TTL_PROVIDER;
 
     // simple counter for all instances, since there will be very few.
     private final int index;
@@ -256,14 +258,17 @@ public final class Granularity {
     private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
-        if (TTL_PROVIDER == null) {
-            TTL_PROVIDER = SafetyTtlProvider.getInstance();
+        if (SAFETY_TTL_PROVIDER == null) {
+            SAFETY_TTL_PROVIDER = SafetyTtlProvider.getInstance();
+        }
+        if (CONFIG_TTL_PROVIDER == null) {
+            CONFIG_TTL_PROVIDER = ConfigTtlProvider.getInstance();
         }
 
         for (Granularity g : Granularity.granularities()) {
             long ttl = getTTL(tenantid, g);
 
-            if (to < Calendar.getInstance().getTimeInMillis() - ttl) {
+            if (from < Calendar.getInstance().getTimeInMillis() - ttl) {
                 continue;
             }
 
@@ -299,14 +304,20 @@ public final class Granularity {
     private static long getTTL(String tenantid, Granularity g) {
         long ttl;
         try {
-            ttl = (long)TTL_PROVIDER.getTTL(
-                    tenantid,
-                    g,
-                    RollupType.BF_BASIC).toMillis();
+            if (g == Granularity.FULL) {
+                if (CONFIG_TTL_PROVIDER.areTTLsForced()) {
+                    ttl = CONFIG_TTL_PROVIDER.getConfigTTLForIngestion().toMillis();
+                }
+                else {
+                    ttl = CONFIG_TTL_PROVIDER.getTTL(tenantid,g,RollupType.BF_BASIC).toMillis();
+                }
+            }
+            else {
+                ttl = SAFETY_TTL_PROVIDER.getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
+            }
         } catch (Exception ex) {
-            ttl = SafetyTtlProvider.getInstance().getSafeTTL(
-                    g,
-                    RollupType.BF_BASIC).toMillis();
+            ttl = SAFETY_TTL_PROVIDER.getSafeTTL(
+                    g, RollupType.BF_BASIC).toMillis();
         }
         return ttl;
     }
