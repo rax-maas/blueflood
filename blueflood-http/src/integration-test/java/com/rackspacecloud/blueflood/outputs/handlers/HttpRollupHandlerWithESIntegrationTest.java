@@ -106,6 +106,48 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     }
 
     @Test
+    public void testOldMetricDataFetching() throws Exception {
+        final Map<Granularity, Integer> points = new HashMap<Granularity, Integer>();
+        //long currentTimeStamp = Calendar.getInstance().getTimeInMillis();
+        long millisInADay = 86400 * 1000;
+
+        points.put(Granularity.FULL, 1600);
+        points.put(Granularity.MIN_5, 400);
+        points.put(Granularity.MIN_20, 71);
+        points.put(Granularity.MIN_60, 23);
+        points.put(Granularity.MIN_240, 5);
+        points.put(Granularity.MIN_1440, 1);
+        long[] old_timestamps = new long[] {baseMillis - 6 * millisInADay, baseMillis - 12 * millisInADay, baseMillis - 30 * millisInADay, baseMillis - (160* millisInADay), baseMillis - (400*millisInADay)};
+
+        int i = 0;
+        for (Granularity gran : Granularity.granularities()) {
+            if (gran == Granularity.LAST) {
+                break;
+            }
+
+            long from = old_timestamps[i];
+            long to = baseMillis+(2 * millisInADay);
+
+            MetricData data = httpHandler.GetDataByPoints(
+                    locator.getTenantId(),
+                    locator.getMetricName(),
+                    from,
+                    to,
+                    points.get(gran));
+
+            //The from timestamps are manufactured such that they are always before
+            //the data corresponding to the granularity 'gran' has expired, it will return points for a granularity coarser
+            //than 'gran'. Therefore the points returned will always be slightly less
+            //than the points asked for.
+            Assert.assertTrue((int) granToPoints.get(gran) > data.getData().getPoints().size());
+            Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
+
+            i++;
+        }
+        Assert.assertFalse(MetadataCache.getInstance().containsKey(locator, MetricMetadata.UNIT.name()));
+    }
+
+    @Test
     public void testMetricDataFetching() throws Exception {
         final Map<Granularity, Integer> points = new HashMap<Granularity, Integer>();
         points.put(Granularity.FULL, 1600);
