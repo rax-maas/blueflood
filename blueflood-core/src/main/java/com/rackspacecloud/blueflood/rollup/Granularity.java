@@ -305,12 +305,7 @@ public final class Granularity {
         long ttl;
         try {
             if (g == Granularity.FULL) {
-                if (CONFIG_TTL_PROVIDER.areTTLsForced()) {
-                    ttl = CONFIG_TTL_PROVIDER.getConfigTTLForIngestion().toMillis();
-                }
-                else {
-                    ttl = CONFIG_TTL_PROVIDER.getTTL(tenantid,g,RollupType.BF_BASIC).toMillis();
-                }
+               ttl = CONFIG_TTL_PROVIDER.getTTLForGranularityAndTenant(tenantid,g);
             }
             else {
                 ttl = SAFETY_TTL_PROVIDER.getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();

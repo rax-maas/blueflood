@@ -140,6 +140,17 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         throw new RuntimeException("Not allowed to override TTL values specified in configs.");
     }
 
+    public long getTTLForGranularityAndTenant(String tenantid, Granularity g) throws Exception{
+        long ttl;
+        if (areTTLsForced()) {
+            ttl = getConfigTTLForIngestion().toMillis();
+        }
+        else {
+            ttl = getTTL(tenantid, Granularity.FULL, RollupType.BF_BASIC).toMillis();
+        }
+        return ttl;
+    }
+
     @Override
     public TimeValue getTTLForStrings(String tenantId) throws Exception {
         return stringTTL;
