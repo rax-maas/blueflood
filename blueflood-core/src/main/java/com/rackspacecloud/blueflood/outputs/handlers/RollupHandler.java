@@ -82,7 +82,7 @@ public class RollupHandler {
                     .withCorePoolSize(ESthreadCount)
                     .withMaxPoolSize(ESthreadCount).withName("Rolluphandler ES executors").build();
         }
-        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.PERFORM_ROLLUPS_ON_READ_SYNC)) {
+        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT)) {
             ThreadPoolExecutor rollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
@@ -143,11 +143,11 @@ public class RollupHandler {
             }
         }
 
-        if (Configuration.getInstance().getBooleanProperty(CoreConfig.PERFORM_ROLLUPS_ON_READ_SYNC)) {
+        if (locators.size() == 1) {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
             }
-        } else {
+        } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
             ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 futures.add(
