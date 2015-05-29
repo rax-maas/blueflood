@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
@@ -60,23 +61,37 @@ public class RollupHandler {
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
+    private static final Meter exceededQueryTimeout = Metrics.meter(RollupHandler.class, "Batched Metrics Query Duration Exceeded Timeout");
+    private static final Histogram queriesSizeHist = Metrics.histogram(RollupHandler.class, "Total queries");
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
-    private ListeningExecutorService RollupsOnReadExecutor = null;
+    private ListeningExecutorService rollupsOnReadExecutor = null;
+    /*
+      Timeout for rollups on read applicable only when operations are done async. for sync rollups on read
+      it will be the astyanax operation timeout.
+      TODO: Hard-coded for now, make configurable if need be
+     */
+    private TimeValue rollupOnReadTimeout = new TimeValue(10, TimeUnit.SECONDS);
 
-    private TimeValue rollupOnReadTimeout = new TimeValue(5, TimeUnit.SECONDS); //Hard-coded for now, make configurable if need be
-    
-    protected RollupHandler() {
+    public RollupHandler() {
         if (Util.shouldUseESForUnits()) {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
-            ESUnitExecutor = Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS));
+            int ESthreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS);
+            ESUnitExecutor = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(ESthreadCount)
+                    .withMaxPoolSize(ESthreadCount).withName("Rolluphandler ES executors").build();
         }
-        RollupsOnReadExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS)));
+        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT)) {
+            ThreadPoolExecutor rollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withName("Rollups on Read Executors").build();
+            rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
+        }
     }
 
-
-    protected Map<Locator, MetricData> getRollupByGranularity(
+    public Map<Locator, MetricData> getRollupByGranularity(
             final String tenantId,
             final List<String> metrics,
             final long from,
@@ -91,6 +106,8 @@ public class RollupHandler {
         for (String metric : metrics) {
             locators.add(Locator.createLocatorFromPathComponents(tenantId, metric));
         }
+
+        queriesSizeHist.update(locators.size());
 
         if (Util.shouldUseESForUnits()) {
              unitsFuture = ESUnitExecutor.submit(new Callable() {
@@ -126,82 +143,95 @@ public class RollupHandler {
             }
         }
 
-        // Now do rollups on read asynchronously
-        ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
-        for (final Map.Entry<Locator, MetricData> metricData: metricDataMap.entrySet()) {
-            futures.add(
-                RollupsOnReadExecutor.submit(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                            boolean isRollable = metricData.getValue().getType().equals(MetricData.Type.NUMBER.toString())
-                                    || metricData.getValue().getType().equals(MetricData.Type.HISTOGRAM.toString());
-                            Boolean retValue = false;
-
-                            // if Granularity is FULL, we are missing raw data - can't generate that
-                            if (ROLLUP_REPAIR && isRollable && g != Granularity.FULL && metricData != null) {
-                                final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
-
-                                if (metricData.getValue().getData().isEmpty()) { // data completely missing for range. complete repair.
-                                    rollupsRepairEntireRange.mark();
-                                    List<Points.Point> repairedPoints = repairRollupsOnRead(metricData.getKey(), g, from, to);
-                                    for (Points.Point repairedPoint : repairedPoints) {
-                                        metricData.getValue().getData().add(repairedPoint);
-                                    }
-
-                                    if (repairedPoints.isEmpty()) {
-                                        rollupsRepairEntireRangeEmpty.mark();
-                                    }
-                                } else {
-                                    long actualStart = minTime(metricData.getValue().getData());
-                                    long actualEnd = maxTime(metricData.getValue().getData());
-
-                                    // If the returned start is greater than 'from', we are missing a portion of data.
-                                    if (actualStart > from) {
-                                        rollupsRepairedLeft.mark();
-                                        List<Points.Point> repairedLeft = repairRollupsOnRead(metricData.getKey(), g, from, actualStart);
-                                        for (Points.Point repairedPoint : repairedLeft) {
-                                            metricData.getValue().getData().add(repairedPoint);
-                                        }
-
-                                        if (repairedLeft.isEmpty()) {
-                                            rollupsRepairedLeftEmpty.mark();
-                                        }
-                                    }
-
-                                    // If the returned end timestamp is less than 'to', we are missing a portion of data.
-                                    if (actualEnd + g.milliseconds() <= to) {
-                                        rollupsRepairedRight.mark();
-                                        List<Points.Point> repairedRight = repairRollupsOnRead(metricData.getKey(), g, actualEnd + g.milliseconds(), to);
-                                        for (Points.Point repairedPoint : repairedRight) {
-                                            metricData.getValue().getData().add(repairedPoint);
-                                        }
-
-                                        if (repairedRight.isEmpty()) {
-                                            rollupsRepairedRightEmpty.mark();
-                                        }
-                                    }
-                                }
-                                retValue = true;
-                                rollupsCalcCtx.stop();
+        if (locators.size() == 1) {
+            for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
+                repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
+            }
+        } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
+            ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
+            for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
+                futures.add(
+                        rollupsOnReadExecutor.submit(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() {
+                                return repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
                             }
-                            ctx.stop();
-
-                            if (g == Granularity.FULL) {
-                                numFullPointsReturned.update(metricData.getValue().getData().getPoints().size());
-                            } else {
-                                numRollupPointsReturned.update(metricData.getValue().getData().getPoints().size());
-                            }
-                            return retValue;
-                        }
-                }));
+                        }));
+            }
+            ListenableFuture<List<Boolean>> aggregateFuture = Futures.allAsList(futures);
+            try {
+                aggregateFuture.get(rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit());
+            } catch (Exception e) {
+                aggregateFuture.cancel(true);
+                exceededQueryTimeout.mark();
+                log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
+            }
         }
-        ListenableFuture<List<Boolean>> aggregateFuture = Futures.allAsList(futures);
-        try {
-            aggregateFuture.get(rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit());
-        } catch (Exception e) {
-            log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
-        }
+        ctx.stop();
         return metricDataMap;
+    }
+
+    private Boolean repairMetrics (Locator locator, MetricData metricData, final long from,
+                                   final long to,
+                                   final Granularity g) {
+        boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString())
+                || metricData.getType().equals(MetricData.Type.HISTOGRAM.toString());
+        Boolean retValue = false;
+
+        // if Granularity is FULL, we are missing raw data - can't generate that
+        if (ROLLUP_REPAIR && isRollable && g != Granularity.FULL && metricData != null) {
+            final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
+
+            if (metricData.getData().isEmpty()) { // data completely missing for range. complete repair.
+                rollupsRepairEntireRange.mark();
+                List<Points.Point> repairedPoints = repairRollupsOnRead(locator, g, from, to);
+                for (Points.Point repairedPoint : repairedPoints) {
+                    metricData.getData().add(repairedPoint);
+                }
+
+                if (repairedPoints.isEmpty()) {
+                    rollupsRepairEntireRangeEmpty.mark();
+                }
+            } else {
+                long actualStart = minTime(metricData.getData());
+                long actualEnd = maxTime(metricData.getData());
+
+                // If the returned start is greater than 'from', we are missing a portion of data.
+                if (actualStart > from) {
+                    rollupsRepairedLeft.mark();
+                    List<Points.Point> repairedLeft = repairRollupsOnRead(locator, g, from, actualStart);
+                    for (Points.Point repairedPoint : repairedLeft) {
+                        metricData.getData().add(repairedPoint);
+                    }
+
+                    if (repairedLeft.isEmpty()) {
+                        rollupsRepairedLeftEmpty.mark();
+                    }
+                }
+
+                // If the returned end timestamp is less than 'to', we are missing a portion of data.
+                if (actualEnd + g.milliseconds() <= to) {
+                    rollupsRepairedRight.mark();
+                    List<Points.Point> repairedRight = repairRollupsOnRead(locator, g, actualEnd + g.milliseconds(), to);
+                    for (Points.Point repairedPoint : repairedRight) {
+                        metricData.getData().add(repairedPoint);
+                    }
+
+                    if (repairedRight.isEmpty()) {
+                        rollupsRepairedRightEmpty.mark();
+                    }
+                }
+            }
+            retValue = true;
+            rollupsCalcCtx.stop();
+        }
+
+        if (g == Granularity.FULL) {
+            numFullPointsReturned.update(metricData.getData().getPoints().size());
+        } else {
+            numRollupPointsReturned.update(metricData.getData().getPoints().size());
+        }
+        return retValue;
     }
 
     private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {

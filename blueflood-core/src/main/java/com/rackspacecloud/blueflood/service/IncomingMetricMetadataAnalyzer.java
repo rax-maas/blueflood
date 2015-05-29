@@ -38,13 +38,15 @@ public class IncomingMetricMetadataAnalyzer {
     private static Timer scanMetricsTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Scan meta for metrics");
     private static Timer checkMetaTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Check meta");
     private static Configuration config = Configuration.getInstance();
-    private static boolean USE_ES_FOR_UNITS = config.getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS);
-    private static boolean ES_MODULE_FOUND = config.getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath);
+    private static boolean USE_ES_FOR_UNITS = false;
+    private static boolean ES_MODULE_FOUND = false;
 
     private final MetadataCache cache;
     
     public IncomingMetricMetadataAnalyzer(MetadataCache cache) {
         this.cache = cache;
+        USE_ES_FOR_UNITS = config.getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS);
+        ES_MODULE_FOUND = config.getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath);
     }
     
     public Collection<IncomingMetricException> scanMetrics(Collection<IMetric> metrics) {

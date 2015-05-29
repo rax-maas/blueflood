@@ -299,7 +299,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public static String getUnitString(Locator locator) {
-        String unitString = null;
+        String unitString = Util.UNKNOWN;
         // Only grab units from cassandra, if we have to
         if (!Util.shouldUseESForUnits()) {
             try {
