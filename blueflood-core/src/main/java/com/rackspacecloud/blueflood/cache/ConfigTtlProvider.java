@@ -156,6 +156,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return stringTTL;
     }
 
+    @Override
     public TimeValue getConfigTTLForIngestion() {
         return TTL_CONFIG_FOR_INGESTION;
     }

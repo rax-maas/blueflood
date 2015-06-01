@@ -58,7 +58,6 @@ public final class Granularity {
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
 
     private static SafetyTtlProvider SAFETY_TTL_PROVIDER;
-    private static ConfigTtlProvider CONFIG_TTL_PROVIDER;
 
     // simple counter for all instances, since there will be very few.
     private final int index;
@@ -261,12 +260,9 @@ public final class Granularity {
         if (SAFETY_TTL_PROVIDER == null) {
             SAFETY_TTL_PROVIDER = SafetyTtlProvider.getInstance();
         }
-        if (CONFIG_TTL_PROVIDER == null) {
-            CONFIG_TTL_PROVIDER = ConfigTtlProvider.getInstance();
-        }
 
         for (Granularity g : Granularity.granularities()) {
-            long ttl = getTTL(tenantid, g);
+            long ttl = SAFETY_TTL_PROVIDER.getFinalTTL(tenantid, g);
 
             if (from < Calendar.getInstance().getTimeInMillis() - ttl) {
                 continue;
@@ -299,22 +295,6 @@ public final class Granularity {
         }
 
         return gran;
-    }
-
-    private static long getTTL(String tenantid, Granularity g) {
-        long ttl;
-        try {
-            if (g == Granularity.FULL) {
-               ttl = CONFIG_TTL_PROVIDER.getTTLForGranularityAndTenant(tenantid,g);
-            }
-            else {
-                ttl = SAFETY_TTL_PROVIDER.getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
-            }
-        } catch (Exception ex) {
-            ttl = SAFETY_TTL_PROVIDER.getSafeTTL(
-                    g, RollupType.BF_BASIC).toMillis();
-        }
-        return ttl;
     }
 
     /** calculate the full/5m slot based on 4032 slots of 300000 milliseconds per slot. */
