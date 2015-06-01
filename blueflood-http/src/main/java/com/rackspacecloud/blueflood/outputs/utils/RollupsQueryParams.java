@@ -60,9 +60,9 @@ public class RollupsQueryParams {
         return !isPoints;
     }
 
-    public Granularity getGranularity() {
+    public Granularity getGranularity(String tenantId) {
         if (isPoints) {
-            return Granularity.granularityFromPointsInInterval(range.getStart(), range.getStop(), points);
+            return Granularity.granularityFromPointsInInterval(tenantId, range.getStart(), range.getStop(), points);
         } else {
             return Granularity.granularities()[resolution.getValue()];
         }

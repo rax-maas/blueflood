@@ -65,7 +65,7 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
                                        long to,
                                        int points) throws IOException, SerializationException {
         histByPointsMeter.mark();
-        Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
+        Granularity g = Granularity.granularityFromPointsInInterval(tenantId,from, to, points);
         return serializer.transformHistogram(getHistogramsByGranularity(tenantId, metric, from, to, g));
     }
 

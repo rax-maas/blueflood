@@ -26,4 +26,6 @@ public interface TenantTtlProvider {
     public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception;
 
     public TimeValue getTTLForStrings(String tenantId) throws Exception;
+
+    public TimeValue getConfigTTLForIngestion() throws Exception;
 }

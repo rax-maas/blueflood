@@ -22,31 +22,91 @@ import com.rackspacecloud.blueflood.types.Range;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class GranularityTest {
 
-    final long baseMillis = 1335820166000L;
+    final long fromBaseMillis = Calendar.getInstance().getTimeInMillis();
+    final long toBaseMillis = fromBaseMillis+ 604800000;
+    final long milliSecondsInADay = 86400 * 1000;
+
+    //An old timestamp that signifies ttld out data.
+    // 619200000 is 8 days, just 1 day more than 7 days ie ttl limit of full gran
+    final long oldFromBaseMillis_FullGran = fromBaseMillis - (8 * milliSecondsInADay);
+    // 15 days old from toTimeStamp.
+    final long oldToBaseMillis_FullGran = oldFromBaseMillis_FullGran + (7 * milliSecondsInADay);
+
+    // A 16 days old time stamp beyond the ttl of 5m granularity
+    final long oldFromBaseMillis_5m = fromBaseMillis - (16 * milliSecondsInADay);
+    final long oldToBaseMillis_5m = oldFromBaseMillis_5m + (7 * milliSecondsInADay);
+
+    // A 30 days old time stamp beyond the ttl of 20m granularity
+    final long oldFromBaseMillis_20m = fromBaseMillis - (30 * milliSecondsInADay);
+    final long oldToBaseMillis_20m = oldFromBaseMillis_20m + (7 * milliSecondsInADay);
+
+    // A 160 days old time stamp beyond the ttl of 60m granularity
+    final long oldFromBaseMillis_60m = fromBaseMillis - (160 * milliSecondsInADay);
+    final long oldToBaseMillis_60m = oldFromBaseMillis_60m + (7 * milliSecondsInADay);
+
+    //A 400 day old time stamp beyond the ttl of 240m granularity
+    final long oldFromBaseMillis_240m = fromBaseMillis - (400 * milliSecondsInADay);
+    final long oldToBaseMillis_240m = oldFromBaseMillis_240m + (7 * milliSecondsInADay);
+
 
     @Test
-    public void testFromPointsInInterval() throws Exception {
-        Assert.assertEquals(Granularity.FULL.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 86400).name());
-        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 288).name());
-        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 72).name());
-        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 24).name());
-        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 6).name());
-        Assert.assertEquals(Granularity.MIN_1440.name(), Granularity.granularityFromPointsInInterval(0, 86400000, 1).name());
+    public void testFromPointsInInterval_1WeekInterval_OldAndNew() throws Exception {
+        Assert.assertEquals(Granularity.FULL.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 86400).name());
 
-        Assert.assertEquals(Granularity.FULL.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 800).name());
-        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 288).name()); // 144 5m points vs 1440 full points.
-        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 144).name());
-        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 35).name());
-        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 11).name());
-        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval(0, 43200000, 3).name());
+        // The timestamp is too old for full data, so it goes to the next granularity ie 5m
+        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",oldFromBaseMillis_FullGran, oldToBaseMillis_FullGran, 86400).name());
 
-        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval(baseMillis, baseMillis + 86400000, 287).name());
+        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 1152).name());
+
+        //The timestamp is too old for 5m. So it goes to the next granularity ie 20m
+        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",oldFromBaseMillis_5m, oldToBaseMillis_5m, 1152).name());
+
+
+        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 576).name());
+
+        //The timestamp is too old for 20m. So it goes to the next granularity ie 60m
+        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",oldFromBaseMillis_20m, oldToBaseMillis_20m, 576).name());
+
+
+        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 96).name());
+
+        //The timestamp is too old for 60m. So it goes to the next granularity ie 240m
+        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",oldFromBaseMillis_60m, oldToBaseMillis_60m, 96).name());
+
+
+        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 24).name());
+
+        //The timestamp is too old for 240m. So it goes to the next granularity ie 1440m
+        Assert.assertEquals(Granularity.MIN_1440.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",oldFromBaseMillis_240m, oldToBaseMillis_240m, 24).name());
+
+
+        Assert.assertEquals(Granularity.MIN_1440.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, toBaseMillis, 1).name());
+    }
+
+    @Test
+    public void testFromPointsInterval_ADayInterval() throws Exception {
+        Assert.assertEquals(Granularity.FULL.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 86400).name());
+        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 288).name());
+        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 72).name());
+        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 24).name());
+        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 6).name());
+        Assert.assertEquals(Granularity.MIN_1440.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+86400000, 1).name());
+    }
+
+    @Test
+    public void testFromPointsInInterval_LessThanADayInterval() throws Exception {
+        Assert.assertEquals(Granularity.FULL.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 800).name());
+        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 288).name()); // 144 5m points vs 1440 full points.
+        Assert.assertEquals(Granularity.MIN_5.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 144).name());
+        Assert.assertEquals(Granularity.MIN_20.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 35).name());
+        Assert.assertEquals(Granularity.MIN_60.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 11).name());
+        Assert.assertEquals(Granularity.MIN_240.name(), Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+43200000, 3).name());
     }
 
     @Test
@@ -73,12 +133,12 @@ public class GranularityTest {
     @Test
     public void testForCloseness() {
         int desiredPoints = 10;
-        long start = 1335796192000L;
+        long start = Calendar.getInstance().getTimeInMillis();
         // 10000000ms == 166.67 min.  166/20 is 8 points. 166/5 is 33 points.  The old algorithm returned the latter, which is too many.
         // 1000000ms == 16.67 min. 16/20 is 0, 16/5 is 3 points, 16/full = 32 points.
         // is too many.
-        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval(start, start + 10000000, desiredPoints));
-        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(start, start + 1000000, desiredPoints));
+        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval("TENANTID1234",start, start + 10000000, desiredPoints));
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval("TENANTID1234",start, start + 1000000, desiredPoints));
       
         // Test edge cases using a 100000000 millisecond swath. For reference 100k secs generates:
         // 3333.33 full res points (at 30s per check)
@@ -118,7 +178,7 @@ public class GranularityTest {
         }};
         
         for (Map.Entry<Integer, Granularity> entry : expectedGranularities.entrySet()) {
-            Granularity actual = Granularity.granularityFromPointsInInterval(0, 100000000, entry.getKey()); 
+            Granularity actual = Granularity.granularityFromPointsInInterval("TENANTID1234",start, start+100000000, entry.getKey());
             Assert.assertEquals(
                     String.format("%d points", entry.getKey()),
                     entry.getValue(), 
@@ -132,22 +192,22 @@ public class GranularityTest {
         long DAY = 24 * HOUR;
 
         // 300 points covering 1 hour -> FULL (120 points)
-        Assert.assertEquals(Granularity.FULL, Granularity.granularityFromPointsInInterval(0, HOUR, 300));
+        Assert.assertEquals(Granularity.FULL, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+HOUR, 300));
 
         // 300 points covering 8 hours -> MIN_5 (96 points - 8 hours is actually a really unfortunate interval)
-        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 8 * HOUR, 300));
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+(8 * HOUR), 300));
 
         // 300 points covering 12 hours -> MIN_5 (144 points)
-        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, 12 * HOUR, 300));
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+(12 * HOUR), 300));
 
         // 300 points covering 1 day -> MIN_5 (288 points)
-        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval(0, DAY, 300));
+        Assert.assertEquals(Granularity.MIN_5, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+DAY, 300));
 
         // 300 points covering 1 week -> MIN_20 (504 points)
-        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval(0, 7 * DAY, 300));
+        Assert.assertEquals(Granularity.MIN_20, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+(7 * DAY), 300));
 
         // 300 points covering 1 month -> MIN_240 (180 points)
-        Assert.assertEquals(Granularity.MIN_240, Granularity.granularityFromPointsInInterval(0, 30 * DAY, 300));
+        Assert.assertEquals(Granularity.MIN_240, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+(30 * DAY), 300));
     }
 
     @Test(expected = GranularityException.class)
@@ -177,7 +237,7 @@ public class GranularityTest {
     
     @Test(expected = RuntimeException.class)
     public void testToBeforeFromInterval() {
-        Granularity.granularityFromPointsInInterval(10000000, 0, 100);
+        Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis+10000000, fromBaseMillis+0, 100);
     }
     
     @Test
@@ -241,7 +301,7 @@ public class GranularityTest {
     @Test
     public void testBadGranularityFromPointsInterval() {
         try {
-            Granularity.granularityFromPointsInInterval(2, 1, 3);
+            Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis+2, fromBaseMillis+1, 3);
             Assert.fail("Should not have worked");
         }
         catch (RuntimeException e) {
