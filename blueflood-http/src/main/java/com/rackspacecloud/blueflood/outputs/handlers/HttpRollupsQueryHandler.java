@@ -88,7 +88,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
                                       long to,
                                       int points) throws SerializationException {
         rollupsByPointsMeter.mark();
-        Granularity g = Granularity.granularityFromPointsInInterval(from, to, points);
+        Granularity g = Granularity.granularityFromPointsInInterval(tenantId, from, to, points);
         return getRollupByGranularity(tenantId, Arrays.asList(metric), from, to, g).get(Locator.createLocatorFromPathComponents(tenantId, metric));
     }
 

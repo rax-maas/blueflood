@@ -21,12 +21,18 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.TtlConfig;
 import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+
+import java.util.concurrent.TimeUnit;
 
 public class SafetyTtlProvider implements TenantTtlProvider {
     private final ImmutableTable<Granularity, RollupType, TimeValue> SAFETY_TTLS;
     private final TimeValue STRING_TTLS = Constants.STRING_SAFETY_TTL;
+    private final TimeValue CONFIG_TTL = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
+    private final boolean ARE_TTLS_FORCED = Configuration.getInstance().getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
 
     private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
 
@@ -74,5 +80,31 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     @Override
     public TimeValue getTTLForStrings(String tenantId) throws Exception {
         return STRING_TTLS;
+    }
+
+    @Override
+    public TimeValue getConfigTTLForIngestion() throws Exception {
+       return CONFIG_TTL;
+    }
+
+    public long getFinalTTL(String tenantid, Granularity g) {
+        long ttl;
+        try {
+            if (g == Granularity.FULL) {
+                if (ARE_TTLS_FORCED) {
+                    ttl = getConfigTTLForIngestion().toMillis();
+                }
+                else {
+                    ttl = getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
+                }
+            }
+            else {
+                ttl = getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
+            }
+        } catch (Exception ex) {
+            ttl = getSafeTTL(
+                    g, RollupType.BF_BASIC).toMillis();
+        }
+        return ttl;
     }
 }
