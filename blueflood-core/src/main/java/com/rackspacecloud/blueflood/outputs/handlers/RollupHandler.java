@@ -56,7 +56,8 @@ public class RollupHandler {
     protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
     protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
     protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
-    protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
+    protected static final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
+    protected final Timer metricsFetchTimerMPlot = Metrics.timer(RollupHandler.class, "Get metrics from db - mplot");
     protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
@@ -91,6 +92,16 @@ public class RollupHandler {
         }
     }
 
+    private enum plotTimers {
+        SPLOT_TIMER(metricsFetchTimer),
+        MPLOT_TIMER(metricsFetchTimer);
+        private Timer timer;
+
+        private plotTimers(Timer timer) {
+            this.timer = timer;
+        }
+    }
+
     public Map<Locator, MetricData> getRollupByGranularity(
             final String tenantId,
             final List<String> metrics,
@@ -98,7 +109,7 @@ public class RollupHandler {
             final long to,
             final Granularity g) {
 
-        final Timer.Context ctx = metricsFetchTimer.time();
+        final Timer.Context ctx = metrics.size() == 1 ? plotTimers.SPLOT_TIMER.timer.time() : plotTimers.MPLOT_TIMER.timer.time();
         Future<List<SearchResult>> unitsFuture = null;
         List<SearchResult> units = null;
         List<Locator> locators = new ArrayList<Locator>();
