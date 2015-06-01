@@ -56,8 +56,10 @@ public class RollupHandler {
     protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
     protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
     protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
-    protected final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
-    protected final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
+    protected static final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
+    protected static final Timer metricsFetchTimerMPlot = Metrics.timer(RollupHandler.class, "Get metrics from db - mplot");
+    protected static final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
+    protected static final Timer rollupsCalcOnReadTimerMPlot = Metrics.timer(RollupHandler.class, "Rollups calculation on read - mplot");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
@@ -91,6 +93,26 @@ public class RollupHandler {
         }
     }
 
+    private enum plotTimers {
+        SPLOT_TIMER(metricsFetchTimer),
+        MPLOT_TIMER(metricsFetchTimerMPlot);
+        private Timer timer;
+
+        private plotTimers(Timer timer) {
+            this.timer = timer;
+        }
+    }
+
+    private enum rollupsOnReadTimers {
+        RR_SPLOT_TIMER(rollupsCalcOnReadTimer),
+        RR_MPLOT_TIMER(rollupsCalcOnReadTimerMPlot);
+        private Timer timer;
+
+        private rollupsOnReadTimers (Timer timer) {
+            this.timer = timer;
+        }
+    }
+
     public Map<Locator, MetricData> getRollupByGranularity(
             final String tenantId,
             final List<String> metrics,
@@ -98,7 +120,7 @@ public class RollupHandler {
             final long to,
             final Granularity g) {
 
-        final Timer.Context ctx = metricsFetchTimer.time();
+        final Timer.Context ctx = metrics.size() == 1 ? plotTimers.SPLOT_TIMER.timer.time() : plotTimers.MPLOT_TIMER.timer.time();
         Future<List<SearchResult>> unitsFuture = null;
         List<SearchResult> units = null;
         List<Locator> locators = new ArrayList<Locator>();
@@ -145,9 +167,12 @@ public class RollupHandler {
 
         if (locators.size() == 1) {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
+                Timer.Context context = rollupsOnReadTimers.RR_SPLOT_TIMER.timer.time();
                 repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
+                context.stop();
             }
         } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
+            Timer.Context context = rollupsOnReadTimers.RR_MPLOT_TIMER.timer.time();
             ArrayList<ListenableFuture<Boolean>> futures = new ArrayList<ListenableFuture<Boolean>>();
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 futures.add(
@@ -166,6 +191,7 @@ public class RollupHandler {
                 exceededQueryTimeout.mark();
                 log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
             }
+            context.stop();
         }
         ctx.stop();
         return metricDataMap;
@@ -180,8 +206,6 @@ public class RollupHandler {
 
         // if Granularity is FULL, we are missing raw data - can't generate that
         if (ROLLUP_REPAIR && isRollable && g != Granularity.FULL && metricData != null) {
-            final Timer.Context rollupsCalcCtx = rollupsCalcOnReadTimer.time();
-
             if (metricData.getData().isEmpty()) { // data completely missing for range. complete repair.
                 rollupsRepairEntireRange.mark();
                 List<Points.Point> repairedPoints = repairRollupsOnRead(locator, g, from, to);
@@ -223,7 +247,6 @@ public class RollupHandler {
                 }
             }
             retValue = true;
-            rollupsCalcCtx.stop();
         }
 
         if (g == Granularity.FULL) {
