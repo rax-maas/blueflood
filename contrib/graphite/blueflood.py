@@ -430,7 +430,7 @@ class BluefloodClient(object):
       return (time_info, dictionary)
 
     except Exception as e:
-      print "Exception in Blueflood 3: "
+      print "Exception in Blueflood fetch_multi: "
       print e
       exc_info = sys.exc_info()
       tb = traceback.format_exception(*exc_info)
