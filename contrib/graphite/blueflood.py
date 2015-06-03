@@ -241,6 +241,7 @@ class TenantBluefloodReader(object):
       node = TenantBluefloodLeafNode(self.metric, reader)
 
       time_info, dictionary = client.fetch_multi([node], start_time, end_time)
+      
       return (time_info, dictionary[self.metric])
 
 class BluefloodClient(object):
@@ -335,7 +336,7 @@ class BluefloodClient(object):
     payload = {
       'from': start_time * 1000,
       'to': end_time * 1000,
-      'resolution': res
+      'points': 1000
     }
     if self.enable_submetrics:
       payload['select'] = ','.join(self.submetric_aliases.values())
@@ -429,7 +430,7 @@ class BluefloodClient(object):
       return (time_info, dictionary)
 
     except Exception as e:
-      print "Exception in Blueflood fetch_multi: "
+      print "Exception in Blueflood 3: "
       print e
       exc_info = sys.exc_info()
       tb = traceback.format_exception(*exc_info)
