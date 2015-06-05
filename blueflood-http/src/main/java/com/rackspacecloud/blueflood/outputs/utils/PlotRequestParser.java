@@ -42,7 +42,8 @@ public class PlotRequestParser {
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         
         DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
-        
+        DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.COUNTER_VALUE);
+
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.LATEST);
         

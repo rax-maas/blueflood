@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.SetRollup;
 import com.rackspacecloud.blueflood.types.TimerRollup;
 
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -149,6 +150,21 @@ public interface BasicRollupsOutputSerializer<T> {
                 else
                     // gauge, set, basic
                     throw new Exception(String.format("rate not supported for this type: %s", rollup.getClass().getSimpleName()));
+            }
+
+            @Override
+            Object convertRawSampleToObject(Object rawSample) {
+                return rawSample;
+            }
+        },
+        COUNTER_VALUE("sum") { //Changed counterValue to sum
+            @Override
+            Object convertRollupToObject(Rollup rollup) throws Exception {
+                if (rollup instanceof CounterRollup)
+                    return ((CounterRollup) rollup).getCount();
+                else
+                    // gauge, set, basic
+                    throw new Exception(String.format("counter value not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
