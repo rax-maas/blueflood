@@ -155,6 +155,10 @@ public class JSONBasicRollupOutputSerializerTest {
             
             Assert.assertNotNull(dataJSON.get("numPoints"));
             Assert.assertEquals((long) (i + 1000), dataJSON.get("numPoints"));
+
+            Assert.assertNotNull(dataJSON.get("counterValue"));
+            Assert.assertEquals((long) (i + 1000), dataJSON.get("counterValue"));
+
             Assert.assertNull(dataJSON.get("rate"));
         }
     }
