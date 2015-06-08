@@ -13,6 +13,10 @@ public class EventModuleLoader {
     private static GenericElasticSearchIO instance = null;
 
     public static GenericElasticSearchIO getInstance() {
+        if (instance == null) {
+            loadEventModule();
+        }
+
         return instance;
     }
 
