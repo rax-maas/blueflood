@@ -19,7 +19,9 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
+import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -47,7 +49,8 @@ import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class ElasticIO implements DiscoveryIO {
-    public static final String INDEX_NAME = "metric_metadata";
+    public static final String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
+    public static final String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     
     static enum ESFieldLabel {
         metric_name,
@@ -132,7 +135,7 @@ public class ElasticIO implements DiscoveryIO {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
-        return client.prepareIndex(INDEX_NAME, ES_TYPE)
+        return client.prepareIndex(INDEX_NAME_WRITE, ES_TYPE)
                 .setId(md.getDocumentId())
                 .setSource(md.createSourceContent())
                 .setCreate(true)
@@ -163,7 +166,7 @@ public class ElasticIO implements DiscoveryIO {
             );
         }
 
-        SearchResponse response = client.prepareSearch(INDEX_NAME)
+        SearchResponse response = client.prepareSearch(INDEX_NAME_READ)
                 .setRouting(tenant)
                 .setSize(100000)
                 .setVersion(true)
