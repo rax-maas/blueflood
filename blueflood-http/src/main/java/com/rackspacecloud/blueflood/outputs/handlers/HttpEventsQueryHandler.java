@@ -30,9 +30,10 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
+        HttpResponseStatus status = HttpResponseStatus.OK;
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String responseBody;
+        String responseBody = null;
         try {
             HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
             Map<String, List<String>> params = requestWithParams.getQueryParams();
@@ -46,9 +47,11 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             responseBody = String.format("Error: %s", e.getMessage());
+            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         }
-
-        sendResponse(ctx, request, responseBody, HttpResponseStatus.OK);
+        finally {
+            sendResponse(ctx, request, responseBody, status);
+        }
     }
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,

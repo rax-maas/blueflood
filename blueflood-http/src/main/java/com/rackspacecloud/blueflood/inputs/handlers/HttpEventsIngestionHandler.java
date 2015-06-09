@@ -28,7 +28,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader(Event.FieldLabels.tenantId.name());
-
+        HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -45,9 +45,11 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
         catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             response = String.format("Error: %s", e.getMessage());
+            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         }
-
-        sendResponse(ctx, request, response, HttpResponseStatus.OK);
+        finally {
+            sendResponse(ctx, request, response, status);
+        }
     }
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
