@@ -31,6 +31,7 @@ import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.EventModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -86,6 +87,9 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
+        EventModuleLoader.loadEventModule();
+        router.post("/v2.0/:tenantId/events", new HttpEventsIngestionHandler(EventModuleLoader.getInstance()));
+
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
