@@ -156,26 +156,13 @@ public interface BasicRollupsOutputSerializer<T> {
                 return rawSample;
             }
         },
-        COUNTER_VALUE("counterValue") {
-            @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof CounterRollup)
-                    return ((CounterRollup) rollup).getCount();
-                else
-                    // gauge, set, basic
-                    throw new Exception(String.format("counter value not supported for this type: %s", rollup.getClass().getSimpleName()));
-            }
-
-            @Override
-            Object convertRawSampleToObject(Object rawSample) {
-                return rawSample;
-            }
-        },
         SUM("sum") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof TimerRollup)
                     return ((TimerRollup) rollup).getSum();
+                else if (rollup instanceof CounterRollup)
+                    return ((CounterRollup) rollup).getCount();
                 else
                     // every other type.
                     throw new Exception(String.format("sum not supported for this type: %s", rollup.getClass().getSimpleName()));
