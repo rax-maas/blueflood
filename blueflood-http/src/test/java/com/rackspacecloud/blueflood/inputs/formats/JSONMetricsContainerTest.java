@@ -23,10 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class JSONMetricsContainerTest {
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -115,6 +112,27 @@ public class JSONMetricsContainerTest {
         testMetric.put("collectionTime", 1234567890L);
         metricsList.add(testMetric);
         return metricsList;
+    }
+
+    public static List<Map<String, Object>> generateAnnotationsData() throws Exception {
+        List<Map<String, Object>> annotationsList = new ArrayList<Map<String, Object>>();
+
+        // Long metric value
+        Map<String, Object> testAnnotation = new TreeMap<String, Object>();
+        testAnnotation.put("what","deployment");
+        testAnnotation.put("when", Calendar.getInstance().getTimeInMillis());
+        testAnnotation.put("tags","prod");
+        testAnnotation.put("data","app00.restart");
+
+        annotationsList.add(testAnnotation);
+        return annotationsList;
+    }
+
+    public static String generateJSONAnnotationsData() throws Exception {
+        mapper.writeValue(writer, generateAnnotationsData());
+        final String jsonString = writer.toString();
+
+        return jsonString;
     }
 
     public static String generateJSONMetricsData() throws Exception {

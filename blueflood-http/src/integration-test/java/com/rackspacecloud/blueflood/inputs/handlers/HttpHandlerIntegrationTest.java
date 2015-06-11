@@ -16,16 +16,12 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
-import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.HttpIngestionService;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -44,8 +40,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
 import static org.mockito.Mockito.*;
@@ -62,14 +57,31 @@ public class HttpHandlerIntegrationTest {
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
     private static ScheduleContext context;
+    private static GenericElasticSearchIO eventsSearchIO;
+    private static EsSetup esSetup;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws Exception{
+        System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
+        Configuration.getInstance().init();
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
+
+        esSetup = new EsSetup();
+        esSetup.execute(EsSetup.deleteAll());
+        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
+        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
+
+        HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
+        server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
+
         httpIngestionService = new HttpIngestionService();
+        httpIngestionService.setMetricsIngestionServer(server);
         httpIngestionService.startService(context, new AstyanaxMetricsWriter());
+
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
@@ -90,6 +102,29 @@ public class HttpHandlerIntegrationTest {
                 locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
+    public void testHttpAnnotationsIngestionHappyCase() throws Exception {
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v2.0/333333/events");
+
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/events.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        HttpPost post = new HttpPost(builder.build());
+
+        HttpEntity entity  = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
     @Test
@@ -222,6 +257,7 @@ public class HttpHandlerIntegrationTest {
 
     @AfterClass
     public static void shutdown() {
+        esSetup.terminate();
         vendor.shutdown();
     }
 }

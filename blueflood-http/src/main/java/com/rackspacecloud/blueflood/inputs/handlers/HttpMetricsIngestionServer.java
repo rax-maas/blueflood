@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -29,6 +30,7 @@ import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.EventModuleLoader;
@@ -65,6 +67,7 @@ public class HttpMetricsIngestionServer {
     private int httpIngestPort;
     private String httpIngestHost;
     private Processor processor;
+    private HttpEventsIngestionHandler httpEventsIngestionHandler;
 
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
@@ -72,10 +75,13 @@ public class HttpMetricsIngestionServer {
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
-        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
-        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.processor = new Processor(context, writer, timeout);
+    }
+
+    public void startServer() {
+        int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
+        int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
@@ -87,8 +93,7 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
-        EventModuleLoader.loadEventModule();
-        router.post("/v2.0/:tenantId/events", new HttpEventsIngestionHandler(EventModuleLoader.getInstance()));
+        router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
 
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
@@ -100,6 +105,7 @@ public class HttpMetricsIngestionServer {
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
     }
+
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
         private RouteMatcher router;
@@ -131,6 +137,20 @@ public class HttpMetricsIngestionServer {
             return pipeline;
         }
     }
+
+    private HttpEventsIngestionHandler getHttpEventsIngestionHandler() {
+        if (this.httpEventsIngestionHandler == null) {
+            this.httpEventsIngestionHandler = new HttpEventsIngestionHandler(EventModuleLoader.getInstance());
+        }
+
+        return this.httpEventsIngestionHandler;
+    }
+
+    @VisibleForTesting
+    public void setHttpEventsIngestionHandler(HttpEventsIngestionHandler httpEventsIngestionHandler) {
+        this.httpEventsIngestionHandler = httpEventsIngestionHandler;
+    }
+
     static class Processor {
         private static int BATCH_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.METRIC_BATCH_SIZE);
         private static int WRITE_THREADS = 
