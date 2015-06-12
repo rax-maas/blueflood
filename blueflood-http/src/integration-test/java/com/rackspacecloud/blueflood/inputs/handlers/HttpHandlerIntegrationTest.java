@@ -140,6 +140,7 @@ public class HttpHandlerIntegrationTest {
 
         results = eventsSearchIO.search("333333", query);
         Assert.assertEquals(1, results.size());
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
     @Test
