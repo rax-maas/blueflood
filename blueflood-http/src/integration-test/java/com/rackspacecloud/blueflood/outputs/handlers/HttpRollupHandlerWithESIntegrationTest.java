@@ -24,7 +24,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.GenericClassLoader;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -90,7 +90,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         writer.insertFull(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        ((ElasticIO)QueryDiscoveryModuleLoader.getDiscoveryInstance()).setClient(esSetup.client());
+        ((ElasticIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, "com.rackspacecloud.blueflood.io.ElasticIO")).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;
