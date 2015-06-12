@@ -125,6 +125,21 @@ public class HttpHandlerIntegrationTest {
 
         HttpResponse response = client.execute(post);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+
+        //Slight delay in search
+        Thread.sleep(1000);
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+
+        List<Map<String, Object>> results = eventsSearchIO.search("333333", query);
+        Assert.assertEquals(1, results.size());
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList("1433798150000"));
+        query.put(Event.untilParameterName, Arrays.asList("1433798170000"));
+
+        results = eventsSearchIO.search("333333", query);
+        Assert.assertEquals(1, results.size());
     }
 
     @Test
