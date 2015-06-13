@@ -17,20 +17,31 @@
 
 package com.rackspacecloud.blueflood.utils;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 
 public class GenericClassLoader {
     private static final Logger log = LoggerFactory.getLogger(GenericClassLoader.class);
     private static Object genericInstance;
-    public static Object getGenericInstance(Class c, String module){
+    public static Object getGenericInstance(Class c, CoreConfig moduleName){
 
+        List<String> modules = Configuration.getInstance().getListProperty(moduleName);
+
+        if (modules.isEmpty())
+            return null;
+
+        if (!modules.isEmpty() && modules.size() != 1) {
+            throw new RuntimeException("Cannot load service with more than one "+moduleName+" module");
+        }
+
+        String module = modules.get(0);
 
         log.info("Loading the module " + module);
-        System.out.println("Loading the module " + module);
-
-        System.out.println("Class Name --> "+c.getName());
         if (genericInstance != null)
             return genericInstance;
 
@@ -42,24 +53,14 @@ public class GenericClassLoader {
         }
         catch (InstantiationException e) {
             log.error("Unable to create instance of "+ c.getName()+" class for: " + module, e);
-            System.out.println("Unable to create instance of "+ c.getName()+" class for: " + module);
-            e.printStackTrace();
         } catch (IllegalAccessException e) {
             log.error("Error starting module: " + module, e);
-            System.out.println("Error starting module: " + module);
-            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             log.error("Unable to locate module: " + module, e);
-            System.out.println("Unable to locate module: " + module);
-            e.printStackTrace();
         } catch (RuntimeException e) {
             log.error("Error starting module: " + module, e);
-            System.out.println("Error starting module: " + module);
-            e.printStackTrace();
         } catch (Throwable e) {
             log.error("Error starting module: " + module, e);
-            System.out.println("Error starting module: " + module);
-            e.printStackTrace();
         }
 
 

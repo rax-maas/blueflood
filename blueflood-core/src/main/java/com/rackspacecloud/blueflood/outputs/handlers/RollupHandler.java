@@ -133,7 +133,7 @@ public class RollupHandler {
 
                  @Override
                  public List<SearchResult> call() throws Exception {
-                      DiscoveryIO discoveryIO = (DiscoveryIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, "com.rackspacecloud.blueflood.io.ElasticIO");
+                      DiscoveryIO discoveryIO = (DiscoveryIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
 
                      if (discoveryIO == null) {
                          log.warn("USE_ES_FOR_UNITS has been set to true, but no discovery module found." +

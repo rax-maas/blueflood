@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.utils.GenericClassLoader;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -56,7 +57,7 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
                 @Override
                 public Future call() {
                     if (Util.shouldUseESForUnits()) {
-                        final DiscoveryIO discoveryIO = (DiscoveryIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, "com.rackspacecloud.blueflood.io.ElasticIO");
+                        final DiscoveryIO discoveryIO = (DiscoveryIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
                         // TODO: Sync for now, but we will have to make it async eventually
                         Lists.transform(Arrays.asList(eventPayload), new Function<RollupEvent, RollupEvent>() {
                             @Override

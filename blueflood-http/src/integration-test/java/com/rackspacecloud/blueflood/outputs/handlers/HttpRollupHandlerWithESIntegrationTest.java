@@ -90,7 +90,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         writer.insertFull(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        ((ElasticIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, "com.rackspacecloud.blueflood.io.ElasticIO")).setClient(esSetup.client());
+        ((ElasticIO) GenericClassLoader.getGenericInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;
