@@ -23,12 +23,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 
 public class GenericClassLoader {
     private static final Logger log = LoggerFactory.getLogger(GenericClassLoader.class);
-    private static Object genericInstance;
+
+    private static Map<CoreConfig, Object> loadedModules = new HashMap<CoreConfig, Object>();
+
     public static Object getGenericInstance(Class c, CoreConfig moduleName){
+
+        Object genericInstance = loadedModules.get(moduleName);
+        if (genericInstance != null)
+            return genericInstance;
 
         List<String> modules = Configuration.getInstance().getListProperty(moduleName);
 
@@ -40,15 +48,13 @@ public class GenericClassLoader {
         }
 
         String module = modules.get(0);
-
         log.info("Loading the module " + module);
-        if (genericInstance != null)
-            return genericInstance;
 
         try {
             ClassLoader loader = c.getClassLoader();
             Class genericClass = loader.loadClass(module);
             genericInstance = genericClass.newInstance();
+            loadedModules.put(moduleName, genericInstance);
             log.info("Registering the module " + module);
         }
         catch (InstantiationException e) {
@@ -62,7 +68,6 @@ public class GenericClassLoader {
         } catch (Throwable e) {
             log.error("Error starting module: " + module, e);
         }
-
 
         return genericInstance;
     }
