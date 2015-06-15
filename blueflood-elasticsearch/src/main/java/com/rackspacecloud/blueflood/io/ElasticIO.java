@@ -50,8 +50,8 @@ import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class ElasticIO implements DiscoveryIO {
-    public static final String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
-    public static final String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
+    public static String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
+    public static String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     
     static enum ESFieldLabel {
         metric_name,
@@ -141,6 +141,16 @@ public class ElasticIO implements DiscoveryIO {
                 .setSource(md.createSourceContent())
                 .setCreate(true)
                 .setRouting(md.getTenantId());
+    }
+
+    @VisibleForTesting
+    public void setINDEX_NAME_WRITE (String indexNameWrite) {
+        INDEX_NAME_WRITE = indexNameWrite;
+    }
+
+    @VisibleForTesting
+    public void setINDEX_NAME_READ (String indexNameRead) {
+        INDEX_NAME_READ = indexNameRead;
     }
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
