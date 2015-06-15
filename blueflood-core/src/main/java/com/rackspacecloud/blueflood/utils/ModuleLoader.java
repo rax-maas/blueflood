@@ -27,16 +27,16 @@ import java.util.Map;
 import java.util.HashMap;
 
 
-public class GenericClassLoader {
-    private static final Logger log = LoggerFactory.getLogger(GenericClassLoader.class);
+public class ModuleLoader {
+    private static final Logger log = LoggerFactory.getLogger(ModuleLoader.class);
 
-    private static Map<CoreConfig, Object> loadedModules = new HashMap<CoreConfig, Object>();
+    private static Map<String, Object> loadedModules = new HashMap<String, Object>();
 
-    public static Object getGenericInstance(Class c, CoreConfig moduleName){
+    public static Object getInstance(Class c, CoreConfig moduleName){
 
-        Object genericInstance = loadedModules.get(moduleName);
-        if (genericInstance != null)
-            return genericInstance;
+        Object moduleInstance = loadedModules.get(moduleName.name().toString());
+        if (moduleInstance != null)
+            return moduleInstance;
 
         List<String> modules = Configuration.getInstance().getListProperty(moduleName);
 
@@ -50,11 +50,12 @@ public class GenericClassLoader {
         String module = modules.get(0);
         log.info("Loading the module " + module);
 
+
         try {
             ClassLoader loader = c.getClassLoader();
             Class genericClass = loader.loadClass(module);
-            genericInstance = genericClass.newInstance();
-            loadedModules.put(moduleName, genericInstance);
+            moduleInstance = genericClass.newInstance();
+            loadedModules.put(moduleName.name().toString(), moduleInstance);
             log.info("Registering the module " + module);
         }
         catch (InstantiationException e) {
@@ -69,6 +70,6 @@ public class GenericClassLoader {
             log.error("Error starting module: " + module, e);
         }
 
-        return genericInstance;
+        return moduleInstance;
     }
 }

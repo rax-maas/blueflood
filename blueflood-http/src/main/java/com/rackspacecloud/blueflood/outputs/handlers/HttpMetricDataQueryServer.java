@@ -24,7 +24,7 @@ import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.utils.GenericClassLoader;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -64,7 +64,7 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler((GenericElasticSearchIO)GenericClassLoader.getGenericInstance(GenericElasticSearchIO.class, CoreConfig.EVENTS_MODULES)));
+        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler((GenericElasticSearchIO) ModuleLoader.getInstance(GenericElasticSearchIO.class, CoreConfig.EVENTS_MODULES)));
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
