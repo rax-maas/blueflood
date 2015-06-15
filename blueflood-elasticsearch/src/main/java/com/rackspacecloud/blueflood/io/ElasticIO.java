@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
@@ -49,8 +50,8 @@ import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class ElasticIO implements DiscoveryIO {
-    public static final String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
-    public static final String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
+    public static String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
+    public static String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     
     static enum ESFieldLabel {
         metric_name,
@@ -141,6 +142,16 @@ public class ElasticIO implements DiscoveryIO {
                 .setCreate(true)
                 .setRouting(md.getTenantId());
     }
+
+    @VisibleForTesting
+    public void setINDEX_NAME_WRITE (String indexNameWrite) {
+        INDEX_NAME_WRITE = indexNameWrite;
+    }
+
+    @VisibleForTesting
+    public void setINDEX_NAME_READ (String indexNameRead) {
+        INDEX_NAME_READ = indexNameRead;
+    }
     
     public List<SearchResult> search(String tenant, String query) throws Exception {
         return search(tenant, Arrays.asList(query));
@@ -178,9 +189,15 @@ public class ElasticIO implements DiscoveryIO {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
             results.add(result);
         }
-        return results;
+        return dedupResults(results);
     }
 
+    private List<SearchResult> dedupResults(List<SearchResult> results) {
+        HashMap<String, SearchResult> dedupedResults = new HashMap<String, SearchResult>();
+        for (SearchResult result : results)
+            dedupedResults.put(result.getMetricName(), result);
+        return Lists.newArrayList(dedupedResults.values());
+    }
 
     public static class Discovery {
         private Map<String, Object> annotation = new HashMap<String, Object>();
