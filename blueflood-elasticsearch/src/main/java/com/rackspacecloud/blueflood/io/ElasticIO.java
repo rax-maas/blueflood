@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
@@ -178,9 +179,15 @@ public class ElasticIO implements DiscoveryIO {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
             results.add(result);
         }
-        return results;
+        return dedupResults(results);
     }
 
+    private List<SearchResult> dedupResults(List<SearchResult> results) {
+        HashMap<String, SearchResult> dedupedResults = new HashMap<String, SearchResult>();
+        for (SearchResult result : results)
+            dedupedResults.put(result.getMetricName(), result);
+        return Lists.newArrayList(dedupedResults.values());
+    }
 
     public static class Discovery {
         private Map<String, Object> annotation = new HashMap<String, Object>();
