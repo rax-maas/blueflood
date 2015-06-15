@@ -242,8 +242,14 @@ public class ElasticIOTest {
 
     @Test
     public void testDeDupMetrics() throws Exception {
-        // Create another index
+        // New index name and the locator to be written to it
         String ES_DUP = ElasticIO.INDEX_NAME_WRITE + "_2";
+        Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
+        // Metric is aleady there in old
+        List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
+        Assert.assertEquals(results.size(), 1);
+        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        // Actually create the new index
         esSetup.execute(EsSetup.createIndex(ES_DUP)
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping_v1.json")));
         // Insert metric into the new index
@@ -256,9 +262,9 @@ public class ElasticIOTest {
         esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
                 .addAlias(ElasticIO.INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
-        List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three00.fourA.five0");
+        results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
         Assert.assertEquals(results.size(), 1);
-        Assert.assertEquals(results.get(0).getMetricName(), "one.two.three00.fourA.five0");
+        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
     }
 }
