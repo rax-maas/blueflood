@@ -39,7 +39,7 @@ import java.util.*;
 public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
-    private static final String tenantId = "ac" + IntegrationTestBase.randString(8);
+    private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
     private final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
     private static int queryPort;
@@ -47,20 +47,20 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     private HttpRollupsQueryHandler httpHandler;
     private static ElasticIO elasticIO;
     private static EsSetup esSetup;
-    private static EventElasticSearchIO eventsSearchIO;
-    private static EsSetup esSetup_Annotations;
-
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
 
     @BeforeClass
-    public static void setUpHttp() throws Exception{
+    public static void setUpHttp() {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
                 "com.rackspacecloud.blueflood.io.ElasticIO");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
-        Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(),
-                "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
+        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
+        httpQueryService = new HttpQueryService();
+        httpQueryService.startService();
+        vendor = new HttpClientVendor();
+        client = vendor.getClient();
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
@@ -68,26 +68,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
-
-        esSetup_Annotations = new EsSetup();
-        esSetup_Annotations.execute(EsSetup.deleteAll());
-        esSetup_Annotations.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        createTestEvents(tenantId,5);
-
-        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
-        HttpMetricDataQueryServer server = new HttpMetricDataQueryServer();
-        server.setEventsIO(eventsSearchIO);
-
-        httpQueryService = new HttpQueryService();
-        httpQueryService.setServer(server);
-
-        httpQueryService.startService();
-
-        vendor = new HttpClientVendor();
-        client = vendor.getClient();
     }
 
     @Before
@@ -130,6 +110,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     @Test
     public void testOldMetricDataFetching() throws Exception {
         final Map<Granularity, Integer> points = new HashMap<Granularity, Integer>();
+        //long currentTimeStamp = Calendar.getInstance().getTimeInMillis();
         long millisInADay = 86400 * 1000;
 
         points.put(Granularity.FULL, 1600);
@@ -210,21 +191,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
-    @Test
-    public void TestHttpAnnotationsHappyCase() throws Exception {
-        HttpGet get = new HttpGet(getAnnotationsQueryURI());
-        HttpResponse response = client.execute(get);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-    }
-
-    private URI getAnnotationsQueryURI() throws URISyntaxException {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data")
-                .setParameter("from", String.valueOf(baseMillis))
-                .setParameter("to", String.valueOf(baseMillis + 86400000));
-        return builder.build();
-    }
-
     private URI getMetricsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
@@ -239,23 +205,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "false");
         esSetup.terminate();
-        esSetup_Annotations.terminate();
         httpQueryService.stopService();
-    }
-
-
-    private static void createTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
-        for (int i=0; i<eventCount; i++) {
-            Event event = new Event();
-            event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(Calendar.getInstance().getTimeInMillis());
-            event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
-            event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
-
-            eventList.add(event.toMap());
-        }
-
-        eventsSearchIO.insert(tenant, eventList);
     }
 }
