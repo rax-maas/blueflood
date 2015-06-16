@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
+import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 
@@ -45,10 +46,14 @@ public class HttpMetricDataQueryServer {
     private final int httpQueryPort;
     private final String httpQueryHost;
     private ServerChannel serverChannel;
+    private GenericElasticSearchIO eventsIO;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
+    }
+
+    public void startServer() {
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
 
@@ -63,14 +68,13 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        EventModuleLoader.loadEventModule();
-        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler(EventModuleLoader.getInstance()));
+        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler(getEventsIO()));
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
-                    new NioServerSocketChannelFactory(
-                            Executors.newFixedThreadPool(acceptThreads),
-                            Executors.newFixedThreadPool(workerThreads)));
+                new NioServerSocketChannelFactory(
+                        Executors.newFixedThreadPool(acceptThreads),
+                        Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         serverChannel =  (ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }
@@ -101,5 +105,18 @@ public class HttpMetricDataQueryServer {
         } catch (InterruptedException e) {
             // Pass
         }
+    }
+
+    private GenericElasticSearchIO getEventsIO() {
+        if (this.eventsIO == null) {
+            this.eventsIO = EventModuleLoader.getInstance();
+        }
+
+        return this.eventsIO;
+    }
+
+    @VisibleForTesting
+    public void setEventsIO(GenericElasticSearchIO eventsIO) {
+        this.eventsIO = eventsIO;
     }
 }

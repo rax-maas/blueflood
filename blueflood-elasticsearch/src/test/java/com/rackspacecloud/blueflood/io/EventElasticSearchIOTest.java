@@ -125,7 +125,7 @@ public class EventElasticSearchIOTest {
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(date.getMillis() / 1000);
+            event.setWhen(date.getMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
 
@@ -141,7 +141,7 @@ public class EventElasticSearchIOTest {
         for (int i=0;i<eventCount; i++) {
             Event event = new Event();
             event.setWhat("1");
-            event.setWhen(date.getMillis() / 1000);
+            event.setWhen(date.getMillis());
             event.setData("2");
             event.setTags("event");
             eventList.add(event.toMap());

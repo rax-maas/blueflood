@@ -27,9 +27,22 @@ import java.io.IOException;
 public class HttpQueryService implements QueryService {
     private HttpMetricDataQueryServer server;
     public void startService() {
-        server = new HttpMetricDataQueryServer();
+        getServer().startServer();
     }
 
     @VisibleForTesting
     public void stopService() { server.stopServer();}
+
+    @VisibleForTesting
+    public void setServer(HttpMetricDataQueryServer srv) {
+        server = srv;
+    }
+
+    private HttpMetricDataQueryServer getServer() {
+        if (server == null) {
+            server = new HttpMetricDataQueryServer();
+        }
+
+        return server;
+    }
 }
