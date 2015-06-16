@@ -45,7 +45,7 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME)
+        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("annotations", EsSetup.fromClassPath("events_mapping.json")));
         eventsIO = new EventElasticSearchIO(esSetup.client());
