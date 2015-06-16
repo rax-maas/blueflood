@@ -83,21 +83,21 @@ public class EventElasticSearchIOTest {
         final int eventCountToCapture = TENANT_RANGE_EVENTS_NUM / 2;
         final int secondsDelta = 10;
         DateTime fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
-        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
         List<Map<String, Object>> results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         DateTime untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
         query.clear();
-        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         query.clear();
         fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * 2 - secondsDelta);
         untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS - secondsDelta);
-        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
-        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(1, results.size());
     }
