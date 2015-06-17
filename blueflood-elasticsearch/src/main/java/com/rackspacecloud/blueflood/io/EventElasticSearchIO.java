@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Event;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -50,14 +52,16 @@ public class EventElasticSearchIO implements GenericElasticSearchIO {
 
     @Override
     public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
+        BulkRequestBuilder bulk = client.prepareBulk();
+
         for (Map<String, Object> event : events) {
             event.put(Event.FieldLabels.tenantId.toString(), tenant);
-            client.prepareIndex(EVENT_INDEX, ES_TYPE)
+            IndexRequestBuilder requestBuilder = client.prepareIndex(EVENT_INDEX, ES_TYPE)
                     .setSource(event)
-                    .setRouting(tenant)
-                    .execute()
-                    .actionGet();
+                    .setRouting(tenant);
+            bulk.add(requestBuilder);
         }
+        bulk.execute().actionGet();
     }
 
     @Override
