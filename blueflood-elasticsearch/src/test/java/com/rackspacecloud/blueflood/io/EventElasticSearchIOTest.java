@@ -69,8 +69,6 @@ public class EventElasticSearchIOTest {
         Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
     }
 
-
-
     @Test
     public void testEventTagsOnlySearch() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();

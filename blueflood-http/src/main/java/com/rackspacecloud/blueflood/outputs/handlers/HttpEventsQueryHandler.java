@@ -1,14 +1,12 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
-import com.rackspacecloud.blueflood.io.Constants;
 
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
@@ -43,24 +41,13 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
 
             List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
             responseBody = objectMapper.writeValueAsString(searchResult);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             responseBody = String.format("Error: %s", e.getMessage());
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            DefaultHandler.sendResponse(ctx, request, responseBody, status);
         }
-        finally {
-            sendResponse(ctx, request, responseBody, status);
-        }
-    }
-
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
-                              HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-        if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
-        }
-        HttpResponder.respond(channel, request, response);
     }
 
     private void parseDateFieldInQuery(Map<String, List<String>> params, String name) {
