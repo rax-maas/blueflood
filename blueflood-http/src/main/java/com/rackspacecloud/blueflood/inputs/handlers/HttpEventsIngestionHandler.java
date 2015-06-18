@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
@@ -64,17 +65,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         }
         finally {
-            sendResponse(ctx, request, response, status);
+            DefaultHandler.sendResponse(ctx, request, response, status);
         }
     }
-
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
-                              HttpResponseStatus status) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-        if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
-        }
-        HttpResponder.respond(channel, request, response);
-    }
-
 }
