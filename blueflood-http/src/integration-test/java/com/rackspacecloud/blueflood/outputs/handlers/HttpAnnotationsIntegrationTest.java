@@ -13,6 +13,7 @@ import com.rackspacecloud.blueflood.service.HttpQueryService;
 import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.junit.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -23,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 
-public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
+public class HttpAnnotationsIntegrationTest {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
@@ -60,20 +61,22 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
     @Before
     public void setup() throws Exception {
         createTestEvents(tenantId, 5);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
     public void TestHttpAnnotationsHappyCase() throws Exception {
         HttpGet get = new HttpGet(getAnnotationsQueryURI());
         HttpResponse response = client.execute(get);
+        String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        Assert.assertTrue(!responseString.equals("[]"));
     }
 
     private URI getAnnotationsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data")
-                .setParameter("from", String.valueOf(baseMillis))
-                .setParameter("to", String.valueOf(baseMillis + 86400000));
+                .setParameter(Event.tagsParameterName,"Tag");
         return builder.build();
     }
 
@@ -92,7 +95,7 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
             event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
-            event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
+            event.setTags(String.format("%s","Tag"));
 
             eventList.add(event.toMap());
         }
