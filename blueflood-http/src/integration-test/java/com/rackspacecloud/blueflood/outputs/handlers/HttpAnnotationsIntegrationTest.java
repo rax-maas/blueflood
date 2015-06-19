@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 
-public class HttpAnnotationsIntegrationTest {
+public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
