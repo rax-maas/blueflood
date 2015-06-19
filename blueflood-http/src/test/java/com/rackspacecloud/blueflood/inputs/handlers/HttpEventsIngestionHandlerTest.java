@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsSearchIO;
 import com.rackspacecloud.blueflood.types.Event;
 import junit.framework.Assert;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -20,14 +20,14 @@ import static org.mockito.Mockito.*;
 
 public class HttpEventsIngestionHandlerTest {
 
-    private GenericElasticSearchIO searchIO;
+    private EventsSearchIO searchIO;
     private HttpEventsIngestionHandler handler;
     private ChannelHandlerContext context;
     private Channel channel;
     private static final String TENANT = "tenant";
 
     public HttpEventsIngestionHandlerTest() {
-        searchIO = mock(GenericElasticSearchIO.class);
+        searchIO = mock(EventsSearchIO.class);
         handler = new HttpEventsIngestionHandler(searchIO);
         channel = mock(Channel.class);
         context = mock(ChannelHandlerContext.class);

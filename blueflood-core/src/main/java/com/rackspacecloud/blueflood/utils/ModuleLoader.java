@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 Rackspace
  *
@@ -21,35 +20,28 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-
 public class ModuleLoader {
     private static final Logger log = LoggerFactory.getLogger(ModuleLoader.class);
-
     private static Map<String, Object> loadedModules = new HashMap<String, Object>();
 
-    public static Object getInstance(Class c, CoreConfig moduleName){
+    public static Object getInstance(Class c, CoreConfig moduleName) {
 
         Object moduleInstance = loadedModules.get(moduleName.name().toString());
         if (moduleInstance != null)
             return moduleInstance;
-
         List<String> modules = Configuration.getInstance().getListProperty(moduleName);
-
         if (modules.isEmpty())
             return null;
-
         if (!modules.isEmpty() && modules.size() != 1) {
             throw new RuntimeException("Cannot load service with more than one "+moduleName+" module");
         }
 
         String module = modules.get(0);
         log.info("Loading the module " + module);
-
 
         try {
             ClassLoader loader = c.getClassLoader();
@@ -59,7 +51,7 @@ public class ModuleLoader {
             log.info("Registering the module " + module);
         }
         catch (InstantiationException e) {
-            log.error("Unable to create instance of "+ c.getName()+" class for: " + module, e);
+            log.error(String.format("Unable to create instance of %s class for %s", c.getName(), module), e);
         } catch (IllegalAccessException e) {
             log.error("Error starting module: " + module, e);
         } catch (ClassNotFoundException e) {

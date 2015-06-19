@@ -20,7 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsSearchIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
@@ -64,7 +64,7 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler((GenericElasticSearchIO) ModuleLoader.getInstance(GenericElasticSearchIO.class, CoreConfig.EVENTS_MODULES)));
+        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler((EventsSearchIO) ModuleLoader.getInstance(EventsSearchIO.class, CoreConfig.EVENTS_MODULES)));
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(

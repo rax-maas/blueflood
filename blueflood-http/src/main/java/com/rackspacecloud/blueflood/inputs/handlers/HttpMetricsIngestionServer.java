@@ -27,7 +27,7 @@ import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsSearchIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -88,7 +88,7 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
-        router.post("/v2.0/:tenantId/events", new HttpEventsIngestionHandler((GenericElasticSearchIO) ModuleLoader.getInstance(GenericElasticSearchIO.class, CoreConfig.EVENTS_MODULES)));
+        router.post("/v2.0/:tenantId/events", new HttpEventsIngestionHandler((EventsSearchIO) ModuleLoader.getInstance(EventsSearchIO.class, CoreConfig.EVENTS_MODULES)));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(

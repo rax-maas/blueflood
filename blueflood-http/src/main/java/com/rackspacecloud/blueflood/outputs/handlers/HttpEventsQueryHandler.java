@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsSearchIO;
 import com.rackspacecloud.blueflood.io.Constants;
 
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
@@ -20,9 +20,9 @@ import java.util.*;
 
 public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
-    private GenericElasticSearchIO searchIO;
+    private EventsSearchIO searchIO;
 
-    public HttpEventsQueryHandler(GenericElasticSearchIO searchIO) {
+    public HttpEventsQueryHandler(EventsSearchIO searchIO) {
         this.searchIO = searchIO;
     }
 

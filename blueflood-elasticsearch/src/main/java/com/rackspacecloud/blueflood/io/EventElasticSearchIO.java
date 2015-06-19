@@ -17,7 +17,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class EventElasticSearchIO implements GenericElasticSearchIO {
+public class EventElasticSearchIO implements EventsSearchIO {
     public static final String EVENT_INDEX = "events";
     public static final String ES_TYPE = "graphite_event";
     private final Client client;
