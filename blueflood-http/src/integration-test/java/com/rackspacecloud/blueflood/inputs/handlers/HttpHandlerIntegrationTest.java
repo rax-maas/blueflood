@@ -74,7 +74,6 @@ public class HttpHandlerIntegrationTest {
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 
@@ -106,41 +105,47 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpAnnotationsIngestionHappyCase() throws Exception {
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/333333/events");
+        int batchSize = 1;
+        String tenant_id = "333333";
 
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/events.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
+        createTestEvents(tenant_id, batchSize, false);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
-        HttpPost post = new HttpPost(builder.build());
-
-        HttpEntity entity  = new StringEntity(json, ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-
-        HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-
-        //Slight delay in search
-        Thread.sleep(1000);
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
-
         List<Map<String, Object>> results = eventsSearchIO.search("333333", query);
-        Assert.assertEquals(1, results.size());
+        Assert.assertEquals(batchSize, results.size());
 
         query = new HashMap<String, List<String>>();
         query.put(Event.fromParameterName, Arrays.asList("1433798150000"));
-        query.put(Event.untilParameterName, Arrays.asList("1433798170000"));
+        query.put(Event.untilParameterName, Arrays.asList("1434568249000"));
 
         results = eventsSearchIO.search("333333", query);
-        Assert.assertEquals(1, results.size());
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+        Assert.assertEquals(batchSize, results.size());
+    }
+
+    @Test
+    public void testHttpAnnotationsIngestionDuplicateEvents() throws Exception {
+
+        int batchSize = 5; // To create duplicate events
+        String tenant_id = "444444";
+
+        createTestEvents(tenant_id, batchSize, false);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList("1433798150000"));
+        query.put(Event.untilParameterName, Arrays.asList("1434568249000"));
+
+        results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+
     }
 
     @Test
@@ -269,6 +274,23 @@ public class HttpHandlerIntegrationTest {
     private URIBuilder getMetricsURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
+    }
+
+    private static void createTestEvents(final String tenant, int eventCount, boolean useCurrentTime) throws Exception {
+        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
+        for (int i=0; i<eventCount; i++) {
+            Event event = new Event();
+            event.setWhat("deployment");
+            if(useCurrentTime)
+                event.setWhen(Calendar.getInstance().getTimeInMillis());
+            else
+                event.setWhen(Long.parseLong("1434568248000"));
+            event.setData("deploying prod");
+            event.setTags("deployment");
+
+            eventList.add(event.toMap());
+        }
+        eventsSearchIO.insert(tenant, eventList);
     }
 
     @AfterClass

@@ -37,12 +37,11 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         try {
             HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
             Map<String, List<String>> params = requestWithParams.getQueryParams();
-
             parseDateFieldInQuery(params, "from");
             parseDateFieldInQuery(params, "until");
-
             List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
             responseBody = objectMapper.writeValueAsString(searchResult);
+
         }
         catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));

@@ -13,20 +13,20 @@ import com.rackspacecloud.blueflood.service.HttpQueryService;
 import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.junit.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Map;
+import java.util.*;
 
 public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
-    private final String tenantId = "ac" + IntegrationTestBase.randString(8);
+    //private final String tenantId = "ac" + IntegrationTestBase.randString(8);
+    private final String tenantId = "acdyxj";
     private static int queryPort;
     private static EventElasticSearchIO eventsIO;
     private static EsSetup esSetup;
@@ -49,7 +49,6 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("annotations", EsSetup.fromClassPath("events_mapping.json")));
         eventsIO = new EventElasticSearchIO(esSetup.client());
-
         httpQueryService = new HttpQueryService();
         HttpMetricDataQueryServer server = new HttpMetricDataQueryServer();
         server.setEventsIO(eventsIO);
@@ -60,6 +59,7 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
     @Before
     public void setup() throws Exception {
         createTestEvents(tenantId, 5);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
@@ -67,13 +67,18 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
         HttpGet get = new HttpGet(getAnnotationsQueryURI());
         HttpResponse response = client.execute(get);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        String responseString = EntityUtils.toString(response.getEntity());
+
+        Assert.assertNotNull(responseString);
+        Assert.assertTrue(!responseString.equals("[]"));
+
     }
 
     private URI getAnnotationsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data")
-                .setParameter("from", String.valueOf(baseMillis))
-                .setParameter("to", String.valueOf(baseMillis + 86400000));
+                .setParameter("from", String.valueOf("1433798150000"))
+                .setParameter("until", String.valueOf("1434568249000"));
         return builder.build();
     }
 
@@ -90,7 +95,8 @@ public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(Calendar.getInstance().getTimeInMillis());
+            //event.setWhen(Calendar.getInstance().getTimeInMillis());
+            event.setWhen(Long.parseLong("1434568248000"));
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
 
