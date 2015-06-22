@@ -92,7 +92,6 @@ public class HttpEventsIngestionHandlerTest {
     @Test public void testMalformedEventPut() throws Exception {
         final String malformedJSON = "{\"when\":, what]}";
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
-
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
@@ -102,9 +101,7 @@ public class HttpEventsIngestionHandlerTest {
     @Test public void testMinimumEventPut() throws Exception {
         Map<String, Object> event = new HashMap<String, Object>();
         event.put(Event.FieldLabels.data.name(), "data");
-
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
-
         handler.handle(context, createPutOneEventRequest(event));
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
@@ -115,7 +112,6 @@ public class HttpEventsIngestionHandlerTest {
         Map<String, Object> event = createRandomEvent();
         event.remove(Event.FieldLabels.when.name());
         handler.handle(context, createPutOneEventRequest(event));
-
         event.put(Event.FieldLabels.when.name(), convertDateTimeToTimestamp(new DateTime()));
         verify(searchIO).insert(TENANT, Arrays.asList(event));
     }

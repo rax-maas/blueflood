@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.io.Constants;
-
 import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.buffer.ChannelBuffers;

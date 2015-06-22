@@ -32,7 +32,6 @@ public class EventModuleLoader {
         if (instance == null) {
             loadEventModule();
         }
-
         return instance;
     }
 
