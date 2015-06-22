@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
-import com.rackspacecloud.blueflood.io.EventsSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.Constants;
 
 import com.rackspacecloud.blueflood.types.Event;
@@ -19,9 +19,9 @@ import java.util.*;
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
-    private EventsSearchIO searchIO;
+    private EventsIO searchIO;
 
-    public HttpEventsIngestionHandler(EventsSearchIO searchIO) {
+    public HttpEventsIngestionHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
     }
 
