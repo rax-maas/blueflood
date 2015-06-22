@@ -112,7 +112,7 @@ If you prefer hipchat, here is the link: https://www.hipchat.com/gQPx7fG8u
 
 ## License
 
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
