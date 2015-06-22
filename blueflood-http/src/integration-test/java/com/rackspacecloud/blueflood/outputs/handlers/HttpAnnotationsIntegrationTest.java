@@ -22,7 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class HttpAnnotationsIntegrationTest extends IntegrationTestBase {
+public class HttpAnnotationsIntegrationTest {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "540123";
