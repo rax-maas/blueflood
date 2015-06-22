@@ -88,7 +88,6 @@ public class HttpEventsIngestionHandlerTest {
         verify(searchIO).insert(TENANT, events);
     }
 
-
     @Test public void testMalformedEventPut() throws Exception {
         final String malformedJSON = "{\"when\":, what]}";
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
