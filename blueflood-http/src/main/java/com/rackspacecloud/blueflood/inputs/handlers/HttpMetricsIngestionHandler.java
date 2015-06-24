@@ -21,7 +21,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
-import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
@@ -59,6 +58,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     // Metrics
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
     private static final Timer persistingTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion persisting timer");
+    private static final Timer sendResponseTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion response sending timer");
 
 
     public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
@@ -94,25 +94,25 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 }
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (JsonMappingException e) {
                 log.warn("Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (IOException e) {
                 log.warn("IO Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (Exception e) {
                 log.warn("Other exception while trying to parse content", e);
-                DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 return;
             }
 
             if (jsonMetricsContainer == null) {
                 log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
-                DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
                 return;
             }
 
@@ -124,7 +124,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
                 log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
-                DefaultHandler.sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (Exception e) {
                 // todo: when you see these in logs, go and fix them (throw InvalidDataExceptions) so they can be reduced
@@ -132,7 +132,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 log.warn("Exception converting JSON container to metric objects", e);
                 // This could happen if clients send BigIntegers as metric values. BF doesn't handle them. So let's send a
                 // BAD REQUEST message until we start handling BigIntegers.
-                DefaultHandler.sendResponse(ctx, request, "Error converting JSON payload to metric objects",
+                sendResponse(ctx, request, "Error converting JSON payload to metric objects",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } finally {
@@ -141,7 +141,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
             if (containerMetrics == null || containerMetrics.isEmpty()) {
                 log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
-                DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
+                sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
             }
 
             final MetricsCollection collection = new MetricsCollection();
@@ -152,16 +152,16 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
                 }
-                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                sendResponse(ctx, request, null, HttpResponseStatus.OK);
             } catch (TimeoutException e) {
-                DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+                sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {
                 log.error("Exception persisting metrics", e);
-                DefaultHandler.sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
             } finally {
                 persistingTimerContext.stop();
             }
@@ -177,6 +177,20 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             for(Metric m : containerMetrics) {
                 m.setTtl(configTtlProvider.getConfigTTLForIngestion());
             }
+        }
+    }
+
+    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
+
+        try {
+            if (messageBody != null && !messageBody.isEmpty()) {
+                response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            }
+            HttpResponder.respond(channel, request, response);
+        } finally {
+            sendResponseTimerContext.stop();
         }
     }
 }
