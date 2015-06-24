@@ -1,18 +1,33 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Event;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -34,14 +49,16 @@ public class EventElasticSearchIO implements EventsIO {
 
     @Override
     public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
+        BulkRequestBuilder bulk = client.prepareBulk();
+
         for (Map<String, Object> event : events) {
             event.put(Event.FieldLabels.tenantId.toString(), tenant);
-            client.prepareIndex(EVENT_INDEX, ES_TYPE)
+            IndexRequestBuilder requestBuilder = client.prepareIndex(EVENT_INDEX, ES_TYPE)
                     .setSource(event)
-                    .setRouting(tenant)
-                    .execute()
-                    .actionGet();
+                    .setRouting(tenant);
+            bulk.add(requestBuilder);
         }
+        bulk.execute().actionGet();
     }
 
     @Override

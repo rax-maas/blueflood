@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
@@ -72,11 +88,9 @@ public class HttpEventsIngestionHandlerTest {
         verify(searchIO).insert(TENANT, events);
     }
 
-
     @Test public void testMalformedEventPut() throws Exception {
         final String malformedJSON = "{\"when\":, what]}";
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
-
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
@@ -86,9 +100,7 @@ public class HttpEventsIngestionHandlerTest {
     @Test public void testMinimumEventPut() throws Exception {
         Map<String, Object> event = new HashMap<String, Object>();
         event.put(Event.FieldLabels.data.name(), "data");
-
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
-
         handler.handle(context, createPutOneEventRequest(event));
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
@@ -99,7 +111,6 @@ public class HttpEventsIngestionHandlerTest {
         Map<String, Object> event = createRandomEvent();
         event.remove(Event.FieldLabels.when.name());
         handler.handle(context, createPutOneEventRequest(event));
-
         event.put(Event.FieldLabels.when.name(), convertDateTimeToTimestamp(new DateTime()));
         verify(searchIO).insert(TENANT, Arrays.asList(event));
     }
