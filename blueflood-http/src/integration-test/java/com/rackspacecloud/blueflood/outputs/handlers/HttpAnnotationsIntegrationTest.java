@@ -121,7 +121,7 @@ public class HttpAnnotationsIntegrationTest {
     }
 
     @Test
-    public void testWildcardTagQueries() throws Exception {
+    public void testWildcardTagQueriesReturnNothing() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.tagsParameterName, "sample*");
 
@@ -129,11 +129,7 @@ public class HttpAnnotationsIntegrationTest {
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertNotNull(responseString);
-        Assert.assertFalse(responseString.equals("[]"));
-        for (int i=0; i<5; i++)
-        {
-            Assert.assertTrue(responseString.contains("sample "+i));
-        }
+        Assert.assertTrue(responseString.equals("[]"));
     }
 
     private URI getAnnotationsQueryURI() throws URISyntaxException {
