@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ public enum CoreConfig implements ConfigDefaults {
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
+    EVENTS_MODULES(""),
 
     MAX_LOCATOR_FETCH_THREADS("2"),
     MAX_ROLLUP_READ_THREADS("20"),
