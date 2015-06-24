@@ -32,22 +32,19 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.zip.GZIPOutputStream;
-
 import static org.mockito.Mockito.*;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class HttpHandlerIntegrationTest {
@@ -59,6 +56,8 @@ public class HttpHandlerIntegrationTest {
     private static ScheduleContext context;
     private static GenericElasticSearchIO eventsSearchIO;
     private static EsSetup esSetup;
+    //A time stamp 2 days ago
+    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
     @BeforeClass
     public static void setUp() throws Exception{
@@ -107,20 +106,21 @@ public class HttpHandlerIntegrationTest {
     public void testHttpAnnotationsIngestionHappyCase() throws Exception {
         int batchSize = 1;
         String tenant_id = "333333";
+        String event = createTestEvent();
+        postEvent(event, tenant_id);
 
-        createTestEvents(tenant_id, batchSize, false);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
-
+       //Sleep for a while
+        Thread.sleep(1200);
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
-        List<Map<String, Object>> results = eventsSearchIO.search("333333", query);
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
         Assert.assertEquals(batchSize, results.size());
 
         query = new HashMap<String, List<String>>();
-        query.put(Event.fromParameterName, Arrays.asList("1433798150000"));
-        query.put(Event.untilParameterName, Arrays.asList("1434568249000"));
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
 
-        results = eventsSearchIO.search("333333", query);
+        results = eventsSearchIO.search(tenant_id, query);
         Assert.assertEquals(batchSize, results.size());
     }
 
@@ -130,7 +130,7 @@ public class HttpHandlerIntegrationTest {
         int batchSize = 5; // To create duplicate events
         String tenant_id = "444444";
 
-        createTestEvents(tenant_id, batchSize, false);
+        createAndInsertTestEvents(tenant_id, batchSize);
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         Map<String, List<String>> query = new HashMap<String, List<String>>();
@@ -140,8 +140,8 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(batchSize, results.size());
 
         query = new HashMap<String, List<String>>();
-        query.put(Event.fromParameterName, Arrays.asList("1433798150000"));
-        query.put(Event.untilParameterName, Arrays.asList("1434568249000"));
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
 
         results = eventsSearchIO.search(tenant_id, query);
         Assert.assertEquals(batchSize, results.size());
@@ -171,7 +171,7 @@ public class HttpHandlerIntegrationTest {
         final Locator locator = Locator.
             createLocatorFromPathComponents("333333", "internal", "packets_received");
         Points<CounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
-                locator, new Range(1389211220,1389211240), 
+                locator, new Range(1389211220,1389211240),
                 CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
@@ -276,21 +276,39 @@ public class HttpHandlerIntegrationTest {
                 .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
     }
 
-    private static void createTestEvents(final String tenant, int eventCount, boolean useCurrentTime) throws Exception {
+    private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
         ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat("deployment");
-            if(useCurrentTime)
-                event.setWhen(Calendar.getInstance().getTimeInMillis());
-            else
-                event.setWhen(Long.parseLong("1434568248000"));
+            event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData("deploying prod");
             event.setTags("deployment");
 
             eventList.add(event.toMap());
         }
         eventsSearchIO.insert(tenant, eventList);
+    }
+
+    private HttpResponse postEvent(String requestBody, String tenantId) throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v2.0/" + tenantId + "/events");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(requestBody,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        post.setHeader(Event.FieldLabels.tenantId.name(), tenantId);
+        HttpResponse response = client.execute(post);
+        return response;
+    }
+
+    private static String createTestEvent() throws Exception {
+        Event event = new Event();
+        event.setWhat("deployment");
+        event.setWhen(Calendar.getInstance().getTimeInMillis());
+        event.setData("deploying prod");
+        event.setTags("deployment");
+        return new ObjectMapper().writeValueAsString(event);
     }
 
     @AfterClass

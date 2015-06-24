@@ -2,14 +2,8 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
-import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.HttpQueryService;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -32,16 +26,13 @@ public class HttpAnnotationsIntegrationTest {
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
+    private static  Map <String, String> parameterMap;
 
     @BeforeClass
-    public static void setUpHttp() {
-        Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-        Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
+    public static void setUpHttp() throws Exception {
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
-
         vendor = new HttpClientVendor();
         client = vendor.getClient();
-
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
@@ -50,33 +41,88 @@ public class HttpAnnotationsIntegrationTest {
         eventsIO = new EventElasticSearchIO(esSetup.client());
 
         httpQueryService = new HttpQueryService();
-        HttpMetricDataQueryServer server = new HttpMetricDataQueryServer();
-        server.setEventsIO(eventsIO);
-        httpQueryService.setServer(server);
+        HttpMetricDataQueryServer queryServer = new HttpMetricDataQueryServer();
+        queryServer.setEventsIO(eventsIO);
+        httpQueryService.setServer(queryServer);
         httpQueryService.startService();
     }
 
     @Before
     public void setup() throws Exception {
-        createTestEvents(tenantId, 5);
+        createAndInsertTestEvents(tenantId, 5);
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
-    public void TestHttpAnnotationsHappyCase() throws Exception {
+    public void testHttpQueryAnnotationsHappyCase() throws Exception {
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
+        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
+        HttpGet get = new HttpGet(getAnnotationsQueryURI());
+        HttpResponse response = client.execute(get);
+
+        String responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        Assert.assertFalse(responseString.equals("[]"));
+
+    }
+
+    @Test
+    public void testQueryHttpAnnotationsStaleTimeStamps() throws Exception {
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
+        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis));
         HttpGet get = new HttpGet(getAnnotationsQueryURI());
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        Assert.assertTrue(!responseString.equals("[]"));
+        Assert.assertNotNull(responseString);
+        Assert.assertTrue(responseString.equals("[]"));
+    }
+
+    @Test
+    public void testQueryAnnotationsByTagName() throws Exception {
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.tagsParameterName, "sample");
+        HttpGet get = new HttpGet(getAnnotationsQueryURI());
+        HttpResponse response = client.execute(get);
+        String responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertNotNull(responseString);
+        Assert.assertFalse(responseString.equals("[]"));
+
+        //Test Using non-existing tag name
+        parameterMap.put(Event.tagsParameterName, "NoSuchTag");
+        get = new HttpGet(getAnnotationsQueryURI());
+        response = client.execute(get);
+        responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertNotNull(responseString);
+        Assert.assertTrue(responseString.equals("[]"));
     }
 
     private URI getAnnotationsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data")
-                .setParameter(Event.fromParameterName, String.valueOf(baseMillis - 86400000))
-                .setParameter(Event.untilParameterName,String.valueOf(baseMillis + (86400000*3)));
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data");
+
+        Set<String> parameters = parameterMap.keySet();
+        Iterator<String> setIterator = parameters.iterator();
+        while (setIterator.hasNext()){
+            String paramName = setIterator.next();
+            builder.setParameter(paramName, parameterMap.get(paramName));
+        }
         return builder.build();
+    }
+
+    private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
+        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
+        for (int i=0; i<eventCount; i++) {
+            Event event = new Event();
+            event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
+            event.setWhen(Long.parseLong(String.valueOf(Calendar.getInstance().getTimeInMillis())));
+            event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
+            event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
+            eventList.add(event.toMap());
+        }
+        eventsIO.insert(tenant, eventList);
     }
 
     @AfterClass
@@ -84,20 +130,5 @@ public class HttpAnnotationsIntegrationTest {
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         esSetup.terminate();
         httpQueryService.stopService();
-    }
-
-
-    private static void createTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
-        for (int i=0; i<eventCount; i++) {
-            Event event = new Event();
-            event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(Long.parseLong(String.valueOf(Calendar.getInstance().getTimeInMillis())));
-            event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
-            event.setTags(String.format("[%s] %s %d",tenant,"Sample tag",i));
-
-            eventList.add(event.toMap());
-        }
-        eventsIO.insert(tenant, eventList);
     }
 }
