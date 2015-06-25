@@ -82,7 +82,7 @@ public class HttpAnnotationsIntegrationTest {
     @Test
     public void testQueryAnnotationsByTagName() throws Exception {
         parameterMap = new HashMap<String, String>();
-        parameterMap.put(Event.tagsParameterName, "sample");
+        parameterMap.put(Event.tagsParameterName, "1");
         HttpGet get = new HttpGet(getAnnotationsQueryURI());
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
@@ -99,7 +99,7 @@ public class HttpAnnotationsIntegrationTest {
     }
 
     @Test
-    public void testQueryByMultipleTags() throws Exception {
+    public void testQueriesByMultipleTagsReturnNothing() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.tagsParameterName, "0,1");
         HttpGet get = new HttpGet(getAnnotationsQueryURI());

@@ -136,17 +136,18 @@ public class HttpHandlerIntegrationTest {
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
         Assert.assertFalse(batchSize == results.size()); //Only saving the first event of the batch, so the result size will be 1.
+        Assert.assertTrue(results.size() == 1);
 
         query = new HashMap<String, List<String>>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
         results = eventsSearchIO.search(tenant_id, query);
         Assert.assertFalse(batchSize == results.size());
+        Assert.assertTrue(results.size() == 1);
     }
 
     @Test
     public void testHttpAnnotationsIngestionDuplicateEvents() throws Exception {
-
         int batchSize = 5; // To create duplicate events
         String tenant_id = "444444";
 
@@ -165,12 +166,10 @@ public class HttpHandlerIntegrationTest {
 
         results = eventsSearchIO.search(tenant_id, query);
         Assert.assertEquals(batchSize, results.size());
-
     }
 
     @Test
     public void testHttpAggregatedIngestionHappyCase() throws Exception {
-
         StringBuilder sb = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_bundle.json")));
         String curLine = reader.readLine();
@@ -323,7 +322,6 @@ public class HttpHandlerIntegrationTest {
     }
 
     private static String createTestEvent(int batchSize) throws Exception {
-
         StringBuilder events = new StringBuilder();
         for (int i=0; i<batchSize; i++) {
             Event event = new Event();
