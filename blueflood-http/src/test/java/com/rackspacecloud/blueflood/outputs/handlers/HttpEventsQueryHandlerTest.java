@@ -30,7 +30,6 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 public class HttpEventsQueryHandlerTest {
-
     private GenericElasticSearchIO searchIO;
     private HttpEventsQueryHandler handler;
     private ChannelHandlerContext context;
@@ -57,7 +56,6 @@ public class HttpEventsQueryHandlerTest {
             rawRequest.setContent(ChannelBuffers.copiedBuffer(requestBody.getBytes()));
         return HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(rawRequest);
     }
-
 
     @Test
     public void testElasticSearchSearchCalledWhenGet() throws Exception {

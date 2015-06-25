@@ -35,7 +35,6 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 public class HttpEventsIngestionHandlerTest {
-
     private GenericElasticSearchIO searchIO;
     private HttpEventsIngestionHandler handler;
     private ChannelHandlerContext context;
@@ -66,7 +65,6 @@ public class HttpEventsIngestionHandlerTest {
     private HttpRequest createPutOneEventRequest(Map<String, Object> event) throws IOException {
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
         events.add(event);
-
         final String requestBody = new ObjectMapper().writeValueAsString(events.get(0));
         return createRequest(HttpMethod.POST, "", requestBody);
     }
@@ -118,6 +116,4 @@ public class HttpEventsIngestionHandlerTest {
     private long convertDateTimeToTimestamp(DateTime date) {
         return date.getMillis() / 1000;
     }
-
-
 }

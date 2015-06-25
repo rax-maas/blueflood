@@ -36,7 +36,6 @@ public class DateTimeParserTest {
 
     @Test
     public void testPlainTimeDateFormat() {
-        // %H:%M%Y%m%d
         DateTimeFormatter formatter = DateTimeFormat.forPattern("HH:mmyyyyMMdd");
         String dateTimeWithSpace = "10:55 2014 12 20";
         String dateTimeWithUnderscore = "10:55_2014_12_20";
