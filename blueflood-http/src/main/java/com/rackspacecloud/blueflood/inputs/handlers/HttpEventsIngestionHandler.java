@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.google.gson.JsonParseException;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.map.JsonMappingException;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
@@ -35,6 +37,8 @@ import java.util.*;
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
+    private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
+            "Handle HTTP request for ingesting events");
     private GenericElasticSearchIO searchIO;
 
     public HttpEventsIngestionHandler(GenericElasticSearchIO searchIO) {
@@ -47,6 +51,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
+        final Timer.Context httpEventsIngestTimerContext = httpEventsIngestTimer.time();
         try {
             Event event = objectMapper.readValue(request.getContent().array(), Event.class);
             if (event.getWhen() == 0) {
@@ -75,6 +80,8 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         } finally {
             DefaultHandler.sendResponse(ctx, request, response, status);
+            httpEventsIngestTimerContext.stop();
         }
+
     }
 }

@@ -2,10 +2,12 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
@@ -16,6 +18,7 @@ import java.util.*;
 
 public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
+    private final Timer httpEventsFetchTimer = Metrics.timer(HttpEventsQueryHandler.class, "Handle HTTP request for fetching events");
     private GenericElasticSearchIO searchIO;
 
     public HttpEventsQueryHandler(GenericElasticSearchIO searchIO) {
@@ -29,6 +32,7 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String responseBody = null;
+        final Timer.Context httpEventsFetchTimerContext = httpEventsFetchTimer.time();
         try {
             HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
             Map<String, List<String>> params = requestWithParams.getQueryParams();
@@ -52,8 +56,10 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         } finally {
             DefaultHandler.sendResponse(ctx, request, responseBody, status);
+            httpEventsFetchTimerContext.stop();
         }
     }
+
 
     private void parseDateFieldInQuery(Map<String, List<String>> params, String name) {
         if (params.containsKey(name)) {
