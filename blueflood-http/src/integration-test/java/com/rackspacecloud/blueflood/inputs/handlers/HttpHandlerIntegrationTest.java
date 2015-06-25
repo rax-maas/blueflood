@@ -104,12 +104,12 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpAnnotationsIngestionHappyCase() throws Exception {
-        int batchSize = 1;
-        String tenant_id = "333333";
-        String event = createTestEvent();
+        final int batchSize = 1;
+        final String tenant_id = "333333";
+        String event = createTestEvent(batchSize);
         postEvent(event, tenant_id);
 
-       //Sleep for a while
+        //Sleep for a while
         Thread.sleep(1200);
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
@@ -119,9 +119,29 @@ public class HttpHandlerIntegrationTest {
         query = new HashMap<String, List<String>>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
-
         results = eventsSearchIO.search(tenant_id, query);
         Assert.assertEquals(batchSize, results.size());
+    }
+
+    @Test
+    public void testHttpAnnotationsIngestionMultiEvents() throws Exception {
+        final int batchSize = 5;
+        final String tenant_id = "333444";
+        String event = createTestEvent(batchSize);
+        postEvent(event, tenant_id);
+
+        //Sleep for a while
+        Thread.sleep(1200);
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertFalse(batchSize == results.size()); //Only saving the first event of the batch, so the result size will be 1.
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
+        results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertFalse(batchSize == results.size());
     }
 
     @Test
@@ -169,7 +189,7 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         final Locator locator = Locator.
-            createLocatorFromPathComponents("333333", "internal", "packets_received");
+                createLocatorFromPathComponents("333333", "internal", "packets_received");
         Points<CounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
                 locator, new Range(1389211220,1389211240),
                 CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
@@ -302,13 +322,18 @@ public class HttpHandlerIntegrationTest {
         return response;
     }
 
-    private static String createTestEvent() throws Exception {
-        Event event = new Event();
-        event.setWhat("deployment");
-        event.setWhen(Calendar.getInstance().getTimeInMillis());
-        event.setData("deploying prod");
-        event.setTags("deployment");
-        return new ObjectMapper().writeValueAsString(event);
+    private static String createTestEvent(int batchSize) throws Exception {
+
+        StringBuilder events = new StringBuilder();
+        for (int i=0; i<batchSize; i++) {
+            Event event = new Event();
+            event.setWhat("deployment "+i);
+            event.setWhen(Calendar.getInstance().getTimeInMillis());
+            event.setData("deploying prod "+i);
+            event.setTags("deployment "+i);
+            events.append(new ObjectMapper().writeValueAsString(event));
+        }
+        return events.toString();
     }
 
     @AfterClass

@@ -50,7 +50,6 @@ public class HttpAnnotationsIntegrationTest {
     @Before
     public void setup() throws Exception {
         createAndInsertTestEvents(tenantId, 5);
-        createAndInsertTestEventsWithOtherTags(tenantId, 5);
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
@@ -102,22 +101,27 @@ public class HttpAnnotationsIntegrationTest {
     @Test
     public void testQueryByMultipleTags() throws Exception {
         parameterMap = new HashMap<String, String>();
-        parameterMap.put(Event.tagsParameterName, "sample");
-        parameterMap.put(Event.tagsParameterName, "deployment");
-
+        parameterMap.put(Event.tagsParameterName, "0,1");
         HttpGet get = new HttpGet(getAnnotationsQueryURI());
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertNotNull(responseString);
-        Assert.assertFalse(responseString.equals("[]"));
-        for (int i=0; i<5; i++)
-        {
-            Assert.assertTrue(responseString.contains("sample "+i));
-        }
-        for (int i=0; i<5; i++)
-        {
-            Assert.assertTrue(responseString.contains("deployment "+i));
-        }
+        Assert.assertTrue(responseString.equals("[]"));
+
+        parameterMap.put(Event.tagsParameterName, "[0,1]");
+        get = new HttpGet(getAnnotationsQueryURI());
+        response = client.execute(get);
+        responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertNotNull(responseString);
+        Assert.assertTrue(responseString.equals("[]"));
+
+        parameterMap.put(Event.tagsParameterName, "{0,1}");
+        get = new HttpGet(getAnnotationsQueryURI());
+        response = client.execute(get);
+        responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertNotNull(responseString);
+        Assert.assertTrue(responseString.equals("[]"));
+
     }
 
     @Test
@@ -150,22 +154,9 @@ public class HttpAnnotationsIntegrationTest {
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(Long.parseLong(String.valueOf(Calendar.getInstance().getTimeInMillis())));
+            event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
-            eventList.add(event.toMap());
-        }
-        eventsIO.insert(tenant, eventList);
-    }
-
-    private static void createAndInsertTestEventsWithOtherTags(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
-        for (int i=0; i<eventCount; i++) {
-            Event event = new Event();
-            event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(Long.parseLong(String.valueOf(Calendar.getInstance().getTimeInMillis())));
-            event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
-            event.setTags(String.format("[%s] %s %d", tenant, "deployment", i));
             eventList.add(event.toMap());
         }
         eventsIO.insert(tenant, eventList);
