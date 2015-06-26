@@ -135,7 +135,6 @@ public class DateTimeParser {
             } else if (stringToParse.contains("today"))
                 stringToParse = stringToParse.replace("today", "");
 
-
             String[] datePatterns = {"MM/dd/YY", "MM/dd/YYYY", "YYYYMMdd", "MMMMddYYYY"};
             for (String s : datePatterns) {
                 DateTime date = tryParseDateTime(s, stringToParse);

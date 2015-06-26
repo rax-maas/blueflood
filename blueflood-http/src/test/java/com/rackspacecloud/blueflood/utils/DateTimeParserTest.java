@@ -138,7 +138,6 @@ public class DateTimeParserTest {
         testFormat("now-2d", nowDateTime().minusDays(2));
         testFormat("now-6mon", nowDateTime().minusMonths(6));
         testFormat("now-5y", nowDateTime().minusYears(5));
-
         testFormat("-6h", nowDateTime().minusHours(6));
     }
 
