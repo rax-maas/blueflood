@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
@@ -11,9 +12,7 @@ import org.jboss.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
-
 
 public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
@@ -22,7 +21,7 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     public HttpEventsQueryHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
     }
-    
+
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         final String tenantId = request.getHeader("tenantId");
@@ -33,12 +32,20 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         try {
             HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
             Map<String, List<String>> params = requestWithParams.getQueryParams();
+
+            if (params == null || params.size() == 0) {
+                throw new InvalidDataException("Query should contain at least one query parameter");
+            }
+
             parseDateFieldInQuery(params, "from");
             parseDateFieldInQuery(params, "until");
             List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
             responseBody = objectMapper.writeValueAsString(searchResult);
-        }
-        catch (Exception e) {
+        } catch (InvalidDataException e) {
+            log.error(String.format("Exception %s", e.toString()));
+            responseBody = String.format("Error: %s", e.getMessage());
+            status = HttpResponseStatus.BAD_REQUEST;
+        } catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             responseBody = String.format("Error: %s", e.getMessage());
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;

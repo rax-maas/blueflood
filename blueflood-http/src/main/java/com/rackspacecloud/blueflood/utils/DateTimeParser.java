@@ -123,7 +123,6 @@ public class DateTimeParser {
             return resultDateTime.withHourOfDay(hour).withMinuteOfHour(minute);
         }
 
-
         private DateTime extractAndUpdateDate(DateTime resultDateTime) {
             String stringToParse = this.dateTime;
 
