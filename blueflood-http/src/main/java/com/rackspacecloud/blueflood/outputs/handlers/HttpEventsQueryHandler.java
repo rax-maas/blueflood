@@ -60,7 +60,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         }
     }
 
-
     private void parseDateFieldInQuery(Map<String, List<String>> params, String name) {
         if (params.containsKey(name)) {
             String fromValue = extractDateFieldFromQuery(params.get(name));

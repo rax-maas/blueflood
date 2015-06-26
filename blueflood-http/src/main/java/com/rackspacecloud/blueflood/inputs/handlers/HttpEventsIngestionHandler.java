@@ -82,6 +82,5 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             DefaultHandler.sendResponse(ctx, request, response, status);
             httpEventsIngestTimerContext.stop();
         }
-
     }
 }
