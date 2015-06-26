@@ -151,7 +151,6 @@ public class DateTimeParser {
             if (date != null)
                 resultDateTime = resultDateTime.withDate(resultDateTime.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
 
-
             // Keep as much of original datetime as possible
             String dayOfWeekFormat = "EEE";
             date = tryParseDateTime(dayOfWeekFormat, stringToParse);
