@@ -24,7 +24,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -64,7 +64,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME)
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
@@ -90,7 +90,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         writer.insertFull(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        ((ElasticIO)QueryDiscoveryModuleLoader.getDiscoveryInstance()).setClient(esSetup.client());
+        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;

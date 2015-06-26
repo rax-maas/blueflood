@@ -138,7 +138,7 @@ public class HttpAnnotationsIntegrationTest {
 
     private URI getAnnotationsQueryURI() throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/get_data");
+                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/events/getEvents");
 
         Set<String> parameters = parameterMap.keySet();
         Iterator<String> setIterator = parameters.iterator();

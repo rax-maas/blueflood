@@ -20,11 +20,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
-
-import com.rackspacecloud.blueflood.utils.EventModuleLoader;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -46,7 +46,7 @@ public class HttpMetricDataQueryServer {
     private final int httpQueryPort;
     private final String httpQueryHost;
     private ServerChannel serverChannel;
-    private GenericElasticSearchIO eventsIO;
+    private EventsIO eventsIO;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -68,7 +68,7 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        router.get("/v2.0/:tenantId/events/get_data", new HttpEventsQueryHandler(getEventsIO()));
+        router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
@@ -107,16 +107,16 @@ public class HttpMetricDataQueryServer {
         }
     }
 
-    private GenericElasticSearchIO getEventsIO() {
+    private EventsIO getEventsIO() {
         if (this.eventsIO == null) {
-            this.eventsIO = EventModuleLoader.getInstance();
+            this.eventsIO = (EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES);
         }
 
         return this.eventsIO;
     }
 
     @VisibleForTesting
-    public void setEventsIO(GenericElasticSearchIO eventsIO) {
+    public void setEventsIO(EventsIO eventsIO) {
         this.eventsIO = eventsIO;
     }
 }

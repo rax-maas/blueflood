@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,22 +14,12 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.service;
+package com.rackspacecloud.blueflood.io;
 
-public enum ElasticIOConfig implements ConfigDefaults {
-    ELASTICSEARCH_HOSTS("127.0.0.1:9300"),
-    ELASTICSEARCH_CLUSTERNAME("elasticsearch"),
-    ELASTICSEARCH_INDEX_NAME_WRITE("metric_metadata"),
-    ELASTICSEARCH_INDEX_NAME_READ("metric_metadata");
+import java.util.List;
+import java.util.Map;
 
-    static {
-        Configuration.getInstance().loadDefaults(ElasticIOConfig.values());
-    }
-    private String defaultValue;
-    private ElasticIOConfig(String value) {
-        this.defaultValue = value;
-    }
-    public String getDefaultValue() {
-        return defaultValue;
-    }
+public interface EventsIO {
+    public void insert(String tenant, List<Map<String, Object>> metrics) throws Exception;
+    public List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception;
 }

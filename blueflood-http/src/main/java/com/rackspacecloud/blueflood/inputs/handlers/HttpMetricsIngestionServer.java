@@ -28,12 +28,13 @@ import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.utils.EventModuleLoader;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -95,7 +96,6 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
 
-
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
                 new NioServerSocketChannelFactory(
@@ -140,7 +140,7 @@ public class HttpMetricsIngestionServer {
 
     private HttpEventsIngestionHandler getHttpEventsIngestionHandler() {
         if (this.httpEventsIngestionHandler == null) {
-            this.httpEventsIngestionHandler = new HttpEventsIngestionHandler(EventModuleLoader.getInstance());
+            this.httpEventsIngestionHandler = new HttpEventsIngestionHandler((EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES));
         }
 
         return this.httpEventsIngestionHandler;

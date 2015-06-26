@@ -54,7 +54,7 @@ public class HttpHandlerIntegrationTest {
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
     private static ScheduleContext context;
-    private static GenericElasticSearchIO eventsSearchIO;
+    private static EventsIO eventsSearchIO;
     private static EsSetup esSetup;
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
