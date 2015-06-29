@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ public class DateTimeParserTest {
 
     @Test
     public void testPlainTimeDateFormat() {
-        // %H:%M%Y%m%d
         DateTimeFormatter formatter = DateTimeFormat.forPattern("HH:mmyyyyMMdd");
         String dateTimeWithSpace = "10:55 2014 12 20";
         String dateTimeWithUnderscore = "10:55_2014_12_20";

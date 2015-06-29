@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.types.Event;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
@@ -30,15 +30,14 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 public class HttpEventsQueryHandlerTest {
-
-    private GenericElasticSearchIO searchIO;
+    private EventsIO searchIO;
     private HttpEventsQueryHandler handler;
     private ChannelHandlerContext context;
     private Channel channel;
     private static final String TENANT = "tenant";
 
     public HttpEventsQueryHandlerTest() {
-        searchIO = mock(GenericElasticSearchIO.class);
+        searchIO = mock(EventsIO.class);
         handler = new HttpEventsQueryHandler(searchIO);
         channel = mock(Channel.class);
         context = mock(ChannelHandlerContext.class);
@@ -58,10 +57,10 @@ public class HttpEventsQueryHandlerTest {
         return HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(rawRequest);
     }
 
-
     @Test
-    public void testElasticSearchSearchCalledWhenGet() throws Exception {
-        testQuery("", new HashMap<String, List<String>>());
+    public void testElasticSearchSearchNotCalledEmptyQuery() throws Exception {
+        handler.handle(context, createGetRequest(""));
+        verify(searchIO, never()).search(TENANT, new HashMap<String, List<String>>());
     }
 
     private void testQuery(String query, Map<String, List<String>> params) throws Exception {

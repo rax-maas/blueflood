@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class EventElasticSearchIO implements GenericElasticSearchIO {
+public class EventElasticSearchIO implements EventsIO {
     public static final String EVENT_INDEX = "events";
     public static final String ES_TYPE = "graphite_event";
     private final Client client;
