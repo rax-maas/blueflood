@@ -5,7 +5,7 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -18,10 +18,10 @@ import java.util.*;
 
 public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
+    private EventsIO searchIO;
     private final Timer httpEventsFetchTimer = Metrics.timer(HttpEventsQueryHandler.class, "Handle HTTP request for fetching events");
-    private GenericElasticSearchIO searchIO;
 
-    public HttpEventsQueryHandler(GenericElasticSearchIO searchIO) {
+    public HttpEventsQueryHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
     }
 

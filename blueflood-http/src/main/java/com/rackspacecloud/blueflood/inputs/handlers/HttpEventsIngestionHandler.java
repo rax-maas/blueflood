@@ -21,7 +21,9 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.io.GenericElasticSearchIO;
+import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.map.JsonMappingException;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -37,11 +39,11 @@ import java.util.*;
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
+    private EventsIO searchIO;
     private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
             "Handle HTTP request for ingesting events");
-    private GenericElasticSearchIO searchIO;
 
-    public HttpEventsIngestionHandler(GenericElasticSearchIO searchIO) {
+    public HttpEventsIngestionHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
     }
 
