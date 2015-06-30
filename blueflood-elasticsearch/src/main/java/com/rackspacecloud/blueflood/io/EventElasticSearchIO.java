@@ -16,9 +16,11 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Event;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -33,6 +35,10 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class EventElasticSearchIO implements EventsIO {
+    private final Timer eventSearchTimer = Metrics.timer(EventElasticSearchIO.class,
+            "Search time for events");
+    private final Timer eventInsertTimer = Metrics.timer(EventElasticSearchIO.class,
+            "Insertion time for events");
     public static final String EVENT_INDEX = "events";
     public static final String ES_TYPE = "graphite_event";
     private final Client client;
@@ -49,6 +55,7 @@ public class EventElasticSearchIO implements EventsIO {
 
     @Override
     public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
+        final Timer.Context eventInsertTimerContext = eventInsertTimer.time();
         BulkRequestBuilder bulk = client.prepareBulk();
 
         for (Map<String, Object> event : events) {
@@ -59,10 +66,12 @@ public class EventElasticSearchIO implements EventsIO {
             bulk.add(requestBuilder);
         }
         bulk.execute().actionGet();
+        eventInsertTimerContext.stop();
     }
 
     @Override
     public List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception {
+        final Timer.Context eventSearchTimerContext = eventSearchTimer.time();
         BoolQueryBuilder qb = boolQuery()
                 .must(termQuery(Event.FieldLabels.tenantId.toString(), tenant));
 
@@ -77,6 +86,8 @@ public class EventElasticSearchIO implements EventsIO {
                 .setQuery(qb)
                 .execute()
                 .actionGet();
+
+        eventSearchTimerContext.stop();
 
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
         for (SearchHit hit : response.getHits().getHits()) {

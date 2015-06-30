@@ -66,7 +66,6 @@ public class HttpEventsIngestionHandlerTest {
     private HttpRequest createPutOneEventRequest(Map<String, Object> event) throws IOException {
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
         events.add(event);
-
         final String requestBody = new ObjectMapper().writeValueAsString(events.get(0));
         return createRequest(HttpMethod.POST, "", requestBody);
     }
@@ -104,7 +103,7 @@ public class HttpEventsIngestionHandlerTest {
         handler.handle(context, createPutOneEventRequest(event));
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
-        Assert.assertEquals(argument.getValue().getContent().toString(Charset.defaultCharset()), "Error: Event should contain at least 'what' field.");
+        Assert.assertEquals(argument.getValue().getContent().toString(Charset.defaultCharset()), "Invalid Data: Event should contain at least 'what' field.");
     }
 
     @Test public void testApplyingCurrentTimeWhenEmpty() throws Exception {
@@ -118,6 +117,4 @@ public class HttpEventsIngestionHandlerTest {
     private long convertDateTimeToTimestamp(DateTime date) {
         return date.getMillis() / 1000;
     }
-
-
 }

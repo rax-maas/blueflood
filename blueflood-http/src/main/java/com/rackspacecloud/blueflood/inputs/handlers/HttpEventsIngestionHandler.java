@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,14 +16,18 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.google.gson.JsonParseException;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.Event;
+import org.codehaus.jackson.map.JsonMappingException;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
@@ -36,6 +40,8 @@ import java.util.*;
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
     private EventsIO searchIO;
+    private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
+            "Handle HTTP request for ingesting events");
 
     public HttpEventsIngestionHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
@@ -47,6 +53,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
+        final Timer.Context httpEventsIngestTimerContext = httpEventsIngestTimer.time();
         try {
             Event event = objectMapper.readValue(request.getContent().array(), Event.class);
             if (event.getWhen() == 0) {
@@ -54,17 +61,28 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             }
 
             if (event.getWhat().equals("")) {
-                throw new Exception(String.format("Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
+                throw new InvalidDataException(String.format("Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
             }
             searchIO.insert(tenantId, Arrays.asList(event.toMap()));
-        }
-        catch (Exception e) {
+        } catch (JsonMappingException e) {
+            log.error(String.format("Exception %s", e.toString()));
+            response = String.format("Invalid Data: %s", e.getMessage());
+            status = HttpResponseStatus.BAD_REQUEST;
+        } catch (JsonParseException e){
+            log.error(String.format("Exception %s", e.toString()));
+            response = String.format("Invalid Data: %s", e.getMessage());
+            status = HttpResponseStatus.BAD_REQUEST;
+        } catch (InvalidDataException e) {
+            log.error(String.format("InvalidDataException %s", e.toString()));
+            response = String.format("Invalid Data: %s", e.getMessage());
+            status = HttpResponseStatus.BAD_REQUEST;
+        } catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             response = String.format("Error: %s", e.getMessage());
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-        }
-        finally {
+        } finally {
             DefaultHandler.sendResponse(ctx, request, response, status);
+            httpEventsIngestTimerContext.stop();
         }
     }
 }
