@@ -123,7 +123,6 @@ public class DateTimeParser {
             return resultDateTime.withHourOfDay(hour).withMinuteOfHour(minute);
         }
 
-
         private DateTime extractAndUpdateDate(DateTime resultDateTime) {
             String stringToParse = this.dateTime;
 
@@ -135,7 +134,6 @@ public class DateTimeParser {
                 stringToParse = stringToParse.replace("yesterday", "");
             } else if (stringToParse.contains("today"))
                 stringToParse = stringToParse.replace("today", "");
-
 
             String[] datePatterns = {"MM/dd/YY", "MM/dd/YYYY", "YYYYMMdd", "MMMMddYYYY"};
             for (String s : datePatterns) {
@@ -151,7 +149,6 @@ public class DateTimeParser {
             DateTime date = tryParseDateTime(monthDayOptionalYearFormat, stringToParse);
             if (date != null)
                 resultDateTime = resultDateTime.withDate(resultDateTime.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
-
 
             // Keep as much of original datetime as possible
             String dayOfWeekFormat = "EEE";

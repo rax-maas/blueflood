@@ -58,10 +58,10 @@ public class HttpEventsQueryHandlerTest {
         return HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(rawRequest);
     }
 
-
     @Test
-    public void testElasticSearchSearchCalledWhenGet() throws Exception {
-        testQuery("", new HashMap<String, List<String>>());
+    public void testElasticSearchSearchNotCalledEmptyQuery() throws Exception {
+        handler.handle(context, createGetRequest(""));
+        verify(searchIO, never()).search(TENANT, new HashMap<String, List<String>>());
     }
 
     private void testQuery(String query, Map<String, List<String>> params) throws Exception {
