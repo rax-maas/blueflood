@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class PlotRequestParser {
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         
         DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
-        DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.COUNTER_VALUE);
+        DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.SUM);
 
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_GAUGE.add(BasicRollupsOutputSerializer.MetricStat.LATEST);

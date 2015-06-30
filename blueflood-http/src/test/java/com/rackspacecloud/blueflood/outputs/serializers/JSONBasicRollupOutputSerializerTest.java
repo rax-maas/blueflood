@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -156,8 +156,8 @@ public class JSONBasicRollupOutputSerializerTest {
             Assert.assertNotNull(dataJSON.get("numPoints"));
             Assert.assertEquals((long) (i + 1000), dataJSON.get("numPoints"));
 
-            Assert.assertNotNull(dataJSON.get("counterValue"));
-            Assert.assertEquals((long) (i + 1000), dataJSON.get("counterValue"));
+            Assert.assertNotNull(dataJSON.get("sum"));
+            Assert.assertEquals((long) (i + 1000), dataJSON.get("sum"));
 
             Assert.assertNull(dataJSON.get("rate"));
         }

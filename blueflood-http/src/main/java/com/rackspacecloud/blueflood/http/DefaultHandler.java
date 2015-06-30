@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 
 public class DefaultHandler implements HttpRequestHandler {
-    private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP Ingestion response sending timer");
+    private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
