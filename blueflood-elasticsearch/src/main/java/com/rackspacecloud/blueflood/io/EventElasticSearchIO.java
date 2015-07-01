@@ -34,7 +34,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class EventElasticSearchIO implements GenericElasticSearchIO {
+public class EventElasticSearchIO implements EventsIO {
     private final Timer eventSearchTimer = Metrics.timer(EventElasticSearchIO.class,
             "Search time for events");
     private final Timer eventInsertTimer = Metrics.timer(EventElasticSearchIO.class,
