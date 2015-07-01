@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
@@ -53,8 +69,6 @@ public class EventElasticSearchIOTest {
         Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
     }
 
-
-
     @Test
     public void testEventTagsOnlySearch() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
@@ -83,21 +97,21 @@ public class EventElasticSearchIOTest {
         final int eventCountToCapture = TENANT_RANGE_EVENTS_NUM / 2;
         final int secondsDelta = 10;
         DateTime fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
-        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
         List<Map<String, Object>> results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         DateTime untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
         query.clear();
-        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(eventCountToCapture, results.size());
 
         query.clear();
         fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * 2 - secondsDelta);
         untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS - secondsDelta);
-        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis() / 1000)));
-        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis() / 1000)));
+        query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
+        query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(1, results.size());
     }
@@ -125,7 +139,7 @@ public class EventElasticSearchIOTest {
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
-            event.setWhen(date.getMillis() / 1000);
+            event.setWhen(date.getMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
 
@@ -141,7 +155,7 @@ public class EventElasticSearchIOTest {
         for (int i=0;i<eventCount; i++) {
             Event event = new Event();
             event.setWhat("1");
-            event.setWhen(date.getMillis() / 1000);
+            event.setWhen(date.getMillis());
             event.setData("2");
             event.setTags("event");
             eventList.add(event.toMap());

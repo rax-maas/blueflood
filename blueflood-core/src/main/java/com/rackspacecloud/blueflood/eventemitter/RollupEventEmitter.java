@@ -20,8 +20,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ import java.util.Arrays;
 import java.util.concurrent.*;
 
 public class RollupEventEmitter extends Emitter<RollupEvent> {
-    private static final Logger log = LoggerFactory.getLogger(QueryDiscoveryModuleLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(ModuleLoader.class);
     private static final int numberOfWorkers = 5;
     public static final String ROLLUP_EVENT_NAME = "rollup".intern();
     private static ThreadPoolExecutor eventExecutors;
@@ -56,8 +57,7 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
                 @Override
                 public Future call() {
                     if (Util.shouldUseESForUnits()) {
-                        QueryDiscoveryModuleLoader.loadDiscoveryModule();
-                        final DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
+                        final DiscoveryIO discoveryIO = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
                         // TODO: Sync for now, but we will have to make it async eventually
                         Lists.transform(Arrays.asList(eventPayload), new Function<RollupEvent, RollupEvent>() {
                             @Override

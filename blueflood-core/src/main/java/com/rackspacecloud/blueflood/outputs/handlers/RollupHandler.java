@@ -32,10 +32,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.QueryDiscoveryModuleLoader;
-import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +133,8 @@ public class RollupHandler {
 
                  @Override
                  public List<SearchResult> call() throws Exception {
-                     DiscoveryIO discoveryIO = QueryDiscoveryModuleLoader.getDiscoveryInstance();
+                     DiscoveryIO discoveryIO = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
                      if (discoveryIO == null) {
                          log.warn("USE_ES_FOR_UNITS has been set to true, but no discovery module found." +
                                  " Please check your config");
