@@ -46,10 +46,14 @@ public class HttpMetricDataQueryServer {
     private final int httpQueryPort;
     private final String httpQueryHost;
     private ServerChannel serverChannel;
+    private EventsIO eventsIO;
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
+    }
+
+    public void startServer() {
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
 
@@ -64,13 +68,13 @@ public class HttpMetricDataQueryServer {
         router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/views/histograms/:metricName", new HttpHistogramQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler((EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES)));
+        router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
-                    new NioServerSocketChannelFactory(
-                            Executors.newFixedThreadPool(acceptThreads),
-                            Executors.newFixedThreadPool(workerThreads)));
+                new NioServerSocketChannelFactory(
+                        Executors.newFixedThreadPool(acceptThreads),
+                        Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         serverChannel =  (ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
     }
@@ -101,5 +105,18 @@ public class HttpMetricDataQueryServer {
         } catch (InterruptedException e) {
             // Pass
         }
+    }
+
+    private EventsIO getEventsIO() {
+        if (this.eventsIO == null) {
+            this.eventsIO = (EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES);
+        }
+
+        return this.eventsIO;
+    }
+
+    @VisibleForTesting
+    public void setEventsIO(EventsIO eventsIO) {
+        this.eventsIO = eventsIO;
     }
 }

@@ -43,7 +43,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
 
             parseDateFieldInQuery(params, "from");
             parseDateFieldInQuery(params, "until");
-
             List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
             responseBody = objectMapper.writeValueAsString(searchResult);
         } catch (InvalidDataException e) {
