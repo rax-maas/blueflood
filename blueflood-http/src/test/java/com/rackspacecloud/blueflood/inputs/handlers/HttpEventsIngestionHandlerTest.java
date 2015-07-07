@@ -35,6 +35,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 public class HttpEventsIngestionHandlerTest {
+
     private EventsIO searchIO;
     private HttpEventsIngestionHandler handler;
     private ChannelHandlerContext context;

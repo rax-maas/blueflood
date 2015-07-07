@@ -30,6 +30,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 public class HttpEventsQueryHandlerTest {
+
     private EventsIO searchIO;
     private HttpEventsQueryHandler handler;
     private ChannelHandlerContext context;
