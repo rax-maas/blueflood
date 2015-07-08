@@ -51,9 +51,6 @@ public class KafkaServiceTest {
         RollupEventEmitter.getInstance().emit(eventName, rollupEvent);
         //Verify that the call method was called atleast once
         verify(kafkaServiceSpy, timeout(1000).atLeastOnce()).call(rollupEvent);
-
-        //Test whether executor got the task
-        Assert.assertEquals(kafkaServiceSpy.getKafkaExecutorsUnsafe().getTaskCount(), 1);
         //Verify that there were interactions with the mock producer
         verify(mockProducer, timeout(1000)).send(anyListOf(KeyedMessage.class));
 
