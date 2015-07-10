@@ -195,6 +195,9 @@ public class ShardStateManager {
             } else if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active)) {
                 // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and
                 //    the triggering timestamp we have is greater or the stamp in memory is yet to be persisted i.e still dirty
+
+                // This "if" is equivalent to: 
+                //  if (current is not active) || (current is older && clean)
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
                     // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
                     if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp))
@@ -202,6 +205,7 @@ public class ShardStateManager {
 
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
                 } else {
+                    // keep rewriting the newer timestamp, in case it has been overwritten:
                     stamp.setDirty(true); // This is crucial for convergence, we need to superimpose a higher timestamp which can be done only if we set it to dirty
                 }
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
