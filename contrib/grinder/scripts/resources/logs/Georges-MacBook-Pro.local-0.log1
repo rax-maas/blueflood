@@ -1,0 +1,75 @@
+2015-07-10 12:20:21,433 INFO  local-0 : The Grinder version 3.11
+2015-07-10 12:20:21,436 INFO  local-0 : Java(TM) SE Runtime Environment 1.7.0_67-b01: Java HotSpot(TM) 64-Bit Server VM (24.65-b04, mixed mode) on Mac OS X x86_64 10.9.5
+2015-07-10 12:20:21,439 INFO  local-0 : time zone is PDT (-0700)
+2015-07-10 12:20:21,521 INFO  local-0 : worker process 0
+2015-07-10 12:20:21,584 INFO  local-0 : instrumentation agents: byte code transforming instrumenter for Jython 2.5; byte code transforming instrumenter for Java
+2015-07-10 12:20:29,570 INFO  local-0 : registered plug-in net.grinder.plugin.http.HTTPPlugin
+2015-07-10 12:20:30,092 INFO  local-0 : running "tests.py" using Jython 2.5.3 (2.5:c56500f08d34+, Aug 13 2012, 14:54:35) 
+[Java HotSpot(TM) 64-Bit Server VM (Oracle Corporation)]
+2015-07-10 12:20:30,108 INFO  local-0 thread-0: starting, will do 1 run
+2015-07-10 12:20:30,109 INFO  local-0 thread-1: starting, will do 1 run
+2015-07-10 12:20:30,110 INFO  local-0 thread-2: starting, will do 1 run
+2015-07-10 12:20:30,111 INFO  local-0 thread-3: starting, will do 1 run
+2015-07-10 12:20:30,113 INFO  local-0 thread-4: starting, will do 1 run
+2015-07-10 12:20:30,115 INFO  local-0 thread-5: starting, will do 1 run
+2015-07-10 12:20:30,116 INFO  local-0 thread-6: starting, will do 1 run
+2015-07-10 12:20:30,117 INFO  local-0 thread-7: starting, will do 1 run
+2015-07-10 12:20:30,117 INFO  local-0 thread-8: starting, will do 1 run
+2015-07-10 12:20:30,117 INFO  local-0 thread-9: starting, will do 1 run
+2015-07-10 12:20:30,118 INFO  local-0 thread-10: starting, will do 1 run
+2015-07-10 12:20:30,118 INFO  local-0 thread-11: starting, will do 1 run
+2015-07-10 12:20:30,125 INFO  local-0 thread-13: starting, will do 1 run
+2015-07-10 12:20:30,125 INFO  local-0 thread-14: starting, will do 1 run
+2015-07-10 12:20:30,126 INFO  local-0 thread-16: starting, will do 1 run
+2015-07-10 12:20:30,125 INFO  local-0 thread-15: starting, will do 1 run
+2015-07-10 12:20:30,125 INFO  local-0 thread-12: starting, will do 1 run
+2015-07-10 12:20:30,126 INFO  local-0 thread-18: starting, will do 1 run
+2015-07-10 12:20:30,127 INFO  local-0 thread-19: starting, will do 1 run
+2015-07-10 12:20:30,128 INFO  local-0 thread-20: starting, will do 1 run
+2015-07-10 12:20:30,126 INFO  local-0 thread-17: starting, will do 1 run
+2015-07-10 12:20:30,128 INFO  local-0 thread-21: starting, will do 1 run
+2015-07-10 12:20:30,129 INFO  local-0 thread-22: starting, will do 1 run
+2015-07-10 12:20:30,129 INFO  local-0 thread-23: starting, will do 1 run
+2015-07-10 12:20:30,130 INFO  local-0 thread-24: starting, will do 1 run
+2015-07-10 12:20:30,131 INFO  local-0 : start time is 1436556030131 ms since Epoch
+2015-07-10 12:20:30,132 INFO  local-0 thread-7: finished 1 run
+2015-07-10 12:20:30,133 INFO  local-0 thread-5: finished 1 run
+2015-07-10 12:20:30,134 INFO  local-0 thread-1: finished 1 run
+2015-07-10 12:20:30,134 INFO  local-0 thread-3: finished 1 run
+2015-07-10 12:20:30,134 INFO  local-0 thread-4: finished 1 run
+2015-07-10 12:20:30,133 INFO  local-0 thread-8: finished 1 run
+2015-07-10 12:20:30,136 INFO  local-0 thread-11: finished 1 run
+2015-07-10 12:20:30,135 INFO  local-0 thread-0: finished 1 run
+2015-07-10 12:20:30,135 INFO  local-0 thread-10: finished 1 run
+2015-07-10 12:20:30,138 INFO  local-0 thread-15: finished 1 run
+2015-07-10 12:20:30,135 INFO  local-0 thread-24: finished 1 run
+2015-07-10 12:20:30,134 INFO  local-0 thread-6: finished 1 run
+2015-07-10 12:20:30,141 INFO  local-0 thread-20: finished 1 run
+2015-07-10 12:20:30,134 INFO  local-0 thread-9: finished 1 run
+2015-07-10 12:20:30,141 INFO  local-0 thread-17: finished 1 run
+2015-07-10 12:20:30,141 INFO  local-0 thread-18: finished 1 run
+2015-07-10 12:20:30,142 INFO  local-0 thread-21: finished 1 run
+2015-07-10 12:20:30,138 INFO  local-0 thread-12: finished 1 run
+2015-07-10 12:20:30,142 INFO  local-0 thread-22: finished 1 run
+2015-07-10 12:20:30,138 INFO  local-0 thread-16: finished 1 run
+2015-07-10 12:20:30,142 INFO  local-0 thread-23: finished 1 run
+2015-07-10 12:20:30,137 INFO  local-0 thread-14: finished 1 run
+2015-07-10 12:20:30,143 INFO  local-0 thread-19: finished 1 run
+2015-07-10 12:20:30,136 INFO  local-0 thread-13: finished 1 run
+2015-07-10 12:20:30,136 INFO  local-0 thread-2: finished 1 run
+2015-07-10 12:20:30,145 INFO  local-0 : elapsed time is 14 ms
+2015-07-10 12:20:30,145 INFO  local-0 : Final statistics for this process:
+2015-07-10 12:20:30,154 INFO  local-0 : 
+             Tests        Errors       Mean Test    Test Time    TPS          Mean         Response     Response     Mean time to Mean time to Mean time to 
+                                       Time (ms)    Standard                  response     bytes per    errors       resolve host establish    first byte   
+                                                    Deviation                 length       second                                 connection                
+                                                    (ms)                                                                                                    
+
+
+Totals       0            0            -            0.00         0.00         -            0.00         0            -            -            -            
+
+  Tests resulting in error only contribute to the Errors column.          
+  Statistics for individual tests can be found in the data file, including
+  (possibly incomplete) statistics for erroneous tests. Composite tests   
+  are marked with () and not included in the totals.                      
+
