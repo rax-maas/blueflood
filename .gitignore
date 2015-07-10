@@ -72,3 +72,4 @@ atlassian-ide-plugin.xml
 #######################################
 tests.log
 node_modules
+*/grinder/resources
