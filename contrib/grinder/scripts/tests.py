@@ -13,6 +13,7 @@ import time
 import utils
 import ingest
 import query
+import annotationsingest
 import unittest
 import random
 import grinder
@@ -55,6 +56,7 @@ class BluefloodTests(unittest.TestCase):
     self.tm = ingest.ThreadManager(net.grinder.script.Grinder.grinder)
     req = MockReq()
     ingest.IngestThread.request = req
+    annotationsingest.AnnotationsIngestThread.request = req
     for x in query.QueryThread.query_types:
       x.query_request = req
     random.shuffle = lambda x: None
@@ -65,6 +67,7 @@ class BluefloodTests(unittest.TestCase):
     test_config = {'report_interval': (1000 * 6),
                    'num_tenants': 3,
                    'metrics_per_tenant': 7,
+                   'annotations_per_tenant' : 2,
                    'batch_size': 3,
                    'ingest_concurrency': 2,
                    'query_concurrency': 10,
@@ -87,12 +90,14 @@ class BluefloodTests(unittest.TestCase):
     self.assertEqual(type(t1), query.QueryThread)
 
     #confirm that a threadnum after all valid thread types raises an exception
-    tot_threads = (ingest.default_config['ingest_concurrency'] + ingest.default_config['query_concurrency'])
+    tot_threads = (ingest.default_config['ingest_concurrency'] + ingest.default_config['query_concurrency'] + ingest.default_config['annotations_concurrency'])
     self.assertRaises(Exception,self.tm.setup_thread, tot_threads)
-
 
     #confirm that the correct batches of ingest metrics are created for worker 0
     self.tm.create_all_metrics(0)
+    self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
+                             [[[0, 0]], [[0, 1]], [[1, 0]], [[1, 1]]])
+
     self.assertEqual(ingest.IngestThread.metrics,
                              [[[0, 0], [0, 1], [0, 2]],
                               [[0, 3], [0, 4], [0, 5]],
@@ -130,6 +135,9 @@ class BluefloodTests(unittest.TestCase):
                              [[[2, 0], [2, 1], [2, 2]], 
                               [[2, 3], [2, 4], [2, 5]], 
                               [[2, 6]]])
+
+    self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
+                     [[[2, 0]], [[2, 1]]])
 
     
     thread = ingest.IngestThread(0)
@@ -174,6 +182,41 @@ class BluefloodTests(unittest.TestCase):
                       u'unit': u'days'}]
     self.assertEqual(payload, valid_payload)
 
+  def test_generate_annotations_payload(self):
+    self.tm.create_all_metrics(1)
+    thread = annotationsingest.AnnotationsIngestThread(0)
+    payload = json.loads(thread.generate_payload(0, [[2, 3]]))
+    valid_payload = [{u'what': u'annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3',
+                      u'when': 0,
+                      u'tags': u'tag',
+                      u'data': u'data'}]
+    self.assertEqual(payload, valid_payload)
+
+  def test_annotationsingest_make_request(self):
+    global sleep_time
+    thread = annotationsingest.AnnotationsIngestThread(0)
+    thread.slice = [[[2, 0]]]
+    thread.position = 0
+    thread.finish_time = 10
+    valid_payload = [{"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1, "tags": "tag", "data": "data"}]
+
+    url, payload = thread.make_request(pp)
+    #confirm request generates proper URL and payload
+    self.assertEqual(url, 
+                     'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/tenantId/events')
+    self.assertEqual(eval(payload), valid_payload)
+
+    #confirm request increments position if not at end of report interval
+    self.assertEqual(thread.position, 1)
+    self.assertEqual(thread.finish_time, 10)
+    thread.position = 2
+    thread.make_request(pp)
+
+    #confirm request resets position at end of report interval
+    self.assertEqual(sleep_time, 9)
+    self.assertEqual(thread.position, 1)
+    self.assertEqual(thread.finish_time, 16)
+
   def test_ingest_make_request(self):
     global sleep_time
     thread = ingest.IngestThread(0)
@@ -184,7 +227,7 @@ class BluefloodTests(unittest.TestCase):
 
     url, payload = thread.make_request(pp)
     #confirm request generates proper URL and payload
-    self.assertEqual(url, 
+    self.assertEqual(url,
                      'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/tenantId/ingest/multi')
     self.assertEqual(eval(payload), valid_payload)
 
