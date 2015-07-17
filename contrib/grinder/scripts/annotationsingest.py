@@ -12,7 +12,7 @@ class AnnotationsIngestThread(AbstractThread):
   annotations = []
   
   # Grinder test reporting infrastructure
-  test1 = Test(1, "Annotations Ingest test")
+  test1 = Test(2, "Annotations Ingest test")
   request = HTTPRequest()
   test1.record(request)
 
@@ -29,7 +29,7 @@ class AnnotationsIngestThread(AbstractThread):
                                             default_config['num_nodes'], 
                                             cls.generate_annotations_for_tenant)
 
-    cls.annotations = cls.divide_metrics_into_batches(annotations, 1)
+    cls.annotations = cls.divide_annotations_into_batches(annotations, 1)
 
   @classmethod
   def num_threads(cls):
@@ -43,7 +43,7 @@ class AnnotationsIngestThread(AbstractThread):
     return l
 
   @classmethod
-  def divide_metrics_into_batches(cls, annotations, batch_size=1):
+  def divide_annotations_into_batches(cls, annotations, batch_size=1):
     b = []
 
     for i in range(0, len(annotations), batch_size):
@@ -58,9 +58,7 @@ class AnnotationsIngestThread(AbstractThread):
     self.slice = self.annotations[start:end]
 
   def generate_annotation(self, time, tenant_id, metric_id):
-
     metric_name = generate_metric_name(metric_id)
-
     return {'what': 'annotation '+metric_name,
             'when': time,
             'tags': 'tag',
@@ -68,7 +66,7 @@ class AnnotationsIngestThread(AbstractThread):
 
   def generate_payload(self, time, batch):
     payload = map(lambda x:self.generate_annotation(time,*x), batch)
-    return json.dumps(payload)
+    return json.dumps(payload[0])
 
   def ingest_url(self):
     return "%s/v2.0/tenantId/events" % default_config['url']
