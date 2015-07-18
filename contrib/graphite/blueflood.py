@@ -21,7 +21,7 @@ except ImportError:
 
 
 secs_per_res = {
-  'FULL': 1,
+  'FULL': 60,
   'MIN5': 5*60,
   'MIN20': 20*60,
   'MIN60': 60*60,
@@ -53,7 +53,10 @@ class TenantBluefloodFinder(object):
   __fetch_multi__ = 'tenant_blueflood'
   __fetch_events__ = 'tenant_blueflood'
   def __init__(self, config=None):
-    print("Blueflood Finder v25")
+    print("Blueflood Finder v28")
+    if os.path.isfile("/root/pdb-flag"):
+      import remote_pdb
+      remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     if config is not None:
       bf_config = config.get('blueflood', {})
       urls = bf_config.get('urls', bf_config.get('url', '').strip('/'))
@@ -310,29 +313,53 @@ class BluefloodClient(object):
       return True
     return False
 
+  def fixup(self, values, fixup_list):
+    # Replace the None's in "values" with interpolations of the
+    # surrounding non-null values 
+    # "fixup_list" lists the null datapoints in the values
+    if fixup_list:
+      #preserve the type of the values
+      set_type = type(values[fixup_list[0][0]])
+    for f in fixup_list:
+      start = f[0]
+      end = f[1]
+      increment = (float(values[end]) - values[start])/(end - start)
+      nextval = values[start]
+      for x in range(start + 1, end):
+        nextval += increment
+        values[x] = set_type(nextval)
+      
+    
   def process_path(self, values, start_time, end_time, step, data_key):
     # Generates datapoints in graphite-api format
     # Graphite-api requires the points be "step" seconds apart in time
     #  with Null's interleaved if needed
-    if not data_key:
-      print "No valid keys present"
-      return []
     v_iter = values
     ret_arr = []
+    current_fixup = None
+    fixup_list = []
     for ts in range(start_time, end_time, step):
 
       # Skip datapoints that have already passed
       #  NOTE/TODO: this while loop has the effect of dropping all but the first datapoint in each step
       #  (Graphite requires exactly one datapoint/step.)  It would be better to rollup the datapoints
       #  if there are more than one/step.  However that will only happen when we have full res metrics
-      #  with sub-second frequencies.  We believe that case is too rare to worry about right now.
+      #  with frequencies less than 10 seconds.  
+      #  We believe that case is too rare to worry about right now.
       while self.current_datapoint_passed(v_iter, ts):
         v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(v_iter[0][data_key])
+        if current_fixup:
+          # The fixup list lists ranges of null datapoints
+          fixup_list.append([current_fixup, len(ret_arr) - 1])
+          current_fixup = None
       else:
+        l = len(ret_arr)
+        if (l > 0) and (ret_arr[l - 1] != None):
+          current_fixup = l - 1
         ret_arr.append(None)
-
+    self.fixup(ret_arr, fixup_list)
     return ret_arr
 
   def get_multi_endpoint(self, endpoint, tenant):
