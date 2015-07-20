@@ -96,7 +96,7 @@ class BluefloodTests(unittest.TestCase):
     #confirm that the correct batches of ingest metrics are created for worker 0
     self.tm.create_all_metrics(0)
     self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
-                             [[[0, 0]], [[0, 1]], [[1, 0]], [[1, 1]]])
+                             [[0, 0], [0, 1], [1, 0], [1, 1]])
 
     self.assertEqual(ingest.IngestThread.metrics,
                              [[[0, 0], [0, 1], [0, 2]],
@@ -137,7 +137,7 @@ class BluefloodTests(unittest.TestCase):
                               [[2, 6]]])
 
     self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
-                     [[[2, 0]], [[2, 1]]])
+                     [[2, 0], [2, 1]])
 
     
     thread = ingest.IngestThread(0)

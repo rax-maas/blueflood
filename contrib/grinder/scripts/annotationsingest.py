@@ -24,12 +24,10 @@ class AnnotationsIngestThread(AbstractThread):
     The metrics are a list of batches.  Each batch is a list of metrics processed by
     a single metrics ingest request.
     """
-    annotations =  generate_metrics_tenants(default_config['num_tenants'],
+    cls.annotations = generate_metrics_tenants(default_config['num_tenants'],
                                             default_config['annotations_per_tenant'], agent_number,
                                             default_config['num_nodes'], 
                                             cls.generate_annotations_for_tenant)
-
-    cls.annotations = cls.divide_annotations_into_batches(annotations, 1)
 
   @classmethod
   def num_threads(cls):
@@ -41,14 +39,6 @@ class AnnotationsIngestThread(AbstractThread):
     for x in range(annotations_per_tenant):
       l.append([tenant_id, x])
     return l
-
-  @classmethod
-  def divide_annotations_into_batches(cls, annotations, batch_size=1):
-    b = []
-
-    for i in range(0, len(annotations), batch_size):
-      b.append(annotations[i:i+batch_size])
-    return b
 
   def __init__(self, thread_num):
     AbstractThread.__init__(self, thread_num)
@@ -66,7 +56,7 @@ class AnnotationsIngestThread(AbstractThread):
 
   def generate_payload(self, time, batch):
     payload = map(lambda x:self.generate_annotation(time,*x), batch)
-    return json.dumps(payload[0])
+    return json.dumps(payload)
 
   def ingest_url(self):
     return "%s/v2.0/tenantId/events" % default_config['url']
