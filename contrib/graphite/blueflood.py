@@ -313,6 +313,8 @@ class BluefloodClient(object):
     # Generates datapoints in graphite-api format
     # Graphite-api requires the points be "step" seconds apart in time
     #  with Null's interleaved if needed
+    # Note that even if there are no datapoints in "values" it will fill
+    #  them with nulls
     v_iter = values
     ret_arr = []
     current_fixup = None
