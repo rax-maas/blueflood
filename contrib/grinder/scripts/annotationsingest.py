@@ -10,7 +10,7 @@ from net.grinder.plugin.http import HTTPRequest
 class AnnotationsIngestThread(AbstractThread):
   # The list of metric numbers for all threads in this worker
   annotations = []
-  
+
   # Grinder test reporting infrastructure
   test1 = Test(2, "Annotations Ingest test")
   request = HTTPRequest()
@@ -28,6 +28,7 @@ class AnnotationsIngestThread(AbstractThread):
                                             default_config['annotations_per_tenant'], agent_number,
                                             default_config['num_nodes'], 
                                             cls.generate_annotations_for_tenant)
+
 
   @classmethod
   def num_threads(cls):
@@ -47,7 +48,7 @@ class AnnotationsIngestThread(AbstractThread):
                                     self.num_threads(), thread_num)
     self.slice = self.annotations[start:end]
 
-  def generate_annotation(self, time, tenant_id, metric_id):
+  def generate_annotation(self, time, metric_id):
     metric_name = generate_metric_name(metric_id)
     return {'what': 'annotation '+metric_name,
             'when': time,
@@ -55,7 +56,7 @@ class AnnotationsIngestThread(AbstractThread):
             'data': 'data'}
 
   def generate_payload(self, time, batch):
-    payload = map(lambda x:self.generate_annotation(time,*x), batch)
+    payload = self.generate_annotation(time,batch[1])
     return json.dumps(payload)
 
   def ingest_url(self):

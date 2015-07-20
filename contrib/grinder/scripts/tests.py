@@ -185,20 +185,20 @@ class BluefloodTests(unittest.TestCase):
   def test_generate_annotations_payload(self):
     self.tm.create_all_metrics(1)
     thread = annotationsingest.AnnotationsIngestThread(0)
-    payload = json.loads(thread.generate_payload(0, [[2, 3]]))
-    valid_payload = [{u'what': u'annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3',
-                      u'when': 0,
-                      u'tags': u'tag',
-                      u'data': u'data'}]
+    payload = json.loads(thread.generate_payload(0, [2, 3]))
+    valid_payload = {'what': 'annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3',
+                      'when': 0,
+                      'tags': 'tag',
+                      'data': 'data'}
     self.assertEqual(payload, valid_payload)
 
   def test_annotationsingest_make_request(self):
     global sleep_time
     thread = annotationsingest.AnnotationsIngestThread(0)
-    thread.slice = [[[2, 0]]]
+    thread.slice = [[2, 0]]
     thread.position = 0
     thread.finish_time = 10
-    valid_payload = [{"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1, "tags": "tag", "data": "data"}]
+    valid_payload = {"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1, "tags": "tag", "data": "data"}
 
     url, payload = thread.make_request(pp)
     #confirm request generates proper URL and payload
