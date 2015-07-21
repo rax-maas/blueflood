@@ -1,6 +1,6 @@
 # It is difficult to invoke the Python coverage tool externally with Jython, so it
 # is being invoked internally here:
-
+from __future__ import division
 import net.grinder.script.Grinder
 package_path = net.grinder.script.Grinder.grinder.getProperties().getProperty("grinder.package_path")
 import sys
@@ -16,6 +16,7 @@ import query
 import annotationsingest
 import unittest
 import random
+import math
 import grinder
 
 
@@ -76,6 +77,7 @@ class BluefloodTests(unittest.TestCase):
                    'singleplot_per_interval': 11,
                    'multiplot_per_interval': 10,
                    'search_queries_per_interval': 9,
+                   'annotations_queries_per_interval': 8,
                    'name_fmt': "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.%d",
                    'num_nodes': 2}
 
@@ -131,14 +133,23 @@ class BluefloodTests(unittest.TestCase):
 
     # confirm that the number of queries is correctly distributed across
     #  each thread in this worker process
+
+    single_plot_queries_agent0 = int(math.ceil(query.default_config['singleplot_per_interval']/2))
+    multi_plot_queries_agent0 = int(math.ceil(query.default_config['multiplot_per_interval']/2))
+    search_queries_agent0 = int(math.ceil(query.default_config['search_queries_per_interval']/2))
+    annotation_queries_agent0 = int(math.ceil(query.default_config['annotations_queries_per_interval']/2))
+    
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * 6 + [query.MultiPlotQuery] * 5 + [query.SearchQuery] * 5))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
 
     thread = query.QueryThread(0)
     self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
 
+    thread = query.QueryThread(6)
+    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
+
     thread = query.QueryThread(9)
-    self.assertEqual(thread.slice, [query.SearchQuery])
+    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
 
 
     #confirm that the correct batches of ingest metrics are created for worker 1
@@ -161,14 +172,22 @@ class BluefloodTests(unittest.TestCase):
                              [[[2, 6]]])
 
     #confirm that the correct batches of queries are created for worker 1
+    single_plot_queries_agent1 = query.default_config['singleplot_per_interval'] - single_plot_queries_agent0
+    multi_plot_queries_agent1 = query.default_config['multiplot_per_interval'] - multi_plot_queries_agent0
+    search_queries_agent1 = query.default_config['search_queries_per_interval'] - search_queries_agent0
+    annotation_queries_agent1 = query.default_config['annotations_queries_per_interval'] - annotation_queries_agent0
+
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * 5 + [query.MultiPlotQuery] * 5 + [query.SearchQuery] * 4))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent1 + [query.MultiPlotQuery] * multi_plot_queries_agent1 + [query.SearchQuery] * search_queries_agent1 + [query.AnnotationsQuery] * annotation_queries_agent1))
 
     thread = query.QueryThread(0)
     self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
 
+    thread = query.QueryThread(6)
+    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
+
     thread = query.QueryThread(9)
-    self.assertEqual(thread.slice, [query.SearchQuery])
+    self.assertEqual(thread.slice, [query.AnnotationsQuery])
 
   def test_generate_payload(self):
     self.tm.create_all_metrics(1)
@@ -256,7 +275,7 @@ class BluefloodTests(unittest.TestCase):
 
   def test_query_make_request(self):
     thread = query.QueryThread(0)
-    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery]
+    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery]
     thread.position = 0
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399999&to=1&resolution=FULL")
@@ -269,6 +288,10 @@ class BluefloodTests(unittest.TestCase):
     thread.make_request(pp)
     self.assertEqual(post_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/20/views?from=-86399999&to=1&resolution=FULL")
     self.assertEqual(eval(post_payload), ["int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.2","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.4","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.5","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.6","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.7","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.8","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.9"])
+
+    random.randint = lambda x,y: 30
+    thread.make_request(pp)
+    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/30/events/getEvents?from=-86399999&until=1")
 
   def tearDown(self):
     random.shuffle = self.real_shuffle

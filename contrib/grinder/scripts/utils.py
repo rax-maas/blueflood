@@ -19,7 +19,8 @@ default_config = {
   'max_multiplot_metrics': 10,
   'search_queries_per_interval': 10,
   'multiplot_per_interval': 10,
-  'singleplot_per_interval': 10}
+  'singleplot_per_interval': 10,
+  'annotations_queries_per_interval': 8}
 
 units_map = {0: 'minutes',
              1: 'hours',
@@ -123,7 +124,7 @@ def generate_job_range(total_jobs, total_servers, server_num):
     end_job += 1
   return (start_job, end_job)
 
-def generate_metrics_tenants(num_tenants, metrics_per_tenant, 
+def generate_metrics_tenants(num_tenants, metrics_per_tenant,
                              agent_number, num_nodes, gen_fn):
   """ generate the subset of the total metrics to be done by this agent"""
   tenants_in_shard = range(*generate_job_range(num_tenants, num_nodes, agent_number))
