@@ -10,6 +10,7 @@ from net.grinder.plugin.http import HTTPRequest
 class AnnotationsIngestThread(AbstractThread):
   # The list of metric numbers for all threads in this worker
   annotations = []
+  tenantid = None
 
   # Grinder test reporting infrastructure
   test1 = Test(2, "Annotations Ingest test")
@@ -19,10 +20,8 @@ class AnnotationsIngestThread(AbstractThread):
 
   @classmethod
   def create_metrics(cls, agent_number):
-    """ Generate all the metrics for this worker
+    """ Generate all the annotations for this worker
 
-    The metrics are a list of batches.  Each batch is a list of metrics processed by
-    a single metrics ingest request.
     """
     cls.annotations = generate_metrics_tenants(default_config['num_tenants'],
                                             default_config['annotations_per_tenant'], agent_number,
@@ -56,11 +55,12 @@ class AnnotationsIngestThread(AbstractThread):
             'data': 'data'}
 
   def generate_payload(self, time, batch):
+    self.tenantid = str(batch[0])
     payload = self.generate_annotation(time,batch[1])
     return json.dumps(payload)
 
   def ingest_url(self):
-    return "%s/v2.0/tenantId/events" % default_config['url']
+    return "%s/v2.0/%s/events" % (default_config['url'], self.tenantid)
 
   def make_request(self, logger):
     if len(self.slice) == 0:

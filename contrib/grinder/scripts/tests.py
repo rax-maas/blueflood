@@ -203,7 +203,7 @@ class BluefloodTests(unittest.TestCase):
     url, payload = thread.make_request(pp)
     #confirm request generates proper URL and payload
     self.assertEqual(url, 
-                     'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/tenantId/events')
+                     'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/2/events')
     self.assertEqual(eval(payload), valid_payload)
 
     #confirm request increments position if not at end of report interval
