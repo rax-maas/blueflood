@@ -71,6 +71,7 @@ class BluefloodTests(unittest.TestCase):
                    'batch_size': 3,
                    'ingest_concurrency': 2,
                    'query_concurrency': 10,
+                   'annotations_concurrency':2,
                    'singleplot_per_interval': 11,
                    'multiplot_per_interval': 10,
                    'search_queries_per_interval': 9,
@@ -89,6 +90,10 @@ class BluefloodTests(unittest.TestCase):
     t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency'])
     self.assertEqual(type(t1), query.QueryThread)
 
+    #confirm that the threadnum after all ingest+query threads is an annotations query thread
+    t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency']+ingest.default_config['query_concurrency'])
+    self.assertEqual(type(t1), annotationsingest.AnnotationsIngestThread)
+
     #confirm that a threadnum after all valid thread types raises an exception
     tot_threads = (ingest.default_config['ingest_concurrency'] + ingest.default_config['query_concurrency'] + ingest.default_config['annotations_concurrency'])
     self.assertRaises(Exception,self.tm.setup_thread, tot_threads)
@@ -97,6 +102,12 @@ class BluefloodTests(unittest.TestCase):
     self.tm.create_all_metrics(0)
     self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
                              [[0, 0], [0, 1], [1, 0], [1, 1]])
+
+    thread = annotationsingest.AnnotationsIngestThread(0)
+    self.assertEqual(thread.slice, [[0, 0], [0, 1]])
+
+    thread = annotationsingest.AnnotationsIngestThread(1)
+    self.assertEqual(thread.slice, [[1, 0], [1, 1]])
 
     self.assertEqual(ingest.IngestThread.metrics,
                              [[[0, 0], [0, 1], [0, 2]],
