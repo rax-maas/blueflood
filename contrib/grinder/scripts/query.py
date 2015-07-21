@@ -96,13 +96,30 @@ class SearchQuery(AbstractQuery):
     result = self.query_request.GET(url)
 #    logger(result.getText())
     return result
-                                                               
+
+
+class AnnotationsQuery(AbstractQuery):
+  query_interval_name = 'annotations_queries_per_interval'
+  query_name = "AnnotationsQuery"
+  test_number = 5
+
+
+  def generate(self, time, logger):
+    tenant_id = random.randint(0, default_config['num_tenants'])
+    to = time
+    frm = time - self.one_day
+    url = "%s/v2.0/%d/events/getEvents?from=%d&until=%d" % (default_config['query_url'], tenant_id, frm, to)
+    result = self.query_request.GET(url)
+#    logger(result.getText())
+    return result
+
+
 
 class QueryThread(AbstractThread):
   # The list of queries to be invoked across all threads in this worker
   queries = []
 
-  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery]
+  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery, AnnotationsQuery]
 
   @classmethod
   def create_metrics(cls, agent_number):
