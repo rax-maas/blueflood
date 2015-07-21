@@ -1,4 +1,4 @@
-grinder.script=../scripts/tests.py
+grinder.script=../scripts/grinder.py
 grinder.package_path=/Library/Python/2.7/site-packages
 grinder.runs=1
 grinder.threads=30
