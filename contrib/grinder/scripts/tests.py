@@ -67,9 +67,9 @@ class BluefloodTests(unittest.TestCase):
 
     test_config = {'report_interval': (1000 * 6),
                    'num_tenants': 3,
-                   'annotations_num_tenants':3,
+                   'annotations_num_tenants': 3,
                    'metrics_per_tenant': 7,
-                   'annotations_per_tenant' : 2,
+                   'annotations_per_tenant': 2,
                    'batch_size': 3,
                    'ingest_concurrency': 2,
                    'query_concurrency': 10,

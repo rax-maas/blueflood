@@ -33,8 +33,8 @@ class AbstractQuery(object):
 
   def generate(self, time, logger):
     raise Exception("Can't instantiate abstract query")
-    
-    
+
+  
 class SinglePlotQuery(AbstractQuery):
   query_interval_name = 'singleplot_per_interval'
   query_name = "SinglePlotQuery"
@@ -105,7 +105,7 @@ class AnnotationsQuery(AbstractQuery):
 
 
   def generate(self, time, logger):
-    tenant_id = random.randint(0, default_config['num_tenants'])
+    tenant_id = random.randint(0, default_config['annotations_num_tenants'])
     to = time
     frm = time - self.one_day
     url = "%s/v2.0/%d/events/getEvents?from=%d&until=%d" % (default_config['query_url'], tenant_id, frm, to)
