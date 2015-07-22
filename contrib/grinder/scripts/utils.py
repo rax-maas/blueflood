@@ -5,6 +5,7 @@ from net.grinder.script.Grinder import grinder
 default_config = {
   'name_fmt': "t4.int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.%d",
   'report_interval': (1000 * 10),
+  'annotations_num_tenants':5,
   'num_tenants': 4,
   'metrics_per_tenant': 15,
   'annotations_per_tenant':10,

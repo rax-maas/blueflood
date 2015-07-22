@@ -22,7 +22,7 @@ class AnnotationsIngestThread(AbstractThread):
     """ Generate all the annotations for this worker
 
     """
-    cls.annotations = generate_metrics_tenants(default_config['num_tenants'],
+    cls.annotations = generate_metrics_tenants(default_config['annotations_num_tenants'],
                                             default_config['annotations_per_tenant'], agent_number,
                                             default_config['num_nodes'], 
                                             cls.generate_annotations_for_tenant)
