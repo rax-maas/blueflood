@@ -50,6 +50,7 @@ $BLUEFLOOD_INSTALL/contrib/grinder/properties/
 ```
 
 grinder.properties runs the unit tests
+grinder.properties.local has some configs for running on your localhost
 grinder.properties.staging runs the staging configuration and is meant to be run on two nodes
 
 ##Coverage tool
