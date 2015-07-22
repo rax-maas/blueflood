@@ -38,7 +38,7 @@ class AbstractQuery(object):
 class SinglePlotQuery(AbstractQuery):
   query_interval_name = 'singleplot_per_interval'
   query_name = "SinglePlotQuery"
-  test_number = 2
+  test_number = 3
 
   def generate(self, time, logger):
     tenant_id = random.randint(0, default_config['num_tenants'])
@@ -57,7 +57,7 @@ class SinglePlotQuery(AbstractQuery):
 class MultiPlotQuery(AbstractQuery):
   query_interval_name = 'multiplot_per_interval'
   query_name = "MultiPlotQuery"
-  test_number = 3
+  test_number = 4
 
   def generate_multiplot_payload(self):
     metrics_count = min(default_config['max_multiplot_metrics'], 
@@ -82,7 +82,7 @@ class MultiPlotQuery(AbstractQuery):
 class SearchQuery(AbstractQuery):
   query_interval_name = 'search_queries_per_interval'
   query_name = "SearchQuery"
-  test_number = 4
+  test_number = 5
     
   def generate_metrics_regex(self):
     metric_name = generate_metric_name(random.randint(0, default_config['metrics_per_tenant']))
