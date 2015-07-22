@@ -8,7 +8,7 @@ default_config = {
   'annotations_num_tenants':5,
   'num_tenants': 4,
   'metrics_per_tenant': 15,
-  'annotations_per_tenant':10,
+  'annotations_per_tenant': 10,
   'batch_size': 5,
   'ingest_concurrency': 15,
   'num_nodes': 1,
