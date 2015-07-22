@@ -175,7 +175,7 @@ class AbstractThread(object):
 
   @classmethod
   def time(cls):
-    return time.time() * 1000
+    return time.time()
 
   @classmethod
   def sleep(cls, x):

@@ -10,7 +10,6 @@ from net.grinder.plugin.http import HTTPRequest
 class AnnotationsIngestThread(AbstractThread):
   # The list of metric numbers for all threads in this worker
   annotations = []
-  tenantid = None
 
   # Grinder test reporting infrastructure
   test1 = Test(2, "Annotations Ingest test")
@@ -54,13 +53,12 @@ class AnnotationsIngestThread(AbstractThread):
             'tags': 'tag',
             'data': 'data'}
 
-  def generate_payload(self, time, batch):
-    self.tenantid = str(batch[0])
-    payload = self.generate_annotation(time,batch[1])
+  def generate_payload(self, time, metric_id):
+    payload = self.generate_annotation(time, metric_id)
     return json.dumps(payload)
 
-  def ingest_url(self):
-    return "%s/v2.0/%s/events" % (default_config['url'], self.tenantid)
+  def ingest_url(self, tenant_id):
+    return "%s/v2.0/%s/events" % (default_config['url'], tenant_id)
 
   def make_request(self, logger):
     if len(self.slice) == 0:
@@ -68,10 +66,13 @@ class AnnotationsIngestThread(AbstractThread):
       self.sleep(1000)
       return None
     self.check_position(logger, len(self.slice))
-    payload = self.generate_payload(int(self.time()),
-                                           self.slice[self.position])
+    batch = self.slice[self.position]
+    tenant_id = batch[0]
+    metric_id = batch[1]
+    payload = self.generate_payload(int(self.time()), metric_id)
+
     self.position += 1
-    result = self.request.POST(self.ingest_url(), payload)
+    result = self.request.POST(self.ingest_url(tenant_id), payload)
     return result
 
 ThreadManager.add_type(AnnotationsIngestThread)

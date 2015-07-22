@@ -196,7 +196,7 @@ class BluefloodTests(unittest.TestCase):
   def test_generate_annotations_payload(self):
     self.tm.create_all_metrics(1)
     thread = annotationsingest.AnnotationsIngestThread(0)
-    payload = json.loads(thread.generate_payload(0, [2, 3]))
+    payload = json.loads(thread.generate_payload(0, 3))
     valid_payload = {'what': 'annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3',
                       'when': 0,
                       'tags': 'tag',
