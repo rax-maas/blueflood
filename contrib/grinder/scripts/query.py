@@ -101,7 +101,7 @@ class SearchQuery(AbstractQuery):
 class AnnotationsQuery(AbstractQuery):
   query_interval_name = 'annotations_queries_per_interval'
   query_name = "AnnotationsQuery"
-  test_number = 5
+  test_number = 6
 
 
   def generate(self, time, logger):

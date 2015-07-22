@@ -134,10 +134,11 @@ class BluefloodTests(unittest.TestCase):
     # confirm that the number of queries is correctly distributed across
     #  each thread in this worker process
 
-    single_plot_queries_agent0 = int(math.ceil(query.default_config['singleplot_per_interval']/2))
-    multi_plot_queries_agent0 = int(math.ceil(query.default_config['multiplot_per_interval']/2))
-    search_queries_agent0 = int(math.ceil(query.default_config['search_queries_per_interval']/2))
-    annotation_queries_agent0 = int(math.ceil(query.default_config['annotations_queries_per_interval']/2))
+    num_query_nodes = query.default_config['num_nodes']
+    single_plot_queries_agent0 = int(math.ceil(query.default_config['singleplot_per_interval']/num_query_nodes))
+    multi_plot_queries_agent0 = int(math.ceil(query.default_config['multiplot_per_interval']/num_query_nodes))
+    search_queries_agent0 = int(math.ceil(query.default_config['search_queries_per_interval']/num_query_nodes))
+    annotation_queries_agent0 = int(math.ceil(query.default_config['annotations_queries_per_interval']/num_query_nodes))
     
     self.assertEqual(query.QueryThread.queries,
                      ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
