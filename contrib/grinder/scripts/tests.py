@@ -62,7 +62,7 @@ class BluefloodTests(unittest.TestCase):
       x.query_request = req
     random.shuffle = lambda x: None
     random.randint = lambda x,y: 0
-    utils.AbstractThread.time = lambda x:1
+    utils.AbstractThread.time = lambda x:1000
     utils.AbstractThread.sleep = mock_sleep
 
     test_config = {'report_interval': (1000 * 6),
@@ -230,7 +230,7 @@ class BluefloodTests(unittest.TestCase):
     thread.slice = [[2, 0]]
     thread.position = 0
     thread.finish_time = 10
-    valid_payload = {"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1, "tags": "tag", "data": "data"}
+    valid_payload = {"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1000, "tags": "tag", "data": "data"}
 
     url, payload = thread.make_request(pp)
     #confirm request generates proper URL and payload
@@ -255,7 +255,7 @@ class BluefloodTests(unittest.TestCase):
     thread.slice = [[[2, 0], [2, 1]]]
     thread.position = 0
     thread.finish_time = 10
-    valid_payload = [{"collectionTime": 1, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0"}, {"collectionTime": 1, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1"}]
+    valid_payload = [{"collectionTime": 1000, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0"}, {"collectionTime": 1000, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1"}]
 
     url, payload = thread.make_request(pp)
     #confirm request generates proper URL and payload
@@ -279,7 +279,7 @@ class BluefloodTests(unittest.TestCase):
     thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery]
     thread.position = 0
     thread.make_request(pp)
-    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399999&to=1&resolution=FULL")
+    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399000&to=1000&resolution=FULL")
 
     random.randint = lambda x,y: 10
     thread.make_request(pp)
@@ -287,12 +287,12 @@ class BluefloodTests(unittest.TestCase):
 
     random.randint = lambda x,y: 20
     thread.make_request(pp)
-    self.assertEqual(post_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/20/views?from=-86399999&to=1&resolution=FULL")
+    self.assertEqual(post_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/20/views?from=-86399000&to=1000&resolution=FULL")
     self.assertEqual(eval(post_payload), ["int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.2","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.4","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.5","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.6","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.7","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.8","int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.9"])
 
     random.randint = lambda x,y: 30
     thread.make_request(pp)
-    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/30/events/getEvents?from=-86399999&until=1")
+    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/30/events/getEvents?from=-86399000&until=1000")
 
   def tearDown(self):
     random.shuffle = self.real_shuffle
