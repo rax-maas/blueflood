@@ -156,7 +156,7 @@ class AbstractThread(object):
     self.position = 0
 
     # finish_time is the end time of the interval
-    self.finish_time = (self.time() + default_config['report_interval']) / 1000
+    self.finish_time = self.time() + default_config['report_interval']
 
   def generate_unit(self, tenant_id):
     unit_number = tenant_id % 6
@@ -166,8 +166,8 @@ class AbstractThread(object):
     """Sleep if finished all work for report interval"""
     if self.position >= max_position:
       self.position = 0
-      sleep_time = self.finish_time - (self.time()/1000)
-      self.finish_time += (default_config['report_interval'] / 1000)
+      sleep_time = self.finish_time - self.time()
+      self.finish_time += default_config['report_interval']
       if sleep_time < 0:
         #return error
         logger("finish time error")
@@ -181,4 +181,4 @@ class AbstractThread(object):
 
   @classmethod
   def sleep(cls, x):
-    return time.sleep(x)
+    return time.sleep(x/1000)

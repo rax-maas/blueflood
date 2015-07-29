@@ -229,7 +229,7 @@ class BluefloodTests(unittest.TestCase):
     thread = annotationsingest.AnnotationsIngestThread(0)
     thread.slice = [[2, 0]]
     thread.position = 0
-    thread.finish_time = 10
+    thread.finish_time = 10000
     valid_payload = {"what": "annotation int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0", "when": 1000, "tags": "tag", "data": "data"}
 
     url, payload = thread.make_request(pp)
@@ -240,21 +240,21 @@ class BluefloodTests(unittest.TestCase):
 
     #confirm request increments position if not at end of report interval
     self.assertEqual(thread.position, 1)
-    self.assertEqual(thread.finish_time, 10)
+    self.assertEqual(thread.finish_time, 10000)
     thread.position = 2
     thread.make_request(pp)
 
     #confirm request resets position at end of report interval
-    self.assertEqual(sleep_time, 9)
+    self.assertEqual(sleep_time, 9000)
     self.assertEqual(thread.position, 1)
-    self.assertEqual(thread.finish_time, 16)
+    self.assertEqual(thread.finish_time, 16000)
 
   def test_ingest_make_request(self):
     global sleep_time
     thread = ingest.IngestThread(0)
     thread.slice = [[[2, 0], [2, 1]]]
     thread.position = 0
-    thread.finish_time = 10
+    thread.finish_time = 10000
     valid_payload = [{"collectionTime": 1000, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0"}, {"collectionTime": 1000, "ttlInSeconds": 172800, "tenantId": "2", "metricValue": 0, "unit": "days", "metricName": "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1"}]
 
     url, payload = thread.make_request(pp)
@@ -265,13 +265,13 @@ class BluefloodTests(unittest.TestCase):
 
     #confirm request increments position if not at end of report interval
     self.assertEqual(thread.position, 1)
-    self.assertEqual(thread.finish_time, 10)
+    self.assertEqual(thread.finish_time, 10000)
     thread.position = 2
     thread.make_request(pp)
     #confirm request resets position at end of report interval
-    self.assertEqual(sleep_time, 9)
+    self.assertEqual(sleep_time, 9000)
     self.assertEqual(thread.position, 1)
-    self.assertEqual(thread.finish_time, 16)
+    self.assertEqual(thread.finish_time, 16000)
 
 
   def test_query_make_request(self):
