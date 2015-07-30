@@ -31,6 +31,7 @@ import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.serializers.JSONHistogramOutputSerializer;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -84,6 +85,9 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+
+        Tracker.track(request);
+
         final String tenantId = request.getHeader("tenantId");
         final String metricName = request.getHeader("metricName");
 
@@ -125,11 +129,14 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
                               HttpResponseStatus status) {
+
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
+
+        Tracker.trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
     }
 }

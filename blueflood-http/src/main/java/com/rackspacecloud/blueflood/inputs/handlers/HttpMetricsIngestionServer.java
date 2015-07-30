@@ -29,6 +29,8 @@ import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.tracker.Tracker;
+import com.rackspacecloud.blueflood.tracker.TrackerMBean;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -67,7 +69,9 @@ public class HttpMetricsIngestionServer {
 
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
-    
+
+    public TrackerMBean tracker;
+
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
@@ -95,6 +99,9 @@ public class HttpMetricsIngestionServer {
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+
+        log.info("Starting tracker service");
+        tracker = new Tracker();
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
