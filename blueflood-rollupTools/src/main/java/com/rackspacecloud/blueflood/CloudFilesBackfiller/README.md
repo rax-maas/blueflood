@@ -72,7 +72,7 @@ All these settings need to be supplied in the blueflood config file (commonly: '
 ###### Available Configuration Options
 
    1. `SHARDS_TO_BACKFILL` - will backfill metrics belonging to only the supplied shards.
-   2. `NUMBER_OF_BUFFERRED_SLOTS` - number of complete+incomplete slots to be kept in memory, once this number gets exceeded the head slots are grabbed, rollups calculated and pushed into cassandra.
+   2. `NUMBER_OF_BUFFERRED_SLOTS` - number of complete+incomplete slots to be kept in memory, once this number gets exceeded the head slots are grabbed, rollups calculated and pushed into cassandra. You will need to experiment a bit to figure out the best value for NUMBER_OF_BUFFERRED_SLOTS.  3 is a usually a good starting value unless there are a lot of delayed metrics.  In that case you can try increasing NUMBER_OF_BUFFERRED_SLOTS.  But then the node may not have enough memory to do rollups on all. In the worst case, you may need to literally skip the areas with a lot of buffered rollups, by letting the tool run without rollups, just to see how wide spread the delayed metrics are.  And then specifically avoiding rerolling during those time periods.
    3. `DOWNLOAD_DIR` -  specifies the location where you want to store the cloud files which are grabbed by RangeDownloader. Note that       this location will also be used later by the OutOfBandRollup.
    4. `REPLAY_PERIOD_START` - determines the start of the range within which you need to backfill 5m rollups.
    5. `REPLAY_PERIOD_STOP` - determines the end of the range within which you need to backfill 5m rollups.

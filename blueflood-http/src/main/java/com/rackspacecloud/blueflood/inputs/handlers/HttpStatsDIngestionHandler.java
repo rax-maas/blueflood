@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -63,9 +64,11 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
     // our own stuff.
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        
+
+        Tracker.track(request);
+
         final Timer.Context timerContext = handlerTimer.time();
-        
+
         // this is all JSON.
         final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
         try {

@@ -30,6 +30,7 @@ import com.rackspacecloud.blueflood.outputs.serializers.BatchedMetricsOutputSeri
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.HttpConfig;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -73,6 +74,9 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+
+        Tracker.track(request);
+
         final String tenantId = request.getHeader("tenantId");
 
         if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
@@ -143,11 +147,14 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
 
     private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
                               HttpResponseStatus status) {
+
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
+
+        Tracker.trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
     }
 }

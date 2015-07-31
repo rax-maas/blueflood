@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.http;
 
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -39,6 +40,8 @@ public class DefaultHandler implements HttpRequestHandler {
             if (messageBody != null && !messageBody.isEmpty()) {
                 response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
+
+            Tracker.trackResponse(request, response);
             HttpResponder.respond(channel, request, response);
         } finally {
             sendResponseTimerContext.stop();

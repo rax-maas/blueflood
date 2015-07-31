@@ -305,11 +305,11 @@ public class AstyanaxWriter extends AstyanaxIO {
                     SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
                     mutation.putColumn(slotState, entry.getValue().getTimestamp());
                     /*
-                      Note: we used to set the timestamp of the column to entry.getValue().getTimestamp() * 1000 over here.
-                      This block of code is dangerous. Consider you are getting out of order metrics M1 and M2, with collection times T1 and T2 with T2>T1, belonging to same slot
+                      Note: this method used to set the timestamp of the Cassandra column to entry.getValue().getTimestamp() * 1000, i.e. the collection time.
+                      That implementation was changed because it could cause delayed metrics not to rollup.
+                      Consider you are getting out of order metrics M1 and M2, with collection times T1 and T2 with T2>T1, belonging to same slot
                       Assume M2 arrives first. The slot gets marked active and rolled up and the state is set as Rolled. Now, assume M1 arrives. We update the slot state to active,
-                      set the slot timestamp to T1, and while persisting we set it, we set the column timestamp to be T1*1000, but because the T1 < T2, the new slot state will never
-                      get reflected.
+                      set the slot timestamp to T1, and while persisting we set it, we set the column timestamp to be T1*1000, but because the T1 < T2, Cassandra wasn't updating it.
                      */
                 }
             }

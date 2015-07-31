@@ -266,5 +266,7 @@ public class ElasticIOTest {
         // Should just be one result
         Assert.assertEquals(results.size(), 1);
         Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        elasticIO.setINDEX_NAME_READ(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ.getDefaultValue());
+        elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
 }
