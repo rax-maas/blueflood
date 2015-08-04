@@ -16,16 +16,12 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
-import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.HttpConfig;
-import com.rackspacecloud.blueflood.service.HttpIngestionService;
-import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,23 +32,19 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 import java.util.zip.GZIPOutputStream;
-
 import static org.mockito.Mockito.*;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class HttpHandlerIntegrationTest {
@@ -62,14 +54,32 @@ public class HttpHandlerIntegrationTest {
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
     private static ScheduleContext context;
+    private static EventsIO eventsSearchIO;
+    private static EsSetup esSetup;
+    //A time stamp 2 days ago
+    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws Exception{
+        System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
+        Configuration.getInstance().init();
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
+
+        esSetup = new EsSetup();
+        esSetup.execute(EsSetup.deleteAll());
+        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
+        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
+        HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
+        server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
+
         httpIngestionService = new HttpIngestionService();
+        httpIngestionService.setMetricsIngestionServer(server);
         httpIngestionService.startService(context, new AstyanaxMetricsWriter());
+
         vendor = new HttpClientVendor();
         client = vendor.getClient();
     }
@@ -93,8 +103,114 @@ public class HttpHandlerIntegrationTest {
     }
 
     @Test
-    public void testHttpAggregatedIngestionHappyCase() throws Exception {
+    public void testHttpAnnotationsIngestionHappyCase() throws Exception {
+        final int batchSize = 1;
+        final String tenant_id = "333333";
+        String event = createTestEvent(batchSize);
+        postEvent(event, tenant_id);
 
+        //Sleep for a while
+        Thread.sleep(1200);
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
+        results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+    }
+
+    @Test
+    public void testHttpAnnotationsIngestionMultiEvents() throws Exception {
+        final int batchSize = 5;
+        final String tenant_id = "333444";
+        String event = createTestEvent(batchSize);
+        postEvent(event, tenant_id);
+
+        //Sleep for a while
+        Thread.sleep(1200);
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertFalse(batchSize == results.size()); //Only saving the first event of the batch, so the result size will be 1.
+        Assert.assertTrue(results.size() == 1);
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
+        results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertFalse(batchSize == results.size());
+        Assert.assertTrue(results.size() == 1);
+    }
+
+    @Test
+    public void testHttpAnnotationsIngestionDuplicateEvents() throws Exception {
+        int batchSize = 5; // To create duplicate events
+        String tenant_id = "444444";
+
+        createAndInsertTestEvents(tenant_id, batchSize);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+
+        Map<String, List<String>> query = new HashMap<String, List<String>>();
+        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+
+        List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+
+        query = new HashMap<String, List<String>>();
+        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
+        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
+
+        results = eventsSearchIO.search(tenant_id, query);
+        Assert.assertEquals(batchSize, results.size());
+    }
+
+    @Test
+    public void testIngestingInvalidJAnnotationsJSON() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v2.0/456854/events");
+        HttpPost post = new HttpPost(builder.build());
+        String requestBody = //Invalid JSON with single inverted commas instead of double.
+                "{'when':346550008," +
+                        "'what':'Dummy Event'," +
+                        "'data':'Dummy Data'," +
+                        "'tags':'deployment'}";
+
+        HttpEntity entity = new StringEntity(requestBody,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        post.setHeader(Event.FieldLabels.tenantId.name(), "456854");
+        HttpResponse response = client.execute(post);
+        String responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+        Assert.assertTrue(responseString.contains("Invalid Data:"));
+    }
+
+    @Test
+    public void testIngestingInvalidAnnotationsData() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v2.0/456854/events");
+        HttpPost post = new HttpPost(builder.build());
+        String requestBody = //Invalid Data.
+                "{\"how\":346550008," +
+                        "\"why\":\"Dummy Event\"," +
+                        "\"info\":\"Dummy Data\"," +
+                        "\"tickets\":\"deployment\"}";
+        HttpEntity entity = new StringEntity(requestBody,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        post.setHeader(Event.FieldLabels.tenantId.name(), "456854");
+        HttpResponse response = client.execute(post);
+        String responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+        Assert.assertTrue(responseString.contains("Invalid Data:"));
+    }
+
+    @Test
+    public void testHttpAggregatedIngestionHappyCase() throws Exception {
         StringBuilder sb = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_bundle.json")));
         String curLine = reader.readLine();
@@ -113,9 +229,9 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         final Locator locator = Locator.
-            createLocatorFromPathComponents("333333", "internal", "packets_received");
+                createLocatorFromPathComponents("333333", "internal", "packets_received");
         Points<CounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
-                locator, new Range(1389211220,1389211240), 
+                locator, new Range(1389211220,1389211240),
                 CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
@@ -220,8 +336,48 @@ public class HttpHandlerIntegrationTest {
                 .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
     }
 
+    private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
+        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
+        for (int i=0; i<eventCount; i++) {
+            Event event = new Event();
+            event.setWhat("deployment");
+            event.setWhen(Calendar.getInstance().getTimeInMillis());
+            event.setData("deploying prod");
+            event.setTags("deployment");
+
+            eventList.add(event.toMap());
+        }
+        eventsSearchIO.insert(tenant, eventList);
+    }
+
+    private HttpResponse postEvent(String requestBody, String tenantId) throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
+                .setPort(httpPort).setPath("/v2.0/" + tenantId + "/events");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(requestBody,
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        post.setHeader(Event.FieldLabels.tenantId.name(), tenantId);
+        HttpResponse response = client.execute(post);
+        return response;
+    }
+
+    private static String createTestEvent(int batchSize) throws Exception {
+        StringBuilder events = new StringBuilder();
+        for (int i=0; i<batchSize; i++) {
+            Event event = new Event();
+            event.setWhat("deployment "+i);
+            event.setWhen(Calendar.getInstance().getTimeInMillis());
+            event.setData("deploying prod "+i);
+            event.setTags("deployment "+i);
+            events.append(new ObjectMapper().writeValueAsString(event));
+        }
+        return events.toString();
+    }
+
     @AfterClass
     public static void shutdown() {
+        esSetup.terminate();
         vendor.shutdown();
     }
 }

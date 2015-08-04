@@ -16,14 +16,36 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.codahale.metrics.Timer;
+import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.tracker.Tracker;
+import com.rackspacecloud.blueflood.utils.Metrics;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.*;
 
 public class DefaultHandler implements HttpRequestHandler {
+    private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
     }
+
+    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
+
+        try {
+            if (messageBody != null && !messageBody.isEmpty()) {
+                response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            }
+
+            Tracker.trackResponse(request, response);
+            HttpResponder.respond(channel, request, response);
+        } finally {
+            sendResponseTimerContext.stop();
+        }
+    }
+
 }
