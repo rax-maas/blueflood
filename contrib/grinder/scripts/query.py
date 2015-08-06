@@ -147,7 +147,7 @@ class QueryThread(AbstractThread):
   def make_request(self, logger):
     if len(self.slice) == 0:
       logger("Warning: no work for current thread")
-      self.sleep(1000)
+      self.sleep(1000000)
       return None
     self.check_position(logger, len(self.slice))
     result = self.query_fn_dict[self.slice[self.position]](int(self.time()), logger)
