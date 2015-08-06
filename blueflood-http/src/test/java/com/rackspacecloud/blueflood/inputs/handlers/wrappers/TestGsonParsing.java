@@ -2,8 +2,8 @@ package com.rackspacecloud.blueflood.inputs.handlers.wrappers;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.rackspacecloud.blueflood.inputs.handlers.HttpStatsDIngestionHandler;
 import com.rackspacecloud.blueflood.types.BluefloodTimer;
+import com.rackspacecloud.blueflood.inputs.handlers.HttpAggregatedIngestionHandler;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,13 +35,13 @@ public class TestGsonParsing {
     @Test
     public void testLameButValidJSON() {
         String badJson = "{}";
-        AggregatedPayload payload = HttpStatsDIngestionHandler.createPayload(badJson);
+        AggregatedPayload payload = HttpAggregatedIngestionHandler.createPayload(badJson);
     }
     
     @Test(expected = JsonSyntaxException.class)
     public void testInvalidJSON() {
         String badJson = "{tenantId:}";
-        AggregatedPayload payload = HttpStatsDIngestionHandler.createPayload(badJson);
+        AggregatedPayload payload = HttpAggregatedIngestionHandler.createPayload(badJson);
     }
     
     @Test

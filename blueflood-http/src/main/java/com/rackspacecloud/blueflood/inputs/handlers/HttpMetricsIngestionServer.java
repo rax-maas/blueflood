@@ -92,12 +92,12 @@ public class HttpMetricsIngestionServer {
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpStatsDIngestionHandler(processor, timeout));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpAggregatedIngestionHandler(processor, timeout));
 
         router.get("/v2.0", new DefaultHandler());
         router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpStatsDIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpAggregatedIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);

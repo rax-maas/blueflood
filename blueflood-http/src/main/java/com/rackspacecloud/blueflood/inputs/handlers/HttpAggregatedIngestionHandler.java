@@ -46,17 +46,17 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
-public class HttpStatsDIngestionHandler implements HttpRequestHandler {
+public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     
-    private static final Logger log = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpAggregatedIngestionHandler.class);
     
-    private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
-    private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
+    private static final Timer handlerTimer = Metrics.timer(HttpAggregatedIngestionHandler.class, "HTTP statsd metrics ingestion timer");
+    private static final Counter requestCount = Metrics.counter(HttpAggregatedIngestionHandler.class, "HTTP Request Count");
     
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
     
-    public HttpStatsDIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+    public HttpAggregatedIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.processor = processor;
         this.timeout = timeout;
     }
