@@ -99,6 +99,7 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpAggregatedIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
+        router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap(
