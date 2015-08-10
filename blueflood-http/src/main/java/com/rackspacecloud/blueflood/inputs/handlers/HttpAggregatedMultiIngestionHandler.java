@@ -23,15 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Created by tilo on 8/7/15.
- */
 public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(HttpAggregatedIngestionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpAggregatedMultiIngestionHandler.class);
 
-    private static final Timer handlerTimer = Metrics.timer(HttpAggregatedIngestionHandler.class, "HTTP statsd metrics ingestion timer");
-    private static final Counter requestCount = Metrics.counter(HttpAggregatedIngestionHandler.class, "HTTP Request Count");
+    private static final Timer handlerTimer = Metrics.timer(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi metrics ingestion timer");
+    private static final Counter requestCount = Metrics.counter(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi Request Count");
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
