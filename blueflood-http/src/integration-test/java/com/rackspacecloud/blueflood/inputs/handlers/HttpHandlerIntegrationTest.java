@@ -407,20 +407,7 @@ public class HttpHandlerIntegrationTest {
         }
         return events.toString();
     }
-
-    public String generateAggregatedJsonData() throws Exception{
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_bundle.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
-
-        return json;
-    }
-
+    
     @AfterClass
     public static void shutdown() {
         esSetup.terminate();

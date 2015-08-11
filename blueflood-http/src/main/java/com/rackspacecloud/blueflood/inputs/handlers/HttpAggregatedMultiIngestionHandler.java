@@ -52,18 +52,21 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
             // block until things get ingested.
             requestCount.inc();
             List<Bundle> bundleList = createBundleList(body);
-            for (Bundle bundle : bundleList){
-                MetricsCollection collection = new MetricsCollection();
+            MetricsCollection collection = new MetricsCollection();
+
+            for (Bundle bundle : bundleList) {
                 collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
-                ListenableFuture<List<Boolean>> futures = processor.apply(collection);
-                List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
-                for (Boolean persisted : persisteds) {
-                    if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                        return;
-                    }
+            }
+
+            ListenableFuture<List<Boolean>> futures = processor.apply(collection);
+            List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+            for (Boolean persisted : persisteds) {
+                if (!persisted) {
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return;
                 }
             }
+
             DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
 
         } catch (JsonParseException ex) {
