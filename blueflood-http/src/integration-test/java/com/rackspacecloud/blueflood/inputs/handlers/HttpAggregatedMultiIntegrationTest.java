@@ -15,6 +15,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,9 +35,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-/**
- * Created by tilo on 8/11/15.
- */
 public class HttpAggregatedMultiIntegrationTest {
     private static HttpIngestionService httpIngestionService;
     private static HttpClientVendor vendor;
@@ -44,9 +42,6 @@ public class HttpAggregatedMultiIntegrationTest {
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPort;
     private static ScheduleContext context;
-    private static EsSetup esSetup;
-    //A time stamp 2 days ago
-    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
     @BeforeClass
     public static void setUp() throws Exception{
@@ -83,6 +78,11 @@ public class HttpAggregatedMultiIntegrationTest {
         Assert.assertEquals(1, points1.getPoints().size());
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        vendor.shutdown();
     }
 
     private URI getMetricsURI() throws URISyntaxException {
