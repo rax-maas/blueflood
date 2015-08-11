@@ -238,6 +238,39 @@ public class HttpHandlerIntegrationTest {
     }
 
     @Test
+    public void testHttpAggregatedMultiIngestionHappyCase() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_bundle.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v2.0/333333/ingest/aggregated/multi");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+
+        final Locator locator = Locator.createLocatorFromPathComponents("5405532", "G200ms");
+        Points<GaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll(GaugeRollup.class,
+                locator, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(GaugeRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points.getPoints().size());
+
+        final Locator locator1 = Locator.createLocatorFromPathComponents("5405577", "internal.bad_lines_seen");
+        Points<CounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
+                locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points1.getPoints().size());
+
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
     public void testBadRequests() throws Exception {
         HttpPost post = new HttpPost(getMetricsURI());
         HttpResponse response = client.execute(post);  // no body
@@ -373,6 +406,19 @@ public class HttpHandlerIntegrationTest {
             events.append(new ObjectMapper().writeValueAsString(event));
         }
         return events.toString();
+    }
+
+    public String generateAggregatedJsonData() throws Exception{
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_bundle.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        return json;
     }
 
     @AfterClass
