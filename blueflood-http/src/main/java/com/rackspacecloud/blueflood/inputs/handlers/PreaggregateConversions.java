@@ -123,6 +123,17 @@ public class PreaggregateConversions {
         }
         return list;
     }
+
+    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<Enum> enums) {
+        List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
+        for (Enum en : enums) {
+            Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
+            EnumRollup rollup = new EnumRollup(en.getName(), en.getValue());
+            PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
+            list.add(metric);
+        }
+        return list;
+    }
     
     // resolve a number to a Long or double.
     public static Number resolveNumber(Number n) {

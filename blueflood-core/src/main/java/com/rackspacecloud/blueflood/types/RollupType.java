@@ -7,6 +7,7 @@ public enum RollupType {
     TIMER,
     SET,
     GAUGE,
+    ENUM,
     BF_HISTOGRAMS,
     BF_BASIC,
     NOT_A_ROLLUP;
