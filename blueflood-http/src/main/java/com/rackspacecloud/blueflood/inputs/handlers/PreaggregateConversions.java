@@ -18,16 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.io.IOError;
@@ -127,6 +118,17 @@ public class PreaggregateConversions {
             for (String value : set.getValues()) {
                 rollup = rollup.withObject(value);
             }
+            PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
+            list.add(metric);
+        }
+        return list;
+    }
+
+    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<Bundle.Enum> enums) {
+        List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
+        for (Bundle.Enum en : enums) {
+            Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
+            EnumRollup rollup = new EnumRollup(en.getName(), en.getValue());
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }

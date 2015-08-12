@@ -116,7 +116,15 @@ public class Bundle {
         public Number getMax() { return max; }
         public Number getSum() { return sum; }
     }
-    
+
+    public static class Enum {
+        private String name;
+        private String value;
+
+        public String getName() { return name; }
+        public String getValue() { return value; }
+    }
+
     //@SafeVarargs (1.7 only doge)
     public static <T> List<T> safeAsList(final T... a) {
         if (a == null)
