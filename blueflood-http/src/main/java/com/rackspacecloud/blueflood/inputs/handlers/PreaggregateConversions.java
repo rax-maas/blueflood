@@ -47,6 +47,7 @@ public class PreaggregateConversions {
         metrics.addAll(PreaggregateConversions.convertGauges(bundle.getTenantId(), bundle.getTimestamp(), bundle.getGauges()));
         metrics.addAll(PreaggregateConversions.convertSets(bundle.getTenantId(), bundle.getTimestamp(), bundle.getSets()));
         metrics.addAll(PreaggregateConversions.convertTimers(bundle.getTenantId(), bundle.getTimestamp(), bundle.getTimers()));
+        metrics.addAll(PreaggregateConversions.convertEnums(bundle.getTenantId(), bundle.getTimestamp(), bundle.getEnums()));
         return metrics;
     }
 

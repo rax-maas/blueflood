@@ -36,6 +36,7 @@ public class Bundle {
     private Counter[] counters;
     private Timer[] timers;
     private Set[] sets;
+    private Enum[] enums;
     
     private Map<String, Object> metadata;
     
@@ -54,6 +55,7 @@ public class Bundle {
     public Collection<Counter> getCounters() { return safeAsList(counters); }
     public Collection<Timer> getTimers() { return safeAsList(timers); }
     public Collection<Set> getSets() { return safeAsList(sets); }
+    public Collection<Enum> getEnums() { return safeAsList(enums);}
     
     public static class Gauge {
         private String name;

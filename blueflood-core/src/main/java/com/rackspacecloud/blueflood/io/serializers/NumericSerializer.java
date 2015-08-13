@@ -24,15 +24,8 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.types.AbstractRollupStat;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,6 +48,7 @@ public class NumericSerializer {
     public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
     public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
+    public static AbstractSerializer<EnumRollup> enRollupInstance = new EnumRollupSerializer();
     public static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
@@ -62,6 +56,7 @@ public class NumericSerializer {
     private static Histogram CounterRollupSize = Metrics.histogram(NumericSerializer.class, "Counter Gauge Metric Size");
     private static Histogram SetRollupSize = Metrics.histogram(NumericSerializer.class, "Set Metric Size");
     private static Histogram timerRollupSize = Metrics.histogram(NumericSerializer.class, "Timer Metric Size");
+    private static Histogram EnumRollupSize = Metrics.histogram(NumericSerializer.class, "Enum Metric Size");
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
@@ -71,6 +66,7 @@ public class NumericSerializer {
         static final byte B_TIMER = (byte)'T';
         static final byte B_SET = (byte)'S';
         static final byte B_GAUGE = (byte)'G';
+        static final byte B_ENUM = (byte) 'E';
     }
     
     /** return a serializer for a specific type */
@@ -92,6 +88,8 @@ public class NumericSerializer {
             return (AbstractSerializer<T>) CounterRollupInstance;
         else if (type.equals(GaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
+        else if (type.equals(EnumRollup.class))
+            return (AbstractSerializer<T>)enRollupInstance;
         else if (type.equals(SetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
@@ -290,7 +288,15 @@ public class NumericSerializer {
                 else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
                     sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
                 return sz;
-                
+            case Type.B_ENUM:
+                EnumRollup en = (EnumRollup)o;
+                sz += 1; // version + rollup type.
+                sz += 1; // numeric type.
+                if (en.getEnumValue() instanceof Long || en.getEnumValue() instanceof Integer)
+                    sz += CodedOutputStream.computeRawVarint64Size(en.getEnumValue().longValue());
+                else if (en.getEnumValue() instanceof Double || en.getEnumValue() instanceof Float)
+                    sz += CodedOutputStream.computeDoubleSizeNoTag(en.getEnumValue().doubleValue());
+                return sz;
             case Type.B_COUNTER:
                 CounterRollup counter = (CounterRollup)o;
                 sz += 1; // version + rollup type.
@@ -322,6 +328,13 @@ public class NumericSerializer {
         double rate = in.readDouble();
         int sampleCount = in.readRawVarint32();
         return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
+    }
+
+    private static EnumRollup deserializeV1EnumRollup(CodedInputStream in) throws IOException {
+        Number value = getUnversionedDoubleOrLong(in);
+        // double rate = in.readDouble();
+        // int sampleCount = in.readRawVarint32();
+        return new EnumRollup();
     }
     
     private static void serializeSetRollup(SetRollup rollup, byte[] buf) throws IOException {
@@ -439,6 +452,13 @@ public class NumericSerializer {
         protobufOut.writeRawVarint64(rollup.getTimestamp());
         putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
     }
+
+    private static void serializeEnum(EnumRollup rollup, byte[] buf) throws IOException {
+        CodedOutputStream out = CodedOutputStream.newInstance(buf);
+        EnumRollupSize.update(buf.length);
+        out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
+        putUnversionedDoubleOrLong(rollup.getEnumValue(), out);
+    }
     
     private static GaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
         BasicRollup basic = deserializeV1Rollup(in);
@@ -462,6 +482,8 @@ public class NumericSerializer {
             return Type.B_TIMER;
         else if (o instanceof GaugeRollup)
             return Type.B_GAUGE;
+        else if (o instanceof EnumRollup)
+            return Type.B_ENUM;
         else if (o instanceof SetRollup)
             return Type.B_SET;
         else if (o instanceof BasicRollup)
@@ -719,6 +741,33 @@ public class NumericSerializer {
                 if (version != VERSION_1_ROLLUP)
                     throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
                 return deserializeV1Gauge(in);
+            } catch (Exception e) {
+                throw new RuntimeException("Deserialization Failure", e);
+            }
+        }
+    }
+
+    public static class EnumRollupSerializer extends AbstractSerializer<EnumRollup> {
+        @Override
+        public ByteBuffer toByteBuffer(EnumRollup er) {
+            try {
+                byte type = typeOf(er);
+                byte[] buf = new byte[sizeOf(er, type)];
+                serializeEnum(er, buf);
+                return ByteBuffer.wrap(buf);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public EnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
+            CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
+            try {
+                byte version = in.readRawByte();
+                if (version != VERSION_1_ROLLUP)
+                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)version));
+                return deserializeV1EnumRollup(in);
             } catch (Exception e) {
                 throw new RuntimeException("Deserialization Failure", e);
             }
