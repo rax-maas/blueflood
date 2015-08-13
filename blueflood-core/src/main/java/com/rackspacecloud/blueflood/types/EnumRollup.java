@@ -9,12 +9,15 @@ public class EnumRollup implements Rollup {
 
     private class EnumValueRollup {
         String valueName;
-        int value;
+        Number value;
 
         public EnumValueRollup(String valueName) {
             this.valueName = valueName;
             this.value = 1;
         }
+    }
+
+    public EnumRollup() {
     }
 
     public EnumRollup(String name, String valueName) {
@@ -24,11 +27,15 @@ public class EnumRollup implements Rollup {
 
     @Override
     public Boolean hasData() {
-        return null;
+        return true;
     }
 
     @Override
     public RollupType getRollupType() {
-        return null;
+        return RollupType.ENUM;
+    }
+
+    public Number getEnumValue() {
+        return this.valueRollup.value;
     }
 }
