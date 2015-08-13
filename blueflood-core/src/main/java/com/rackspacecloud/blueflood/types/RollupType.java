@@ -40,6 +40,9 @@ public enum RollupType {
             return RollupType.BF_HISTOGRAMS;
         else if (value instanceof SimpleNumber)
             return RollupType.NOT_A_ROLLUP;
+        else if (value instanceof EnumRollup) {
+            return RollupType.ENUM;
+        }
         else
             throw new Error(String.format("Cannot discern RollupType from %s", value.getClass().getSimpleName()));
     }
