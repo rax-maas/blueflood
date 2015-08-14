@@ -289,13 +289,12 @@ public class NumericSerializer {
                     sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
                 return sz;
             case Type.B_ENUM:
+                sz += 1; // version
                 EnumRollup en = (EnumRollup)o;
-                sz += 1; // version + rollup type.
-                sz += 1; // numeric type.
-                if (en.getEnumValue() instanceof Long || en.getEnumValue() instanceof Integer)
-                    sz += CodedOutputStream.computeRawVarint64Size(en.getEnumValue().longValue());
-                else if (en.getEnumValue() instanceof Double || en.getEnumValue() instanceof Float)
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(en.getEnumValue().doubleValue());
+                sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
+                for (Integer i : en.getHashes()) {
+                    sz += CodedOutputStream.computeRawVarint32Size(i);
+                }
                 return sz;
             case Type.B_COUNTER:
                 CounterRollup counter = (CounterRollup)o;
@@ -331,10 +330,12 @@ public class NumericSerializer {
     }
 
     private static EnumRollup deserializeV1EnumRollup(CodedInputStream in) throws IOException {
-        Number value = getUnversionedDoubleOrLong(in);
-        // double rate = in.readDouble();
-        // int sampleCount = in.readRawVarint32();
-        return new EnumRollup();
+        int count = in.readRawVarint32();
+        EnumRollup rollup = new EnumRollup();
+        //while (count-- > 0) {
+        //    rollup = rollup.withObject(in.readRawVarint32());
+        //}
+        return rollup;
     }
     
     private static void serializeSetRollup(SetRollup rollup, byte[] buf) throws IOException {
@@ -457,7 +458,10 @@ public class NumericSerializer {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         EnumRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
-        putUnversionedDoubleOrLong(rollup.getEnumValue(), out);
+        out.writeRawVarint32(rollup.getCount());
+        for (Integer i : rollup.getHashes()) {
+            out.writeRawVarint32(i);
+        }
     }
     
     private static GaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
