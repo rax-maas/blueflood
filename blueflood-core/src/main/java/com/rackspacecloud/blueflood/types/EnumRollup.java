@@ -1,29 +1,33 @@
 package com.rackspacecloud.blueflood.types;
 
-/**
- * Created by tilo on 8/12/15.
- */
+import java.util.HashSet;
+import java.util.Set;
+
 public class EnumRollup implements Rollup {
     String name;
-    EnumValueRollup valueRollup;
+    HashSet<Integer> hashes =  new HashSet<Integer>();
+
+    public EnumRollup withObject(String name, String valueName, Number value) {
+        this.name = name;
+        EnumValueRollup enumValueRollup = new EnumValueRollup(valueName, value);
+
+        hashes.add(enumValueRollup.hashCode());
+        return this;
+    }
 
     private class EnumValueRollup {
         String valueName;
         Number value;
 
-        public EnumValueRollup(String valueName) {
+        public EnumValueRollup(String valueName, Number value) {
             this.valueName = valueName;
-            this.value = 1;
+            this.value = value;
         }
     }
 
     public EnumRollup() {
     }
 
-    public EnumRollup(String name, String valueName) {
-        this.name = name;
-        this.valueRollup = new EnumValueRollup(valueName);
-    }
 
     @Override
     public Boolean hasData() {
@@ -35,7 +39,12 @@ public class EnumRollup implements Rollup {
         return RollupType.ENUM;
     }
 
-    public Number getEnumValue() {
-        return this.valueRollup.value;
+    public int getCount() {
+        return hashes.size();
     }
+
+    public Set<Integer> getHashes() {
+        return this.hashes;
+    }
+
 }
