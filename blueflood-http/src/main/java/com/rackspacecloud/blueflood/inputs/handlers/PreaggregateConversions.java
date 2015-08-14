@@ -131,7 +131,8 @@ public class PreaggregateConversions {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
         for (Enum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
-            EnumRollup rollup = new EnumRollup(en.getName(), en.getValue());
+            EnumRollup rollup = new EnumRollup();
+            rollup = rollup.withObject(en.getName(), en.getValue(), 1);
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }
