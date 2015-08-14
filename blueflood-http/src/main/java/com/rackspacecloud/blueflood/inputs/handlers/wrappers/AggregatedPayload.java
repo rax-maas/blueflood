@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 // Using nested classes for now. Expect this to be cleaned up.
-public class Bundle {
+public class AggregatedPayload {
     private String tenantId;
     private long timestamp; // millis since epoch.
     
@@ -35,7 +35,7 @@ public class Bundle {
     private Gauge[] gauges;
     private Counter[] counters;
     private Timer[] timers;
-    private Set[] sets;
+    private AggregatedSet[] sets;
     
     private Map<String, Object> metadata;
     
@@ -53,7 +53,7 @@ public class Bundle {
     public Collection<Gauge> getGauges() { return safeAsList(gauges); }
     public Collection<Counter> getCounters() { return safeAsList(counters); }
     public Collection<Timer> getTimers() { return safeAsList(timers); }
-    public Collection<Set> getSets() { return safeAsList(sets); }
+    public Collection<AggregatedSet> getSets() { return safeAsList(sets); }
     
     public static class Gauge {
         private String name;
@@ -73,7 +73,7 @@ public class Bundle {
         public Number getRate() { return rate; }
     }
     
-    public static class Set {
+    public static class AggregatedSet {
         private String name;
         private String[] values;
         

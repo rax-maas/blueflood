@@ -212,7 +212,7 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testHttpAggregatedIngestionHappyCase() throws Exception {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_bundle.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
