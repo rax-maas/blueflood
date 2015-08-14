@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class Timer {
+public class BluefloodTimer {
     private String name;
     private Number count;
     private Number rate;

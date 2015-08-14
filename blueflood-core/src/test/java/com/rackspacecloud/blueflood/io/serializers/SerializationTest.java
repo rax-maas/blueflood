@@ -50,11 +50,11 @@ public class SerializationTest {
             Object.class,
             Integer.class,
             Long.class,
-            TimerRollup.class,
+            BluefloodTimerRollup.class,
             //HistogramRollup.class, // todo: not implemented yet.
-            CounterRollup.class,
-            AggregatedSetRollup.class,
-            GaugeRollup.class
+            BluefloodCounterRollup.class,
+            BluefloodSetRollup.class,
+            BluefloodGaugeRollup.class
     };
     
     private final static BasicRollup[] TO_SERIALIZE_BASIC_ROLLUP = new BasicRollup[4];

@@ -6,20 +6,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class AggregatedSetRollup implements Rollup {
+public class BluefloodSetRollup implements Rollup {
     
     private Set<Integer> hashes = new HashSet<Integer>();
     
-    public AggregatedSetRollup() {}
+    public BluefloodSetRollup() {}
     
-    public AggregatedSetRollup withObject(Object o) {
+    public BluefloodSetRollup withObject(Object o) {
         hashes.add(o.hashCode());
         return this;
     }
     
-    public static AggregatedSetRollup buildRollupFromSetRollups(Points<AggregatedSetRollup> input) throws IOException {
-        AggregatedSetRollup rollup = new AggregatedSetRollup();
-        for (Points.Point<AggregatedSetRollup> point : input.getPoints().values()) {
+    public static BluefloodSetRollup buildRollupFromSetRollups(Points<BluefloodSetRollup> input) throws IOException {
+        BluefloodSetRollup rollup = new BluefloodSetRollup();
+        for (Points.Point<BluefloodSetRollup> point : input.getPoints().values()) {
             for (Integer i : point.getData().getHashes()) {
                 rollup.hashes.add(i);
             }
@@ -33,10 +33,10 @@ public class AggregatedSetRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof AggregatedSetRollup)) {
+        if (obj == null || !(obj instanceof BluefloodSetRollup)) {
             return false;
         }
-        AggregatedSetRollup other = (AggregatedSetRollup)obj;
+        BluefloodSetRollup other = (BluefloodSetRollup)obj;
         return hashes.equals(other.hashes);
     }
 

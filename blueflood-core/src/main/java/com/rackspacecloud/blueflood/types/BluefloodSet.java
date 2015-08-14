@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.types;
 
 import java.util.Arrays;
 
-public class AggregatedSet {
+public class BluefloodSet {
     private String name;
     private String[] values;
 

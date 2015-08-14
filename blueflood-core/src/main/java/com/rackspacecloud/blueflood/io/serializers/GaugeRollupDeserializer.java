@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.io.serializers;
 
-import com.rackspacecloud.blueflood.types.GaugeRollup;
+import com.rackspacecloud.blueflood.types.BluefloodGaugeRollup;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.JsonToken;
@@ -24,14 +24,14 @@ import org.codehaus.jackson.map.DeserializationContext;
 
 import java.io.IOException;
 
-public class GaugeRollupDeserializer extends org.codehaus.jackson.map.JsonDeserializer<com.rackspacecloud.blueflood.types.GaugeRollup> {
+public class GaugeRollupDeserializer extends org.codehaus.jackson.map.JsonDeserializer<BluefloodGaugeRollup> {
     @Override
-    public GaugeRollup deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public BluefloodGaugeRollup deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         Integer count = 0;
         Long timestamp = null;
         Number latest = null;
 
-        GaugeRollup g = new GaugeRollup();
+        BluefloodGaugeRollup g = new BluefloodGaugeRollup();
 
         String fieldName = "";
         while (!jp.getCurrentToken().equals(JsonToken.END_OBJECT)) {

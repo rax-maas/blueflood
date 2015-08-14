@@ -50,15 +50,15 @@ public class PreaggregateConversions {
         return metrics;
     }
 
-    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<Counter> counters) {
+    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<BluefloodCounter> counters) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(counters.size());
-        for (Counter counter : counters) {
+        for (BluefloodCounter counter : counters) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, counter.getName().split(NAME_DELIMITER, -1));
             // flushIntervalMillis could be zero (if not specified in the statsD config).
             long sampleCount = flushIntervalMillis > 0
                     ? (long)(counter.getRate().doubleValue() * ((double)flushIntervalMillis/1000d))
                     : 1;
-            Rollup rollup = new CounterRollup()
+            Rollup rollup = new BluefloodCounterRollup()
                     .withCount(resolveNumber(counter.getValue()))
                     .withRate(counter.getRate().doubleValue())
                     .withSampleCount((int)sampleCount);
@@ -68,14 +68,14 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<Gauge> gauges) {
+    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<BluefloodGauge> gauges) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(gauges.size());
-        for (Gauge gauge : gauges) {
+        for (BluefloodGauge gauge : gauges) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, gauge.getName().split(NAME_DELIMITER, -1));
             Points<SimpleNumber> points = new Points<SimpleNumber>();
             points.add(new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(resolveNumber(gauge.getValue()))));
             try {
-                Rollup rollup = GaugeRollup.buildFromRawSamples(points);
+                Rollup rollup = BluefloodGaugeRollup.buildFromRawSamples(points);
                 PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
                 list.add(metric);
             } catch (IOException ex) {
@@ -85,11 +85,11 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<Timer> timers) {
+    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<BluefloodTimer> timers) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(timers.size());
-        for (Timer timer : timers) {
+        for (BluefloodTimer timer : timers) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, timer.getName().split(NAME_DELIMITER, -1));
-            TimerRollup rollup = new TimerRollup()
+            BluefloodTimerRollup rollup = new BluefloodTimerRollup()
                     .withCount(timer.getCount().longValue())
                     .withSampleCount(1)
                     .withAverage(resolveNumber(timer.getAvg() == null ? 0.0d : timer.getAvg()))
@@ -110,11 +110,11 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<AggregatedSet> sets) {
+    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<BluefloodSet> sets) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(sets.size());
-        for (AggregatedSet set : sets) {
+        for (BluefloodSet set : sets) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, set.getName().split(NAME_DELIMITER, -1));
-            AggregatedSetRollup rollup = new AggregatedSetRollup();
+            BluefloodSetRollup rollup = new BluefloodSetRollup();
             for (String value : set.getValues()) {
                 rollup = rollup.withObject(value);
             }

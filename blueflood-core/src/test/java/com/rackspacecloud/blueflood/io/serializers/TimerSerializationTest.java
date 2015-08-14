@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.BluefloodTimerRollup;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class TimerSerializationTest {
     @Test
     public void testV1RoundTrip() throws IOException {
         // build up a Timer
-        TimerRollup r0 = new TimerRollup()
+        BluefloodTimerRollup r0 = new BluefloodTimerRollup()
                 .withSum(Double.valueOf(42))
                 .withCountPS(23.32d)
                 .withAverage(56)
@@ -60,14 +60,14 @@ public class TimerSerializationTest {
 
         BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/timer_version_" + version + ".bin"));
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        TimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
+        BluefloodTimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
         Assert.assertEquals(r0, r1);
     }
 
     @Test
     public void testV2RoundTrip() throws IOException {
         // build up a Timer
-        TimerRollup r0 = new TimerRollup()
+        BluefloodTimerRollup r0 = new BluefloodTimerRollup()
                 .withSum(Double.valueOf(42))
                 .withCountPS(23.32d)
                 .withAverage(56)
@@ -95,7 +95,7 @@ public class TimerSerializationTest {
         while (version <= maxVersion) {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/timer_version_" + version + ".bin"));
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            TimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
+            BluefloodTimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
             Assert.assertEquals(r0, r1);
             count++;
             version++;

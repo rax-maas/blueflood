@@ -3,11 +3,11 @@ package com.rackspacecloud.blueflood.types;
 import java.io.IOException;
 import java.util.Map;
 
-public class GaugeRollup extends BasicRollup {
+public class BluefloodGaugeRollup extends BasicRollup {
     
     Points.Point<SimpleNumber> latestValue;
 
-    public GaugeRollup withLatest(long timestamp, Number value) {
+    public BluefloodGaugeRollup withLatest(long timestamp, Number value) {
         this.latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(value));
         this.setCount(Math.max(1, this.getCount()));
         return this;
@@ -15,10 +15,10 @@ public class GaugeRollup extends BasicRollup {
     
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof GaugeRollup))
+        if (!(obj instanceof BluefloodGaugeRollup))
             return false;
         else {
-            GaugeRollup other = (GaugeRollup)obj;
+            BluefloodGaugeRollup other = (BluefloodGaugeRollup)obj;
             return super.equals(other) && other.latestValue.equals(this.latestValue);
         }
     }
@@ -40,10 +40,10 @@ public class GaugeRollup extends BasicRollup {
         return RollupType.GAUGE;
     }
 
-    public static GaugeRollup buildFromRawSamples(Points<SimpleNumber> input) throws IOException {
+    public static BluefloodGaugeRollup buildFromRawSamples(Points<SimpleNumber> input) throws IOException {
         
         // normal stuff.
-        GaugeRollup rollup = new GaugeRollup();
+        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
         rollup.computeFromSimpleMetrics(input);
         
         // latest value is special.
@@ -57,14 +57,14 @@ public class GaugeRollup extends BasicRollup {
         return rollup;
     }
     
-    public static GaugeRollup buildFromGaugeRollups(Points<GaugeRollup> input) throws IOException {
-        GaugeRollup rollup = new GaugeRollup();
+    public static BluefloodGaugeRollup buildFromGaugeRollups(Points<BluefloodGaugeRollup> input) throws IOException {
+        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
         
         rollup.computeFromRollups(BasicRollup.recast(input, IBasicRollup.class));
         
         Points.Point<SimpleNumber> latest = rollup.latestValue;
         
-        for (Map.Entry<Long, Points.Point<GaugeRollup>> entry : input.getPoints().entrySet()) {
+        for (Map.Entry<Long, Points.Point<BluefloodGaugeRollup>> entry : input.getPoints().entrySet()) {
             if (latest == null || entry.getValue().getTimestamp() > latest.getTimestamp())
                 latest = entry.getValue().getData().latestValue;
         }
@@ -74,8 +74,8 @@ public class GaugeRollup extends BasicRollup {
         return rollup;
     }
     
-    public static GaugeRollup fromBasicRollup(IBasicRollup basic, long timestamp, Number latestValue) {
-        GaugeRollup rollup = new GaugeRollup();
+    public static BluefloodGaugeRollup fromBasicRollup(IBasicRollup basic, long timestamp, Number latestValue) {
+        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
         
         rollup.setCount(basic.getCount());
         rollup.setAverage((Average)basic.getAverage());

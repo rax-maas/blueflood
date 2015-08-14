@@ -230,9 +230,9 @@ public class HttpHandlerIntegrationTest {
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
         final Locator locator = Locator.
                 createLocatorFromPathComponents("333333", "internal", "packets_received");
-        Points<CounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
+        Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
                 locator, new Range(1389211220,1389211240),
-                CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
+                CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }

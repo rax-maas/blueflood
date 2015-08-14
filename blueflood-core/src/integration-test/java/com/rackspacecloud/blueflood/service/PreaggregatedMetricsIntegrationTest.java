@@ -20,12 +20,7 @@ import com.google.common.collect.Lists;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -41,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 // todo: need an easy way to run this. It will require some plumbing changes to the project.
 public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     
-    private TimerRollup simple;
+    private BluefloodTimerRollup simple;
     private static final TimeValue ttl = new TimeValue(24, TimeUnit.HOURS);
     private AstyanaxWriter writer = AstyanaxWriter.getInstance();
     private AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -49,7 +44,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     
     @Before
     public void createFixtures() throws Exception {
-        simple = new TimerRollup()
+        simple = new BluefloodTimerRollup()
             .withSampleCount(1)
             .withSum(100d)
             .withCountPS(101d)
@@ -62,9 +57,9 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         simple.setPercentile("99th", 110);
     }
     
-    private static Points<TimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {
-        ColumnFamily<Locator, Long> cf = CassandraModel.getColumnFamily(TimerRollup.class, gran);
-        return reader.getDataToRoll(TimerRollup.class, locator, range, cf);
+    private static Points<BluefloodTimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {
+        ColumnFamily<Locator, Long> cf = CassandraModel.getColumnFamily(BluefloodTimerRollup.class, gran);
+        return reader.getDataToRoll(BluefloodTimerRollup.class, locator, range, cf);
     }
     
     @Test
@@ -75,7 +70,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
 
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         
-        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<BluefloodTimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
 
         Assert.assertEquals(1, points.getPoints().size());
         Assert.assertEquals(metric.getMetricValue(), points.getPoints().get(ts).getData());
@@ -91,27 +86,27 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         
         // read the raw data.
-        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<BluefloodTimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
         Assert.assertEquals(1, points.getPoints().size());
         
         // create the rollup
-        final TimerRollup rollup = TimerRollup.buildRollupFromTimerRollups(points);
+        final BluefloodTimerRollup rollup = BluefloodTimerRollup.buildRollupFromTimerRollups(points);
         // should be the same as simple
         Assert.assertEquals(simple, rollup);
         
         // assemble it into points, but give it a new timestamp.
-        points = new Points<TimerRollup>() {{
-            add(new Point<TimerRollup>(rollupTs, rollup));
+        points = new Points<BluefloodTimerRollup>() {{
+            add(new Point<BluefloodTimerRollup>(rollupTs, rollup));
         }};
         List<IMetric> toWrite = toIMetricsList(locator, points);
         writer.insertMetrics(toWrite, CassandraModel.CF_METRICS_PREAGGREGATED_5M);
         
         // we should be able to read that now.
-        Points<TimerRollup> rollups5m = reader.getDataToRoll(TimerRollup.class, locator, new Range(rollupTs, rollupTs+1), CassandraModel.CF_METRICS_PREAGGREGATED_5M);
+        Points<BluefloodTimerRollup> rollups5m = reader.getDataToRoll(BluefloodTimerRollup.class, locator, new Range(rollupTs, rollupTs+1), CassandraModel.CF_METRICS_PREAGGREGATED_5M);
         
         Assert.assertEquals(1, rollups5m.getPoints().size());
         
-        TimerRollup rollup5m = rollups5m.getPoints().values().iterator().next().getData();
+        BluefloodTimerRollup rollup5m = rollups5m.getPoints().values().iterator().next().getData();
         // rollups should be identical since one is just a coarse rollup of the other.
         Assert.assertEquals(rollup, rollup5m);
     }
@@ -126,7 +121,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         writer.insertMetrics(Lists.newArrayList(metric), CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         
         // read it quickly.
-        Points<TimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
+        Points<BluefloodTimerRollup> points = PreaggregatedMetricsIntegrationTest.getTimerDataToRoll(reader, locator, new Range(ts, ts+1), Granularity.FULL);
         Assert.assertEquals(1, points.getPoints().size());
         
         // let it time out.
@@ -137,9 +132,9 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(0, points.getPoints().size());
     }
     
-    private static List<IMetric> toIMetricsList(Locator locator, Points<TimerRollup> points) {
+    private static List<IMetric> toIMetricsList(Locator locator, Points<BluefloodTimerRollup> points) {
         List<IMetric> list = new ArrayList<IMetric>();
-        for (Map.Entry<Long, Points.Point<TimerRollup>> entry : points.getPoints().entrySet()) {
+        for (Map.Entry<Long, Points.Point<BluefloodTimerRollup>> entry : points.getPoints().entrySet()) {
             PreaggregatedMetric metric = new PreaggregatedMetric(entry.getKey(), locator, ttl, entry.getValue().getData());
             list.add(metric);
         }

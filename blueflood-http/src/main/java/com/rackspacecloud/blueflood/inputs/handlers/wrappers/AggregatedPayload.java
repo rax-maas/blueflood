@@ -31,10 +31,10 @@ public class AggregatedPayload {
     // this field is optional
     private long flushInterval = 0;
     
-    private Gauge[] gauges;
-    private Counter[] counters;
-    private Timer[] timers;
-    private AggregatedSet[] sets;
+    private BluefloodGauge[] gauges;
+    private BluefloodCounter[] counters;
+    private BluefloodTimer[] timers;
+    private BluefloodSet[] sets;
     
     private Map<String, Object> metadata;
     
@@ -49,10 +49,10 @@ public class AggregatedPayload {
     
     public long getFlushIntervalMillis() { return flushInterval; }
     
-    public Collection<Gauge> getGauges() { return safeAsList(gauges); }
-    public Collection<Counter> getCounters() { return safeAsList(counters); }
-    public Collection<Timer> getTimers() { return safeAsList(timers); }
-    public Collection<AggregatedSet> getSets() { return safeAsList(sets); }
+    public Collection<BluefloodGauge> getGauges() { return safeAsList(gauges); }
+    public Collection<BluefloodCounter> getCounters() { return safeAsList(counters); }
+    public Collection<BluefloodTimer> getTimers() { return safeAsList(timers); }
+    public Collection<BluefloodSet> getSets() { return safeAsList(sets); }
 
     //@SafeVarargs (1.7 only doge)
     public static <T> List<T> safeAsList(final T... a) {

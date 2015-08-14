@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
-public class Gauge {
+public class BluefloodGauge {
     private String name;
     private Number value;
 

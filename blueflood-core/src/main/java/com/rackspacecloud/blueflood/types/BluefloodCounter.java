@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.types;
 
-public class Counter {
+public class BluefloodCounter {
     private String name;
     private Number value;
     private Number rate;
