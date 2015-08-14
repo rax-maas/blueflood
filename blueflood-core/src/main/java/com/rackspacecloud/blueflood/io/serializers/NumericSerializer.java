@@ -24,15 +24,8 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.types.AbstractRollupStat;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,7 +46,7 @@ public class NumericSerializer {
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
     public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
-    public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
+    public static AbstractSerializer<AggregatedSetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     public static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
@@ -92,7 +85,7 @@ public class NumericSerializer {
             return (AbstractSerializer<T>) CounterRollupInstance;
         else if (type.equals(GaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
-        else if (type.equals(SetRollup.class))
+        else if (type.equals(AggregatedSetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
@@ -227,7 +220,7 @@ public class NumericSerializer {
                 break;
             case Type.B_SET:
                 sz += 1; // version
-                SetRollup setRollup = (SetRollup)o;
+                AggregatedSetRollup setRollup = (AggregatedSetRollup)o;
                 sz += CodedOutputStream.computeRawVarint32Size(setRollup.getCount());
                 for (Integer i : setRollup.getHashes()) {
                     sz += CodedOutputStream.computeRawVarint32Size(i);
@@ -324,7 +317,7 @@ public class NumericSerializer {
         return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
     
-    private static void serializeSetRollup(SetRollup rollup, byte[] buf) throws IOException {
+    private static void serializeSetRollup(AggregatedSetRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         SetRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_SET_ROLLUP);
@@ -334,9 +327,9 @@ public class NumericSerializer {
         }
     }
     
-    private static SetRollup deserializeV1SetRollup(CodedInputStream in) throws IOException {
+    private static AggregatedSetRollup deserializeV1SetRollup(CodedInputStream in) throws IOException {
         int count = in.readRawVarint32();
-        SetRollup rollup = new SetRollup();
+        AggregatedSetRollup rollup = new AggregatedSetRollup();
         while (count-- > 0) {
             rollup = rollup.withObject(in.readRawVarint32());
         }
@@ -462,7 +455,7 @@ public class NumericSerializer {
             return Type.B_TIMER;
         else if (o instanceof GaugeRollup)
             return Type.B_GAUGE;
-        else if (o instanceof SetRollup)
+        else if (o instanceof AggregatedSetRollup)
             return Type.B_SET;
         else if (o instanceof BasicRollup)
             return Type.B_ROLLUP;
@@ -670,10 +663,10 @@ public class NumericSerializer {
         }
     }
     
-    public static class SetRollupSerializer extends AbstractSerializer<SetRollup> {
+    public static class SetRollupSerializer extends AbstractSerializer<AggregatedSetRollup> {
         
         @Override
-        public ByteBuffer toByteBuffer(SetRollup obj) {
+        public ByteBuffer toByteBuffer(AggregatedSetRollup obj) {
             try {
                 byte type = typeOf(obj);
                 byte[] buf = new byte[sizeOf(obj, type)];
@@ -685,7 +678,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public SetRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public AggregatedSetRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();

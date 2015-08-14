@@ -82,7 +82,7 @@ public class RollupEventSerializerTest {
 
     @Test
     public void testSetRollupSerialization() {
-        final SetRollup rollup0 = new SetRollup()
+        final AggregatedSetRollup rollup0 = new AggregatedSetRollup()
                 .withObject(10)
                 .withObject(20)
                 .withObject(30);

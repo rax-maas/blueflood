@@ -71,11 +71,11 @@ public class IMetricSerializerTest {
     public void testSetSerialization() throws IOException {
         String setValue = "{\"type\":\"set\",\"count\":9,\"hashes\":[746007989,1875251108,98262,103159993,1727114331,-1034140067,98699,1062516268,99644]}";
 
-        SetRollup setDeserialized = mapper.readValue(setValue, SetRollup.class);
+        AggregatedSetRollup setDeserialized = mapper.readValue(setValue, AggregatedSetRollup.class);
         String setSerialized = mapper.writeValueAsString(setDeserialized);
         Assert.assertEquals(setValue, setSerialized);
 
-        SetRollup setReserialized = mapper.readValue(setSerialized, SetRollup.class);
+        AggregatedSetRollup setReserialized = mapper.readValue(setSerialized, AggregatedSetRollup.class);
         Assert.assertEquals(setDeserialized, setReserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, setReserialized);

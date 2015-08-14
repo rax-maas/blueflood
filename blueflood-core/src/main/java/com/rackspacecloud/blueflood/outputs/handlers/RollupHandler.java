@@ -300,7 +300,7 @@ public class RollupHandler {
             return Rollup.BasicFromRaw.compute(points);
         } else if (rollupTypeClass.equals(CounterRollup.class)) {
             return Rollup.CounterFromCounter.compute(points);
-        } else if (rollupTypeClass.equals(SetRollup.class)) {
+        } else if (rollupTypeClass.equals(AggregatedSetRollup.class)) {
             return Rollup.SetFromSet.compute(points);
         } else if (rollupTypeClass.equals(TimerRollup.class)) {
             return Rollup.TimerFromTimer.compute(points);

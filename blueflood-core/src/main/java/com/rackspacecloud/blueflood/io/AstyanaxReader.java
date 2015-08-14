@@ -274,7 +274,7 @@ public class AstyanaxReader extends AstyanaxIO {
             // consider a method for this.  getSerializer(CF, TYPE);
             if (type.equals(TimerRollup.class)) {
                 serializer = NumericSerializer.timerRollupInstance;
-            } else if (type.equals(SetRollup.class)) {
+            } else if (type.equals(AggregatedSetRollup.class)) {
                 serializer = NumericSerializer.setRollupInstance;
             } else if (type.equals(GaugeRollup.class)) {
                 serializer = NumericSerializer.gaugeRollupInstance;

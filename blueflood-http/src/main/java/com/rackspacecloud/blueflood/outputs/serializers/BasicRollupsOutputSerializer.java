@@ -18,12 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -112,8 +107,8 @@ public interface BasicRollupsOutputSerializer<T> {
                     return ((TimerRollup) rollup).getCount();
                 else if (rollup instanceof CounterRollup)
                     return ((CounterRollup) rollup).getCount();
-                else if (rollup instanceof SetRollup)
-                    return ((SetRollup) rollup).getCount();
+                else if (rollup instanceof AggregatedSetRollup)
+                    return ((AggregatedSetRollup) rollup).getCount();
                 else
                     // gauge.
                     throw new Exception(String.format("numPoints not supported for this type: %s", rollup.getClass().getSimpleName()));

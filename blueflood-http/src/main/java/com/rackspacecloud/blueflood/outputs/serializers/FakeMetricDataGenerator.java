@@ -18,15 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
-import com.bigml.histogram.Target;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,12 +96,12 @@ public class FakeMetricDataGenerator {
         return points;
     }
     
-    public static Points<SetRollup> generateFakeSetRollupPoints() {
-        Points<SetRollup> points = new Points<SetRollup>();
+    public static Points<AggregatedSetRollup> generateFakeSetRollupPoints() {
+        Points<AggregatedSetRollup> points = new Points<AggregatedSetRollup>();
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            Points.Point<SetRollup> point = new Points.Point<SetRollup>(timeNow, new SetRollup()
+            Points.Point<AggregatedSetRollup> point = new Points.Point<AggregatedSetRollup>(timeNow, new AggregatedSetRollup()
                     .withObject(i)
                     .withObject(i % 2)
                     .withObject(i / 2));

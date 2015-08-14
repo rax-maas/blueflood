@@ -19,14 +19,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -54,7 +47,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
                 filterStats = PlotRequestParser.DEFAULT_GAUGE;
             else if (dataClass.equals(CounterRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_COUNTER;
-            else if (dataClass.equals(SetRollup.class))
+            else if (dataClass.equals(AggregatedSetRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_SET;
             else if (dataClass.equals(TimerRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_TIMER;
@@ -114,8 +107,8 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         } else if (point.getData() instanceof Boolean) {
             numPoints = 1;
             filterStatsObject = getFilteredStatsForBoolean((Boolean) point.getData());
-        } else if (point.getData() instanceof SetRollup) {
-            SetRollup rollup = (SetRollup)point.getData();
+        } else if (point.getData() instanceof AggregatedSetRollup) {
+            AggregatedSetRollup rollup = (AggregatedSetRollup)point.getData();
             numPoints += rollup.getCount();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
         } else if (point.getData() instanceof TimerRollup) {

@@ -37,8 +37,8 @@ public class RollupSerializationHelper {
             return handleCounterRollup((CounterRollup)rollup);
         else if (rollup instanceof TimerRollup)
             return handleTimerRollup((TimerRollup)rollup);
-        else if (rollup instanceof SetRollup)
-            return handleSetRollup((SetRollup)rollup);
+        else if (rollup instanceof AggregatedSetRollup)
+            return handleSetRollup((AggregatedSetRollup)rollup);
         else if (rollup instanceof GaugeRollup)
             return handleGaugeRollup((GaugeRollup)rollup);
         else if (rollup instanceof BasicRollup)
@@ -90,7 +90,7 @@ public class RollupSerializationHelper {
         return handleBasicRollup(rollup, rollupNode);
     }
 
-    private static ObjectNode handleSetRollup(SetRollup rollup) {
+    private static ObjectNode handleSetRollup(AggregatedSetRollup rollup) {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         rollupNode.put("count", rollup.getCount());
         return rollupNode;

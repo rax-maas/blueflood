@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -93,7 +92,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            SetRollup rollup = new SetRollup().withObject(i);
+            AggregatedSetRollup rollup = new AggregatedSetRollup().withObject(i);
             metric = new PreaggregatedMetric(time, setLocator, ttl, rollup);
             preaggregatedMetrics.add(metric);
             
@@ -158,7 +157,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testSetRollup() throws IOException {
-        testRolledupMetric(setLocator, SetRollup.class, SetRollup.class);
+        testRolledupMetric(setLocator, AggregatedSetRollup.class, AggregatedSetRollup.class);
     }
     
     private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 

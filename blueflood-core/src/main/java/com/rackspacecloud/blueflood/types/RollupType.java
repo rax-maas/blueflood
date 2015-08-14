@@ -25,7 +25,7 @@ public enum RollupType {
     }
     
     public static RollupType fromRollup(Rollup value) {
-        if (value instanceof SetRollup)
+        if (value instanceof AggregatedSetRollup)
             return RollupType.SET;
         else if (value instanceof TimerRollup)
             return RollupType.TIMER;
@@ -50,7 +50,7 @@ public enum RollupType {
         else if (type == RollupType.TIMER)
             return TimerRollup.class;
         else if (type == RollupType.SET)
-            return SetRollup.class;
+            return AggregatedSetRollup.class;
         else if (type == RollupType.GAUGE)
             return GaugeRollup.class;
         else if (type == RollupType.BF_BASIC && gran == Granularity.FULL)

@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.inputs.handlers.wrappers;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpStatsDIngestionHandler;
+import com.rackspacecloud.blueflood.types.Timer;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +65,7 @@ public class TestGsonParsing {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
         
         Assert.assertNotNull(payload);
-        Map<String, AggregatedPayload.Timer> timers = asMap(payload.getTimers());
+        Map<String, Timer> timers = asMap(payload.getTimers());
         
         Assert.assertEquals(4, timers.get("4444444.T1s").getHistogram().size());
         Assert.assertEquals(11, timers.get("3333333.T29s").getHistogram().size());
@@ -80,7 +81,7 @@ public class TestGsonParsing {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
         
         Assert.assertNotNull(payload);
-        Map<String, AggregatedPayload.Timer> timers = asMap(payload.getTimers());
+        Map<String, Timer> timers = asMap(payload.getTimers());
         
         Assert.assertEquals(5, timers.get("4444444.T1s").getPercentiles().size());
         Assert.assertEquals(5, timers.get("3333333.T29s").getPercentiles().size());
@@ -88,9 +89,9 @@ public class TestGsonParsing {
         Assert.assertEquals(5, timers.get("3333333.T200ms").getPercentiles().size());
     }
     
-    private static Map<String, AggregatedPayload.Timer> asMap(Collection<AggregatedPayload.Timer> timers) {
-        Map<String, AggregatedPayload.Timer> map = new HashMap<String, AggregatedPayload.Timer>(timers.size());
-        for (AggregatedPayload.Timer timer : timers)
+    private static Map<String, Timer> asMap(Collection<Timer> timers) {
+        Map<String, Timer> map = new HashMap<String, Timer>(timers.size());
+        for (Timer timer : timers)
             map.put(timer.getName(), timer);
         return map;
     }

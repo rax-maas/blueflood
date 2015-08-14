@@ -18,16 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.io.IOError;
@@ -59,9 +50,9 @@ public class PreaggregateConversions {
         return metrics;
     }
 
-    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<AggregatedPayload.Counter> counters) {
+    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<Counter> counters) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(counters.size());
-        for (AggregatedPayload.Counter counter : counters) {
+        for (Counter counter : counters) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, counter.getName().split(NAME_DELIMITER, -1));
             // flushIntervalMillis could be zero (if not specified in the statsD config).
             long sampleCount = flushIntervalMillis > 0
@@ -77,9 +68,9 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<AggregatedPayload.Gauge> gauges) {
+    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<Gauge> gauges) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(gauges.size());
-        for (AggregatedPayload.Gauge gauge : gauges) {
+        for (Gauge gauge : gauges) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, gauge.getName().split(NAME_DELIMITER, -1));
             Points<SimpleNumber> points = new Points<SimpleNumber>();
             points.add(new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(resolveNumber(gauge.getValue()))));
@@ -94,9 +85,9 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<AggregatedPayload.Timer> timers) {
+    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<Timer> timers) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(timers.size());
-        for (AggregatedPayload.Timer timer : timers) {
+        for (Timer timer : timers) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, timer.getName().split(NAME_DELIMITER, -1));
             TimerRollup rollup = new TimerRollup()
                     .withCount(timer.getCount().longValue())
@@ -107,7 +98,7 @@ public class PreaggregateConversions {
                     .withCountPS(timer.getRate() == null ? 0.0d : timer.getRate().doubleValue())
                     .withSum(timer.getSum() == null ? 0L : timer.getSum().doubleValue())
                     .withVariance(Math.pow(timer.getStd() == null ? 0.0d : timer.getStd().doubleValue(), 2d));
-            for (Map.Entry<String, AggregatedPayload.Percentile> entry : timer.getPercentiles().entrySet()) {
+            for (Map.Entry<String, Percentile> entry : timer.getPercentiles().entrySet()) {
                 // throw away max and sum.
                 if (entry.getValue().getAvg() != null) {
                     rollup.setPercentile(entry.getKey(), resolveNumber(entry.getValue().getAvg()));
@@ -119,11 +110,11 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<AggregatedPayload.AggregatedSet> sets) {
+    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<AggregatedSet> sets) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(sets.size());
-        for (AggregatedPayload.AggregatedSet set : sets) {
+        for (AggregatedSet set : sets) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, set.getName().split(NAME_DELIMITER, -1));
-            SetRollup rollup = new SetRollup();
+            AggregatedSetRollup rollup = new AggregatedSetRollup();
             for (String value : set.getValues()) {
                 rollup = rollup.withObject(value);
             }

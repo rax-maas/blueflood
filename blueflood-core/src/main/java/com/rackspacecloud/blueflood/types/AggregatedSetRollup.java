@@ -6,20 +6,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class SetRollup implements Rollup {
+public class AggregatedSetRollup implements Rollup {
     
     private Set<Integer> hashes = new HashSet<Integer>();
     
-    public SetRollup() {}
+    public AggregatedSetRollup() {}
     
-    public SetRollup withObject(Object o) {
+    public AggregatedSetRollup withObject(Object o) {
         hashes.add(o.hashCode());
         return this;
     }
     
-    public static SetRollup buildRollupFromSetRollups(Points<SetRollup> input) throws IOException {
-        SetRollup rollup = new SetRollup();
-        for (Points.Point<SetRollup> point : input.getPoints().values()) {
+    public static AggregatedSetRollup buildRollupFromSetRollups(Points<AggregatedSetRollup> input) throws IOException {
+        AggregatedSetRollup rollup = new AggregatedSetRollup();
+        for (Points.Point<AggregatedSetRollup> point : input.getPoints().values()) {
             for (Integer i : point.getData().getHashes()) {
                 rollup.hashes.add(i);
             }
@@ -33,10 +33,10 @@ public class SetRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof SetRollup)) {
+        if (obj == null || !(obj instanceof AggregatedSetRollup)) {
             return false;
         }
-        SetRollup other = (SetRollup)obj;
+        AggregatedSetRollup other = (AggregatedSetRollup)obj;
         return hashes.equals(other.hashes);
     }
 

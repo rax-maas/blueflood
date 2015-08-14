@@ -57,7 +57,7 @@ public class IMetricSerializer {
     @JsonSubTypes({
             @JsonSubTypes.Type(value = CounterRollup.class, name = "counter"),
             @JsonSubTypes.Type(value = GaugeRollup.class, name = "gauge"),
-            @JsonSubTypes.Type(value = SetRollup.class, name = "set"),
+            @JsonSubTypes.Type(value = AggregatedSetRollup.class, name = "set"),
             @JsonSubTypes.Type(value = TimerRollup.class, name = "timer"),
             @JsonSubTypes.Type(value = BasicRollup.class, name = "basic")
     })

@@ -89,10 +89,10 @@ public interface Rollup {
         }
     };
     
-    public static final Type<SetRollup, SetRollup> SetFromSet = new Type<SetRollup, SetRollup>() {
+    public static final Type<AggregatedSetRollup, AggregatedSetRollup> SetFromSet = new Type<AggregatedSetRollup, AggregatedSetRollup>() {
         @Override
-        public SetRollup compute(Points<SetRollup> input) throws IOException {
-            return SetRollup.buildRollupFromSetRollups(input);
+        public AggregatedSetRollup compute(Points<AggregatedSetRollup> input) throws IOException {
+            return AggregatedSetRollup.buildRollupFromSetRollups(input);
         }
     };
 
