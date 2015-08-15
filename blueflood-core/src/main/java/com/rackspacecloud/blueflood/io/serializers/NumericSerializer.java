@@ -335,9 +335,9 @@ public class NumericSerializer {
     private static EnumRollup deserializeV1EnumRollup(CodedInputStream in) throws IOException {
         int count = in.readRawVarint32();
         EnumRollup rollup = new EnumRollup();
-        //while (count-- > 0) {
-        //    rollup = rollup.withObject(in.readRawVarint32());
-        //}
+        while (count-- > 0) {
+            rollup = rollup.withObject(in.readRawVarint32(), in.readRawVarint64());
+        }
         return rollup;
     }
     
