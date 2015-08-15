@@ -4,18 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnumRollup implements Rollup {
-    private String name;
     private Map<Integer, Number> en2Value = new HashMap<Integer, Number>();
 
-    public EnumRollup withObject(String name, String valueName, Number value) {
-        this.name = name;
-        this.en2Value.put(valueName.hashCode(), value);
+    public EnumRollup withObject(Integer valueNameHashcode, Number value) {
+        this.en2Value.put(valueNameHashcode, value);
         return this;
     }
-
-    public EnumRollup() {
-    }
-
 
     @Override
     public Boolean hasData() {
