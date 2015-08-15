@@ -1,28 +1,16 @@
 package com.rackspacecloud.blueflood.types;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EnumRollup implements Rollup {
-    String name;
-    HashSet<Integer> hashes =  new HashSet<Integer>();
+    private String name;
+    private Map<Integer, Number> en2Value = new HashMap<Integer, Number>();
 
     public EnumRollup withObject(String name, String valueName, Number value) {
         this.name = name;
-        EnumValueRollup enumValueRollup = new EnumValueRollup(valueName, value);
-
-        hashes.add(enumValueRollup.hashCode());
+        this.en2Value.put(valueName.hashCode(), value);
         return this;
-    }
-
-    private class EnumValueRollup {
-        String valueName;
-        Number value;
-
-        public EnumValueRollup(String valueName, Number value) {
-            this.valueName = valueName;
-            this.value = value;
-        }
     }
 
     public EnumRollup() {
@@ -40,11 +28,11 @@ public class EnumRollup implements Rollup {
     }
 
     public int getCount() {
-        return hashes.size();
+        return en2Value.size();
     }
 
-    public Set<Integer> getHashes() {
-        return this.hashes;
+    public Map<Integer, Number> getHashes() {
+        return this.en2Value;
     }
 
 }
