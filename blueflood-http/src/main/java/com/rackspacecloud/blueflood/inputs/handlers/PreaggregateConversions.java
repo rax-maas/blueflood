@@ -130,7 +130,7 @@ public class PreaggregateConversions {
         for (Bundle.Enum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
             EnumRollup rollup = new EnumRollup();
-            rollup = rollup.withObject(en.getValue().hashCode(), 1);
+            rollup = rollup.withObject((long)en.getValue().hashCode(), 1L);
             PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
             list.add(metric);
         }
