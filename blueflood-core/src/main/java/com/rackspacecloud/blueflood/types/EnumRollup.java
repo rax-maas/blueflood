@@ -29,4 +29,13 @@ public class EnumRollup implements Rollup {
         return this.en2Value;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof EnumRollup)) {
+            return false;
+        }
+        EnumRollup other = (EnumRollup)obj;
+        return en2Value.equals(other.en2Value);
+    }
+
 }
