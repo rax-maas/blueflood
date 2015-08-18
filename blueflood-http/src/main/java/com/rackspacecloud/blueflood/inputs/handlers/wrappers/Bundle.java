@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers.wrappers;
 
+import com.rackspacecloud.blueflood.types.BluefloodEnum;
+
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +38,7 @@ public class Bundle {
     private Counter[] counters;
     private Timer[] timers;
     private Set[] sets;
-    private Enum[] enums;
+    private BluefloodEnum[] enums;
     
     private Map<String, Object> metadata;
     
@@ -55,8 +57,8 @@ public class Bundle {
     public Collection<Counter> getCounters() { return safeAsList(counters); }
     public Collection<Timer> getTimers() { return safeAsList(timers); }
     public Collection<Set> getSets() { return safeAsList(sets); }
-    public Collection<Enum> getEnums() { return safeAsList(enums);}
-    
+    public Collection<BluefloodEnum> getEnums() { return safeAsList(enums);}
+
     public static class Gauge {
         private String name;
         private Number value;
@@ -117,14 +119,6 @@ public class Bundle {
         public Number getAvg() { return avg; }
         public Number getMax() { return max; }
         public Number getSum() { return sum; }
-    }
-
-    public static class Enum {
-        private String name;
-        private String value;
-
-        public String getName() { return name; }
-        public String getValue() { return value; }
     }
 
     //@SafeVarargs (1.7 only doge)

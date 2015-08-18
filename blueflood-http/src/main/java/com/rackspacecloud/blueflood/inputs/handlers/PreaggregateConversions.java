@@ -125,9 +125,9 @@ public class PreaggregateConversions {
         return list;
     }
 
-    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<Bundle.Enum> enums) {
+    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<BluefloodEnum> enums) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
-        for (Bundle.Enum en : enums) {
+        for (BluefloodEnum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
             EnumRollup rollup = new EnumRollup();
             rollup = rollup.withObject((long)en.getValue().hashCode(), 1L);
