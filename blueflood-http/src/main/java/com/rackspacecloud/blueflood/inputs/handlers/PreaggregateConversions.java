@@ -129,7 +129,7 @@ public class PreaggregateConversions {
 
     public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<Enum> enums) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
-        for (Enum en : enums) {
+        for (BluefloodEnum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
             EnumRollup rollup = new EnumRollup();
             rollup = rollup.withObject((long)en.getValue().hashCode(), 1L);
