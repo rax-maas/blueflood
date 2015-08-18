@@ -290,12 +290,12 @@ public class NumericSerializer {
             case Type.B_ENUM:
                 sz += 1; // version
                 EnumRollup en = (EnumRollup)o;
-                Map<Integer, Number> enValues = en.getHashes();
+                Map<Long, Long> enValues = en.getHashes();
                 sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
-                for (Integer enName  : enValues.keySet()) {
-                    sz+=CodedOutputStream.computeRawVarint32Size(enName);
-                    Number enValue = enValues.get(enName);
-                    sz+= CodedOutputStream.computeRawVarint64Size(enValue.longValue());
+                for (Long enName  : enValues.keySet()) {
+                    sz+=CodedOutputStream.computeRawVarint64Size(enName);
+                    Long enValue = enValues.get(enName);
+                    sz+= CodedOutputStream.computeRawVarint64Size(enValue);
                 }
                 return sz;
             case Type.B_COUNTER:
@@ -335,7 +335,7 @@ public class NumericSerializer {
         int count = in.readRawVarint32();
         EnumRollup rollup = new EnumRollup();
         while (count-- > 0) {
-            rollup = rollup.withObject(in.readRawVarint32(), in.readRawVarint64());
+            rollup = rollup.withObject(in.readRawVarint64(), in.readRawVarint64());
         }
         return rollup;
     }
@@ -461,10 +461,10 @@ public class NumericSerializer {
         EnumRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
         out.writeRawVarint32(rollup.getCount());
-        Map<Integer, Number> enValues = rollup.getHashes();
-        for (Integer i : enValues.keySet()) {
-            out.writeRawVarint32(i);
-            out.writeRawVarint64(enValues.get(i).longValue());
+        Map<Long, Long> enValues = rollup.getHashes();
+        for (Long i : enValues.keySet()) {
+            out.writeRawVarint64(i);
+            out.writeRawVarint64(enValues.get(i));
         }
     }
     
