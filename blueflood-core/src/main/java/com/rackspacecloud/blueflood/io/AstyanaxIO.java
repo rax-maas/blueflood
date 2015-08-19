@@ -94,7 +94,6 @@ public class AstyanaxIO {
         final ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl("MyConnectionPool")
                 .setPort(port)
                 .setSocketTimeout(timeout)
-                .setInitConnsPerHost(connsPerHost)
                 .setMaxConnsPerHost(connsPerHost)
                 .setMaxBlockedThreadsPerHost(5)
                 .setMaxTimeoutWhenExhausted(timeoutWhenExhausted)
