@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -71,19 +70,19 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             long time = i * 30000;
             IMetric metric;
             
-            CounterRollup counter = new CounterRollup()
+            BluefloodCounterRollup counter = new BluefloodCounterRollup()
                     .withCount(i)
                     .withRate(i * i)
                     .withSampleCount(1);
             metric = new PreaggregatedMetric(time, counterLocator, ttl, counter);
             preaggregatedMetrics.add(metric);
 
-            GaugeRollup gauge = new GaugeRollup()
+            BluefloodGaugeRollup gauge = new BluefloodGaugeRollup()
                     .withLatest(time, i);
             metric = new PreaggregatedMetric(time, gaugeLocator, ttl, gauge);
             preaggregatedMetrics.add(metric);
             
-            TimerRollup timer = new TimerRollup()
+            BluefloodTimerRollup timer = new BluefloodTimerRollup()
                     .withCount(5 * i + 1)
                     .withMaxValue(100 - i)
                     .withMinValue(100 - i - i)
@@ -93,7 +92,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             metric = new PreaggregatedMetric(time, timerLocator, ttl, timer);
             preaggregatedMetrics.add(metric);
             
-            SetRollup rollup = new SetRollup().withObject(i);
+            BluefloodSetRollup rollup = new BluefloodSetRollup().withObject(i);
             metric = new PreaggregatedMetric(time, setLocator, ttl, rollup);
             preaggregatedMetrics.add(metric);
             
@@ -143,22 +142,22 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     @Test
     public void testCounterRollup() throws IOException {
-        testRolledupMetric(counterLocator, CounterRollup.class, CounterRollup.class);
+        testRolledupMetric(counterLocator, BluefloodCounterRollup.class, BluefloodCounterRollup.class);
     }
     
     @Test
     public void testGaugeRollup() throws IOException {
-        testRolledupMetric(gaugeLocator, GaugeRollup.class, GaugeRollup.class);
+        testRolledupMetric(gaugeLocator, BluefloodGaugeRollup.class, BluefloodGaugeRollup.class);
     }
     
     @Test
     public void testTimerRollup() throws IOException {
-        testRolledupMetric(timerLocator, TimerRollup.class, TimerRollup.class);
+        testRolledupMetric(timerLocator, BluefloodTimerRollup.class, BluefloodTimerRollup.class);
     }
     
     @Test
     public void testSetRollup() throws IOException {
-        testRolledupMetric(setLocator, SetRollup.class, SetRollup.class);
+        testRolledupMetric(setLocator, BluefloodSetRollup.class, BluefloodSetRollup.class);
     }
     
     private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 

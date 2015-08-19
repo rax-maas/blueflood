@@ -33,14 +33,14 @@ public class RollupSerializationHelper {
     private static final Logger log = LoggerFactory.getLogger(RollupSerializationHelper.class);
 
     public static ObjectNode rollupToJson(Rollup rollup) {
-        if (rollup instanceof CounterRollup)
-            return handleCounterRollup((CounterRollup)rollup);
-        else if (rollup instanceof TimerRollup)
-            return handleTimerRollup((TimerRollup)rollup);
-        else if (rollup instanceof SetRollup)
-            return handleSetRollup((SetRollup)rollup);
-        else if (rollup instanceof GaugeRollup)
-            return handleGaugeRollup((GaugeRollup)rollup);
+        if (rollup instanceof BluefloodCounterRollup)
+            return handleCounterRollup((BluefloodCounterRollup)rollup);
+        else if (rollup instanceof BluefloodTimerRollup)
+            return handleTimerRollup((BluefloodTimerRollup)rollup);
+        else if (rollup instanceof BluefloodSetRollup)
+            return handleSetRollup((BluefloodSetRollup)rollup);
+        else if (rollup instanceof BluefloodGaugeRollup)
+            return handleGaugeRollup((BluefloodGaugeRollup)rollup);
         else if (rollup instanceof BasicRollup)
             return handleBasicRollup((BasicRollup)rollup, JsonNodeFactory.instance.objectNode());
         else if (rollup instanceof HistogramRollup)
@@ -83,20 +83,20 @@ public class RollupSerializationHelper {
         return rollupNode;
     }
 
-    private static ObjectNode handleGaugeRollup(GaugeRollup rollup) {
+    private static ObjectNode handleGaugeRollup(BluefloodGaugeRollup rollup) {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         SimpleNumber rollupValue = rollup.getLatestValue();
         rollupNode.put("latestVal", rollupValue.getDataType() == (SimpleNumber.Type.DOUBLE) ? rollupValue.getValue().doubleValue() : rollupValue.getValue().longValue());
         return handleBasicRollup(rollup, rollupNode);
     }
 
-    private static ObjectNode handleSetRollup(SetRollup rollup) {
+    private static ObjectNode handleSetRollup(BluefloodSetRollup rollup) {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         rollupNode.put("count", rollup.getCount());
         return rollupNode;
     }
 
-    private static ObjectNode handleTimerRollup(TimerRollup rollup) {
+    private static ObjectNode handleTimerRollup(BluefloodTimerRollup rollup) {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         rollupNode.put("sum", rollup.getSum());
         rollupNode.put("rate", rollup.getRate());
@@ -104,7 +104,7 @@ public class RollupSerializationHelper {
         return handleBasicRollup(rollup, rollupNode);
     }
 
-    private static ObjectNode handleCounterRollup(CounterRollup rollup) {
+    private static ObjectNode handleCounterRollup(BluefloodCounterRollup rollup) {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         rollupNode.put("count", (rollup.getCount() instanceof Float || rollup.getCount() instanceof Double) ? rollup.getCount().doubleValue() : rollup.getCount().longValue());
         rollupNode.put("sampleCount", rollup.getSampleCount());

@@ -154,8 +154,8 @@ public class CassandraModel {
             return CF_NAME_TO_CF.get(granularity);
         } else if (type.equals(HistogramRollup.class)) {
             return HIST_GRAN_TO_CF.get(granularity);
-        } else if (type.equals(SetRollup.class) || type.equals(TimerRollup.class) || type.equals(GaugeRollup.class) ||
-                type.equals(CounterRollup.class)) {
+        } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
+                type.equals(BluefloodCounterRollup.class)) {
             return PREAG_GRAN_TO_CF.get(granularity);
         } else {
             throw new RuntimeException("Unsupported rollup type.");

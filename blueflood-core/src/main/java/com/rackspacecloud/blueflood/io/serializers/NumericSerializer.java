@@ -24,15 +24,8 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.types.AbstractRollupStat;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,10 +45,10 @@ public class NumericSerializer {
     public static final AbstractSerializer<SimpleNumber> simpleNumberSerializer = new SimpleNumberSerializer();
     private static AbstractSerializer<Object> fullInstance = new RawSerializer();
     private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
-    public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
-    public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
-    public static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    public static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
+    public static AbstractSerializer<BluefloodTimerRollup> timerRollupInstance = new TimerRollupSerializer();
+    public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
+    public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
+    public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
@@ -84,15 +77,15 @@ public class NumericSerializer {
         
         if (type.equals(BasicRollup.class))
             return (AbstractSerializer<T>) basicRollupInstance;
-        else if (type.equals(TimerRollup.class))
+        else if (type.equals(BluefloodTimerRollup.class))
             return (AbstractSerializer<T>)timerRollupInstance;
         else if (type.equals(HistogramRollup.class))
             return (AbstractSerializer<T>) HistogramSerializer.get();
-        else if (type.equals(CounterRollup.class))
+        else if (type.equals(BluefloodCounterRollup.class))
             return (AbstractSerializer<T>) CounterRollupInstance;
-        else if (type.equals(GaugeRollup.class))
+        else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
-        else if (type.equals(SetRollup.class))
+        else if (type.equals(BluefloodSetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
             return (AbstractSerializer<T>)fullInstance;
@@ -227,7 +220,7 @@ public class NumericSerializer {
                 break;
             case Type.B_SET:
                 sz += 1; // version
-                SetRollup setRollup = (SetRollup)o;
+                BluefloodSetRollup setRollup = (BluefloodSetRollup)o;
                 sz += CodedOutputStream.computeRawVarint32Size(setRollup.getCount());
                 for (Integer i : setRollup.getHashes()) {
                     sz += CodedOutputStream.computeRawVarint32Size(i);
@@ -242,7 +235,7 @@ public class NumericSerializer {
                 return sz;
             case Type.B_TIMER:
                 sz += 1; // version
-                TimerRollup rollup = (TimerRollup)o;
+                BluefloodTimerRollup rollup = (BluefloodTimerRollup)o;
                 if (timerVersion == VERSION_1_TIMER) {
                     sz += CodedOutputStream.computeRawVarint64Size((long) rollup.getSum());
                 } else if (timerVersion == VERSION_2_TIMER) {
@@ -259,9 +252,9 @@ public class NumericSerializer {
                 sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
                 sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
                 
-                Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+                Map<String, BluefloodTimerRollup.Percentile> percentiles = rollup.getPercentiles();
                 sz += CodedOutputStream.computeRawVarint32Size(rollup.getPercentiles().size());
-                for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+                for (Map.Entry<String, BluefloodTimerRollup.Percentile> entry : percentiles.entrySet()) {
                     sz += CodedOutputStream.computeStringSizeNoTag(entry.getKey());
                     Number[] pctComponents = new Number[] {
                             entry.getValue().getMean(),
@@ -282,7 +275,7 @@ public class NumericSerializer {
                 sz += sizeOf(o, Type.B_ROLLUP);
                 
                 // here's where it gets different.
-                GaugeRollup gauge = (GaugeRollup)o;
+                BluefloodGaugeRollup gauge = (BluefloodGaugeRollup)o;
                 sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
                 sz += 1; // type of latest value.
                 if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
@@ -292,7 +285,7 @@ public class NumericSerializer {
                 return sz;
                 
             case Type.B_COUNTER:
-                CounterRollup counter = (CounterRollup)o;
+                BluefloodCounterRollup counter = (BluefloodCounterRollup)o;
                 sz += 1; // version + rollup type.
                 sz += 1; // numeric type.
                 if (counter.getCount() instanceof Long || counter.getCount() instanceof Integer)
@@ -308,7 +301,7 @@ public class NumericSerializer {
         return sz;
     }
     
-    private static void serializeCounterRollup(CounterRollup rollup, byte[] buf) throws IOException {
+    private static void serializeCounterRollup(BluefloodCounterRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         CounterRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_COUNTER_ROLLUP);
@@ -317,14 +310,14 @@ public class NumericSerializer {
         out.writeRawVarint32(rollup.getSampleCount());
     }
     
-    private static CounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
+    private static BluefloodCounterRollup deserializeV1CounterRollup(CodedInputStream in) throws IOException {
         Number value = getUnversionedDoubleOrLong(in);
         double rate = in.readDouble();
         int sampleCount = in.readRawVarint32();
-        return new CounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
+        return new BluefloodCounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
     
-    private static void serializeSetRollup(SetRollup rollup, byte[] buf) throws IOException {
+    private static void serializeSetRollup(BluefloodSetRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         SetRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_SET_ROLLUP);
@@ -334,16 +327,16 @@ public class NumericSerializer {
         }
     }
     
-    private static SetRollup deserializeV1SetRollup(CodedInputStream in) throws IOException {
+    private static BluefloodSetRollup deserializeV1SetRollup(CodedInputStream in) throws IOException {
         int count = in.readRawVarint32();
-        SetRollup rollup = new SetRollup();
+        BluefloodSetRollup rollup = new BluefloodSetRollup();
         while (count-- > 0) {
             rollup = rollup.withObject(in.readRawVarint32());
         }
         return rollup;
     }
 
-    private static void serializeTimer(TimerRollup rollup, byte[] buf, byte timerVersion) throws IOException {
+    private static void serializeTimer(BluefloodTimerRollup rollup, byte[] buf, byte timerVersion) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         timerRollupSize.update(buf.length);
         out.writeRawByte(timerVersion);
@@ -366,15 +359,15 @@ public class NumericSerializer {
         putRollupStat(rollup.getVariance(), out);
         
         // percentiles.
-        Map<String, TimerRollup.Percentile> percentiles = rollup.getPercentiles();
+        Map<String, BluefloodTimerRollup.Percentile> percentiles = rollup.getPercentiles();
         out.writeRawVarint32(percentiles.size());
-        for (Map.Entry<String, TimerRollup.Percentile> entry : percentiles.entrySet()) {
+        for (Map.Entry<String, BluefloodTimerRollup.Percentile> entry : percentiles.entrySet()) {
             out.writeStringNoTag(entry.getKey());
             putUnversionedDoubleOrLong(entry.getValue().getMean(), out);
         }
     }
     
-    private static TimerRollup deserializeTimer(CodedInputStream in, byte timerVersion) throws IOException {
+    private static BluefloodTimerRollup deserializeTimer(CodedInputStream in, byte timerVersion) throws IOException {
         // note: type and version have already been read.
         final double sum;
         if (timerVersion == VERSION_1_TIMER) {
@@ -412,7 +405,7 @@ public class NumericSerializer {
         stat = getStatFromRollup(statType, statBucket);
         setStat(stat, in);
         
-        TimerRollup rollup = new TimerRollup()
+        BluefloodTimerRollup rollup = new BluefloodTimerRollup()
                 .withSum(sum)
                 .withCount(count)
                 .withCountPS(countPs)
@@ -432,7 +425,7 @@ public class NumericSerializer {
         return rollup;
     }
     
-    private static void serializeGauge(GaugeRollup rollup, byte[] buf) throws IOException {
+    private static void serializeGauge(BluefloodGaugeRollup rollup, byte[] buf) throws IOException {
         rollupSize.update(buf.length);
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
         serializeRollup(rollup, protobufOut);
@@ -440,11 +433,11 @@ public class NumericSerializer {
         putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
     }
     
-    private static GaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
+    private static BluefloodGaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
         BasicRollup basic = deserializeV1Rollup(in);
         long timestamp = in.readRawVarint64();
         Number lastValue = getUnversionedDoubleOrLong(in);
-        return GaugeRollup.fromBasicRollup(basic, timestamp, lastValue);
+        return BluefloodGaugeRollup.fromBasicRollup(basic, timestamp, lastValue);
     }
     
     private static byte typeOf(Object o) throws IOException {
@@ -458,15 +451,15 @@ public class NumericSerializer {
             return Type.B_FLOAT_AS_DOUBLE;
         else if (o instanceof AbstractRollupStat)
             return Type.B_ROLLUP_STAT;
-        else if (o instanceof TimerRollup)
+        else if (o instanceof BluefloodTimerRollup)
             return Type.B_TIMER;
-        else if (o instanceof GaugeRollup)
+        else if (o instanceof BluefloodGaugeRollup)
             return Type.B_GAUGE;
-        else if (o instanceof SetRollup)
+        else if (o instanceof BluefloodSetRollup)
             return Type.B_SET;
         else if (o instanceof BasicRollup)
             return Type.B_ROLLUP;
-        else if (o instanceof CounterRollup)
+        else if (o instanceof BluefloodCounterRollup)
             return Type.B_COUNTER;
         else
             throw new SerializationException("Unexpected type: " + o.getClass().getName());
@@ -633,9 +626,9 @@ public class NumericSerializer {
         }
     }
     
-    public static class TimerRollupSerializer extends AbstractSerializer<TimerRollup> {
+    public static class TimerRollupSerializer extends AbstractSerializer<BluefloodTimerRollup> {
         @Override
-        public ByteBuffer toByteBuffer(TimerRollup o) {
+        public ByteBuffer toByteBuffer(BluefloodTimerRollup o) {
             try {
                 byte type = typeOf(o);
                 byte[] buf = new byte[sizeOf(o, type, VERSION_2_TIMER)];
@@ -647,7 +640,7 @@ public class NumericSerializer {
         }
 
         @VisibleForTesting
-        public ByteBuffer toByteBufferWithV1Serialization(TimerRollup o) {
+        public ByteBuffer toByteBufferWithV1Serialization(BluefloodTimerRollup o) {
             try {
                 byte type = typeOf(o);
                 byte[] buf = new byte[sizeOf(o, type, VERSION_1_TIMER)];
@@ -659,7 +652,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public TimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public BluefloodTimerRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
@@ -670,10 +663,10 @@ public class NumericSerializer {
         }
     }
     
-    public static class SetRollupSerializer extends AbstractSerializer<SetRollup> {
+    public static class SetRollupSerializer extends AbstractSerializer<BluefloodSetRollup> {
         
         @Override
-        public ByteBuffer toByteBuffer(SetRollup obj) {
+        public ByteBuffer toByteBuffer(BluefloodSetRollup obj) {
             try {
                 byte type = typeOf(obj);
                 byte[] buf = new byte[sizeOf(obj, type)];
@@ -685,7 +678,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public SetRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public BluefloodSetRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
@@ -698,9 +691,9 @@ public class NumericSerializer {
         }
     }
     
-    public static class GaugeRollupSerializer extends AbstractSerializer<GaugeRollup> {
+    public static class GaugeRollupSerializer extends AbstractSerializer<BluefloodGaugeRollup> {
         @Override
-        public ByteBuffer toByteBuffer(GaugeRollup o) {
+        public ByteBuffer toByteBuffer(BluefloodGaugeRollup o) {
             try {
                 byte type = typeOf(o);
                 byte[] buf = new byte[sizeOf(o, type)];
@@ -712,7 +705,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public GaugeRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public BluefloodGaugeRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
@@ -727,9 +720,9 @@ public class NumericSerializer {
     
     // for now let's try to get away with a single serializer for all single value rollups. We'll still encode specific
     // types so we can differentiate.
-    public static class CounterRollupSerializer extends AbstractSerializer<CounterRollup> {
+    public static class CounterRollupSerializer extends AbstractSerializer<BluefloodCounterRollup> {
         @Override
-        public ByteBuffer toByteBuffer(CounterRollup obj) {
+        public ByteBuffer toByteBuffer(BluefloodCounterRollup obj) {
             try {
                 byte type = typeOf(obj);
                 byte[] buf = new byte[sizeOf(obj, type)];
@@ -741,7 +734,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public CounterRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public BluefloodCounterRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();

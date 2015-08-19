@@ -1,10 +1,26 @@
+/*
+ * Copyright 2015 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.utils.Util;
 
 import java.io.IOException;
 
-public class CounterRollup implements Rollup {
+public class BluefloodCounterRollup implements Rollup {
     
     private Number count;
     private double rate; // per-second!
@@ -14,22 +30,22 @@ public class CounterRollup implements Rollup {
      */
     private int sampleCount;
     
-    public CounterRollup() {
+    public BluefloodCounterRollup() {
         this.rate = 0d;
         this.sampleCount = 0;
     }
     
-    public CounterRollup withCount(Number count) {
+    public BluefloodCounterRollup withCount(Number count) {
         this.count = promoteToDoubleOrLong(count);
         return this;
     }
     
-    public CounterRollup withRate(double rate) {
+    public BluefloodCounterRollup withRate(double rate) {
         this.rate = rate;
         return this;
     }
 
-    public CounterRollup withSampleCount(int sampleCount) {
+    public BluefloodCounterRollup withSampleCount(int sampleCount) {
         this.sampleCount = sampleCount;
         return this;
     }
@@ -59,19 +75,19 @@ public class CounterRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof CounterRollup))
+        if (obj == null || !(obj instanceof BluefloodCounterRollup))
             return false;
         
-        CounterRollup other = (CounterRollup)obj;
+        BluefloodCounterRollup other = (BluefloodCounterRollup)obj;
         return this.getCount().equals(other.getCount())
                 && this.rate == other.rate
                 && this.getSampleCount() == other.getSampleCount();
     }
     
-    public static CounterRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
+    public static BluefloodCounterRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
         long minTime = Long.MAX_VALUE;
         long maxTime = Long.MIN_VALUE;
-        CounterRollup rollup = new CounterRollup();
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
         Number count = 0L;
         for (Points.Point<SimpleNumber> point : input.getPoints().values()) {
             count = sum(count, point.getData().getValue());
@@ -83,19 +99,19 @@ public class CounterRollup implements Rollup {
         return rollup.withCount(count).withRate(rate).withSampleCount(input.getPoints().size());
     }
 
-    public static CounterRollup buildRollupFromCounterRollups(Points<CounterRollup> input) throws IOException {
+    public static BluefloodCounterRollup buildRollupFromCounterRollups(Points<BluefloodCounterRollup> input) throws IOException {
         
         Number count = 0L;
         double seconds = 0;
         int sampleCount = 0;
-        for (Points.Point<CounterRollup> point : input.getPoints().values()) {
+        for (Points.Point<BluefloodCounterRollup> point : input.getPoints().values()) {
             count = sum(count, point.getData().getCount());
             sampleCount = sampleCount + point.getData().getSampleCount();
             seconds += Util.safeDiv(point.getData().getCount().doubleValue(), point.getData().getRate());
         }
         double aggregateRate = Util.safeDiv(count.doubleValue(), seconds);
 
-        return new CounterRollup().withCount(count).withRate(aggregateRate).withSampleCount(sampleCount);
+        return new BluefloodCounterRollup().withCount(count).withRate(aggregateRate).withSampleCount(sampleCount);
     }
     
     private static Number sum(Number x, Number y) {

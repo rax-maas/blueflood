@@ -88,7 +88,7 @@ public class ElasticIOTest {
     private static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
         List<IMetric> metrics = new ArrayList<IMetric>();
-        CounterRollup counter = new CounterRollup();
+        BluefloodCounterRollup counter = new BluefloodCounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.types;
 
 import com.google.common.base.Joiner;
@@ -10,7 +26,7 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class TimerRollup implements Rollup, IBasicRollup {
+public class BluefloodTimerRollup implements Rollup, IBasicRollup {
     private double sum = 0;
     private long count = 0;
     private double rate = 0;
@@ -30,66 +46,66 @@ public class TimerRollup implements Rollup, IBasicRollup {
     // to support percentiles, we will overload the count and treat it as sum.
     private Map<String, Percentile> percentiles = new HashMap<String, Percentile>();
     
-    public TimerRollup() {
+    public BluefloodTimerRollup() {
         super();
     }
     
-    public TimerRollup withSum(double sum) {
+    public BluefloodTimerRollup withSum(double sum) {
         this.sum = sum;
         return this;
     }
 
-    public TimerRollup withCount(long count) {
+    public BluefloodTimerRollup withCount(long count) {
         this.count = count;
         return this;
     }
 
-    public TimerRollup withCountPS(double count_ps) {
+    public BluefloodTimerRollup withCountPS(double count_ps) {
         this.rate = count_ps;
         return this;
     }
 
-    public TimerRollup withSampleCount(int sampleCount) {
+    public BluefloodTimerRollup withSampleCount(int sampleCount) {
         this.sampleCount = sampleCount;
         return this;
     }
 
-    public TimerRollup withMinValue(MinValue min) {
+    public BluefloodTimerRollup withMinValue(MinValue min) {
         this.min = min;
         return this;
     }
     
-    public TimerRollup withMinValue(Number num) {
+    public BluefloodTimerRollup withMinValue(Number num) {
         AbstractRollupStat.set(this.min, num);
         return this;
     }
 
-    public TimerRollup withMaxValue(MaxValue max) {
+    public BluefloodTimerRollup withMaxValue(MaxValue max) {
         this.max = max;
         return this;
     }
     
-    public TimerRollup withMaxValue(Number num) {
+    public BluefloodTimerRollup withMaxValue(Number num) {
         AbstractRollupStat.set(this.max, num);
         return this;
     }
 
-    public TimerRollup withAverage(Average average) {
+    public BluefloodTimerRollup withAverage(Average average) {
         this.average = average;
         return this;
     }
     
-    public TimerRollup withAverage(Number average) {
+    public BluefloodTimerRollup withAverage(Number average) {
         AbstractRollupStat.set(this.average, average);
         return this;
     }
 
-    public TimerRollup withVariance(Variance variance) {
+    public BluefloodTimerRollup withVariance(Variance variance) {
         this.variance = variance;
         return this;
     }
     
-    public TimerRollup withVariance(Number variance) {
+    public BluefloodTimerRollup withVariance(Number variance) {
         AbstractRollupStat.set(this.variance, variance);
         return this;
     }
@@ -169,8 +185,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
 
     public boolean equals(Object obj) {
-        if (!(obj instanceof TimerRollup)) return false;
-        TimerRollup other = (TimerRollup)obj;
+        if (!(obj instanceof BluefloodTimerRollup)) return false;
+        BluefloodTimerRollup other = (BluefloodTimerRollup)obj;
 
         if (other.sum != this.sum) return false;
         if (other.sampleCount != this.sampleCount) return false;
@@ -192,20 +208,20 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return true;
     }
     
-    private void computeFromRollups(Points<TimerRollup> input) throws IOException {
+    private void computeFromRollups(Points<BluefloodTimerRollup> input) throws IOException {
         if (input == null)
             throw new IOException("Null input to create rollup from");
         if (input.isEmpty())
             return;
         
-        Map<Long, Points.Point<TimerRollup>> points = input.getPoints();
+        Map<Long, Points.Point<BluefloodTimerRollup>> points = input.getPoints();
         Set<String> labels = new HashSet<String>();
         Multimap<String, Number> pctMeans = LinkedListMultimap.create();
         Multimap<String, Number> pctUppers = LinkedListMultimap.create();
         Multimap<String, Number> pctSums = LinkedListMultimap.create();
 
-        for (Map.Entry<Long, Points.Point<TimerRollup>> item : points.entrySet()) {
-            TimerRollup rollup = item.getValue().getData();
+        for (Map.Entry<Long, Points.Point<BluefloodTimerRollup>> item : points.entrySet()) {
+            BluefloodTimerRollup rollup = item.getValue().getData();
             
             // todo: put this calculation in a static method and put tests for it.
             long count = this.getCount() + rollup.getCount();
@@ -233,7 +249,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
         
         // now go through the percentiles and calculate!
         for (String label : labels) {
-            Number mean = TimerRollup.avg(pctMeans.get(label));
+            Number mean = BluefloodTimerRollup.avg(pctMeans.get(label));
             this.setPercentile(label, mean);
         }
         // wooo!
@@ -262,7 +278,7 @@ public class TimerRollup implements Rollup, IBasicRollup {
     }
     
     public static Number avg(Collection<Number> numbers) {
-        Number sum = TimerRollup.sum(numbers);
+        Number sum = BluefloodTimerRollup.sum(numbers);
         if (sum instanceof Long || sum instanceof Integer)
             return (Long)sum / numbers.size();
         else
@@ -302,8 +318,8 @@ public class TimerRollup implements Rollup, IBasicRollup {
         return Collections.unmodifiableMap(percentiles);
     }
     
-    public static TimerRollup buildRollupFromTimerRollups(Points<TimerRollup> input) throws IOException {
-        TimerRollup rollup = new TimerRollup();
+    public static BluefloodTimerRollup buildRollupFromTimerRollups(Points<BluefloodTimerRollup> input) throws IOException {
+        BluefloodTimerRollup rollup = new BluefloodTimerRollup();
         rollup.computeFromRollups(input);
         return rollup;
     }

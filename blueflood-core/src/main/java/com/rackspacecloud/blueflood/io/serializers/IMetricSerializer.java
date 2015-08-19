@@ -34,13 +34,13 @@ public class IMetricSerializer {
         metricModule.setMixInAnnotation(Rollup.class, RollupMixin.class);
         metricModule.setMixInAnnotation(BasicRollup.class, BasicRollupMixin.class);
         metricModule.setMixInAnnotation(AbstractRollupStat.class, AbstractRollupStatMixin.class);
-        metricModule.setMixInAnnotation(GaugeRollup.class, GaugeRollupMixin.class);
-        metricModule.setMixInAnnotation(TimerRollup.class, TimerRollupMixin.class);
-        metricModule.setMixInAnnotation(TimerRollup.Percentile.class, PercentileMixin.class);
+        metricModule.setMixInAnnotation(BluefloodGaugeRollup.class, GaugeRollupMixin.class);
+        metricModule.setMixInAnnotation(BluefloodTimerRollup.class, TimerRollupMixin.class);
+        metricModule.setMixInAnnotation(BluefloodTimerRollup.Percentile.class, PercentileMixin.class);
 
         metricModule.addSerializer(AbstractRollupStat.class, new AbstractRollupStatSerializer());
         metricModule.addDeserializer(Metric.class, new MetricDeserializer());
-        metricModule.addDeserializer(GaugeRollup.class, new GaugeRollupDeserializer());
+        metricModule.addDeserializer(BluefloodGaugeRollup.class, new GaugeRollupDeserializer());
 
         mapper.setVisibility(JsonMethod.FIELD, JsonAutoDetect.Visibility.ANY);
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -55,10 +55,10 @@ public class IMetricSerializer {
             include = JsonTypeInfo.As.PROPERTY,
             property = "type")
     @JsonSubTypes({
-            @JsonSubTypes.Type(value = CounterRollup.class, name = "counter"),
-            @JsonSubTypes.Type(value = GaugeRollup.class, name = "gauge"),
-            @JsonSubTypes.Type(value = SetRollup.class, name = "set"),
-            @JsonSubTypes.Type(value = TimerRollup.class, name = "timer"),
+            @JsonSubTypes.Type(value = BluefloodCounterRollup.class, name = "counter"),
+            @JsonSubTypes.Type(value = BluefloodGaugeRollup.class, name = "gauge"),
+            @JsonSubTypes.Type(value = BluefloodSetRollup.class, name = "set"),
+            @JsonSubTypes.Type(value = BluefloodTimerRollup.class, name = "timer"),
             @JsonSubTypes.Type(value = BasicRollup.class, name = "basic")
     })
     @JsonIgnoreProperties({ "rollupType" })

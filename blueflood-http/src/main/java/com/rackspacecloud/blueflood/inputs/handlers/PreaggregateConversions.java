@@ -17,17 +17,8 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.io.IOError;
@@ -50,24 +41,24 @@ public class PreaggregateConversions {
     // circumstances. e.g. calling `longValue()` when the number is obviously a double, or is used in the
     // type comparisions we use to determine how to serialize a number.
     
-    public static Collection<IMetric> buildMetricsCollection(Bundle bundle) {
+    public static Collection<IMetric> buildMetricsCollection(AggregatedPayload payload) {
         Collection<IMetric> metrics = new ArrayList<IMetric>();
-        metrics.addAll(PreaggregateConversions.convertCounters(bundle.getTenantId(), bundle.getTimestamp(), bundle.getFlushIntervalMillis(), bundle.getCounters()));
-        metrics.addAll(PreaggregateConversions.convertGauges(bundle.getTenantId(), bundle.getTimestamp(), bundle.getGauges()));
-        metrics.addAll(PreaggregateConversions.convertSets(bundle.getTenantId(), bundle.getTimestamp(), bundle.getSets()));
-        metrics.addAll(PreaggregateConversions.convertTimers(bundle.getTenantId(), bundle.getTimestamp(), bundle.getTimers()));
+        metrics.addAll(PreaggregateConversions.convertCounters(payload.getTenantId(), payload.getTimestamp(), payload.getFlushIntervalMillis(), payload.getCounters()));
+        metrics.addAll(PreaggregateConversions.convertGauges(payload.getTenantId(), payload.getTimestamp(), payload.getGauges()));
+        metrics.addAll(PreaggregateConversions.convertSets(payload.getTenantId(), payload.getTimestamp(), payload.getSets()));
+        metrics.addAll(PreaggregateConversions.convertTimers(payload.getTenantId(), payload.getTimestamp(), payload.getTimers()));
         return metrics;
     }
 
-    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<Bundle.Counter> counters) {
+    public static Collection<PreaggregatedMetric> convertCounters(String tenant, long timestamp, long flushIntervalMillis, Collection<BluefloodCounter> counters) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(counters.size());
-        for (Bundle.Counter counter : counters) {
+        for (BluefloodCounter counter : counters) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, counter.getName().split(NAME_DELIMITER, -1));
             // flushIntervalMillis could be zero (if not specified in the statsD config).
             long sampleCount = flushIntervalMillis > 0
                     ? (long)(counter.getRate().doubleValue() * ((double)flushIntervalMillis/1000d))
                     : 1;
-            Rollup rollup = new CounterRollup()
+            Rollup rollup = new BluefloodCounterRollup()
                     .withCount(resolveNumber(counter.getValue()))
                     .withRate(counter.getRate().doubleValue())
                     .withSampleCount((int)sampleCount);
@@ -77,14 +68,14 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<Bundle.Gauge> gauges) {
+    public static Collection<PreaggregatedMetric> convertGauges(String tenant, long timestamp, Collection<BluefloodGauge> gauges) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(gauges.size());
-        for (Bundle.Gauge gauge : gauges) {
+        for (BluefloodGauge gauge : gauges) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, gauge.getName().split(NAME_DELIMITER, -1));
             Points<SimpleNumber> points = new Points<SimpleNumber>();
             points.add(new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(resolveNumber(gauge.getValue()))));
             try {
-                Rollup rollup = GaugeRollup.buildFromRawSamples(points);
+                Rollup rollup = BluefloodGaugeRollup.buildFromRawSamples(points);
                 PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
                 list.add(metric);
             } catch (IOException ex) {
@@ -94,11 +85,11 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<Bundle.Timer> timers) {
+    public static Collection<PreaggregatedMetric> convertTimers(String tenant, long timestamp, Collection<BluefloodTimer> timers) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(timers.size());
-        for (Bundle.Timer timer : timers) {
+        for (BluefloodTimer timer : timers) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, timer.getName().split(NAME_DELIMITER, -1));
-            TimerRollup rollup = new TimerRollup()
+            BluefloodTimerRollup rollup = new BluefloodTimerRollup()
                     .withCount(timer.getCount().longValue())
                     .withSampleCount(1)
                     .withAverage(resolveNumber(timer.getAvg() == null ? 0.0d : timer.getAvg()))
@@ -107,7 +98,7 @@ public class PreaggregateConversions {
                     .withCountPS(timer.getRate() == null ? 0.0d : timer.getRate().doubleValue())
                     .withSum(timer.getSum() == null ? 0L : timer.getSum().doubleValue())
                     .withVariance(Math.pow(timer.getStd() == null ? 0.0d : timer.getStd().doubleValue(), 2d));
-            for (Map.Entry<String, Bundle.Percentile> entry : timer.getPercentiles().entrySet()) {
+            for (Map.Entry<String, Percentile> entry : timer.getPercentiles().entrySet()) {
                 // throw away max and sum.
                 if (entry.getValue().getAvg() != null) {
                     rollup.setPercentile(entry.getKey(), resolveNumber(entry.getValue().getAvg()));
@@ -119,11 +110,11 @@ public class PreaggregateConversions {
         return list;
     }
     
-    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<Bundle.Set> sets) {
+    public static Collection<PreaggregatedMetric> convertSets(String tenant, long timestamp, Collection<BluefloodSet> sets) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(sets.size());
-        for (Bundle.Set set : sets) {
+        for (BluefloodSet set : sets) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, set.getName().split(NAME_DELIMITER, -1));
-            SetRollup rollup = new SetRollup();
+            BluefloodSetRollup rollup = new BluefloodSetRollup();
             for (String value : set.getValues()) {
                 rollup = rollup.withObject(value);
             }

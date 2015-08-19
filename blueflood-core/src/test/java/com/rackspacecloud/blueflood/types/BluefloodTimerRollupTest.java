@@ -9,13 +9,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class TimerRollupTest {
+public class BluefloodTimerRollupTest {
     
     private static final double ACCEPTABLE_SKEW = 0.00000001d;
     
     @Test
     public void testCountPerSecondCalculation() {
-        Assert.assertEquals(7.5d, TimerRollup.calculatePerSecond(150, 5d, 300, 10d));
+        Assert.assertEquals(7.5d, BluefloodTimerRollup.calculatePerSecond(150, 5d, 300, 10d));
     }
     
     private static Points<SimpleNumber> createPoints(final long startingTime, final int startingValue, final int numSamples, final int timeDelta, final int sampleDelta) {
@@ -36,14 +36,14 @@ public class TimerRollupTest {
     @Test
     public void testConstantTimerRollup() throws IOException {
         // 40 samples, one per milli, each sample increments by one.  Now divide those into four parts.
-        TimerRollup tr0 = new TimerRollup().withSum(45d).withCountPS(4.5d).withAverage(4).withVariance(8.25d).withMinValue(0).withMaxValue(9).withCount(10);
-        TimerRollup tr1 = new TimerRollup().withSum(145d).withCountPS(4.5d).withAverage(14).withVariance(8.25d).withMinValue(10).withMaxValue(19).withCount(10);
-        TimerRollup tr2 = new TimerRollup().withSum(245d).withCountPS(4.5d).withAverage(24).withVariance(8.25d).withMinValue(20).withMaxValue(29).withCount(10);
-        TimerRollup tr3 = new TimerRollup().withSum(345d).withCountPS(4.5d).withAverage(34).withVariance(8.25d).withMinValue(30).withMaxValue(39).withCount(10);
-        BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(0, 0, 10, 1, 1));
-        BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(10, 10, 10, 1, 1));
-        BasicRollup br2 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(20, 20, 10, 1, 1));
-        BasicRollup br3 = BasicRollup.buildRollupFromRawSamples(TimerRollupTest.createPoints(30, 30, 10, 1, 1));
+        BluefloodTimerRollup tr0 = new BluefloodTimerRollup().withSum(45d).withCountPS(4.5d).withAverage(4).withVariance(8.25d).withMinValue(0).withMaxValue(9).withCount(10);
+        BluefloodTimerRollup tr1 = new BluefloodTimerRollup().withSum(145d).withCountPS(4.5d).withAverage(14).withVariance(8.25d).withMinValue(10).withMaxValue(19).withCount(10);
+        BluefloodTimerRollup tr2 = new BluefloodTimerRollup().withSum(245d).withCountPS(4.5d).withAverage(24).withVariance(8.25d).withMinValue(20).withMaxValue(29).withCount(10);
+        BluefloodTimerRollup tr3 = new BluefloodTimerRollup().withSum(345d).withCountPS(4.5d).withAverage(34).withVariance(8.25d).withMinValue(30).withMaxValue(39).withCount(10);
+        BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(BluefloodTimerRollupTest.createPoints(0, 0, 10, 1, 1));
+        BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(BluefloodTimerRollupTest.createPoints(10, 10, 10, 1, 1));
+        BasicRollup br2 = BasicRollup.buildRollupFromRawSamples(BluefloodTimerRollupTest.createPoints(20, 20, 10, 1, 1));
+        BasicRollup br3 = BasicRollup.buildRollupFromRawSamples(BluefloodTimerRollupTest.createPoints(30, 30, 10, 1, 1));
         
         // first, make sure that the self-proclaimed timers match the basic rollups generated from raw samples.
         // this establishes a baseline.
@@ -53,12 +53,12 @@ public class TimerRollupTest {
         assertRollupsAreClose(br3, tr3);
         
         // create a cumulative timer from the timer rollups.
-        Points<TimerRollup> timerPoints = new Points<TimerRollup>();
-        timerPoints.add(new Points.Point<TimerRollup>(0, tr0));
-        timerPoints.add(new Points.Point<TimerRollup>(10, tr1));
-        timerPoints.add(new Points.Point<TimerRollup>(20, tr2));
-        timerPoints.add(new Points.Point<TimerRollup>(30, tr3));
-        TimerRollup cumulativeTimer = TimerRollup.buildRollupFromTimerRollups(timerPoints);
+        Points<BluefloodTimerRollup> timerPoints = new Points<BluefloodTimerRollup>();
+        timerPoints.add(new Points.Point<BluefloodTimerRollup>(0, tr0));
+        timerPoints.add(new Points.Point<BluefloodTimerRollup>(10, tr1));
+        timerPoints.add(new Points.Point<BluefloodTimerRollup>(20, tr2));
+        timerPoints.add(new Points.Point<BluefloodTimerRollup>(30, tr3));
+        BluefloodTimerRollup cumulativeTimer = BluefloodTimerRollup.buildRollupFromTimerRollups(timerPoints);
         
         // create a cumulative basic from the basic rollups
         Points<BasicRollup> rollupPoints = new Points<BasicRollup>();
@@ -69,7 +69,7 @@ public class TimerRollupTest {
         BasicRollup cumulativeBasicFromRollups = BasicRollup.buildRollupFromRollups(rollupPoints);
         
         // also create a cumulative basic from raw data.
-        Points<SimpleNumber> simplePoints = TimerRollupTest.createPoints(0, 0, 40, 1, 1);
+        Points<SimpleNumber> simplePoints = BluefloodTimerRollupTest.createPoints(0, 0, 40, 1, 1);
         BasicRollup cumulativeBasicFromRaw = BasicRollup.buildRollupFromRawSamples(simplePoints);
         
         // ensure the baseline holds: cumulative basic from raw should be the same as cumulative basic from basic.
@@ -84,10 +84,10 @@ public class TimerRollupTest {
 
     @Test
     public void testNullVersusZero() throws IOException {
-        final TimerRollup timerWithData = new TimerRollup()
+        final BluefloodTimerRollup timerWithData = new BluefloodTimerRollup()
                 .withSampleCount(1);
 
-        final TimerRollup timerWithoutData = new TimerRollup()
+        final BluefloodTimerRollup timerWithoutData = new BluefloodTimerRollup()
                 .withSampleCount(0);
 
         Assert.assertNotSame(timerWithData, timerWithoutData);
@@ -99,7 +99,7 @@ public class TimerRollupTest {
         Points<SimpleNumber> p0 = createPoints(0, 0, 100, 2, 2);
         // count_ps for this will be 200 time units / 100 samples = 2.0
         BasicRollup br0 = BasicRollup.buildRollupFromRawSamples(p0);
-        final TimerRollup tr0 = new TimerRollup()
+        final BluefloodTimerRollup tr0 = new BluefloodTimerRollup()
                 .withSum(9900.0d)
                 .withCountPS(2.0)
                 .withAverage(99)
@@ -112,7 +112,7 @@ public class TimerRollupTest {
         Points<SimpleNumber> p1 = createPoints(200, 200, 200, 1, 2);
         // count_ps for this will be 200 time units / 200 samples = 1.0
         BasicRollup br1 = BasicRollup.buildRollupFromRawSamples(p1);
-        final TimerRollup tr1 = new TimerRollup()
+        final BluefloodTimerRollup tr1 = new BluefloodTimerRollup()
                 .withSum(39900.0d)
                 .withCountPS(1.0)
                 .withAverage(399)
@@ -122,9 +122,9 @@ public class TimerRollupTest {
                 .withCount(100);
         
         // count_ps should end up being 400 time units / 300 samples = 1.33
-        TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
-            add(new Point<TimerRollup>(0, tr0));
-            add(new Point<TimerRollup>(200, tr1));
+        BluefloodTimerRollup cumulative = BluefloodTimerRollup.buildRollupFromTimerRollups(new Points<BluefloodTimerRollup>() {{
+            add(new Point<BluefloodTimerRollup>(0, tr0));
+            add(new Point<BluefloodTimerRollup>(200, tr1));
         }});
         
         Assert.assertEquals(4d/3d, cumulative.getRate());
@@ -145,32 +145,32 @@ public class TimerRollupTest {
     
     @Test
     public void testSum() {
-        Assert.assertEquals(6L, TimerRollup.sum(longs));
-        Assert.assertEquals(6.0d, TimerRollup.sum(doubles));
-        Assert.assertEquals(6.0d, TimerRollup.sum(mixed));
-        Assert.assertEquals(6.0d, TimerRollup.sum(alsoMixed));
+        Assert.assertEquals(6L, BluefloodTimerRollup.sum(longs));
+        Assert.assertEquals(6.0d, BluefloodTimerRollup.sum(doubles));
+        Assert.assertEquals(6.0d, BluefloodTimerRollup.sum(mixed));
+        Assert.assertEquals(6.0d, BluefloodTimerRollup.sum(alsoMixed));
     }
     
     @Test
     public void testAverage() {
-        Assert.assertEquals(2L, TimerRollup.avg(longs));
-        Assert.assertEquals(2.0d, TimerRollup.avg(doubles));
-        Assert.assertEquals(2.0d, TimerRollup.avg(mixed));
-        Assert.assertEquals(2.0d, TimerRollup.avg(alsoMixed));
+        Assert.assertEquals(2L, BluefloodTimerRollup.avg(longs));
+        Assert.assertEquals(2.0d, BluefloodTimerRollup.avg(doubles));
+        Assert.assertEquals(2.0d, BluefloodTimerRollup.avg(mixed));
+        Assert.assertEquals(2.0d, BluefloodTimerRollup.avg(alsoMixed));
     }
     
     @Test
     public void testMax() {
-        Assert.assertEquals(3L, TimerRollup.max(longs));
-        Assert.assertEquals(3.0d, TimerRollup.max(doubles));
-        Assert.assertEquals(3.0d, TimerRollup.max(mixed));
-        Assert.assertEquals(3.0d, TimerRollup.max(alsoMixed));
+        Assert.assertEquals(3L, BluefloodTimerRollup.max(longs));
+        Assert.assertEquals(3.0d, BluefloodTimerRollup.max(doubles));
+        Assert.assertEquals(3.0d, BluefloodTimerRollup.max(mixed));
+        Assert.assertEquals(3.0d, BluefloodTimerRollup.max(alsoMixed));
     }
     
     @Test
     public void testPercentiles() throws IOException {
-        final TimerRollup tr0 = new TimerRollup().withSum(0d).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
-        final TimerRollup tr1 = new TimerRollup().withSum(0d).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
+        final BluefloodTimerRollup tr0 = new BluefloodTimerRollup().withSum(0d).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
+        final BluefloodTimerRollup tr1 = new BluefloodTimerRollup().withSum(0d).withCountPS(0).withAverage(0).withVariance(0).withMinValue(0).withMaxValue(0).withCount(0);
         
         // populate percentiles (these are nonsensical)
         tr0.setPercentile("75", 0.1d);
@@ -183,9 +183,9 @@ public class TimerRollupTest {
         // weighted would be: ((0.3d * 300d) + (0.4d * 400d)) / (300d + 400d);
         double expectedMean98 = (0.3d + 0.4d) / 2.0d;
         
-        TimerRollup cumulative = TimerRollup.buildRollupFromTimerRollups(new Points<TimerRollup>() {{
-            add(new Point<TimerRollup>(0, tr0));
-            add(new Point<TimerRollup>(100, tr1));
+        BluefloodTimerRollup cumulative = BluefloodTimerRollup.buildRollupFromTimerRollups(new Points<BluefloodTimerRollup>() {{
+            add(new Point<BluefloodTimerRollup>(0, tr0));
+            add(new Point<BluefloodTimerRollup>(100, tr1));
         }});
 
         Assert.assertEquals(2, cumulative.getPercentiles().size());

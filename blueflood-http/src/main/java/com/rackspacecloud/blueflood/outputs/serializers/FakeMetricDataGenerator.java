@@ -18,15 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
-import com.bigml.histogram.Target;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.HistogramRollup;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -90,12 +82,12 @@ public class FakeMetricDataGenerator {
         return bins;
     }
     
-    public static Points<CounterRollup> generateFakeCounterRollupPoints() {
-        Points<CounterRollup> points = new Points<CounterRollup>();
+    public static Points<BluefloodCounterRollup> generateFakeCounterRollupPoints() {
+        Points<BluefloodCounterRollup> points = new Points<BluefloodCounterRollup>();
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            Points.Point<CounterRollup> point = new Points.Point<CounterRollup>(timeNow, new CounterRollup()
+            Points.Point<BluefloodCounterRollup> point = new Points.Point<BluefloodCounterRollup>(timeNow, new BluefloodCounterRollup()
                     .withCount(i + 1000)
                     .withRate((double) i)
                     .withSampleCount(1));
@@ -104,12 +96,12 @@ public class FakeMetricDataGenerator {
         return points;
     }
     
-    public static Points<SetRollup> generateFakeSetRollupPoints() {
-        Points<SetRollup> points = new Points<SetRollup>();
+    public static Points<BluefloodSetRollup> generateFakeSetRollupPoints() {
+        Points<BluefloodSetRollup> points = new Points<BluefloodSetRollup>();
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            Points.Point<SetRollup> point = new Points.Point<SetRollup>(timeNow, new SetRollup()
+            Points.Point<BluefloodSetRollup> point = new Points.Point<BluefloodSetRollup>(timeNow, new BluefloodSetRollup()
                     .withObject(i)
                     .withObject(i % 2)
                     .withObject(i / 2));
@@ -118,24 +110,24 @@ public class FakeMetricDataGenerator {
         return points;
     }
     
-    public static Points<GaugeRollup> generateFakeGaugeRollups() {
-        Points<GaugeRollup> points = new Points<GaugeRollup>();
+    public static Points<BluefloodGaugeRollup> generateFakeGaugeRollups() {
+        Points<BluefloodGaugeRollup> points = new Points<BluefloodGaugeRollup>();
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            Points.Point<GaugeRollup> point = new Points.Point<GaugeRollup>(timeNow, new GaugeRollup()
+            Points.Point<BluefloodGaugeRollup> point = new Points.Point<BluefloodGaugeRollup>(timeNow, new BluefloodGaugeRollup()
                 .withLatest(timeNow, i));
             points.add(point);
         }
         return points;
     }
     
-    public static Points<TimerRollup> generateFakeTimerRollups() {
-        Points<TimerRollup> points = new Points<TimerRollup>();
+    public static Points<BluefloodTimerRollup> generateFakeTimerRollups() {
+        Points<BluefloodTimerRollup> points = new Points<BluefloodTimerRollup>();
         long startTime = 1234567L;
         for (int i = 0; i < 5; i++) {
             long timeNow = startTime + i*1000;
-            TimerRollup rollup = new TimerRollup()
+            BluefloodTimerRollup rollup = new BluefloodTimerRollup()
                 .withAverage(i)
                 .withCount(i)
                 .withCountPS(i*0.1d)
@@ -145,7 +137,7 @@ public class FakeMetricDataGenerator {
                 .withVariance(i);
             rollup.setPercentile("50", i);
             rollup.setPercentile("99", i * 2 + 1);
-            Points.Point<TimerRollup> point = new Points.Point<TimerRollup>(timeNow, rollup);
+            Points.Point<BluefloodTimerRollup> point = new Points.Point<BluefloodTimerRollup>(timeNow, rollup);
             points.add(point);
         }
         return points;

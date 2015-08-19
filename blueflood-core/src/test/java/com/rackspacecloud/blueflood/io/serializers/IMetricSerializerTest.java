@@ -37,11 +37,11 @@ public class IMetricSerializerTest {
     public void testCounterSerialization() throws IOException {
         String counterValue = "{\"type\":\"counter\",\"count\":1,\"rate\":0.06666666666666667,\"sampleCount\":0}";
 
-        CounterRollup counterDeserialized = mapper.readValue(counterValue, CounterRollup.class);
+        BluefloodCounterRollup counterDeserialized = mapper.readValue(counterValue, BluefloodCounterRollup.class);
         String counterSerialized = mapper.writeValueAsString(counterDeserialized);
         Assert.assertEquals(counterValue, counterSerialized);
 
-        CounterRollup counterReserialized = mapper.readValue(counterSerialized, CounterRollup.class);
+        BluefloodCounterRollup counterReserialized = mapper.readValue(counterSerialized, BluefloodCounterRollup.class);
         Assert.assertEquals(counterDeserialized, counterReserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, counterReserialized);
@@ -54,11 +54,11 @@ public class IMetricSerializerTest {
     public void testGaugeSerialization() throws IOException {
         String gaugeValue = "{\"type\":\"gauge\",\"count\":1,\"latestNumericValue\":397,\"max\":397,\"mean\":397,\"min\":397,\"timestamp\":1389211230,\"var\":0.0}";
 
-        GaugeRollup gaugeDeserialized = mapper.readValue(gaugeValue, GaugeRollup.class);
+        BluefloodGaugeRollup gaugeDeserialized = mapper.readValue(gaugeValue, BluefloodGaugeRollup.class);
         String gaugeSerialized = mapper.writeValueAsString(gaugeDeserialized);
         Assert.assertEquals(gaugeValue, gaugeSerialized);
 
-        GaugeRollup gaugeReserialized = mapper.readValue(gaugeSerialized, GaugeRollup.class);
+        BluefloodGaugeRollup gaugeReserialized = mapper.readValue(gaugeSerialized, BluefloodGaugeRollup.class);
         Assert.assertEquals(gaugeDeserialized, gaugeReserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, gaugeReserialized);
@@ -71,11 +71,11 @@ public class IMetricSerializerTest {
     public void testSetSerialization() throws IOException {
         String setValue = "{\"type\":\"set\",\"count\":9,\"hashes\":[746007989,1875251108,98262,103159993,1727114331,-1034140067,98699,1062516268,99644]}";
 
-        SetRollup setDeserialized = mapper.readValue(setValue, SetRollup.class);
+        BluefloodSetRollup setDeserialized = mapper.readValue(setValue, BluefloodSetRollup.class);
         String setSerialized = mapper.writeValueAsString(setDeserialized);
         Assert.assertEquals(setValue, setSerialized);
 
-        SetRollup setReserialized = mapper.readValue(setSerialized, SetRollup.class);
+        BluefloodSetRollup setReserialized = mapper.readValue(setSerialized, BluefloodSetRollup.class);
         Assert.assertEquals(setDeserialized, setReserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, setReserialized);
@@ -88,11 +88,11 @@ public class IMetricSerializerTest {
     public void testTimerSerialization() throws IOException {
         String timerValue = "{\"type\":\"timer\",\"average\":214,\"count\":1,\"max\":214,\"min\":214,\"percentiles\":{\"98\":214,\"99\":214,\"75\":214,\"999\":214,\"50\":214},\"rate\":0.06666666666666667,\"sampleCount\":1,\"sum\":214.0,\"variance\":0.0}";
 
-        TimerRollup timerDeserialized = mapper.readValue(timerValue, TimerRollup.class);
+        BluefloodTimerRollup timerDeserialized = mapper.readValue(timerValue, BluefloodTimerRollup.class);
         String timerSerialized = mapper.writeValueAsString(timerDeserialized);
         Assert.assertEquals(timerValue, timerSerialized);
 
-        TimerRollup timerReserialized = mapper.readValue(timerSerialized, TimerRollup.class);
+        BluefloodTimerRollup timerReserialized = mapper.readValue(timerSerialized, BluefloodTimerRollup.class);
         Assert.assertEquals(timerDeserialized, timerReserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, timerReserialized);

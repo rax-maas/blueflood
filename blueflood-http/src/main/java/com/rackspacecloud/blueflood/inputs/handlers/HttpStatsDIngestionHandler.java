@@ -25,7 +25,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -75,7 +75,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             // block until things get ingested.
             requestCount.inc();
             MetricsCollection collection = new MetricsCollection();
-            collection.add(PreaggregateConversions.buildMetricsCollection(createBundle(body)));
+            collection.add(PreaggregateConversions.buildMetricsCollection(createPayload(body)));
             ListenableFuture<List<Boolean>> futures = processor.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
@@ -105,9 +105,9 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         }
     }
     
-    public static Bundle createBundle(String json) {
-        Bundle bundle = new Gson().fromJson(json, Bundle.class);
-        return bundle;
+    public static AggregatedPayload createPayload(String json) {
+        AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
+        return payload;
     }
 
     public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, ListenableFuture<Boolean>> {

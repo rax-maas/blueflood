@@ -46,7 +46,7 @@ public class RollupEventSerializerTest {
 
     @Test
     public void testTimerRollupSerialization() {
-        TimerRollup rollup = new TimerRollup();
+        BluefloodTimerRollup rollup = new BluefloodTimerRollup();
         rollup.withCount(20);
         rollup.withAverage(10);
         rollup.withMaxValue(20);
@@ -82,7 +82,7 @@ public class RollupEventSerializerTest {
 
     @Test
     public void testSetRollupSerialization() {
-        final SetRollup rollup0 = new SetRollup()
+        final BluefloodSetRollup rollup0 = new BluefloodSetRollup()
                 .withObject(10)
                 .withObject(20)
                 .withObject(30);
@@ -92,7 +92,7 @@ public class RollupEventSerializerTest {
 
     @Test
     public void testGaugeRollupSerialization() {
-        final GaugeRollup rollup = new GaugeRollup()
+        final BluefloodGaugeRollup rollup = new BluefloodGaugeRollup()
                 .withLatest(0, 1234);
         rollup.setMin(1);
         rollup.setMax(2);

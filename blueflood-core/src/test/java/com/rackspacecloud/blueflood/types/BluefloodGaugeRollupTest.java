@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-public class GaugeRollupTest {
+public class BluefloodGaugeRollupTest {
 
     @Test
     public void testGaugeV1RoundTrip() throws IOException {
@@ -32,15 +32,15 @@ public class GaugeRollupTest {
             add(new Point<SimpleNumber>(6, new SimpleNumber(50L)));
         }};
         
-        final GaugeRollup g0 = GaugeRollup.buildFromRawSamples(set0);
-        final GaugeRollup g1 = GaugeRollup.buildFromRawSamples(set1);
-        GaugeRollup g2 = GaugeRollup.buildFromGaugeRollups(new Points<GaugeRollup>() {{
-            add(new Point<GaugeRollup>(0, g0));
-            add(new Point<GaugeRollup>(3, g1));
+        final BluefloodGaugeRollup g0 = BluefloodGaugeRollup.buildFromRawSamples(set0);
+        final BluefloodGaugeRollup g1 = BluefloodGaugeRollup.buildFromRawSamples(set1);
+        BluefloodGaugeRollup g2 = BluefloodGaugeRollup.buildFromGaugeRollups(new Points<BluefloodGaugeRollup>() {{
+            add(new Point<BluefloodGaugeRollup>(0, g0));
+            add(new Point<BluefloodGaugeRollup>(3, g1));
         }});
         
         // equality tests.
-        Assert.assertTrue(GaugeRollup.buildFromRawSamples(set0).equals(GaugeRollup.buildFromRawSamples(set0)));
+        Assert.assertTrue(BluefloodGaugeRollup.buildFromRawSamples(set0).equals(BluefloodGaugeRollup.buildFromRawSamples(set0)));
         Assert.assertFalse(g0.equals(g1));
         
         Assert.assertEquals(20L, g0.getLatestNumericValue());
@@ -72,11 +72,11 @@ public class GaugeRollupTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/gauge_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            GaugeRollup gg0 = NumericSerializer.serializerFor(GaugeRollup.class).fromByteBuffer(bb);
+            BluefloodGaugeRollup gg0 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(g0, gg0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            GaugeRollup gg1 = NumericSerializer.serializerFor(GaugeRollup.class).fromByteBuffer(bb);
+            BluefloodGaugeRollup gg1 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(g1, gg1);
             
             Assert.assertFalse(gg0.equals(gg1));

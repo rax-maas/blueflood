@@ -54,45 +54,45 @@ public interface Rollup {
         }
     };
     
-    public static final Type<TimerRollup, TimerRollup> TimerFromTimer = new Type<TimerRollup, TimerRollup>() {
+    public static final Type<BluefloodTimerRollup, BluefloodTimerRollup> TimerFromTimer = new Type<BluefloodTimerRollup, BluefloodTimerRollup>() {
         @Override
-        public TimerRollup compute(Points<TimerRollup> input) throws IOException {
-            return TimerRollup.buildRollupFromTimerRollups(input);
+        public BluefloodTimerRollup compute(Points<BluefloodTimerRollup> input) throws IOException {
+            return BluefloodTimerRollup.buildRollupFromTimerRollups(input);
         }
     };
     
-    public static final Type<SimpleNumber, CounterRollup> CounterFromRaw = new Type<SimpleNumber, CounterRollup>() {
+    public static final Type<SimpleNumber, BluefloodCounterRollup> CounterFromRaw = new Type<SimpleNumber, BluefloodCounterRollup>() {
         @Override
-        public CounterRollup compute(Points<SimpleNumber> input) throws IOException {
-            return CounterRollup.buildRollupFromRawSamples(input);
+        public BluefloodCounterRollup compute(Points<SimpleNumber> input) throws IOException {
+            return BluefloodCounterRollup.buildRollupFromRawSamples(input);
         }
     };
     
-    public static final Type<CounterRollup, CounterRollup> CounterFromCounter = new Type<CounterRollup, CounterRollup>() {
+    public static final Type<BluefloodCounterRollup, BluefloodCounterRollup> CounterFromCounter = new Type<BluefloodCounterRollup, BluefloodCounterRollup>() {
         @Override
-        public CounterRollup compute(Points<CounterRollup> input) throws IOException {
-            return CounterRollup.buildRollupFromCounterRollups(input);
+        public BluefloodCounterRollup compute(Points<BluefloodCounterRollup> input) throws IOException {
+            return BluefloodCounterRollup.buildRollupFromCounterRollups(input);
         }
     };
     
-    public static final Type<SimpleNumber, GaugeRollup> GaugeFromRaw = new Type<SimpleNumber, GaugeRollup>() {
+    public static final Type<SimpleNumber, BluefloodGaugeRollup> GaugeFromRaw = new Type<SimpleNumber, BluefloodGaugeRollup>() {
         @Override
-        public GaugeRollup compute(Points<SimpleNumber> input) throws IOException {
-            return GaugeRollup.buildFromRawSamples(input);
+        public BluefloodGaugeRollup compute(Points<SimpleNumber> input) throws IOException {
+            return BluefloodGaugeRollup.buildFromRawSamples(input);
         }
     };
     
-    public static final Type<GaugeRollup, GaugeRollup> GaugeFromGauge = new Type<GaugeRollup, GaugeRollup>() {
+    public static final Type<BluefloodGaugeRollup, BluefloodGaugeRollup> GaugeFromGauge = new Type<BluefloodGaugeRollup, BluefloodGaugeRollup>() {
         @Override
-        public GaugeRollup compute(Points<GaugeRollup> input) throws IOException {
-            return GaugeRollup.buildFromGaugeRollups(input);
+        public BluefloodGaugeRollup compute(Points<BluefloodGaugeRollup> input) throws IOException {
+            return BluefloodGaugeRollup.buildFromGaugeRollups(input);
         }
     };
     
-    public static final Type<SetRollup, SetRollup> SetFromSet = new Type<SetRollup, SetRollup>() {
+    public static final Type<BluefloodSetRollup, BluefloodSetRollup> SetFromSet = new Type<BluefloodSetRollup, BluefloodSetRollup>() {
         @Override
-        public SetRollup compute(Points<SetRollup> input) throws IOException {
-            return SetRollup.buildRollupFromSetRollups(input);
+        public BluefloodSetRollup compute(Points<BluefloodSetRollup> input) throws IOException {
+            return BluefloodSetRollup.buildRollupFromSetRollups(input);
         }
     };
 

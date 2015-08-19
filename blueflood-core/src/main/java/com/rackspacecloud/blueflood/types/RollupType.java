@@ -25,13 +25,13 @@ public enum RollupType {
     }
     
     public static RollupType fromRollup(Rollup value) {
-        if (value instanceof SetRollup)
+        if (value instanceof BluefloodSetRollup)
             return RollupType.SET;
-        else if (value instanceof TimerRollup)
+        else if (value instanceof BluefloodTimerRollup)
             return RollupType.TIMER;
-        else if (value instanceof CounterRollup)
+        else if (value instanceof BluefloodCounterRollup)
             return RollupType.COUNTER;
-        else if (value instanceof GaugeRollup)
+        else if (value instanceof BluefloodGaugeRollup)
             return RollupType.GAUGE;
         else if  (value instanceof Metric)
             return RollupType.BF_BASIC;
@@ -46,13 +46,13 @@ public enum RollupType {
     // derive the class of the type. This will be used to determine which serializer is used.
     public static Class<? extends Rollup> classOf(RollupType type, Granularity gran) {
         if (type == RollupType.COUNTER)
-            return CounterRollup.class;
+            return BluefloodCounterRollup.class;
         else if (type == RollupType.TIMER)
-            return TimerRollup.class;
+            return BluefloodTimerRollup.class;
         else if (type == RollupType.SET)
-            return SetRollup.class;
+            return BluefloodSetRollup.class;
         else if (type == RollupType.GAUGE)
-            return GaugeRollup.class;
+            return BluefloodGaugeRollup.class;
         else if (type == RollupType.BF_BASIC && gran == Granularity.FULL)
             return SimpleNumber.class;
         else if (type == RollupType.BF_BASIC && gran != Granularity.FULL)

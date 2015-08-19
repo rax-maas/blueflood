@@ -1,25 +1,40 @@
-package com.rackspacecloud.blueflood.types;
+/*
+ * Copyright 2015 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 
+package com.rackspacecloud.blueflood.types;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class SetRollup implements Rollup {
+public class BluefloodSetRollup implements Rollup {
     
     private Set<Integer> hashes = new HashSet<Integer>();
     
-    public SetRollup() {}
+    public BluefloodSetRollup() {}
     
-    public SetRollup withObject(Object o) {
+    public BluefloodSetRollup withObject(Object o) {
         hashes.add(o.hashCode());
         return this;
     }
     
-    public static SetRollup buildRollupFromSetRollups(Points<SetRollup> input) throws IOException {
-        SetRollup rollup = new SetRollup();
-        for (Points.Point<SetRollup> point : input.getPoints().values()) {
+    public static BluefloodSetRollup buildRollupFromSetRollups(Points<BluefloodSetRollup> input) throws IOException {
+        BluefloodSetRollup rollup = new BluefloodSetRollup();
+        for (Points.Point<BluefloodSetRollup> point : input.getPoints().values()) {
             for (Integer i : point.getData().getHashes()) {
                 rollup.hashes.add(i);
             }
@@ -33,10 +48,10 @@ public class SetRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof SetRollup)) {
+        if (obj == null || !(obj instanceof BluefloodSetRollup)) {
             return false;
         }
-        SetRollup other = (SetRollup)obj;
+        BluefloodSetRollup other = (BluefloodSetRollup)obj;
         return hashes.equals(other.hashes);
     }
 

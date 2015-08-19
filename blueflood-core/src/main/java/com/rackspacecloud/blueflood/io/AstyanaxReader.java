@@ -272,13 +272,13 @@ public class AstyanaxReader extends AstyanaxIO {
             serializer = NumericSerializer.simpleNumberSerializer;
         } else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL) {
             // consider a method for this.  getSerializer(CF, TYPE);
-            if (type.equals(TimerRollup.class)) {
+            if (type.equals(BluefloodTimerRollup.class)) {
                 serializer = NumericSerializer.timerRollupInstance;
-            } else if (type.equals(SetRollup.class)) {
+            } else if (type.equals(BluefloodSetRollup.class)) {
                 serializer = NumericSerializer.setRollupInstance;
-            } else if (type.equals(GaugeRollup.class)) {
+            } else if (type.equals(BluefloodGaugeRollup.class)) {
                 serializer = NumericSerializer.gaugeRollupInstance;
-            } else if (type.equals(CounterRollup.class)) {
+            } else if (type.equals(BluefloodCounterRollup.class)) {
                 serializer = NumericSerializer.CounterRollupInstance;
             } else {
                 serializer = NumericSerializer.simpleNumberSerializer;

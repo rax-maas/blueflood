@@ -17,8 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
-import com.rackspacecloud.blueflood.types.CounterRollup;
+import com.rackspacecloud.blueflood.types.BluefloodCounterRollup;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
@@ -35,8 +34,8 @@ public class CounterRollupSerializationTest {
 
     @Test
     public void testCounterV1RoundTrip() throws IOException {
-        CounterRollup c0 = new CounterRollup().withCount(7442245).withSampleCount(1);
-        CounterRollup c1 = new CounterRollup().withCount(34454722343L).withSampleCount(10);
+        BluefloodCounterRollup c0 = new BluefloodCounterRollup().withCount(7442245).withSampleCount(1);
+        BluefloodCounterRollup c1 = new BluefloodCounterRollup().withCount(34454722343L).withSampleCount(10);
         
         if (System.getProperty("GENERATE_COUNTER_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/counter_version_" + Constants.VERSION_1_COUNTER_ROLLUP + ".bin", false);
@@ -56,11 +55,11 @@ public class CounterRollupSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/counter_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            CounterRollup cc0 = NumericSerializer.serializerFor(CounterRollup.class).fromByteBuffer(bb);
+            BluefloodCounterRollup cc0 = NumericSerializer.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(c0, cc0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            CounterRollup cc1 = NumericSerializer.serializerFor(CounterRollup.class).fromByteBuffer(bb);
+            BluefloodCounterRollup cc1 = NumericSerializer.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(c1, cc1);
             
             Assert.assertFalse(cc0.equals(cc1));

@@ -16,13 +16,11 @@
 
 package com.rackspacecloud.blueflood.outputs.serializers;
 
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer.MetricStat;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
 import com.rackspacecloud.blueflood.types.Points;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.types.SimpleNumber;

@@ -19,14 +19,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -50,13 +43,13 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
             Class dataClass = metricData.getData().getDataClass();
             if (dataClass.equals(BasicRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_BASIC;
-            else if (dataClass.equals(GaugeRollup.class))
+            else if (dataClass.equals(BluefloodGaugeRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_GAUGE;
-            else if (dataClass.equals(CounterRollup.class))
+            else if (dataClass.equals(BluefloodCounterRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_COUNTER;
-            else if (dataClass.equals(SetRollup.class))
+            else if (dataClass.equals(BluefloodSetRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_SET;
-            else if (dataClass.equals(TimerRollup.class))
+            else if (dataClass.equals(BluefloodTimerRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_TIMER;
             // else, I got nothing.
         }
@@ -98,8 +91,8 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         
         // todo: adding getCount() to Rollup interface will simplify this block.
         // because of inheritance, GaugeRollup needs to come before BasicRollup. sorry.
-        if (point.getData() instanceof GaugeRollup) {
-            GaugeRollup rollup = (GaugeRollup)point.getData();
+        if (point.getData() instanceof BluefloodGaugeRollup) {
+            BluefloodGaugeRollup rollup = (BluefloodGaugeRollup)point.getData();
             numPoints += rollup.getCount();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
         } else if (point.getData() instanceof BasicRollup) {
@@ -114,16 +107,16 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         } else if (point.getData() instanceof Boolean) {
             numPoints = 1;
             filterStatsObject = getFilteredStatsForBoolean((Boolean) point.getData());
-        } else if (point.getData() instanceof SetRollup) {
-            SetRollup rollup = (SetRollup)point.getData();
+        } else if (point.getData() instanceof BluefloodSetRollup) {
+            BluefloodSetRollup rollup = (BluefloodSetRollup)point.getData();
             numPoints += rollup.getCount();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
-        } else if (point.getData() instanceof TimerRollup) {
-            TimerRollup rollup = (TimerRollup)point.getData();
+        } else if (point.getData() instanceof BluefloodTimerRollup) {
+            BluefloodTimerRollup rollup = (BluefloodTimerRollup)point.getData();
             numPoints += rollup.getCount();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
-        } else if (point.getData() instanceof CounterRollup) {
-            CounterRollup rollup = (CounterRollup)point.getData();
+        } else if (point.getData() instanceof BluefloodCounterRollup) {
+            BluefloodCounterRollup rollup = (BluefloodCounterRollup)point.getData();
             numPoints += rollup.getCount().longValue();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
         } else {
@@ -161,7 +154,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
                 Object filteredValue = stat.convertRollupToObject(rollup);
                 if (filteredValue instanceof Map && stat == MetricStat.PERCENTILE) {
                     for (Map.Entry entry : ((Map<?,?>)filteredValue).entrySet()) {
-                        TimerRollup.Percentile pct = (TimerRollup.Percentile)entry.getValue();
+                        BluefloodTimerRollup.Percentile pct = (BluefloodTimerRollup.Percentile)entry.getValue();
                         filteredObject.put(String.format("pct_%s", entry.getKey().toString()), pct.getMean());
                     }
                 } else {

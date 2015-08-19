@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
@@ -33,19 +33,19 @@ import java.util.Collection;
 
 public class StatsdHttpIngestionTests {
     
-    private Bundle bundle;
+    private AggregatedPayload payload;
     
     @Before
-    public void buildBundle() throws IOException {
+    public void buildPayload() throws IOException {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_bundle.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
             curLine = reader.readLine();
         }
         String json = sb.toString();
-        bundle = HttpStatsDIngestionHandler.createBundle(json);
+        payload = HttpStatsDIngestionHandler.createPayload(json);
     }
     
     @Test(expected = NumberFormatException.class)
@@ -64,28 +64,28 @@ public class StatsdHttpIngestionTests {
     
     @Test
     public void testCounters() {
-        Collection<PreaggregatedMetric> counters = PreaggregateConversions.convertCounters("1", 1, 15000, bundle.getCounters());
+        Collection<PreaggregatedMetric> counters = PreaggregateConversions.convertCounters("1", 1, 15000, payload.getCounters());
         Assert.assertEquals(6, counters.size());
         ensureSerializability(counters);
     }
     
     @Test
     public void testGauges() {
-        Collection<PreaggregatedMetric> gauges = PreaggregateConversions.convertGauges("1", 1, bundle.getGauges());
+        Collection<PreaggregatedMetric> gauges = PreaggregateConversions.convertGauges("1", 1, payload.getGauges());
         Assert.assertEquals(4, gauges.size());
         ensureSerializability(gauges);
     }
      
     @Test
     public void testSets() {
-        Collection<PreaggregatedMetric> sets = PreaggregateConversions.convertSets("1", 1, bundle.getSets());
+        Collection<PreaggregatedMetric> sets = PreaggregateConversions.convertSets("1", 1, payload.getSets());
         Assert.assertEquals(2, sets.size());
         ensureSerializability(sets);
     }
     
     @Test
     public void testTimers() {
-        Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, bundle.getTimers());
+        Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, payload.getTimers());
         Assert.assertEquals(4, timers.size());
         ensureSerializability(timers);
     }

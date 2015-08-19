@@ -298,13 +298,13 @@ public class RollupHandler {
         Class rollupTypeClass = points.getDataClass();
         if (rollupTypeClass.equals(SimpleNumber.class)) {
             return Rollup.BasicFromRaw.compute(points);
-        } else if (rollupTypeClass.equals(CounterRollup.class)) {
+        } else if (rollupTypeClass.equals(BluefloodCounterRollup.class)) {
             return Rollup.CounterFromCounter.compute(points);
-        } else if (rollupTypeClass.equals(SetRollup.class)) {
+        } else if (rollupTypeClass.equals(BluefloodSetRollup.class)) {
             return Rollup.SetFromSet.compute(points);
-        } else if (rollupTypeClass.equals(TimerRollup.class)) {
+        } else if (rollupTypeClass.equals(BluefloodTimerRollup.class)) {
             return Rollup.TimerFromTimer.compute(points);
-        } else if (rollupTypeClass.equals(GaugeRollup.class)) {
+        } else if (rollupTypeClass.equals(BluefloodGaugeRollup.class)) {
             return Rollup.GaugeFromGauge.compute(points);
         } else {
             throw new IOException(String.format("Unexpected rollup type: %s", rollupTypeClass.getSimpleName()));

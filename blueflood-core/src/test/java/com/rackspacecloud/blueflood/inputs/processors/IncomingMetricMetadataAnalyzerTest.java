@@ -71,7 +71,7 @@ public class IncomingMetricMetadataAnalyzerTest {
         ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
 
         Locator locator = Locator.createLocatorFromDbKey("preag_counter");
-        metricsList.add(new PreaggregatedMetric(12300000, locator, new TimeValue(1, TimeUnit.DAYS), new CounterRollup()));
+        metricsList.add(new PreaggregatedMetric(12300000, locator, new TimeValue(1, TimeUnit.DAYS), new BluefloodCounterRollup()));
 
         analyzer.scanMetrics(metricsList);
         String type = cache.get(locator, MetricMetadata.TYPE.name().toLowerCase());

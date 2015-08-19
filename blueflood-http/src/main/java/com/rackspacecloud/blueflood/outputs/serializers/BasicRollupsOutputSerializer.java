@@ -18,12 +18,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.types.CounterRollup;
-import com.rackspacecloud.blueflood.types.GaugeRollup;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SetRollup;
-import com.rackspacecloud.blueflood.types.TimerRollup;
+import com.rackspacecloud.blueflood.types.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,8 +35,8 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getAverage();
-                else if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getAverage();
+                else if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getAverage();
                 else
                     // counters, sets
                     throw new Exception(String.format("average not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -57,8 +52,8 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getVariance();
-                else if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getVariance();
+                else if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getVariance();
                 else
                     // counters, sets.
                     throw new Exception(String.format("variance not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -74,8 +69,8 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMinValue();
-                else if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getMinValue();
+                else if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getMinValue();
                 else
                     // counters, sets.
                     throw new Exception(String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -91,8 +86,8 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMaxValue();
-                else if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getMaxValue();
+                else if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getMaxValue();
                 else
                     // counters, sets.
                     throw new Exception(String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -108,12 +103,12 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getCount();
-                else if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getCount();
-                else if (rollup instanceof CounterRollup)
-                    return ((CounterRollup) rollup).getCount();
-                else if (rollup instanceof SetRollup)
-                    return ((SetRollup) rollup).getCount();
+                else if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getCount();
+                else if (rollup instanceof BluefloodCounterRollup)
+                    return ((BluefloodCounterRollup) rollup).getCount();
+                else if (rollup instanceof BluefloodSetRollup)
+                    return ((BluefloodSetRollup) rollup).getCount();
                 else
                     // gauge.
                     throw new Exception(String.format("numPoints not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -127,8 +122,8 @@ public interface BasicRollupsOutputSerializer<T> {
         LATEST("latest") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof GaugeRollup)
-                    return ((GaugeRollup) rollup).getLatestValue().getValue();
+                if (rollup instanceof BluefloodGaugeRollup)
+                    return ((BluefloodGaugeRollup) rollup).getLatestValue().getValue();
                 else
                     // every other type.
                     throw new Exception(String.format("latest value not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -142,10 +137,10 @@ public interface BasicRollupsOutputSerializer<T> {
         RATE("rate") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getRate();
-                else if (rollup instanceof CounterRollup)
-                    return ((CounterRollup) rollup).getRate();
+                if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getRate();
+                else if (rollup instanceof BluefloodCounterRollup)
+                    return ((BluefloodCounterRollup) rollup).getRate();
                 else
                     // gauge, set, basic
                     throw new Exception(String.format("rate not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -159,10 +154,10 @@ public interface BasicRollupsOutputSerializer<T> {
         SUM("sum") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getSum();
-                else if (rollup instanceof CounterRollup)
-                    return ((CounterRollup) rollup).getCount();
+                if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getSum();
+                else if (rollup instanceof BluefloodCounterRollup)
+                    return ((BluefloodCounterRollup) rollup).getCount();
                 else
                     // every other type.
                     throw new Exception(String.format("sum not supported for this type: %s", rollup.getClass().getSimpleName()));
@@ -176,8 +171,8 @@ public interface BasicRollupsOutputSerializer<T> {
         PERCENTILE("percentiles") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof TimerRollup)
-                    return ((TimerRollup) rollup).getPercentiles();
+                if (rollup instanceof BluefloodTimerRollup)
+                    return ((BluefloodTimerRollup) rollup).getPercentiles();
                 else
                     // every other type.
                     throw new Exception(String.format("percentiles supported for this type: %s", rollup.getClass().getSimpleName()));

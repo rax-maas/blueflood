@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-public class SetRollupTest {
+public class BluefloodSetRollupTest {
     
     @Test
     public void testMaths() throws IOException {
@@ -27,7 +27,7 @@ public class SetRollupTest {
             add(new Point<SimpleNumber>(1, new SimpleNumber(20L)));
             add(new Point<SimpleNumber>(2, new SimpleNumber(30L)));
         }};  
-        final SetRollup rollup0 = new SetRollup()
+        final BluefloodSetRollup rollup0 = new BluefloodSetRollup()
                 .withObject(10)
                 .withObject(20)
                 .withObject(30);
@@ -40,7 +40,7 @@ public class SetRollupTest {
             add(new Point<SimpleNumber>(5, new SimpleNumber(60L)));
             add(new Point<SimpleNumber>(6, new SimpleNumber(70L)));
         }};
-        final SetRollup rollup1 = new SetRollup()
+        final BluefloodSetRollup rollup1 = new BluefloodSetRollup()
                 .withObject(40)
                 .withObject(50)
                 .withObject(60)
@@ -52,9 +52,9 @@ public class SetRollupTest {
         Assert.assertEquals(4, rollup1.getCount());
         
         // now combine them!
-        SetRollup rollup2 = SetRollup.buildRollupFromSetRollups(new Points<SetRollup>() {{
-            add(new Point<SetRollup>(0, rollup0));
-            add(new Point<SetRollup>(3, rollup1));
+        BluefloodSetRollup rollup2 = BluefloodSetRollup.buildRollupFromSetRollups(new Points<BluefloodSetRollup>() {{
+            add(new Point<BluefloodSetRollup>(0, rollup0));
+            add(new Point<BluefloodSetRollup>(3, rollup1));
         }});
         
         Assert.assertEquals(4 + 3, rollup2.getCount());
@@ -66,8 +66,8 @@ public class SetRollupTest {
         final Random rand = new Random(7391938383L);
         Set<String> s0Sample = new HashSet<String>();
         Set<String> s1Sample = new HashSet<String>();
-        SetRollup s0 = new SetRollup();
-        SetRollup s1 = new SetRollup();
+        BluefloodSetRollup s0 = new BluefloodSetRollup();
+        BluefloodSetRollup s1 = new BluefloodSetRollup();
         
         for (int i = 0; i < 200; i++) {
             String s0String = Long.toHexString(rand.nextLong());
@@ -98,11 +98,11 @@ public class SetRollupTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SetRollup ss0 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
+            BluefloodSetRollup ss0 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s0, ss0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            SetRollup ss1 = NumericSerializer.serializerFor(SetRollup.class).fromByteBuffer(bb);
+            BluefloodSetRollup ss1 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s1, ss1);
             
             Assert.assertFalse(ss0.equals(ss1));
