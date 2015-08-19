@@ -63,6 +63,8 @@ public enum RollupType {
             return BasicRollup.class;
         else if (type == RollupType.BF_HISTOGRAMS)
             return HistogramRollup.class;
+        else if(type == RollupType.ENUM)
+            return EnumRollup.class;
         else
             throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
     }
