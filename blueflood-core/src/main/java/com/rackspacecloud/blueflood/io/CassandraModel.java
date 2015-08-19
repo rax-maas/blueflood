@@ -155,7 +155,7 @@ public class CassandraModel {
         } else if (type.equals(HistogramRollup.class)) {
             return HIST_GRAN_TO_CF.get(granularity);
         } else if (type.equals(SetRollup.class) || type.equals(TimerRollup.class) || type.equals(GaugeRollup.class) ||
-                type.equals(CounterRollup.class)) {
+                type.equals(CounterRollup.class) || type.equals(EnumRollup.class)) {
             return PREAG_GRAN_TO_CF.get(granularity);
         } else {
             throw new RuntimeException("Unsupported rollup type.");
