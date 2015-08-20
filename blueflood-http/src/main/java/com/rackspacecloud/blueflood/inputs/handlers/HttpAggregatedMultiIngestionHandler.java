@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Rackspace
+ * Copyright 2013-2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,18 +19,13 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
+import com.google.gson.*;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
-import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -40,27 +35,25 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
-public class HttpStatsDIngestionHandler implements HttpRequestHandler {
-    
-    private static final Logger log = LoggerFactory.getLogger(HttpStatsDIngestionHandler.class);
-    
-    private static final Timer handlerTimer = Metrics.timer(HttpStatsDIngestionHandler.class, "HTTP statsd metrics ingestion timer");
-    private static final Counter requestCount = Metrics.counter(HttpStatsDIngestionHandler.class, "HTTP Request Count");
-    
+public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(HttpAggregatedMultiIngestionHandler.class);
+
+    private static final Timer handlerTimer = Metrics.timer(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi metrics ingestion timer");
+    private static final Counter requestCount = Metrics.counter(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi Request Count");
+
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
-    
-    public HttpStatsDIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+
+    public HttpAggregatedMultiIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.processor = processor;
         this.timeout = timeout;
     }
-    
+
     // our own stuff.
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
@@ -74,8 +67,13 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
         try {
             // block until things get ingested.
             requestCount.inc();
+            List<AggregatedPayload> bundleList = createBundleList(body);
             MetricsCollection collection = new MetricsCollection();
-            collection.add(PreaggregateConversions.buildMetricsCollection(createPayload(body)));
+
+            for (AggregatedPayload bundle : bundleList) {
+                collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+            }
+
             ListenableFuture<List<Boolean>> futures = processor.apply(collection);
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
@@ -84,6 +82,7 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
                     return;
                 }
             }
+
             DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
 
         } catch (JsonParseException ex) {
@@ -104,29 +103,20 @@ public class HttpStatsDIngestionHandler implements HttpRequestHandler {
             timerContext.stop();
         }
     }
-    
-    public static AggregatedPayload createPayload(String json) {
-        AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
-        return payload;
-    }
 
-    public static class WriteMetrics extends FunctionWithThreadPool<Collection<IMetric>, ListenableFuture<Boolean>> {
-        private final AstyanaxWriter writer;
-        
-        public WriteMetrics(ThreadPoolExecutor executor, AstyanaxWriter writer) {
-            super(executor);
-            this.writer = writer;
+    public static List<AggregatedPayload> createBundleList(String json) {
+        Gson gson = new Gson();
+        JsonParser parser = new JsonParser();
+        JsonArray jArray = parser.parse(json).getAsJsonArray();
+
+        ArrayList<AggregatedPayload> bundleList = new ArrayList<AggregatedPayload>();
+
+        for(JsonElement obj : jArray )
+        {
+            AggregatedPayload bundle = gson.fromJson( obj , AggregatedPayload.class);
+            bundleList.add(bundle);
         }
 
-        @Override
-        public ListenableFuture<Boolean> apply(final Collection<IMetric> input) throws Exception {
-            return this.getThreadPool().submit(new Callable<Boolean>() {
-                @Override
-                public Boolean call() throws Exception {
-                    writer.insertMetrics(input, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
-                    return true;
-                }
-            });
-        }
+        return bundleList;
     }
 }

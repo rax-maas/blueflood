@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collection;
 
-public class StatsdHttpIngestionTests {
+public class HttpAggregatedIngestionTests {
     
     private AggregatedPayload payload;
     
@@ -45,7 +45,7 @@ public class StatsdHttpIngestionTests {
             curLine = reader.readLine();
         }
         String json = sb.toString();
-        payload = HttpStatsDIngestionHandler.createPayload(json);
+        payload = HttpAggregatedIngestionHandler.createPayload(json);
     }
     
     @Test(expected = NumberFormatException.class)
