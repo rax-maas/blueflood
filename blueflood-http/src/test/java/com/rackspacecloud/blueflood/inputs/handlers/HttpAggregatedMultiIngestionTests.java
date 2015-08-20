@@ -32,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 public class HttpAggregatedMultiIngestionTests {
@@ -49,6 +50,21 @@ public class HttpAggregatedMultiIngestionTests {
         }
         String json = sb.toString();
         bundleList = HttpAggregatedMultiIngestionHandler.createBundleList(json);
+    }
+
+    @Test
+    public void testMultiBundle() {
+        HashSet<String> tenantIdSet = new HashSet<String>();
+        HashSet<Long> timestampSet = new HashSet<Long>();
+        Assert.assertTrue(bundleList.size() == 3);
+
+        for (Bundle bundle : bundleList) {
+            tenantIdSet.add(bundle.getTenantId());
+            timestampSet.add(bundle.getTimestamp());
+        }
+
+        Assert.assertTrue(tenantIdSet.size() == 3); //3 unique timestamps are supported
+        Assert.assertTrue(timestampSet.size() == 3); //3 unique tenants are supported
     }
 
     @Test
