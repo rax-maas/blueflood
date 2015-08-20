@@ -258,13 +258,13 @@ public class HttpHandlerIntegrationTest {
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
 
         final Locator locator = Locator.createLocatorFromPathComponents("5405532", "G200ms");
-        Points<GaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll(GaugeRollup.class,
-                locator, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(GaugeRollup.class, Granularity.FULL));
+        Points<BluefloodGaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodGaugeRollup.class,
+                locator, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodGaugeRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
 
         final Locator locator1 = Locator.createLocatorFromPathComponents("5405577", "internal.bad_lines_seen");
-        Points<CounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll(CounterRollup.class,
-                locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(CounterRollup.class, Granularity.FULL));
+        Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
+                locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points1.getPoints().size());
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently

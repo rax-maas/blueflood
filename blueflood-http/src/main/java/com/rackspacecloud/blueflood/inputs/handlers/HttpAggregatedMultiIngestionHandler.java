@@ -23,7 +23,7 @@ import com.google.gson.*;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -67,10 +67,10 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         try {
             // block until things get ingested.
             requestCount.inc();
-            List<Bundle> bundleList = createBundleList(body);
+            List<AggregatedPayload> bundleList = createBundleList(body);
             MetricsCollection collection = new MetricsCollection();
 
-            for (Bundle bundle : bundleList) {
+            for (AggregatedPayload bundle : bundleList) {
                 collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
             }
 
@@ -104,16 +104,16 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         }
     }
 
-    public static List<Bundle> createBundleList(String json) {
+    public static List<AggregatedPayload> createBundleList(String json) {
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
         JsonArray jArray = parser.parse(json).getAsJsonArray();
 
-        ArrayList<Bundle> bundleList = new ArrayList<Bundle>();
+        ArrayList<AggregatedPayload> bundleList = new ArrayList<AggregatedPayload>();
 
         for(JsonElement obj : jArray )
         {
-            Bundle bundle = gson.fromJson( obj , Bundle.class);
+            AggregatedPayload bundle = gson.fromJson( obj , AggregatedPayload.class);
             bundleList.add(bundle);
         }
 

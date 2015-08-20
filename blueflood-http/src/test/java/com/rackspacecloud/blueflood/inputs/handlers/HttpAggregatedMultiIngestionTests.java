@@ -16,11 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.inputs.handlers.HttpAggregatedIngestionHandler;
-import com.rackspacecloud.blueflood.inputs.handlers.PreaggregateConversions;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.Bundle;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
@@ -37,7 +34,7 @@ import java.util.List;
 
 public class HttpAggregatedMultiIngestionTests {
     
-    private List<Bundle> bundleList;
+    private List<AggregatedPayload> bundleList;
     
     @Before
     public void buildBundle() throws IOException {
@@ -58,7 +55,7 @@ public class HttpAggregatedMultiIngestionTests {
         HashSet<Long> timestampSet = new HashSet<Long>();
         Assert.assertTrue(bundleList.size() == 3);
 
-        for (Bundle bundle : bundleList) {
+        for (AggregatedPayload bundle : bundleList) {
             tenantIdSet.add(bundle.getTenantId());
             timestampSet.add(bundle.getTimestamp());
         }
@@ -69,7 +66,7 @@ public class HttpAggregatedMultiIngestionTests {
 
     @Test
     public void testCounters() {
-        for (Bundle bundle : bundleList) {
+        for (AggregatedPayload bundle : bundleList) {
             Collection<PreaggregatedMetric> counters = PreaggregateConversions.convertCounters("1", 1, 15000, bundle.getCounters());
             Assert.assertEquals(1, counters.size());
             ensureSerializability(counters);
@@ -79,12 +76,12 @@ public class HttpAggregatedMultiIngestionTests {
     @Test
     public void testEmptyButValidMultiJSON() {
         String badJson = "[]";
-        List<Bundle> bundle = HttpAggregatedMultiIngestionHandler.createBundleList(badJson);
+        List<AggregatedPayload> bundle = HttpAggregatedMultiIngestionHandler.createBundleList(badJson);
     }
     
     @Test
     public void testGauges() {
-        for (Bundle bundle : bundleList) {
+        for (AggregatedPayload bundle : bundleList) {
             Collection<PreaggregatedMetric> gauges = PreaggregateConversions.convertGauges("1", 1, bundle.getGauges());
             Assert.assertEquals(1, gauges.size());
             ensureSerializability(gauges);
@@ -93,7 +90,7 @@ public class HttpAggregatedMultiIngestionTests {
      
     @Test
     public void testSets() {
-        for (Bundle bundle : bundleList) {
+        for (AggregatedPayload bundle : bundleList) {
             Collection<PreaggregatedMetric> sets = PreaggregateConversions.convertSets("1", 1, bundle.getSets());
             Assert.assertEquals(1, sets.size());
             ensureSerializability(sets);
@@ -102,7 +99,7 @@ public class HttpAggregatedMultiIngestionTests {
     
     @Test
     public void testTimers() {
-        for (Bundle bundle : bundleList) {
+        for (AggregatedPayload bundle : bundleList) {
             Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, bundle.getTimers());
             Assert.assertEquals(1, timers.size());
             ensureSerializability(timers);
