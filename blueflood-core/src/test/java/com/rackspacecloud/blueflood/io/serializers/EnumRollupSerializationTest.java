@@ -19,7 +19,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.types.EnumRollup;
+import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
@@ -31,8 +31,8 @@ public class EnumRollupSerializationTest {
 
     @Test
     public void testEnumV1RoundTrip() throws IOException {
-        EnumRollup e0 = new EnumRollup().withEnumValue("enumValue1", (long) 1).withEnumValue("enumValuu2", 5L);
-        EnumRollup e1 = new EnumRollup().withEnumValue("t4.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L)
+        BluefloodEnumRollup e0 = new BluefloodEnumRollup().withEnumValue("enumValue1", (long) 1).withEnumValue("enumValuu2", 5L);
+        BluefloodEnumRollup e1 = new BluefloodEnumRollup().withEnumValue("t4.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L)
                             .withEnumValue("t5.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L);
 
         if (System.getProperty("GENERATE_ENUM_SERIALIZATION") != null) {
@@ -53,11 +53,11 @@ public class EnumRollupSerializationTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/enum_version_" + version + ".bin"));
 
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            EnumRollup ee0 = NumericSerializer.serializerFor(EnumRollup.class).fromByteBuffer(bb);
+            BluefloodEnumRollup ee0 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(e0, ee0);
 
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            EnumRollup ee1 = NumericSerializer.serializerFor(EnumRollup.class).fromByteBuffer(bb);
+            BluefloodEnumRollup ee1 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(e1, ee1);
 
             Assert.assertFalse(ee0.equals(ee1));
