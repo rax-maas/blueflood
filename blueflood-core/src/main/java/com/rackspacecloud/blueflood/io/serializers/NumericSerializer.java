@@ -49,6 +49,7 @@ public class NumericSerializer {
     public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
+    public static AbstractSerializer<EnumRollup> enumRollupInstance = new EnumRollupSerializer();
 
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
@@ -65,7 +66,7 @@ public class NumericSerializer {
         static final byte B_TIMER = (byte)'T';
         static final byte B_SET = (byte)'S';
         static final byte B_GAUGE = (byte)'G';
-        static final byte B_ENUM = (byte) 'E';
+        static final byte B_ENUM = (byte)'E';
     }
     
     /** return a serializer for a specific type */
@@ -88,7 +89,7 @@ public class NumericSerializer {
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
         else if (type.equals(EnumRollup.class))
-            return (AbstractSerializer<T>)enRollupInstance;
+            return (AbstractSerializer<T>)enumRollupInstance;
         else if (type.equals(BluefloodSetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
