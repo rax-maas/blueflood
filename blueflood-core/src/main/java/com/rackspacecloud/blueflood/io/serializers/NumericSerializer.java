@@ -48,7 +48,7 @@ public class NumericSerializer {
     public static AbstractSerializer<TimerRollup> timerRollupInstance = new TimerRollupSerializer();
     public static AbstractSerializer<SetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<GaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    public static AbstractSerializer<EnumRollup> enRollupInstance = new EnumRollupSerializer();
+    public static AbstractSerializer<EnumRollup> enumRollupInstance = new EnumRollupSerializer();
     public static AbstractSerializer<CounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
@@ -66,7 +66,7 @@ public class NumericSerializer {
         static final byte B_TIMER = (byte)'T';
         static final byte B_SET = (byte)'S';
         static final byte B_GAUGE = (byte)'G';
-        static final byte B_ENUM = (byte) 'E';
+        static final byte B_ENUM = (byte)'E';
     }
     
     /** return a serializer for a specific type */
@@ -89,7 +89,7 @@ public class NumericSerializer {
         else if (type.equals(GaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
         else if (type.equals(EnumRollup.class))
-            return (AbstractSerializer<T>)enRollupInstance;
+            return (AbstractSerializer<T>)enumRollupInstance;
         else if (type.equals(SetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
