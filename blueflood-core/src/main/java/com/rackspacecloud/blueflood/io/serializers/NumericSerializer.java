@@ -49,7 +49,7 @@ public class NumericSerializer {
     public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
     public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
-    public static AbstractSerializer<EnumRollup> enumRollupInstance = new EnumRollupSerializer();
+    public static AbstractSerializer<BluefloodEnumRollup> enumRollupInstance = new EnumRollupSerializer();
 
     private static Histogram fullResSize = Metrics.histogram(NumericSerializer.class, "Full Resolution Metric Size");
     private static Histogram rollupSize = Metrics.histogram(NumericSerializer.class, "Rollup Metric Size");
@@ -88,7 +88,7 @@ public class NumericSerializer {
             return (AbstractSerializer<T>) CounterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
-        else if (type.equals(EnumRollup.class))
+        else if (type.equals(BluefloodEnumRollup.class))
             return (AbstractSerializer<T>)enumRollupInstance;
         else if (type.equals(BluefloodSetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
@@ -290,7 +290,7 @@ public class NumericSerializer {
                 return sz;
             case Type.B_ENUM:
                 sz += 1; // version
-                EnumRollup en = (EnumRollup)o;
+                BluefloodEnumRollup en = (BluefloodEnumRollup)o;
                 Map<String, Long> enValues = en.getHashes();
                 sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
                 for (String enName  : enValues.keySet()) {
@@ -332,9 +332,9 @@ public class NumericSerializer {
         return new BluefloodCounterRollup().withCount(value.longValue()).withRate(rate).withSampleCount(sampleCount);
     }
 
-    private static EnumRollup deserializeV1EnumRollup(CodedInputStream in) throws IOException {
+    private static BluefloodEnumRollup deserializeV1EnumRollup(CodedInputStream in) throws IOException {
         int count = in.readRawVarint32();
-        EnumRollup rollup = new EnumRollup();
+        BluefloodEnumRollup rollup = new BluefloodEnumRollup();
         while (count-- > 0) {
             rollup = rollup.withEnumValue(in.readString(), in.readRawVarint64());
         }
@@ -457,7 +457,7 @@ public class NumericSerializer {
         putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
     }
 
-    private static void serializeEnum(EnumRollup rollup, byte[] buf) throws IOException {
+    private static void serializeEnum(BluefloodEnumRollup rollup, byte[] buf) throws IOException {
         CodedOutputStream out = CodedOutputStream.newInstance(buf);
         EnumRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
@@ -491,7 +491,7 @@ public class NumericSerializer {
             return Type.B_TIMER;
         else if (o instanceof BluefloodGaugeRollup)
             return Type.B_GAUGE;
-        else if (o instanceof EnumRollup)
+        else if (o instanceof BluefloodEnumRollup)
             return Type.B_ENUM;
         else if (o instanceof BluefloodSetRollup)
             return Type.B_SET;
@@ -756,9 +756,9 @@ public class NumericSerializer {
         }
     }
 
-    public static class EnumRollupSerializer extends AbstractSerializer<EnumRollup> {
+    public static class EnumRollupSerializer extends AbstractSerializer<BluefloodEnumRollup> {
         @Override
-        public ByteBuffer toByteBuffer(EnumRollup er) {
+        public ByteBuffer toByteBuffer(BluefloodEnumRollup er) {
             try {
                 byte type = typeOf(er);
                 byte[] buf = new byte[sizeOf(er, type)];
@@ -770,7 +770,7 @@ public class NumericSerializer {
         }
 
         @Override
-        public EnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
+        public BluefloodEnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
             CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
             try {
                 byte version = in.readRawByte();
