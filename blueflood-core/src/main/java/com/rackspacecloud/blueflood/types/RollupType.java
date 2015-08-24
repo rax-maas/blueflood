@@ -40,7 +40,7 @@ public enum RollupType {
             return RollupType.BF_HISTOGRAMS;
         else if (value instanceof SimpleNumber)
             return RollupType.NOT_A_ROLLUP;
-        else if (value instanceof EnumRollup) {
+        else if (value instanceof BluefloodEnumRollup) {
             return RollupType.ENUM;
         }
         else
@@ -64,7 +64,7 @@ public enum RollupType {
         else if (type == RollupType.BF_HISTOGRAMS)
             return HistogramRollup.class;
         else if(type == RollupType.ENUM)
-            return EnumRollup.class;
+            return BluefloodEnumRollup.class;
         else
             throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
     }
