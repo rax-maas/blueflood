@@ -31,9 +31,9 @@ public class EnumRollupSerializationTest {
 
     @Test
     public void testEnumV1RoundTrip() throws IOException {
-        EnumRollup e0 = new EnumRollup().withObject((long)"enumValue1".hashCode(), (long)1).withObject((long) "enumValuu2".hashCode(), 5L);
-        EnumRollup e1 = new EnumRollup().withObject((long)"t4.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met".hashCode(), 34454722343L)
-                            .withObject((long)"t5.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met".hashCode(), 34454722343L);
+        EnumRollup e0 = new EnumRollup().withEnumValue("enumValue1", (long) 1).withEnumValue("enumValuu2", 5L);
+        EnumRollup e1 = new EnumRollup().withEnumValue("t4.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L)
+                            .withEnumValue("t5.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L);
 
         if (System.getProperty("GENERATE_ENUM_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/enum_version_" + Constants.VERSION_1_ENUM_ROLLUP + ".bin", false);
