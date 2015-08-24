@@ -92,7 +92,7 @@ public class HttpAggregatedIngestionTests {
 
     @Test
     public void testEnums() {
-        Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, bundle.getEnums());
+        Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, payload.getEnums());
         Assert.assertEquals(1, enums.size());
         ensureSerializability(enums);
     }
