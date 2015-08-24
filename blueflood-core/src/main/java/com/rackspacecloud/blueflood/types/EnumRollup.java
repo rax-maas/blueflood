@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnumRollup implements Rollup {
-    private Map<Long, Long> en2Value = new HashMap<Long, Long>();
+    private Map<String, Long> en2Value = new HashMap<String, Long>();
 
-    public EnumRollup withObject(Long valueNameHashcode, Long value) {
-        this.en2Value.put(valueNameHashcode, value);
+    public EnumRollup withEnumValue(String valueName, Long value) {
+        this.en2Value.put(valueName, value);
         return this;
     }
 
@@ -25,7 +25,7 @@ public class EnumRollup implements Rollup {
         return en2Value.size();
     }
 
-    public Map<Long, Long> getHashes() {
+    public Map<String, Long> getHashes() {
         return this.en2Value;
     }
 
