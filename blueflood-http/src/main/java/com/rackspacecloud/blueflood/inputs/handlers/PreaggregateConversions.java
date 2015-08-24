@@ -127,7 +127,7 @@ public class PreaggregateConversions {
         return list;
     }
 
-    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<Enum> enums) {
+    public static Collection<PreaggregatedMetric> convertEnums(String tenant, long timestamp, Collection<BluefloodEnum> enums) {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
         for (BluefloodEnum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
