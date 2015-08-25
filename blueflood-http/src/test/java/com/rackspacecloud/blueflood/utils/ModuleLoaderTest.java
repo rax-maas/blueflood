@@ -11,24 +11,20 @@ import org.junit.Test;
 public class ModuleLoaderTest {
 
     @Test
-    public void getInstanceShouldReturnCorrectInstance() throws Exception {
+    public void getInstanceShouldReturnCorrectInstance() throws Exception{
+        System.setProperty("EVENTS_MODULES", "");
+        Configuration.getInstance().init();
+        Assert.assertNull(ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES));
 
-        Configuration.getInstance().setProperty("DISCOVERY_MODULES", "com.rackspacecloud.blueflood.io.ElasticIO");
-        Object dm = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
-        Assert.assertTrue("ModuleLoader did not return DiscoveryIO instance for DISCOVERY_MODULES and instead returned: " + dm.getClass(),
-                dm instanceof DiscoveryIO);
+        System.setProperty("DISCOVERY_MODULES", "com.rackspacecloud.blueflood.io.ElasticIO");
+        Configuration.getInstance().init();
+        Assert.assertTrue((ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)) instanceof DiscoveryIO);
 
-        Configuration.getInstance().setProperty("EVENTS_MODULES", "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-        Object em = ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES);
-        Assert.assertTrue("ModuleLoader did not return EventsIO instance for EVENTS_MODULES and instead returned: " + em.getClass(),
-                em instanceof EventsIO);
+        System.setProperty("EVENTS_MODULES", "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
+        Configuration.getInstance().init();
+        Assert.assertTrue((ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES)) instanceof EventsIO);
 
-        Assert.assertFalse("ModuleLoader returned DiscoveryIO instance for EVENTS_MODULES",
-                (ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES)) instanceof DiscoveryIO);
-
-        Assert.assertFalse("ModuleLoader returned EventsIO instance for DISCOVERY_MODULES",
-                (ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)) instanceof EventsIO);
-
+        Assert.assertFalse((ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES)) instanceof DiscoveryIO);
+        Assert.assertFalse((ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)) instanceof EventsIO);
     }
-
 }
