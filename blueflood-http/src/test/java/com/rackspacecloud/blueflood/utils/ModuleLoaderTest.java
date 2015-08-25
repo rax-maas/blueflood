@@ -12,10 +12,6 @@ public class ModuleLoaderTest {
 
     @Test
     public void getInstanceShouldReturnCorrectInstance() throws Exception{
-        System.setProperty("EVENTS_MODULES", "");
-        Configuration.getInstance().init();
-        Assert.assertNull(ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES));
-
         System.setProperty("DISCOVERY_MODULES", "com.rackspacecloud.blueflood.io.ElasticIO");
         Configuration.getInstance().init();
         Assert.assertTrue((ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)) instanceof DiscoveryIO);
