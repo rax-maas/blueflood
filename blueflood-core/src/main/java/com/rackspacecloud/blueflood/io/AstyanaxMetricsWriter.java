@@ -34,7 +34,7 @@ public class AstyanaxMetricsWriter implements IMetricsWriter {
     }
 
     @Override
-    public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException {
+    public void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws Exception {
         try {
             AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         } catch (ConnectionException e) {
