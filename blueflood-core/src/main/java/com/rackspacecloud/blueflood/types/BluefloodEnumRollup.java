@@ -3,10 +3,10 @@ package com.rackspacecloud.blueflood.types;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EnumRollup implements Rollup {
+public class BluefloodEnumRollup implements Rollup {
     private Map<String, Long> en2Value = new HashMap<String, Long>();
 
-    public EnumRollup withEnumValue(String valueName, Long value) {
+    public BluefloodEnumRollup withEnumValue(String valueName, Long value) {
         this.en2Value.put(valueName, value);
         return this;
     }
@@ -31,10 +31,10 @@ public class EnumRollup implements Rollup {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof EnumRollup)) {
+        if (obj == null || !(obj instanceof BluefloodEnumRollup)) {
             return false;
         }
-        EnumRollup other = (EnumRollup)obj;
+        BluefloodEnumRollup other = (BluefloodEnumRollup)obj;
         return en2Value.equals(other.en2Value);
     }
 

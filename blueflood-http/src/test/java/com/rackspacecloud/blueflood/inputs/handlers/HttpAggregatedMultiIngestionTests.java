@@ -39,7 +39,7 @@ public class HttpAggregatedMultiIngestionTests {
     @Before
     public void buildBundle() throws IOException {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_bundle.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_aggregated_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
@@ -103,6 +103,15 @@ public class HttpAggregatedMultiIngestionTests {
             Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, bundle.getTimers());
             Assert.assertEquals(1, timers.size());
             ensureSerializability(timers);
+        }
+    }
+
+    @Test
+    public void testEnums() {
+        for (AggregatedPayload bundle : bundleList) {
+            Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, bundle.getEnums());
+            Assert.assertEquals(1, enums.size());
+            ensureSerializability(enums);
         }
     }
     

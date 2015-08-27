@@ -52,13 +52,13 @@ public class IMetricSerializerTest {
 
     @Test
     public void testEnumSerialization() throws IOException {
-        String enumRollupString = "{\"type\":\"EnumRollup\",\"count\":2,\"en2Value\":{\"-1365468863\":2,\"233047280\":5},\"hashes\":{\"-1365468863\":2,\"233047280\":5}}";
+        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":2,\"en2Value\":{\"-1365468863\":2,\"233047280\":5},\"hashes\":{\"-1365468863\":2,\"233047280\":5}}";
 
-        EnumRollup enumDeserialized = mapper.readValue(enumRollupString, EnumRollup.class);
+        BluefloodEnumRollup enumDeserialized = mapper.readValue(enumRollupString, BluefloodEnumRollup.class);
         String enumSerialized = mapper.writeValueAsString(enumDeserialized);
         Assert.assertEquals(enumRollupString, enumSerialized);
 
-        EnumRollup enumReDeserialized = mapper.readValue(enumSerialized, EnumRollup.class);
+        BluefloodEnumRollup enumReDeserialized = mapper.readValue(enumSerialized, BluefloodEnumRollup.class);
         Assert.assertEquals(enumDeserialized,enumReDeserialized);
 
         PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, enumReDeserialized);
