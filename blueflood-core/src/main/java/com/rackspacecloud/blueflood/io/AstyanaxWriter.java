@@ -161,6 +161,12 @@ public class AstyanaxWriter extends AstyanaxIO {
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
+    private final void insertEnumLocator(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
+        for(String valueName : rollup.getHashes().keySet()) {
+            mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
+        }
+    }
+
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
         final boolean isString = metric.isString();
         final boolean isBoolean = metric.isBoolean();
@@ -237,7 +243,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
     
     // generic IMetric insertion. All other metric insertion methods could use this one.
-    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
+    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws Exception {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(cf);
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
@@ -257,12 +263,14 @@ public class AstyanaxWriter extends AstyanaxIO {
                     if (metric instanceof Metric) {
                         final boolean isString = DataType.isStringMetric(metric.getMetricValue());
                         final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
-                        
-                        
+
                         if (!isString && !isBoolean)
                             locatorInsertOk = true;
                         shouldPersist = shouldPersist((Metric)metric);
                     } else {
+                        if (DataType.isEnumMetric(metric.getMetricValue())) {
+                            insertEnumLocator(metric.getLocator(), (BluefloodEnumRollup)metric.getMetricValue(), batch);
+                        }
                         locatorInsertOk = true;
                     }
                     
@@ -287,6 +295,8 @@ public class AstyanaxWriter extends AstyanaxIO {
                 Instrumentation.markWriteError(e);
                 log.error("Connection exception persisting data", e);
                 throw e;
+            } catch (Exception ez) {
+                throw ez;
             }
         } finally {
             ctx.stop();
