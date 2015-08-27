@@ -1,13 +1,22 @@
 package com.rackspacecloud.blueflood.types;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BluefloodEnumRollup implements Rollup {
-    private Map<String, Long> en2Value = new HashMap<String, Long>();
+    private List<String> rawEnumValues = new ArrayList<String>();
+    private Map<Long,Long> hashedEnum2Value = new HashMap<Long, Long>();
 
     public BluefloodEnumRollup withEnumValue(String valueName, Long value) {
-        this.en2Value.put(valueName, value);
+        this.rawEnumValues.add(valueName);
+        this.hashedEnum2Value.put((long)valueName.hashCode(), value);
+        return this;
+    }
+
+    public BluefloodEnumRollup withHashedEnumValue(Long hashedEnumValue, Long value) {
+        this.hashedEnum2Value.put(hashedEnumValue, value);
         return this;
     }
 
@@ -22,12 +31,14 @@ public class BluefloodEnumRollup implements Rollup {
     }
 
     public int getCount() {
-        return en2Value.size();
+        return hashedEnum2Value.size();
     }
 
-    public Map<String, Long> getHashes() {
-        return this.en2Value;
+    public Map<Long, Long> getHashes() {
+        return this.hashedEnum2Value;
     }
+
+    public List<String> getRawValues() { return this.rawEnumValues; }
 
     @Override
     public boolean equals(Object obj) {
@@ -35,7 +46,7 @@ public class BluefloodEnumRollup implements Rollup {
             return false;
         }
         BluefloodEnumRollup other = (BluefloodEnumRollup)obj;
-        return en2Value.equals(other.en2Value);
+        return hashedEnum2Value.equals(other.hashedEnum2Value);
     }
 
 }
