@@ -1,17 +1,14 @@
 package com.rackspacecloud.blueflood.types;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BluefloodEnumRollup implements Rollup {
-    private List<String> rawEnumValues = new ArrayList<String>();
+    private Set<String> rawEnumValues = new HashSet<String>();
     private Map<Long,Long> hashedEnum2Value = new HashMap<Long, Long>();
 
     public BluefloodEnumRollup withEnumValue(String valueName, Long value) {
         this.rawEnumValues.add(valueName);
-        this.hashedEnum2Value.put((long)valueName.hashCode(), value);
+        this.hashedEnum2Value.put((long) valueName.hashCode(), value);
         return this;
     }
 
@@ -38,7 +35,7 @@ public class BluefloodEnumRollup implements Rollup {
         return this.hashedEnum2Value;
     }
 
-    public List<String> getRawValues() { return this.rawEnumValues; }
+    public Set<String> getRawValues() { return this.rawEnumValues; }
 
     @Override
     public boolean equals(Object obj) {
