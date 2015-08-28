@@ -52,7 +52,7 @@ public class IMetricSerializerTest {
 
     @Test
     public void testEnumSerialization() throws IOException {
-        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":2,\"en2Value\":{\"-1365468863\":2,\"233047280\":5},\"hashes\":{\"-1365468863\":2,\"233047280\":5}}";
+        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":1,\"hashedEnum2Value\":{\"-563243779\":1},\"hashes\":{\"-563243779\":1},\"rawEnumValues\":[\"somevalue\"],\"rawValues\":[\"somevalue\"]}";
 
         BluefloodEnumRollup enumDeserialized = mapper.readValue(enumRollupString, BluefloodEnumRollup.class);
         String enumSerialized = mapper.writeValueAsString(enumDeserialized);
