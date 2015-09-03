@@ -99,7 +99,6 @@ public class RouteMatcher {
             route(context, request, unsupportedMethodHandler);
             return;
         }
-
         PatternRouteBinding binding = null;
         if (method.equals(HttpMethod.GET.getName())) {
             binding = getBindings.get(pattern);
@@ -227,7 +226,6 @@ public class RouteMatcher {
         knownPatterns.add(routeBinding.pattern);
 
         Set<String> supportedMethods = supportedMethodsForURLs.get(routeBinding.pattern);
-
         if (supportedMethods == null) {
             supportedMethods = new HashSet<String>();
         }
@@ -238,25 +236,36 @@ public class RouteMatcher {
     }
 
     private PatternRouteBinding getPatternRouteBinding(String URLPattern, HttpRequestHandler handler) {
-        // We need to search for any :<token name> tokens in the String and replace them with named capture groups
-        Matcher m =  Pattern.compile(":([A-Za-z][A-Za-z0-9_]*)").matcher(URLPattern);
-
-        StringBuffer sb = new StringBuffer();
-        Map<String, Integer> groups = new HashMap<String, Integer>();
-        int pos = 1;  // group 0 is the whole expression
-        while (m.find()) {
-            String group = m.group().substring(1);
-            if (groups.containsKey(group)) {
-                throw new IllegalArgumentException("Cannot use identifier " + group + " more than once in pattern string");
+        Pattern pattern = null;
+        Map<String, Integer> groups = null;
+        boolean patternExists = false;
+        for(Pattern knownPattern:knownPatterns){
+            if(knownPattern.equals(getMatchingPatternForURL(URLPattern))){
+                pattern =knownPattern;
+                patternExists =true;
+                break;
             }
-            m.appendReplacement(sb, "([^/]+)");
-            groups.put(group, pos++);
         }
-        m.appendTail(sb);
+        if(!patternExists) {
+            // We need to search for any :<token name> tokens in the String and replace them with named capture groups
+            Matcher m = Pattern.compile(":([A-Za-z][A-Za-z0-9_]*)").matcher(URLPattern);
 
-        final String regex = sb.toString();
-        final Pattern pattern = Pattern.compile(regex);
+            StringBuffer sb = new StringBuffer();
+            groups = new HashMap<String, Integer>();
+            int pos = 1;  // group 0 is the whole expression
+            while (m.find()) {
+                String group = m.group().substring(1);
+                if (groups.containsKey(group)) {
+                    throw new IllegalArgumentException("Cannot use identifier " + group + " more than once in pattern string");
+                }
+                m.appendReplacement(sb, "([^/]+)");
+                groups.put(group, pos++);
+            }
+            m.appendTail(sb);
 
+            final String regex = sb.toString();
+            pattern = Pattern.compile(regex);
+        }
         return new PatternRouteBinding(pattern, groups, handler);
     }
 
