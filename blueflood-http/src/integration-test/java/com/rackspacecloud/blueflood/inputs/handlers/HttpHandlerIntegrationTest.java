@@ -17,6 +17,10 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.netflix.astyanax.connectionpool.OperationResult;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
+import com.netflix.astyanax.model.*;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.*;
@@ -37,15 +41,13 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.io.ByteArrayOutputStream;
+
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.zip.GZIPOutputStream;
 import static org.mockito.Mockito.*;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
@@ -267,6 +269,19 @@ public class HttpHandlerIntegrationTest {
                 locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points1.getPoints().size());
 
+        final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
+        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getInstance().getDataToRoll(BluefloodEnumRollup.class,
+                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points1.getPoints().size());
+        for (Long timestamp : points1.getPoints().keySet()) {
+            BluefloodEnumRollup er = points2.getPoints().get(timestamp).getData();
+            for (String value : er.getStringEnumValuesWithCounts().keySet()) {
+                Assert.assertEquals("500",value);
+                Assert.assertEquals(1L, er.getStringEnumValuesWithCounts().get(value).longValue());
+            }
+        }
+
+
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
 
@@ -420,6 +435,66 @@ public class HttpHandlerIntegrationTest {
 
         if (httpIngestionService != null) {
             httpIngestionService.shutdownService();
+        }
+    }
+
+    public class FakeEnumAstyanaxReader extends AstyanaxReader {
+
+        public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
+            Points<T> points = super.getDataToRoll(type, locator, range, cf);
+            return getEnumStringValuesFromHashes(points, locator);
+        }
+
+        private <T extends Rollup> Points<T> getEnumStringValuesFromHashes(Points<T> points, Locator locator) {
+            ColumnList<Long> enumvalues = getColumnsFromEnumCF(locator);
+            Map<Long, String> hash2enumValues = getEnumValueFromHash(enumvalues);
+            Points<T> pointsEnum = new Points<T>();
+
+            Map<Long, Points.Point<T>> pointsMap = points.getPoints();
+
+            for (Long timestamp : points.getPoints().keySet()) {
+                BluefloodEnumRollup enumRollup = (BluefloodEnumRollup)pointsMap.get(timestamp).getData();
+                for (Long hash : enumRollup.getHashedEnumValuesWithCounts().keySet()) {
+                    String enumValueString = hash2enumValues.get(hash);
+                    enumRollup.getStringEnumValuesWithCounts().put(enumValueString, enumRollup.getHashedEnumValuesWithCounts().get(hash));
+                    pointsEnum.add(new Points.Point<T>(timestamp,(T)enumRollup));
+                }
+            }
+            return pointsEnum;
+        }
+
+        private Map<Long, String> getEnumValueFromHash(ColumnList<Long> enumValues) {
+            HashMap<Long,String> hash2enumValues = new HashMap<Long, String>();
+
+            for (Column<Long> col: enumValues) {
+                hash2enumValues.put(col.getName(), col.getStringValue());
+            }
+
+            return hash2enumValues;
+        }
+
+        private ColumnList<Long> getColumnsFromEnumCF(final Locator locator) {
+            final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
+
+            try {
+                OperationResult<Rows<Locator, Long>> query = getKeyspace()
+                        .prepareQuery(CassandraModel.CF_METRICS_ENUM)
+                        .getKeySlice(locator)
+                        .execute();
+
+                for (Row<Locator, Long> row : query.getResult()) {
+                    columns.put(row.getKey(), row.getColumns());
+                }
+            } catch (ConnectionException e) {
+                if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
+                    System.out.println("CF Not found");
+                } else {
+                    System.out.println("Some other error");
+                }
+            } finally {
+            }
+
+            return columns.get(locator);
         }
     }
 }
