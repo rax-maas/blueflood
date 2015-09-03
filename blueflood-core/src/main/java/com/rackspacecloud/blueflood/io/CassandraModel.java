@@ -55,7 +55,7 @@ public class CassandraModel {
             LocatorSerializer.get(),
             StringSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>("metrics_enum1",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>("metrics_enum",
             LocatorSerializer.get(),
             LongSerializer.get(),
             StringSerializer.get());
