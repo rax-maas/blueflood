@@ -26,10 +26,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         this.searchIO = searchIO;
     }
 
-    public HttpEventsQueryHandler() {
-
-    }
-
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
