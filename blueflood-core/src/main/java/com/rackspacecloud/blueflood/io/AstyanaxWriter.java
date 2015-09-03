@@ -161,7 +161,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
-    private final void insertEnumLocator(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
+    private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
         for(String valueName : rollup.getStringEnumValuesWithCounts().keySet()) {
             mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
         }
@@ -243,7 +243,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
     
     // generic IMetric insertion. All other metric insertion methods could use this one.
-    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws Exception {
+    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(cf);
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
@@ -269,7 +269,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                         shouldPersist = shouldPersist((Metric)metric);
                     } else {
                         if (DataType.isEnumMetric(metric.getMetricValue())) {
-                            insertEnumLocator(metric.getLocator(), (BluefloodEnumRollup)metric.getMetricValue(), batch);
+                            insertEnumValuesWithHashcodes(metric.getLocator(), (BluefloodEnumRollup) metric.getMetricValue(), batch);
                         }
                         locatorInsertOk = true;
                     }
@@ -295,8 +295,6 @@ public class AstyanaxWriter extends AstyanaxIO {
                 Instrumentation.markWriteError(e);
                 log.error("Connection exception persisting data", e);
                 throw e;
-            } catch (Exception ez) {
-                throw ez;
             }
         } finally {
             ctx.stop();
