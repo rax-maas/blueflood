@@ -162,7 +162,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     private final void insertEnumLocator(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
-        for(String valueName : rollup.getRawValues()) {
+        for(String valueName : rollup.getStringEnumValuesWithCounts().keySet()) {
             mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
         }
     }
