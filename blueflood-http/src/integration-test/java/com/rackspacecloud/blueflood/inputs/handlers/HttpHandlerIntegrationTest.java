@@ -535,6 +535,8 @@ public class HttpHandlerIntegrationTest {
         }
     }
 
+    //TODO: This class should go away when we implement queries for enums. All the logic contained in this class
+    // should likely be transferred to AstyanaxReader or a process in the query pipeline that processes enums.
     public class FakeEnumAstyanaxReader extends AstyanaxReader {
 
         public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
