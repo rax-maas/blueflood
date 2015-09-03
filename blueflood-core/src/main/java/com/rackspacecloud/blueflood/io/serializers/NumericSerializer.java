@@ -291,7 +291,7 @@ public class NumericSerializer {
             case Type.B_ENUM:
                 sz += 1; // version
                 BluefloodEnumRollup en = (BluefloodEnumRollup)o;
-                Map<Long, Long> enValues = en.getHashes();
+                Map<Long, Long> enValues = en.getHashedEnumValuesWithCounts();
                 sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
                 for (Long enName  : enValues.keySet()) {
                     sz+=CodedOutputStream.computeRawVarint64Size(enName);
@@ -462,7 +462,7 @@ public class NumericSerializer {
         EnumRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
         out.writeRawVarint32(rollup.getCount());
-        Map<Long, Long> enValues = rollup.getHashes();
+        Map<Long, Long> enValues = rollup.getHashedEnumValuesWithCounts();
         for (Long i : enValues.keySet()) {
             out.writeRawVarint64(i);
             out.writeRawVarint64(enValues.get(i));
