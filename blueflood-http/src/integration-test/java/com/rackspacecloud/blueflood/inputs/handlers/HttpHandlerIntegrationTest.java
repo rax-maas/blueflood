@@ -272,15 +272,14 @@ public class HttpHandlerIntegrationTest {
         final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
         Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getInstance().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points1.getPoints().size());
-        for (Long timestamp : points1.getPoints().keySet()) {
+        Assert.assertEquals(1, points2.getPoints().size());
+        for (Long timestamp : points2.getPoints().keySet()) {
             BluefloodEnumRollup er = points2.getPoints().get(timestamp).getData();
             for (String value : er.getStringEnumValuesWithCounts().keySet()) {
                 Assert.assertEquals("500",value);
                 Assert.assertEquals(1L, er.getStringEnumValuesWithCounts().get(value).longValue());
             }
         }
-
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
