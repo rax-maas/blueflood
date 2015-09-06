@@ -236,17 +236,10 @@ public class RouteMatcher {
     }
 
     private PatternRouteBinding getPatternRouteBinding(String URLPattern, HttpRequestHandler handler) {
-        Pattern pattern = null;
+        Pattern pattern = getMatchingPatternForURL(URLPattern);
         Map<String, Integer> groups = null;
-        boolean patternExists = false;
-        for(Pattern knownPattern:knownPatterns){
-            if(knownPattern.equals(getMatchingPatternForURL(URLPattern))){
-                pattern =knownPattern;
-                patternExists =true;
-                break;
-            }
-        }
-        if(!patternExists) {
+      
+        if(pattern == null) {
             // We need to search for any :<token name> tokens in the String and replace them with named capture groups
             Matcher m = Pattern.compile(":([A-Za-z][A-Za-z0-9_]*)").matcher(URLPattern);
 
