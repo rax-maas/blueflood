@@ -19,6 +19,6 @@ datasources: {</br>
     url: 'http://staging.metrics.api.rackspacecloud.com',</br>
     username: [UserName],</br>
     apikey: [APIKey],</br>
-    tenantID: [tenantID]
+    tenantID: [tenantID]</br>
   }</br>
   },</br>
