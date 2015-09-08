@@ -79,7 +79,7 @@ define([
                         tags = '&tags=' + options.tags;
                     }
 
-                    /*
+                    var d = $q.defer();
                     this.doAPIRequest({
                         method: 'GET',
                         url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
@@ -92,25 +92,19 @@ define([
                                 if(response.status/100 === 4 || response.status === 500){
                                     alert("Error while connecting to Blueflood");
                                 }
-                                var d = $q.defer();
-                                d.resolve(response);
-                                return d.promise;
-                            });
 
+                                d.resolve(response);
+
+                            });
                         }
-                        var d = $q.defer();
+                        else
                         d.resolve(response);
-                        return d.promise;
                     });
-                    */
-                    return this.doAPIRequest({
-                        method: 'GET',
-                        url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
-                    }, this.reposeAPI.getToken());
                 }
                 catch (err) {
-                    return $q.reject(err);
+                     d.reject(err);
                 }
+        return d.promise;
             };
 
             BluefloodDatasource.prototype.translateTime = function(date) {
