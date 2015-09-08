@@ -5,6 +5,7 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
+import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -27,35 +28,46 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader("tenantId");
-        HttpResponseStatus status = HttpResponseStatus.OK;
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseBody = null;
-        final Timer.Context httpEventsFetchTimerContext = httpEventsFetchTimer.time();
-        try {
-            HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-            Map<String, List<String>> params = requestWithParams.getQueryParams();
+        if(request.getMethod().toString().equalsIgnoreCase("GET")) {
+            final String tenantId = request.getHeader("tenantId");
+            HttpResponseStatus status = HttpResponseStatus.OK;
 
-            if (params == null || params.size() == 0) {
-                throw new InvalidDataException("Query should contain at least one query parameter");
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseBody = null;
+            final Timer.Context httpEventsFetchTimerContext = httpEventsFetchTimer.time();
+            try {
+                HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+                Map<String, List<String>> params = requestWithParams.getQueryParams();
+
+                if (params == null || params.size() == 0) {
+                    throw new InvalidDataException("Query should contain at least one query parameter");
+                }
+
+                parseDateFieldInQuery(params, "from");
+                parseDateFieldInQuery(params, "until");
+                List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
+                responseBody = objectMapper.writeValueAsString(searchResult);
+            } catch (InvalidDataException e) {
+                log.error(String.format("Exception %s", e.toString()));
+                responseBody = String.format("Error: %s", e.getMessage());
+                status = HttpResponseStatus.BAD_REQUEST;
+            } catch (Exception e) {
+                log.error(String.format("Exception %s", e.toString()));
+                responseBody = String.format("Error: %s", e.getMessage());
+                status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+            } finally {
+                DefaultHandler.sendResponse(ctx, request, responseBody, status);
+                httpEventsFetchTimerContext.stop();
             }
-
-            parseDateFieldInQuery(params, "from");
-            parseDateFieldInQuery(params, "until");
-            List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
-            responseBody = objectMapper.writeValueAsString(searchResult);
-        } catch (InvalidDataException e) {
-            log.error(String.format("Exception %s", e.toString()));
-            responseBody = String.format("Error: %s", e.getMessage());
-            status = HttpResponseStatus.BAD_REQUEST;
-        } catch (Exception e) {
-            log.error(String.format("Exception %s", e.toString()));
-            responseBody = String.format("Error: %s", e.getMessage());
-            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-        } finally {
-            DefaultHandler.sendResponse(ctx, request, responseBody, status);
-            httpEventsFetchTimerContext.stop();
+        }
+        else if(request.getMethod().toString().equalsIgnoreCase("OPTIONS")){
+            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Methods", "GET");
+            response.setHeader("Access-Control-Allow-Headers", "X-Auth-Token, Accept");
+            response.setHeader("Access-Control-Max-Age", "1728000");
+            HttpResponder.respond(ctx, request, response);
         }
     }
 

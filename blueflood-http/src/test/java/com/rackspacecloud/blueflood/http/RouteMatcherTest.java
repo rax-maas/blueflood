@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.net.SocketAddress;
+import java.util.Arrays;
 
 public class RouteMatcherTest {
     private RouteMatcher routeMatcher;
@@ -62,6 +63,22 @@ public class RouteMatcherTest {
         router.get("/", new TestRouteHandler());
         router.route(null, new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/"));
         Assert.assertTrue(testRouteHandlerCalled);
+    }
+    @Test
+    public void testMultiMethodSupport() throws Exception {
+        final HttpRequestHandler dummyHandler = new HttpRequestHandler() {
+            @Override
+            public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+                // pass
+            }
+        };
+        RouteMatcher router = new RouteMatcher();
+        router.get("/test/1234/abc", dummyHandler);
+        router.post("/test/1234/abc", dummyHandler);
+        router.options("/test/1234/abc", dummyHandler);
+        Object[] supportedMethods = router.getSupportedMethodsForURL("/test/1234/abc").toArray();
+        Arrays.sort(supportedMethods);
+        Assert.assertArrayEquals(new String[]{"GET", "OPTIONS", "POST"}, supportedMethods);
     }
 
     @Test
