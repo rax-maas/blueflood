@@ -24,6 +24,7 @@ define([
                 this.url              = datasource.url;
                 this.username         = datasource.username;
                 this.apikey           = datasource.apikey;
+                this.tenantID         = datasource.tenantID;
                 this.identityURL      = "https://identity.api.rackspacecloud.com/v2.0/tokens";
 
                 this.partials = datasource.partials || 'plugins/datasource/blueflood/partials';
@@ -37,13 +38,12 @@ define([
             }
 
             BluefloodDatasource.prototype.doAPIRequest = function(options, token) {
-                var tokenID = token.id
-                var tenantID = token.tenant.id;
-                options.url   = this.url + '/v2.0/'+tenantID+options.url;
-                options.headers = {
-                    'X-Auth-Token' : tokenID
+                options.url   = this.url + '/v2.0/'+this.tenantID+options.url;
+                if(typeof token !== 'undefined'){
+                    options.headers = {
+                        'X-Auth-Token' : token.id
+                    }
                 }
-
                 return $http.get(options.url, options);
             };
 
@@ -79,7 +79,7 @@ define([
                         tags = '&tags=' + options.tags;
                     }
 
-
+                    /*
                     this.doAPIRequest({
                         method: 'GET',
                         url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
@@ -102,6 +102,11 @@ define([
                         d.resolve(response);
                         return d.promise;
                     });
+                    */
+                    return this.doAPIRequest({
+                        method: 'GET',
+                        url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
+                    }, this.reposeAPI.getToken());
                 }
                 catch (err) {
                     return $q.reject(err);

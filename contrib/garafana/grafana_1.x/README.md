@@ -17,7 +17,8 @@ datasources: {</br>
   blueflood: {</br>
     type: 'BluefloodDatasource',</br>
     url: 'http://staging.metrics.api.rackspacecloud.com',</br>
-    username: <UserName>,</br>
-    apikey: <APIKey></br>
+    username: [UserName],</br>
+    apikey: [APIKey],</br>
+    tenantID: [tenantID]
   }</br>
   },</br>
