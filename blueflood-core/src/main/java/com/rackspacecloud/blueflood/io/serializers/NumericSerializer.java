@@ -291,10 +291,10 @@ public class NumericSerializer {
             case Type.B_ENUM:
                 sz += 1; // version
                 BluefloodEnumRollup en = (BluefloodEnumRollup)o;
-                Map<String, Long> enValues = en.getHashes();
+                Map<Long, Long> enValues = en.getHashedEnumValuesWithCounts();
                 sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
-                for (String enName  : enValues.keySet()) {
-                    sz+=CodedOutputStream.computeStringSizeNoTag(enName);
+                for (Long enName  : enValues.keySet()) {
+                    sz+=CodedOutputStream.computeRawVarint64Size(enName);
                     Long enValue = enValues.get(enName);
                     sz+= CodedOutputStream.computeRawVarint64Size(enValue);
                 }
@@ -336,7 +336,7 @@ public class NumericSerializer {
         int count = in.readRawVarint32();
         BluefloodEnumRollup rollup = new BluefloodEnumRollup();
         while (count-- > 0) {
-            rollup = rollup.withEnumValue(in.readString(), in.readRawVarint64());
+            rollup = rollup.withHashedEnumValue(in.readRawVarint64(), in.readRawVarint64());
         }
         return rollup;
     }
@@ -462,13 +462,13 @@ public class NumericSerializer {
         EnumRollupSize.update(buf.length);
         out.writeRawByte(Constants.VERSION_1_ENUM_ROLLUP);
         out.writeRawVarint32(rollup.getCount());
-        Map<String, Long> enValues = rollup.getHashes();
-        for (String i : enValues.keySet()) {
-            out.writeStringNoTag(i);
+        Map<Long, Long> enValues = rollup.getHashedEnumValuesWithCounts();
+        for (Long i : enValues.keySet()) {
+            out.writeRawVarint64(i);
             out.writeRawVarint64(enValues.get(i));
         }
     }
-    
+
     private static BluefloodGaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
         BasicRollup basic = deserializeV1Rollup(in);
         long timestamp = in.readRawVarint64();

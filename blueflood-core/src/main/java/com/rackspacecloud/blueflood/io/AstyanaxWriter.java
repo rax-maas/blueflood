@@ -161,6 +161,12 @@ public class AstyanaxWriter extends AstyanaxIO {
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
+    private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
+        for(String valueName : rollup.getStringEnumValuesWithCounts().keySet()) {
+            mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
+        }
+    }
+
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
         final boolean isString = metric.isString();
         final boolean isBoolean = metric.isBoolean();
@@ -257,12 +263,14 @@ public class AstyanaxWriter extends AstyanaxIO {
                     if (metric instanceof Metric) {
                         final boolean isString = DataType.isStringMetric(metric.getMetricValue());
                         final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
-                        
-                        
+
                         if (!isString && !isBoolean)
                             locatorInsertOk = true;
                         shouldPersist = shouldPersist((Metric)metric);
                     } else {
+                        if (DataType.isEnumMetric(metric.getMetricValue())) {
+                            insertEnumValuesWithHashcodes(metric.getLocator(), (BluefloodEnumRollup) metric.getMetricValue(), batch);
+                        }
                         locatorInsertOk = true;
                     }
                     

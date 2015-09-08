@@ -280,7 +280,10 @@ public class AstyanaxReader extends AstyanaxIO {
                 serializer = NumericSerializer.gaugeRollupInstance;
             } else if (type.equals(BluefloodCounterRollup.class)) {
                 serializer = NumericSerializer.CounterRollupInstance;
-            } else {
+            } else if (type.equals(BluefloodEnumRollup.class)) {
+                serializer = NumericSerializer.enumRollupInstance;
+            }
+            else {
                 serializer = NumericSerializer.simpleNumberSerializer;
             }
         }

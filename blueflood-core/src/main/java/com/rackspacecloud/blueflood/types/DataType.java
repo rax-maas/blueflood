@@ -61,6 +61,10 @@ public class DataType {
         return metricType == DataType.BOOLEAN;
     }
 
+    public static boolean isEnumMetric(Object metricValue) {
+        return metricValue instanceof BluefloodEnumRollup;
+    }
+
     public static boolean isKnownMetricType(DataType incoming) {
         return incoming.equals(STRING) || incoming.equals(NUMERIC)
                 || incoming.equals(BOOLEAN);
