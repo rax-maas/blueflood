@@ -75,4 +75,23 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         writer.writeMetadataValue(loc2, "a", "strrrrring");
         assertNumberOfRows("metrics_metadata", 2);
     }
+
+    @Test
+    public void testBadMetricGetsWritten() throws Exception {
+        assertNumberOfRows("metrics_bad_metrics", 0);
+
+        Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        Long timestamp1 = 1L;
+        Long timestamp2 = 2L;
+
+        writer.writeBadMetric(loc1, timestamp1);
+        assertNumberOfRows("metrics_bad_metrics", 1);
+
+        // new locator means new row.
+        writer.writeBadMetric(loc2, timestamp2);
+        assertNumberOfRows("metrics_bad_metrics", 2);
+    }
+
 }
