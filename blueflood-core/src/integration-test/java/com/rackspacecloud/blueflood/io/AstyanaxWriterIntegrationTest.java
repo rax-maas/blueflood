@@ -77,8 +77,8 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testBadMetricGetsWritten() throws Exception {
-        assertNumberOfRows("metrics_bad_metrics", 0);
+    public void testExcessEnumMetricGetsWritten() throws Exception {
+        assertNumberOfRows("metrics_excess_enums", 0);
 
         Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
@@ -86,12 +86,12 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         Long timestamp1 = 1L;
         Long timestamp2 = 2L;
 
-        writer.writeBadMetric(loc1, timestamp1);
-        assertNumberOfRows("metrics_bad_metrics", 1);
+        writer.writeExcessEnumMetric(loc1, timestamp1);
+        assertNumberOfRows("metrics_excess_enums", 1);
 
         // new locator means new row.
-        writer.writeBadMetric(loc2, timestamp2);
-        assertNumberOfRows("metrics_bad_metrics", 2);
+        writer.writeExcessEnumMetric(loc2, timestamp2);
+        assertNumberOfRows("metrics_excess_enums", 2);
     }
 
 }
