@@ -71,22 +71,22 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testCanReadBadMetrics() throws Exception {
+    public void testCanReadExcessEnumMetrics() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         Long timestamp1 = 1L;
         Long timestamp2 = 2L;
-        List<Locator> badList = new ArrayList<Locator>();
-        badList.add(loc1);
-        badList.add(loc2);
-        Collections.sort(badList);
-        writer.writeBadMetric(loc1, timestamp1);
-        writer.writeBadMetric(loc2, timestamp2);
-        List<Locator> newBadList = reader.getBadMetrics();
-        Collections.sort(newBadList);
-        Assert.assertEquals(badList, newBadList);
+        List<Locator> excessEnumList = new ArrayList<Locator>();
+        excessEnumList.add(loc1);
+        excessEnumList.add(loc2);
+        Collections.sort(excessEnumList);
+        writer.writeExcessEnumMetric(loc1, timestamp1);
+        writer.writeExcessEnumMetric(loc2, timestamp2);
+        List<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
+        Collections.sort(newExcessEnumList);
+        Assert.assertEquals(excessEnumList, newExcessEnumList);
     }
 
     @Test

@@ -527,36 +527,36 @@ public class AstyanaxReader extends AstyanaxIO {
 
 
     /**
-     * Gets all the Bad Metrics Locators
+     * Gets all the ExcessEnum Metrics Locators
      *
      */
-    public List<Locator> getBadMetrics() throws Exception{
-        final ArrayList<Locator> badMetrics = new ArrayList<Locator>();
+    public List<Locator> getExcessEnumMetrics() throws Exception{
+        final ArrayList<Locator> excessEnumMetrics = new ArrayList<Locator>();
         Function<Row<Locator, Long>, Boolean> rowFunction = new Function<Row<Locator, Long>, Boolean>() {
             @Override
             public Boolean apply(Row<Locator, Long> row) {
-                badMetrics.add(row.getKey());
+                excessEnumMetrics.add(row.getKey());
                 return true;
             }
         };
 
-        ColumnFamily CF = CassandraModel.CF_METRICS_BAD_METRICS;
+        ColumnFamily CF = CassandraModel.CF_METRICS_EXCESS_ENUMS;
         Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
         try {
-            new AllRowsReader.Builder<Locator, Long>(keyspace, CassandraModel.CF_METRICS_BAD_METRICS)
+            // Get all the Row Keys
+            new AllRowsReader.Builder<Locator, Long>(keyspace, CassandraModel.CF_METRICS_EXCESS_ENUMS)
                     .withColumnRange(null, null, false, 0)
-                    .withPartitioner(null) // this will use keyspace's partitioner
                     .forEachRow(rowFunction)
                     .build()
                     .call();
         } catch (ConnectionException e) {
-            log.error("Error reading Bad Metrics Table", e);
+            log.error("Error reading ExcessEnum Metrics Table", e);
             Instrumentation.markReadError(e);
             throw new RuntimeException(e);
         } finally {
             ctx.stop();
         }
-        return badMetrics;
+        return excessEnumMetrics;
     }
 
 }
