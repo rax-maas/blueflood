@@ -209,6 +209,20 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
+    public void writeExcessEnumMetric(Locator locator, Long timestamp) throws ConnectionException {
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_EXCESS_ENUMS);
+        try {
+            keyspace.prepareColumnMutation(CassandraModel.CF_METRICS_EXCESS_ENUMS, locator, timestamp)
+                    .putEmptyColumn(null).execute();
+        } catch (ConnectionException e) {
+            Instrumentation.markWriteError(e);
+            log.error("Error writing ExcessEnum Metric", e);
+            throw e;
+        } finally {
+            ctx.stop();
+        }
+    }
+
     public void writeMetadata(Table<Locator, String, String> metaTable) throws ConnectionException {
         ColumnFamily cf = CassandraModel.CF_METRIC_METADATA;
         Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(cf);

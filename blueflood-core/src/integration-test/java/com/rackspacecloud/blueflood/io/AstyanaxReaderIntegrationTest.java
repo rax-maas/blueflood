@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +68,25 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         writer.writeMetadataValue(loc1, "foo", "bar");
         Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
+    }
+
+    @Test
+    public void testCanReadExcessEnumMetrics() throws Exception {
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Long timestamp1 = 1L;
+        Long timestamp2 = 2L;
+        List<Locator> excessEnumList = new ArrayList<Locator>();
+        excessEnumList.add(loc1);
+        excessEnumList.add(loc2);
+        Collections.sort(excessEnumList);
+        writer.writeExcessEnumMetric(loc1, timestamp1);
+        writer.writeExcessEnumMetric(loc2, timestamp2);
+        List<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
+        Collections.sort(newExcessEnumList);
+        Assert.assertEquals(excessEnumList, newExcessEnumList);
     }
 
     @Test
