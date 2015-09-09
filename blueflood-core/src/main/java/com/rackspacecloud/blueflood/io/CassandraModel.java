@@ -67,6 +67,10 @@ public class CassandraModel {
             LongSerializer.get(),
             SlotStateSerializer.get());
 
+    public static final ColumnFamily<Locator, Long> CF_METRICS_BAD_METRICS = new ColumnFamily<Locator, Long>("metrics_bad_metrics",
+            LocatorSerializer.get(),
+            LongSerializer.get());
+
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
             CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
@@ -77,7 +81,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE
+          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_BAD_METRICS
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;
