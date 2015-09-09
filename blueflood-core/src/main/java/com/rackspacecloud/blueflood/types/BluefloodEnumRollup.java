@@ -1,5 +1,8 @@
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.utils.Util;
+
+import java.io.IOException;
 import java.util.*;
 
 public class BluefloodEnumRollup implements Rollup {
@@ -44,6 +47,26 @@ public class BluefloodEnumRollup implements Rollup {
         }
         BluefloodEnumRollup other = (BluefloodEnumRollup)obj;
         return hashedEnumValues2Count.equals(other.hashedEnumValues2Count);
+    }
+
+    public static BluefloodEnumRollup buildRollupFromEnumRollups(Points<BluefloodEnumRollup> input) throws IOException {
+        BluefloodEnumRollup enumRollup = new BluefloodEnumRollup();
+        for (Points.Point<BluefloodEnumRollup> point : input.getPoints().values()) {
+            BluefloodEnumRollup pointData = point.getData();
+            Map<Long, Long> incomingHashedEnums = pointData.getHashedEnumValuesWithCounts();
+            Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();
+
+            for (Long hash : incomingHashedEnums.keySet()) {
+                long count = incomingHashedEnums.get(hash);
+                if (currentHashedEnums.containsKey(hash)) {
+                    long count1 = currentHashedEnums.get(hash);
+                    count+=count1;
+                }
+                enumRollup.getHashedEnumValuesWithCounts().put(hash, count);
+            }
+        }
+
+        return enumRollup;
     }
 
 }
