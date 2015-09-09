@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
+import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ListMultimap;
@@ -27,6 +28,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.RowQuery;
+import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
@@ -45,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.*;
 
 public class AstyanaxReader extends AstyanaxIO {
@@ -520,4 +523,40 @@ public class AstyanaxReader extends AstyanaxIO {
             // this works for EVERYTHING except SimpleNumber.
         return new Points.Point(column.getName(), column.getValue(serializer));
     }
+
+
+
+    /**
+     * Gets all the Bad Metrics Locators
+     *
+     */
+    public List<Locator> getBadMetrics() throws Exception{
+        final ArrayList<Locator> badMetrics = new ArrayList<Locator>();
+        Function<Row<Locator, Long>, Boolean> rowFunction = new Function<Row<Locator, Long>, Boolean>() {
+            @Override
+            public Boolean apply(Row<Locator, Long> row) {
+                badMetrics.add(row.getKey());
+                return true;
+            }
+        };
+
+        ColumnFamily CF = CassandraModel.CF_METRICS_BAD_METRICS;
+        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        try {
+            new AllRowsReader.Builder<Locator, Long>(keyspace, CassandraModel.CF_METRICS_BAD_METRICS)
+                    .withColumnRange(null, null, false, 0)
+                    .withPartitioner(null) // this will use keyspace's partitioner
+                    .forEachRow(rowFunction)
+                    .build()
+                    .call();
+        } catch (ConnectionException e) {
+            log.error("Error reading Bad Metrics Table", e);
+            Instrumentation.markReadError(e);
+            throw new RuntimeException(e);
+        } finally {
+            ctx.stop();
+        }
+        return badMetrics;
+    }
+
 }

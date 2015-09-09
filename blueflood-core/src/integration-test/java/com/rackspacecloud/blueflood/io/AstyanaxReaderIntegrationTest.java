@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +68,25 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         writer.writeMetadataValue(loc1, "foo", "bar");
         Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
+    }
+
+    @Test
+    public void testCanReadBadMetrics() throws Exception {
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Long timestamp1 = 1L;
+        Long timestamp2 = 2L;
+        List<Locator> badList = new ArrayList<Locator>();
+        badList.add(loc1);
+        badList.add(loc2);
+        Collections.sort(badList);
+        writer.writeBadMetric(loc1, timestamp1);
+        writer.writeBadMetric(loc2, timestamp2);
+        List<Locator> newBadList = reader.getBadMetrics();
+        Collections.sort(newBadList);
+        Assert.assertEquals(badList, newBadList);
     }
 
     @Test
