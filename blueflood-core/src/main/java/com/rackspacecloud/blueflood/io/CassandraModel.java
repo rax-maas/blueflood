@@ -67,7 +67,7 @@ public class CassandraModel {
             LongSerializer.get(),
             SlotStateSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_BAD_METRICS = new ColumnFamily<Locator, Long>("metrics_bad_metrics",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_EXCESS_ENUMS = new ColumnFamily<Locator, Long>("metrics_excess_enums",
             LocatorSerializer.get(),
             LongSerializer.get());
 
@@ -81,7 +81,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_BAD_METRICS
+          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;
