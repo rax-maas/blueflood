@@ -10,13 +10,22 @@ public class BluefloodEnumRollup implements Rollup {
     private Map<Long,Long> hashedEnumValues2Count = new HashMap<Long, Long>();
 
     public BluefloodEnumRollup withEnumValue(String valueName, Long value) {
-        this.stringEnumValues2Count.put(valueName, value);
-        this.hashedEnumValues2Count.put((long) valueName.hashCode(), value);
-        return this;
+        long count = 0;
+        if (this.stringEnumValues2Count.containsKey(valueName)) {
+            count = this.stringEnumValues2Count.get(valueName);
+        }
+        this.stringEnumValues2Count.put(valueName, count+value);
+
+        return this.withHashedEnumValue((long)valueName.hashCode(), value);
     }
 
     public BluefloodEnumRollup withHashedEnumValue(Long hashedEnumValue, Long value) {
-        this.hashedEnumValues2Count.put(hashedEnumValue, value);
+        long hashcount = 0;
+        if (this.hashedEnumValues2Count.containsKey(hashedEnumValue)) {
+            hashcount = this.hashedEnumValues2Count.get(hashedEnumValue);
+        }
+        this.hashedEnumValues2Count.put((long) hashedEnumValue, value+hashcount);
+
         return this;
     }
 
