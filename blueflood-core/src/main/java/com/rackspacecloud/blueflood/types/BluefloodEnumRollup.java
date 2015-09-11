@@ -9,22 +9,22 @@ public class BluefloodEnumRollup implements Rollup {
     private Map<String, Long> stringEnumValues2Count = new HashMap<String, Long>();
     private Map<Long,Long> hashedEnumValues2Count = new HashMap<Long, Long>();
 
-    public BluefloodEnumRollup withEnumValue(String valueName, Long value) {
-        long count = 0;
+    public BluefloodEnumRollup withEnumValue(String valueName, Long incomingCount) {
+        long existingCount = 0;
         if (this.stringEnumValues2Count.containsKey(valueName)) {
-            count = this.stringEnumValues2Count.get(valueName);
+            existingCount = this.stringEnumValues2Count.get(valueName);
         }
-        this.stringEnumValues2Count.put(valueName, count+value);
+        this.stringEnumValues2Count.put(valueName, existingCount+incomingCount);
 
-        return this.withHashedEnumValue((long)valueName.hashCode(), value);
+        return this.withHashedEnumValue((long)valueName.hashCode(), incomingCount);
     }
 
-    public BluefloodEnumRollup withHashedEnumValue(Long hashedEnumValue, Long value) {
-        long hashcount = 0;
+    public BluefloodEnumRollup withHashedEnumValue(Long hashedEnumValue, Long incomingCount) {
+        long existingHashcount = 0;
         if (this.hashedEnumValues2Count.containsKey(hashedEnumValue)) {
-            hashcount = this.hashedEnumValues2Count.get(hashedEnumValue);
+            existingHashcount = this.hashedEnumValues2Count.get(hashedEnumValue);
         }
-        this.hashedEnumValues2Count.put((long) hashedEnumValue, value+hashcount);
+        this.hashedEnumValues2Count.put((long) hashedEnumValue, incomingCount+existingHashcount);
 
         return this;
     }
@@ -66,12 +66,12 @@ public class BluefloodEnumRollup implements Rollup {
             Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();
 
             for (Long hash : incomingHashedEnums.keySet()) {
-                long count = incomingHashedEnums.get(hash);
+                long incomingCount = incomingHashedEnums.get(hash);
                 if (currentHashedEnums.containsKey(hash)) {
-                    long count1 = currentHashedEnums.get(hash);
-                    count+=count1;
+                    long currentCount = currentHashedEnums.get(hash);
+                    incomingCount+=currentCount;
                 }
-                enumRollup.getHashedEnumValuesWithCounts().put(hash, count);
+                enumRollup.getHashedEnumValuesWithCounts().put(hash, incomingCount);
             }
         }
 
