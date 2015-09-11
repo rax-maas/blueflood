@@ -24,6 +24,9 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 
+import java.util.Iterator;
+import java.util.Map;
+
 public class DefaultHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
 
@@ -33,7 +36,19 @@ public class DefaultHandler implements HttpRequestHandler {
     }
 
     public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+        sendResponse(channel, request, messageBody, status, null);
+    }
+    
+    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status, Map<String, String> headers) {
+
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        if(headers!=null && !headers.keySet().isEmpty()){
+            Iterator<String> itr = headers.keySet().iterator();
+            while(itr.hasNext()){
+                String headerKey = itr.next();
+                response.setHeader(headerKey,headers.get(headerKey));
+            }
+        }
         final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
 
         try {
