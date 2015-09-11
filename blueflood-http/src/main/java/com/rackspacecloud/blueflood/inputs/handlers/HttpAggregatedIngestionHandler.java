@@ -80,25 +80,25 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
             for (Boolean persisted : persisteds) {
                 if (!persisted) {
-                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR, null);
                     return;
                 }
             }
-            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK, null);
 
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));
             log.error(ex.getMessage(), ex);
-            DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST, null);
         } catch (ConnectionException ex) {
             log.error(ex.getMessage(), ex);
-            DefaultHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR, null);
         } catch (TimeoutException ex) {
-            DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+            DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED, null);
         } catch (Exception ex) {
             log.debug(String.format("BAD JSON: %s", body));
             log.error("Other exception while trying to parse content", ex);
-            DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR, null);
         } finally {
             requestCount.dec();
             timerContext.stop();

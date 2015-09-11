@@ -57,17 +57,19 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
                 responseBody = String.format("Error: %s", e.getMessage());
                 status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
             } finally {
-                DefaultHandler.sendResponse(ctx, request, responseBody, status);
+                Map <String, String> headers = new HashMap<String, String>();
+                headers.put("Access-Control-Allow-Origin", "*");
+                DefaultHandler.sendResponse(ctx, request, responseBody, status, headers);
                 httpEventsFetchTimerContext.stop();
             }
         }
         else if(request.getMethod().toString().equalsIgnoreCase("OPTIONS")){
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            response.setHeader("Access-Control-Allow-Origin", "*");
-            response.setHeader("Access-Control-Allow-Methods", "GET");
-            response.setHeader("Access-Control-Allow-Headers", "X-Auth-Token, Accept");
-            response.setHeader("Access-Control-Max-Age", "1728000");
-            HttpResponder.respond(ctx, request, response);
+            Map <String, String> headers = new HashMap<String, String>();
+            headers.put("Access-Control-Allow-Origin", "*");
+            headers.put("Access-Control-Allow-Methods", "GET");
+            headers.put("Access-Control-Allow-Headers", "X-Auth-Token, Accept");
+            headers.put("Access-Control-Max-Age", "1728000");
+            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.NO_CONTENT, headers);
         }
     }
 
