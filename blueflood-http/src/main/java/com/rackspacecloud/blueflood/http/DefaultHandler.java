@@ -35,6 +35,9 @@ public class DefaultHandler implements HttpRequestHandler {
         HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
     }
 
+    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+        sendResponse(channel, request, messageBody, null);
+    }
     public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status, Map<String, String> headers) {
 
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);

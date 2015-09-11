@@ -84,7 +84,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             response = String.format("Error: %s", e.getMessage());
             status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
         } finally {
-            DefaultHandler.sendResponse(ctx, request, response, status, null);
+            DefaultHandler.sendResponse(ctx, request, response, status);
             httpEventsIngestTimerContext.stop();
         }
     }
