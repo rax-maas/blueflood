@@ -31,7 +31,7 @@
         "enums": [
             {
                 "name": "call_xyz_api",
-                "value": "500"
+                "value": "OK"
             }
         ]
     },
@@ -67,7 +67,7 @@
         "enums": [
             {
                 "name": "call_xyz_api",
-                "value": "500"
+                "value": "OK"
             }
         ]
     },
@@ -103,7 +103,7 @@
         "enums": [
             {
                 "name": "call_xyz_api",
-                "value": "500"
+                "value": "OK"
             }
         ]
     }
