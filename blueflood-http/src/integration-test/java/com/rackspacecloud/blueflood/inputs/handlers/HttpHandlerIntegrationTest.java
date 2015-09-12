@@ -270,16 +270,52 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(1, points1.getPoints().size());
 
         final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
-        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getInstance().getDataToRoll(BluefloodEnumRollup.class,
+        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points2.getPoints().size());
         for (Long timestamp : points2.getPoints().keySet()) {
             BluefloodEnumRollup er = points2.getPoints().get(timestamp).getData();
             for (String value : er.getStringEnumValuesWithCounts().keySet()) {
-                Assert.assertEquals("500",value);
+                Assert.assertEquals("OK",value);
                 Assert.assertEquals(1L, er.getStringEnumValuesWithCounts().get(value).longValue());
             }
         }
+
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
+    public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_enums_payload.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v2.0/333333/ingest/aggregated/multi");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+
+        final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
+        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getDataToRoll(BluefloodEnumRollup.class,
+                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
+        Assert.assertEquals(2, points2.getPoints().size());
+
+        BluefloodEnumRollup er0 = points2.getPoints().get(1439231324001L).getData();
+        Assert.assertTrue(er0.getStringEnumValuesWithCounts().containsKey("OK"));
+        Assert.assertEquals(1L, er0.getStringEnumValuesWithCounts().get("OK").longValue());
+
+        er0 = points2.getPoints().get(1439231324003L).getData();
+        Assert.assertTrue(er0.getStringEnumValuesWithCounts().containsKey("ERROR"));
+        Assert.assertEquals(1L, er0.getStringEnumValuesWithCounts().get("ERROR").longValue());
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
