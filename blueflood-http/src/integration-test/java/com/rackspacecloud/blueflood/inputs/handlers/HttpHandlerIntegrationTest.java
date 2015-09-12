@@ -304,7 +304,7 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
 
-        final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
+        final Locator locator2 = Locator.createLocatorFromPathComponents("99988877", "call_xyz_api");
         Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(2, points2.getPoints().size());
