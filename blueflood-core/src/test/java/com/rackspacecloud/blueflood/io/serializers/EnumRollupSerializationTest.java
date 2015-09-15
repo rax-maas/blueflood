@@ -20,6 +20,7 @@ package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
+import com.rackspacecloud.blueflood.types.BluefloodEnumRollupTest;
 import com.rackspacecloud.blueflood.types.Points;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
@@ -38,7 +39,7 @@ public class EnumRollupSerializationTest {
                             .withEnumValue("t5.enum.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met", 34454722343L)
                             .withEnumValue("enumValue2",10L);
         BluefloodEnumRollup e2 = new BluefloodEnumRollup().withEnumValue("enumValue1",1L).withEnumValue("enumValue1",1L);
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, e0, e1, e2));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(BluefloodEnumRollupTest.asPoints(BluefloodEnumRollup.class, 0, 300, e0, e1, e2));
         Assert.assertEquals(4, er.getCount());
         Map<Long, Long> map = er.getHashedEnumValuesWithCounts();
         Assert.assertTrue(map.get((long)"enumValue1".hashCode()) == 3L);
@@ -87,15 +88,5 @@ public class EnumRollupSerializationTest {
         }
 
         Assert.assertTrue(count > 0);
-    }
-
-    private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
-        Points<T> points = new Points<T>();
-        long time = initialTime;
-        for (T v : values) {
-            points.add(new Points.Point<T>(time, v));
-            time += timeDelta;
-        }
-        return points;
     }
 }
