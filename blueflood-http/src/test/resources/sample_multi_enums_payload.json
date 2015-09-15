@@ -1,0 +1,32 @@
+[
+    {
+        "tenantId":"5405532",
+        "timestamp":1439231324000,
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "OK"
+            }
+        ]
+    },
+    {
+        "tenantId":"99988877",
+        "timestamp":1439231324001,
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "OK"
+            }
+        ]
+    },
+    {
+        "tenantId":"99988877",
+        "timestamp":1439231324003,
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "ERROR"
+            }
+        ]
+    }
+]

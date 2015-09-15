@@ -306,6 +306,8 @@ public class RollupHandler {
             return Rollup.TimerFromTimer.compute(points);
         } else if (rollupTypeClass.equals(BluefloodGaugeRollup.class)) {
             return Rollup.GaugeFromGauge.compute(points);
+        } else if (rollupTypeClass.equals(BluefloodEnumRollup.class)) {
+            return Rollup.EnumFromEnum.compute(points);
         } else {
             throw new IOException(String.format("Unexpected rollup type: %s", rollupTypeClass.getSimpleName()));
         }
