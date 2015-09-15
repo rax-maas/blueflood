@@ -199,8 +199,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             }
         }
 
-        reader.getDataToRoll(rollupClass, locator, range, CassandraModel.CF_METRICS_PREAGGREGATED_5M).getPoints();
-
         Assert.assertEquals(1, reader.getDataToRoll(rollupClass,
                                                     locator,
                                                     range,
