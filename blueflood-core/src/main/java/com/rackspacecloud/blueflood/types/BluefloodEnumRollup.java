@@ -60,18 +60,18 @@ public class BluefloodEnumRollup implements Rollup {
 
     public static BluefloodEnumRollup buildRollupFromEnumRollups(Points<BluefloodEnumRollup> input) throws IOException {
         BluefloodEnumRollup enumRollup = new BluefloodEnumRollup();
+        Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();
+
         for (Points.Point<BluefloodEnumRollup> point : input.getPoints().values()) {
             BluefloodEnumRollup pointData = point.getData();
             Map<Long, Long> incomingHashedEnums = pointData.getHashedEnumValuesWithCounts();
-            Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();
-
             for (Long hash : incomingHashedEnums.keySet()) {
                 long incomingCount = incomingHashedEnums.get(hash);
                 if (currentHashedEnums.containsKey(hash)) {
                     long currentCount = currentHashedEnums.get(hash);
                     incomingCount+=currentCount;
                 }
-                enumRollup.getHashedEnumValuesWithCounts().put(hash, incomingCount);
+                currentHashedEnums.put(hash, incomingCount);
             }
         }
 
