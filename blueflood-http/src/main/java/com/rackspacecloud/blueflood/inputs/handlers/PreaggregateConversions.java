@@ -18,10 +18,9 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.tracker.Tracker;
+import com.rackspacecloud.blueflood.service.ExcessEnumReader;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.joda.time.DateTime;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -131,10 +130,12 @@ public class PreaggregateConversions {
         List<PreaggregatedMetric> list = new ArrayList<PreaggregatedMetric>(enums.size());
         for (BluefloodEnum en : enums) {
             Locator locator = Locator.createLocatorFromPathComponents(tenant, en.getName().split(NAME_DELIMITER, -1));
-            BluefloodEnumRollup rollup = new BluefloodEnumRollup();
-            rollup = rollup.withEnumValue(en.getValue(), 1L);
-            PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
-            list.add(metric);
+            if (!ExcessEnumReader.getInstance().isInExcessEnumMetrics(locator)) {
+                BluefloodEnumRollup rollup = new BluefloodEnumRollup();
+                rollup = rollup.withEnumValue(en.getValue(), 1L);
+                PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
+                list.add(metric);
+            }
         }
         return list;
     }
