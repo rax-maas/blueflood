@@ -530,8 +530,8 @@ public class AstyanaxReader extends AstyanaxIO {
      * Gets all the ExcessEnum Metrics Locators
      *
      */
-    public List<Locator> getExcessEnumMetrics() throws Exception{
-        final ArrayList<Locator> excessEnumMetrics = new ArrayList<Locator>();
+    public Set<Locator> getExcessEnumMetrics() throws Exception{
+        final Set<Locator> excessEnumMetrics = new HashSet<Locator>();
         Function<Row<Locator, Long>, Boolean> rowFunction = new Function<Row<Locator, Long>, Boolean>() {
             @Override
             public Boolean apply(Row<Locator, Long> row) {

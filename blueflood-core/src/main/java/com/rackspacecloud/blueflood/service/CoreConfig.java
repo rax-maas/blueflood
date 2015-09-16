@@ -148,7 +148,8 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_ON_READ_THREADS("50"),
     TURN_OFF_RR_MPLOT("false"),
 
-    DELAYED_METRICS_MILLIS("300000");
+    DELAYED_METRICS_MILLIS("300000"),
+    EXCESS_ENUM_READER_SLEEP("600000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
