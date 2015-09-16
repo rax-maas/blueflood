@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,15 +38,18 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
+    private static final long millisInADay = 24 * 60 * 60 * 1000;
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleSlotsOlderThan");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
+    private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
             granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
+            granToDelayedMetricsMeter.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("Delayed metric that has a danger of TTLing", rollupGranularity.shortName())));
         }
     }
 
@@ -189,6 +193,7 @@ public class ShardStateManager {
             final long timestamp = slotState.getTimestamp();
             UpdateStamp.State state = slotState.getState();
             UpdateStamp stamp = slotToUpdateStampMap.get(slot);
+            long nowMillis = new DateTime().getMillis();
             if (stamp == null) {
                 // haven't seen this slot before, take the update. This happens when a blueflood service is just started.
                 slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
@@ -200,8 +205,12 @@ public class ShardStateManager {
                 //  if (current is not active) || (current is older && clean)
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
                     // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
-                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp))
+                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp)) {
                         granToReRollMeters.get(granularity).mark();
+                        if (nowMillis - timestamp >= millisInADay) {
+                            granToDelayedMetricsMeter.get(granularity).mark();
+                        }
+                    }
 
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false));
                 } else {
@@ -217,11 +226,16 @@ public class ShardStateManager {
         protected void createOrUpdateForSlotAndMillisecond(int slot, long millis) {
             if (slotToUpdateStampMap.containsKey(slot)) {
                 UpdateStamp stamp = slotToUpdateStampMap.get(slot);
+                long nowMillis = new DateTime().getMillis();
                 stamp.setTimestamp(millis);
                 // Only if we are managing the shard and rolling it up, we should emit a metric here, otherwise, it will be emitted by the rollup context which is responsible for rolling up the shard
                 if (getManagedShards().contains(shard) && Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
-                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(millis))
+                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(millis)) {
                         granToReRollMeters.get(granularity).mark();
+                        if (nowMillis - millis >= millisInADay) {
+                            granToDelayedMetricsMeter.get(granularity).mark();
+                        }
+                    }
                 }
                 stamp.setState(UpdateStamp.State.Active);
                 stamp.setDirty(true);
