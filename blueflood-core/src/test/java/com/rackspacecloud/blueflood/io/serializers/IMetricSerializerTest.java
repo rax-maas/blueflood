@@ -52,10 +52,11 @@ public class IMetricSerializerTest {
 
     @Test
     public void testEnumSerialization() throws IOException {
-        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":2,\"hashedEnumValues2Count\":{\"-622108619\":2,\"-592796451\":5},\"hashedEnumValuesWithCounts\":{\"-622108619\":2,\"-592796451\":5},\"stringEnumValues2Count\":{\"someValue\":5,\"someotherValue\":2},\"stringEnumValuesWithCounts\":{\"someValue\":5,\"someotherValue\":2}}";
+        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":2,\"hashedEnumValues2Count\":{\"-622108619\":2,\"-592796451\":5},\"hashedEnumValuesWithCounts\":{\"-622108619\":2,\"-592796451\":5},\"numPoints\":7,\"stringEnumValues2Count\":{\"someValue\":5,\"someotherValue\":2},\"stringEnumValuesWithCounts\":{\"someValue\":5,\"someotherValue\":2}}";
 
         BluefloodEnumRollup enumDeserialized = mapper.readValue(enumRollupString, BluefloodEnumRollup.class);
         String enumSerialized = mapper.writeValueAsString(enumDeserialized);
+        System.out.println(enumSerialized);
         Assert.assertEquals(enumRollupString, enumSerialized);
 
         BluefloodEnumRollup enumReDeserialized = mapper.readValue(enumSerialized, BluefloodEnumRollup.class);
