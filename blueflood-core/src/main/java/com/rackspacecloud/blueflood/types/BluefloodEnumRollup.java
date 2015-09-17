@@ -1,7 +1,5 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.utils.Util;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -47,7 +45,13 @@ public class BluefloodEnumRollup implements Rollup {
         return this.hashedEnumValues2Count;
     }
 
-    public Map<String,Long> getStringEnumValuesWithCounts() { return this.stringEnumValues2Count; }
+    public Map<String,Long> getStringEnumValuesWithCounts() {
+        return this.stringEnumValues2Count;
+    }
+
+    public ArrayList<String> getStringEnumValues() {
+        return new ArrayList<String>(this.stringEnumValues2Count.keySet());
+    }
 
     @Override
     public boolean equals(Object obj) {

@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Discovery {
-    private Map<String, Object> annotation = new HashMap<String, Object>();
+    private Map<String, Object> fields = new HashMap<String, Object>();
     private final String metricName;
     private final String tenantId;
 
@@ -33,8 +33,8 @@ public class Discovery {
         this.metricName = metricName;
     }
 
-    public Map<String, Object> getAnnotation() {
-        return annotation;
+    public Map<String, Object> getFields() {
+        return fields;
     }
 
     public String getTenantId() {
@@ -51,12 +51,14 @@ public class Discovery {
 
     @Override
     public String toString() {
-        return "ElasticMetricDiscovery [tenantId=" + tenantId + ", metricName=" + metricName + ", annotation="
-                + annotation.toString() + "]";
+        return "ElasticMetricDiscovery [" +
+                "tenantId=" + tenantId + ", " +
+                "metricName=" + metricName + ", " +
+                "fields=" + fields.toString() + "]";
     }
 
-    public Discovery withAnnotation(Map<String, Object> annotation) {
-        this.annotation = annotation;
+    public Discovery withSourceFields(Map<String, Object> fields) {
+        this.fields = fields;
         return this;
     }
 
@@ -67,7 +69,7 @@ public class Discovery {
                 .field(ESFieldLabel.tenantId.toString(), tenantId)
                 .field(ESFieldLabel.metric_name.toString(), metricName);
 
-        for (Map.Entry<String, Object> entry : annotation.entrySet()) {
+        for (Map.Entry<String, Object> entry : fields.entrySet()) {
             json = json.field(entry.getKey(), entry.getValue());
         }
         json = json.endObject();

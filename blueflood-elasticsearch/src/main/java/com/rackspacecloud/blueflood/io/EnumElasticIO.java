@@ -25,9 +25,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
-import com.rackspacecloud.blueflood.types.EnumMetric;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -79,24 +77,32 @@ public class EnumElasticIO implements DiscoveryIO {
         try {
             BulkRequestBuilder bulk = client.prepareBulk();
             for (Object obj : batch) {
-                if (!(obj instanceof EnumMetric)) {
+                if (!(obj instanceof PreaggregatedMetric)) {
                     classCastExceptionMeter.mark();
                     continue;
                 }
 
-                EnumMetric metric = (EnumMetric)obj;
-                Locator locator = metric.getLocator();
-                Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+                // get PreaggregatedMetric
+                PreaggregatedMetric metric = (PreaggregatedMetric)obj;
 
-                Map<String, Object> info = new HashMap<String, Object>();
-
-                ArrayList<String> enumValues = metric.getEnumValues();
-                if (enumValues != null) {
-                    info.put(ESFieldLabel.enum_values.toString(), enumValues);
+                // get rollup object of metric values
+                BluefloodEnumRollup rollup = (BluefloodEnumRollup) metric.getMetricValue();
+                if (rollup == null) {
+                    continue;
                 }
 
-                md.withAnnotation(info);
-                bulk.add(createSingleRequest(md));
+                Locator locator = metric.getLocator();
+                Discovery discovery = new Discovery(locator.getTenantId(), locator.getMetricName());
+
+                Map<String, Object> fields = new HashMap<String, Object>();
+
+                ArrayList<String> enumValues = rollup.getStringEnumValues();
+                if (enumValues.size() > 0) {
+                    fields.put(ESFieldLabel.enum_values.toString(), enumValues);
+                }
+
+                discovery.withSourceFields(fields);
+                bulk.add(createSingleRequest(discovery));
             }
             bulk.execute().actionGet();
         } finally {
