@@ -51,6 +51,8 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
                 filterStats = PlotRequestParser.DEFAULT_SET;
             else if (dataClass.equals(BluefloodTimerRollup.class))
                 filterStats = PlotRequestParser.DEFAULT_TIMER;
+            else if (dataClass.equals(BluefloodEnumRollup.class))
+                filterStats = PlotRequestParser.DEFAULT_ENUM;
             // else, I got nothing.
         }
 
@@ -118,6 +120,10 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         } else if (point.getData() instanceof BluefloodCounterRollup) {
             BluefloodCounterRollup rollup = (BluefloodCounterRollup)point.getData();
             numPoints += rollup.getCount().longValue();
+            filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
+        } else if (point.getData() instanceof BluefloodEnumRollup) {
+            BluefloodEnumRollup rollup = (BluefloodEnumRollup)point.getData();
+            numPoints += rollup.getCount();
             filterStatsObject = getFilteredStatsForRollup(rollup, filterStats);
         } else {
             String errString =
