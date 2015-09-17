@@ -273,7 +273,7 @@ public class AstyanaxReader extends AstyanaxIO {
         // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
         // to be known before we ever get to this method (see above comment).
 
-        ExecutorService taskExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService taskExecutor = null;
 
         Future<ColumnList<Long>> enumValuesFuture = null;
         if (cf == CassandraModel.CF_METRICS_FULL) {
@@ -290,13 +290,14 @@ public class AstyanaxReader extends AstyanaxIO {
                 serializer = NumericSerializer.CounterRollupInstance;
             } else if (type.equals(BluefloodEnumRollup.class)) {
                 serializer = NumericSerializer.enumRollupInstance;
+                taskExecutor = Executors.newSingleThreadExecutor();
                 enumValuesFuture = taskExecutor.submit(new ColumnFromEnumCF(locator));
             }
             else {
                 serializer = NumericSerializer.simpleNumberSerializer;
             }
         }
-        
+
         ColumnList<Long> cols = getColumnsFromDB(locator, cf, range);
         Points<T> points = new Points<T>();
         try {
@@ -309,13 +310,13 @@ public class AstyanaxReader extends AstyanaxIO {
         }
 
         if (type.equals(BluefloodEnumRollup.class)) {
-                try {
-                    ColumnList<Long> enumvalues = enumValuesFuture.get();
-                    taskExecutor.shutdown();
-                    return getEnumStringValuesFromHashes(points, enumvalues);
-                } catch (Exception e) {
-                    log.error("Exception", e);
-                }
+            try {
+                ColumnList<Long> enumvalues = enumValuesFuture.get();
+                taskExecutor.shutdown();
+                return getEnumStringValuesFromHashes(points, enumvalues);
+            } catch (Exception e) {
+                log.error("Exception", e);
+            }
         }
         return points;
     }
@@ -390,13 +391,13 @@ public class AstyanaxReader extends AstyanaxIO {
     // other individual metric fetch methods once this gets in.
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
         ListMultimap<ColumnFamily, Locator> locatorsByCF =
-                 ArrayListMultimap.create();
+                ArrayListMultimap.create();
         Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
 
         for (Locator locator : locators) {
             try {
                 RollupType rollupType = RollupType.fromString((String)
-                            metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                        metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
                 DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
                 ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
@@ -406,7 +407,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-         for (ColumnFamily CF : locatorsByCF.keySet()) {
+        for (ColumnFamily CF : locatorsByCF.keySet()) {
             List<Locator> locs = locatorsByCF.get(CF);
             Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
             // transform columns to MetricData
@@ -450,7 +451,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private MetricData getEnumMetricDataForRange(final Locator locator, Range range, Granularity gran, RollupType rollupType, DataType dataType) {
-       ExecutorService taskExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService taskExecutor = Executors.newSingleThreadExecutor();
 
         Future<ColumnList<Long>> enumValuesFuture = taskExecutor.submit(new ColumnFromEnumCF(locator));
 
@@ -490,7 +491,7 @@ public class AstyanaxReader extends AstyanaxIO {
         ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(rollupType, dataType, gran);
         Points points = new Points();
         ColumnList<Long> results = getColumnsFromDB(locator, CF, range);
-        
+
         // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
         // data we are asking for and use a specific reader method.
         AbstractSerializer serializer = NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
@@ -520,7 +521,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private MetricData transformColumnsToMetricData(Locator locator, ColumnList<Long> columns,
-                                                                       Granularity gran) {
+                                                    Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
             DataType dataType = getDataType(locator, dataTypeCacheKey);
@@ -560,7 +561,7 @@ public class AstyanaxReader extends AstyanaxIO {
         }
         else
             // this works for EVERYTHING except SimpleNumber.
-        return new Points.Point(column.getName(), column.getValue(serializer));
+            return new Points.Point(column.getName(), column.getValue(serializer));
     }
 
 
@@ -668,7 +669,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return points;
     }
     class ColumnFromEnumCF implements Callable{
-         Locator locator;
+        Locator locator;
         ColumnFromEnumCF(Locator locator){
             this.locator = locator;
         }
