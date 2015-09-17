@@ -65,6 +65,7 @@ public class BluefloodEnumRollup implements Rollup {
     public static BluefloodEnumRollup buildRollupFromEnumRollups(Points<BluefloodEnumRollup> input) throws IOException {
         BluefloodEnumRollup enumRollup = new BluefloodEnumRollup();
         Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();
+        Map<String, Long> currentStringEnums = enumRollup.getStringEnumValuesWithCounts();
 
         for (Points.Point<BluefloodEnumRollup> point : input.getPoints().values()) {
             BluefloodEnumRollup pointData = point.getData();
@@ -76,6 +77,15 @@ public class BluefloodEnumRollup implements Rollup {
                     incomingCount+=currentCount;
                 }
                 currentHashedEnums.put(hash, incomingCount);
+            }
+            Map<String, Long> incomingStringEnums = pointData.getStringEnumValuesWithCounts();
+            for (String enumString : incomingStringEnums.keySet()) {
+                long incomingCount = incomingStringEnums.get(enumString);
+                if (currentStringEnums.containsKey(enumString)) {
+                    long currentCount = currentStringEnums.get(enumString);
+                    incomingCount+=currentCount;
+                }
+                currentStringEnums.put(enumString, incomingCount);
             }
         }
 
