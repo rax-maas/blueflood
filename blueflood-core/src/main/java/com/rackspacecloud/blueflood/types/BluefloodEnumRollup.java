@@ -41,6 +41,16 @@ public class BluefloodEnumRollup implements Rollup {
         return hashedEnumValues2Count.size();
     }
 
+    public int getNumPoints() {
+        int enumCount = 0;
+        Set keySet = hashedEnumValues2Count.keySet();
+        Iterator itr = keySet.iterator();
+        while(itr.hasNext()){
+            enumCount+= hashedEnumValues2Count.get(itr.next());
+        }
+        return enumCount;
+    }
+
     public Map<Long, Long> getHashedEnumValuesWithCounts() {
         return this.hashedEnumValues2Count;
     }
