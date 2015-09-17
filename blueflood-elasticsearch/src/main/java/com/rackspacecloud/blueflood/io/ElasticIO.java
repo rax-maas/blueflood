@@ -48,9 +48,9 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public class ElasticIO implements DiscoveryIO {
     public static String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
-    
+    public static final String ES_DOCUMENT_TYPE = "metrics";
+
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
-    private static final String ES_TYPE = "metrics";
     private Client client;
     
     // todo: these should be instances per client.
@@ -100,17 +100,17 @@ public class ElasticIO implements DiscoveryIO {
 
                 IMetric metric = (IMetric)obj;
                 Locator locator = metric.getLocator();
-                Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+                Discovery discovery = new Discovery(locator.getTenantId(), locator.getMetricName());
 
-                Map<String, Object> info = new HashMap<String, Object>();
+                Map<String, Object> fields = new HashMap<String, Object>();
 
 
                 if (obj instanceof  Metric && getUnit((Metric)metric) != null) { // metric units may be null
-                    info.put(ESFieldLabel.unit.toString(), getUnit((Metric)metric));
+                    fields.put(ESFieldLabel.unit.toString(), getUnit((Metric) metric));
                 }
 
-                md.withAnnotation(info);
-                bulk.add(createSingleRequest(md));
+                discovery.withSourceFields(fields);
+                bulk.add(createSingleRequest(discovery));
             }
             bulk.execute().actionGet();
         } finally {
@@ -126,7 +126,7 @@ public class ElasticIO implements DiscoveryIO {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
-        return client.prepareIndex(INDEX_NAME_WRITE, ES_TYPE)
+        return client.prepareIndex(INDEX_NAME_WRITE, ES_DOCUMENT_TYPE)
                 .setId(md.getDocumentId())
                 .setSource(md.createSourceContent())
                 .setCreate(true)

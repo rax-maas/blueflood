@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Rackspace
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.types.Locator;
@@ -38,21 +54,21 @@ public class SearchResult {
 
     @Override
     public String toString() {
-        String s = "SearchResult [tenantId=" + locator.getTenantId() + ", metricName=" + locator.getMetricName() + ", unit=" + unit;
+        StringBuilder sb = new StringBuilder()
+                .append("SearchResult [tenantId=").append(locator.getTenantId())
+                .append(", metricName=").append(locator.getMetricName());
 
-        if (enumValues != null) {
-            String enumValuesString = "";
-            for (String enumValue : enumValues) {
-                if (enumValuesString != "") {
-                    enumValuesString += ",";
-                }
-                enumValuesString += enumValue.replace(",", "\\,");
-            }
-            s += ", enumValues=" + enumValuesString + "]";
+        if (unit != null) {
+            sb.append(", unit=").append(unit);
         }
 
-        s += "]";
-        return s;
+        if (enumValues != null) {
+            sb.append(", enumValues=").append(enumValues.toString());
+        }
+
+        sb.append("]");
+
+        return sb.toString();
     }
 
     @Override
@@ -87,6 +103,11 @@ public class SearchResult {
         if (this == other) {
             return true;
         }
+
+        if (other == null) {
+            return false;
+        }
+
         boolean result = locator.equals(other.locator);
 
         if (unit != null) {
