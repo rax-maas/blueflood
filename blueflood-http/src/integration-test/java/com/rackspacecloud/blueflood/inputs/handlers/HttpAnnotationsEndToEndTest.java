@@ -73,7 +73,7 @@ public class HttpAnnotationsEndToEndTest {
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
+                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
@@ -153,7 +153,12 @@ public class HttpAnnotationsEndToEndTest {
     @AfterClass
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
-        esSetup.terminate();
-        httpQueryService.stopService();
+        if (esSetup != null) {
+            esSetup.terminate();
+        }
+
+        if (httpQueryService != null) {
+            httpQueryService.stopService();
+        }
     }
 }

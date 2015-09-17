@@ -71,7 +71,7 @@ public class HttpHandlerIntegrationTest {
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("events_mapping.json")));
+                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
@@ -410,7 +410,12 @@ public class HttpHandlerIntegrationTest {
     
     @AfterClass
     public static void shutdown() {
-        esSetup.terminate();
-        vendor.shutdown();
+        if (esSetup != null) {
+            esSetup.terminate();
+        }
+
+        if (vendor != null) {
+            vendor.shutdown();
+        }
     }
 }

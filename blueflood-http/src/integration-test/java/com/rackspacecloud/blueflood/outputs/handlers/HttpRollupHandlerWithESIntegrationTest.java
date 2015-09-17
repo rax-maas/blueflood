@@ -204,7 +204,13 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "false");
-        esSetup.terminate();
-        httpQueryService.stopService();
+
+        if (esSetup != null) {
+            esSetup.terminate();
+        }
+
+        if (httpQueryService != null) {
+            httpQueryService.stopService();
+        }
     }
 }
