@@ -110,7 +110,7 @@ public interface BasicRollupsOutputSerializer<T> {
                 else if (rollup instanceof BluefloodSetRollup)
                     return ((BluefloodSetRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodEnumRollup)
-                    return ((BluefloodEnumRollup) rollup).getCount();
+                    return ((BluefloodEnumRollup) rollup).getNumPoints();
                 else
                     // gauge.
                     throw new Exception(String.format("numPoints not supported for this type: %s", rollup.getClass().getSimpleName()));
