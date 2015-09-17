@@ -40,26 +40,26 @@ public class DiscoveryTest {
 
     @Test
     public void testWithAnnotation() {
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put("a_1", "a1");
-        info.put("a_2", "a2");
-        info.put("a_3", "a3");
+        Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("a_1", "a1");
+        fields.put("a_2", "a2");
+        fields.put("a_3", "a3");
 
-        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withAnnotation(info);
+        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withSourceFields(fields);
 
-        Map<String, Object> actualInfo = discovery.getAnnotation();
-        Assert.assertEquals("a1", actualInfo.get("a_1").toString());
-        Assert.assertEquals("a2", actualInfo.get("a_2").toString());
-        Assert.assertEquals("a3", actualInfo.get("a_3").toString());
+        Map<String, Object> actualFields = discovery.getFields();
+        Assert.assertEquals("a1", actualFields.get("a_1").toString());
+        Assert.assertEquals("a2", actualFields.get("a_2").toString());
+        Assert.assertEquals("a3", actualFields.get("a_3").toString());
     }
 
     @Test
     public void testCreateSourceContent() throws IOException {
 
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put(ESFieldLabel.unit.toString(), "quantum");
+        Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put(ESFieldLabel.unit.toString(), "quantum");
 
-        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withAnnotation(info);
+        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withSourceFields(fields);
         XContentBuilder builder = discovery.createSourceContent();
 
         final String expectedString =
