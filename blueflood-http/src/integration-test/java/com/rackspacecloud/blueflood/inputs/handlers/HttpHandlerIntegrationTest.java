@@ -233,7 +233,7 @@ public class HttpHandlerIntegrationTest {
         final Locator locator = Locator.
                 createLocatorFromPathComponents("333333", "internal", "packets_received");
         Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
-                locator, new Range(1389211220,1389211240),
+                locator, new Range(1389211220, 1389211240),
                 CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
@@ -270,7 +270,7 @@ public class HttpHandlerIntegrationTest {
         Assert.assertEquals(1, points1.getPoints().size());
 
         final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
-        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getDataToRoll(BluefloodEnumRollup.class,
+        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points2.getPoints().size());
         for (Long timestamp : points2.getPoints().keySet()) {
@@ -305,7 +305,7 @@ public class HttpHandlerIntegrationTest {
         verify(context, atLeastOnce()).update(anyLong(), anyInt());
 
         final Locator locator2 = Locator.createLocatorFromPathComponents("99988877", "call_xyz_api");
-        Points<BluefloodEnumRollup> points2 = new FakeEnumAstyanaxReader().getDataToRoll(BluefloodEnumRollup.class,
+        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(2, points2.getPoints().size());
 
