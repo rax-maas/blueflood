@@ -17,15 +17,19 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.EnumMetric;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.service.ElasticClientManager;
+import org.elasticsearch.action.ListenableActionFuture;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +40,8 @@ public class EnumElasticIOTest {
 
     private EnumElasticIO enumElasticIO;
     private EsSetup esSetup;
+    private Client esClientMock = mock(Client.class);
+    private BulkRequestBuilder bulkRequestBuilderMock = mock(BulkRequestBuilder.class);
 
     private static final String TENANT_1 = "100000";
     private static final String TENANT_2 = "200000";
@@ -47,7 +53,11 @@ public class EnumElasticIOTest {
     private static final String METRIC_NAME_B2 = "b.m2";
     private static final String METRIC_NAME_B3 = "b.m3";
 
-    ArrayList<String> enumValues = new ArrayList<String>();
+    BluefloodEnumRollup rollupWithEnumValues = new BluefloodEnumRollup()
+            .withEnumValue("v1", 1L)
+            .withEnumValue("v2", 1L)
+            .withEnumValue("v3", 1L);
+    ArrayList<String> enumValues = rollupWithEnumValues.getStringEnumValues();
 
     @Before
     public void setup() throws IOException {
@@ -60,8 +70,6 @@ public class EnumElasticIOTest {
         enumElasticIO = new EnumElasticIO(esSetup.client());
         enumElasticIO.setINDEX_NAME_READ(EnumElasticIO.ENUMS_INDEX_NAME_WRITE);
         enumElasticIO.setINDEX_NAME_WRITE(EnumElasticIO.ENUMS_INDEX_NAME_WRITE);
-
-        createTestMetrics();
     }
 
     @After
@@ -69,32 +77,18 @@ public class EnumElasticIOTest {
         esSetup.terminate();
     }
 
-    private IMetric createTestMetric(String tenantId, String metricName, ArrayList<String> enumValues) {
-        Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-        return new EnumMetric(locator, "", 0, new TimeValue(1, TimeUnit.DAYS), enumValues);
-    }
+    @Test
+    public void testCreateEnumElasticIO() {
+        EnumElasticIO enumElasticIO1 = new EnumElasticIO();
+        Assert.assertNotNull("create EnumElasticIO() failed", enumElasticIO1);
 
-    private void createTestMetrics() throws IOException {
+        EnumElasticIO enumElasticIO2 = new EnumElasticIO(esClientMock);
+        Assert.assertNotNull("create EnumElasticIO(client) failed", enumElasticIO2);
 
-        enumValues.add("v1");
-        enumValues.add("v2");
-        enumValues.add("v3");
-
-        List<IMetric> metrics = new ArrayList<IMetric>();
-
-        // add TENANT_1 metrics
-        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_A1, enumValues));
-        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_A2, enumValues));
-        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_B1, enumValues));
-        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_B2, enumValues));
-
-        // add TENANT_2 metrics
-        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B1, enumValues));
-        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B2, enumValues));
-        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B3, enumValues));
-        enumElasticIO.insertDiscovery(metrics);
-
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        ElasticClientManager managerMock = mock(ElasticClientManager.class);
+        EnumElasticIO enumElasticIO3 = new EnumElasticIO(managerMock);
+        Assert.assertNotNull("create EnumElasticIO(manager) failed", enumElasticIO3);
+        verify(managerMock, times(1)).getClient();
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -123,7 +117,85 @@ public class EnumElasticIOTest {
     }
 
     @Test
+    public void testInsertDiscoveryWithEmptyBatch() throws IOException {
+        when(esClientMock.prepareBulk()).thenReturn(bulkRequestBuilderMock);
+        enumElasticIO.setClient(esClientMock);
+
+        // create empty metrics list and call insertDiscovery with it
+        List<IMetric> metrics = new ArrayList<IMetric>();
+        enumElasticIO.insertDiscovery(metrics);
+
+        // verify nothing is executed
+        verify(esClientMock, never()).prepareBulk();
+        verify(bulkRequestBuilderMock, never()).execute();
+    }
+
+    @Test
+    public void testInsertDiscoveryWithInvalidMetricClass() throws IOException {
+        ListenableActionFuture listenableActionFutureMock = mock(ListenableActionFuture.class);
+        when(esClientMock.prepareBulk()).thenReturn(bulkRequestBuilderMock);
+        when(bulkRequestBuilderMock.execute()).thenReturn(listenableActionFutureMock);
+        enumElasticIO.setClient(esClientMock);
+
+        // create empty metrics list and call insertDiscovery with it
+        List<IMetric> metrics = new ArrayList<IMetric>();
+        Locator locator = Locator.createLocatorFromPathComponents(TENANT_1, METRIC_NAME_A1);
+        metrics.add(new Metric(locator, "", 0L, new TimeValue(1, TimeUnit.DAYS), null));
+        enumElasticIO.insertDiscovery(metrics);
+
+        // verify
+        verify(bulkRequestBuilderMock, never()).add(any(IndexRequestBuilder.class));
+    }
+
+    @Test
+    public void testInsertDiscovery() throws IOException {
+        // setup mock for BulkRequestBuilder
+        ListenableActionFuture listenableActionFutureMock = mock(ListenableActionFuture.class);
+        when(bulkRequestBuilderMock.execute()).thenReturn(listenableActionFutureMock);
+
+        // setup mock for ElasticSearch Client
+        IndexRequestBuilder indexRequestBuilderMock = mock(IndexRequestBuilder.class);
+        when(esClientMock.prepareBulk()).thenReturn(bulkRequestBuilderMock);
+        when(esClientMock.prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE))
+                .thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setId(anyString())).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setSource(any(XContentBuilder.class))).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setCreate(anyBoolean())).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setRouting(anyString())).thenReturn(indexRequestBuilderMock);
+        enumElasticIO.setClient(esClientMock);
+
+        // create PreaggregatedMetric metrics list and call insertDiscovery with it
+        List<IMetric> metrics = new ArrayList<IMetric>();
+        long collectionTime = 0;
+        Locator locator1 = Locator.createLocatorFromPathComponents(TENANT_1, METRIC_NAME_A1);
+        Locator locator2 = Locator.createLocatorFromPathComponents(TENANT_2, METRIC_NAME_B1);
+        TimeValue ttl = new TimeValue(1, TimeUnit.DAYS);
+        metrics.add(new PreaggregatedMetric(collectionTime, locator1, ttl, rollupWithEnumValues));
+        metrics.add(new PreaggregatedMetric(collectionTime, locator2, ttl, rollupWithEnumValues));
+        enumElasticIO.insertDiscovery(metrics);
+
+        // verify client and bulk
+        verify(esClientMock, times(1)).prepareBulk();
+        verify(bulkRequestBuilderMock, times(2)).add(any(IndexRequestBuilder.class));
+        verify(esClientMock, times(2)).prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE);
+        verify(bulkRequestBuilderMock, times(1)).execute();
+
+        // verify indexRequestBuilder
+        verify(indexRequestBuilderMock, times(2)).setId(anyString());
+        verify(indexRequestBuilderMock).setId(TENANT_1 + ":" + METRIC_NAME_A1);
+        verify(indexRequestBuilderMock).setId(TENANT_2 + ":" + METRIC_NAME_B1);
+        verify(indexRequestBuilderMock, times(2)).setSource(any(XContentBuilder.class));
+        verify(indexRequestBuilderMock, times(2)).setCreate(true);
+        verify(indexRequestBuilderMock, times(2)).setRouting(anyString());
+        verify(indexRequestBuilderMock).setRouting(TENANT_1);
+        verify(indexRequestBuilderMock).setRouting(TENANT_2);
+    }
+
+    @Test
     public void testSearchWithNoWildCard() throws Exception {
+
+        createTestMetrics();
+
         List<SearchResult> results = enumElasticIO.search(TENANT_1, METRIC_NAME_A1);
         Assert.assertEquals("results should have 1 result", 1, results.size());
 
@@ -137,6 +209,9 @@ public class EnumElasticIOTest {
 
     @Test
     public void testSearchWithWildCard() throws Exception {
+
+        createTestMetrics();
+
         // tenant1 expected search results
         SearchResult tenant1Entry1 =  new SearchResult(TENANT_1, METRIC_NAME_A1, null, enumValues);
         SearchResult tenant1Entry2 =  new SearchResult(TENANT_1, METRIC_NAME_A2, null, enumValues);
@@ -169,8 +244,8 @@ public class EnumElasticIOTest {
         Assert.assertTrue("results2 should contain tenant2 entry1", results2.contains(tenant2Entry1));
         Assert.assertTrue("results2 should contain tenant2 entry2", results2.contains(tenant2Entry2));
         Assert.assertTrue("results2 should contain tenant2 entry3", results2.contains(tenant2Entry3));
-        Assert.assertTrue("results1 should not contain tenant1 entry1", !results2.contains(tenant1Entry1));
-        Assert.assertTrue("results1 should not contain tenant1 entry2", !results2.contains(tenant1Entry2));
+        Assert.assertTrue("results2 should not contain tenant1 entry1", !results2.contains(tenant1Entry1));
+        Assert.assertTrue("results2 should not contain tenant1 entry2", !results2.contains(tenant1Entry2));
 
         // results3 = search *.m1 for tenant1
         List<SearchResult> results3 = enumElasticIO.search(TENANT_1, "*.m1");
@@ -186,6 +261,9 @@ public class EnumElasticIOTest {
 
     @Test
     public void testBatchQueryWithWildCards() throws Exception {
+
+        createTestMetrics();
+
         String tenantId = TENANT_1;
         String query1 = "a.*";
         String query2 = "*.m1";
@@ -205,5 +283,27 @@ public class EnumElasticIOTest {
         Assert.assertTrue("results should contain result1", results.contains(result1));
         Assert.assertTrue("results should contain result2", results.contains(result2));
         Assert.assertTrue("results should contain result3", results.contains(result3));
+    }
+
+    private IMetric createTestMetric(String tenantId, String metricName) {
+        Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
+        return new PreaggregatedMetric(0, locator, new TimeValue(1, TimeUnit.DAYS), rollupWithEnumValues);
+    }
+
+    private void createTestMetrics() throws IOException {
+        List<IMetric> metrics = new ArrayList<IMetric>();
+
+        // add TENANT_1 metrics
+        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_A1));
+        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_A2));
+        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_B1));
+        metrics.add(createTestMetric(TENANT_1, METRIC_NAME_B2));
+
+        // add TENANT_2 metrics
+        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B1));
+        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B2));
+        metrics.add(createTestMetric(TENANT_2, METRIC_NAME_B3));
+        enumElasticIO.insertDiscovery(metrics);
+        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 }
