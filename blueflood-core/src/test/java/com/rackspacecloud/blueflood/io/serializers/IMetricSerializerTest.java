@@ -56,6 +56,7 @@ public class IMetricSerializerTest {
 
         BluefloodEnumRollup enumDeserialized = mapper.readValue(enumRollupString, BluefloodEnumRollup.class);
         String enumSerialized = mapper.writeValueAsString(enumDeserialized);
+        System.out.println(enumSerialized);
         Assert.assertEquals(enumRollupString, enumSerialized);
 
         BluefloodEnumRollup enumReDeserialized = mapper.readValue(enumSerialized, BluefloodEnumRollup.class);
