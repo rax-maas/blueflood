@@ -27,9 +27,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     
@@ -67,7 +68,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         writer.writeMetadataValue(loc1, "foo", "bar");
-        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
+        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo"));
     }
 
     @Test
@@ -78,14 +79,12 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         Long timestamp1 = 1L;
         Long timestamp2 = 2L;
-        List<Locator> excessEnumList = new ArrayList<Locator>();
+        Set<Locator> excessEnumList = new HashSet<Locator>();
         excessEnumList.add(loc1);
         excessEnumList.add(loc2);
-        Collections.sort(excessEnumList);
         writer.writeExcessEnumMetric(loc1, timestamp1);
         writer.writeExcessEnumMetric(loc2, timestamp2);
-        List<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
-        Collections.sort(newExcessEnumList);
+        Set<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
         Assert.assertEquals(excessEnumList, newExcessEnumList);
     }
 
