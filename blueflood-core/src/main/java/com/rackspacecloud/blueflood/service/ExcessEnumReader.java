@@ -18,20 +18,32 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import java.util.Collections;
 import java.util.Set;
 
+import com.codahale.metrics.Meter;
+
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.utils.Metrics;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExcessEnumReader implements Runnable{
+    private static final Logger log = LoggerFactory.getLogger(ExcessEnumReader.class);
+    private final Meter readMeter = Metrics.meter(ExcessEnumReader.class, 
+                                                    "reads", "Cassandra Reads");
+    private final Meter readErrMeter = Metrics.meter(ExcessEnumReader.class, 
+                                                    "reads", "Cassandra Read Errors");
+        
 
     private static final ExcessEnumReader INSTANCE = new ExcessEnumReader();
     public static ExcessEnumReader getInstance() {
         return INSTANCE;
     }
 
-    private Set<Locator> excessEnumMetrics;
+    private Set<Locator> excessEnumMetrics = Collections.emptySet();
     private static final Configuration config = Configuration.getInstance();
 
     public Boolean isInExcessEnumMetrics(Locator m){
@@ -40,12 +52,17 @@ public class ExcessEnumReader implements Runnable{
     final public void run() {
 
         int sleepMillis = config.getIntegerProperty(CoreConfig.EXCESS_ENUM_READER_SLEEP);
-
-        while (true) try {
-            excessEnumMetrics = AstyanaxReader.getInstance().getExcessEnumMetrics();
-            Thread.sleep(sleepMillis);
-        } catch (Exception e) {
-            throw new RuntimeException("ExcessEnumReader failed with exception", e);
+        // Loop and periodically read the table from Cassandra
+        while (true)
+        {
+            try {
+                excessEnumMetrics = AstyanaxReader.getInstance().getExcessEnumMetrics();
+                readMeter.mark();
+                Thread.sleep(sleepMillis);
+            } catch (Exception e) {
+                log.error("ExcessEnumReader failed with exception " + e);
+                readErrMeter.mark();
+            }
         }
     }
 }
