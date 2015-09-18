@@ -92,7 +92,7 @@ def main():
         print('')
     except Exception, ex:
         print(ex)
-        raise Exception('Cannot ingest metrics into bluflood')
+        raise Exception('Cannot ingest metrics into blueflood')
 
 main()
 

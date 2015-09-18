@@ -89,6 +89,6 @@ def main():
                 print(r.content)
     except Exception, ex:
         print(ex)
-        raise Exception('Cannot retrieve metrics from bluflood')
+        raise Exception('Cannot retrieve metrics from blueflood')
 
 main()
