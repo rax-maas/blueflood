@@ -16,10 +16,13 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Meter;
+
 import com.google.gson.internal.LazilyParsedNumber;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.service.ExcessEnumReader;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 import java.io.IOError;
@@ -30,7 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PreaggregateConversions {
+    private static final Logger log = LoggerFactory.getLogger(PreaggregateConversions.class);
+    private static final Meter excessEnumIngestedMeter = Metrics.meter(PreaggregateConversions.class, "ExcessEnumIngested");
     
     // todo: punt on TTL
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
@@ -135,6 +143,9 @@ public class PreaggregateConversions {
                 rollup = rollup.withEnumValue(en.getValue(), 1L);
                 PreaggregatedMetric metric = new PreaggregatedMetric(timestamp, locator, DEFAULT_TTL, rollup);
                 list.add(metric);
+            } else {
+                log.warn("Skipping Ingest of Excess Enum Metric " + locator);
+                excessEnumIngestedMeter.mark();
             }
         }
         return list;
