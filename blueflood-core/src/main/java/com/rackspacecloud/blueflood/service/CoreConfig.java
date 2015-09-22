@@ -146,7 +146,9 @@ public enum CoreConfig implements ConfigDefaults {
     // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
     ES_UNIT_THREADS("50"),
     ROLLUP_ON_READ_THREADS("50"),
-    TURN_OFF_RR_MPLOT("false");
+    TURN_OFF_RR_MPLOT("false"),
+
+    EXCESS_ENUM_READER_SLEEP("600000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());
