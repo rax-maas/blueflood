@@ -37,13 +37,13 @@ public class ExcessEnumsReaderIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testReader() throws Exception {
-        // Before the table is read from Cassandra the locator should not be found
-        Assert.assertFalse(ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
+        Assert.assertFalse("Before the table is read from Cassandra the locator should not be found", 
+            ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
         // Start the thread to read the table from Cassandra
         eerThread.start();
         Thread.sleep(100);
-        // Confirm that the locator has been read from Cassandra
-        Assert.assertTrue(ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
+        Assert.assertTrue("After the table is read from Cassandra the locator should be found", 
+            ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
 
     }
 }
