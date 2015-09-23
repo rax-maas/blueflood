@@ -81,6 +81,38 @@ public class BluefloodEnumRollupTest {
         }
     }
 
+    @Test
+    public void testGetStringEnumValues() {
+        // one value
+        BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withEnumValue("r1", 1L);
+        Assert.assertEquals("rollup1 should have 1 value", 1, rollup1.getStringEnumValues().size());
+        ArrayList<String> enums1 = rollup1.getStringEnumValues();
+        Assert.assertTrue("enums1 should contain r1", enums1.contains("r1"));
+
+        // multiple unique values
+        BluefloodEnumRollup rollup2 = new BluefloodEnumRollup()
+                .withEnumValue("r2.1", 2L)
+                .withEnumValue("r2.2", 2L)
+                .withEnumValue("r2.3", 1L);
+        Assert.assertEquals("rollup2 should have 3 values", 3, rollup2.getStringEnumValues().size());
+        ArrayList<String> enums2 = rollup2.getStringEnumValues();
+        Assert.assertTrue("enums2 should contain r2.1", enums2.contains("r2.1"));
+        Assert.assertTrue("enums2 should contain r2.2", enums2.contains("r2.2"));
+        Assert.assertTrue("enums2 should contain r2.3", enums2.contains("r2.3"));
+
+        // multiple duplicate values
+        BluefloodEnumRollup rollup3 = new BluefloodEnumRollup()
+                .withEnumValue("r3.1", 1L)
+                .withEnumValue("r3.1", 1L)
+                .withEnumValue("r3.2", 1L)
+                .withEnumValue("r3.2", 2L)
+                .withEnumValue("r3.2", 3L);
+        Assert.assertEquals("rollup3 should have 2 values", 2, rollup3.getStringEnumValues().size());
+        ArrayList<String> enums3 = rollup3.getStringEnumValues();
+        Assert.assertTrue("enums3 should contain r3.1", enums3.contains("r3.1"));
+        Assert.assertTrue("enums3 should contain r3.2", enums3.contains("r3.2"));
+    }
+
     public static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
         Points<T> points = new Points<T>();
         long time = initialTime;

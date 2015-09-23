@@ -31,6 +31,7 @@ public enum CoreConfig implements ConfigDefaults {
     INGESTION_MODULES(""),
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
+    ENUMS_DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
     EVENTS_MODULES(""),
 
