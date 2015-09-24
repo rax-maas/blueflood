@@ -352,7 +352,7 @@ class BluefloodClient(object):
         v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(v_iter[0][data_key])
-        if current_fixup:
+        if current_fixup != None:
           # The fixup list lists ranges of null datapoints
           fixup_list.append([current_fixup, len(ret_arr) - 1])
           current_fixup = None
