@@ -62,11 +62,11 @@ class BluefloodTests(TestCase):
     self.finder = TenantBluefloodFinder(config)
     self.metric1 = "a.b.c"
     self.metric2 = "e.f.g"
-    self.reader = TenantBluefloodReader(self.metric1, self.finder.tenant, self.finder.bf_query_endpoint, 
+    self.reader = TenantBluefloodReader(self.metric1, self.finder.tenant, self.finder.bf_query_endpoint,
                                      self.finder.enable_submetrics, self.finder.submetric_aliases)
     self.node1 = TenantBluefloodLeafNode(self.metric1, self.reader)
     self.node2 = TenantBluefloodLeafNode(self.metric2, self.reader)
-    self.bfc = BluefloodClient(self.finder.bf_query_endpoint, self.finder.tenant, 
+    self.bfc = BluefloodClient(self.finder.bf_query_endpoint, self.finder.tenant,
                                self.finder.enable_submetrics, self.finder.submetric_aliases)
     auth.set_auth(None)
 
@@ -181,11 +181,11 @@ class BluefloodTests(TestCase):
     node1 = TenantBluefloodLeafNode(metric1, self.reader)
     node2 = TenantBluefloodLeafNode(metric2, self.reader)
     return ([node1, node2],
-            [{u'data': 
+            [{u'data':
               [{u'timestamp': third_timestamp, u'average': 4449.97, u'numPoints': 1},
-               {u'timestamp': fourth_timestamp, u'average': 14449.97, u'numPoints': 1}], 
-              u'metric': self.metric1, u'type': u'number', u'unit': u'unknown'}, 
-             {u'data': 
+               {u'timestamp': fourth_timestamp, u'average': 14449.97, u'numPoints': 1}],
+              u'metric': self.metric1, u'type': u'number', u'unit': u'unknown'},
+             {u'data':
               [{u'timestamp': first_timestamp, u'average': 6421.18, u'numPoints': 1},
                {u'timestamp': second_timestamp, u'average': 26421.18, u'numPoints': 1}], 
               u'metric': self.metric2, u'type': u'number', u'unit': u'unknown'}])
@@ -198,13 +198,15 @@ class BluefloodTests(TestCase):
     dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
     self.assertDictEqual(dictionary,
                     {nodes[1].path: [6421.18, None, None, None, None, None, None, None, None], 
-                     nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
+                     nodes[0].path: [None, None, None, None, 4449.97, 7783.303333333333, 
+                                     11116.636666666667, 14449.97, None]})
 
     # check that it handles unfound metric correctly
     nodes[1].path += '.dummy'
     dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
     self.assertTrue(dictionary == 
-                    {nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
+                    {nodes[0].path: [None, None, None, None, 4449.97, 7783.303333333333, 
+                                     11116.636666666667, 14449.97, None]})
 
     # now with submetrics
     self.bfc.enable_submetrics = True
@@ -212,7 +214,8 @@ class BluefloodTests(TestCase):
     dictionary = self.bfc.gen_dict(nodes, responses, start, end, step)
     self.assertTrue(dictionary == 
                     {nodes[1].path: [6421.18, None, None, None, None, None, None, None, None], 
-                     nodes[0].path: [None, None, None, None, 4449.97, None, None, 14449.97, None]})
+                     nodes[0].path: [None, None, None, None, 4449.97, 7783.303333333333, 
+                                     11116.636666666667, 14449.97, None]})
 
   def test_gen_responses(self):
     step = 3000
@@ -338,9 +341,9 @@ class BluefloodTests(TestCase):
       self.assertSequenceEqual(time_info, (1426120000, 1426147300, 300))
       self.assertDictEqual(dictionary,
                            {'e.f.g': 
-                            [6421.18, None, None, None, None, None, None, None, None, 26421.18, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], 
+                            [6421.18, 8643.402222222223, 10865.624444444446, 13087.846666666668, 15310.06888888889, 17532.291111111113, 19754.513333333336, 21976.73555555556, 24198.95777777778, 26421.18, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], 
                             'a.b.c': 
-                            [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 4449.97, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 14449.97, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]})
+                            [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 4449.97, 4926.160476190476, 5402.350952380953, 5878.541428571429, 6354.731904761905, 6830.922380952381, 7307.112857142857, 7783.303333333333, 8259.49380952381, 8735.684285714287, 9211.874761904764, 9688.065238095242, 10164.255714285719, 10640.446190476196, 11116.636666666673, 11592.82714285715, 12069.017619047627, 12545.208095238104, 13021.39857142858, 13497.589047619058, 13973.779523809535, 14449.97, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]})
 
       time2, seq = self.reader.fetch(start, end)
       self.assertSequenceEqual(time2, (1426120000, 1426147300, 300))
