@@ -77,13 +77,11 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
-        Long timestamp1 = 1L;
-        Long timestamp2 = 2L;
         Set<Locator> excessEnumList = new HashSet<Locator>();
         excessEnumList.add(loc1);
         excessEnumList.add(loc2);
-        writer.writeExcessEnumMetric(loc1, timestamp1);
-        writer.writeExcessEnumMetric(loc2, timestamp2);
+        writer.writeExcessEnumMetric(loc1);
+        writer.writeExcessEnumMetric(loc2);
         Set<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
         Assert.assertEquals(excessEnumList, newExcessEnumList);
     }
