@@ -322,7 +322,6 @@ public class AstyanaxReader extends AstyanaxIO {
             pointsFuture = taskExecutor.submit(new PointsFromDB(locator,range, cf, serializer));
             try {
                 points =  pointsFuture.get();
-                taskExecutor.shutdown();
             } catch (InterruptedException e) {
                 log.error("Interrupted Exception during roll ups ", e);
             } catch (ExecutionException e) {
