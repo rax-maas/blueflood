@@ -31,7 +31,7 @@ public class ExcessEnumsReaderIntegrationTest extends IntegrationTestBase {
 
     @Before
     public void setUp() throws Exception {
-        AstyanaxWriter.getInstance().writeExcessEnumMetric(dummyLocator, 0L);
+        AstyanaxWriter.getInstance().writeExcessEnumMetric(dummyLocator);
     }
 
 
