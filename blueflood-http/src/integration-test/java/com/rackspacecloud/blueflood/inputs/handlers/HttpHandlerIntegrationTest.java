@@ -273,13 +273,6 @@ public class HttpHandlerIntegrationTest {
         Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points2.getPoints().size());
-        for (Long timestamp : points2.getPoints().keySet()) {
-            BluefloodEnumRollup er = points2.getPoints().get(timestamp).getData();
-            for (String value : er.getStringEnumValuesWithCounts().keySet()) {
-                Assert.assertEquals("OK",value);
-                Assert.assertEquals(1L, er.getStringEnumValuesWithCounts().get(value).longValue());
-            }
-        }
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
@@ -308,14 +301,6 @@ public class HttpHandlerIntegrationTest {
         Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
                 locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
         Assert.assertEquals(2, points2.getPoints().size());
-
-        BluefloodEnumRollup er0 = points2.getPoints().get(1439231324001L).getData();
-        Assert.assertTrue(er0.getStringEnumValuesWithCounts().containsKey("OK"));
-        Assert.assertEquals(1L, er0.getStringEnumValuesWithCounts().get("OK").longValue());
-
-        er0 = points2.getPoints().get(1439231324003L).getData();
-        Assert.assertTrue(er0.getStringEnumValuesWithCounts().containsKey("ERROR"));
-        Assert.assertEquals(1L, er0.getStringEnumValuesWithCounts().get("ERROR").longValue());
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }
