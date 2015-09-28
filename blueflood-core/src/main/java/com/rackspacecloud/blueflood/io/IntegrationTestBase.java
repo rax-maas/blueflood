@@ -141,6 +141,23 @@ public class IntegrationTestBase {
         return metric;
     }
 
+    protected IMetric writeEnumMetric(String name) throws Exception {
+        final List<IMetric> metrics = new ArrayList<IMetric>();
+        final Locator locator = Locator.createLocatorFromPathComponents("acctId", name);
+        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+randString(5),1L).withEnumValue("enumValue"+randString(5),1L);
+
+        PreaggregatedMetric metric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), rollup);
+        metrics.add(metric);
+
+        AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+
+        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
+        insertedLocators.invalidateAll();
+
+        return metric;
+    }
+
+
     protected List<Metric> makeRandomIntMetrics(int count) {
         final String tenantId = "ac" + randString(8);
         List<Metric> metrics = new ArrayList<Metric>();

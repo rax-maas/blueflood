@@ -436,18 +436,28 @@ public class AstyanaxReader extends AstyanaxIO {
         return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
     }
 
-    private MetricData getEnumMetricDataForRange(final Locator locator, Range range, Granularity gran) {
+    public MetricData getEnumMetricDataForRange(final Locator locator, final Range range, final Granularity gran) {
         int enumThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_READ_THREADS);
 
         ExecutorService taskExecutor = new ThreadPoolBuilder().withUnboundedQueue()
                 .withCorePoolSize(enumThreadCount)
                 .withMaxPoolSize(enumThreadCount).withName("Retrieving Enum Values").build();
 
-        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(RollupType.classOf(RollupType.ENUM, gran), gran);
-        AbstractSerializer serializer = NumericSerializer.serializerFor(RollupType.classOf(RollupType.ENUM, gran));
+        Future<ColumnList<Long>> enumValuesFuture = taskExecutor.submit(new Callable() {
+            @Override
+            public ColumnList<Long> call() throws Exception {
+                return getColumnsFromEnumCF(locator);
+            }
 
-        Future<ColumnList<Long>> enumValuesFuture = taskExecutor.submit(new ColumnFromEnumCF(locator));
-        Future<Points> pointsFuture = taskExecutor.submit(new PointsFromDB(locator, range, CF, serializer));
+        });
+
+        Future<Points> pointsFuture = taskExecutor.submit(new Callable() {
+            @Override
+            public Points call() throws Exception {
+                return getNumericMetricDataForRange(locator, range, gran, RollupType.ENUM, null).getData();
+            }
+        });
+
         Points points = null;
         try {
             ColumnList<Long> enumValues =  enumValuesFuture.get();
@@ -457,7 +467,8 @@ public class AstyanaxReader extends AstyanaxIO {
             log.error("Interrupted Exception during query of  Enum metrics",e);
         } catch (ExecutionException e) {
             log.error("Execution Exception during query of Enum metrics", e);
-        } finally {
+        }
+        finally {
             taskExecutor.shutdown();
         }
 
@@ -593,7 +604,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return excessEnumMetrics;
     }
 
-    private <T extends Rollup> Points<T> getEnumStringValuesFromHashes(Points<T> points, ColumnList<Long> enumvalues) {
+    public <T extends Rollup> Points<T> getEnumStringValuesFromHashes(Points<T> points, ColumnList<Long> enumvalues) {
         Map<Long, String> hash2enumValues = getEnumValueFromHash(enumvalues);
         Points<T> pointsEnum = new Points<T>();
 
@@ -620,7 +631,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return hash2enumValues;
     }
 
-    private ColumnList<Long> getColumnsFromEnumCF(final Locator locator) {
+    public ColumnList<Long> getColumnsFromEnumCF(final Locator locator) {
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
 
         try {
@@ -641,43 +652,5 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
         }
         return columns.get(locator);
-    }
-
-    class ColumnFromEnumCF implements Callable{
-        Locator locator;
-        ColumnFromEnumCF(Locator locator){
-            this.locator = locator;
-        }
-        @Override
-        public ColumnList<Long> call() throws ScriptException {
-            return getColumnsFromEnumCF(locator);
-        }
-    }
-
-    class PointsFromDB implements Callable{
-        Locator locator;
-        Range range;
-        ColumnFamily<Locator, Long> CF;
-        AbstractSerializer serializer;
-        PointsFromDB(Locator locator, Range range, ColumnFamily<Locator, Long> CF, AbstractSerializer serializer){
-            this.locator = locator;
-            this.range = range;
-            this.CF = CF;
-            this.serializer = serializer;
-        }
-        @Override
-        public Points call() throws ScriptException {
-            Points points = new Points();
-            ColumnList<Long> results = getColumnsFromDB(locator, CF, range);
-
-            for (Column<Long> column : results) {
-                try {
-                    points.add(pointFromColumn(column, serializer));
-                } catch (RuntimeException ex) {
-                    log.error("Problem deserializing data for " + locator + " (" + range + ") from " + CF.getName(), ex);
-                }
-            }
-            return points;
-        }
     }
 }
