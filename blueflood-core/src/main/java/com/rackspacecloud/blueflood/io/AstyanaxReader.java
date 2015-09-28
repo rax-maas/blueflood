@@ -35,11 +35,14 @@ import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -272,12 +275,6 @@ public class AstyanaxReader extends AstyanaxIO {
         // SimpleNumber instances.
         // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
         // to be known before we ever get to this method (see above comment).
-
-        ExecutorService taskExecutor;
-
-        Future<ColumnList<Long>> enumValuesFuture;
-        Future<Points> pointsFuture;
-
         if (cf == CassandraModel.CF_METRICS_FULL) {
             serializer = NumericSerializer.simpleNumberSerializer;
         } else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL) {
@@ -298,39 +295,17 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        Points points = null;
-
-        if (type.equals(BluefloodEnumRollup.class)) {
-            taskExecutor = Executors.newFixedThreadPool(2);
-            enumValuesFuture = taskExecutor.submit(new ColumnFromEnumCF(locator));
-            pointsFuture = taskExecutor.submit(new PointsFromDB(locator,range, cf, serializer));
-            try {
-                ColumnList<Long> enumValues = enumValuesFuture.get();
-                points = pointsFuture.get();
-                return getEnumStringValuesFromHashes(points, enumValues);
-            } catch (InterruptedException e) {
-                log.error("Interrupted Exception during rolling up Enums", e);
-            } catch (ExecutionException e) {
-                log.error("ExecutionException Exception during rolling up Enums", e);
-            } finally {
-                taskExecutor.shutdown();
+        ColumnList<Long> cols = getColumnsFromDB(locator, cf, range);
+        Points<T> points = new Points<T>();
+        try {
+            for (Column<Long> col : cols) {
+                points.add(new Points.Point<T>(col.getName(), (T)col.getValue(serializer)));
             }
+        } catch (RuntimeException ex) {
+            log.error("Problem deserializing data for " + locator + " (" + range + ") from " + cf.getName(), ex);
+            throw new IOException(ex);
         }
-
-        else{
-            taskExecutor = Executors.newSingleThreadExecutor();
-            pointsFuture = taskExecutor.submit(new PointsFromDB(locator,range, cf, serializer));
-            try {
-                points =  pointsFuture.get();
-            } catch (InterruptedException e) {
-                log.error("Interrupted Exception during roll ups ", e);
-            } catch (ExecutionException e) {
-                log.error("ExecutionException Exception during roll ups", e);
-            } finally {
-                taskExecutor.shutdown();
-            }
-        }
-    return points;
+        return points;
     }
 
     public static String getUnitString(Locator locator) {
@@ -372,7 +347,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 rollupType = RollupType.BF_BASIC;
             }
             if (type == null && rollupType == RollupType.ENUM){
-                return getEnumMetricDataForRange(locator, range, gran, rollupType, DataType.NUMERIC);
+                return getEnumMetricDataForRange(locator, range, gran);
             }
             if (type == null) {
                 return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
@@ -461,10 +436,16 @@ public class AstyanaxReader extends AstyanaxIO {
         return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
     }
 
-    private MetricData getEnumMetricDataForRange(final Locator locator, Range range, Granularity gran, RollupType rollupType, DataType dataType) {
-        ExecutorService taskExecutor = Executors.newFixedThreadPool(2);
-        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(rollupType, dataType, gran);
-        AbstractSerializer serializer = NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+    private MetricData getEnumMetricDataForRange(final Locator locator, Range range, Granularity gran) {
+        int enumThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_READ_THREADS);
+
+        ExecutorService taskExecutor = new ThreadPoolBuilder().withUnboundedQueue()
+                .withCorePoolSize(enumThreadCount)
+                .withMaxPoolSize(enumThreadCount).withName("Retrieving Enum Values").build();
+
+        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(RollupType.classOf(RollupType.ENUM, gran), gran);
+        AbstractSerializer serializer = NumericSerializer.serializerFor(RollupType.classOf(RollupType.ENUM, gran));
+
         Future<ColumnList<Long>> enumValuesFuture = taskExecutor.submit(new ColumnFromEnumCF(locator));
         Future<Points> pointsFuture = taskExecutor.submit(new PointsFromDB(locator, range, CF, serializer));
         Points points = null;
@@ -473,9 +454,9 @@ public class AstyanaxReader extends AstyanaxIO {
             points = pointsFuture.get();
             points = getEnumStringValuesFromHashes(points, enumValues);
         } catch (InterruptedException e) {
-            log.error("Interrupted Exception",e);
+            log.error("Interrupted Exception during query of  Enum metrics",e);
         } catch (ExecutionException e) {
-            log.error("Execution Exception", e);
+            log.error("Execution Exception during query of Enum metrics", e);
         } finally {
             taskExecutor.shutdown();
         }
