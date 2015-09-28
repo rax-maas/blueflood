@@ -89,6 +89,31 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    public void testCanReadEnumValuesByOneLocator() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric1");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        MetricData results = reader.getDatapointsForRange(metric.getLocator(), new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(1, results.getData().getPoints().size());
+        Points points = results.getData();
+        Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+        for (Long timestamp : actualData.keySet()) {
+            BluefloodEnumRollup er = actualData.get(timestamp).getData();
+            for (String value : er.getStringEnumValuesWithCounts().keySet()) {
+                Assert.assertTrue(value.contains("enumValue"));
+                Assert.assertEquals(1L, (long)er.getStringEnumValuesWithCounts().get(value));
+            }
+        }
+    }
+
+    @Test
     public void testBatchedReads() throws Exception {
         // Write metrics and also persist their types.
         List<Locator> locatorList = new ArrayList<Locator>();
