@@ -325,8 +325,8 @@ class BluefloodClient(object):
       #  NOTE/TODO: this while loop has the effect of dropping all but the first datapoint in each step
       #  (Graphite requires exactly one datapoint/step.)  It would be better to rollup the datapoints
       #  if there are more than one/step.  However that will only happen when we have full res metrics
-      #  with frequencies less than 10 seconds.  
-      #  We believe that case is too rare to worry about right now.
+      #  with frequencies less than 60 seconds.  And since Graphite/Whisper doesn't seem to do that
+      #  this approach seems to better emulate the results produced by Graphite
       while self.current_datapoint_passed(v_iter, ts):
         v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
