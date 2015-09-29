@@ -21,7 +21,7 @@ except ImportError:
 
 
 secs_per_res = {
-  'FULL': 60,
+  'FULL': 60,   # Setting this to 60 seems to best emulate graphite/whisper for dogfooding
   'MIN5': 5*60,
   'MIN20': 20*60,
   'MIN60': 60*60,
