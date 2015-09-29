@@ -49,6 +49,8 @@ public class HttpIngestionService implements IngestionService {
     }
 
     public void shutdownService() {
-        throw new UnsupportedOperationException("The method is not implemented");
+        if (this.server != null) {
+            this.server.shutdownServer();
+        }
     }
 }

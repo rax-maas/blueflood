@@ -229,4 +229,8 @@ public class HttpMetricsIngestionServer {
             return batchWriter.apply(batches);
         }
     }
+
+    public void shutdownServer() {
+        throw new UnsupportedOperationException("The method is not implemented");
+    }
 }
