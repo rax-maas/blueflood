@@ -75,6 +75,8 @@ public class HttpMetricsIngestionServer {
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
+    private ServerBootstrap bootstrap;
+
     public TrackerMBean tracker;
 
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
@@ -109,6 +111,8 @@ public class HttpMetricsIngestionServer {
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+
+        bootstrap = server;
 
         log.info("Starting tracker service");
         tracker = new Tracker();
