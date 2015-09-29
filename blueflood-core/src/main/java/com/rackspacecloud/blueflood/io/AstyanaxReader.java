@@ -379,15 +379,22 @@ public class AstyanaxReader extends AstyanaxIO {
         ListMultimap<ColumnFamily, Locator> locatorsByCF =
                 ArrayListMultimap.create();
         Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
+        Map<Locator, MetricData> enumResults;
 
+        List<Locator> enLocators = new ArrayList<Locator>();
         for (Locator locator : locators) {
             try {
                 RollupType rollupType = RollupType.fromString((String)
                         metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
                 DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
-                ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
-                List<Locator> locs = locatorsByCF.get(cf);
-                locs.add(locator);
+                if (rollupType == RollupType.ENUM) {
+                    enLocators.add(locator);
+                }
+                else {
+                    ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
+                    List<Locator> locs = locatorsByCF.get(cf);
+                    locs.add(locator);
+                }
             } catch (Exception e) {
                 // pass for now. need metric to figure this stuff out.
             }
@@ -395,19 +402,29 @@ public class AstyanaxReader extends AstyanaxIO {
 
         for (ColumnFamily CF : locatorsByCF.keySet()) {
             List<Locator> locs = locatorsByCF.get(CF);
-            Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
-            // transform columns to MetricData
-            for (Locator loc : metrics.keySet()) {
-                MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
-                if (data != null && data.getData() != null) {
-                    results.put(loc, data);
-                }
+            results.putAll(getNumericDataForRangeLocatorList(range, gran, CF, locs));
+        }
+
+        enumResults = getEnumMetricDataForRangeForLocatorList(enLocators, range, gran);
+        results.putAll(enumResults);
+
+        return results;
+    }
+
+    private Map<Locator, MetricData> getNumericDataForRangeLocatorList(Range range, Granularity gran, ColumnFamily CF, List<Locator> locs) {
+        Map<Locator, ColumnList<Long>> metrics = getColumnsFromDB(locs, CF, range);
+        Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
+
+        // transform columns to MetricData
+        for (Locator loc : metrics.keySet()) {
+            MetricData data = transformColumnsToMetricData(loc, metrics.get(loc), gran);
+            if (data != null && data.getData() != null) {
+                results.put(loc, data);
             }
         }
 
         return results;
     }
-
 
     public MetricData getHistogramsForRange(Locator locator, Range range, Granularity granularity) throws IOException {
         if (!granularity.isCoarser(Granularity.FULL)) {
@@ -436,33 +453,44 @@ public class AstyanaxReader extends AstyanaxIO {
         return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
     }
 
-    public MetricData getEnumMetricDataForRange(final Locator locator, final Range range, final Granularity gran) {
+    public MetricData getEnumMetricDataForRange(final Locator locator, final Range range, Granularity gran) {
+        Map<Locator, MetricData> metricDataMap = getEnumMetricDataForRangeForLocatorList(new ArrayList<Locator>(){{add (locator); }}, range, gran);
+        return metricDataMap.get(locator);
+    }
+
+    public  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locator, final Range range, final Granularity gran) {
         int enumThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_READ_THREADS);
+        final ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(RollupType.classOf(RollupType.ENUM, gran), gran);
 
         ExecutorService taskExecutor = new ThreadPoolBuilder().withUnboundedQueue()
                 .withCorePoolSize(enumThreadCount)
                 .withMaxPoolSize(enumThreadCount).withName("Retrieving Enum Values").build();
 
-        Future<ColumnList<Long>> enumValuesFuture = taskExecutor.submit(new Callable() {
+        Future<Map<Locator, ColumnList<Long>>> enumValuesFuture = taskExecutor.submit(new Callable() {
             @Override
-            public ColumnList<Long> call() throws Exception {
-                return getColumnsFromEnumCF(locator);
+            public Map<Locator, ColumnList<Long>> call() throws Exception {
+                return getColumnsFromEnumCF(new ArrayList<Locator>(locator));
             }
 
         });
 
-        Future<Points> pointsFuture = taskExecutor.submit(new Callable() {
+        Future<Map<Locator, MetricData>> pointsFuture = taskExecutor.submit(new Callable() {
             @Override
-            public Points call() throws Exception {
-                return getNumericMetricDataForRange(locator, range, gran, RollupType.ENUM, null).getData();
+            public Map<Locator, MetricData> call() throws Exception {
+                return getNumericDataForRangeLocatorList(range, gran, CF, locator);
             }
         });
 
-        Points points = null;
+        Map<Locator, MetricData> metricDataMap;
+        Map<Locator, MetricData> resultMap = new HashMap<Locator, MetricData>();
         try {
-            ColumnList<Long> enumValues =  enumValuesFuture.get();
-            points = pointsFuture.get();
-            points = getEnumStringValuesFromHashes(points, enumValues);
+            Map<Locator, ColumnList<Long>> enumValues =  enumValuesFuture.get();
+            metricDataMap = pointsFuture.get();
+            for (Locator l : metricDataMap.keySet()) {
+                Points p = transformEnumValueHashesToStrings(metricDataMap.get(l), enumValues.get(l));
+                MetricData m = new MetricData(p, getUnitString(l), MetricData.Type.NUMBER);
+                resultMap.put(l,m);
+            }
         } catch (InterruptedException e) {
             log.error("Interrupted Exception during query of  Enum metrics",e);
         } catch (ExecutionException e) {
@@ -472,7 +500,7 @@ public class AstyanaxReader extends AstyanaxIO {
             taskExecutor.shutdown();
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        return resultMap;
     }
 
     private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
@@ -604,13 +632,13 @@ public class AstyanaxReader extends AstyanaxIO {
         return excessEnumMetrics;
     }
 
-    public <T extends Rollup> Points<T> getEnumStringValuesFromHashes(Points<T> points, ColumnList<Long> enumvalues) {
+    public <T extends Rollup> Points<T> transformEnumValueHashesToStrings(MetricData metricData, ColumnList<Long> enumvalues) {
         Map<Long, String> hash2enumValues = getEnumValueFromHash(enumvalues);
         Points<T> pointsEnum = new Points<T>();
 
-        Map<Long, Points.Point<T>> pointsMap = points.getPoints();
+        Map<Long, Points.Point<T>> pointsMap = metricData.getData().getPoints();
 
-        for (Long timestamp : points.getPoints().keySet()) {
+        for (Long timestamp : pointsMap.keySet()) {
             BluefloodEnumRollup enumRollup = (BluefloodEnumRollup)pointsMap.get(timestamp).getData();
             for (Long hash : enumRollup.getHashedEnumValuesWithCounts().keySet()) {
                 String enumValueString = hash2enumValues.get(hash);
@@ -631,13 +659,13 @@ public class AstyanaxReader extends AstyanaxIO {
         return hash2enumValues;
     }
 
-    public ColumnList<Long> getColumnsFromEnumCF(final Locator locator) {
+    public Map<Locator, ColumnList<Long>> getColumnsFromEnumCF(final List<Locator> locators) {
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
 
         try {
             OperationResult<Rows<Locator, Long>> query = getKeyspace()
                     .prepareQuery(CassandraModel.CF_METRICS_ENUM)
-                    .getKeySlice(locator)
+                    .getKeySlice(locators)
                     .execute();
 
             for (Row<Locator, Long> row : query.getResult()) {
@@ -651,6 +679,6 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } finally {
         }
-        return columns.get(locator);
+        return columns;
     }
 }
