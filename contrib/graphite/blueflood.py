@@ -317,6 +317,7 @@ class BluefloodClient(object):
     #  them with nulls
     v_iter = values
     ret_arr = []
+    # A fixup is the start and end position of the current range of Null datapoints
     current_fixup = None
     fixup_list = []
     for ts in range(start_time, end_time, step):
@@ -332,11 +333,14 @@ class BluefloodClient(object):
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(v_iter[0][data_key])
         if current_fixup != None:
-          # The fixup list lists ranges of null datapoints
+          # we have found the end of the current fixup, so
+          #  add the start and end of the current fixup into fixup list
           fixup_list.append([current_fixup, len(ret_arr) - 1])
           current_fixup = None
       else:
         l = len(ret_arr)
+        #if previous element was not None, start a new fixup
+        #  and set it to point to the current position
         if (l > 0) and (ret_arr[l - 1] != None):
           current_fixup = l - 1
         ret_arr.append(None)
