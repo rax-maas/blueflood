@@ -151,6 +151,8 @@ public enum CoreConfig implements ConfigDefaults {
     TURN_OFF_RR_MPLOT("false"),
 
     DELAYED_METRICS_MILLIS("300000"),
+    ENUM_VALIDATOR_THREADS("20"),
+    ENUM_UNIQUE_VALUES_THRESHOLD("100"),
     EXCESS_ENUM_READER_SLEEP("600000");
 
     static {
