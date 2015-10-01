@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -66,6 +66,12 @@ public class EnumElasticIO implements DiscoveryIO {
         this(manager.getClient());
     }
 
+    public void insertDiscovery(IMetric metric) throws IOException {
+        List<IMetric> batch = new ArrayList<IMetric>();
+        batch.add(metric);
+        insertDiscovery(batch);
+    }
+
     public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
@@ -117,7 +123,6 @@ public class EnumElasticIO implements DiscoveryIO {
         return client.prepareIndex(ENUMS_INDEX_NAME_WRITE, ENUMS_DOCUMENT_TYPE)
                 .setId(metricDiscovery.getDocumentId())
                 .setSource(metricDiscovery.createSourceContent())
-                .setCreate(true)
                 .setRouting(metricDiscovery.getTenantId());
     }
 

@@ -7,6 +7,10 @@ public class BluefloodEnumRollup implements Rollup {
     private Map<String, Long> stringEnumValues2Count = new HashMap<String, Long>();
     private Map<Long,Long> hashedEnumValues2Count = new HashMap<Long, Long>();
 
+    public BluefloodEnumRollup withEnumValue(String valueName) {
+        return this.withEnumValue(valueName, 1L);
+    }
+
     public BluefloodEnumRollup withEnumValue(String valueName, Long incomingCount) {
         long existingCount = 0;
         if (this.stringEnumValues2Count.containsKey(valueName)) {

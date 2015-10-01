@@ -15,7 +15,6 @@
  *    limitations under the License.
  */
 
-
 package com.rackspacecloud.blueflood.service;
 
 import java.util.Collections;
@@ -30,7 +29,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExcessEnumReader implements Runnable{
+public class ExcessEnumReader implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ExcessEnumReader.class);
     private final Meter readMeter = Metrics.meter(ExcessEnumReader.class, 
                                                     "reads", "Cassandra Reads");
