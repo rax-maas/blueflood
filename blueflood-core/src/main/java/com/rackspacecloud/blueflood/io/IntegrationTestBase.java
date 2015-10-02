@@ -141,9 +141,9 @@ public class IntegrationTestBase {
         return metric;
     }
 
-    protected IMetric writeEnumMetric(String name) throws Exception {
+    protected IMetric writeEnumMetric(String name, String tenantid) throws Exception {
         final List<IMetric> metrics = new ArrayList<IMetric>();
-        final Locator locator = Locator.createLocatorFromPathComponents("333333", name);
+        final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
         BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+randString(5),1L).withEnumValue("enumValue"+randString(5),1L);
 
         PreaggregatedMetric metric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), rollup);
