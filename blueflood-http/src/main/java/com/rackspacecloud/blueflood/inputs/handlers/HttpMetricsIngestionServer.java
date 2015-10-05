@@ -230,6 +230,7 @@ public class HttpMetricsIngestionServer {
         }
     }
 
+    @VisibleForTesting
     public void shutdownServer() {
         throw new UnsupportedOperationException("The method is not implemented");
     }
