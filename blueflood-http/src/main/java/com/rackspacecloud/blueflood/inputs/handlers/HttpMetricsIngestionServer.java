@@ -40,6 +40,8 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
@@ -71,8 +73,8 @@ public class HttpMetricsIngestionServer {
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
     private ServerBootstrap bootstrap;
-    private Channel serverChannel;
     private ChannelFactory channelFactory;
+    private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
 
     public TrackerMBean tracker;
 
@@ -108,7 +110,8 @@ public class HttpMetricsIngestionServer {
         ServerBootstrap server = new ServerBootstrap(channelFactory);
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        allOpenChannels.add(serverChannel);
 
         bootstrap = server;
 
@@ -235,7 +238,7 @@ public class HttpMetricsIngestionServer {
     @VisibleForTesting
     public void shutdownServer() {
         try {
-            serverChannel.close().await(5, TimeUnit.SECONDS);
+            allOpenChannels.close().await(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             // Pass
         }
