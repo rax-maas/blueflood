@@ -122,6 +122,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         Assert.assertTrue(responseString.contains("enumValue"));
+        Assert.assertTrue(responseString.contains("\"type\": \"ENUM\""));
     }
 
     @Test
