@@ -49,7 +49,6 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -62,8 +61,15 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final String dataTypeCacheKey = MetricMetadata.TYPE.toString().toLowerCase();
 
     private static final Keyspace keyspace = getKeyspace();
+    private static int enumThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_READ_THREADS);
+    private ExecutorService taskExecutor =  null;
 
     public static AstyanaxReader getInstance() {
+        if (INSTANCE.taskExecutor == null || INSTANCE.taskExecutor.isShutdown()) {
+            INSTANCE.taskExecutor = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(enumThreadCount)
+                    .withMaxPoolSize(enumThreadCount).withName("Retrieving Enum Values").build();
+        }
         return INSTANCE;
     }
 
@@ -459,17 +465,12 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locator, final Range range, final Granularity gran) {
-        int enumThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_READ_THREADS);
         final ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(RollupType.classOf(RollupType.ENUM, gran), gran);
-
-        ExecutorService taskExecutor = new ThreadPoolBuilder().withUnboundedQueue()
-                .withCorePoolSize(enumThreadCount)
-                .withMaxPoolSize(enumThreadCount).withName("Retrieving Enum Values").build();
 
         Future<Map<Locator, ColumnList<Long>>> enumValuesFuture = taskExecutor.submit(new Callable() {
             @Override
             public Map<Locator, ColumnList<Long>> call() throws Exception {
-                return getColumnsFromEnumCF(new ArrayList<Locator>(locator));
+                return getStringAndHashMappingForEnums(new ArrayList<Locator>(locator));
             }
 
         });
@@ -495,9 +496,6 @@ public class AstyanaxReader extends AstyanaxIO {
             log.error("Interrupted Exception during query of  Enum metrics",e);
         } catch (ExecutionException e) {
             log.error("Execution Exception during query of Enum metrics", e);
-        }
-        finally {
-            taskExecutor.shutdown();
         }
 
         return resultMap;
@@ -633,7 +631,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public <T extends Rollup> Points<T> transformEnumValueHashesToStrings(MetricData metricData, ColumnList<Long> enumvalues) {
-        Map<Long, String> hash2enumValues = getEnumValueFromHash(enumvalues);
+        Map<Long, String> hash2enumValues = getEnumValueFromHashes(enumvalues);
         Points<T> pointsEnum = new Points<T>();
 
         Map<Long, Points.Point<T>> pointsMap = metricData.getData().getPoints();
@@ -649,7 +647,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return pointsEnum;
     }
 
-    private Map<Long, String> getEnumValueFromHash(ColumnList<Long> enumValues) {
+    private Map<Long, String> getEnumValueFromHashes(ColumnList<Long> enumValues) {
         HashMap<Long,String> hash2enumValues = new HashMap<Long, String>();
 
         for (Column<Long> col: enumValues) {
@@ -659,7 +657,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return hash2enumValues;
     }
 
-    public Map<Locator, ColumnList<Long>> getColumnsFromEnumCF(final List<Locator> locators) {
+    public Map<Locator, ColumnList<Long>> getStringAndHashMappingForEnums(final List<Locator> locators) {
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
 
         try {
@@ -673,11 +671,11 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
-                System.out.println("CF Not found");
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM);
             } else {
-                System.out.println("Some other error");
+                log.warn("Enum read query failed for column family " + CassandraModel.CF_METRICS_ENUM.getName(), e);
+                Instrumentation.markReadError(e);
             }
-        } finally {
         }
         return columns;
     }
