@@ -104,14 +104,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(1, results.getData().getPoints().size());
         Points points = results.getData();
         Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
-        for (Long timestamp : actualData.keySet()) {
-            BluefloodEnumRollup er = actualData.get(timestamp).getData();
-            Assert.assertEquals(2, er.getStringEnumValuesWithCounts().size());
-            for (String value : er.getStringEnumValuesWithCounts().keySet()) {
-                Assert.assertTrue(value.contains("enumValue"));
-                Assert.assertEquals(1L, (long) er.getStringEnumValuesWithCounts().get(value));
-            }
-        }
+        verifyPointsData(actualData);
     }
 
     @Test
@@ -137,14 +130,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
             Points points = results.get(locator).getData();
             Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
             Assert.assertEquals(1, actualData.size());
-            for (Long timestamp : actualData.keySet()) {
-                BluefloodEnumRollup er = actualData.get(timestamp).getData();
-                Assert.assertEquals(2, er.getStringEnumValuesWithCounts().size());
-                for (String value : er.getStringEnumValuesWithCounts().keySet()) {
-                    Assert.assertTrue(value.contains("enumValue"));
-                    Assert.assertEquals(1L, (long) er.getStringEnumValuesWithCounts().get(value));
-                }
-            }
+            verifyPointsData(actualData);
         }
     }
 
@@ -182,14 +168,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
             Points points = results.get(locator).getData();
             Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
             Assert.assertEquals(1, actualData.size());
-            for (Long timestamp : actualData.keySet()) {
-                BluefloodEnumRollup er = actualData.get(timestamp).getData();
-                Assert.assertEquals(2, er.getStringEnumValuesWithCounts().size());
-                for (String value : er.getStringEnumValuesWithCounts().keySet()) {
-                    Assert.assertTrue(value.contains("enumValue"));
-                    Assert.assertEquals(1L, (long) er.getStringEnumValuesWithCounts().get(value));
-                }
-            }
+            verifyPointsData(actualData);
         }
     }
 
@@ -284,5 +263,20 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Assert.assertTrue(serializer != null);
         Assert.assertFalse(serializer instanceof StringSerializer);
         Assert.assertFalse(serializer instanceof BooleanSerializer);
+    }
+
+    private void verifyPointsData(Map<Long, Points.Point<BluefloodEnumRollup>> actualData) {
+        for (Long timestamp : actualData.keySet()) {
+            BluefloodEnumRollup er = actualData.get(timestamp).getData();
+            Assert.assertEquals(2, er.getStringEnumValuesWithCounts().size());
+            verifyRollupValues(er);
+        }
+    }
+
+    private void verifyRollupValues(BluefloodEnumRollup er) {
+        for (String value : er.getStringEnumValuesWithCounts().keySet()) {
+            Assert.assertTrue(value.contains("enumValue"));
+            Assert.assertEquals(1L, (long) er.getStringEnumValuesWithCounts().get(value));
+        }
     }
 }
