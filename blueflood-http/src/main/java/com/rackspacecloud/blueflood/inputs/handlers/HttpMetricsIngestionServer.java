@@ -72,6 +72,7 @@ public class HttpMetricsIngestionServer {
 
     private ServerBootstrap bootstrap;
     private Channel serverChannel;
+    private ChannelFactory channelFactory;
 
     public TrackerMBean tracker;
 
@@ -100,10 +101,11 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        ServerBootstrap server = new ServerBootstrap(
+        channelFactory =
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
+                        Executors.newFixedThreadPool(workerThreads));
+        ServerBootstrap server = new ServerBootstrap(channelFactory);
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
