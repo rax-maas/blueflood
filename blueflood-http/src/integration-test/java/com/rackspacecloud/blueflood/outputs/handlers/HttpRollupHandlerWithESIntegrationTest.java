@@ -121,8 +121,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
         String responseString = EntityUtils.toString(response.getEntity());
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        Assert.assertTrue(responseString.contains("enumValue"));
-        Assert.assertTrue(responseString.contains("\"type\": \"ENUM\""));
+        Assert.assertTrue(responseString.contains("enumValue")); //Verifying that the payload has string values and not hashcodes
+        Assert.assertTrue(responseString.contains("\"type\": \"ENUM\"")); //Verifying that the payload has an enum type
     }
 
     @Test
