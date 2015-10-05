@@ -417,5 +417,9 @@ public class HttpHandlerIntegrationTest {
         if (vendor != null) {
             vendor.shutdown();
         }
+
+        if (httpIngestionService != null) {
+            httpIngestionService.shutdownService();
+        }
     }
 }
