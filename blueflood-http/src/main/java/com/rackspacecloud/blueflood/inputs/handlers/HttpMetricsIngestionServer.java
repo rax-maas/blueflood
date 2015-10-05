@@ -31,7 +31,6 @@ import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
-import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.tracker.TrackerMBean;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -40,11 +39,7 @@ import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
@@ -76,6 +71,7 @@ public class HttpMetricsIngestionServer {
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
     private ServerBootstrap bootstrap;
+    private Channel serverChannel;
 
     public TrackerMBean tracker;
 
@@ -110,7 +106,7 @@ public class HttpMetricsIngestionServer {
                         Executors.newFixedThreadPool(workerThreads)));
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
 
         bootstrap = server;
 
