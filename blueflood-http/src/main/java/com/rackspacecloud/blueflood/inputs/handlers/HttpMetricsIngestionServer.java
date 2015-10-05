@@ -232,6 +232,10 @@ public class HttpMetricsIngestionServer {
 
     @VisibleForTesting
     public void shutdownServer() {
-        throw new UnsupportedOperationException("The method is not implemented");
+        try {
+            serverChannel.close().await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Pass
+        }
     }
 }
