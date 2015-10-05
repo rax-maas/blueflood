@@ -72,8 +72,6 @@ public class HttpMetricsIngestionServer {
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
-    private ServerBootstrap bootstrap;
-    private ChannelFactory channelFactory;
     private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
 
     public TrackerMBean tracker;
@@ -103,7 +101,7 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        channelFactory =
+        ChannelFactory channelFactory =
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
                         Executors.newFixedThreadPool(workerThreads));
@@ -112,8 +110,6 @@ public class HttpMetricsIngestionServer {
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
         allOpenChannels.add(serverChannel);
-
-        bootstrap = server;
 
         log.info("Starting tracker service");
         tracker = new Tracker();
