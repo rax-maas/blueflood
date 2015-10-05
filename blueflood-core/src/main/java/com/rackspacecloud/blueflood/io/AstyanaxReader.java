@@ -352,7 +352,7 @@ public class AstyanaxReader extends AstyanaxIO {
             if (rollupType == null) {
                 rollupType = RollupType.BF_BASIC;
             }
-            if (type == null && rollupType == RollupType.ENUM){
+            if (rollupType == RollupType.ENUM){
                 return getEnumMetricDataForRange(locator, range, gran);
             }
             if (type == null) {
