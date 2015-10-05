@@ -47,4 +47,10 @@ public class HttpIngestionService implements IngestionService {
 
         return this.server;
     }
+
+    public void shutdownService() {
+        if (this.server != null) {
+            this.server.shutdownServer();
+        }
+    }
 }

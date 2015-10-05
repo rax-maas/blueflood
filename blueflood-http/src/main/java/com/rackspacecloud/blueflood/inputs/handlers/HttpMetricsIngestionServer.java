@@ -31,7 +31,6 @@ import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
-import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.tracker.TrackerMBean;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -40,11 +39,9 @@ import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
@@ -75,6 +72,8 @@ public class HttpMetricsIngestionServer {
     private TimeValue timeout;
     private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
+    private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
+
     public TrackerMBean tracker;
 
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
@@ -102,13 +101,15 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        ServerBootstrap server = new ServerBootstrap(
+        ChannelFactory channelFactory =
                 new NioServerSocketChannelFactory(
                         Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads)));
+                        Executors.newFixedThreadPool(workerThreads));
+        ServerBootstrap server = new ServerBootstrap(channelFactory);
 
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
+        allOpenChannels.add(serverChannel);
 
         log.info("Starting tracker service");
         tracker = new Tracker();
@@ -227,6 +228,15 @@ public class HttpMetricsIngestionServer {
             List<List<IMetric>> batches = collection.splitMetricsIntoBatches(BATCH_SIZE);
             discoveryWriter.apply(batches);
             return batchWriter.apply(batches);
+        }
+    }
+
+    @VisibleForTesting
+    public void shutdownServer() {
+        try {
+            allOpenChannels.close().await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Pass
         }
     }
 }
