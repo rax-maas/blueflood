@@ -41,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Calendar;
@@ -88,9 +89,6 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         client = vendor.getClient();
     }
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     @Test
     public void testHttpIngestionHappyCase() throws Exception {
 
@@ -110,8 +108,12 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         server.shutdownServer();
 
         // then
-        exception.expect(java.net.ConnectException.class);
-        HttpResponse response2 = client.execute(post2);
+        try {
+            HttpResponse response2 = client.execute(post2);
+            Assert.fail("We should have received a Connect exception");
+        } catch (ConnectException ex) {
+            Assert.assertEquals("Connection refused", ex.getMessage());
+        }
     }
 
 
