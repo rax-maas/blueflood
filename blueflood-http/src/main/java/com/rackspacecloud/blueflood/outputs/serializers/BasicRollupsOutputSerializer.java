@@ -199,6 +199,21 @@ public interface BasicRollupsOutputSerializer<T> {
             Object convertRawSampleToObject(Object rawSample) {
                 return rawSample;
             }
+        },
+        TYPE("type") {
+            @Override
+            Object convertRollupToObject(Rollup rollup) throws Exception {
+                if (rollup instanceof BluefloodEnumRollup)
+                    return rollup.getRollupType().toString();
+                else
+                    // every other type.
+                    throw new Exception(String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
+            }
+
+            @Override
+            Object convertRawSampleToObject(Object rawSample) {
+                return rawSample;
+            }
         }
         ;
         

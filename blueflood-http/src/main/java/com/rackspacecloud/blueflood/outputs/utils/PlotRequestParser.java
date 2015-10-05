@@ -56,6 +56,7 @@ public class PlotRequestParser {
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
 
         DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.ENUM_VALUES);
+        DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.TYPE);
         DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
 
         DEFAULT_STATS.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
