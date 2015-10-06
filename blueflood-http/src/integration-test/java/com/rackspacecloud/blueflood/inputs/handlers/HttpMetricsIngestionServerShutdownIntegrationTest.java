@@ -112,6 +112,15 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
             HttpResponse response2 = client.execute(post2);
             Assert.fail("We should have received a Connect exception");
         } catch (ConnectException ex) {
+
+            // NOTE: ideally, one would simply use jUnit's `ExpectedException`
+            // rule or `expected` param to indicate that we expected a
+            // ConnectException to be thrown. However, ConnectException can be
+            // thrown for a number of different reasons, and the only way to
+            // know for sure that the connection was refused (and, thus, that
+            // the port is no longer open) is to catch the exception object and
+            // check its message. Hence, this try/catch.
+
             Assert.assertEquals("Connection refused", ex.getMessage());
         }
     }
