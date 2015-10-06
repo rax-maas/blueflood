@@ -96,12 +96,14 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
-        // start a thread with EnumValidator runnable to validate enum values for this set of locators
-        try {
-            enumValidatorExecutor.execute(new EnumValidator(locators));
-        } catch (Throwable any) {
-            executionContext.markUnsuccessful(any);
-            log.error("EnumValidator failed for locators: " +  Arrays.toString(locators.toArray()), any.getMessage());
+        // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
+        if (gran.equals(Granularity.MIN_5)) {
+            try {
+                log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(locators.toArray())));
+                enumValidatorExecutor.execute(new EnumValidator(locators));
+            } catch (Exception e) {
+                log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
+            }
         }
 
         for (Locator locator : locators) {
