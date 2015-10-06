@@ -470,7 +470,7 @@ public class AstyanaxReader extends AstyanaxIO {
         Future<Map<Locator, ColumnList<Long>>> enumValuesFuture = taskExecutor.submit(new Callable() {
             @Override
             public Map<Locator, ColumnList<Long>> call() throws Exception {
-                return getStringAndHashMappingForEnums(new ArrayList<Locator>(locator));
+                return getEnumHashMappings(new ArrayList<Locator>(locator));
             }
 
         });
@@ -647,7 +647,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return pointsEnum;
     }
 
-    private Map<Long, String> getEnumValueFromHashes(ColumnList<Long> enumValues) {
+    public Map<Long, String> getEnumValueFromHashes(ColumnList<Long> enumValues) {
         HashMap<Long,String> hash2enumValues = new HashMap<Long, String>();
 
         for (Column<Long> col: enumValues) {
@@ -657,7 +657,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return hash2enumValues;
     }
 
-    public Map<Locator, ColumnList<Long>> getStringAndHashMappingForEnums(final List<Locator> locators) {
+    public Map<Locator, ColumnList<Long>> getEnumHashMappings(final List<Locator> locators) {
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
 
         try {
