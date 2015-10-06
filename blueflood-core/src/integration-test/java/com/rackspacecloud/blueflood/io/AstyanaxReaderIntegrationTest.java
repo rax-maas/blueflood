@@ -135,6 +135,41 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    public void test_ReadEnumValues_MultipleLocators_OneLocatorFaulty() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric2","333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+
+        IMetric metric1 = writeEnumMetric("enum_metric3","333333");
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric1.getLocator());
+
+        Locator faultyLocator = Locator.createLocatorFromPathComponents("333333", "faulty_enum_name");
+        locatorList.add(faultyLocator);
+
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(3, results.size());
+
+        for (Locator locator: results.keySet()) {
+            Points points = results.get(locator).getData();
+            Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+            if (!locator.equals(faultyLocator)) {
+                Assert.assertEquals(1, actualData.size());
+                verifyPointsData(actualData);
+            }
+            else {
+                Assert.assertEquals(0, actualData.size());
+            }
+        }
+    }
+
+    @Test
     public void testCanReadMixedEnumAndRegularMetrics() throws Exception {
         Set<Locator> enumLocatorsSet = new HashSet<Locator>();
         List<Locator> locatorList = new ArrayList<Locator>();
