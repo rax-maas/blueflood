@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.ColumnList;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
@@ -40,9 +39,12 @@ public class EnumValidator implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(EnumValidator.class);
     private static final Configuration config = Configuration.getInstance();
-    private static final DiscoveryIO discoveryIO = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
     private static final int ENUM_UNIQUE_VALUES_THRESHOLD = config.getIntegerProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD);
     private Set<Locator> locators;
+
+    private AstyanaxReader reader = null;
+    private AstyanaxWriter writer = null;
+    private DiscoveryIO discoveryIO = null;
 
     public EnumValidator(Set<Locator> locators) {
         this.locators = locators;
@@ -50,37 +52,12 @@ public class EnumValidator implements Runnable {
 
     @Override
     public void run() {
-
         if (locators == null) return;
-        Map<Locator, ColumnList<Long>> cfMetrics = AstyanaxReader.getInstance().getEnumHashMappings(new ArrayList(locators));
 
-        for (final Locator locator : cfMetrics.keySet()) {
-            // for each locator from CF results, get enum values
-            try {
-                // values from cassandra db
-                Map<Long, String> enumStringValuesFromCF = null;
-                ColumnList<Long> enumHashValuesFromCF = cfMetrics.get(locator);
-                if ((enumHashValuesFromCF != null) && (enumHashValuesFromCF.size() > 0)) {
-                    enumStringValuesFromCF = AstyanaxReader.getInstance().getEnumValueFromHashes(enumHashValuesFromCF);
-                }
-                else {
-                    log.debug(String.format("No enum values found for metric %s", locator.toString()));
-                    // metric has no enum values, skip processing this locator and proceed to next one
-                    continue;
-                }
-
-                // convert enum values to array list
-                ArrayList<String> currentEnumValues = null;
-                if ((enumStringValuesFromCF != null) && (enumStringValuesFromCF.size() > 0)) {
-                    currentEnumValues = new ArrayList<String>(enumStringValuesFromCF.values());
-                }
-
-                // validate enum values count and write to index or bad metric
-                validateThresholdAndWrite(locator, currentEnumValues);
-
-            } catch (Exception e) {
-                log.error(String.format("Exception validating locator %s: %s", locator.toString(), e.getMessage()), e);
-            }
+        Map<Locator, ArrayList<String>> locatorEnums = getReader().getEnumStringMappings(new ArrayList(locators));
+        for (final Locator locator : locatorEnums.keySet()) {
+            // validate enum values count and write to index or bad metric
+            validateThresholdAndWrite(locator, locatorEnums.get(locator));
         }
     }
 
@@ -93,7 +70,7 @@ public class EnumValidator implements Runnable {
             // count of current enum values of metric exceeded threshold, bad metric
             // write locator to bad metric table
             try {
-                AstyanaxWriter.getInstance().writeExcessEnumMetric(locator);
+                getWriter().writeExcessEnumMetric(locator);
             } catch (ConnectionException e) {
                 log.error(String.format("Exception writing bad metric %s: %s", locator.toString(), e.getMessage()), e);
             }
@@ -103,7 +80,7 @@ public class EnumValidator implements Runnable {
             // search for metric from elastic search
             List<SearchResult> esSearchResult = null;
             try {
-                esSearchResult = discoveryIO.search(locator.getTenantId(), locator.getMetricName());
+                esSearchResult = getDiscoveryIO().search(locator.getTenantId(), locator.getMetricName());
             }
             catch (Exception e) {
                 log.error(String.format("Exception retrieving enum values from elasticsearch for %s: %s", locator.toString(), e.getMessage()), e);
@@ -111,7 +88,7 @@ public class EnumValidator implements Runnable {
 
             // get elasticsearch enum values from top search results of exact match
             ArrayList<String> elasticsearchEnumValues = null;
-            if ((esSearchResult != null) && (esSearchResult.get(0) != null)) {
+            if ((esSearchResult != null) && (esSearchResult.size() > 0)) {
                 elasticsearchEnumValues = esSearchResult.get(0).getEnumValues();
             }
 
@@ -121,13 +98,13 @@ public class EnumValidator implements Runnable {
 
             // compare two list of enum values
             if (((currentEnumValues != null) && (!currentEnumValues.equals(elasticsearchEnumValues))) ||
-                ((currentEnumValues == null) && (elasticsearchEnumValues != null) && (elasticsearchEnumValues.size() > 0)))
+                    ((currentEnumValues == null) && (elasticsearchEnumValues != null) && (elasticsearchEnumValues.size() > 0)))
             {
                 // if not equal, create or update enums index in elastic search
                 BluefloodEnumRollup rollupWithEnumValues = createRollupWithEnumValues(currentEnumValues);
                 IMetric enumMetric = new PreaggregatedMetric(0, locator, null, rollupWithEnumValues);
                 try {
-                    discoveryIO.insertDiscovery(enumMetric);
+                    getDiscoveryIO().insertDiscovery(enumMetric);
                 }
                 catch (Exception e) {
                     log.error(String.format("Exception writing enums index to elasticsearch for %s: %s", locator.toString(), e.getMessage()), e);
@@ -142,5 +119,38 @@ public class EnumValidator implements Runnable {
             rollup = rollup.withEnumValue(val);
         }
         return rollup;
+    }
+
+    public AstyanaxReader getReader() {
+        if (this.reader == null) {
+            this.reader = AstyanaxReader.getInstance();
+        }
+        return this.reader;
+    }
+
+    public void setReader(AstyanaxReader reader) {
+        this.reader = reader;
+    }
+
+    public AstyanaxWriter getWriter() {
+        if (this.writer == null) {
+            this.writer = AstyanaxWriter.getInstance();
+        }
+        return this.writer;
+    }
+
+    public void setWriter(AstyanaxWriter writer) {
+        this.writer = writer;
+    }
+
+    public DiscoveryIO getDiscoveryIO() {
+        if (this.discoveryIO == null) {
+            this.discoveryIO = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
+        }
+        return this.discoveryIO;
+    }
+
+    public void setDiscoveryIO(DiscoveryIO discoveryIO) {
+        this.discoveryIO = discoveryIO;
     }
 }

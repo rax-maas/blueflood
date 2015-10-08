@@ -679,4 +679,32 @@ public class AstyanaxReader extends AstyanaxIO {
         }
         return columns;
     }
+
+    public Map<Locator, ArrayList<String>> getEnumStringMappings(final List<Locator> locators) {
+        final Map<Locator, ArrayList<String>> map = new HashMap<Locator, ArrayList<String>>();
+
+        try {
+            OperationResult<Rows<Locator, Long>> query = getKeyspace()
+                    .prepareQuery(CassandraModel.CF_METRICS_ENUM)
+                    .getKeySlice(locators)
+                    .execute();
+
+            for (Row<Locator, Long> row : query.getResult()) {
+                ColumnList<Long> cols = row.getColumns();
+                ArrayList<String> enumStrings = new ArrayList<String>();
+                for (Column col : cols) {
+                    enumStrings.add(col.getStringValue());
+                }
+                map.put(row.getKey(), enumStrings);
+            }
+        } catch (ConnectionException e) {
+            if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM);
+            } else {
+                log.warn("Enum String read query failed for column family " + CassandraModel.CF_METRICS_ENUM.getName(), e);
+                Instrumentation.markReadError(e);
+            }
+        }
+        return map;
+    }
 }
