@@ -68,6 +68,9 @@ public class EnumElasticIOTest {
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         esSetup.execute(EsSetup.createIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping(EnumElasticIO.ENUMS_DOCUMENT_TYPE, EsSetup.fromClassPath("metrics_mapping_enums.json")));
