@@ -44,7 +44,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public class EnumElasticIO implements DiscoveryIO {
 
     public static String ENUMS_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE);
-    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
+    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
+    public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     public static final String ENUMS_DOCUMENT_TYPE = "metrics";
 
     private Client client;
@@ -150,7 +151,8 @@ public class EnumElasticIO implements DiscoveryIO {
             );
         }
 
-        SearchResponse response = client.prepareSearch(ENUMS_INDEX_NAME_READ)
+        // search both ENUMS_INDEX_NAME_READ and ELASTICSEARCH_INDEX_NAME_READ
+        SearchResponse response = client.prepareSearch(ENUMS_INDEX_NAME_READ, ELASTICSEARCH_INDEX_NAME_READ)
                 .setRouting(tenant)
                 .setSize(100000)
                 .setVersion(true)
