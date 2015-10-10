@@ -157,6 +157,14 @@ public class HttpAnnotationsEndToEndTest {
             esSetup.terminate();
         }
 
+        if (vendor != null) {
+            vendor.shutdown();
+        }
+
+        if (httpIngestionService != null) {
+            httpIngestionService.shutdownService();
+        }
+
         if (httpQueryService != null) {
             httpQueryService.stopService();
         }
