@@ -150,6 +150,8 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_ON_READ_THREADS("50"),
     TURN_OFF_RR_MPLOT("false"),
 
+    ENUM_VALIDATOR_THREADS("20"),
+    ENUM_UNIQUE_VALUES_THRESHOLD("100"),
     EXCESS_ENUM_READER_SLEEP("600000");
 
     static {

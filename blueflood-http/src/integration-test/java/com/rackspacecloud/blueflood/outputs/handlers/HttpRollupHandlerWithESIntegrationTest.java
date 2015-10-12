@@ -227,6 +227,10 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             esSetup.terminate();
         }
 
+        if (vendor != null) {
+            vendor.shutdown();
+        }
+
         if (httpQueryService != null) {
             httpQueryService.stopService();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ public class EnumElasticIOTest {
     private EsSetup esSetup;
     private Client esClientMock = mock(Client.class);
     private BulkRequestBuilder bulkRequestBuilderMock = mock(BulkRequestBuilder.class);
+    private ListenableActionFuture listenableActionFutureMock = mock(ListenableActionFuture.class);
+    private IndexRequestBuilder indexRequestBuilderMock = mock(IndexRequestBuilder.class);
 
     private static final String TENANT_1 = "100000";
     private static final String TENANT_2 = "200000";
@@ -53,6 +55,9 @@ public class EnumElasticIOTest {
     private static final String METRIC_NAME_B2 = "b.m2";
     private static final String METRIC_NAME_B3 = "b.m3";
 
+    long collectionTime = 0;
+    TimeValue ttl = new TimeValue(1, TimeUnit.DAYS);
+
     BluefloodEnumRollup rollupWithEnumValues = new BluefloodEnumRollup()
             .withEnumValue("v1", 1L)
             .withEnumValue("v2", 1L)
@@ -63,6 +68,9 @@ public class EnumElasticIOTest {
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
+        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         esSetup.execute(EsSetup.createIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping(EnumElasticIO.ENUMS_DOCUMENT_TYPE, EsSetup.fromClassPath("metrics_mapping_enums.json")));
@@ -70,6 +78,16 @@ public class EnumElasticIOTest {
         enumElasticIO = new EnumElasticIO(esSetup.client());
         enumElasticIO.setINDEX_NAME_READ(EnumElasticIO.ENUMS_INDEX_NAME_WRITE);
         enumElasticIO.setINDEX_NAME_WRITE(EnumElasticIO.ENUMS_INDEX_NAME_WRITE);
+
+        // setup mock for ElasticSearch Client
+        when(bulkRequestBuilderMock.execute()).thenReturn(listenableActionFutureMock);
+        when(esClientMock.prepareBulk()).thenReturn(bulkRequestBuilderMock);
+        when(esClientMock.prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE))
+                .thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setId(anyString())).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setSource(any(XContentBuilder.class))).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setCreate(anyBoolean())).thenReturn(indexRequestBuilderMock);
+        when(indexRequestBuilderMock.setRouting(anyString())).thenReturn(indexRequestBuilderMock);
     }
 
     @After
@@ -148,47 +166,41 @@ public class EnumElasticIOTest {
     }
 
     @Test
-    public void testInsertDiscovery() throws IOException {
-        // setup mock for BulkRequestBuilder
-        ListenableActionFuture listenableActionFutureMock = mock(ListenableActionFuture.class);
-        when(bulkRequestBuilderMock.execute()).thenReturn(listenableActionFutureMock);
+    public void testInsertDiscoverySingle() throws IOException {
+        enumElasticIO.setClient(esClientMock);
 
-        // setup mock for ElasticSearch Client
-        IndexRequestBuilder indexRequestBuilderMock = mock(IndexRequestBuilder.class);
-        when(esClientMock.prepareBulk()).thenReturn(bulkRequestBuilderMock);
-        when(esClientMock.prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE))
-                .thenReturn(indexRequestBuilderMock);
-        when(indexRequestBuilderMock.setId(anyString())).thenReturn(indexRequestBuilderMock);
-        when(indexRequestBuilderMock.setSource(any(XContentBuilder.class))).thenReturn(indexRequestBuilderMock);
-        when(indexRequestBuilderMock.setCreate(anyBoolean())).thenReturn(indexRequestBuilderMock);
-        when(indexRequestBuilderMock.setRouting(anyString())).thenReturn(indexRequestBuilderMock);
+        // test single metric insert
+        Locator locator = Locator.createLocatorFromPathComponents(TENANT_1, METRIC_NAME_A1);
+        IMetric metric = new PreaggregatedMetric(collectionTime, locator, ttl, rollupWithEnumValues);
+        enumElasticIO.insertDiscovery(metric);
+        // verify
+        verify(esClientMock, times(1)).prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE);
+        verify(indexRequestBuilderMock).setId(TENANT_1 + ":" + METRIC_NAME_A1);
+        verify(bulkRequestBuilderMock, times(1)).execute();
+    }
+
+    @Test
+    public void testInsertDiscoveryBatch() throws IOException {
         enumElasticIO.setClient(esClientMock);
 
         // create PreaggregatedMetric metrics list and call insertDiscovery with it
         List<IMetric> metrics = new ArrayList<IMetric>();
-        long collectionTime = 0;
         Locator locator1 = Locator.createLocatorFromPathComponents(TENANT_1, METRIC_NAME_A1);
         Locator locator2 = Locator.createLocatorFromPathComponents(TENANT_2, METRIC_NAME_B1);
-        TimeValue ttl = new TimeValue(1, TimeUnit.DAYS);
         metrics.add(new PreaggregatedMetric(collectionTime, locator1, ttl, rollupWithEnumValues));
         metrics.add(new PreaggregatedMetric(collectionTime, locator2, ttl, rollupWithEnumValues));
         enumElasticIO.insertDiscovery(metrics);
 
-        // verify client and bulk
-        verify(esClientMock, times(1)).prepareBulk();
-        verify(bulkRequestBuilderMock, times(2)).add(any(IndexRequestBuilder.class));
+        // verify client execute with right params
         verify(esClientMock, times(2)).prepareIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE, EnumElasticIO.ENUMS_DOCUMENT_TYPE);
-        verify(bulkRequestBuilderMock, times(1)).execute();
-
-        // verify indexRequestBuilder
         verify(indexRequestBuilderMock, times(2)).setId(anyString());
         verify(indexRequestBuilderMock).setId(TENANT_1 + ":" + METRIC_NAME_A1);
         verify(indexRequestBuilderMock).setId(TENANT_2 + ":" + METRIC_NAME_B1);
         verify(indexRequestBuilderMock, times(2)).setSource(any(XContentBuilder.class));
-        verify(indexRequestBuilderMock, times(2)).setCreate(true);
         verify(indexRequestBuilderMock, times(2)).setRouting(anyString());
         verify(indexRequestBuilderMock).setRouting(TENANT_1);
         verify(indexRequestBuilderMock).setRouting(TENANT_2);
+        verify(bulkRequestBuilderMock, times(1)).execute();
     }
 
     @Test

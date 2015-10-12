@@ -82,6 +82,12 @@ public class ElasticIO implements DiscoveryIO {
         return result;
     }
 
+    public void insertDiscovery(IMetric metric) throws IOException {
+        List<IMetric> batch = new ArrayList<IMetric>();
+        batch.add(metric);
+        insertDiscovery(batch);
+    }
+
     public void insertDiscovery(List<IMetric> batch) throws IOException {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {

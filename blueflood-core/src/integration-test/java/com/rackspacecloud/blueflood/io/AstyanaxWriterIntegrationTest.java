@@ -83,14 +83,33 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        Long timestamp1 = 1L;
-        Long timestamp2 = 2L;
 
-        writer.writeExcessEnumMetric(loc1, timestamp1);
+        writer.writeExcessEnumMetric(loc1);
         assertNumberOfRows("metrics_excess_enums", 1);
 
         // new locator means new row.
-        writer.writeExcessEnumMetric(loc2, timestamp2);
+        writer.writeExcessEnumMetric(loc2);
+        assertNumberOfRows("metrics_excess_enums", 2);
+    }
+
+    @Test
+    public void testExcessEnumMetricDoesNotDuplicates() throws Exception {
+        assertNumberOfRows("metrics_excess_enums", 0);
+
+        Locator loc1 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
+        Locator loc2 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
+        Locator loc3 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
+        Locator loc4 = Locator.createLocatorFromPathComponents("acNEW", "entityId", "checkId", "mz", "metric");
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+
+        // same locator means same row.
+        writer.writeExcessEnumMetric(loc1);
+        writer.writeExcessEnumMetric(loc2);
+        writer.writeExcessEnumMetric(loc3);
+        assertNumberOfRows("metrics_excess_enums", 1);
+
+        // new locator means new row.
+        writer.writeExcessEnumMetric(loc4);
         assertNumberOfRows("metrics_excess_enums", 2);
     }
 

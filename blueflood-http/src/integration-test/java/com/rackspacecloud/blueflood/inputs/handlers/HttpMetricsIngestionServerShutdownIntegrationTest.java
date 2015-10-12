@@ -35,10 +35,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.net.ConnectException;
@@ -125,7 +122,6 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         }
     }
 
-
     private URI getMetricsURI() throws URISyntaxException {
         return getMetricsURIBuilder().build();
     }
@@ -133,6 +129,18 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     private URIBuilder getMetricsURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
+        if (esSetup != null) {
+            esSetup.terminate();
+        }
+
+        if (vendor != null) {
+            vendor.shutdown();
+        }
     }
 
 }

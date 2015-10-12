@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public class EnumElasticIO implements DiscoveryIO {
 
     public static String ENUMS_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE);
-    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
+    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
+    public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     public static final String ENUMS_DOCUMENT_TYPE = "metrics";
 
     private Client client;
@@ -64,6 +65,12 @@ public class EnumElasticIO implements DiscoveryIO {
 
     public EnumElasticIO(ElasticClientManager manager) {
         this(manager.getClient());
+    }
+
+    public void insertDiscovery(IMetric metric) throws IOException {
+        List<IMetric> batch = new ArrayList<IMetric>();
+        batch.add(metric);
+        insertDiscovery(batch);
     }
 
     public void insertDiscovery(List<IMetric> batch) throws IOException {
@@ -117,7 +124,6 @@ public class EnumElasticIO implements DiscoveryIO {
         return client.prepareIndex(ENUMS_INDEX_NAME_WRITE, ENUMS_DOCUMENT_TYPE)
                 .setId(metricDiscovery.getDocumentId())
                 .setSource(metricDiscovery.createSourceContent())
-                .setCreate(true)
                 .setRouting(metricDiscovery.getTenantId());
     }
 
@@ -145,7 +151,8 @@ public class EnumElasticIO implements DiscoveryIO {
             );
         }
 
-        SearchResponse response = client.prepareSearch(ENUMS_INDEX_NAME_READ)
+        // search both ENUMS_INDEX_NAME_READ and ELASTICSEARCH_INDEX_NAME_READ
+        SearchResponse response = client.prepareSearch(ENUMS_INDEX_NAME_READ, ELASTICSEARCH_INDEX_NAME_READ)
                 .setRouting(tenant)
                 .setSize(100000)
                 .setVersion(true)
