@@ -107,6 +107,8 @@ class ThreadManager(object):
 
     return thread_type(server_num)
 
+#ThreadManager class ends here
+#Utility functions below
 
 def generate_job_range(total_jobs, total_servers, server_num):
   """ Determine which subset of the total work the current server is to do.
@@ -136,6 +138,8 @@ def generate_metrics_tenants(num_tenants, metrics_per_tenant,
 
 def generate_metric_name(metric_id):
   return default_config['name_fmt'] % metric_id
+
+#Utility functions end here
 
 class AbstractThread(object):
   #superclass for the various thread types

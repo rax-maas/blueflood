@@ -153,6 +153,8 @@ public class RollupRunnable implements Runnable {
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
                 return Rollup.SetFromSet;
+            case ENUM:
+                return Rollup.EnumFromEnum;
             default:
                 break;
         }

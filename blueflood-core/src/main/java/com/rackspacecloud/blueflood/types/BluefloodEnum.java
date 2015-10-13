@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Rackspace
+ * Copyright 2015 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,15 +14,12 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.types;
 
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Metric;
+public class BluefloodEnum {
+    private String name;
+    private String value;
 
-import java.io.IOException;
-import java.util.Collection;
-
-public interface IMetricsWriter {
-    void insertFullMetrics(Collection<Metric> metrics) throws Exception;
-    void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws Exception;
+    public String getName() { return name; }
+    public String getValue() { return value; }
 }
