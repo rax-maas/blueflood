@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.joda.time.DateTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class JSONMetricsContainer {
     private final String tenantId;
     private final List<JSONMetric> jsonMetrics;
+    private List<Metric> delayedMetrics;
+    private static final long millisIn10Minutes = 10 * 60 * 1000;
 
     public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
         this.tenantId = tenantId;
@@ -50,6 +53,7 @@ public class JSONMetricsContainer {
         }
 
         final List<Metric> metrics = new ArrayList<Metric>();
+        delayedMetrics = new ArrayList<Metric>();
         for (JSONMetric jsonMetric : jsonMetrics) {
             Locator locator;
             if (jsonMetric instanceof ScopedJSONMetric) {
@@ -62,11 +66,19 @@ public class JSONMetricsContainer {
             if (jsonMetric.getMetricValue() != null) {
                 final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                         new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
+                long nowMillis = new DateTime().getMillis();
+                if (nowMillis - metric.getCollectionTime() > millisIn10Minutes) {
+                    delayedMetrics.add(metric);
+                }
                 metrics.add(metric);
             }
         }
 
         return metrics;
+    }
+
+    public boolean areDelayedMetricsPresent() {
+        return delayedMetrics.size() > 0;
     }
 
     // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.

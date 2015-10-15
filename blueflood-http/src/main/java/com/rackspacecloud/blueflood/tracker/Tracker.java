@@ -38,6 +38,7 @@ public class Tracker implements TrackerMBean {
     private static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
 
     static Set tenantIds = new HashSet();
+    static boolean isTrackingDelayedMetrics = false;
 
     public Tracker() {
         registerMBean();
@@ -46,6 +47,14 @@ public class Tracker implements TrackerMBean {
     public void addTenant(String tenantId) {
         tenantIds.add(tenantId);
         log.info("[TRACKER] tenantId " + tenantId + " added.");
+    }
+
+    public void setIsTrackingDelayedMetrics() {
+        isTrackingDelayedMetrics = true;
+    }
+
+    public void resetIsTrackingDelayedMetrics() {
+        isTrackingDelayedMetrics = false;
     }
 
     public void removeTenant(String tenantId) {
@@ -108,6 +117,13 @@ public class Tracker implements TrackerMBean {
                     "HEADERS: " + headers +
                     requestContent;
 
+            log.info(logMessage);
+        }
+    }
+
+    public static void trackDelayedMetricsTenant(String tenantid) {
+        if (isTrackingDelayedMetrics) {
+            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metric is %s",tenantid);
             log.info(logMessage);
         }
     }

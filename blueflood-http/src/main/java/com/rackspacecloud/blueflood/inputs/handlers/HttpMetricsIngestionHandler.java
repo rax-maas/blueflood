@@ -95,6 +95,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 if (!jsonMetricsContainer.isValid()) {
                     throw new IOException("Invalid JSONMetricsContainer");
                 }
+
+                if (!jsonMetricsContainer.areDelayedMetricsPresent()) {
+                    Tracker.trackDelayedMetricsTenant(tenantId);
+                }
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
                 DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
