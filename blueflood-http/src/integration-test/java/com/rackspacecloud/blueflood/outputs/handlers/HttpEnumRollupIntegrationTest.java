@@ -93,7 +93,13 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetRollupByPointsEnums() throws Exception {
+    public void testEnumRollups() throws Exception {
+        testGetRollupByPointsEnums();
+        testGetRollupByResolution();
+        testHttpRequestForPoints();
+    }
+
+    private void testGetRollupByPointsEnums() throws Exception {
         final Map<Granularity, Integer> points = new HashMap<Granularity, Integer>();
         points.put(Granularity.FULL, 1600);
         points.put(Granularity.MIN_5, 287);
@@ -105,13 +111,11 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         HttpRollupHandlerIntegrationTest.testHTTPRollupHandlerGetByPoints(enumlocatorToPoints, points, baseMillis, baseMillis + 86400000, enumLocators, httpHandler);
     }
 
-    @Test
-    public void testGetRollupByResolution() throws Exception {
+    private void testGetRollupByResolution() throws Exception {
         HttpRollupHandlerIntegrationTest.testGetRollupByResolution(enumLocators, enumlocatorToPoints, httpHandler);
     }
 
-    @Test
-    public void testHttpRequestForPoints() throws Exception {
+    private void testHttpRequestForPoints() throws Exception {
         HttpRollupHandlerIntegrationTest.testHappyCaseHTTPRequest(enumMetricName, tenantId, client);
         HttpRollupHandlerIntegrationTest.testBadRequest(enumMetricName, tenantId, client);
         HttpRollupHandlerIntegrationTest.testBadMethod(enumMetricName, tenantId, client);
