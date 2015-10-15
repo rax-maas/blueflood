@@ -96,7 +96,6 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
     public void testEnumRollups() throws Exception {
         testGetRollupByPointsEnums();
         testGetRollupByResolution();
-        testHttpRequestForPoints();
     }
 
     private void testGetRollupByPointsEnums() throws Exception {
@@ -113,13 +112,6 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
 
     private void testGetRollupByResolution() throws Exception {
         HttpRollupHandlerIntegrationTest.testGetRollupByResolution(enumLocators, enumlocatorToPoints, httpHandler);
-    }
-
-    private void testHttpRequestForPoints() throws Exception {
-        HttpRollupHandlerIntegrationTest.testHappyCaseHTTPRequest(enumMetricName, tenantId, client);
-        HttpRollupHandlerIntegrationTest.testBadRequest(enumMetricName, tenantId, client);
-        HttpRollupHandlerIntegrationTest.testBadMethod(enumMetricName, tenantId, client);
-        //TODO: Add multi test here for enums
     }
 
     @AfterClass
