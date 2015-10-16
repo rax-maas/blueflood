@@ -1,5 +1,6 @@
 import random
-try: 
+import time
+try:
   from com.xhaus.jyson import JysonCodec as json
 except ImportError:
   import json
@@ -7,15 +8,14 @@ from utils import *
 from net.grinder.script import Test
 from net.grinder.plugin.http import HTTPRequest
 
-class IngestThread(AbstractThread):
+class EnumIngestThread(AbstractThread):
   # The list of metric numbers for all threads in this worker
   metrics = []
-  
+
   # Grinder test reporting infrastructure
-  test1 = Test(1, "Ingest test")
+  test1 = Test(7, "Enum Ingest test")
   request = HTTPRequest()
   test1.record(request)
-
 
   @classmethod
   def create_metrics(cls, agent_number):
@@ -24,16 +24,16 @@ class IngestThread(AbstractThread):
     The metrics are a list of batches.  Each batch is a list of metrics processed by
     a single metrics ingest request.
     """
-    metrics =  generate_metrics_tenants(default_config['num_tenants'],
-                                            default_config['metrics_per_tenant'], agent_number, 
-                                            default_config['num_nodes'], 
+    metrics =  generate_metrics_tenants(default_config['enum_num_tenants'],
+                                            default_config['enum_metrics_per_tenant'], agent_number,
+                                            default_config['num_nodes'],
                                             cls.generate_metrics_for_tenant)
 
     cls.metrics = cls.divide_metrics_into_batches(metrics, default_config['batch_size'])
 
   @classmethod
   def num_threads(cls):
-    return default_config['ingest_concurrency']
+    return default_config['enum_ingest_concurrency']
 
   @classmethod
   def generate_metrics_for_tenant(cls, tenant_id, metrics_per_tenant):
@@ -52,24 +52,22 @@ class IngestThread(AbstractThread):
   def __init__(self, thread_num):
     AbstractThread.__init__(self, thread_num)
     # Initialize the "slice" of the metrics to be sent by this thread
-    start, end = generate_job_range(len(self.metrics), 
+    start, end = generate_job_range(len(self.metrics),
                                     self.num_threads(), thread_num)
     self.slice = self.metrics[start:end]
 
-  def generate_metric(self, time, tenant_id, metric_id):
+  def generate_enum_metric(self, time, tenant_id, metric_id):
     return {'tenantId': str(tenant_id),
-            'metricName': generate_metric_name(metric_id),
-            'unit': self.generate_unit(tenant_id),
-            'metricValue': random.randint(0, RAND_MAX),
-            'ttlInSeconds': (2 * 24 * 60 * 60),
-            'collectionTime': time}
+            'timestamp': int(round(time * 1000)),
+            'enums': [{'name': 'enum_grinder_'+str(metric_id), 'value': 'e_g_'+str(metric_id)}]
+            }
 
   def generate_payload(self, time, batch):
-    payload = map(lambda x:self.generate_metric(time,*x), batch)
+    payload = map(lambda x:self.generate_enum_metric(time,*x), batch)
     return json.dumps(payload)
 
   def ingest_url(self):
-    return "%s/v2.0/tenantId/ingest/multi" % default_config['url']
+    return "%s/v2.0/tenantId/ingest/aggregated/multi" % default_config['url']
 
 
   def make_request(self, logger):
@@ -84,4 +82,4 @@ class IngestThread(AbstractThread):
     result = self.request.POST(self.ingest_url(), payload)
     return result
 
-ThreadManager.add_type(IngestThread)
+ThreadManager.add_type(EnumIngestThread)
