@@ -12,6 +12,7 @@ cov.start()
 import time
 import utils
 import ingest
+import ingestenum
 import query
 import annotationsingest
 import unittest
@@ -57,6 +58,7 @@ class BluefloodTests(unittest.TestCase):
     self.tm = ingest.ThreadManager(net.grinder.script.Grinder.grinder)
     req = MockReq()
     ingest.IngestThread.request = req
+    ingestenum.EnumIngestThread.request = req
     annotationsingest.AnnotationsIngestThread.request = req
     for x in query.QueryThread.query_types:
       x.query_request = req
@@ -67,16 +69,20 @@ class BluefloodTests(unittest.TestCase):
 
     test_config = {'report_interval': (1000 * 6),
                    'num_tenants': 3,
+                   'enum_num_tenants': 4,
                    'annotations_num_tenants': 3,
                    'metrics_per_tenant': 7,
+                   'enum_metrics_per_tenant': 2,
                    'annotations_per_tenant': 2,
                    'batch_size': 3,
                    'ingest_concurrency': 2,
+                   'enum_ingest_concurrency': 2,
                    'query_concurrency': 10,
                    'annotations_concurrency':2,
                    'singleplot_per_interval': 11,
                    'multiplot_per_interval': 10,
                    'search_queries_per_interval': 9,
+                   'enum_search_queries_per_interval': 9,
                    'annotations_queries_per_interval': 8,
                    'name_fmt': "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.%d",
                    'num_nodes': 2}
@@ -89,16 +95,20 @@ class BluefloodTests(unittest.TestCase):
     t1 = self.tm.setup_thread(0)
     self.assertEqual(type(t1), ingest.IngestThread)
 
+    #confirm that the threadnum after all ingest threads is EnumIngestThread
+    t1 = self.tm.setup_thread(ingestenum.default_config['enum_ingest_concurrency'])
+    self.assertEqual(type(t1), ingestenum.EnumIngestThread)
+
     #confirm that the threadnum after all ingest threads is a query thread
-    t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency'])
+    t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency']+ingestenum.default_config['enum_ingest_concurrency'])
     self.assertEqual(type(t1), query.QueryThread)
 
     #confirm that the threadnum after all ingest+query threads is an annotations query thread
-    t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency']+ingest.default_config['query_concurrency'])
+    t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency']+ingestenum.default_config['enum_ingest_concurrency']+ingest.default_config['query_concurrency'])
     self.assertEqual(type(t1), annotationsingest.AnnotationsIngestThread)
 
     #confirm that a threadnum after all valid thread types raises an exception
-    tot_threads = (ingest.default_config['ingest_concurrency'] + ingest.default_config['query_concurrency'] + ingest.default_config['annotations_concurrency'])
+    tot_threads = (ingest.default_config['ingest_concurrency'] + ingest.default_config['enum_ingest_concurrency'] + ingest.default_config['query_concurrency'] + ingest.default_config['annotations_concurrency'])
     self.assertRaises(Exception,self.tm.setup_thread, tot_threads)
 
     #confirm that the correct batches of ingest metrics are created for worker 0
@@ -138,16 +148,20 @@ class BluefloodTests(unittest.TestCase):
     single_plot_queries_agent0 = int(math.ceil(query.default_config['singleplot_per_interval']/num_query_nodes))
     multi_plot_queries_agent0 = int(math.ceil(query.default_config['multiplot_per_interval']/num_query_nodes))
     search_queries_agent0 = int(math.ceil(query.default_config['search_queries_per_interval']/num_query_nodes))
+    enum_search_queries_agent0 = int(math.ceil(query.default_config['enum_search_queries_per_interval']/num_query_nodes))
     annotation_queries_agent0 = int(math.ceil(query.default_config['annotations_queries_per_interval']/num_query_nodes))
     
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.EnumSearchQuery] * enum_search_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
 
     thread = query.QueryThread(0)
-    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
+    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 3)
+
+    thread = query.QueryThread(4)
+    self.assertEqual(thread.slice, [query.SearchQuery] * 3)
 
     thread = query.QueryThread(6)
-    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
+    self.assertEqual(thread.slice, [query.EnumSearchQuery] * 2)
 
     thread = query.QueryThread(9)
     self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
@@ -176,19 +190,23 @@ class BluefloodTests(unittest.TestCase):
     single_plot_queries_agent1 = query.default_config['singleplot_per_interval'] - single_plot_queries_agent0
     multi_plot_queries_agent1 = query.default_config['multiplot_per_interval'] - multi_plot_queries_agent0
     search_queries_agent1 = query.default_config['search_queries_per_interval'] - search_queries_agent0
+    enum_search_queries_agent1 = query.default_config['enum_search_queries_per_interval'] - enum_search_queries_agent0
     annotation_queries_agent1 = query.default_config['annotations_queries_per_interval'] - annotation_queries_agent0
 
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * single_plot_queries_agent1 + [query.MultiPlotQuery] * multi_plot_queries_agent1 + [query.SearchQuery] * search_queries_agent1 + [query.AnnotationsQuery] * annotation_queries_agent1))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent1 + [query.MultiPlotQuery] * multi_plot_queries_agent1 + [query.SearchQuery] * search_queries_agent1 + [query.EnumSearchQuery] * enum_search_queries_agent1 + [query.AnnotationsQuery] * annotation_queries_agent1))
 
     thread = query.QueryThread(0)
-    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
+    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 3)
 
-    thread = query.QueryThread(6)
+    thread = query.QueryThread(4)
     self.assertEqual(thread.slice, [query.SearchQuery] * 2)
 
+    thread = query.QueryThread(6)
+    self.assertEqual(thread.slice, [query.EnumSearchQuery] * 2)
+
     thread = query.QueryThread(9)
-    self.assertEqual(thread.slice, [query.AnnotationsQuery])
+    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
 
   def test_generate_payload(self):
     self.tm.create_all_metrics(1)
@@ -273,6 +291,29 @@ class BluefloodTests(unittest.TestCase):
     self.assertEqual(thread.position, 1)
     self.assertEqual(thread.finish_time, 16000)
 
+  def test_ingest_enum_make_request(self):
+      global sleep_time
+      thread = ingestenum.EnumIngestThread(0)
+      thread.slice = [[[2, 0], [2, 1]]]
+      thread.position = 0
+      thread.finish_time = 10000
+      valid_payload = [{'tenantId': '2', 'timestamp': 1000000, 'enums': [{'value': 'e_g_0', 'name': 'enum_grinder_0'}]}, {'tenantId': '2', 'timestamp': 1000000, 'enums': [{'value': 'e_g_1', 'name': 'enum_grinder_1'}]}]
+
+      url, payload = thread.make_request(pp)
+      #confirm request generates proper URL and payload
+      self.assertEqual(url,
+                       'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/tenantId/ingest/aggregated/multi')
+      self.assertEqual(eval(payload), valid_payload)
+
+      #confirm request increments position if not at end of report interval
+      self.assertEqual(thread.position, 1)
+      self.assertEqual(thread.finish_time, 10000)
+      thread.position = 2
+      thread.make_request(pp)
+      #confirm request resets position at end of report interval
+      self.assertEqual(sleep_time, 9000)
+      self.assertEqual(thread.position, 1)
+      self.assertEqual(thread.finish_time, 16000)
 
   def test_query_make_request(self):
     thread = query.QueryThread(0)
