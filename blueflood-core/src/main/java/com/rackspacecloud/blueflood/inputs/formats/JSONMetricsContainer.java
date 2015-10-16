@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -30,7 +32,7 @@ public class JSONMetricsContainer {
     private final String tenantId;
     private final List<JSONMetric> jsonMetrics;
     private List<Metric> delayedMetrics;
-    private static final long millisIn10Minutes = 10 * 60 * 1000;
+    private static final long delayedMetricsMillis = Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_MILLIS);
 
     public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
         this.tenantId = tenantId;
@@ -67,7 +69,7 @@ public class JSONMetricsContainer {
                 final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                         new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
                 long nowMillis = new DateTime().getMillis();
-                if (nowMillis - metric.getCollectionTime() > millisIn10Minutes) {
+                if (nowMillis - metric.getCollectionTime() > delayedMetricsMillis) {
                     delayedMetrics.add(metric);
                 }
                 metrics.add(metric);

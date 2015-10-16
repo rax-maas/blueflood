@@ -95,10 +95,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 if (!jsonMetricsContainer.isValid()) {
                     throw new IOException("Invalid JSONMetricsContainer");
                 }
-
-                if (!jsonMetricsContainer.areDelayedMetricsPresent()) {
-                    Tracker.trackDelayedMetricsTenant(tenantId);
-                }
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
                 DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
@@ -127,6 +123,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             try {
                 containerMetrics = jsonMetricsContainer.toMetrics();
                 forceTTLsIfConfigured(containerMetrics);
+
+                if (!jsonMetricsContainer.areDelayedMetricsPresent()) {
+                    Tracker.trackDelayedMetricsTenant(tenantId);
+                }
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Someting wasn't right (data out of range, etc.)

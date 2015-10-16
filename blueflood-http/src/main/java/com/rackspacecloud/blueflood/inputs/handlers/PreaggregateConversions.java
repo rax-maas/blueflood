@@ -36,7 +36,6 @@ public class PreaggregateConversions {
     // todo: punt on TTL
     private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
     private static final String NAME_DELIMITER = "//.";
-    private static final long millisIn10Minutes = 10 * 60 * 1000;
 
     // NOTE: when you create objects from gson-converted json, you need to make sure to resolve numbers that
     // are not accessed via `doubleValue()` or `longValue()`, i.e., they are treated as `Number` instances.
@@ -46,10 +45,6 @@ public class PreaggregateConversions {
     
     public static Collection<IMetric> buildMetricsCollection(AggregatedPayload payload) {
         Collection<IMetric> metrics = new ArrayList<IMetric>();
-        long nowMillis = new DateTime().getMillis();
-        if (nowMillis - payload.getTimestamp() > millisIn10Minutes) {
-            Tracker.trackDelayedMetricsTenant(payload.getTenantId());
-        }
         metrics.addAll(PreaggregateConversions.convertCounters(payload.getTenantId(), payload.getTimestamp(), payload.getFlushIntervalMillis(), payload.getCounters()));
         metrics.addAll(PreaggregateConversions.convertGauges(payload.getTenantId(), payload.getTimestamp(), payload.getGauges()));
         metrics.addAll(PreaggregateConversions.convertSets(payload.getTenantId(), payload.getTimestamp(), payload.getSets()));
