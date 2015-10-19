@@ -123,6 +123,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             try {
                 containerMetrics = jsonMetricsContainer.toMetrics();
                 forceTTLsIfConfigured(containerMetrics);
+
+                if (!jsonMetricsContainer.areDelayedMetricsPresent()) {
+                    Tracker.trackDelayedMetricsTenant(tenantId);
+                }
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Someting wasn't right (data out of range, etc.)

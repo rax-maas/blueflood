@@ -82,6 +82,40 @@ public class JSONMetricsContainerTest {
         }
     }
 
+    @Test
+    public void testDelayedMetric() throws Exception {
+        String jsonBody = "[{\"collectionTime\":1401302372775,\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = null;
+
+        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        jsonBody,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+        container = new JSONMetricsContainer("786659", jsonMetrics);
+        List<Metric> metrics = container.toMetrics();
+        Assert.assertTrue(container.areDelayedMetricsPresent());
+    }
+
+    @Test
+    public void testDelayedMetricFalseForRecentMetric() throws Exception {
+        String jsonBody = "[{\"collectionTime\":"+System.currentTimeMillis()+",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = null;
+
+        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        jsonBody,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.JSONMetric.class)
+                );
+        container = new JSONMetricsContainer("786659", jsonMetrics);
+        List<Metric> metrics = container.toMetrics();
+        Assert.assertFalse(container.areDelayedMetricsPresent());
+    }
+
     public static List<Map<String, Object>> generateMetricsData() throws Exception {
         List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
 
