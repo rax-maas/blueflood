@@ -113,6 +113,8 @@ class BluefloodTests(unittest.TestCase):
 
     #confirm that the correct batches of ingest metrics are created for worker 0
     self.tm.create_all_metrics(0)
+
+    # confirm annotationsingest
     self.assertEqual(annotationsingest.AnnotationsIngestThread.annotations,
                              [[0, 0], [0, 1], [1, 0], [1, 1]])
 
@@ -122,6 +124,20 @@ class BluefloodTests(unittest.TestCase):
     thread = annotationsingest.AnnotationsIngestThread(1)
     self.assertEqual(thread.slice, [[1, 0], [1, 1]])
 
+    #confirm enum metrics ingest
+    self.assertEqual(ingestenum.EnumIngestThread.metrics,
+                        [
+                            [[0, 0], [0, 1], [1, 0]],
+                            [[1, 1]]
+                        ])
+
+    thread = ingestenum.EnumIngestThread(0)
+    self.assertEqual(thread.slice, [[[0, 0], [0, 1], [1, 0]]])
+
+    thread = ingestenum.EnumIngestThread(1)
+    self.assertEqual(thread.slice, [[[1, 1]]])
+
+    # confirm metrics ingest
     self.assertEqual(ingest.IngestThread.metrics,
                              [[[0, 0], [0, 1], [0, 2]],
                               [[0, 3], [0, 4], [0, 5]],
@@ -232,6 +248,19 @@ class BluefloodTests(unittest.TestCase):
                       u'unit': u'days'}]
     self.assertEqual(payload, valid_payload)
 
+  def test_generate_enum_payload(self):
+    self.tm.create_all_metrics(1)
+    thread = ingestenum.EnumIngestThread(0)
+    payload = json.loads(thread.generate_payload(0, [[2, 1], [2, 2]]))
+    valid_payload = [{u'timestamp': 0,
+                      u'tenantId': u'2',
+                      u'enums': [{u'value': u'e_g_1', u'name': u'enum_grinder_1'}]},
+                     {u'timestamp': 0,
+                      u'tenantId': u'2',
+                      u'enums': [{u'value': u'e_g_2', u'name': u'enum_grinder_2'}]}
+                    ]
+    self.assertEqual(payload, valid_payload)
+
   def test_generate_annotations_payload(self):
     self.tm.create_all_metrics(1)
     thread = annotationsingest.AnnotationsIngestThread(0)
@@ -317,7 +346,7 @@ class BluefloodTests(unittest.TestCase):
 
   def test_query_make_request(self):
     thread = query.QueryThread(0)
-    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery]
+    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery, query.EnumSearchQuery]
     thread.position = 0
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399000&to=1000&resolution=FULL")
@@ -334,6 +363,10 @@ class BluefloodTests(unittest.TestCase):
     random.randint = lambda x,y: 30
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/30/events/getEvents?from=-86399000&until=1000")
+
+    random.randint = lambda x,y: 40
+    thread.make_request(pp)
+    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/40/metrics/search?query=enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.*&include_enum_values=true")
 
   def tearDown(self):
     random.shuffle = self.real_shuffle
