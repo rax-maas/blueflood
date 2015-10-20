@@ -123,9 +123,14 @@ public class Tracker implements TrackerMBean {
         }
     }
 
-    public static void trackDelayedMetricsTenant(String tenantid) {
+    public static void trackDelayedMetricsTenant(String tenantid, List<String> metricNames) {
         if (isTrackingDelayedMetrics) {
-            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metric is %s",tenantid);
+            StringBuilder sb = new StringBuilder();
+            for(String name : metricNames) {
+                sb.append(name);
+                sb.append(";");
+            }
+            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metric is %s with the delayed metrics -- %s",tenantid,sb.toString());
             log.info(logMessage);
         }
     }

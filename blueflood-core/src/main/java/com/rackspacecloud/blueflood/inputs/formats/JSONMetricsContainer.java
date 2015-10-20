@@ -83,6 +83,15 @@ public class JSONMetricsContainer {
         return delayedMetrics.size() > 0;
     }
 
+    public List<String> getDelayedMetricNames() {
+        List<String> delayedMetricNames = new ArrayList<String>();
+        for (Metric m : delayedMetrics) {
+            delayedMetricNames.add(m.getLocator().getMetricName());
+        }
+
+        return delayedMetricNames;
+    }
+
     // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.
     public static class JSONMetric {
         private String metricName;
