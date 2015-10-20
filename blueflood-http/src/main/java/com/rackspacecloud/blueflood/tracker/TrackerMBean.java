@@ -24,5 +24,6 @@ public interface TrackerMBean {
     public void removeTenant(String tenantId);
     public void removeAllTenants();
     public Set getTenants();
-
+    public void setIsTrackingDelayedMetrics();
+    public void resetIsTrackingDelayedMetrics();
 }

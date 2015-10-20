@@ -51,10 +51,12 @@ public class Tracker implements TrackerMBean {
 
     public void setIsTrackingDelayedMetrics() {
         isTrackingDelayedMetrics = true;
+        log.info("[TRACKER] Tracking delayed metrics started");
     }
 
     public void resetIsTrackingDelayedMetrics() {
         isTrackingDelayedMetrics = false;
+        log.info("[TRACKER] Tracking delayed metrics stopped");
     }
 
     public void removeTenant(String tenantId) {
