@@ -21,6 +21,8 @@ import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.TtlConfig;
 import org.joda.time.DateTime;
 
 import java.io.IOError;
@@ -34,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class PreaggregateConversions {
     
     // todo: punt on TTL
-    private static final TimeValue DEFAULT_TTL = new TimeValue(48, TimeUnit.HOURS);
+    private static final TimeValue DEFAULT_TTL = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
     private static final String NAME_DELIMITER = "//.";
 
     // NOTE: when you create objects from gson-converted json, you need to make sure to resolve numbers that
