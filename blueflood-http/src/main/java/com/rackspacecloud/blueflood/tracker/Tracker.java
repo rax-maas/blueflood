@@ -128,7 +128,7 @@ public class Tracker implements TrackerMBean {
             StringBuilder sb = new StringBuilder();
             for(String name : metricNames) {
                 sb.append(name);
-                sb.append(";");
+                sb.append(",");
             }
             String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metric is %s with the delayed metrics -- %s",tenantid,sb.toString());
             log.info(logMessage);
