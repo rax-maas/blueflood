@@ -125,7 +125,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 forceTTLsIfConfigured(containerMetrics);
 
                 if (jsonMetricsContainer.areDelayedMetricsPresent()) {
-                    Tracker.trackDelayedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetricNames());
+                    Tracker.trackDelayedMetricsTenant(tenantId);
                 }
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
