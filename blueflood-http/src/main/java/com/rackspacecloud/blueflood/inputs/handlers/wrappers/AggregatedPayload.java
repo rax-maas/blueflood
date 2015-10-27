@@ -35,6 +35,7 @@ public class AggregatedPayload {
     private BluefloodCounter[] counters;
     private BluefloodTimer[] timers;
     private BluefloodSet[] sets;
+    private BluefloodEnum[] enums;
     
     private Map<String, Object> metadata;
     
@@ -53,6 +54,8 @@ public class AggregatedPayload {
     public Collection<BluefloodCounter> getCounters() { return safeAsList(counters); }
     public Collection<BluefloodTimer> getTimers() { return safeAsList(timers); }
     public Collection<BluefloodSet> getSets() { return safeAsList(sets); }
+    public Collection<BluefloodEnum> getEnums() { return safeAsList(enums); }
+
 
     //@SafeVarargs (1.7 only doge)
     public static <T> List<T> safeAsList(final T... a) {

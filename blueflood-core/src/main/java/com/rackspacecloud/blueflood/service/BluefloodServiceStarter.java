@@ -125,6 +125,12 @@ public class BluefloodServiceStarter {
                     System.exit(1);
                 }
             }
+
+            final Thread eerThread = new Thread(ExcessEnumReader.getInstance(), "Excess Enum Table Reader");
+            eerThread.start();
+            log.info("Started Excess Enum Reader ingestion service");
+            services_started++;
+
             log.info("Started " + services_started + " ingestion services");
         } else {
             log.info("HTTP ingestion service not required");

@@ -14,14 +14,14 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.service;
+package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-import com.rackspacecloud.blueflood.io.ElasticIO;
-import com.rackspacecloud.blueflood.io.SearchResult;
+import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,6 +117,32 @@ public class ElasticIOTest {
     @After
     public void tearDown() {
         esSetup.terminate();
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testCreateSingleRequest_WithNullMetricName() throws IOException {
+        Discovery discovery = new Discovery(TENANT_A, null);
+        elasticIO.createSingleRequest(discovery);
+    }
+
+    @Test
+    public void testCreateSingleRequest() throws IOException {
+        final String METRIC_NAME = "a.b.c.m1";
+        Discovery discovery = new Discovery(TENANT_A, METRIC_NAME);
+        IndexRequestBuilder builder = elasticIO.createSingleRequest(discovery);
+        Assert.assertNotNull(builder);
+        Assert.assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
+        final String expectedIndex =
+                "index {" +
+                        "[" + ElasticIO.INDEX_NAME_WRITE + "]" +
+                        "[" + ElasticIO.ES_DOCUMENT_TYPE + "]" +
+                        "["+ TENANT_A + ":" + METRIC_NAME + "], " +
+                        "source[{" +
+                        "\"tenantId\":\"" + TENANT_A + "\"," +
+                        "\"metric_name\":\"" + METRIC_NAME + "\"" +
+                        "}]}";
+        Assert.assertEquals(expectedIndex, builder.request().toString());
+        Assert.assertEquals(builder.request().routing(), TENANT_A);
     }
 
     @Test

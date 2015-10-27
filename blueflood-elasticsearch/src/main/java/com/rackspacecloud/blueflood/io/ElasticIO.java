@@ -35,8 +35,6 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -45,22 +43,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-
-import static com.rackspacecloud.blueflood.io.ElasticIO.ESFieldLabel.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class ElasticIO implements DiscoveryIO {
     public static String INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
-    
-    static enum ESFieldLabel {
-        metric_name,
-        tenantId,
-        unit
-    }
-    
+    public static final String ES_DOCUMENT_TYPE = "metrics";
+
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
-    private static final String ES_TYPE = "metrics";
     private Client client;
     
     // todo: these should be instances per client.
@@ -84,12 +74,18 @@ public class ElasticIO implements DiscoveryIO {
 
     private static SearchResult convertHitToMetricDiscoveryResult(SearchHit hit) {
         Map<String, Object> source = hit.getSource();
-        String metricName = (String)source.get(metric_name.toString());
+        String metricName = (String)source.get(ESFieldLabel.metric_name.toString());
         String tenantId = (String)source.get(ESFieldLabel.tenantId.toString());
         String unit = (String)source.get(ESFieldLabel.unit.toString());
         SearchResult result = new SearchResult(tenantId, metricName, unit);
 
         return result;
+    }
+
+    public void insertDiscovery(IMetric metric) throws IOException {
+        List<IMetric> batch = new ArrayList<IMetric>();
+        batch.add(metric);
+        insertDiscovery(batch);
     }
 
     public void insertDiscovery(List<IMetric> batch) throws IOException {
@@ -110,17 +106,17 @@ public class ElasticIO implements DiscoveryIO {
 
                 IMetric metric = (IMetric)obj;
                 Locator locator = metric.getLocator();
-                Discovery md = new Discovery(locator.getTenantId(), locator.getMetricName());
+                Discovery discovery = new Discovery(locator.getTenantId(), locator.getMetricName());
 
-                Map<String, Object> info = new HashMap<String, Object>();
+                Map<String, Object> fields = new HashMap<String, Object>();
 
 
                 if (obj instanceof  Metric && getUnit((Metric)metric) != null) { // metric units may be null
-                    info.put(unit.toString(), getUnit((Metric)metric));
+                    fields.put(ESFieldLabel.unit.toString(), getUnit((Metric) metric));
                 }
 
-                md.withAnnotation(info);
-                bulk.add(createSingleRequest(md));
+                discovery.withSourceFields(fields);
+                bulk.add(createSingleRequest(discovery));
             }
             bulk.execute().actionGet();
         } finally {
@@ -132,11 +128,11 @@ public class ElasticIO implements DiscoveryIO {
         return metric.getUnit();
     }
 
-    private IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
+    IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
         if (md.getMetricName() == null) {
             throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
         }
-        return client.prepareIndex(INDEX_NAME_WRITE, ES_TYPE)
+        return client.prepareIndex(INDEX_NAME_WRITE, ES_DOCUMENT_TYPE)
                 .setId(md.getDocumentId())
                 .setSource(md.createSourceContent())
                 .setCreate(true)
@@ -167,12 +163,12 @@ public class ElasticIO implements DiscoveryIO {
         for (String query : queries) {
             GlobPattern pattern = new GlobPattern(query);
             if (!pattern.hasWildcard()) {
-                qb = termQuery(metric_name.name(), query);
+                qb = termQuery(ESFieldLabel.metric_name.name(), query);
             } else {
-                qb = regexpQuery(metric_name.name(), pattern.compiled().toString());
+                qb = regexpQuery(ESFieldLabel.metric_name.name(), pattern.compiled().toString());
             }
             bqb.should(boolQuery()
-                     .must(termQuery(tenantId.toString(), tenant))
+                     .must(termQuery(ESFieldLabel.tenantId.toString(), tenant))
                      .must(qb)
             );
         }
@@ -197,58 +193,6 @@ public class ElasticIO implements DiscoveryIO {
         for (SearchResult result : results)
             dedupedResults.put(result.getMetricName(), result);
         return Lists.newArrayList(dedupedResults.values());
-    }
-
-    public static class Discovery {
-        private Map<String, Object> annotation = new HashMap<String, Object>();
-        private final String metricName;
-        private final String tenantId;
-
-        public Discovery(String tenantId, String metricName) {
-            this.tenantId = tenantId;
-            this.metricName = metricName;
-        }
-        public Map<String, Object> getAnnotation() {
-            return annotation;
-        }
-
-        public String getTenantId() {
-            return tenantId;
-        }
-
-        public String getMetricName() {
-            return metricName;
-        }
-
-        public String getDocumentId() {
-            return tenantId + ":" + metricName;
-        }
-
-        @Override
-        public String toString() {
-            return "ElasticMetricDiscovery [tenantId=" + tenantId + ", metricName=" + metricName + ", annotation="
-                    + annotation.toString() + "]";
-        }
-
-        public Discovery withAnnotation(Map<String, Object> annotation) {
-            this.annotation = annotation;
-            return this;
-        }
-
-        private XContentBuilder createSourceContent() throws IOException {
-            XContentBuilder json;
-
-            json = XContentFactory.jsonBuilder().startObject()
-                    .field(ESFieldLabel.tenantId.toString(), tenantId)
-                    .field(metric_name.toString(), metricName);
-
-
-            for (Map.Entry<String, Object> entry : annotation.entrySet()) {
-                json = json.field(entry.getKey(), entry.getValue());
-            }
-            json = json.endObject();
-            return json;
-        }
     }
 
     @VisibleForTesting

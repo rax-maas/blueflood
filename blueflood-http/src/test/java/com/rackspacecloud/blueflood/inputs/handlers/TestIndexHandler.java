@@ -22,6 +22,22 @@ public class TestIndexHandler {
     }
 
     @Test
+    public void testSearchResultToJSONWithEnum() {
+        ArrayList<String> enumValues = new ArrayList<String>();
+        enumValues.add("v1");
+        enumValues.add("v2");
+        enumValues.add("OK");
+
+        List<SearchResult> results = new ArrayList<SearchResult>();
+        results.add(new SearchResult("tenant0", "a.b.c.d.foo", "parsecs", enumValues));
+        results.add(new SearchResult("tenant1", "a.b.c.d.bar", null, enumValues));
+
+        String searchResultsJson = HttpMetricsIndexHandler.getSerializedJSON(results);
+        Assert.assertFalse("[]".equals(searchResultsJson));
+        Assert.assertTrue(searchResultsJson.contains("enum_values"));
+    }
+
+    @Test
     public void testNullUnitsDontGetAdded() {
         List<SearchResult> results = new ArrayList<SearchResult>();
         results.add(new SearchResult("tenant0", "a.b.c.d.foo", null));

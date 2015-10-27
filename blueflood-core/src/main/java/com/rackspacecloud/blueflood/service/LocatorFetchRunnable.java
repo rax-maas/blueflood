@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
@@ -41,6 +42,7 @@ class LocatorFetchRunnable implements Runnable {
     
     private final ThreadPoolExecutor rollupReadExecutor;
     private final ThreadPoolExecutor rollupWriteExecutor;
+    private final ThreadPoolExecutor enumValidatorExecutor;
     private final SlotKey parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
@@ -48,12 +50,18 @@ class LocatorFetchRunnable implements Runnable {
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx, SlotKey destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
+    LocatorFetchRunnable(ScheduleContext scheduleCtx,
+                         SlotKey destSlotKey,
+                         ThreadPoolExecutor rollupReadExecutor,
+                         ThreadPoolExecutor rollupWriteExecutor,
+                         ThreadPoolExecutor enumValidatorExecutor) {
+
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
+        this.enumValidatorExecutor = enumValidatorExecutor;
     }
     
     public void run() {
@@ -81,11 +89,23 @@ class LocatorFetchRunnable implements Runnable {
         Set<Locator> locators = new HashSet<Locator>();
 
         try {
+            // get a list of all locators to rollup for a shard
             locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
         } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
+
+        // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
+        if (gran.equals(Granularity.MIN_5)) {
+            try {
+                log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(locators.toArray())));
+                enumValidatorExecutor.execute(new EnumValidator(locators));
+            } catch (Exception e) {
+                log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
+            }
+        }
+
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);

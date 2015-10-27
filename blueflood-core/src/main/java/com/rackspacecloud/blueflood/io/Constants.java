@@ -36,6 +36,8 @@ public class Constants {
     public static final byte VERSION_1_COUNTER_ROLLUP = 0;
     public static final byte VERSION_1_SET_ROLLUP = VERSION_1_ROLLUP; // don't change this.
 
+    public static final byte VERSION_1_ENUM_ROLLUP = 0;
+
     public static final int DOUBLE = (int) MetricHelper.Type.DOUBLE;
     public static final int I32 = (int) MetricHelper.Type.INT32;
     public static final int I64 = (int) MetricHelper.Type.INT64;
