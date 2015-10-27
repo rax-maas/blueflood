@@ -1,6 +1,6 @@
 {
     "tenantId":"333333",
-    "timestamp":1439231324000,
+    "timestamp":1389211230,
     "enums": [
         {
             "name": "enum_metric_test",
