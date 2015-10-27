@@ -27,6 +27,12 @@
                 "name":"S500ms",
                 "values":["cow","dog","cat","loris","narwhal","platypus","chicken","nutria","pangolin","horse"]
             }
+        ],
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "OK"
+            }
         ]
     },
     {
@@ -57,6 +63,12 @@
                 "name":"S500ms",
                 "values":["cow","dog","cat","loris","narwhal","platypus","chicken","nutria","pangolin","horse"]
             }
+        ],
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "OK"
+            }
         ]
     },
     {
@@ -86,6 +98,12 @@
             {
                 "name":"S500ms",
                 "values":["cow","dog","cat","loris","narwhal","platypus","chicken","nutria","pangolin","horse"]
+            }
+        ],
+        "enums": [
+            {
+                "name": "call_xyz_api",
+                "value": "OK"
             }
         ]
     }

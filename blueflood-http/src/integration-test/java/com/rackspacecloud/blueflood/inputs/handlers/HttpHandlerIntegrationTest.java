@@ -37,15 +37,13 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.io.ByteArrayOutputStream;
+
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.zip.GZIPOutputStream;
 import static org.mockito.Mockito.*;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
@@ -231,7 +229,7 @@ public class HttpHandlerIntegrationTest {
         final Locator locator = Locator.
                 createLocatorFromPathComponents("333333", "internal", "packets_received");
         Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
-                locator, new Range(1389211220,1389211240),
+                locator, new Range(1389211220, 1389211240),
                 CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points.getPoints().size());
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
@@ -240,7 +238,7 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testHttpAggregatedMultiIngestionHappyCase() throws Exception {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_bundle.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_aggregated_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
@@ -266,6 +264,39 @@ public class HttpHandlerIntegrationTest {
         Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
                 locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
         Assert.assertEquals(1, points1.getPoints().size());
+
+        final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
+        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
+                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
+        Assert.assertEquals(1, points2.getPoints().size());
+
+        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+    }
+
+    @Test
+    public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_enums_payload.json")));
+        String curLine = reader.readLine();
+        while (curLine != null) {
+            sb = sb.append(curLine);
+            curLine = reader.readLine();
+        }
+        String json = sb.toString();
+
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath("/v2.0/333333/ingest/aggregated/multi");
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        verify(context, atLeastOnce()).update(anyLong(), anyInt());
+
+        final Locator locator2 = Locator.createLocatorFromPathComponents("99988877", "call_xyz_api");
+        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
+                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
+        Assert.assertEquals(2, points2.getPoints().size());
 
         EntityUtils.consume(response.getEntity()); // Releases connection apparently
     }

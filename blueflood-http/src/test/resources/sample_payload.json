@@ -100,5 +100,11 @@
             "name":"4444444.S1s",
             "values":["platypus","dog","pangolin","loris","chicken","narwhal","cow","cat","nutria"]
         }
+    ],
+    "enums":[
+        {
+            "name":"call_xyz_api",
+            "value":"400"
+        }
     ]
 }

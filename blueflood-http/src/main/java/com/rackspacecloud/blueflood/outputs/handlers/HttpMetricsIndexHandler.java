@@ -18,15 +18,13 @@ import org.jboss.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HttpMetricsIndexHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIndexHandler.class);
     private DiscoveryIO discoveryHandle;
-
-    public HttpMetricsIndexHandler() {
-        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
-    }
 
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
@@ -36,12 +34,26 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
         final String tenantId = request.getHeader("tenantId");
 
         HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-        List<String> query = requestWithParams.getQueryParams().get("query");
 
+        // get the query param
+        List<String> query = requestWithParams.getQueryParams().get("query");
         if (query == null || query.size() != 1) {
             sendResponse(ctx, request, "Invalid Query String",
                     HttpResponseStatus.BAD_REQUEST);
             return;
+        }
+
+        // get the include_enum_values param to determine if results should contain enum values if applicable
+        List<String> includeEnumValues = requestWithParams.getQueryParams().get("include_enum_values");
+
+        if ((includeEnumValues != null) &&
+            (includeEnumValues.size() != 0) &&
+            (includeEnumValues.get(0).compareToIgnoreCase("true") == 0)) {
+            // include_enum_values is present and set to true, use the ENUMS_DISCOVERY_MODULES as the discoveryHandle
+            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
+        } else {
+            // default discoveryHandle to DISCOVERY_MODULES
+            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
         }
 
         if (discoveryHandle == null) {
@@ -76,11 +88,23 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
         for (SearchResult result : searchResults) {
             ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
             resultNode.put("metric", result.getMetricName());
-            String unit = result.getUnit();
 
+            String unit = result.getUnit();
             if (unit != null) {
                 //Preaggreated metrics do not have units. Do not want to return null units in query results.
                 resultNode.put("unit", unit);
+            }
+
+            // get enum values and add if applicable
+            ArrayList<String> enumValues = result.getEnumValues();
+            if (enumValues != null) {
+                // sort for consistent result ordering
+                Collections.sort(enumValues);
+                ArrayNode enumValuesArray = JsonNodeFactory.instance.arrayNode();
+                for (String val : enumValues) {
+                    enumValuesArray.add(val);
+                }
+                resultNode.put("enum_values", enumValuesArray);
             }
 
             resultArray.add(resultNode);

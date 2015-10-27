@@ -29,6 +29,7 @@ public class PlotRequestParser {
     public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_GAUGE;
     public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_SET;
     public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_TIMER;
+    public static final Set<BasicRollupsOutputSerializer.MetricStat> DEFAULT_ENUM;
     
     static {
         // EnumSet is so crappy for making me do this instead of using an anonymous subclass.
@@ -37,6 +38,7 @@ public class PlotRequestParser {
         DEFAULT_GAUGE = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
         DEFAULT_SET = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
         DEFAULT_TIMER = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
+        DEFAULT_ENUM = EnumSet.noneOf(BasicRollupsOutputSerializer.MetricStat.class);
         
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
@@ -52,7 +54,11 @@ public class PlotRequestParser {
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.RATE);
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_TIMER.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
-        
+
+        DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.ENUM_VALUES);
+        DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.TYPE);
+        DEFAULT_ENUM.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+
         DEFAULT_STATS.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
         DEFAULT_STATS.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
     } 

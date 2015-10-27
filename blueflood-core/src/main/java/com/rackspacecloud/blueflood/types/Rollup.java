@@ -68,6 +68,13 @@ public interface Rollup {
         }
     };
     
+    public static final Type<BluefloodEnumRollup, BluefloodEnumRollup> EnumFromEnum = new Type<BluefloodEnumRollup, BluefloodEnumRollup>() {
+        @Override
+        public BluefloodEnumRollup compute(Points<BluefloodEnumRollup> input) throws IOException {
+            return BluefloodEnumRollup.buildRollupFromEnumRollups(input);
+        }
+    };
+
     public static final Type<BluefloodCounterRollup, BluefloodCounterRollup> CounterFromCounter = new Type<BluefloodCounterRollup, BluefloodCounterRollup>() {
         @Override
         public BluefloodCounterRollup compute(Points<BluefloodCounterRollup> input) throws IOException {
