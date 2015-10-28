@@ -145,11 +145,35 @@ class EnumSinglePlotQuery(AbstractQuery):
 #    logger(result.getText())
     return result
 
+class EnumMultiPlotQuery(AbstractQuery):
+  query_interval_name = 'enum_multiplot_per_interval'
+  query_name = "EnumMultiPlotQuery"
+  test_number = 10
+
+  def generate_multiplot_payload(self):
+    metrics_count = min(default_config['max_multiplot_metrics'],
+                        random.randint(0, default_config['enum_metrics_per_tenant']))
+    metrics_list = map("enum_grinder_"+generate_metric_name, range(metrics_count))
+    return json.dumps(metrics_list)
+
+  def generate(self, time, logger):
+    tenant_id = random.randint(0, default_config['enum_num_tenants'])
+    payload = self.generate_multiplot_payload()
+    to = time
+    frm = time - self.one_day
+    resolution = 'FULL'
+    url = "%s/v2.0/%d/views?from=%d&to=%d&resolution=%s"  % (default_config['query_url'],
+                                                                tenant_id, frm,
+                                                                to, resolution)
+    result = self.query_request.POST(url, payload)
+#    logger(result.getText())
+    return result
+
 class QueryThread(AbstractThread):
   # The list of queries to be invoked across all threads in this worker
   queries = []
 
-  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery, EnumSearchQuery, EnumSinglePlotQuery, AnnotationsQuery]
+  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery, EnumSearchQuery, EnumSinglePlotQuery, AnnotationsQuery, EnumMultiPlotQuery]
 
   @classmethod
   def create_metrics(cls, agent_number):
