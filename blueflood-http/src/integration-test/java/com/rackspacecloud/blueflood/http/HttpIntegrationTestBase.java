@@ -55,6 +55,9 @@ public class HttpIntegrationTestBase {
     private static EventsIO eventsSearchIO;
     private static EsSetup esSetup;
 
+    public final String postAggregatedPath = "/v2.0/%s/ingest/aggregated";
+    public final String postAggregatedMultiPath = "/v2.0/%s/ingest/aggregated/multi";
+
     @BeforeClass
     public static void setUp() throws Exception{
         Configuration.getInstance().init();
@@ -123,7 +126,11 @@ public class HttpIntegrationTestBase {
         }
     }
 
-    public HttpResponse postAggregatedMetric(String tenantId, String payloadFilePath) throws URISyntaxException, IOException {
+    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath) throws URISyntaxException, IOException {
+        // post metric to ingestion server for a tenantId
+        // urlPath is path for url ingestion after the hostname
+        // payloadFilepath is location of the payload for the POST content entity
+
         // get payload
         StringBuilder sb = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(payloadFilePath)));
@@ -136,7 +143,7 @@ public class HttpIntegrationTestBase {
 
         // build url to aggregated ingestion endpoint
         URIBuilder builder = getMetricsURIBuilder()
-                .setPath(String.format("/v2.0/%s/ingest/aggregated", tenantId));
+                .setPath(String.format(urlPath, tenantId));
         HttpPost post = new HttpPost(builder.build());
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
