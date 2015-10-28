@@ -37,7 +37,7 @@ public class HttpEnumIntegrationTest extends HttpIntegrationTestBase {
         locators.add(Locator.createLocatorFromPathComponents(tenant_id, metric_name));
 
         // post enum metric for ingestion and verify
-        HttpResponse response = postAggregatedMetric(tenant_id, "src/test/resources/sample_enums_payload.json");
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "src/test/resources/sample_enums_payload.json");
         Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity());
 

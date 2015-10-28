@@ -204,7 +204,7 @@ public interface BasicRollupsOutputSerializer<T> {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
                 if (rollup instanceof BluefloodEnumRollup)
-                    return rollup.getRollupType().toString();
+                    return MetricData.Type.ENUM;
                 else
                     // every other type.
                     throw new Exception(String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
