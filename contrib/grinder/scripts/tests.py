@@ -77,12 +77,13 @@ class BluefloodTests(unittest.TestCase):
                    'batch_size': 3,
                    'ingest_concurrency': 2,
                    'enum_ingest_concurrency': 2,
-                   'query_concurrency': 10,
+                   'query_concurrency': 15,
                    'annotations_concurrency':2,
                    'singleplot_per_interval': 11,
                    'multiplot_per_interval': 10,
                    'search_queries_per_interval': 9,
                    'enum_search_queries_per_interval': 9,
+                   'enum_single_plot_queries_per_interval':10,
                    'annotations_queries_per_interval': 8,
                    'name_fmt': "int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.%d",
                    'num_nodes': 2}
@@ -165,23 +166,29 @@ class BluefloodTests(unittest.TestCase):
     multi_plot_queries_agent0 = int(math.ceil(query.default_config['multiplot_per_interval']/num_query_nodes))
     search_queries_agent0 = int(math.ceil(query.default_config['search_queries_per_interval']/num_query_nodes))
     enum_search_queries_agent0 = int(math.ceil(query.default_config['enum_search_queries_per_interval']/num_query_nodes))
+    enum_single_plot_queries_agent0 = int(math.ceil(query.default_config['enum_single_plot_queries_per_interval']/num_query_nodes))
     annotation_queries_agent0 = int(math.ceil(query.default_config['annotations_queries_per_interval']/num_query_nodes))
     
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.EnumSearchQuery] * enum_search_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent0 + [query.MultiPlotQuery] * multi_plot_queries_agent0 + [query.SearchQuery] * search_queries_agent0 + [query.EnumSearchQuery] * enum_search_queries_agent0 + [query.EnumSinglePlotQuery] * enum_single_plot_queries_agent0 + [query.AnnotationsQuery] * annotation_queries_agent0))
 
     thread = query.QueryThread(0)
-    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 3)
+    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
 
     thread = query.QueryThread(4)
-    self.assertEqual(thread.slice, [query.SearchQuery] * 3)
+    self.assertEqual(thread.slice, [query.MultiPlotQuery] * 2)
 
     thread = query.QueryThread(6)
-    self.assertEqual(thread.slice, [query.EnumSearchQuery] * 2)
+    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
 
     thread = query.QueryThread(9)
-    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
+    self.assertEqual(thread.slice, [query.EnumSearchQuery] * 2)
 
+    thread = query.QueryThread(12)
+    self.assertEqual(thread.slice, [query.EnumSinglePlotQuery] * 2)
+
+    thread = query.QueryThread(14)
+    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
 
     #confirm that the correct batches of ingest metrics are created for worker 1
     self.tm.create_all_metrics(1)
@@ -207,22 +214,29 @@ class BluefloodTests(unittest.TestCase):
     multi_plot_queries_agent1 = query.default_config['multiplot_per_interval'] - multi_plot_queries_agent0
     search_queries_agent1 = query.default_config['search_queries_per_interval'] - search_queries_agent0
     enum_search_queries_agent1 = query.default_config['enum_search_queries_per_interval'] - enum_search_queries_agent0
+    enum_single_plot_queries_agent1 = query.default_config['enum_single_plot_queries_per_interval'] - enum_single_plot_queries_agent0
     annotation_queries_agent1 = query.default_config['annotations_queries_per_interval'] - annotation_queries_agent0
 
     self.assertEqual(query.QueryThread.queries,
-                     ([query.SinglePlotQuery] * single_plot_queries_agent1 + [query.MultiPlotQuery] * multi_plot_queries_agent1 + [query.SearchQuery] * search_queries_agent1 + [query.EnumSearchQuery] * enum_search_queries_agent1 + [query.AnnotationsQuery] * annotation_queries_agent1))
+                     ([query.SinglePlotQuery] * single_plot_queries_agent1 + [query.MultiPlotQuery] * multi_plot_queries_agent1 + [query.SearchQuery] * search_queries_agent1 + [query.EnumSearchQuery] * enum_search_queries_agent1 + [query.EnumSinglePlotQuery] * enum_single_plot_queries_agent1 + [query.AnnotationsQuery] * annotation_queries_agent1))
 
     thread = query.QueryThread(0)
-    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 3)
+    self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
 
     thread = query.QueryThread(4)
-    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
+    self.assertEqual(thread.slice, [query.MultiPlotQuery] * 2)
 
     thread = query.QueryThread(6)
+    self.assertEqual(thread.slice, [query.SearchQuery] * 2)
+
+    thread = query.QueryThread(8)
     self.assertEqual(thread.slice, [query.EnumSearchQuery] * 2)
 
-    thread = query.QueryThread(9)
-    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 2)
+    thread = query.QueryThread(10)
+    self.assertEqual(thread.slice, [query.EnumSinglePlotQuery] * 2)
+
+    thread = query.QueryThread(12)
+    self.assertEqual(thread.slice, [query.AnnotationsQuery] * 1)
 
   def test_generate_payload(self):
     self.tm.create_all_metrics(1)
@@ -346,7 +360,7 @@ class BluefloodTests(unittest.TestCase):
 
   def test_query_make_request(self):
     thread = query.QueryThread(0)
-    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery, query.EnumSearchQuery]
+    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery, query.EnumSearchQuery, query.EnumSinglePlotQuery]
     thread.position = 0
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399000&to=1000&resolution=FULL")
@@ -367,6 +381,11 @@ class BluefloodTests(unittest.TestCase):
     random.randint = lambda x,y: 40
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/40/metrics/search?query=enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.*&include_enum_values=true")
+
+    random.randint = lambda x,y: 50
+    thread.make_request(pp)
+    self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/50/views/enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.50?from=-86399000&to=1000&resolution=FULL")
+
 
   def tearDown(self):
     random.shuffle = self.real_shuffle
