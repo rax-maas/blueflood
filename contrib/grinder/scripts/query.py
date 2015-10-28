@@ -127,12 +127,29 @@ class EnumSearchQuery(AbstractQuery):
     result = self.query_request.GET(url)
     return result
 
+class EnumSinglePlotQuery(AbstractQuery):
+  query_interval_name = 'enum_single_plot_queries_per_interval'
+  query_name = "EnumSinglePlotQuery"
+  test_number = 9
+
+  def generate(self, time, logger):
+    tenant_id = random.randint(0, default_config['enum_num_tenants'])
+    metric_name = "enum_grinder_"+generate_metric_name(random.randint(0, default_config['enum_metrics_per_tenant']))
+    to = time
+    frm = time - self.one_day
+    resolution = 'FULL'
+    url =  "%s/v2.0/%d/views/%s?from=%d&to=%s&resolution=%s" % (default_config['query_url'],
+                                                                tenant_id, metric_name, frm,
+                                                                to, resolution)
+    result = self.query_request.GET(url)
+#    logger(result.getText())
+    return result
 
 class QueryThread(AbstractThread):
   # The list of queries to be invoked across all threads in this worker
   queries = []
 
-  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery, EnumSearchQuery, AnnotationsQuery]
+  query_types = [SinglePlotQuery, MultiPlotQuery, SearchQuery, EnumSearchQuery, EnumSinglePlotQuery, AnnotationsQuery]
 
   @classmethod
   def create_metrics(cls, agent_number):
