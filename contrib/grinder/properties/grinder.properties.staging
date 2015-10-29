@@ -26,3 +26,5 @@ grinder.bf.enum_search_queries_per_interval=10
 grinder.bf.multiplot_per_interval=20
 grinder.bf.singleplot_per_interval=300
 grinder.bf.annotations_queries_per_interval=100
+grinder.bf.enum_single_plot_queries_per_interval=20
+grinder.bf.enum_multiplot_per_interval=50
