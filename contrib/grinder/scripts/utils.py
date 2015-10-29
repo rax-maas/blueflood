@@ -22,7 +22,9 @@ default_config = {
   'max_multiplot_metrics': 10,
   'search_queries_per_interval': 10,
   'enum_search_queries_per_interval': 10,
+  'enum_single_plot_queries_per_interval':10,
   'multiplot_per_interval': 10,
+  'enum_multiplot_per_interval': 10,
   'singleplot_per_interval': 10,
   'annotations_queries_per_interval': 8}
 
@@ -142,6 +144,10 @@ def generate_metrics_tenants(num_tenants, metrics_per_tenant,
 
 def generate_metric_name(metric_id):
   return default_config['name_fmt'] % metric_id
+
+#TODO: Add enum prefix to config
+def generate_enum_metric_name(metric_id):
+  return "enum_grinder_"+default_config['name_fmt'] % metric_id
 
 #Utility functions end here
 
