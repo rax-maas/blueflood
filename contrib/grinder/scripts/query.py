@@ -134,7 +134,7 @@ class EnumSinglePlotQuery(AbstractQuery):
 
   def generate(self, time, logger):
     tenant_id = random.randint(0, default_config['enum_num_tenants'])
-    metric_name = "enum_grinder_"+generate_metric_name(random.randint(0, default_config['enum_metrics_per_tenant']))
+    metric_name = generate_enum_metric_name(random.randint(0, default_config['enum_metrics_per_tenant']))
     to = time
     frm = time - self.one_day
     resolution = 'FULL'
@@ -153,7 +153,7 @@ class EnumMultiPlotQuery(AbstractQuery):
   def generate_multiplot_payload(self):
     metrics_count = min(default_config['max_multiplot_metrics'],
                         random.randint(0, default_config['enum_metrics_per_tenant']))
-    metrics_list = map("enum_grinder_"+generate_metric_name, range(metrics_count))
+    metrics_list = map(generate_enum_metric_name, range(metrics_count))
     return json.dumps(metrics_list)
 
   def generate(self, time, logger):
