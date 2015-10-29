@@ -371,7 +371,7 @@ class BluefloodTests(unittest.TestCase):
 
   def test_query_make_request(self):
     thread = query.QueryThread(0)
-    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery, query.EnumSearchQuery, query.EnumSinglePlotQuery]
+    thread.slice = [query.SinglePlotQuery, query.SearchQuery, query.MultiPlotQuery, query.AnnotationsQuery, query.EnumSearchQuery, query.EnumSinglePlotQuery, query.EnumMultiPlotQuery]
     thread.position = 0
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/0/views/int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0?from=-86399000&to=1000&resolution=FULL")
@@ -396,6 +396,11 @@ class BluefloodTests(unittest.TestCase):
     random.randint = lambda x,y: 50
     thread.make_request(pp)
     self.assertEqual(get_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/50/views/enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.50?from=-86399000&to=1000&resolution=FULL")
+
+    random.randint = lambda x,y: 4
+    thread.make_request(pp)
+    self.assertEqual(post_url, "http://qe01.metrics.api.rackspacecloud.com/v2.0/4/views?from=-86399000&to=1000&resolution=FULL")
+    self.assertEqual(eval(post_payload), ["enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.0","enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.1","enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.2","enum_grinder_int.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.3"])
 
 
   def tearDown(self):

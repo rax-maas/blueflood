@@ -145,6 +145,10 @@ def generate_metrics_tenants(num_tenants, metrics_per_tenant,
 def generate_metric_name(metric_id):
   return default_config['name_fmt'] % metric_id
 
+#TODO: Add enum prefix to config
+def generate_enum_metric_name(metric_id):
+  return "enum_grinder_"+default_config['name_fmt'] % metric_id
+
 #Utility functions end here
 
 class AbstractThread(object):
