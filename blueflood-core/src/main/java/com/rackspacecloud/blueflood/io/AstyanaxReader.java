@@ -489,7 +489,7 @@ public class AstyanaxReader extends AstyanaxIO {
             metricDataMap = pointsFuture.get();
             for (Locator l : metricDataMap.keySet()) {
                 Points p = transformEnumValueHashesToStrings(metricDataMap.get(l), enumValues.get(l));
-                MetricData m = new MetricData(p, getUnitString(l), MetricData.Type.NUMBER);
+                MetricData m = new MetricData(p, getUnitString(l), MetricData.Type.ENUM);
                 resultMap.put(l,m);
             }
         } catch (InterruptedException e) {
