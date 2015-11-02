@@ -28,8 +28,7 @@ before_deploy:
 deploy:
   skip_cleanup: true
   provider: releases
-  api_key: 
-    secure: E1yPcauKBAbC81SyQxoBrCq4FzqChZLFDbHPIapkHA1XU2WZft8qBF8N17HfcV1hW3rhe13JioVtlVp3CPSVwF2KiQ7jd/Ukwzc97WYqHS+55h5+X+S8+AfspVO+VGoHNkbTzeF0q2dmlt45p8Xv8D1GJXYZB7DXrnegGyFfxf4=
+  api_key: $API_KEY
   file_glob: true
   file:
     - "./blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar"
