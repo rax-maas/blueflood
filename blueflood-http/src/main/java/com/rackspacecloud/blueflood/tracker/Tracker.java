@@ -39,6 +39,7 @@ public class Tracker implements TrackerMBean {
 
     static Set tenantIds = new HashSet();
     static boolean isTrackingDelayedMetrics = false;
+    static Set<String> metricNames = new HashSet<String>();
 
     public Tracker() {
         registerMBean();
@@ -47,6 +48,11 @@ public class Tracker implements TrackerMBean {
     public void addTenant(String tenantId) {
         tenantIds.add(tenantId);
         log.info("[TRACKER] tenantId " + tenantId + " added.");
+    }
+
+    public void addMetricName(String metricName) {
+        metricNames.add(metricName);
+        log.info("[TRACKER] Metric name "+ metricName + " added.");
     }
 
     public void setIsTrackingDelayedMetrics() {
@@ -69,8 +75,35 @@ public class Tracker implements TrackerMBean {
         log.info("[TRACKER] all tenants removed.");
     }
 
+    public void removeMetricName(String metricName) {
+        metricNames.remove(metricName);
+        log.info("[TRACKER] Metric name "+ metricName + " removed.");
+    }
+
+    public void removeAllMetricNames() {
+        metricNames.clear();
+        log.info("[TRACKER] All metric names removed.");
+    }
+
     public static boolean isTracking(String tenantId) {
         return tenantIds.contains(tenantId);
+    }
+
+    public static boolean doesMessageContainMetricNames(String logmessage) {
+        boolean toLog = false;
+
+        if (metricNames.size() == 0) {
+            toLog = true;
+        }
+        else {
+            for (String name : metricNames) {
+                if (logmessage.contains(name)) {
+                    toLog = true;
+                    break;
+                }
+            }
+        }
+        return toLog;
     }
 
     public Set getTenants() {
@@ -119,7 +152,9 @@ public class Tracker implements TrackerMBean {
                     "HEADERS: " + headers +
                     requestContent;
 
-            log.info(logMessage);
+            if (doesMessageContainMetricNames(logMessage)) {
+                log.info(logMessage);
+            }
         }
     }
 

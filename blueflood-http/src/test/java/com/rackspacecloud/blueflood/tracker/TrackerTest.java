@@ -49,6 +49,40 @@ public class TrackerTest {
     }
 
     @Test
+    public void testAddAndRemoveMetricName() {
+        tracker.addMetricName("metricName");
+        Assert.assertTrue("metricName not added",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+
+        tracker.addMetricName("anotherMetricNom");
+        Assert.assertTrue("metricName not being logged",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+        Assert.assertTrue("anotherMetricNom not being logged",tracker.doesMessageContainMetricNames("Track.this.anotherMetricNom"));
+        Assert.assertFalse("randomMetricNameNom should not be logged", tracker.doesMessageContainMetricNames("Track.this.randomMetricNameNom"));
+
+        tracker.removeMetricName("metricName");
+        Assert.assertFalse("metricName should not be logged",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+
+        tracker.removeMetricName("anotherMetricNom");
+        Assert.assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.anotherMetricNom"));
+        Assert.assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.randomMetricNameNom"));
+    }
+
+    @Test
+    public void testRemoveAllMetricNames() {
+        tracker.addMetricName("metricName");
+        tracker.addMetricName("anotherMetricNom");
+
+        Assert.assertTrue("metricName not being logged",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+        Assert.assertTrue("anotherMetricNom not being logged",tracker.doesMessageContainMetricNames("Track.this.anotherMetricNom"));
+        Assert.assertFalse("randomMetricNameNom should not be logged", tracker.doesMessageContainMetricNames("Track.this.randomMetricNameNom"));
+
+        tracker.removeAllMetricNames();
+
+        Assert.assertTrue("Everything should be logged",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+        Assert.assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.anotherMetricNom"));
+        Assert.assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.randomMetricNameNom"));
+    }
+
+    @Test
     public void testRemoveAllTenant() {
         tracker.addTenant(testTenant1);
         tracker.addTenant(testTenant2);
