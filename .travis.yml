@@ -36,6 +36,7 @@ deploy:
     repo: rackerlabs/blueflood
     tags: false
     branch: rax-release
+    jdk: oraclejdk7
 
 notifications:
   irc: "irc.freenode.net#blueflood"
