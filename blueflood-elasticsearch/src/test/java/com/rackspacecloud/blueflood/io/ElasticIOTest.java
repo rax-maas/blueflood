@@ -104,7 +104,7 @@ public class ElasticIOTest {
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping_v1.json")));
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
@@ -277,7 +277,8 @@ public class ElasticIOTest {
         Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
         // Actually create the new index
         esSetup.execute(EsSetup.createIndex(ES_DUP)
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping_v1.json")));
+                .withSettings(EsSetup.fromClassPath("index_settings.json"))
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
         ArrayList metricList = new ArrayList();
