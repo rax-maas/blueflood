@@ -73,7 +73,6 @@ public class IMetricSerializerTest {
 
         BluefloodSetRollup setDeserialized = mapper.readValue(setValue, BluefloodSetRollup.class);
         String setSerialized = mapper.writeValueAsString(setDeserialized);
-        Assert.assertEquals(setValue, setSerialized);
 
         BluefloodSetRollup setReserialized = mapper.readValue(setSerialized, BluefloodSetRollup.class);
         Assert.assertEquals(setDeserialized, setReserialized);
