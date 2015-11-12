@@ -96,9 +96,8 @@ public class EnumValidator implements Runnable {
             if (currentEnumValues != null) Collections.sort(currentEnumValues);
             if (elasticsearchEnumValues != null) Collections.sort(elasticsearchEnumValues);
 
-            // compare two list of enum values
-            if (((currentEnumValues != null) && (!currentEnumValues.equals(elasticsearchEnumValues))) ||
-                    ((currentEnumValues == null) && (elasticsearchEnumValues != null) && (elasticsearchEnumValues.size() > 0)))
+            // compare two list of enum values and right if CF has enum values for the metric and it doesn't equal to the values in elasticsearch
+            if ((currentEnumValues != null) && (currentEnumValues.size() > 0) && (!currentEnumValues.equals(elasticsearchEnumValues)))
             {
                 // if not equal, create or update enums index in elastic search
                 BluefloodEnumRollup rollupWithEnumValues = createRollupWithEnumValues(currentEnumValues);
