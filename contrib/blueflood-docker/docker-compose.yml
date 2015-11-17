@@ -1,0 +1,19 @@
+blueflood:
+  build: .
+  links:
+    - cassandra
+    - elasticsearch
+
+cassandra:
+  image: cassandra:2.1
+
+cassandran:
+  image: cassandra:2.1
+  links:
+    - cassandra:seed
+  environment:
+    - CASSANDRA_SEEDS=seed
+
+elasticsearch:
+  image: elasticsearch:1.7
+  command: elasticsearch -Des.cluster.name="blueflood"
