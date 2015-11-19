@@ -301,7 +301,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     private void verifyPointsData(Map<Long, Points.Point<BluefloodEnumRollup>> actualData) {
         for (Long timestamp : actualData.keySet()) {
             BluefloodEnumRollup er = actualData.get(timestamp).getData();
-            Assert.assertEquals(2, er.getStringEnumValuesWithCounts().size());
+            Assert.assertEquals(1, er.getStringEnumValuesWithCounts().size());
             verifyRollupValues(er);
         }
     }

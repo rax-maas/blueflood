@@ -157,7 +157,7 @@ public class IntegrationTestBase {
 
     protected PreaggregatedMetric getEnumMetric(String name, String tenantid, long timestamp) {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
-        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue(pickAnEnumValue()).withEnumValue(pickAnEnumValue(),1L);
+        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+pickAnEnumValue());
         return new PreaggregatedMetric(timestamp, locator, new TimeValue(1, TimeUnit.DAYS), rollup);
     }
 
