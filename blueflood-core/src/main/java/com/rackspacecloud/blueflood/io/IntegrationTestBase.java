@@ -86,7 +86,7 @@ public class IntegrationTestBase {
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     private static final Random rand = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
-    private static final List<String> enumValueList = new ArrayList<String>() {{ add("A");  add("B");  add("C"); add("D"); add("E"); }};
+    private static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
 
     protected final void assertNumberOfRows(String cf, int rows) throws Exception {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
