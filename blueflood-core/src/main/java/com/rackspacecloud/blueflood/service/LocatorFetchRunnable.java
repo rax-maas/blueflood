@@ -99,8 +99,11 @@ class LocatorFetchRunnable implements Runnable {
         // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
         if (gran.equals(Granularity.MIN_5)) {
             try {
-                log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(locators.toArray())));
-                enumValidatorExecutor.execute(new EnumValidator(locators));
+                Set<Locator> enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
+                if (enumLocators.size() > 0) {
+                    log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(enumLocators.toArray())));
+                    enumValidatorExecutor.execute(new EnumValidator(enumLocators));
+                }
             } catch (Exception e) {
                 log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
             }
