@@ -61,10 +61,10 @@ app.get('/v2.0/:tenantId/events/getEvents', function (req, res) {
 
     var args = {
         data: req.body,
-        headers:{"Content-Type": "application/json", "X-Auth-Token": req.headers.X-Auth-Token}
+        headers:{"Content-Type": "application/json", "X-Auth-Token": req.headers['x-auth-token']}
     };
 
-    var reqURL = "http://iad.metrics.api.rackspacecloud.com/v2.0/"+req.params.tenantId+"events/getEvents?from="+
+    var reqURL = "http://iad.metrics.api.rackspacecloud.com/v2.0/"+req.params.tenantId+"/events/getEvents?from="+
         req.query.from+"&until="+req.query.until;
 
     if (req.query.tags){
