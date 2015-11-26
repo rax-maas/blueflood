@@ -24,10 +24,10 @@
                     this.username         = datasource.username;
                     this.apikey           = datasource.apikey;
                     this.tenantID         = datasource.tenantID;
-                    if(datasource.proxyEnabled) {
-                        this.url              = "http://"+$location.host()+":3000/";
-                        this.identityURL = "https://"+$location.host()+"/identity";
 
+                    if(datasource.proxyEnabled) {
+                        this.url              = "http://"+$location.host()+":3000";
+                        this.identityURL = "https://"+$location.host()+"/identity";
                     }
                     else {
                         this.identityURL = "https://identity.api.rackspacecloud.com/v2.0/tokens";
