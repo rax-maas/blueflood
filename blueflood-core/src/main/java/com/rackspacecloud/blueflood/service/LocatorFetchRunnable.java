@@ -87,6 +87,7 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
         Set<Locator> locators = new HashSet<Locator>();
+        HashSet<Locator> enumLocators = null ;
 
         try {
             // get a list of all locators to rollup for a shard
@@ -96,11 +97,16 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
+        try {
+            enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
+        } catch (Exception e) {
+            log.error("Failed to get enumlocators for slot: "+ parentSlot, e);
+        }
+
         // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
         if (gran.equals(Granularity.MIN_5)) {
             try {
-                Set<Locator> enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
-                if (enumLocators.size() > 0) {
+                if (enumLocators != null && enumLocators.size() > 0) {
                     log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(enumLocators.toArray())));
                     enumValidatorExecutor.execute(new EnumValidator(enumLocators));
                 }
@@ -117,6 +123,10 @@ class LocatorFetchRunnable implements Runnable {
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
+
+                if(enumLocators.contains(locator)) {
+                    singleRollupReadContext.getEnumMetricsMeter().mark();
+                }
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.markUnsuccessful(any);
