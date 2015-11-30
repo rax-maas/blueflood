@@ -708,7 +708,7 @@ public class AstyanaxReader extends AstyanaxIO {
         return map;
     }
 
-    public Set<Locator> getEnumLocatorsFromLocatorSet(Set<Locator> locators) throws Exception{
+    public HashSet<Locator> getEnumLocatorsFromLocatorSet(Set<Locator> locators) throws Exception{
         HashSet<Locator> locatorHashSet = new HashSet<Locator>();
 
         for (Locator loc : locators) {
