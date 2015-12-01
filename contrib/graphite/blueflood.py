@@ -223,6 +223,7 @@ class TenantBluefloodFinder(object):
       headers = auth.headers()
 
       r = self.make_request(url, payload, headers)
+      print r
       return r.json()
 
 class TenantBluefloodReader(object):
