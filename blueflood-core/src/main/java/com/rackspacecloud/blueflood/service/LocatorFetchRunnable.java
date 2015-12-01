@@ -97,6 +97,7 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
+        /*
         try {
             enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
         } catch (Exception e) {
@@ -114,6 +115,7 @@ class LocatorFetchRunnable implements Runnable {
                 log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
             }
         }
+        */
 
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
@@ -124,7 +126,7 @@ class LocatorFetchRunnable implements Runnable {
                 rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
                 rollCount += 1;
 
-                if(enumLocators.contains(locator)) {
+                if(enumLocators != null && enumLocators.contains(locator)) {
                     singleRollupReadContext.getEnumMetricsMeter().mark();
                 }
             } catch (Throwable any) {
