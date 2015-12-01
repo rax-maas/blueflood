@@ -214,7 +214,6 @@ class TenantBluefloodFinder(object):
 
   def getEvents(self, start_time, end_time, tags):
       url = self.find_events_endpoint(self.bf_query_endpoint, self.tenant)
-      print url
       payload = {
         'from': start_time * 1000,
         'until': end_time * 1000
@@ -222,11 +221,11 @@ class TenantBluefloodFinder(object):
 
       if tags is not None:
         payload['tags'] = tags
-      print payload
       headers = auth.headers()
 
       r = self.make_request(url, payload, headers)
-      print r
+      for event in r:
+        event['when'] = int(event['when']/1000)
       return r.json()
 
 class TenantBluefloodReader(object):
