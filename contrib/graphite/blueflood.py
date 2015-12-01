@@ -51,6 +51,7 @@ def calc_res(start, stop):
 
 class TenantBluefloodFinder(object):
   __fetch_multi__ = 'tenant_blueflood'
+  __fetch_events__ = 'tenant_blueflood'
   def __init__(self, config=None):
     print("Blueflood Finder v25")
     if config is not None:
@@ -207,6 +208,22 @@ class TenantBluefloodFinder(object):
 
   def fetch_multi(self, nodes, start_time, end_time):
     return self.client.fetch_multi(nodes, start_time, end_time)
+
+  def find_events_endpoint(self, endpoint, tenant):
+    return "%s/v2.0/%s/events/getEvents" % (endpoint, tenant)
+
+  def getEvents(self, start_time, end_time, tags):
+      url = self.find_events_endpoint(self.bf_query_endpoint, self.tenant)
+      payload = {
+      'from': start_time * 1000,
+      'until': end_time * 1000
+      }
+      if(tags is not None):
+        payload['tags'] = tags
+      headers = auth.headers()
+
+      r = self.make_request(url, payload, headers)
+      return r.json()
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint', 
@@ -437,6 +454,8 @@ class BluefloodClient(object):
       for line in tb:
         print(line)
       raise e
+
+
 
 class TenantBluefloodLeafNode(LeafNode):
   __fetch_multi__ = 'tenant_blueflood'
