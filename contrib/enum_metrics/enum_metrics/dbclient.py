@@ -213,7 +213,7 @@ class DBClient:
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting [%s] from metrics_preaggregated_240m' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_240m' % metric_name
 
     def delete_metrics_preaggregated_1440m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_1440m WHERE (key = ?)")

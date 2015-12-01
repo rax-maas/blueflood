@@ -1,10 +1,9 @@
 import sys
 import argparse
 import json
-
 import dbclient as db
 import esclient as es
-
+import config
 
 def parseArguments(args):
     """Parses the supplied arguments"""
@@ -87,9 +86,9 @@ def print_excess_enums_relevant_data(excess_enum_related_dict, key):
     print '\n'
 
 
-def clear_from_es(es_params, metric_name, tenant_id, dryrun):
+def clear_from_es(es_nodes, metric_name, tenant_id, dryrun):
     print '\n***** Deleting from Elastic Cluster *****\n'
-    es_client = es.ESClient(es_params)
+    es_client = es.ESClient(es_nodes)
 
     metric_metadata = es_client.get_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
     enums_data = es_client.get_enums_data(metric_name=metric_name, tenant_id=tenant_id)
@@ -111,7 +110,6 @@ def clear_from_es(es_params, metric_name, tenant_id, dryrun):
 
 
 def print_enum_related_data(metric_meta_data, enums_data):
-
     print '\nmetric_metadata:' if metric_meta_data['found'] else 'metric_metadata NOT FOUND: '
     print json.dumps(metric_meta_data, indent=2)
 
@@ -121,14 +119,9 @@ def print_enum_related_data(metric_meta_data, enums_data):
 
 def main():
     args = parseArguments(sys.argv[1:])
-    print args
 
-    nodes = ['127.0.0.1']
-    es_params = [{'host': 'localhost'},
-                 {'port': 9020}]
-
-    clear_from_db(nodes, args.metricName, args.tenantId, args.dryrun)
-    clear_from_es(es_params=es_params, metric_name=args.metricName, tenant_id=args.tenantId, dryrun=args.dryrun)
+    clear_from_db(config.cassandra_nodes, args.metricName, args.tenantId, args.dryrun)
+    clear_from_es(es_nodes=config.es_nodes, metric_name=args.metricName, tenant_id=args.tenantId, dryrun=args.dryrun)
 
 
 if __name__ == "__main__":
