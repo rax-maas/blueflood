@@ -1,5 +1,7 @@
 import sys
 import argparse
+import json
+
 import dbclient as db
 import esclient as es
 
@@ -22,7 +24,7 @@ def parseArguments(args):
 
 
 def clear_from_db(nodes, metric_name, tenant_id, dryrun):
-    print '\n\n ***** Deleting from Cassandra *****'
+    print '\n***** Deleting from Cassandra *****\n'
 
     client = db.DBClient()
     client.connect(nodes)
@@ -82,11 +84,11 @@ def print_excess_enums_relevant_data(excess_enum_related_dict, key):
     if not excess_enum_related_dict['metrics_preaggregated_1440m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_1440m']: print x
 
-    print '\n\n'
+    print '\n'
 
 
 def clear_from_es(es_params, metric_name, tenant_id, dryrun):
-    print '\n\n ***** Deleting from Elastic Cluster *****'
+    print '\n***** Deleting from Elastic Cluster *****\n'
     es_client = es.ESClient(es_params)
 
     metric_metadata = es_client.get_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
@@ -96,30 +98,25 @@ def clear_from_es(es_params, metric_name, tenant_id, dryrun):
 
     if not dryrun:
         if metric_metadata['found']:
-            es_client.delete_metric_metadata(metric_metadata, tenant_id=tenant_id)
+            es_client.delete_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
         else:
             print 'Document NOT FOUND in index metric_metadata for id: [%s] routing: [%s]' % \
                   (metric_metadata['_id'], tenant_id)
 
         if enums_data['found']:
-            es_client.delete_enums_data(enums_data, tenant_id=tenant_id)
+            es_client.delete_enums_data(metric_name=metric_name, tenant_id=tenant_id)
         else:
             print 'Document NOT FOUND in index enums for id: [%s] routing: [%s]' % \
                   (enums_data['_id'], tenant_id)
 
 
 def print_enum_related_data(metric_meta_data, enums_data):
-    print '\nmetric_metadata:'
-    print metric_meta_data
-    if not metric_meta_data['found']:
-        print 'metric_metadata NOT FOUND: '
 
-    print '\nenums:'
-    print enums_data
-    if not enums_data['found']:
-        print 'enums NOT FOUND: '
+    print '\nmetric_metadata:' if metric_meta_data['found'] else 'metric_metadata NOT FOUND: '
+    print json.dumps(metric_meta_data, indent=2)
 
-    print '\n'
+    print '\nenums:' if enums_data['found'] else 'enums NOT FOUND: '
+    print json.dumps(enums_data, indent=2)
 
 
 def main():
