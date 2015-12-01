@@ -13,7 +13,7 @@ class DBClient:
         )
         metadata = cluster.metadata
         self.session = cluster.connect('DATA')
-        print 'Connected to cluster: %s' % metadata.cluster_name
+        print '\nConnected to cluster: %s' % metadata.cluster_name
         for host in metadata.all_hosts():
             print 'Datacenter: %s; Host: %s; Rack: %s' % (host.datacenter, host.address, host.rack)
 
@@ -33,18 +33,8 @@ class DBClient:
 
         return [(x.key, x.column1, x.value) for x in results]
 
-    def get_metrics_excess_enums(self):
-        """
-        Retrive data from metrics_excess_enums
-        :param metric_name:
-        :return:
-        """
 
-        prepared_stmt = self.session.prepare("SELECT * FROM metrics_excess_enums")
-        results = self.session.execute(prepared_stmt)
-        return self.format_results(results)
-
-    def get_metrics_excess_enums_by_metric_name(self, metric_name):
+    def get_metrics_excess_enums(self, metric_name):
         """
         Retrive data from metrics_excess_enums
         :param metric_name:
@@ -167,10 +157,7 @@ class DBClient:
         :return:
         """
 
-        if metric_name:
-            excess_enums = self.get_metrics_excess_enums_by_metric_name(metric_name)
-        else:
-            excess_enums = self.get_metrics_excess_enums()
+        excess_enums = self.get_metrics_excess_enums(metric_name)
 
         metric_list = [x[0] for x in excess_enums]
 
@@ -191,46 +178,46 @@ class DBClient:
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_excess_enums' % metric_name
+        print 'Deleted [%s] from metrics_excess_enums' % metric_name
 
     def delete_metrics_preaggregated_full(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_full WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_full' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_full' % metric_name
 
     def delete_metrics_preaggregated_5m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_5m WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_5m' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_5m' % metric_name
 
     def delete_metrics_preaggregated_20m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_20m WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_20m' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_20m' % metric_name
 
     def delete_metrics_preaggregated_60m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_60m WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_60m' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_60m' % metric_name
 
     def delete_metrics_preaggregated_240m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_240m WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_240m' % metric_name
+        print 'Deleting [%s] from metrics_preaggregated_240m' % metric_name
 
     def delete_metrics_preaggregated_1440m(self, metric_name):
         prepared_stmt = self.session.prepare("DELETE FROM metrics_preaggregated_1440m WHERE (key = ?)")
         bound_stmt = prepared_stmt.bind([metric_name])
         self.session.execute(bound_stmt)
 
-        print 'Deleting %s from metrics_preaggregated_1440m' % metric_name
+        print 'Deleted [%s] from metrics_preaggregated_1440m' % metric_name

@@ -1,33 +1,37 @@
 import sys
 import argparse
 import dbclient as db
+import esclient as es
 
 
 def parseArguments(args):
     """Parses the supplied arguments"""
     parser = argparse.ArgumentParser(prog="clear_errant_enums.py", description='Script to delete errant enums')
-    parser.add_argument('--all', action='store_true', help='Delete all errant enums')
-    parser.add_argument('--dryrun', action='store_true', help='Display all errant enums to be deleted')
-    parser.add_argument('-m', '--metricName', help='metric name to be deleted')
+
+    parser.add_argument('--dryrun',
+                        action='store_true', help='Display errant enums related data for the given metric name.')
+    parser.add_argument('-m', '--metricName',
+                        required=True, help='metric name to be deleted')
+    parser.add_argument('-t', '--tenantId',
+                        required=True, help='tenantId corresponding to the metric name to be deleted')
 
     args = parser.parse_args(args)
     print args
 
-    # Either --all or -m option must be specified but not both
-    if (args.all is True and args.metricName) or (args.all is False and (not args.metricName)):
-        parser.error("--all and -m are mutually exclusive options and atleast one of them should be specified.")
     return args
 
 
-def clear_from_db(nodes, metric_name, dryrun):
+def clear_from_db(nodes, metric_name, tenant_id, dryrun):
+    print '\n\n ***** Deleting from Cassandra *****'
+
     client = db.DBClient()
     client.connect(nodes)
 
-    excess_enum_related_dict = client.get_excess_enums_relevant_data(metric_name)
+    key = tenant_id + '.' + metric_name
+    excess_enum_related_dict = client.get_excess_enums_relevant_data(key)
 
-    if dryrun:
-        print_excess_enums_relevant_data(excess_enum_related_dict)
-    else:
+    print_excess_enums_relevant_data(excess_enum_related_dict, key)
+    if not dryrun:
         delete_excess_enums_relevant_data(client, excess_enum_related_dict)
 
     client.close()
@@ -35,7 +39,7 @@ def clear_from_db(nodes, metric_name, dryrun):
 
 def delete_excess_enums_relevant_data(client, excess_enum_related_dict):
     for excess_enum in excess_enum_related_dict['metrics_excess_enums']:
-        print 'Deleting metrics data related to excess enum: %s ' % excess_enum[0]
+        print 'Deleting metrics data related to excess enum: %s \n' % excess_enum[0]
 
         client.delete_metrics_excess_enums(excess_enum[0])
         client.delete_metrics_preaggregated_full(excess_enum[0])
@@ -45,18 +49,77 @@ def delete_excess_enums_relevant_data(client, excess_enum_related_dict):
         client.delete_metrics_preaggregated_240m(excess_enum[0])
         client.delete_metrics_preaggregated_1440m(excess_enum[0])
 
-        print 'Deleted successfully metrics data related to excess enum: %s ' % excess_enum[0]
+        print '\nDeleted successfully metrics data related to excess enum: %s ' % excess_enum[0]
         print '\n'
 
 
-def print_excess_enums_relevant_data(excess_enum_related_dict):
+def print_excess_enums_relevant_data(excess_enum_related_dict, key):
+    print '\nColumn family: metrics_excess_enums'
+    if not excess_enum_related_dict['metrics_excess_enums']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_excess_enums']: print x
+
+    print '\nColumn family: metrics_preaggregated_full'
+    if not excess_enum_related_dict['metrics_preaggregated_full']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_full']: print x
+
+    print '\nColumn family: metrics_preaggregated_5m'
+    if not excess_enum_related_dict['metrics_preaggregated_5m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_5m']: print x
+
+    print '\nColumn family: metrics_preaggregated_20m'
+    if not excess_enum_related_dict['metrics_preaggregated_20m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_20m']: print x
+
+    print '\nColumn family: metrics_preaggregated_60m'
+    if not excess_enum_related_dict['metrics_preaggregated_60m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_60m']: print x
+
+    print '\nColumn family: metrics_preaggregated_240m'
+    if not excess_enum_related_dict['metrics_preaggregated_240m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_240m']: print x
+
+    print '\nColumn family: metrics_preaggregated_1440m'
+    if not excess_enum_related_dict['metrics_preaggregated_1440m']: print 'Key %s NOT FOUND' % key
     for x in excess_enum_related_dict['metrics_preaggregated_1440m']: print x
+
+    print '\n\n'
+
+
+def clear_from_es(es_params, metric_name, tenant_id, dryrun):
+    print '\n\n ***** Deleting from Elastic Cluster *****'
+    es_client = es.ESClient(es_params)
+
+    metric_metadata = es_client.get_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
+    enums_data = es_client.get_enums_data(metric_name=metric_name, tenant_id=tenant_id)
+
+    print_enum_related_data(metric_metadata, enums_data)
+
+    if not dryrun:
+        if metric_metadata['found']:
+            es_client.delete_metric_metadata(metric_metadata, tenant_id=tenant_id)
+        else:
+            print 'Document NOT FOUND in index metric_metadata for id: [%s] routing: [%s]' % \
+                  (metric_metadata['_id'], tenant_id)
+
+        if enums_data['found']:
+            es_client.delete_enums_data(enums_data, tenant_id=tenant_id)
+        else:
+            print 'Document NOT FOUND in index enums for id: [%s] routing: [%s]' % \
+                  (enums_data['_id'], tenant_id)
+
+
+def print_enum_related_data(metric_meta_data, enums_data):
+    print '\nmetric_metadata:'
+    print metric_meta_data
+    if not metric_meta_data['found']:
+        print 'metric_metadata NOT FOUND: '
+
+    print '\nenums:'
+    print enums_data
+    if not enums_data['found']:
+        print 'enums NOT FOUND: '
+
+    print '\n'
 
 
 def main():
@@ -64,7 +127,11 @@ def main():
     print args
 
     nodes = ['127.0.0.1']
-    clear_from_db(nodes, args.metricName, args.dryrun)
+    es_params = [{'host': 'localhost'},
+                 {'port': 9020}]
+
+    clear_from_db(nodes, args.metricName, args.tenantId, args.dryrun)
+    clear_from_es(es_params=es_params, metric_name=args.metricName, tenant_id=args.tenantId, dryrun=args.dryrun)
 
 
 if __name__ == "__main__":

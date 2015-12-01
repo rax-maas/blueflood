@@ -11,6 +11,7 @@ setup(
     author_email='chandra.addala@rackspace.com',
     description='Utilities to work on enum metrics',
     install_requires=[
-        'cassandra-driver'
+        'cassandra-driver',
+        'elasticsearch>=1.0.0,<2.0.0'
     ]
 )
