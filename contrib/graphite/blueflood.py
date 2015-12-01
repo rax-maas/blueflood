@@ -225,9 +225,7 @@ class TenantBluefloodFinder(object):
 
       r = self.make_request(url, payload, headers)
       r = r.json()
-      print r
       for event in r:
-        print(event['when'])
         event['when'] = int(event['when']/1000)
       return r
 
