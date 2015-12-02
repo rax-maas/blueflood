@@ -47,6 +47,9 @@ class LocatorFetchRunnable implements Runnable {
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private static final Timer enumMetaTypeGetTimer = Metrics.timer(RollupService.class, "Enum Get RollupType Metacache");
+    private static final Timer enumValidatorTimer = Metrics.timer(RollupService.class, "Enum validation scheduling");
+
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
@@ -97,15 +100,18 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
-        /*
+        Timer.Context t1 = enumMetaTypeGetTimer.time();
         try {
             enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
         } catch (Exception e) {
             log.error("Failed to get enumlocators for slot: "+ parentSlot, e);
+        } finally {
+             t1.stop();
         }
 
         // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
         if (gran.equals(Granularity.MIN_5)) {
+            Timer.Context t2 = enumValidatorTimer.time();
             try {
                 if (enumLocators != null && enumLocators.size() > 0) {
                     log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(enumLocators.toArray())));
@@ -113,9 +119,10 @@ class LocatorFetchRunnable implements Runnable {
                 }
             } catch (Exception e) {
                 log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
+            } finally {
+                t2.stop();
             }
         }
-        */
 
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
