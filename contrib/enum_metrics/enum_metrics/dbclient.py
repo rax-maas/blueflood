@@ -167,10 +167,9 @@ class DBClient:
 
     def __delete_metrics_data(self, key, table_name):
         """
-        Delete metrics data based on tenant_id, metric_name and table_name
+        Delete metrics data based on key and table_name
 
-        :param tenant_id:
-        :param metric_name:
+        :param key:
         :param table_name:
         :return:
         """

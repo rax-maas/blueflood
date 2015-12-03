@@ -19,6 +19,10 @@ Blueflood stores the enum metrics with more than allowed number of enum values i
 This utility can be used to remove that row from the excess enums table in Cassandra and the document from the 
 "enums" and "metrics_metadata" indexes in ElasticSearch.
 
+Note that data from cassandra and elastic seach will be removed only if the metric is already classified as an
+excess enum (i.e. if its present in metrics_excess_enums table)
+
+
     
     usage: clear_errant_enums.py [-h] [--dryrun] -m METRICNAME -t TENANTID
     
