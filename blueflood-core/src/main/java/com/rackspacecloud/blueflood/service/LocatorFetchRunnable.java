@@ -100,42 +100,15 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
-        Timer.Context t1 = enumMetaTypeGetTimer.time();
-        try {
-            enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
-        } catch (Exception e) {
-            log.error("Failed to get enumlocators for slot: "+ parentSlot, e);
-        } finally {
-             t1.stop();
-        }
-
-        // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
-        if (gran.equals(Granularity.MIN_5)) {
-            Timer.Context t2 = enumValidatorTimer.time();
-            try {
-                if (enumLocators != null && enumLocators.size() > 0) {
-                    log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(enumLocators.toArray())));
-                    enumValidatorExecutor.execute(new EnumValidator(enumLocators));
-                }
-            } catch (Exception e) {
-                log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
-            } finally {
-                t2.stop();
-            }
-        }
-
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
-                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
+                RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
+                rollupReadExecutor.execute(rollupRunnable);
                 rollCount += 1;
-
-                if(enumLocators != null && enumLocators.contains(locator)) {
-                    singleRollupReadContext.getEnumMetricsMeter().mark();
-                }
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
                 executionContext.markUnsuccessful(any);
