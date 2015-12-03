@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class RollupRunnableIntegrationTest extends IntegrationTestBase {
@@ -128,7 +129,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, null);
         rr.run();
 
         while (!rec.doneReading() && !rec.doneWriting()) {
@@ -187,7 +188,13 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
+        ThreadPoolExecutor enumValidatorExec = new ThreadPoolBuilder()
+                .withName("Validating Enum Metrics")
+                .withCorePoolSize(10)
+                .withMaxPoolSize(10)
+                .withUnboundedQueue()
+                .build();
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, enumValidatorExec);
         rr.run();
         
         // assert something in 5m for this locator.

@@ -32,7 +32,8 @@ import org.slf4j.LoggerFactory;
 import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
-import java.util.HashMap;
+import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -52,6 +53,8 @@ public class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
     private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
+    private static boolean isEnumRollup = false;
+    private ThreadPoolExecutor enumValidatorExecutor;
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -59,13 +62,14 @@ public class RollupRunnable implements Runnable {
         }
     }
 
-    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
+    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter, ThreadPoolExecutor enumValidatorExecutor) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
         this.rollupBatchWriter = rollupBatchWriter;
+        this.enumValidatorExecutor = enumValidatorExecutor;
         startWait = System.currentTimeMillis();
     }
-    
+
     public void run() {
         // done waiting.
         singleRollupReadContext.getWaitHist().update(System.currentTimeMillis() - startWait);
@@ -95,11 +99,19 @@ public class RollupRunnable implements Runnable {
             // Read data and compute rollup
             Points input;
             Rollup rollup = null;
+            Locator rollupLocator = singleRollupReadContext.getLocator();
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
-                    singleRollupReadContext.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+                    rollupLocator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
+
+            if (rollupType == RollupType.ENUM) {
+                singleRollupReadContext.getEnumMetricsMeter().mark();
+                HashSet<Locator> enumLocatorsSet = new HashSet<Locator>();
+                enumLocatorsSet.add(rollupLocator);
+                enumValidatorExecutor.execute(new EnumValidator(enumLocatorsSet));
+            }
 
             try {
                 // first, get the points.
