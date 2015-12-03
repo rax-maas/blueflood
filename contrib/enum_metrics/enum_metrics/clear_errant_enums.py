@@ -5,6 +5,7 @@ import dbclient as db
 import esclient as es
 import config
 
+
 def parseArguments(args):
     """Parses the supplied arguments"""
     parser = argparse.ArgumentParser(prog="clear_errant_enums.py", description='Script to delete errant enums')
@@ -22,80 +23,55 @@ def parseArguments(args):
     return args
 
 
-def clear_from_db(nodes, metric_name, tenant_id, dryrun):
+def clear_data(args):
+    total_records_deleted = clear_from_db(cassandra_nodes=config.cassandra_nodes, metric_name=args.metricName,
+                                          tenant_id=args.tenantId, dryrun=args.dryrun)
+
+    is_excess_enum = True if total_records_deleted else False
+
+    clear_from_es(es_nodes=config.es_nodes, metric_name=args.metricName, tenant_id=args.tenantId,
+                  dryrun=args.dryrun, is_excess_enum=is_excess_enum)
+
+
+def clear_from_db(cassandra_nodes, metric_name, tenant_id, dryrun):
+    """
+
+    :param nodes:
+    :param metric_name:
+    :param tenant_id:
+    :param dryrun:
+    :return: total number of records being deleted from all tables.
+    """
     print '\n***** Deleting from Cassandra *****\n'
 
     client = db.DBClient()
-    client.connect(nodes)
+    client.connect(cassandra_nodes)
 
-    key = tenant_id + '.' + metric_name
-    excess_enum_related_dict = client.get_excess_enums_relevant_data(key)
+    excess_enum_related_dict = client.get_excess_enums_relevant_data(tenant_id=tenant_id, metric_name=metric_name)
+    print_excess_enums_relevant_data(excess_enum_related_dict, tenant_id=tenant_id, metric_name=metric_name)
 
-    print_excess_enums_relevant_data(excess_enum_related_dict, key)
     if not dryrun:
         delete_excess_enums_relevant_data(client, excess_enum_related_dict)
 
     client.close()
+    return sum(len(x) for x in excess_enum_related_dict.itervalues())
 
 
-def delete_excess_enums_relevant_data(client, excess_enum_related_dict):
-    for excess_enum in excess_enum_related_dict['metrics_excess_enums']:
-        print 'Deleting metrics data related to excess enum: %s \n' % excess_enum[0]
-
-        client.delete_metrics_excess_enums(excess_enum[0])
-        client.delete_metrics_preaggregated_full(excess_enum[0])
-        client.delete_metrics_preaggregated_5m(excess_enum[0])
-        client.delete_metrics_preaggregated_20m(excess_enum[0])
-        client.delete_metrics_preaggregated_60m(excess_enum[0])
-        client.delete_metrics_preaggregated_240m(excess_enum[0])
-        client.delete_metrics_preaggregated_1440m(excess_enum[0])
-
-        print '\nDeleted successfully metrics data related to excess enum: %s ' % excess_enum[0]
-        print '\n'
-
-
-def print_excess_enums_relevant_data(excess_enum_related_dict, key):
-    print '\nColumn family: metrics_excess_enums'
-    if not excess_enum_related_dict['metrics_excess_enums']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_excess_enums']: print x
-
-    print '\nColumn family: metrics_preaggregated_full'
-    if not excess_enum_related_dict['metrics_preaggregated_full']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_full']: print x
-
-    print '\nColumn family: metrics_preaggregated_5m'
-    if not excess_enum_related_dict['metrics_preaggregated_5m']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_5m']: print x
-
-    print '\nColumn family: metrics_preaggregated_20m'
-    if not excess_enum_related_dict['metrics_preaggregated_20m']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_20m']: print x
-
-    print '\nColumn family: metrics_preaggregated_60m'
-    if not excess_enum_related_dict['metrics_preaggregated_60m']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_60m']: print x
-
-    print '\nColumn family: metrics_preaggregated_240m'
-    if not excess_enum_related_dict['metrics_preaggregated_240m']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_240m']: print x
-
-    print '\nColumn family: metrics_preaggregated_1440m'
-    if not excess_enum_related_dict['metrics_preaggregated_1440m']: print 'Key %s NOT FOUND' % key
-    for x in excess_enum_related_dict['metrics_preaggregated_1440m']: print x
-
-    print '\n'
-
-
-def clear_from_es(es_nodes, metric_name, tenant_id, dryrun):
+def clear_from_es(es_nodes, metric_name, tenant_id, dryrun, is_excess_enum):
     print '\n***** Deleting from Elastic Cluster *****\n'
     es_client = es.ESClient(es_nodes)
 
     metric_metadata = es_client.get_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
     enums_data = es_client.get_enums_data(metric_name=metric_name, tenant_id=tenant_id)
 
+    if (metric_metadata['found'] or enums_data['found']) and not is_excess_enum:
+        print "**** WARNING: Records exists in ES but is not an excess enum as per cassandra. " \
+              "Data wont be deleted from ES. ****"
+
     print_enum_related_data(metric_metadata, enums_data)
 
-    if not dryrun:
+    # Delete from ES only if it is an excess_enum as per cassandra
+    if (not dryrun) and is_excess_enum:
         if metric_metadata['found']:
             es_client.delete_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
         else:
@@ -109,6 +85,62 @@ def clear_from_es(es_nodes, metric_name, tenant_id, dryrun):
                   (enums_data['_id'], tenant_id)
 
 
+def delete_excess_enums_relevant_data(client, excess_enum_related_dict):
+    if excess_enum_related_dict:
+        key = excess_enum_related_dict['metrics_excess_enums'][0][0]  # Grabbing the key from the first row
+        print 'Deleting metrics data related to excess enum key: [%s] \n' % key
+
+        client.delete_metrics_excess_enums(key)
+        client.delete_metrics_preaggregated_full(key)
+        client.delete_metrics_preaggregated_5m(key)
+        client.delete_metrics_preaggregated_20m(key)
+        client.delete_metrics_preaggregated_60m(key)
+        client.delete_metrics_preaggregated_240m(key)
+        client.delete_metrics_preaggregated_1440m(key)
+        print '\nDeleted successfully metrics data related to excess enum key: [%s] \n' % key
+
+
+def print_excess_enums_relevant_data(excess_enum_related_dict, tenant_id, metric_name):
+    print '\nColumn family: metrics_excess_enums'
+    if not excess_enum_related_dict:
+        print 'Row NOT FOUND for tenant_id: [%s] metric_name: [%s] ' % (tenant_id, metric_name)
+    else:
+        for x in excess_enum_related_dict['metrics_excess_enums']: print x
+
+        key = excess_enum_related_dict['metrics_excess_enums'][0][0]  # Grabbing the key from the first row
+        print '\nColumn family: metrics_preaggregated_full'
+        if not excess_enum_related_dict['metrics_preaggregated_full']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_full']: print x
+
+        print '\nColumn family: metrics_preaggregated_5m'
+        if not excess_enum_related_dict['metrics_preaggregated_5m']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_5m']: print x
+
+        print '\nColumn family: metrics_preaggregated_20m'
+        if not excess_enum_related_dict['metrics_preaggregated_20m']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_20m']: print x
+
+        print '\nColumn family: metrics_preaggregated_60m'
+        if not excess_enum_related_dict['metrics_preaggregated_60m']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_60m']: print x
+
+        print '\nColumn family: metrics_preaggregated_240m'
+        if not excess_enum_related_dict['metrics_preaggregated_240m']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_240m']: print x
+
+        print '\nColumn family: metrics_preaggregated_1440m'
+        if not excess_enum_related_dict['metrics_preaggregated_1440m']:
+            print 'Row corresponding to excess_enums [%s] NOT FOUND' % key
+        for x in excess_enum_related_dict['metrics_preaggregated_1440m']: print x
+
+    print '\n'
+
+
 def print_enum_related_data(metric_meta_data, enums_data):
     print '\nmetric_metadata:' if metric_meta_data['found'] else 'metric_metadata NOT FOUND: '
     print json.dumps(metric_meta_data, indent=2)
@@ -120,8 +152,7 @@ def print_enum_related_data(metric_meta_data, enums_data):
 def main():
     args = parseArguments(sys.argv[1:])
 
-    clear_from_db(config.cassandra_nodes, args.metricName, args.tenantId, args.dryrun)
-    clear_from_es(es_nodes=config.es_nodes, metric_name=args.metricName, tenant_id=args.tenantId, dryrun=args.dryrun)
+    clear_data(args)
 
 
 if __name__ == "__main__":
