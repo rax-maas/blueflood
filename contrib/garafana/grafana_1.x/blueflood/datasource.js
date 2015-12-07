@@ -26,11 +26,11 @@
                     this.tenantID         = datasource.tenantID;
                     this.useGraphite      = datasource.useGraphite
 
-                    if(datasource.proxyEnabled && !datasource.useGraphite) {
+                    if(datasource.proxyEnabled) {
                         this.url              = "http://"+$location.host()+":3000";
                         this.identityURL = "https://"+$location.host()+"/identity";
                     }
-                    else if(!datasource.proxyEnabled && datasource.useGraphite){
+                    else if(datasource.useGraphite){
                         this.url              = "graphite";
                     }
                     else {
@@ -49,7 +49,12 @@
                 }
 
                 BluefloodDatasource.prototype.doAPIRequest = function(options, token) {
-                    options.url   = this.url + '/v2.0/'+this.tenantID+options.url;
+                    if(this.useGraphite){
+                        options.url = this.url + options.url;
+                    }
+                    else {
+                        options.url = this.url + '/v2.0/' + this.tenantID + options.url;
+                    }
                     if(typeof token !== 'undefined'){
                         options.headers = {
                             'X-Auth-Token' : token.id
