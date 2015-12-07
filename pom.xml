@@ -41,8 +41,8 @@
   <url>http://blueflood.io</url>
 
   <properties>
-    <BUILD_SUFFIX>0-SNAPSHOT</BUILD_SUFFIX>
-    <BLUEFLOOD_VERSION>2.0.${BUILD_SUFFIX}</BLUEFLOOD_VERSION>
+    <VERSION_SUFFIX>0-SNAPSHOT</VERSION_SUFFIX>
+    <BLUEFLOOD_VERSION>2.0.${VERSION_SUFFIX}</BLUEFLOOD_VERSION>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
