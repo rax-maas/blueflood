@@ -75,17 +75,7 @@
                             var list = [];
                             for (var i = 0; i < results.data.length; i++) {
                                 var e = results.data[i];
-
-                                if(this.useGraphite){
-                                    list.push({
-                                        annotation: annotation,
-                                        time: e.when*1000,
-                                        title: e.what,
-                                        tags: e.tags,
-                                        text: e.data
-                                    });
-                                }
-                                else {
+                                
                                     list.push({
                                         annotation: annotation,
                                         time: e.when,
@@ -93,7 +83,6 @@
                                         tags: e.tags,
                                         text: e.data
                                     });
-                                }
                             }
                             return list;
                         });
