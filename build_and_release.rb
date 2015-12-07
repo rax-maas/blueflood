@@ -58,5 +58,5 @@ run_command("git commit -a -m \"Release #{new_version}\"")
 
 # create a release tag and push it to the repo
 
-run_command("git tag release-#{new_version}")
+run_command("git tag izrik-release-#{new_version}")
 run_command("git push --tags")
