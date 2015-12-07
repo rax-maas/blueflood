@@ -24,10 +24,14 @@
                     this.username         = datasource.username;
                     this.apikey           = datasource.apikey;
                     this.tenantID         = datasource.tenantID;
+                    this.useGraphite      = datasource.useGraphite
 
-                    if(datasource.proxyEnabled) {
+                    if(datasource.proxyEnabled && !datasource.useGraphite) {
                         this.url              = "http://"+$location.host()+":3000";
                         this.identityURL = "https://"+$location.host()+"/identity";
+                    }
+                    else if(!datasource.proxyEnabled && datasource.useGraphite){
+                        this.url              = "graphite";
                     }
                     else {
                         this.identityURL = "https://identity.api.rackspacecloud.com/v2.0/tokens";
@@ -67,13 +71,24 @@
                             for (var i = 0; i < results.data.length; i++) {
                                 var e = results.data[i];
 
-                                list.push({
-                                    annotation: annotation,
-                                    time  :  e.when,
-                                    title :  e.what,
-                                    tags  :  e.tags,
-                                    text  :  e.data
-                                });
+                                if(this.useGraphite){
+                                    list.push({
+                                        annotation: annotation,
+                                        time: e.when*1000,
+                                        title: e.what,
+                                        tags: e.tags,
+                                        text: e.data
+                                    });
+                                }
+                                else {
+                                    list.push({
+                                        annotation: annotation,
+                                        time: e.when,
+                                        title: e.what,
+                                        tags: e.tags,
+                                        text: e.data
+                                    });
+                                }
                             }
                             return list;
                         });
@@ -85,16 +100,24 @@
                         if (options.tags) {
                             tags = '&tags=' + options.tags;
                         }
+                        var url = '';
+
+                        if (this.useGraphite){
+                            url = '/events/get_data?from=' + options.range.from +'&until=' +options.range.to
+                        }
+                        else{
+                            url = '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
+                        }
 
                         var d = $q.defer();
                         this.doAPIRequest({
                             method: 'GET',
-                            url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
+                            url: url
                         }, this.reposeAPI.getToken()).then(function (response) {
                             if(response.status === 401){
                                 this.doAPIRequest({
                                     method: 'GET',
-                                    url: '/events/getEvents?from=' +this.translateTime(options.range.from)+ '&until=' +this.translateTime(options.range.to) + tags
+                                    url: url
                                 }, this.reposeAPI.getIdentity()).then(function (response) {
                                     if(response.status/100 === 4 || response.status === 500){
                                         alert("Error while connecting to Blueflood");
