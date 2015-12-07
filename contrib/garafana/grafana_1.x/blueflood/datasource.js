@@ -70,12 +70,30 @@
                 BluefloodDatasource.prototype.annotationQuery = function (annotation, rangeUnparsed) {
 
                     var tags = templateSrv.replace(annotation.tags);
-                    return this.events({range: rangeUnparsed, tags: tags})
-                        .then(function (results) {
-                            var list = [];
-                            for (var i = 0; i < results.data.length; i++) {
-                                var e = results.data[i];
-                                
+                    if(this.useGraphite){
+                        return this.events({range: rangeUnparsed, tags: tags})
+                            .then(function (results) {
+                                var list = [];
+                                for (var i = 0; i < results.data.length; i++) {
+                                    var e = results.data[i];
+                                    list.push({
+                                        annotation: annotation,
+                                        time: e.when*1000,
+                                        title: e.what,
+                                        tags: e.tags,
+                                        text: e.data
+                                    });
+                                }
+                                return list;
+                            });
+                    }
+
+                    else {
+                        return this.events({range: rangeUnparsed, tags: tags})
+                            .then(function (results) {
+                                var list = [];
+                                for (var i = 0; i < results.data.length; i++) {
+                                    var e = results.data[i];
                                     list.push({
                                         annotation: annotation,
                                         time: e.when,
@@ -83,19 +101,22 @@
                                         tags: e.tags,
                                         text: e.data
                                     });
-                            }
-                            return list;
-                        });
+                                }
+                                return list;
+                            });
+                    }
+
                 };
 
                 BluefloodDatasource.prototype.events = function (options) {
                     try {
                         var tags = '';
+                        var url = '';
+                        var isTokenExpired =false;
+
                         if (options.tags) {
                             tags = '&tags=' + options.tags;
                         }
-                        var url = '';
-
                         if (this.useGraphite){
                             url = '/events/get_data?from=' + options.range.from +'&until=' +options.range.to
                         }
@@ -104,26 +125,30 @@
                         }
 
                         var d = $q.defer();
+
                         this.doAPIRequest({
                             method: 'GET',
                             url: url
                         }, this.reposeAPI.getToken()).then(function (response) {
-                            if(response.status === 401){
-                                this.doAPIRequest({
-                                    method: 'GET',
-                                    url: url
-                                }, this.reposeAPI.getIdentity()).then(function (response) {
-                                    if(response.status/100 === 4 || response.status === 500){
-                                        alert("Error while connecting to Blueflood");
-                                    }
-
-                                    d.resolve(response);
-
-                                });
-                            }
+                            if(response.status === 401)
+                                isTokenExpired = true;
                             else
                                 d.resolve(response);
                         });
+
+                        if(isTokenExpired){
+                            this.doAPIRequest({
+                                method: 'GET',
+                                url: url
+                            }, this.reposeAPI.getIdentity()).then(function (response) {
+                                if(response.status/100 === 4 || response.status === 500){
+                                    alert("Error while connecting to Blueflood");
+                                }
+
+                                d.resolve(response);
+                                isTokenExpired = false;
+                            });
+                        }
                     }
                     catch (err) {
                         d.reject(err);
