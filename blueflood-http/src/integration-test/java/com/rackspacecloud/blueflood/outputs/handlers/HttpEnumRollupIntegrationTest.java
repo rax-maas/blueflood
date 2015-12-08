@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.elasticsearch.common.joda.time.DateTime;
 import org.junit.*;
 
 import java.util.*;
@@ -38,6 +39,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
+    private static DateTime dt;
 
     private HttpRollupsQueryHandler httpHandler;
     private final Map<Locator, Map<Granularity, Integer>> enumlocatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
@@ -57,7 +59,12 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         super.setUp();
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
+        dt = new DateTime();
+        System.out.println(String.format("Starting generation of metrics %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+
         enumLocators = new ArrayList<Locator>();
+
+        //insert an enum rollup once every 1 min for 24 hrs
         for(int i=0; i< 1440; i++) {
             final long curMillis = baseMillis + ( i* 60000);
             final List<IMetric> metrics = new ArrayList<IMetric>();
@@ -70,6 +77,9 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
             writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
         }
 
+        dt= new DateTime();
+        System.out.println(String.format("Starting generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+
         httpHandler = new HttpRollupsQueryHandler();
 
         // generate every level of rollup for the raw data
@@ -80,6 +90,10 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
                 generateEnumRollups(locator, baseMillis, baseMillis + 86400000, g);
             }
         }
+
+        dt = new DateTime();
+        System.out.println(String.format("Finished generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+
 
         final Map<Granularity, Integer> answerForEnumMetric = new HashMap<Granularity, Integer>();
         answerForEnumMetric.put(Granularity.FULL, 1440);
