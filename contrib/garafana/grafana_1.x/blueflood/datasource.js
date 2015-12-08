@@ -26,11 +26,7 @@
                     this.tenantID         = datasource.tenantID;
                     this.useGraphite      = datasource.useGraphite
 
-                    if(datasource.proxyEnabled) {
-                        this.url              = "http://"+$location.host()+":3000";
-                        this.identityURL = "https://"+$location.host()+"/identity";
-                    }
-                    else if(datasource.useGraphite){
+                    if(datasource.useGraphite){
                         this.url              = "graphite";
                     }
                     else {
