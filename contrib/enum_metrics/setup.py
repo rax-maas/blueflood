@@ -12,6 +12,9 @@ setup(
     description='Utilities to work on enum metrics',
     install_requires=[
         'cassandra-driver',
-        'elasticsearch>=1.0.0,<2.0.0'
+        'elasticsearch>=1.0.0,<2.0.0',
+        'mock',
+        'nose',
+        'nose-cover3'
     ]
 )

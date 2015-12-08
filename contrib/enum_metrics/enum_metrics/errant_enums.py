@@ -6,16 +6,24 @@ import esclient as es
 import config
 
 
-def parseArguments(args):
+def parse_arguments(args):
     """Parses the supplied arguments"""
-    parser = argparse.ArgumentParser(prog="clear_errant_enums.py", description='Script to delete errant enums')
+    parser = argparse.ArgumentParser(prog="errant_enums.py", description='Script to delete errant enums')
 
-    parser.add_argument('--dryrun',
-                        action='store_true', help='Display errant enums related data for the given metric name.')
-    parser.add_argument('-m', '--metricName',
-                        required=True, help='metric name to be deleted')
-    parser.add_argument('-t', '--tenantId',
-                        required=True, help='tenantId corresponding to the metric name to be deleted')
+    subparsers = parser.add_subparsers(help='commands')
+
+    # A list command to list all excess enums.
+    list_parser = subparsers.add_parser('list', help='List all excess enums')
+
+    # A delete command to delete a given excess enum.
+    delete_parser = subparsers.add_parser('delete', help='Delete errant enum')
+
+    delete_parser.add_argument('--dryrun',
+                               action='store_true', help='Display errant enums related data for the given metric name.')
+    delete_parser.add_argument('-m', '--metricName',
+                               required=True, help='metric name to be deleted')
+    delete_parser.add_argument('-t', '--tenantId',
+                               required=True, help='tenantId corresponding to the metric name to be deleted')
 
     args = parser.parse_args(args)
     print args
@@ -23,17 +31,26 @@ def parseArguments(args):
     return args
 
 
-def clear_data(args):
-    total_records_deleted = clear_from_db(cassandra_nodes=config.cassandra_nodes, metric_name=args.metricName,
+def list_excess_enums(db_client):
+    metrics_excess_enums = db_client.get_all_metrics_excess_enums()
+
+    print '\n**** Listing all excess enums ****\n'
+
+    print 'Column family: metrics_excess_enums'
+    for x in metrics_excess_enums: print x
+
+
+def clear_excess_enums(args, db_client, es_client):
+    total_records_deleted = clear_from_db(db_client=db_client, metric_name=args.metricName,
                                           tenant_id=args.tenantId, dryrun=args.dryrun)
 
     is_excess_enum = True if total_records_deleted else False
 
-    clear_from_es(es_nodes=config.es_nodes, metric_name=args.metricName, tenant_id=args.tenantId,
+    clear_from_es(es_client=es_client, metric_name=args.metricName, tenant_id=args.tenantId,
                   dryrun=args.dryrun, is_excess_enum=is_excess_enum)
 
 
-def clear_from_db(cassandra_nodes, metric_name, tenant_id, dryrun):
+def clear_from_db(db_client, metric_name, tenant_id, dryrun):
     """
 
     :param nodes:
@@ -44,22 +61,18 @@ def clear_from_db(cassandra_nodes, metric_name, tenant_id, dryrun):
     """
     print '\n***** Deleting from Cassandra *****\n'
 
-    client = db.DBClient()
-    client.connect(cassandra_nodes)
-
-    excess_enum_related_dict = client.get_excess_enums_relevant_data(tenant_id=tenant_id, metric_name=metric_name)
+    excess_enum_related_dict = db_client.get_excess_enums_relevant_data(tenant_id=tenant_id, metric_name=metric_name)
     print_excess_enums_relevant_data(excess_enum_related_dict, tenant_id=tenant_id, metric_name=metric_name)
 
     if not dryrun:
-        delete_excess_enums_relevant_data(client, excess_enum_related_dict)
+        delete_excess_enums_relevant_data(db_client, excess_enum_related_dict)
 
-    client.close()
+    db_client.close()
     return sum(len(x) for x in excess_enum_related_dict.itervalues())
 
 
-def clear_from_es(es_nodes, metric_name, tenant_id, dryrun, is_excess_enum):
+def clear_from_es(es_client, metric_name, tenant_id, dryrun, is_excess_enum):
     print '\n***** Deleting from Elastic Cluster *****\n'
-    es_client = es.ESClient(es_nodes)
 
     metric_metadata = es_client.get_metric_metadata(metric_name=metric_name, tenant_id=tenant_id)
     enums_data = es_client.get_enums_data(metric_name=metric_name, tenant_id=tenant_id)
@@ -150,9 +163,18 @@ def print_enum_related_data(metric_meta_data, enums_data):
 
 
 def main():
-    args = parseArguments(sys.argv[1:])
+    args = parse_arguments(sys.argv[1:])
 
-    clear_data(args)
+    db_client = db.DBClient()
+    db_client.connect(config.cassandra_nodes)
+
+    es_client = es.ESClient(config.es_nodes)
+
+    # 'delete' command has the namespace: Namespace(dryrun=True, metricName='metric_name', tenantId='tenant_id')
+    if 'dryrun' in args:
+        clear_excess_enums(args, db_client, es_client)
+    else:
+        list_excess_enums(db_client)
 
 
 if __name__ == "__main__":

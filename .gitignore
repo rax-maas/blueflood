@@ -73,3 +73,10 @@ atlassian-ide-plugin.xml
 tests.log
 node_modules
 */grinder/resources
+
+# python Setuptools distribution folder.
+contrib/enum_metrics/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+contrib/enum_metrics/dist/*.egg-info
+contrib/enum_metrics/dist/*.egg

@@ -33,6 +33,15 @@ class DBClient:
 
         return [(x.key, x.column1, x.value) for x in results]
 
+    def get_all_metrics_excess_enums(self):
+        """
+        :return: all metrics excess enums present in the table metrics_excess_enums
+        """
+        prepared_stmt = self.session.prepare("SELECT * FROM metrics_excess_enums")
+        results = self.session.execute(prepared_stmt)
+
+        return self.format_results(results)
+
     def get_metrics_excess_enums(self, tenant_id, metric_name):
         """
         Retrive data from metrics_excess_enums

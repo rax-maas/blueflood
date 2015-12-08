@@ -24,9 +24,21 @@ excess enum (i.e. if its present in metrics_excess_enums table)
 
 
     
-    usage: clear_errant_enums.py [-h] [--dryrun] -m METRICNAME -t TENANTID
-    
+    usage: errant_enums.py [-h] {list,delete} ...
+
     Script to delete errant enums
+    
+    positional arguments:
+      {list,delete}  commands
+        list         List all excess enums
+        delete       Delete errant enum
+    
+    optional arguments:
+      -h, --help     show this help message and exit
+
+####Delete command
+
+    usage: errant_enums.py delete [-h] [--dryrun] -m METRICNAME -t TENANTID
     
     optional arguments:
       -h, --help            show this help message and exit
@@ -38,6 +50,25 @@ excess enum (i.e. if its present in metrics_excess_enums table)
                             tenantId corresponding to the metric name to be
                             deleted
 
- Example Usage:
+Example Usage:
  
-    python enum_metrics/clear_errant_enums.py -m mytest.enum.excess -t 836986 --dryrun
+    python enum_metrics/errant_enums.py delete -m mytest.enum.excess -t 836986 --dryrun
+
+
+####List command
+
+    usage: errant_enums.py list [-h]
+
+    optional arguments:
+      -h, --help  show this help message and exit
+
+
+Example Usage:
+ 
+    python enum_metrics/errant_enums.py list    
+    
+###Tests
+
+To run tests, you can simply do:    
+    
+    nosetests
