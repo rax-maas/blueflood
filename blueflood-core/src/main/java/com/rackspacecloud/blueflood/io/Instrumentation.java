@@ -37,20 +37,27 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
     private static final Meter batchReadErrMeter;
+    private static final Meter excessEnumWriteErrMeter;
+    private static final Meter excessEnumReadErrMeter;
 
     // One-off meters
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
+    private static final Meter enumMetricWritten;
 
     static {
         Class kls = Instrumentation.class;
+        excessEnumWriteErrMeter = Metrics.meter( kls, "writes", "Excess Enum Metrics Write Errors" );
+        excessEnumReadErrMeter = Metrics.meter( kls, "reads", "Excess Enum Metrics Read Errors" );
         writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
         readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
         batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Read Errors");
         scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
+        enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
+
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
                 final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", Instrumentation.class.getSimpleName());
@@ -107,6 +114,10 @@ public class Instrumentation implements InstrumentationMBean {
         writeErrMeter.mark();
     }
 
+    public static void markExcessEnumWriteError() { excessEnumWriteErrMeter.mark(); }
+
+    public static void markExcessEnumReadError() { excessEnumReadErrMeter.mark(); }
+
     public static void markWriteError(ConnectionException e) {
         markWriteError();
         if (e instanceof PoolTimeoutException) {
@@ -144,6 +155,10 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markFullResMetricWritten() {
         fullResMetricWritten.mark();
+    }
+
+    public static void markEnumMetricWritten() {
+        enumMetricWritten.mark();
     }
 }
 

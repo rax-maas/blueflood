@@ -623,6 +623,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (ConnectionException e) {
             log.error("Error reading ExcessEnum Metrics Table", e);
             Instrumentation.markReadError(e);
+            Instrumentation.markExcessEnumReadError();
             throw new RuntimeException(e);
         } finally {
             ctx.stop();
