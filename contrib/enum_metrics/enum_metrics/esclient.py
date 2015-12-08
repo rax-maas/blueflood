@@ -9,10 +9,6 @@ class ESClient:
     def get_metric_metadata(self, metric_name, tenant_id):
         """
         Get document from index metric_metadata for a given metric name and tenant id
-
-        :param metric_name:
-        :param tenant_id:
-        :return:
         """
 
         document_id = self.get_document_id(tenant_id=tenant_id, metric_name=metric_name)
@@ -24,10 +20,6 @@ class ESClient:
     def get_enums_data(self, metric_name, tenant_id):
         """
         Get document from index enums for a given metric name and tenant id
-
-        :param metric_name:
-        :param tenant_id:
-        :return:
         """
 
         document_id = self.get_document_id(tenant_id=tenant_id, metric_name=metric_name)
@@ -41,10 +33,6 @@ class ESClient:
         """
         Delete document from index metric_metadata for metric_metadata dictionary(obtained from get_metric_metadata
         call) and tenant id
-
-        :param metric_metadata:
-        :param tenant_id:
-        :return:
         """
 
         document_id = self.get_document_id(tenant_id=tenant_id, metric_name=metric_name)
@@ -55,10 +43,6 @@ class ESClient:
         """
         Delete document from index enums for enums dictionary(obtained from get_enums_data
         call) and tenant id
-
-        :param enums_data:
-        :param tenant_id:
-        :return:
         """
         document_id = self.get_document_id(tenant_id=tenant_id, metric_name=metric_name)
         self.es.delete(index='enums', doc_type='metrics', id=document_id, routing=tenant_id)
@@ -67,9 +51,5 @@ class ESClient:
     def get_document_id(self, tenant_id, metric_name):
         """
         Construct _id of elastic search from tenant id and metric name
-
-        :param tenant_id:
-        :param metric_name:
-        :return:
         """
         return tenant_id + ':' + metric_name

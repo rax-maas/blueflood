@@ -26,16 +26,13 @@ class DBClient:
         """
         Formats results to a tuple and returns it with just the (key, column1, value) from
         database results.
-
-        :param results:
-        :return:
         """
 
         return [(x.key, x.column1, x.value) for x in results]
 
     def get_all_metrics_excess_enums(self):
         """
-        :return: all metrics excess enums present in the table metrics_excess_enums
+        return all metrics excess enums present in the table metrics_excess_enums
         """
         prepared_stmt = self.session.prepare("SELECT * FROM metrics_excess_enums")
         results = self.session.execute(prepared_stmt)
@@ -45,9 +42,6 @@ class DBClient:
     def get_metrics_excess_enums(self, tenant_id, metric_name):
         """
         Retrive data from metrics_excess_enums
-        :param tenant_id:
-        :param metric_name:
-        :return:
         """
 
         key = tenant_id + '.' + metric_name
@@ -56,9 +50,6 @@ class DBClient:
     def get_metrics_preaggregated_full(self, key):
         """
         Retrieve data from metrics_preaggregated_full
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_full")
@@ -66,9 +57,6 @@ class DBClient:
     def get_metrics_preaggregated_5m(self, key):
         """
         Retrieve data from metrics_preaggregated_5m for a given key
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_5m")
@@ -76,9 +64,6 @@ class DBClient:
     def get_metrics_preaggregated_20m(self, key):
         """
         Retrieve data from metrics_preaggregated_20m for a given key
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_20m")
@@ -86,9 +71,6 @@ class DBClient:
     def get_metrics_preaggregated_60m(self, key):
         """
         Retrieve data from metrics_preaggregated_60m for a given key
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_60m")
@@ -96,9 +78,6 @@ class DBClient:
     def get_metrics_preaggregated_240m(self, key):
         """
         Retrieve data from metrics_preaggregated_240m for a given key
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_240m")
@@ -106,9 +85,6 @@ class DBClient:
     def get_metrics_preaggregated_1440m(self, key):
         """
         Retrieve data from metrics_preaggregated_1440m for a given key
-
-        :param key:
-        :return:
         """
 
         return self.__get_metrics(key, "metrics_preaggregated_1440m")
@@ -116,10 +92,6 @@ class DBClient:
     def __get_metrics(self, key, table_name):
         """
         get metrics data for the given key and table_name
-
-        :param key:
-        :param table_name:
-        :return:
         """
 
         prepared_stmt = self.session.prepare("SELECT * FROM %s WHERE (key = ?)" % table_name)
@@ -132,10 +104,6 @@ class DBClient:
         """
         Returns a list of all excess enums related data in a dictionary. If metric_name is not sent,
         returns relevant data for all metrics in metrics_excess_enums table.
-
-        :param tenant_id:
-        :param metric_name:
-        :return:
         """
         excess_enums = self.get_metrics_excess_enums(tenant_id, metric_name)
         excess_enum_related_dict = {}
@@ -177,10 +145,6 @@ class DBClient:
     def __delete_metrics_data(self, key, table_name):
         """
         Delete metrics data based on key and table_name
-
-        :param key:
-        :param table_name:
-        :return:
         """
 
         prepared_stmt = self.session.prepare("DELETE FROM %s WHERE (key = ?)" % table_name)

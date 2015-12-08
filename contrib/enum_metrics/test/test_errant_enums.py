@@ -9,21 +9,24 @@ class TestClearEnums(TestCase):
         metric_name = 'metric.test'
         args = em.parse_arguments(['delete', '--dryrun', '-m', metric_name, '-t', '836986'])
 
-        assert args.dryrun is True
-        assert args.metricName is metric_name
+        self.assertEquals(args.dryrun, True)
+        self.assertEquals(args.metricName, metric_name)
+        self.assertEquals(args.env, em.LOCALHOST)
 
     def test_valid_args_2(self):
         metric_name = 'metric.test'
-        args = em.parse_arguments(['delete', '--metricName', metric_name, '--tenantId', '836986'])
+        args = em.parse_arguments(['delete', '--metricName', metric_name, '--tenantId', '836986', '-e', 'qe01'])
 
-        assert args.dryrun is False
-        assert args.metricName is metric_name
+        self.assertEquals(args.dryrun, False)
+        self.assertEquals(args.metricName, metric_name)
+        self.assertEquals(args.env, em.QE01)
 
     def test_valid_args_3(self):
         metric_name = 'metric.test'
         args = em.parse_arguments(['list'])
 
-        assert 'dryrun' not in args
+        self.assertTrue('dryrun' not in args)
+        self.assertEquals(args.env, em.LOCALHOST)
 
     def test_invalid_args_1(self):
         self.assertRaises(SystemExit, em.parse_arguments, ['delete', '--dryrun', '--tenantId', '836986'])
@@ -59,25 +62,25 @@ class TestClearEnums(TestCase):
 
         em.clear_excess_enums(args, mock_db_client, mock_es_client)
 
-        assert not mock_db_client.delete_metrics_excess_enums.called, \
-            'delete_metrics_excess_enums method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_full.called, \
-            'delete_metrics_preaggregated_full method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_5m.called, \
-            'delete_metrics_preaggregated_5m method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_20m.called, \
-            'delete_metrics_preaggregated_20m method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_60m.called, \
-            'delete_metrics_preaggregated_60m method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_240m.called, \
-            'delete_metrics_preaggregated_240m method should not have been called'
-        assert not mock_db_client.delete_metrics_preaggregated_1440m.called, \
-            'delete_metrics_preaggregated_1440m method should not have been called'
+        self.assertFalse(mock_db_client.delete_metrics_excess_enums.called,
+                         'delete_metrics_excess_enums method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_full.called,
+                         'delete_metrics_preaggregated_full method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_5m.called,
+                         'delete_metrics_preaggregated_5m method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_20m.called,
+                         'delete_metrics_preaggregated_20m method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_60m.called,
+                         'delete_metrics_preaggregated_60m method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_240m.called,
+                         'delete_metrics_preaggregated_240m method should not have been called')
+        self.assertFalse(mock_db_client.delete_metrics_preaggregated_1440m.called,
+                         'delete_metrics_preaggregated_1440m method should not have been called')
 
-        assert not mock_es_client.delete_metric_metadata.called, \
-            'delete_metric_metadata method should not have been called'
-        assert not mock_es_client.delete_enums_data.called, \
-            'delete_enums_data method should not have been called'
+        self.assertFalse(mock_es_client.delete_metric_metadata.called,
+                         'delete_metric_metadata method should not have been called')
+        self.assertFalse(mock_es_client.delete_enums_data.called,
+                         'delete_enums_data method should not have been called')
 
     @mock.patch('enum_metrics.dbclient')
     @mock.patch('enum_metrics.esclient')
@@ -95,7 +98,7 @@ class TestClearEnums(TestCase):
 
         em.clear_excess_enums(args, mock_db_client, mock_es_client)
 
-        assert not mock_es_client.delete_metric_metadata.called, \
-            'delete_metric_metadata method should not have been called'
-        assert not mock_es_client.delete_enums_data.called, \
-            'delete_enums_data method should not have been called'
+        self.assertFalse(mock_es_client.delete_metric_metadata.called,
+                         'delete_metric_metadata method should not have been called')
+        self.assertFalse(mock_es_client.delete_enums_data.called,
+                         'delete_enums_data method should not have been called')

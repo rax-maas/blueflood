@@ -10,6 +10,11 @@ setup(
     author='Chandra Addala',
     author_email='chandra.addala@rackspace.com',
     description='Utilities to work on enum metrics',
+    include_package_data=True,
+    package_data={
+        # If any package contains *.ini files, include them:
+        'enum_metrics': ['data/*.ini']
+    },
     install_requires=[
         'cassandra-driver',
         'elasticsearch>=1.0.0,<2.0.0',
@@ -17,4 +22,5 @@ setup(
         'nose',
         'nose-cover3'
     ]
+
 )

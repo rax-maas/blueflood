@@ -3,11 +3,18 @@ import argparse
 import json
 import dbclient as db
 import esclient as es
-import config
+import config as cf
+
+LOCALHOST = 'localhost'
+QE01 = 'qe01'
+QE02 = 'qe02'
+STAGING = 'staging'
+PROD = 'prod'
 
 
 def parse_arguments(args):
     """Parses the supplied arguments"""
+
     parser = argparse.ArgumentParser(prog="errant_enums.py", description='Script to delete errant enums')
 
     subparsers = parser.add_subparsers(help='commands')
@@ -24,6 +31,12 @@ def parse_arguments(args):
                                required=True, help='metric name to be deleted')
     delete_parser.add_argument('-t', '--tenantId',
                                required=True, help='tenantId corresponding to the metric name to be deleted')
+
+    environments = [LOCALHOST, QE01, QE02, STAGING, PROD]
+
+    for p in [list_parser, delete_parser]:
+        p.add_argument('-e', '--env', choices=environments,
+                       default=LOCALHOST, help='Environment we are pointing to')
 
     args = parser.parse_args(args)
     print args
@@ -52,12 +65,7 @@ def clear_excess_enums(args, db_client, es_client):
 
 def clear_from_db(db_client, metric_name, tenant_id, dryrun):
     """
-
-    :param nodes:
-    :param metric_name:
-    :param tenant_id:
-    :param dryrun:
-    :return: total number of records being deleted from all tables.
+    Returns total number of records being deleted from all tables
     """
     print '\n***** Deleting from Cassandra *****\n'
 
@@ -165,10 +173,12 @@ def print_enum_related_data(metric_meta_data, enums_data):
 def main():
     args = parse_arguments(sys.argv[1:])
 
-    db_client = db.DBClient()
-    db_client.connect(config.cassandra_nodes)
+    config = cf.Config(args.env.lower())
 
-    es_client = es.ESClient(config.es_nodes)
+    db_client = db.DBClient()
+    db_client.connect(config.get_cassandra_nodes())
+
+    es_client = es.ESClient(config.get_es_nodes())
 
     # 'delete' command has the namespace: Namespace(dryrun=True, metricName='metric_name', tenantId='tenant_id')
     if 'dryrun' in args:
