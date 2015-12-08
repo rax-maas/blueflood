@@ -31,6 +31,9 @@ import java.util.Collection;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
+
 public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
     // gentle reader: remember, all column families are truncated between tests.
@@ -148,31 +151,32 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testCounterRollup() throws IOException {
+    public void testCounterRollup() throws Exception {
         testRolledupMetric(counterLocator, BluefloodCounterRollup.class, BluefloodCounterRollup.class);
     }
     
     @Test
-    public void testGaugeRollup() throws IOException {
+    public void testGaugeRollup() throws Exception {
         testRolledupMetric(gaugeLocator, BluefloodGaugeRollup.class, BluefloodGaugeRollup.class);
     }
     
     @Test
-    public void testTimerRollup() throws IOException {
+    public void testTimerRollup() throws Exception {
         testRolledupMetric(timerLocator, BluefloodTimerRollup.class, BluefloodTimerRollup.class);
     }
     
     @Test
-    public void testSetRollup() throws IOException {
+    public void testSetRollup() throws Exception {
         testRolledupMetric(setLocator, BluefloodSetRollup.class, BluefloodSetRollup.class);
     }
 
     @Test
-    public void testEnumRollup() throws IOException {
+    public void testEnumRollup() throws Exception {
         testRolledupMetric(enumLocator, BluefloodEnumRollup.class, BluefloodEnumRollup.class);
+        testEnumValidatorRunsFor5M(enumLocator,BluefloodEnumRollup.class);
     }
     
-    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException { 
+    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws Exception {
         // full res has 5 samples.
         Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
@@ -188,15 +192,14 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        ThreadPoolExecutor enumValidatorExec = new ThreadPoolBuilder()
-                .withName("Validating Enum Metrics")
-                .withCorePoolSize(10)
-                .withMaxPoolSize(10)
-                .withUnboundedQueue()
-                .build();
+        ThreadPoolExecutor enumValidatorExec = mock(ThreadPoolExecutor.class);
         RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, enumValidatorExec);
         rr.run();
-        
+
+        if (rollupClass == BluefloodEnumRollup.class) {
+            verify(enumValidatorExec, never()).execute(any(EnumValidator.class));
+        }
+
         // assert something in 5m for this locator.
         while (!rec.doneReading() && !rec.doneWriting()) {
             batchWriter.drainBatch();
@@ -210,5 +213,18 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                                                     locator,
                                                     range,
                                                     CassandraModel.CF_METRICS_PREAGGREGATED_5M).getPoints().size());
+    }
+
+    private void testEnumValidatorRunsFor5M (Locator locator, Class rollupClass) {
+        RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
+        SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_20);
+        RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
+        ThreadPoolExecutor enumValidatorExec = mock(ThreadPoolExecutor.class);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, enumValidatorExec);
+        rr.run();
+
+        if (rollupClass == BluefloodEnumRollup.class) {
+            verify(enumValidatorExec, times(1)).execute(any(EnumValidator.class));
+        }
     }
 }
