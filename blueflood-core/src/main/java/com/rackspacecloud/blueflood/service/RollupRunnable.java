@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.google.common.collect.Sets;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
@@ -53,7 +54,6 @@ public class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
     private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
-    private static boolean isEnumRollup = false;
     private ThreadPoolExecutor enumValidatorExecutor;
 
     static {
@@ -106,11 +106,9 @@ public class RollupRunnable implements Runnable {
             ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, srcGran.coarser());
 
-            if (rollupType == RollupType.ENUM) {
+            if (rollupType == RollupType.ENUM && srcGran.equals(Granularity.MIN_5)) {
                 singleRollupReadContext.getEnumMetricsMeter().mark();
-                HashSet<Locator> enumLocatorsSet = new HashSet<Locator>();
-                enumLocatorsSet.add(rollupLocator);
-                enumValidatorExecutor.execute(new EnumValidator(enumLocatorsSet));
+                enumValidatorExecutor.execute(new EnumValidator(Sets.newHashSet(rollupLocator)));
             }
 
             try {
