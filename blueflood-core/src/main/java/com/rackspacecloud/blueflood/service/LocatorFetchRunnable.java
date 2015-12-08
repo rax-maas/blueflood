@@ -47,8 +47,6 @@ class LocatorFetchRunnable implements Runnable {
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
-    private static final Timer enumMetaTypeGetTimer = Metrics.timer(RollupService.class, "Enum Get RollupType Metacache");
-    private static final Timer enumValidatorTimer = Metrics.timer(RollupService.class, "Enum validation scheduling");
 
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
@@ -90,7 +88,6 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
         Set<Locator> locators = new HashSet<Locator>();
-        HashSet<Locator> enumLocators = null ;
 
         try {
             // get a list of all locators to rollup for a shard

@@ -151,32 +151,32 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     }
     
     @Test
-    public void testCounterRollup() throws Exception {
+    public void testCounterRollup() throws IOException {
         testRolledupMetric(counterLocator, BluefloodCounterRollup.class, BluefloodCounterRollup.class);
     }
     
     @Test
-    public void testGaugeRollup() throws Exception {
+    public void testGaugeRollup() throws IOException {
         testRolledupMetric(gaugeLocator, BluefloodGaugeRollup.class, BluefloodGaugeRollup.class);
     }
     
     @Test
-    public void testTimerRollup() throws Exception {
+    public void testTimerRollup() throws IOException {
         testRolledupMetric(timerLocator, BluefloodTimerRollup.class, BluefloodTimerRollup.class);
     }
     
     @Test
-    public void testSetRollup() throws Exception {
+    public void testSetRollup() throws IOException {
         testRolledupMetric(setLocator, BluefloodSetRollup.class, BluefloodSetRollup.class);
     }
 
     @Test
-    public void testEnumRollup() throws Exception {
+    public void testEnumRollup() throws IOException {
         testRolledupMetric(enumLocator, BluefloodEnumRollup.class, BluefloodEnumRollup.class);
-        testEnumValidatorRunsFor5M(enumLocator,BluefloodEnumRollup.class);
+        testEnumValidatorRunsFor5M(enumLocator, BluefloodEnumRollup.class);
     }
     
-    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws Exception {
+    private void testRolledupMetric(Locator locator, Class fullResClass, Class rollupClass) throws IOException {
         // full res has 5 samples.
         Assert.assertEquals(5, reader.getDataToRoll(fullResClass,
                                                     locator,
