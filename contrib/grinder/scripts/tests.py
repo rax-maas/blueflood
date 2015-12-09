@@ -279,10 +279,10 @@ class BluefloodTests(unittest.TestCase):
     payload = json.loads(thread.generate_payload(1, [[2, 1], [2, 2]]))
     valid_payload = [{u'timestamp': 1,
                       u'tenantId': u'2',
-                      u'enums': [{u'value': u'e_g_1', u'name': u'enum_grinder_1'}]},
+                      u'enums': [{u'value': u'e_g_1_0', u'name': u'enum_grinder_1'}]},
                      {u'timestamp': 1,
                       u'tenantId': u'2',
-                      u'enums': [{u'value': u'e_g_2', u'name': u'enum_grinder_2'}]}
+                      u'enums': [{u'value': u'e_g_2_0', u'name': u'enum_grinder_2'}]}
                     ]
     self.assertEqual(payload, valid_payload)
 
@@ -351,7 +351,7 @@ class BluefloodTests(unittest.TestCase):
       thread.slice = [[[2, 0], [2, 1]]]
       thread.position = 0
       thread.finish_time = 10000
-      valid_payload = [{'tenantId': '2', 'timestamp': 1000, 'enums': [{'value': 'e_g_0', 'name': 'enum_grinder_0'}]}, {'tenantId': '2', 'timestamp': 1000, 'enums': [{'value': 'e_g_1', 'name': 'enum_grinder_1'}]}]
+      valid_payload = [{'tenantId': '2', 'timestamp': 1000, 'enums': [{'value': 'e_g_0_0', 'name': 'enum_grinder_0'}]}, {'tenantId': '2', 'timestamp': 1000, 'enums': [{'value': 'e_g_1_0', 'name': 'enum_grinder_1'}]}]
 
       url, payload = thread.make_request(pp)
       #confirm request generates proper URL and payload

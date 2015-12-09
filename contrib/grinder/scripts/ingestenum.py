@@ -56,10 +56,14 @@ class EnumIngestThread(AbstractThread):
                                     self.num_threads(), thread_num)
     self.slice = self.metrics[start:end]
 
+  def generate_enum_suffix(self):
+    return "_" + str(random.randint(0, default_config['enum_num_values']))
+
   def generate_enum_metric(self, time, tenant_id, metric_id):
     return {'tenantId': str(tenant_id),
             'timestamp': time,
-            'enums': [{'name': 'enum_grinder_'+str(metric_id), 'value': 'e_g_'+str(metric_id)}]
+            'enums': [{'name': 'enum_grinder_'+str(metric_id),
+                       'value': 'e_g_'+str(metric_id) + self.generate_enum_suffix()}]
             }
 
   def generate_payload(self, time, batch):
