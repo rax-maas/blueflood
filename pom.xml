@@ -23,7 +23,7 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>${BLUEFLOOD_VERSION}</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-udp</module>
@@ -41,6 +41,8 @@
   <url>http://blueflood.io</url>
 
   <properties>
+    <BUILD_SUFFIX>0-SNAPSHOT</BUILD_SUFFIX>
+    <BLUEFLOOD_VERSION>2.0.${BUILD_SUFFIX}</BLUEFLOOD_VERSION>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
