@@ -25,6 +25,7 @@ default_config = {
   'enum_single_plot_queries_per_interval':10,
   'multiplot_per_interval': 10,
   'enum_multiplot_per_interval': 10,
+  'enum_num_values': 10,
   'singleplot_per_interval': 10,
   'annotations_queries_per_interval': 8}
 
