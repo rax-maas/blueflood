@@ -86,6 +86,7 @@ public class IntegrationTestBase {
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     private static final Random rand = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
+    private static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
 
     protected final void assertNumberOfRows(String cf, int rows) throws Exception {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
@@ -156,7 +157,7 @@ public class IntegrationTestBase {
 
     protected PreaggregatedMetric getEnumMetric(String name, String tenantid, long timestamp) {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
-        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+randString(5),1L).withEnumValue("enumValue"+randString(5),1L);
+        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+pickAnEnumValue());
         return new PreaggregatedMetric(timestamp, locator, new TimeValue(1, TimeUnit.DAYS), rollup);
     }
 
@@ -201,6 +202,11 @@ public class IntegrationTestBase {
 
     protected static <T> Metric makeMetric(final Locator locator, long timestamp, T value) {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
+    }
+
+    protected String pickAnEnumValue() {
+        int index = rand.nextInt(enumValueList.size() - 1);
+        return enumValueList.get(index);
     }
 
     private enum UNIT_ENUM {

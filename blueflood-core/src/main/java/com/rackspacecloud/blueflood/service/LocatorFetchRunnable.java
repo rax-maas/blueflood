@@ -47,6 +47,7 @@ class LocatorFetchRunnable implements Runnable {
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
@@ -96,26 +97,14 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
 
-        // if gran 5 minutes rollup, start a thread with EnumValidator runnable to validate enum values for this set of locators
-        if (gran.equals(Granularity.MIN_5)) {
-            try {
-                Set<Locator> enumLocators = AstyanaxReader.getInstance().getEnumLocatorsFromLocatorSet(locators);
-                if (enumLocators.size() > 0) {
-                    log.debug(String.format("Starting an EnumValidator thread at granularity %s for locators: %s", gran, Arrays.toString(enumLocators.toArray())));
-                    enumValidatorExecutor.execute(new EnumValidator(enumLocators));
-                }
-            } catch (Exception e) {
-                log.error(String.format("Exception in EnumValidator for locators %s: %s", Arrays.toString(locators.toArray()), e.getMessage()), e);
-            }
-        }
-
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
-                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
+                RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
+                rollupReadExecutor.execute(rollupRunnable);
                 rollCount += 1;
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.

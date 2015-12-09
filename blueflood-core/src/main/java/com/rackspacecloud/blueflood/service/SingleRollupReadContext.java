@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -36,7 +37,8 @@ public class SingleRollupReadContext {
     private final Range range;
     private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
-    
+    private static final Meter enumMetricsMeter = Metrics.meter(RollupService.class, "Enum Metrics Rollup Meter");
+
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
 
@@ -53,6 +55,8 @@ public class SingleRollupReadContext {
     Histogram getWaitHist() {
         return waitHist;
     }
+
+    Meter getEnumMetricsMeter() { return enumMetricsMeter; }
 
     Granularity getRollupGranularity() {
         return this.rollupGranularity;

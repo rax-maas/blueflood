@@ -623,6 +623,7 @@ public class AstyanaxReader extends AstyanaxIO {
         } catch (ConnectionException e) {
             log.error("Error reading ExcessEnum Metrics Table", e);
             Instrumentation.markReadError(e);
+            Instrumentation.markExcessEnumReadError();
             throw new RuntimeException(e);
         } finally {
             ctx.stop();
@@ -706,18 +707,5 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
         return map;
-    }
-
-    public Set<Locator> getEnumLocatorsFromLocatorSet(Set<Locator> locators) throws Exception{
-        HashSet<Locator> locatorHashSet = new HashSet<Locator>();
-
-        for (Locator loc : locators) {
-            RollupType rollupType = RollupType.fromString(metaCache.get(loc, rollupTypeCacheKey));
-            if (rollupType == RollupType.ENUM) {
-                locatorHashSet.add(loc);
-            }
-        }
-
-        return locatorHashSet;
     }
 }

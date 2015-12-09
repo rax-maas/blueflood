@@ -164,6 +164,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
         for(String valueName : rollup.getStringEnumValuesWithCounts().keySet()) {
             mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
+            Instrumentation.markEnumMetricWritten();
         }
     }
 
@@ -216,6 +217,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                     .putEmptyColumn(null).execute();
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);
+            Instrumentation.markExcessEnumWriteError();
             log.error("Error writing ExcessEnum Metric", e);
             throw e;
         } finally {
