@@ -108,7 +108,7 @@ public class RollupRunnable implements Runnable {
             ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, dstGran);
 
             if (rollupType == RollupType.ENUM) {
-                singleRollupReadContext.getEnumMetricsMeter().mark();
+                singleRollupReadContext.getEnumMetricsMeterForGranularity(dstGran).mark();
                 //Run the validation for enums every 5 minutes, when data is being rolled up from full to 5m
                 if (dstGran.equals(Granularity.MIN_5) && Configuration.getInstance().getBooleanProperty(CoreConfig.ENUM_VALIDATOR_ENABLED) == true) {
                     enumValidatorExecutor.execute(new EnumValidator(Sets.newHashSet(rollupLocator)));
