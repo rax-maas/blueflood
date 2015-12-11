@@ -1,3 +1,14 @@
+#!/usr/bin/ruby
+
+# This script builds the code, overriding the version number of the pom with
+# one of the form MAJOR.MINOR.BUILD. The major and minor version numbers are
+# taken from the pom file (see the BLUEFLOOD_VERSION maven parameter). The
+# build number should be passed in as the first and only command line argument
+# to the script. The script will then turn a snapshot version string, such as
+# "2.0-SNAPSHOT", into something suitable for a release build, like "2.0.36".
+#
+# Running maven from the command line (e.g. `mvn package`), instead of the
+# script, will still produce artifacts with the SNAPSHOT version string.
 
 require 'rexml/document'
 
