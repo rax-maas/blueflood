@@ -6,10 +6,7 @@ import esclient as es
 import config as cf
 
 LOCALHOST = 'localhost'
-QE01 = 'qe01'
-QE02 = 'qe02'
-STAGING = 'staging'
-PROD = 'prod'
+
 
 
 def parse_arguments(args):
@@ -32,10 +29,8 @@ def parse_arguments(args):
     delete_parser.add_argument('-t', '--tenantId',
                                required=True, help='tenantId corresponding to the metric name to be deleted')
 
-    environments = [LOCALHOST, QE01, QE02, STAGING, PROD]
-
     for p in [list_parser, delete_parser]:
-        p.add_argument('-e', '--env', choices=environments,
+        p.add_argument('-e', '--env', choices=cf.Config.get_environments(),
                        default=LOCALHOST, help='Environment we are pointing to')
 
     args = parser.parse_args(args)

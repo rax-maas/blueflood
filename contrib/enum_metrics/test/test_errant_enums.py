@@ -15,11 +15,11 @@ class TestClearEnums(TestCase):
 
     def test_valid_args_2(self):
         metric_name = 'metric.test'
-        args = em.parse_arguments(['delete', '--metricName', metric_name, '--tenantId', '836986', '-e', 'qe01'])
+        args = em.parse_arguments(['delete', '--metricName', metric_name, '--tenantId', '836986', '-e', em.LOCALHOST])
 
         self.assertEquals(args.dryrun, False)
         self.assertEquals(args.metricName, metric_name)
-        self.assertEquals(args.env, em.QE01)
+        self.assertEquals(args.env, em.LOCALHOST)
 
     def test_valid_args_3(self):
         metric_name = 'metric.test'

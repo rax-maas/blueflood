@@ -5,7 +5,7 @@ This project contains some python utilities to work with enum metrics.
 
 ### Setup
 
-Get the [blue flood](https://github.com/rackerlabs/blueflood) repo from github. Execute the following commands
+Get the [blueflood](https://github.com/rackerlabs/blueflood) repo from github. Execute the following commands
 
     cd $BLUEFLOOD_REPO_LOCATION/contrib/enum_metrics
     virtualenv enums
@@ -38,7 +38,7 @@ excess enum (i.e. if its present in metrics_excess_enums table)
 ####Delete command
 
     usage: errant_enums.py delete [-h] [--dryrun] -m METRICNAME -t TENANTID
-                                  [-e {localhost,qe01,qe02,staging,prod}]
+                                  [-e {localhost}]
     
     optional arguments:
       -h, --help            show this help message and exit
@@ -49,7 +49,7 @@ excess enum (i.e. if its present in metrics_excess_enums table)
       -t TENANTID, --tenantId TENANTID
                             tenantId corresponding to the metric name to be
                             deleted
-      -e {localhost,qe01,qe02,staging,prod}, --env {localhost,qe01,qe02,staging,prod}
+      -e {localhost}, --env {localhost}
                             Environment we are pointing to
 
 Example Usage:
@@ -59,11 +59,11 @@ Example Usage:
 
 ####List command
 
-    usage: errant_enums.py list [-h] [-e {localhost,qe01,qe02,staging,prod}]
+    usage: errant_enums.py list [-h] [-e {localhost}]
     
     optional arguments:
       -h, --help            show this help message and exit
-      -e {localhost,qe01,qe02,staging,prod}, --env {localhost,qe01,qe02,staging,prod}
+      -e {localhost}, --env {localhost}
                             Environment we are pointing to
 
 
