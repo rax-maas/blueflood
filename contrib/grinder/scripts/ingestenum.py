@@ -62,7 +62,7 @@ class EnumIngestThread(AbstractThread):
   def generate_enum_metric(self, time, tenant_id, metric_id):
     return {'tenantId': str(tenant_id),
             'timestamp': time,
-            'enums': [{'name': 'enum_grinder_'+str(metric_id),
+            'enums': [{'name': generate_enum_metric_name(metric_id),
                        'value': 'e_g_'+str(metric_id) + self.generate_enum_suffix()}]
             }
 
