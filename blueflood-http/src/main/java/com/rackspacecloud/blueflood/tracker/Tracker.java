@@ -31,11 +31,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Tracker implements TrackerMBean {
 
     private static final Logger log = LoggerFactory.getLogger(Tracker.class);
     private static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
+    private static final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
 
     static Set tenantIds = new HashSet();
     static boolean isTrackingDelayedMetrics = false;
@@ -95,7 +98,8 @@ public class Tracker implements TrackerMBean {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the request if it is
         if (request == null) return;
 
-        String tenantId = request.getHeader("tenantId");
+        String tenantId = findTid( request.getUri() );
+
         if (isTracking(tenantId)) {
 
             // get headers
@@ -121,6 +125,16 @@ public class Tracker implements TrackerMBean {
 
             log.info(logMessage);
         }
+    }
+
+    static String findTid( String uri ) {
+
+        Matcher m = patternGetTid.matcher( uri );
+
+        if( m.matches() )
+            return m.group( 1 );
+        else
+            return null;
     }
 
     public static void trackDelayedMetricsTenant(String tenantid) {
