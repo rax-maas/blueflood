@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 
 public class JSONBasicRollupOutputSerializerTest {
     private final Set<MetricStat> filterStats;
@@ -161,6 +162,33 @@ public class JSONBasicRollupOutputSerializerTest {
         }
     }
     
+    @Test
+    public void testEnums() throws Exception {
+        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
+        final MetricData metricData = new MetricData(
+                FakeMetricDataGenerator.generateFakeEnumRollupPoints(), 
+                "unknown", 
+                MetricData.Type.ENUM);
+        JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_STATS);
+        final JSONArray data = (JSONArray)metricDataJSON.get("values");
+        
+        Assert.assertEquals(5, data.size());
+        for (int i = 0; i < data.size(); i++) {
+            final JSONObject dataJSON = (JSONObject)data.get(i);
+            final Map<String,Long> evJSON = (Map<String, Long>)dataJSON.get("enum_values");
+            Set<String> keys = evJSON.keySet();
+
+            Assert.assertEquals(1, keys.size());
+            for (String key : keys) {
+              Assert.assertEquals(key, "enum_value_" + i);
+              Assert.assertEquals((long)evJSON.get(key), 1);
+            }
+            Assert.assertNotNull(dataJSON.get("numPoints"));
+            Assert.assertEquals(1, dataJSON.get("numPoints"));
+            Assert.assertEquals(MetricData.Type.ENUM, dataJSON.get("type"));
+        }
+    }
+
     @Test
     public void testGauges() throws Exception {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
