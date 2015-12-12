@@ -43,7 +43,7 @@ public class BatchedMetricsJSONOutputSerializer extends JSONBasicRollupsOutputSe
             singleMetricJSON.put("unit", one.getValue().getUnit() == null ? Util.UNKNOWN : one.getValue().getUnit());
             singleMetricJSON.put("type", one.getValue().getType());
             Set<MetricStat> oneFilterStats = fixFilterStats(one.getValue(), filterStats);
-            JSONArray values = transformDataToJSONArray(one.getValue(), filterStats);
+            JSONArray values = transformDataToJSONArray(one.getValue(), oneFilterStats);
             singleMetricJSON.put("data", values);
             metricsArray.add(singleMetricJSON);
         }
