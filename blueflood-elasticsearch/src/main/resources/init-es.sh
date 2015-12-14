@@ -1,5 +1,11 @@
 #!/bin/bash
-#WARNING this will destroy existing ES data and reset it to the proper init state
+# init-es.sh is the script to be run to properly setup the es cluster.  The main things
+#  it does is set up the aliases and mappings as required by BF.  The mappings
+#  are required to properly tokenize the incoming data.
+
+#WARNING: this script will destroy existing ES data and reset it to the proper init state
+
+
 function checkFile
 {
   echo checking $1.
