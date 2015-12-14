@@ -75,3 +75,4 @@ curl -XPUT 'http://localhost:9200/enums/_mapping/metrics' -d @metrics_mapping_en
 #add mappings to graphite_event index
 curl -XDELETE 'http://localhost:9200/events/_mapping/graphite_event' >& /dev/null
 curl -XPUT 'http://localhost:9200/events/_mapping/graphite_event' -d @events_mapping.json
+
