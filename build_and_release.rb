@@ -56,6 +56,6 @@ run_command("mvn verify -DBUILD_SUFFIX=#{build_number} -P cassandra-2.0 findbugs
 
 
 
-# # tag the commit so we can associate it with the release
-# run_command("git tag release-#{new_version}")
-# run_command("git push --tags")
+# tag the commit so we can associate it with the release
+run_command("git tag release-#{new_version}")
+run_command("git push --tags")
