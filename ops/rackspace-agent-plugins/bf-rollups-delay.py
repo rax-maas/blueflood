@@ -110,6 +110,8 @@ def print_stats_for_metrics_state(metrics_state_for_shards):
             # print 'Most delay: %d, Res: %s' % (float(max_delay/(1000*60)),
             #                                    resolution)
             across_shards_most_delay.append(max_delay)
+            for slot in delayed_slots[resolution][shard].keys():
+              print 'Delayed slot %s %d %d' % (resolution, shard, slot)
 
         if (len(across_shards_most_delay)):
             output[resolution] = max(across_shards_most_delay)
