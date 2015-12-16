@@ -51,7 +51,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
                 "        {\n" +
                 "          \"numPoints\": 1,\n" +
                 "          \"timestamp\": 1382400000,\n" +
-                "          \"average\": 397\n" +
+                "          \"latest\": 397\n" +
                 "        }\n" +
                 "      ],\n" +
                 "      \"type\": \"number\"\n" +
@@ -63,7 +63,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
                 "        {\n" +
                 "          \"numPoints\": 1,\n" +
                 "          \"timestamp\": 1382400000,\n" +
-                "          \"average\": 56\n" +
+                "          \"latest\": 56\n" +
                 "        }\n" +
                 "      ],\n" +
                 "      \"type\": \"number\"\n" +

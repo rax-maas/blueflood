@@ -31,13 +31,8 @@ import java.util.Set;
 
 public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSerializer<JSONObject> {
     private static final Logger log = LoggerFactory.getLogger(JSONBasicRollupsOutputSerializer.class);
-    
-    @Override
-    public JSONObject transformRollupData(MetricData metricData, Set<MetricStat> filterStats)
-            throws SerializationException {
-        final JSONObject globalJSON = new JSONObject();
-        final JSONObject metaObject = new JSONObject();
-        
+
+    protected Set<MetricStat> fixFilterStats(MetricData metricData, Set<MetricStat> filterStats) {
         // if no stats were entered, figure out what type we are dealing with and select out default stats. 
         if (metricData.getData().getPoints().size() > 0 && filterStats == PlotRequestParser.DEFAULT_STATS) {
             Class dataClass = metricData.getData().getDataClass();
@@ -55,6 +50,16 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
                 filterStats = PlotRequestParser.DEFAULT_ENUM;
             // else, I got nothing.
         }
+
+        return filterStats;
+    }
+
+    @Override
+    public JSONObject transformRollupData(MetricData metricData, Set<MetricStat> filterStats)
+            throws SerializationException {
+        final JSONObject globalJSON = new JSONObject();
+        final JSONObject metaObject = new JSONObject();
+        filterStats = fixFilterStats(metricData, filterStats);
 
         final JSONArray valuesArray = transformDataToJSONArray(metricData, filterStats);
 
