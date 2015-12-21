@@ -9,6 +9,15 @@
 #
 # Running maven from the command line (e.g. `mvn package`), instead of the
 # script, will still produce artifacts with the SNAPSHOT version string.
+#
+# To produce a snapshot build of the software, run the following at the command
+# line:
+#   mvn package
+#
+# To produce a release build of the software, run the following:
+#   ruby build_and_release VERSION_SUFFIX
+# where VERSION_SUFFIX is a number.
+
 
 require 'rexml/document'
 
