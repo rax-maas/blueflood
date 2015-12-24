@@ -9,8 +9,7 @@ class Config:
 
     def __init__(self, env):
         self.env = env
-
-        print self.parser.sections()
+        #print self.parser.sections()
 
     def __get_value(self, config_name):
         return Config.parser.get(self.env, config_name)
