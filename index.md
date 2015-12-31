@@ -4,10 +4,28 @@ title: Home
 weight: 0
 ---
 
-[ ![Build Status] [travis-image] ] [travis]
-[ ![Coveralls] [coveralls-image] ] [coveralls]
-[ ![Release] [release-image] ] [releases]
-[ ![License] [license-image] ] [license]
+[ ![Build Status] [travis-image] ] [travis] [ ![Coveralls] [coveralls-image] ] [coveralls] [ ![Release] [release-image] ] [releases] [ ![License] [license-image] ] [license]
+
+## What is Blueflood?
+
+Simply put, Blueflood is a big, fast database for your metrics.  
+
+Data from Blueflood can be used to construct dashboards, generate reports, graphs or for any other use involving time series data.  It focuses on near-realtime data, with data that is queryable mere milliseconds after ingestion.
+
+Data is stored using Cassandra to make Blueflood fault-tolerant and highly-available.  In contrast to forebearers such as [CarbonDB](http://carbondb.org/) or [RRDTool](http://oss.oetiker.ch/rrdtool/), your Blueflood cluster can expand as your metrics needs grow.  Simply add more Cassandra nodes.  
+
+Written in Java, Blueflood exists as a cluster of distributed services.  The services are:
+
+* Ingestion
+* Query 
+* Rollup
+
+You send metrics to the ingestion service.  You query your metrics from the Query service.  And in the background, rollups are batch-processed offline so that queries for large time-periods are returned quickly.
+
+Blueflood was created by the [Rackspace Monitoring](http://www.rackspace.com/cloud/monitoring) team at [Rackspace](http://www.rackspace.com/) to manage raw metrics generated from the Cloud Monitoring system.  Blueflood is now largely promoted by the [Rackspace Metrics](https://www.rackspace.com/knowledge_center/article/rackspace-metrics-overview) team which provides Blueflood-as-a-Service as a free service (yes, really -- just [talk to us] [talk-to-us]).  Since making the product open source, several other large companies have begun using the tool.
+
+Blueflood is an open source under the [Apache 2.0 license] [license].
+
 
 ## Quickstart
 
