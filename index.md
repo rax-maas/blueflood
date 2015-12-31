@@ -4,114 +4,49 @@ title: Home
 weight: 0
 ---
 
-## Getting Started
+[ ![Build Status] [travis-image] ] [travis]
+[ ![Coveralls] [coveralls-image] ] [coveralls]
+[ ![Release] [release-image] ] [releases]
+[ ![License] [license-image] ] [license]
 
-The latest code will always be here on Github.
+## Quickstart
 
-```
-git clone git@github.com:rackerlabs/blueflood.git
-cd blueflood
-```
 
-You can run the entire suite of tests using Maven:
+There are a couple different ways that you can get started with Blueflood:
 
-```
-mvn test integration-test
-```
-
-### Building
-
-Build an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-uber-jar) using maven:
+### Method 1: Docker
+Assuming git and docker installed:
 
 ```
-mvn package -P all-modules
+git clone -b goru97/docker --single-branch https://github.com/rackerlabs/blueflood.git
+cd blueflood/contrib/blueflood-docker/
+docker-compose up &
 ```
 
-The uber jar will be found in ${BLUEFLOOD_DIR}/blueflood-all/target/blueflood-all-${VERSION}-jar-with-dependencies.jar.
-This jar contains all the dependencies necessary to run Blueflood with a very simple classpath.
+* note: this will be in the master branch as soon as [PR 558](https://github.com/rackerlabs/blueflood/pull/558) gets merged
 
-### Running
-
-The best place to start is the [10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10minuteguide).
-In a nutshell, you must do this:
+### Method 2: Vagrant
+Assuming **[Vagrant] [vagrant-install]** and **[VirtualBox] [virtualbox-install]** installed:
 
 ```
-java -cp /path/to/uber.jar \
--Dblueflood.config=file:///path/to/blueflood.conf \
--Dlog4j.configuration=file:///path/to/log4j.properties \
-com.rackspacecloud.blueflood.service.BluefloodServiceStarter
-```
-
-Each configuration option can be found in Configuration.java.  Each of those can be overridden on the command line by
-doing:
-
-```
--DCONFIG_OPTION=NEW_VALUE
-```
-
-## Development
-
-We anticipate different use cases for Blueflood.  For example, at Rackspace it made more sense to create a
-[Thrift](http://thrift.apache.org) layer for ingestion and query.  We have chosen not to release that layer because
-it contains a lot of code that is specific to our infrastructure and other backend systems.
-
-We decided to release Blueflood with reference HTTP-based ingestion and query layers.  These layers may be replaced by
-code that works better with your enterprise.
-
-### Custom Ingestion
-
-Several things must be done to properly ingest data:
-1. Full resolution data must be written via `AstyanaxWriter.insertFull()`.
-2. A `ScheduleContext` object must be `update()`d regarding that metrics shard and collection time.
-3. Shard state must be periodically pushed to the database for each shard that metrics have been collected for.  This
-   can be done by getting the dirty slot information from the `ShardStateManager` associated with a particular
-   `ScheduleContext` object.
-
-`HttpMetricsIngestionServer` is an example of how to set up a multi-threaded staged ingestion pipeline.
-
-### Custom Querying
-
-Thankfully, querying is easier than ingestion.  Whatever query service you create should have a handler that extends
-`RollupHandler`, which provides a basic wrapping of low level read operations provided by `AstyanaxReader`.
-
-## Operations
-
-Blueflood exposes a great deal of internal performance metrics over
-[JMX](https://blogs.oracle.com/jmxetc/entry/what_is_jmx).
-Blueflood respects the standard JMX JVM settings:
-
-```
-com.sun.management.jmxremote.authenticate
-com.sun.management.jmxremote.ssl
-java.rmi.server.hostname
-com.sun.management.jmxremote.port
-```
-
-You can use any tool that supports JMX to get internal performance metrics out of Blueflood.
-
-Additionally, internal performance metrics can be pushed directly to a [Graphite](http://graphite.wikidot.com/)
-service by specifying the following in your Blueflood
-configuration:
-
-```
-GRAPHITE_HOST
-GRAPHITE_PORT
-GRAPHITE_PREFIX
+mkdir blueflood_demo; cd blueflood_demo
+vagrant init blueflood/blueflood; vagrant up
 ```
 
 ## Contributing
 
-First, we welcome bug reports and contributions.
-If you would like to contribute code, just fork this project and send us a pull request.
-If you would like to contribute documentation, you should get familiar with
-[our wiki](https://github.com/rackerlabs/blueflood/wiki)
+Let's just get this straight: we love anybody who submits bug reports, fixes documentation, joins our IRC channel, submits PR's... whatever you got, we'll gladly accept.
 
-Also, we have set up a [Google Group](https://groups.google.com/forum/#!forum/blueflood-discuss) to answer questions.
-If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenode.
+If you want to get involved at any level, check out our **[Contributing] [contributing]** page on the wiki!
 
-## License
+## Questions or need help?
 
-Copyright 2013 Rackspace
+Check out the **[Talk to us] [talk-to-us]** page on our wiki.
+
+
+## Copyright and License
+
+Copyright 2013-2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -124,3 +59,22 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+
+
+[travis-image]: https://secure.travis-ci.org/rackerlabs/blueflood.png?branch=master
+[travis]: http://travis-ci.org/rackerlabs/blueflood
+[coveralls-image]: https://coveralls.io/repos/rackerlabs/blueflood/badge.svg?branch=master
+[coveralls]: https://coveralls.io/github/rackerlabs/blueflood
+[release-image]: http://img.shields.io/badge/rax-release-v1.0.1956.svg
+[releases]: https://github.com/rackerlabs/blueflood/releases
+[license-image]: https://img.shields.io/badge/license-Apache%202-blue.svg
+[license]: http://www.apache.org/licenses/LICENSE-2.0
+
+[wiki]: https://github.com/rackerlabs/blueflood/wiki
+[talk-to-us]: https://github.com/rackerlabs/blueflood/wiki/Talk-to-us
+[contributing]: https://github.com/rackerlabs/blueflood/wiki/Contributing
+
+
+[vagrant-install]: http://docs.vagrantup.com/v2/installation/index.html
+[virtualbox-install]: https://www.virtualbox.org/wiki/Downloads
