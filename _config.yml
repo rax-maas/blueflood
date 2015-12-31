@@ -17,3 +17,9 @@ collections:
 sass:
     sass_dir: _scss
     style: :compressed
+defaults:
+  -
+    scope:
+      path: ""
+    values:
+      layout: "page"
