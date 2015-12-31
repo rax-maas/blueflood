@@ -2,7 +2,11 @@
  <img src="http://i.imgur.com/dJwsM5z.gif" width="500" height="350" align=center>
 </p>
 
-# Blueflood [![Build Status](https://secure.travis-ci.org/rackerlabs/blueflood.png?branch=master)](http://travis-ci.org/rackerlabs/blueflood) [![Coverage Status](https://coveralls.io/repos/rackerlabs/blueflood/badge.svg?branch=master)](https://coveralls.io/r/rackerlabs/blueflood)
+# Blueflood 
+[ ![Build Status] [travis-image] ] [travis]
+[ ![Coveralls] [coveralls-image] ] [coveralls]
+[ ![Release] [release-image] ] [releases]
+[ ![License] [license-image] ] [license]
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
@@ -129,10 +133,19 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-2.0 
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+[travis-image]: https://secure.travis-ci.org/rackerlabs/blueflood.png?branch=master
+[travis]: http://travis-ci.org/rackerlabs/blueflood
+[coveralls-image]: https://coveralls.io/repos/rackerlabs/blueflood/badge.svg?branch=master
+[coveralls]: https://coveralls.io/github/rackerlabs/blueflood
+[release-image]: http://img.shields.io/badge/rax-release-v1.0.1956.svg
+[releases]: https://github.com/rackerlabs/blueflood/releases
+[license-image]: https://img.shields.io/badge/license-Apache%202-blue.svg
+[license]: http://www.apache.org/licenses/LICENSE-2.0
