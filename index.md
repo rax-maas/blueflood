@@ -10,7 +10,7 @@ weight: 0
 
 Simply put, Blueflood is a big, fast database for your metrics.  
 
-Data from Blueflood can be used to construct dashboards, generate reports, graphs or for any other use involving time series data.  It focuses on near-realtime data, with data that is queryable mere milliseconds after ingestion.
+Data from Blueflood can be used to construct dashboards, generate reports, graphs or for any other use involving time-series data.  It focuses on near-realtime data, with data that is queryable mere milliseconds after ingestion.
 
 Data is stored using Cassandra to make Blueflood fault-tolerant and highly-available.  In contrast to forebearers such as [CarbonDB](http://carbondb.org/) or [RRDTool](http://oss.oetiker.ch/rrdtool/), your Blueflood cluster can expand as your metrics needs grow.  Simply add more Cassandra nodes.  
 
@@ -66,18 +66,11 @@ Check out the **[Talk to us] [talk-to-us]** page on our wiki.
 
 Copyright 2013-2015 Rackspace
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
 [travis-image]: https://secure.travis-ci.org/rackerlabs/blueflood.png?branch=master
