@@ -3,6 +3,10 @@ blueflood:
   links:
     - cassandra
     - elasticsearch
+  ports:
+        - "19000:19000"
+        - "20000:20000"
+        - "9180:9180"
 
 cassandra:
   image: cassandra:2.1

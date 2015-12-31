@@ -16,3 +16,4 @@ CMD ["/startBlueflood.sh"]
 
 EXPOSE 19000
 EXPOSE 20000
+EXPOSE 9180
