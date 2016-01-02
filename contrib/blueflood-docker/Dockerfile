@@ -10,7 +10,7 @@ RUN pip install cqlsh
 
 ADD ./configs/ .
 
-RUN wget https://github.com/rackerlabs/blueflood/releases/download/rax-release-v1.0.1956/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar
+RUN curl -s -L https://github.com/rackerlabs/blueflood/releases/latest | egrep -o 'rackerlabs/blueflood/releases/download/rax-release-.*/blueflood-all-.*-jar-with-dependencies.jar' |  xargs -I % curl -C - -L https://github.com/% --create-dirs -o ./blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar
 
 CMD ["/startBlueflood.sh"]
 
