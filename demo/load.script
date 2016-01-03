@@ -1,3 +1,10 @@
+/*
+This script is old, but may still be useful for anyone who wants to load a demo schema
+for Blueflood on Cassandra 1.1.  This script hasn't been actively maintained so YMMV.
+
+Please use load.cdl for a more up-to-date schema which you can load via cqlsh.
+*/
+
 CREATE KEYSPACE DATA
     WITH placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy'
     AND strategy_options = {replication_factor:1};
