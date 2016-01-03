@@ -1,0 +1,8 @@
+Vagrant.configure(2) do |config|
+  config.vm.box = "blueflood/blueflood"
+  config.vm.network "forwarded_port", guest: 9160, host: 19160  # port forward for cassandra
+  config.vm.network "forwarded_port", guest: 9180, host: 19180  # port forward for blueflood jmx
+  config.vm.network "forwarded_port", guest: 9300, host: 19300  # port forward for elasticsearch
+  config.vm.network "forwarded_port", guest: 19000, host: 19000 # port forward for blueflood ingest
+  config.vm.network "forwarded_port", guest: 20000, host: 20000 # port forward for blueflood query
+end
