@@ -51,6 +51,23 @@ mkdir blueflood_demo; cd blueflood_demo
 vagrant init blueflood/blueflood; vagrant up
 ```
 
+## Media
+
+* **Metrics Meetup**, December 2014 - *Blueflood: Multi-tenanted Time-series Datastore*:
+	* [Video](https://vimeo.com/114585521)
+	* [Slides](https://raw.githubusercontent.com/rackerlabs/blueflood/master/contrib/presentations/MetricsMeetupDecember2014.pdf)
+* **Berlin Buzzwords**, May 2014 - *Blueflood 2.0 and beyond: Distributed open source metrics processing*:
+  * [Video](https://www.youtube.com/watch?v=NmZTdWzX5v8&list=PLq-odUc2x7i-Q5gQtkmba4ov37XRPjp6n&index=33)
+  * [Slides](http://berlinbuzzwords.de/sites/berlinbuzzwords.de/files/media/documents/gary_dusbabek_berlin_buzzwords_2014.pdf)
+* **Metrics Meetup**, February 2014 - *Introduction to Blueflood*:
+	* [Video](http://vimeo.com/87210602)
+	* [Slides](http://www.lakshmikannan.me/slides/2014-02-19-sf-metrics-meetup/#/)
+	* This presentation given to the [SF Metrics Meetup](http://www.meetup.com/San-Francisco-Metrics-Meetup/) group in February 2014 is a good video introduction to Blueflood.
+* **Cassandra EU**, October 2013 - *Blueflood: Simple Metrics Processing*:
+	* [Video](https://www.youtube.com/watch?v=1rcffSq26z0)
+	* [Slides](http://www.slideshare.net/gdusbabek/blueflood-open-source-metrics-processing-at-cassandraeu-2013)
+
+
 ## Contributing
 
 Let's just get this straight: we love anybody who submits bug reports, fixes documentation, joins our IRC channel, submits PR's... whatever you got, we'll gladly accept.
