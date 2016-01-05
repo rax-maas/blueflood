@@ -41,7 +41,7 @@ public class ExcessEnumsReaderIntegrationTest extends IntegrationTestBase {
             ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
         // Start the thread to read the table from Cassandra
         eerThread.start();
-        Thread.sleep(200);
+        Thread.sleep(2000);
         Assert.assertTrue("After the table is read from Cassandra the locator should be found", 
             ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
 
