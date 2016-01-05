@@ -22,7 +22,7 @@ Written in Java, Blueflood exists as a cluster of distributed services.  The ser
 
 You send metrics to the ingestion service.  You query your metrics from the Query service.  And in the background, rollups are batch-processed offline so that queries for large time-periods are returned quickly.
 
-Blueflood was created by the [Rackspace Monitoring](http://www.rackspace.com/cloud/monitoring) team at [Rackspace](http://www.rackspace.com/) to manage raw metrics generated from the Cloud Monitoring system.  Blueflood is now largely promoted by the [Rackspace Metrics](https://www.rackspace.com/knowledge_center/article/rackspace-metrics-overview) team which provides Blueflood-as-a-Service as a free service (yes, really -- just [talk to us] [talk-to-us]).  Since making the product open source, several other large companies have begun using the tool.
+Blueflood was created by the [Rackspace Monitoring](http://www.rackspace.com/cloud/monitoring) team at [Rackspace](http://www.rackspace.com/) to manage raw metrics generated from the Rackspace Monitoring system.  Blueflood is now largely promoted by the [Rackspace Metrics](https://www.rackspace.com/knowledge_center/article/rackspace-metrics-overview) team which provides Blueflood-as-a-Service as a free service (yes, really -- just [talk to us] [talk-to-us]).  Since making the product open source, several other large companies have begun using the tool.
 
 Blueflood is an open source under the [Apache 2.0 license] [license].
 
