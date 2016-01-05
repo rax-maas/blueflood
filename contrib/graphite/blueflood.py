@@ -10,6 +10,10 @@ import traceback
 import os.path
 import fnmatch
 
+import Queue
+import threading
+
+
 try:
     from graphite_api.intervals import Interval, IntervalSet
     from graphite_api.node import LeafNode, BranchNode
@@ -21,7 +25,7 @@ except ImportError:
 
 
 secs_per_res = {
-  'FULL': 1,
+  'FULL': 60,   # Setting this to 60 seems to best emulate graphite/whisper for dogfooding
   'MIN5': 5*60,
   'MIN20': 20*60,
   'MIN60': 60*60,
@@ -49,11 +53,15 @@ def calc_res(start, stop):
     res = 'MIN1440'
   return res
 
-class TenantBluefloodFinder(object):
+class TenantBluefloodFinder(threading.Thread):
   __fetch_multi__ = 'tenant_blueflood'
   __fetch_events__ = 'tenant_blueflood'
   def __init__(self, config=None):
-    print("Blueflood Finder v25")
+    print("Blueflood Finder v31")
+    threading.Thread.__init__(self)
+    if os.path.isfile("/root/pdb-flag"):
+      import remote_pdb
+      remote_pdb.RemotePdb('127.0.0.1', 4444).set_trace()
     if config is not None:
       bf_config = config.get('blueflood', {})
       urls = bf_config.get('urls', bf_config.get('url', '').strip('/'))
@@ -77,23 +85,33 @@ class TenantBluefloodFinder(object):
       bfauth = class_(config)
       auth.set_auth(bfauth)
 
+    self.exit_flag = 0
+    self.metrics_q = Queue.Queue(1)
+    self.data_q = Queue.Queue(1)
+
     self.tenant = tenant
     self.bf_query_endpoint = urls[0]
     self.enable_submetrics = enable_submetrics
     self.submetric_aliases = submetric_aliases
     self.client = BluefloodClient(self.bf_query_endpoint, self.tenant, 
                                   self.enable_submetrics, self.submetric_aliases)
+    self.daemon = True
+    self.start()
     print("BF finder submetrics enabled: ", enable_submetrics)
 
-  def complete(self, metric, query_depth):
+  
+  def run(self):
+    #This separate thread allows queued reads to happen in the background
+    print("BF enum thread started: ")
+    while not self.exit_flag:
+      metric = self.metrics_q.get()
+      self.data_q.put(self.find_metrics_with_enum_values(metric))
+        
+
+  def complete(self, metric, complete_len):
+    #returns true if metric is a complete metric name wrt the query
     metric_parts = metric.split('.')
-    if self.enable_submetrics:
-      complete_len = query_depth - 1
-    else:
-      complete_len = query_depth 
     return (len(metric_parts) == complete_len)
-
-
 
   def make_request(self, url, payload, headers):
     if auth.is_active():
@@ -105,19 +123,30 @@ class TenantBluefloodFinder(object):
     return r
 
   def find_metrics_endpoint(self, endpoint, tenant):
-    return "%s/v2.0/%s/metrics/search" % (endpoint, tenant)
+    return "%s/v2.0/%s/metrics/search?include_enum_values=true" % (endpoint, tenant)
 
-  def find_metrics(self, query):
+  def find_metrics_with_enum_values(self, query):
+    #BF search command that returns enum values as well as metric names
     print "BluefloodClient.find_metrics: " + str(query)
     payload = {'query': query}
     headers = auth.headers()
     endpoint = self.find_metrics_endpoint(self.bf_query_endpoint, self.tenant)
     r = self.make_request(endpoint, payload, headers)
-
+    ret_dict = {}
     if r.status_code == 200:
-        return [m['metric'] for m in r.json()]
+      for m in r.json():
+        if 'enum_values' in m:
+          v = m['enum_values']
+        else:
+          v = None
+        ret_dict[m['metric']] = v
+      return ret_dict
     else:
-      return []
+      return {}
+
+  def find_metrics(self, query):
+    #BF search command that returns metric names without enum values
+    return self.find_metrics_with_enum_values(query).keys()
 
   def find_nodes_with_submetrics(self, query):
     # By definition, when using submetrics, the names of all Leafnodes must end in a submetric alias
@@ -132,13 +161,27 @@ class TenantBluefloodFinder(object):
     # Every submetric leaf node is covered by one of the above two cases.  Everything else is a 
     # branch node.
 
+    def submetric_is_enum_value(submetric_alias):
+      return self.submetric_aliases[submetric_alias] == 'enum'
+
     query_parts = query.pattern.split('.')
     query_depth = len(query_parts)
-
+    submetric_alias = query_parts[-1]
+    complete_len = query_depth - 1
     # The pattern which all complete metrics will match
-    complete_pattern = '.'.join(query_parts[0:-1])
-
-    if (query_depth > 1) and (query_parts[-1] == '*'):
+    complete_pattern = '.'.join(query_parts[:-1])
+    
+    #handle enums 
+    # enums are required to have an "enum" submetric alias so 
+    # this is the only read required, (no background read.)
+    if (query_depth > 2) and (submetric_alias in self.submetric_aliases):
+      if (submetric_is_enum_value(submetric_alias)):
+        enum_name = '.'.join(query_parts[:-2])
+        for metric, enums in self.find_metrics_with_enum_values(enum_name).items():
+          for n in self.make_enum_nodes(metric, enums, complete_pattern):
+            yield n
+        return
+    if (query_depth > 1) and (submetric_alias == '*'):
       #  In this if clause we are searching for complete metric names
       #  followed by a ".*". If so, we are requesting a list of submetric
       #  names, so return leaf nodes for each submetric alias that is
@@ -149,13 +192,13 @@ class TenantBluefloodFinder(object):
       new_pattern = complete_pattern + '*'
       for metric in self.find_metrics(new_pattern):
         metric_parts = metric.split('.')
-        if self.complete(metric, query_depth) and fnmatch.fnmatchcase(metric, complete_pattern):
+        if self.complete(metric, complete_len) and fnmatch.fnmatchcase(metric, complete_pattern):
           for alias, _ in self.submetric_aliases.items():
             yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
                                           TenantBluefloodReader(metric, self.tenant, 
                                                                 self.bf_query_endpoint, 
                                                                 self.enable_submetrics, 
-                                                                self.submetric_aliases))
+                                                                self.submetric_aliases, None))
         else:
           # Make sure the branch nodes match the original pattern
           if fnmatch.fnmatchcase(metric, query.pattern):
@@ -163,29 +206,56 @@ class TenantBluefloodFinder(object):
 
 
     #if searching for a particular submetric alias, create a leaf node for it
-    elif (query_depth > 1) and (query_parts[-1] in self.submetric_aliases):
+    elif (query_depth > 1) and (submetric_alias in self.submetric_aliases):
       for metric in self.find_metrics(complete_pattern):
-        if self.complete(metric, query_depth):
-          yield TenantBluefloodLeafNode('.'.join([metric, query_parts[-1]]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
+        if self.complete(metric, complete_len):
+          yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
 
     #everything else is a branch node
     else: 
       for metric in self.find_metrics(query.pattern):
         metric_parts = metric.split('.')
-        if not self.complete(metric, query_depth):
+        if not self.complete(metric, complete_len):
           yield BranchNode('.'.join(metric_parts[:query_depth]))
+
+
+  def make_non_enum_node(self, metric, complete_len):
+    if not self.complete(metric, complete_len):
+      metric_parts = metric.split('.')
+      yield BranchNode('.'.join(metric_parts[:complete_len]))
+    else:
+      yield TenantBluefloodLeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
+
+  def make_enum_nodes(self, metric, enums, pattern):
+    for e in enums:
+      metric_with_enum = metric + '.' + e
+      if fnmatch.fnmatchcase(metric_with_enum, pattern):
+        yield TenantBluefloodLeafNode(metric_with_enum, TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, e))
+
+
 
   def find_nodes_without_submetrics(self, query):
     query_parts = query.pattern.split('.')
-    query_depth = len(query_parts)
+    complete_len = len(query_parts)
 
+    # do a background read to see if this is an enum metric
+    if complete_len > 1:
+      enum_name = ".".join(query_parts[:-1])
+      self.metrics_q.put(enum_name)
+
+    # find non enum nodes
     for metric in self.find_metrics(query.pattern):
-      metric_parts = metric.split('.')
-      if not self.complete(metric, query_depth):
-        yield BranchNode('.'.join(metric_parts[:query_depth]))
-      else:
-        yield TenantBluefloodLeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases))
+      for n in self.make_non_enum_node(metric, complete_len):
+        yield n
 
+    # get the results of the background read to add enums
+    if complete_len > 1:
+      d = self.data_q.get()
+      for metric, enums in d.items():
+        metric_len = len(metric.split('.'))
+        if enums and (metric_len + 1 == complete_len):
+          for n in self.make_enum_nodes(metric, enums, query.pattern):
+            yield n
 
   def find_nodes(self, query):
     #yields all valid metric names matching glob based query
@@ -231,10 +301,10 @@ class TenantBluefloodFinder(object):
 
 class TenantBluefloodReader(object):
   __slots__ = ('metric', 'tenant', 'bf_query_endpoint', 
-               'enable_submetrics', 'submetric_aliases')
+               'enable_submetrics', 'submetric_aliases', 'enum_value')
   supported = True
 
-  def __init__(self, metric, tenant, endpoint, enable_submetrics, submetric_aliases):
+  def __init__(self, metric, tenant, endpoint, enable_submetrics, submetric_aliases, enum_value):
 
     # print 'READER ' + tenant + ' ' + metric
     self.metric = metric
@@ -242,6 +312,7 @@ class TenantBluefloodReader(object):
     self.bf_query_endpoint = endpoint
     self.enable_submetrics = enable_submetrics
     self.submetric_aliases = submetric_aliases
+    self.enum_value = enum_value
 
   def get_intervals(self):
     # todo: make this a lot smarter.
@@ -249,21 +320,6 @@ class TenantBluefloodReader(object):
     millis = int(round(time.time() * 1000))
     intervals.append(Interval(0, millis))
     return IntervalSet(intervals)
-
-  def fetch(self, start_time, end_time):
-    # remember, graphite treats time as seconds-since-epoch. BF treats time as millis-since-epoch.
-    if not self.metric:
-      return ((start_time, end_time, 1), [])
-    else:
-      client = BluefloodClient(self.bf_query_endpoint, self.tenant,
-                                  self.enable_submetrics, self.submetric_aliases)
-      reader = TenantBluefloodReader(self.metric, self.tenant, self.bf_query_endpoint, 
-                                     self.enable_submetrics, self.submetric_aliases)
-      node = TenantBluefloodLeafNode(self.metric, reader)
-
-      time_info, dictionary = client.fetch_multi([node], start_time, end_time)
-      
-      return (time_info, dictionary[self.metric])
 
 class BluefloodClient(object):
   def __init__(self, host, tenant, enable_submetrics, submetric_aliases):
@@ -283,13 +339,13 @@ class BluefloodClient(object):
   def gen_data_key(self, values):
     # Determines which key to use for the data
     if not len(values):
-      return None
+      return NonNestedDataKey(None)
     value_res_order = ['average', 'latest', 'numPoints']
     present_keys = [v for v in value_res_order if v in values[0]]
     if present_keys:
-      return present_keys[0]
+      return NonNestedDataKey(present_keys[0])
     else:
-      return None
+      return NonNestedDataKey(None)
 
   def current_datapoint_passed(self, v_iter, ts):
     # Determines if the current datapoint is too old to be considered
@@ -303,36 +359,66 @@ class BluefloodClient(object):
   def current_datapoint_valid(self, v_iter, data_key, ts, step):
     # Determines if the current datapoint be included in the current step
     #assumes current_datapoint_passed() is true
-    if (not len(v_iter)) or not (data_key in v_iter[0]):
+    if (not len(v_iter)) or not data_key.exists(v_iter[0]):
       return False
     datapoint_ts = v_iter[0]['timestamp']/1000
     if (datapoint_ts < (ts + step)):
       return True
     return False
 
+  def fixup(self, values, fixup_list):
+    # Replace the None's in "values" with interpolations of the
+    # surrounding non-null values 
+    # "fixup_list" lists the null datapoints in the values
+    if fixup_list:
+      #preserve the type of the values
+      set_type = type(values[fixup_list[0][0]])
+    for f in fixup_list:
+      start = f[0]
+      end = f[1]
+      increment = (float(values[end]) - values[start])/(end - start)
+      nextval = values[start]
+      for x in range(start + 1, end):
+        nextval += increment
+        values[x] = set_type(nextval)
+      
+    
   def process_path(self, values, start_time, end_time, step, data_key):
     # Generates datapoints in graphite-api format
     # Graphite-api requires the points be "step" seconds apart in time
     #  with Null's interleaved if needed
-    if not data_key:
-      print "No valid keys present"
-      return []
+    # Note that even if there are no datapoints in "values" it will fill
+    #  them with nulls
     v_iter = values
     ret_arr = []
+    # A fixup is the start and end position of the current range of Null datapoints
+    current_fixup = None
+    fixup_list = []
     for ts in range(start_time, end_time, step):
 
       # Skip datapoints that have already passed
       #  NOTE/TODO: this while loop has the effect of dropping all but the first datapoint in each step
       #  (Graphite requires exactly one datapoint/step.)  It would be better to rollup the datapoints
       #  if there are more than one/step.  However that will only happen when we have full res metrics
-      #  with sub-second frequencies.  We believe that case is too rare to worry about right now.
+      #  with frequencies less than 60 seconds.  And since Graphite/Whisper doesn't seem to do that
+      #  this approach seems to better emulate the results produced by Graphite
       while self.current_datapoint_passed(v_iter, ts):
         v_iter = v_iter[1:]
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
-        ret_arr.append(v_iter[0][data_key])
+        ret_arr.append(data_key.get_datapoints(v_iter[0]))
+        if current_fixup != None:
+          # we have found the end of the current fixup, so
+          #  add the start and end of the current fixup into fixup list
+          fixup_list.append([current_fixup, len(ret_arr) - 1])
+          current_fixup = None
       else:
+        l = len(ret_arr)
+        #if previous element was not None, start a new fixup
+        #  and set it to point to the current position
+        if (l > 0) and (ret_arr[l - 1] != None):
+          current_fixup = l - 1
         ret_arr.append(None)
-
+    self.fixup(ret_arr, fixup_list)
     return ret_arr
 
   def get_multi_endpoint(self, endpoint, tenant):
@@ -348,7 +434,7 @@ class BluefloodClient(object):
       headers['X-Auth-Token'] = auth.get_token(True)
       r = requests.post(url, params=payload, data=json.dumps(metric_list), headers=headers)
     if r.status_code != 200:
-      print("get_metric_data failed; response: ", r.status_code, tenant, metric_list)
+      print("get_metric_data failed; response: ", endpoint, r.status_code, tenant, metric_list)
       return None
     else:
       return r.json()['metrics']
@@ -368,15 +454,19 @@ class BluefloodClient(object):
     #  metrics_key, (the name of the metric, which varies
     #   depending on if submetric aliases are used.)
     #  data_key, (the name of the key to use for the individual datapoint
-    #   returned by BF
+    #   returned by BF)
     metrics_key = None
-    data_key = None
-    if self.enable_submetrics:
+    data_key = NonNestedDataKey(None)
+    if node.reader.enum_value != None:
+      evalue = node.reader.enum_value
+      metrics_key = node.path[:-(len(evalue) + 1)]
+      data_key = NestedDataKey('enum_values', evalue)
+    elif self.enable_submetrics:
       path_parts = node.path.split('.')
-      test_key = '.'.join(path_parts[0:-1])
+      test_key = '.'.join(path_parts[:-1])
       if test_key in metrics:
         metrics_key = test_key
-        data_key = self.submetric_aliases[path_parts[-1]]
+        data_key = NonNestedDataKey(self.submetric_aliases[path_parts[-1]])
     elif node.path in metrics:
       metrics_key = node.path
       data_key = self.gen_data_key(metrics[metrics_key])
@@ -410,14 +500,34 @@ class BluefloodClient(object):
       tot_len += len(remaining_paths[cur_path]) + 2 # for the ", "
       cur_metric += 1
       cur_path += 1
-    return remaining_paths[cur_path:], groups + [remaining_paths[0:cur_path]]
+    return remaining_paths[cur_path:], groups + [remaining_paths[:cur_path]]
+
+  def gen_paths(self, nodes):
+    #This modifies the metrics names used by graphite to match
+    # the input expected by the BF mplot api.
+    # These differ when submetrics are used because the submetric alias
+    # is included in the graphite path but the BF metric name.
+    # Also, if enums are used, the enum_value is included in the 
+    # graphite path, but not the BF metric name
+    path_set = set()
+    paths = []
+    for n in nodes:
+      if n.reader.enum_value != None:
+        #add to a "set" here because some of the names may be dupes
+        path_set.add(n.path[:-(len(n.reader.enum_value) + 1)])
+      else:
+        if self.enable_submetrics:
+          path_set.add('.'.join(n.path.split('.')[:-1]))
+        else:
+          paths.append(n.path)
+    for p in path_set:
+      paths.append(p)
+    return paths
 
   def gen_groups(self, nodes):
     # creates groups of metrics none of which exceed limits
     groups = []
-    remaining_paths = [node.path for node in nodes]
-    if self.enable_submetrics:
-      remaining_paths = ['.'.join(p.split('.')[0:-1]) for p in remaining_paths]
+    remaining_paths = self.gen_paths(nodes)
     while remaining_paths:
       new_remaining_paths, groups = self.gen_next_group(remaining_paths, groups)
       #check for infinite loops/should never happen
@@ -463,3 +573,33 @@ class BluefloodClient(object):
 
 class TenantBluefloodLeafNode(LeafNode):
   __fetch_multi__ = 'tenant_blueflood'
+
+class NonNestedDataKey(object):
+  def __init__(self, key1):
+    self.key1 = key1
+
+  def exists(self, value):
+    return self.key1 in value
+
+  def get_datapoints(self, value):
+    if not self.exists(value):
+      return None
+    else:
+      return value[self.key1]
+    
+class NestedDataKey(object):
+  #as the name implies a "NestedDataKey is used to deref
+  # a nested value
+  def __init__(self, key1, key2):
+    self.key1 = key1
+    self.key2 = key2
+
+  def exists(self, value):
+    return self.key1 in value and self.key2 in value[self.key1]
+    
+  def get_datapoints(self, value):
+    if not self.exists(value):
+      return None
+    else:
+      return value[self.key1][self.key2]
+

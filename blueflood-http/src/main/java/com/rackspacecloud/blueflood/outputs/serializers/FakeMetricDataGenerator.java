@@ -96,6 +96,17 @@ public class FakeMetricDataGenerator {
         return points;
     }
     
+    public static Points<BluefloodEnumRollup> generateFakeEnumRollupPoints() {
+        Points<BluefloodEnumRollup> points = new Points<BluefloodEnumRollup>();
+        long startTime = 1234567L;
+        for (int i = 0; i < 5; i++) {
+            long timeNow = startTime + i*1000;
+            Points.Point<BluefloodEnumRollup> point = new Points.Point<BluefloodEnumRollup>(timeNow, new BluefloodEnumRollup().withEnumValue("enum_value_" + i));
+            points.add(point);
+        }
+        return points;
+    }
+
     public static Points<BluefloodSetRollup> generateFakeSetRollupPoints() {
         Points<BluefloodSetRollup> points = new Points<BluefloodSetRollup>();
         long startTime = 1234567L;

@@ -51,6 +51,24 @@ public class IMetricSerializerTest {
     }
 
     @Test
+    public void testEnumSerialization() throws IOException {
+        String enumRollupString = "{\"type\":\"BluefloodEnumRollup\",\"count\":2,\"hashedEnumValues2Count\":{\"-622108619\":2,\"-592796451\":5},\"hashedEnumValuesWithCounts\":{\"-622108619\":2,\"-592796451\":5},\"numPoints\":7,\"stringEnumValues\":[\"someValue\",\"someotherValue\"],\"stringEnumValues2Count\":{\"someValue\":5,\"someotherValue\":2},\"stringEnumValuesWithCounts\":{\"someValue\":5,\"someotherValue\":2}}";
+
+        BluefloodEnumRollup enumDeserialized = mapper.readValue(enumRollupString, BluefloodEnumRollup.class);
+        String enumSerialized = mapper.writeValueAsString(enumDeserialized);
+        System.out.println(enumSerialized);
+        Assert.assertEquals(enumRollupString, enumSerialized);
+
+        BluefloodEnumRollup enumReDeserialized = mapper.readValue(enumSerialized, BluefloodEnumRollup.class);
+        Assert.assertEquals(enumDeserialized,enumReDeserialized);
+
+        PreaggregatedMetric m = new PreaggregatedMetric(12345l, goneIn, sixtySeconds, enumReDeserialized);
+        String preagg = mapper.writeValueAsString(m);
+        Assert.assertTrue(preagg, preagg.startsWith(START_STRING));
+        Assert.assertTrue(preagg, preagg.endsWith(END_STRING));
+    }
+
+    @Test
     public void testGaugeSerialization() throws IOException {
         String gaugeValue = "{\"type\":\"gauge\",\"count\":1,\"latestNumericValue\":397,\"max\":397,\"mean\":397,\"min\":397,\"timestamp\":1389211230,\"var\":0.0}";
 

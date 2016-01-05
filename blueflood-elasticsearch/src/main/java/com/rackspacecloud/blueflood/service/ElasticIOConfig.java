@@ -20,7 +20,9 @@ public enum ElasticIOConfig implements ConfigDefaults {
     ELASTICSEARCH_HOSTS("127.0.0.1:9300"),
     ELASTICSEARCH_CLUSTERNAME("elasticsearch"),
     ELASTICSEARCH_INDEX_NAME_WRITE("metric_metadata"),
-    ELASTICSEARCH_INDEX_NAME_READ("metric_metadata");
+    ELASTICSEARCH_INDEX_NAME_READ("metric_metadata"),
+    ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE("enums"),
+    ELASTICSEARCH_ENUMS_INDEX_NAME_READ("enums");
 
     static {
         Configuration.getInstance().loadDefaults(ElasticIOConfig.values());

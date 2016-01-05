@@ -1,12 +1,20 @@
+-- this script create the main column families for blueflood in cassandra using the deprecated cassandra-cli client
+-- usage:
+--   $ cassandra-cli -f load.script -h <cassandra_hostname> -p <cassandra_port>
+-- example:
+--   $ cassandra-cli -f ./blueflood/src/cassandra/cli/load.script -h 127.0.0.1 -p 9160
+
 CREATE KEYSPACE DATA
     WITH placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy'
     AND strategy_options = {replication_factor:1};
 USE DATA;
 
-CREATE COLUMN FAMILY metrics_locator WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='LongType' AND default_validation_class='UTF8Type';
 CREATE COLUMN FAMILY metrics_discovery WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='UTF8Type' AND default_validation_class='UTF8Type';
-CREATE COLUMN FAMILY metrics_state WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='LongType' AND default_validation_class='LongType';
+CREATE COLUMN FAMILY metrics_enum WITH column_type='Standard' AND comparator='LongType' AND key_validation_class='UTF8Type' AND default_validation_class='UTF8Type';
+CREATE COLUMN FAMILY metrics_excess_enums WITH column_type='Standard' AND comparator='LongType' AND key_validation_class='UTF8Type' AND default_validation_class='LongType';
+CREATE COLUMN FAMILY metrics_locator WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='LongType' AND default_validation_class='UTF8Type';
 CREATE COLUMN FAMILY metrics_metadata WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='UTF8Type' AND default_validation_class='BytesType';
+CREATE COLUMN FAMILY metrics_state WITH column_type='Standard' AND comparator='UTF8Type' AND key_validation_class='LongType' AND default_validation_class='LongType';
 CREATE COLUMN FAMILY metrics_string WITH column_type='Standard' AND comparator='LongType' AND key_validation_class='UTF8Type' AND default_validation_class='UTF8Type';
 
 CREATE COLUMN FAMILY metrics_full WITH column_type='Standard' AND comparator='LongType' AND key_validation_class='UTF8Type' AND default_validation_class='BytesType';

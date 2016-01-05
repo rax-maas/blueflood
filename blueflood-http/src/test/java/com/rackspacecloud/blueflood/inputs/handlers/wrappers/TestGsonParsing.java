@@ -58,6 +58,7 @@ public class TestGsonParsing {
         Assert.assertEquals(6, payload.getCounters().size());
         Assert.assertEquals(4, payload.getTimers().size());
         Assert.assertEquals(2, payload.getSets().size());
+        Assert.assertEquals(1, payload.getEnums().size());
     }
 
     @Test

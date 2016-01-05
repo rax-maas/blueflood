@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -53,6 +54,7 @@ public class RollupHandler {
     protected final Meter rollupsRepairEntireRangeEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - entire range - no data");
     protected final Meter rollupsRepairedLeftEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - left - no data");
     protected final Meter rollupsRepairedRightEmpty = Metrics.meter(RollupHandler.class, "BF-API", "Rollups repaired - right - no data");
+    protected final Map<RollupType, Meter> queriesByRollupTypeMeters = new HashMap< RollupType, Meter>();
     protected static final Timer metricsFetchTimer = Metrics.timer(RollupHandler.class, "Get metrics from db");
     protected static final Timer metricsFetchTimerMPlot = Metrics.timer(RollupHandler.class, "Get metrics from db - mplot");
     protected static final Timer rollupsCalcOnReadTimer = Metrics.timer(RollupHandler.class, "Rollups calculation on read");
@@ -74,6 +76,11 @@ public class RollupHandler {
     private TimeValue rollupOnReadTimeout = new TimeValue(10, TimeUnit.SECONDS);
 
     public RollupHandler() {
+
+        // TODO:  we can iterate over the enums and create Meters for each type
+        // currently we only initialize this for type ENUM.
+        queriesByRollupTypeMeters.put( RollupType.ENUM, Metrics.meter( RollupHandler.class, RollupType.ENUM.toString() + " queries" ) );
+
         if (Util.shouldUseESForUnits()) {
             // The number of threads getting used for ES_UNIT_THREADS, should at least be equal netty worker threads
             int ESthreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ES_UNIT_THREADS);
@@ -191,8 +198,33 @@ public class RollupHandler {
             }
             context.stop();
         }
+
+        for( MetricData metricData : metricDataMap.values() ){
+
+            // currently this only tracks enum queries
+            markQueryByRollupType( metricData );
+        }
+
         ctx.stop();
         return metricDataMap;
+    }
+
+    /**
+     * Marks queries based on RollupType.
+     *
+     * NOTE:  currently the map is only initialized with RollupType.ENUM, and therefore, only ENUMs are tracked.
+     *
+     * @param metricData
+     */
+    private void markQueryByRollupType( MetricData metricData ) {
+
+        if( !metricData.getData().isEmpty() ) {
+            RollupType type = RollupType.fromRollupTypeClass( metricData.getData().getDataClass() );
+
+            if ( queriesByRollupTypeMeters.containsKey( type ) ) {
+                queriesByRollupTypeMeters.get( type ).mark();
+            }
+        }
     }
 
     private Boolean repairMetrics (Locator locator, MetricData metricData, final long from,
@@ -306,6 +338,8 @@ public class RollupHandler {
             return Rollup.TimerFromTimer.compute(points);
         } else if (rollupTypeClass.equals(BluefloodGaugeRollup.class)) {
             return Rollup.GaugeFromGauge.compute(points);
+        } else if (rollupTypeClass.equals(BluefloodEnumRollup.class)) {
+            return Rollup.EnumFromEnum.compute(points);
         } else {
             throw new IOException(String.format("Unexpected rollup type: %s", rollupTypeClass.getSimpleName()));
         }

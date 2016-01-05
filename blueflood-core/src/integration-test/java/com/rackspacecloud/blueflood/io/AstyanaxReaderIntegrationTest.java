@@ -29,6 +29,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     
@@ -66,7 +68,141 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
         AstyanaxReader reader = AstyanaxReader.getInstance();
         writer.writeMetadataValue(loc1, "foo", "bar");
-        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo").toString());
+        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo"));
+    }
+
+    @Test
+    public void testCanReadExcessEnumMetrics() throws Exception {
+        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
+        Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Set<Locator> excessEnumList = new HashSet<Locator>();
+        excessEnumList.add(loc1);
+        excessEnumList.add(loc2);
+        writer.writeExcessEnumMetric(loc1);
+        writer.writeExcessEnumMetric(loc2);
+        Set<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
+        Assert.assertEquals(excessEnumList, newExcessEnumList);
+    }
+
+    @Test
+    public void testCanReadEnumValuesByOneLocator() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric1","333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+
+        // Test batch reads
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        MetricData results = reader.getDatapointsForRange(metric.getLocator(), new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(1, results.getData().getPoints().size());
+        Points points = results.getData();
+        Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+        verifyPointsData(actualData);
+    }
+
+    @Test
+    public void testCanReadEnumValuesByMultipleLocators() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric2","333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+
+        IMetric metric1 = writeEnumMetric("enum_metric3","333333");
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric1.getLocator());
+
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(2, results.size());
+
+        for (Locator locator: results.keySet()) {
+            Points points = results.get(locator).getData();
+            Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+            Assert.assertEquals(1, actualData.size());
+            verifyPointsData(actualData);
+        }
+    }
+
+    @Test
+    public void test_ReadEnumValues_MultipleLocators_OneLocatorFaulty() throws Exception {
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric2","333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+
+        IMetric metric1 = writeEnumMetric("enum_metric3","333333");
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric1.getLocator());
+
+        Locator faultyLocator = Locator.createLocatorFromPathComponents("333333", "faulty_enum_name");
+        locatorList.add(faultyLocator);
+
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(3, results.size());
+
+        for (Locator locator: results.keySet()) {
+            Points points = results.get(locator).getData();
+            Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+            if (!locator.equals(faultyLocator)) {
+                Assert.assertEquals(1, actualData.size());
+                verifyPointsData(actualData);
+            }
+            else {
+                Assert.assertEquals(0, actualData.size());
+            }
+        }
+    }
+
+    @Test
+    public void testCanReadMixedEnumAndRegularMetrics() throws Exception {
+        Set<Locator> enumLocatorsSet = new HashSet<Locator>();
+        List<Locator> locatorList = new ArrayList<Locator>();
+        IMetric metric = writeEnumMetric("enum_metric3","333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric.getLocator());
+        enumLocatorsSet.add(metric.getLocator());
+
+        IMetric metric1 = writeEnumMetric("enum_metric4","333333");
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        locatorList.add(metric1.getLocator());
+        enumLocatorsSet.add(metric1.getLocator());
+
+        metric = writeMetric("int_metric1", 45);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.NUMERIC.toString());
+        locatorList.add(metric.getLocator());
+
+        metric = writeMetric("long_metric1", 67L);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), DataType.NUMERIC.toString());
+        locatorList.add(metric.getLocator());
+
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+        Map<Locator, MetricData> results = reader.getDatapointsForRange(locatorList, new Range(metric.getCollectionTime() - 100000,
+                metric.getCollectionTime() + 100000), Granularity.FULL);
+
+        Assert.assertEquals(4, results.size());
+
+        for (Locator locator: enumLocatorsSet) {
+            Points points = results.get(locator).getData();
+            Map<Long, Points.Point<BluefloodEnumRollup>> actualData = points.getPoints();
+            Assert.assertEquals(1, actualData.size());
+            verifyPointsData(actualData);
+        }
     }
 
     @Test
@@ -160,5 +296,20 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         Assert.assertTrue(serializer != null);
         Assert.assertFalse(serializer instanceof StringSerializer);
         Assert.assertFalse(serializer instanceof BooleanSerializer);
+    }
+
+    private void verifyPointsData(Map<Long, Points.Point<BluefloodEnumRollup>> actualData) {
+        for (Long timestamp : actualData.keySet()) {
+            BluefloodEnumRollup er = actualData.get(timestamp).getData();
+            Assert.assertEquals(1, er.getStringEnumValuesWithCounts().size());
+            verifyRollupValues(er);
+        }
+    }
+
+    private void verifyRollupValues(BluefloodEnumRollup er) {
+        for (String value : er.getStringEnumValuesWithCounts().keySet()) {
+            Assert.assertTrue(value.contains("enumValue"));
+            Assert.assertEquals(1L, (long) er.getStringEnumValuesWithCounts().get(value));
+        }
     }
 }

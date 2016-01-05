@@ -89,7 +89,14 @@ public class HttpAggregatedIngestionTests {
         Assert.assertEquals(4, timers.size());
         ensureSerializability(timers);
     }
-    
+
+    @Test
+    public void testEnums() {
+        Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, payload.getEnums());
+        Assert.assertEquals(1, enums.size());
+        ensureSerializability(enums);
+    }
+
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {

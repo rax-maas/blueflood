@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.tools.jmx.JmxBooleanGauge;
@@ -44,6 +45,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
+    private final ThreadPoolExecutor enumValidatorExecutor;
     private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
     private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
     private transient Thread thread;
@@ -179,6 +181,15 @@ public class RollupService implements Runnable, RollupServiceMBean {
         );
         InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
         InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
+
+        // create executor threadpool for EnumValidator
+        int enumValidatorThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_VALIDATOR_THREADS);
+        this.enumValidatorExecutor = new ThreadPoolBuilder()
+                .withName("Validating Enum Metrics")
+                .withCorePoolSize(enumValidatorThreadCount)
+                .withMaxPoolSize(enumValidatorThreadCount)
+                .withUnboundedQueue()
+                .build();
     }
 
     public void forcePoll() {
@@ -207,7 +218,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 if (slotKey == null) { continue; }
                 try {
                     log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
-                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors));
+                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors, enumValidatorExecutor));
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't

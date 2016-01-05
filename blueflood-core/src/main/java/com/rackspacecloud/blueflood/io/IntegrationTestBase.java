@@ -86,6 +86,7 @@ public class IntegrationTestBase {
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     private static final Random rand = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
+    private static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
 
     protected final void assertNumberOfRows(String cf, int rows) throws Exception {
         new AstyanaxTester().assertNumberOfRows(cf, rows);
@@ -141,6 +142,26 @@ public class IntegrationTestBase {
         return metric;
     }
 
+    protected IMetric writeEnumMetric(String name, String tenantid) throws Exception {
+        final List<IMetric> metrics = new ArrayList<IMetric>();
+        PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
+        metrics.add(metric);
+
+        AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+
+        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
+        insertedLocators.invalidateAll();
+
+        return metric;
+    }
+
+    protected PreaggregatedMetric getEnumMetric(String name, String tenantid, long timestamp) {
+        final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
+        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+pickAnEnumValue());
+        return new PreaggregatedMetric(timestamp, locator, new TimeValue(1, TimeUnit.DAYS), rollup);
+    }
+
+
     protected List<Metric> makeRandomIntMetrics(int count) {
         final String tenantId = "ac" + randString(8);
         List<Metric> metrics = new ArrayList<Metric>();
@@ -183,6 +204,11 @@ public class IntegrationTestBase {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 
+    protected String pickAnEnumValue() {
+        int index = rand.nextInt(enumValueList.size() - 1);
+        return enumValueList.get(index);
+    }
+
     private enum UNIT_ENUM {
         SECS("seconds"),
         MSECS("milliseconds"),
@@ -218,6 +244,24 @@ public class IntegrationTestBase {
             destCF = CassandraModel.getColumnFamily(HistogramRollup.class, destGranularity);
             HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(histogramRollup, locator, destGranularity, destCF, range.start));
+        }
+
+        AstyanaxWriter.getInstance().insertRollups(writeContexts);
+    }
+
+    protected void generateEnumRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
+        if (destGranularity == Granularity.FULL) {
+            throw new Exception("Can't roll up to FULL");
+        }
+
+        ColumnFamily<Locator, Long> destCF;
+        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
+        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
+            destCF = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, destGranularity);
+            Points<BluefloodEnumRollup> input = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class, locator, range,
+                    CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+            BluefloodEnumRollup enumRollup = BluefloodEnumRollup.buildRollupFromEnumRollups(input);
+            writeContexts.add(new SingleRollupWriteContext(enumRollup, locator, destGranularity, destCF, range.start));
         }
 
         AstyanaxWriter.getInstance().insertRollups(writeContexts);

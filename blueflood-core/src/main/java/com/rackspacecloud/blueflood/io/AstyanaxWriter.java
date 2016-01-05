@@ -161,6 +161,13 @@ public class AstyanaxWriter extends AstyanaxIO {
                 .putEmptyColumn(locator, LOCATOR_TTL);
     }
 
+    private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
+        for(String valueName : rollup.getStringEnumValuesWithCounts().keySet()) {
+            mutationBatch.withRow(CassandraModel.CF_METRICS_ENUM, locator).putColumn((long)valueName.hashCode(), valueName);
+            Instrumentation.markEnumMetricWritten();
+        }
+    }
+
     private void insertMetric(Metric metric, MutationBatch mutationBatch) {
         final boolean isString = metric.isString();
         final boolean isBoolean = metric.isBoolean();
@@ -197,6 +204,21 @@ public class AstyanaxWriter extends AstyanaxIO {
         } catch (ConnectionException e) {
             Instrumentation.markWriteError(e);
             log.error("Error writing Metadata Value", e);
+            throw e;
+        } finally {
+            ctx.stop();
+        }
+    }
+
+    public void writeExcessEnumMetric(Locator locator) throws ConnectionException {
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_EXCESS_ENUMS);
+        try {
+            keyspace.prepareColumnMutation(CassandraModel.CF_METRICS_EXCESS_ENUMS, locator, 0L)
+                    .putEmptyColumn(null).execute();
+        } catch (ConnectionException e) {
+            Instrumentation.markWriteError(e);
+            Instrumentation.markExcessEnumWriteError();
+            log.error("Error writing ExcessEnum Metric", e);
             throw e;
         } finally {
             ctx.stop();
@@ -257,12 +279,14 @@ public class AstyanaxWriter extends AstyanaxIO {
                     if (metric instanceof Metric) {
                         final boolean isString = DataType.isStringMetric(metric.getMetricValue());
                         final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
-                        
-                        
+
                         if (!isString && !isBoolean)
                             locatorInsertOk = true;
                         shouldPersist = shouldPersist((Metric)metric);
                     } else {
+                        if (DataType.isEnumMetric(metric.getMetricValue())) {
+                            insertEnumValuesWithHashcodes(metric.getLocator(), (BluefloodEnumRollup) metric.getMetricValue(), batch);
+                        }
                         locatorInsertOk = true;
                     }
                     

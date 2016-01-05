@@ -196,6 +196,10 @@ public class HttpAnnotationsIntegrationTest {
             esSetup.terminate();
         }
 
+        if (vendor != null) {
+            vendor.shutdown();
+        }
+
         if (httpQueryService != null) {
             httpQueryService.stopService();
         }

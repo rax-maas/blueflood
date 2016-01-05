@@ -7,6 +7,7 @@ public enum RollupType {
     TIMER,
     SET,
     GAUGE,
+    ENUM,
     BF_HISTOGRAMS,
     BF_BASIC,
     NOT_A_ROLLUP;
@@ -23,7 +24,7 @@ public enum RollupType {
             return RollupType.BF_BASIC;
         }
     }
-    
+
     public static RollupType fromRollup(Rollup value) {
         if (value instanceof BluefloodSetRollup)
             return RollupType.SET;
@@ -39,8 +40,46 @@ public enum RollupType {
             return RollupType.BF_HISTOGRAMS;
         else if (value instanceof SimpleNumber)
             return RollupType.NOT_A_ROLLUP;
+        else if (value instanceof BluefloodEnumRollup) {
+            return RollupType.ENUM;
+        }
         else
             throw new Error(String.format("Cannot discern RollupType from %s", value.getClass().getSimpleName()));
+    }
+
+    /**
+     *  Get RollupType from Rollup class type.
+     *
+     * @param rollupTypeClass
+     * @return RollupType
+     */
+    public static RollupType fromRollupTypeClass( Class<? extends Rollup> rollupTypeClass )  {
+
+        if (rollupTypeClass.equals(SimpleNumber.class)
+                || rollupTypeClass.equals( BasicRollup.class)
+                || rollupTypeClass.equals( String.class )) {
+            return RollupType.BF_BASIC;
+        }
+        else if (rollupTypeClass.equals(BluefloodCounterRollup.class)) {
+            return RollupType.COUNTER;
+        }
+        else if (rollupTypeClass.equals(BluefloodSetRollup.class)) {
+            return RollupType.SET;
+        }
+        else if (rollupTypeClass.equals(BluefloodTimerRollup.class)) {
+            return RollupType.TIMER;
+        }
+        else if (rollupTypeClass.equals(BluefloodGaugeRollup.class)) {
+            return RollupType.GAUGE;
+        }
+        else if (rollupTypeClass.equals(BluefloodEnumRollup.class)) {
+            return RollupType.ENUM;
+        }
+        else if ( rollupTypeClass.equals( HistogramRollup.class )) {
+            return RollupType.BF_HISTOGRAMS;
+        }
+        else
+            throw new Error(String.format("Cannot discern RollupType from %s", rollupTypeClass.getSimpleName()));
     }
 
     // derive the class of the type. This will be used to determine which serializer is used.
@@ -59,6 +98,8 @@ public enum RollupType {
             return BasicRollup.class;
         else if (type == RollupType.BF_HISTOGRAMS)
             return HistogramRollup.class;
+        else if(type == RollupType.ENUM)
+            return BluefloodEnumRollup.class;
         else
             throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
     }

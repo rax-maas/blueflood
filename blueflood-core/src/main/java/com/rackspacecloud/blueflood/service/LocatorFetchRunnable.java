@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
@@ -41,19 +42,27 @@ class LocatorFetchRunnable implements Runnable {
     
     private final ThreadPoolExecutor rollupReadExecutor;
     private final ThreadPoolExecutor rollupWriteExecutor;
+    private final ThreadPoolExecutor enumValidatorExecutor;
     private final SlotKey parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
 
-    LocatorFetchRunnable(ScheduleContext scheduleCtx, SlotKey destSlotKey, ThreadPoolExecutor rollupReadExecutor, ThreadPoolExecutor rollupWriteExecutor) {
+    LocatorFetchRunnable(ScheduleContext scheduleCtx,
+                         SlotKey destSlotKey,
+                         ThreadPoolExecutor rollupReadExecutor,
+                         ThreadPoolExecutor rollupWriteExecutor,
+                         ThreadPoolExecutor enumValidatorExecutor) {
+
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
+        this.enumValidatorExecutor = enumValidatorExecutor;
     }
     
     public void run() {
@@ -81,18 +90,21 @@ class LocatorFetchRunnable implements Runnable {
         Set<Locator> locators = new HashSet<Locator>();
 
         try {
+            // get a list of all locators to rollup for a shard
             locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
         } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
         }
+
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
                 log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
             try {
                 executionContext.incrementReadCounter();
                 final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
-                rollupReadExecutor.execute(new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter));
+                RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
+                rollupReadExecutor.execute(rollupRunnable);
                 rollCount += 1;
             } catch (Throwable any) {
                 // continue on, but log the problem so that we can fix things later.
@@ -145,6 +157,7 @@ class LocatorFetchRunnable implements Runnable {
 
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
+            log.info("Successful completion of rollups for (gran,slot,shard) {} in {}", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);

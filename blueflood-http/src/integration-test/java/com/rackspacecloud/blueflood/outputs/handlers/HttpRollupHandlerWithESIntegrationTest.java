@@ -30,6 +30,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.junit.*;
 
 import java.net.URI;
@@ -50,6 +51,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
+    IMetric metric;
 
     @BeforeClass
     public static void setUpHttp() {
@@ -66,7 +68,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping_v1.json")));
+                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
     }
 
@@ -99,12 +101,28 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
+
+        metric = writeEnumMetric("enum_metric2", "333333");
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+
         granToPoints.put(Granularity.FULL, 1440);
         granToPoints.put(Granularity.MIN_5, 289);
         granToPoints.put(Granularity.MIN_20, 73);
         granToPoints.put(Granularity.MIN_60, 25);
         granToPoints.put(Granularity.MIN_240, 7);
         granToPoints.put(Granularity.MIN_1440, 2);
+    }
+
+    @Test
+    public void testEnumEndToEndHappyCase() throws Exception {
+        HttpGet get = new HttpGet(getMetricsQueryURI("enum_metric2", "333333", metric.getCollectionTime() - 10000));
+        HttpResponse response = client.execute(get);
+
+        String responseString = EntityUtils.toString(response.getEntity());
+        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
+        Assert.assertTrue(responseString.contains("enumValue")); //Verifying that the payload has string values and not hashcodes
+        Assert.assertTrue(responseString.contains("\"type\": \"enum\"")); //Verifying that the payload has an enum type
     }
 
     @Test
@@ -186,16 +204,16 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
     @Test
     public void TestHttpHappyCase() throws Exception {
-        HttpGet get = new HttpGet(getMetricsQueryURI());
+        HttpGet get = new HttpGet(getMetricsQueryURI(metricName, tenantId, baseMillis));
         HttpResponse response = client.execute(get);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
-    private URI getMetricsQueryURI() throws URISyntaxException {
+    private URI getMetricsQueryURI(String metricName, String tenantid, long fromTimestamp) throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
-                .setParameter("from", String.valueOf(baseMillis))
-                .setParameter("to", String.valueOf(baseMillis + 86400000))
+                .setPort(queryPort).setPath("/v2.0/" + tenantid + "/views/" + metricName)
+                .setParameter("from", String.valueOf(fromTimestamp))
+                .setParameter("to", String.valueOf(fromTimestamp + 86400000))
                 .setParameter("resolution", "full");
         return builder.build();
     }
@@ -207,6 +225,10 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
         if (esSetup != null) {
             esSetup.terminate();
+        }
+
+        if (vendor != null) {
+            vendor.shutdown();
         }
 
         if (httpQueryService != null) {
