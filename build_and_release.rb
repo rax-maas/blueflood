@@ -46,12 +46,33 @@ def run_command(command)
   end
 end
 
+def run_command_return_lines(command)
+  lines = []
+  ret = IO.popen(command, :err=>[:child, :out]) {|io|
+    io.each {|line|
+      lines << line
+    }
+  }
+  return lines
+end
+
+def pom_evaluate(property_name)
+  lines = run_command_return_lines("mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=#{property_name}")
+  return lines.find {|line| not line.start_with?("[")}.chomp
+end
+
+
 
 if ARGV.length < 1
   $stderr.puts "Usage: #{$0} BUILD_NUMBER"
   exit 1
 end
 
+pom_version = pom_evaluate("project.version")
+if not pom_version.end_with?("-SNAPSHOT")
+  puts "The project's effective version doesn't end with \"-SNAPSHOT\""
+  exit 1
+end
 
 # Get the new version, as MAJOR.MINOR.BUILD
 build_number = ARGV.shift
