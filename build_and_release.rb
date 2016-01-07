@@ -78,6 +78,14 @@ end
 build_number = ARGV.shift
 new_version = get_version_number(build_number)
 
+# Check the branch that we're on. if not master, add the branch name and treat as snapshot
+branches = run_command_return_lines("git branch --no-color --contains")
+branch = branches.find {|line| line.start_with?("*")}.sub(/^\*\s*/, '').strip()
+if branch != "master"
+  branch.sub!(/_/, '__')
+  branch.sub!(/[\\\/]/,'_')
+  build_number += "-" + branch + "-SNAPSHOT"
+end
 
 
 # build the project
