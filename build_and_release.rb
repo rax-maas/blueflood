@@ -76,7 +76,7 @@ end
 
 options = parser.parse!
 
-if options < 1
+if options.length < 1
   $stderr.puts parser.help
   exit 1
 end
