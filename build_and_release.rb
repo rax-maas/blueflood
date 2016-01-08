@@ -89,12 +89,14 @@ end
 
 # Get the new version, as MAJOR.MINOR.BUILD
 build_number = options.shift
-new_version = get_version_number(build_number)
+
+is_release = true
 
 # Check the branch that we're on. if not master, add the branch name and treat as snapshot
 branches = run_command_return_lines("git branch --no-color --contains")
 branch = branches.find {|line| line.start_with?("*")}.sub(/^\*\s*/, '').strip()
 if branch != "master"
+  is_release = false
   branch.sub!(/_/, '__')
   branch.sub!(/[\\\/]/,'_')
   build_number += "-" + branch + "-SNAPSHOT"
@@ -106,8 +108,10 @@ run_command("mvn clean")
 run_command("mvn verify -DBUILD_SUFFIX=#{build_number} -P cassandra-2.0 findbugs:findbugs")
 
 
-if tag_on_success
+if tag_on_success and is_release
   # tag the commit so we can associate it with the release
-  run_command("git tag release-#{new_version}")
-  run_command("git push --tags")
+  new_version = get_version_number(build_number)
+  tag_name = "release-#{new_version}"
+  run_command("git tag #{tag_name}")
+  run_command("git push origin #{tag_name}:refs/tags/#{tag_name}")
 end
