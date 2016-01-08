@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
@@ -43,6 +45,10 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
+
+        JsonParser jsonParser = new JsonParser();
+        JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
+
         String expectedResponse = "{\n" +
                 "  \"unit\": \"unknown\",\n" +
                 "  \"values\": [\n" +
@@ -59,8 +65,9 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
                 "    \"marker\": null\n" +
                 "  }\n" +
                 "}";
+        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
 
-        Assert.assertEquals(expectedResponse, responseContent);
+        Assert.assertEquals(expectedObject, responseObject);
         EntityUtils.consume(query_response.getEntity());
     }
 
@@ -81,6 +88,10 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
+
+        JsonParser jsonParser = new JsonParser();
+        JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
+
         String expectedResponse = "{\n" +
                 "  \"unit\": \"unknown\",\n" +
                 "  \"values\": [\n" +
@@ -100,8 +111,9 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
                 "    \"marker\": null\n" +
                 "  }\n" +
                 "}";
+        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
 
-        Assert.assertEquals(expectedResponse, responseContent);
+        Assert.assertEquals(expectedObject, responseObject);
         EntityUtils.consume(query_response.getEntity());
     }
 }
