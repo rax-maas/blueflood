@@ -20,6 +20,7 @@
 
 
 require 'rexml/document'
+require 'optparse'
 
 
 def get_version_number(build_number)
@@ -63,8 +64,20 @@ end
 
 
 
-if ARGV.length < 1
-  $stderr.puts "Usage: #{$0} BUILD_NUMBER"
+
+tag_on_success = false
+parser = OptionParser.new do |o|
+  o.banner = "Usage: #{$0} [--[no-]tag-on-success] BUILD_NUMBER"
+
+  o.on('--[no-]tag-on-success') do |value|
+    tag_on_success = value
+  end
+end
+
+options = parser.parse!
+
+if options < 1
+  $stderr.puts parser.help
   exit 1
 end
 
@@ -75,7 +88,7 @@ if not pom_version.end_with?("-SNAPSHOT")
 end
 
 # Get the new version, as MAJOR.MINOR.BUILD
-build_number = ARGV.shift
+build_number = options.shift
 new_version = get_version_number(build_number)
 
 # Check the branch that we're on. if not master, add the branch name and treat as snapshot
@@ -93,7 +106,8 @@ run_command("mvn clean")
 run_command("mvn verify -DBUILD_SUFFIX=#{build_number} -P cassandra-2.0 findbugs:findbugs")
 
 
-
-# tag the commit so we can associate it with the release
-run_command("git tag release-#{new_version}")
-run_command("git push --tags")
+if tag_on_success
+  # tag the commit so we can associate it with the release
+  run_command("git tag release-#{new_version}")
+  run_command("git push --tags")
+end
