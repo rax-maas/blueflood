@@ -23,6 +23,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 public interface IMetricsWriter {
-    void insertFullMetrics(Collection<Metric> metrics) throws IOException;
-    void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws IOException;
+    void insertFullMetrics(Collection<Metric> metrics) throws Exception;
+    void insertPreaggreatedMetrics(Collection<IMetric> metrics) throws Exception;
 }

@@ -31,7 +31,6 @@
     <module>blueflood-http</module>
     <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
-    <module>blueflood-io-datastax</module>
     <module>blueflood-rollupTools</module>
   </modules>
 

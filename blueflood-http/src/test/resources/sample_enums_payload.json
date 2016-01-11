@@ -1,0 +1,26 @@
+{
+    "tenantId":"333333",
+    "timestamp":1389211230,
+    "enums": [
+        {
+            "name": "enum_metric_test",
+            "value": "v3"
+        },
+        {
+            "name": "enum_metric_test",
+            "value": "v1"
+        },
+        {
+            "name": "enum_metric_test",
+            "value": "v1"
+        },
+        {
+            "name": "enum_metric_test",
+            "value": "v2"
+        },
+        {
+            "name": "enum_metric_test",
+            "value": "v3"
+        }
+    ]
+}

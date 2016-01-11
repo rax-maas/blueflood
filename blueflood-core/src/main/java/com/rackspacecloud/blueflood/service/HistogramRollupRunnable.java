@@ -36,7 +36,7 @@ public class HistogramRollupRunnable extends RollupRunnable {
     public HistogramRollupRunnable(RollupExecutionContext executionContext,
                                    SingleRollupReadContext singleRollupReadContext,
                                    RollupBatchWriter rollupBatchWriter) {
-        super(executionContext, singleRollupReadContext, rollupBatchWriter);
+        super(executionContext, singleRollupReadContext, rollupBatchWriter, null);
     }
 
     public void run() {

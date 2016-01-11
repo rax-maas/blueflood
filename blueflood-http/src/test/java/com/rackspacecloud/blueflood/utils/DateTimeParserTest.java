@@ -116,9 +116,9 @@ public class DateTimeParserTest {
     @Test
     public void testDayOfWeekFormat() {
         DateTime todayDate = referenceDateTime();
-        for (String dateTimeString: Arrays.asList("Sun", "14:42 Sun", "noon Sun")) {
+        for (String dateTimeString: Arrays.asList("Fri", "14:42 Fri", "noon Fri")) {
             DateTime date = DateTimeParser.parse(dateTimeString);
-            Assert.assertEquals(date.getDayOfWeek(), 7);
+            Assert.assertEquals(date.getDayOfWeek(), 5);
             Assert.assertTrue(todayDate.getYear() == date.getYear());
             Assert.assertTrue(todayDate.getDayOfYear() - date.getDayOfYear() <= 7);
         }

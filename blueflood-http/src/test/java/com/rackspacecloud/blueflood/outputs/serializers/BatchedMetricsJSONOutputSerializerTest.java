@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.outputs.serializers;
 
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.outputs.utils.PlotRequestParser;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -61,6 +62,34 @@ public class BatchedMetricsJSONOutputSerializerTest {
             JSONObject singleMetricObject = metricsObjects.next();
             Assert.assertTrue(singleMetricObject.get("unit").equals("unknown"));
             Assert.assertTrue(singleMetricObject.get("type").equals("number"));
+            JSONArray data = (JSONArray) singleMetricObject.get("data");
+            Assert.assertTrue(data != null);
+        }
+    }
+
+    @Test
+    public void testBatchedEnumMetricsSerialization() throws Exception {
+        final BatchedMetricsJSONOutputSerializer serializer = new BatchedMetricsJSONOutputSerializer();
+
+        final Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
+        for (int i = 0; i < 2; i++) {
+            final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeEnumRollupPoints(), "unknown",
+                    MetricData.Type.ENUM);
+
+            metrics.put(Locator.createLocatorFromPathComponents(tenantId, String.valueOf(i)), metricData);
+        }
+
+        JSONObject jsonMetrics = serializer.transformRollupData(metrics, PlotRequestParser.DEFAULT_STATS);
+        Assert.assertTrue(jsonMetrics.get("metrics") != null);
+        JSONArray jsonMetricsArray = (JSONArray) jsonMetrics.get("metrics");
+
+        Iterator<JSONObject> metricsObjects = jsonMetricsArray.iterator();
+        Assert.assertTrue(metricsObjects.hasNext());
+
+        while (metricsObjects.hasNext()) {
+            JSONObject singleMetricObject = metricsObjects.next();
+            Assert.assertTrue(singleMetricObject.get("unit").equals("unknown"));
+            Assert.assertTrue(singleMetricObject.get("type").equals("enum"));
             JSONArray data = (JSONArray) singleMetricObject.get("data");
             Assert.assertTrue(data != null);
         }

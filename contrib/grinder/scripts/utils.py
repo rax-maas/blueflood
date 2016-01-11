@@ -7,10 +7,13 @@ default_config = {
   'report_interval': (1000 * 10),
   'annotations_num_tenants':5,
   'num_tenants': 4,
+  'enum_num_tenants': 4,
   'metrics_per_tenant': 15,
+  'enum_metrics_per_tenant': 10,
   'annotations_per_tenant': 10,
   'batch_size': 5,
   'ingest_concurrency': 15,
+  'enum_ingest_concurrency': 15,
   'num_nodes': 1,
   'url': "http://localhost:19000",
   'query_url': "http://localhost:20000",
@@ -18,7 +21,11 @@ default_config = {
   'annotations_concurrency':5,
   'max_multiplot_metrics': 10,
   'search_queries_per_interval': 10,
+  'enum_search_queries_per_interval': 10,
+  'enum_single_plot_queries_per_interval':10,
   'multiplot_per_interval': 10,
+  'enum_multiplot_per_interval': 10,
+  'enum_num_values': 10,
   'singleplot_per_interval': 10,
   'annotations_queries_per_interval': 8}
 
@@ -107,6 +114,8 @@ class ThreadManager(object):
 
     return thread_type(server_num)
 
+#ThreadManager class ends here
+#Utility functions below
 
 def generate_job_range(total_jobs, total_servers, server_num):
   """ Determine which subset of the total work the current server is to do.
@@ -136,6 +145,12 @@ def generate_metrics_tenants(num_tenants, metrics_per_tenant,
 
 def generate_metric_name(metric_id):
   return default_config['name_fmt'] % metric_id
+
+#TODO: Add enum prefix to config
+def generate_enum_metric_name(metric_id):
+  return "enum_grinder_"+default_config['name_fmt'] % metric_id
+
+#Utility functions end here
 
 class AbstractThread(object):
   #superclass for the various thread types

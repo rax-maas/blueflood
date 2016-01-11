@@ -54,12 +54,22 @@ public class CassandraModel {
     public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
             LocatorSerializer.get(),
             StringSerializer.get());
+
+    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>("metrics_enum",
+            LocatorSerializer.get(),
+            LongSerializer.get(),
+            StringSerializer.get());
+
     public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
             LongSerializer.get(),
             LocatorSerializer.get());
     public static final ColumnFamily<Long, SlotState> CF_METRICS_STATE = new ColumnFamily<Long, SlotState>("metrics_state",
             LongSerializer.get(),
             SlotStateSerializer.get());
+
+    public static final ColumnFamily<Locator, Long> CF_METRICS_EXCESS_ENUMS = new ColumnFamily<Locator, Long>("metrics_excess_enums",
+            LocatorSerializer.get(),
+            LongSerializer.get());
 
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
@@ -71,7 +81,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE
+          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;
@@ -155,7 +165,7 @@ public class CassandraModel {
         } else if (type.equals(HistogramRollup.class)) {
             return HIST_GRAN_TO_CF.get(granularity);
         } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
-                type.equals(BluefloodCounterRollup.class)) {
+                type.equals(BluefloodCounterRollup.class) || type.equals(BluefloodEnumRollup.class)) {
             return PREAG_GRAN_TO_CF.get(granularity);
         } else {
             throw new RuntimeException("Unsupported rollup type.");

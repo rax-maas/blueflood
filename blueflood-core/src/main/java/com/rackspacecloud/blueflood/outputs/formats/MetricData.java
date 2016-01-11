@@ -49,7 +49,8 @@ public class MetricData {
         NUMBER("number"),
         BOOLEAN("boolean"),
         STRING("string"),
-        HISTOGRAM("histogram");
+        HISTOGRAM("histogram"),
+        ENUM("enum");
 
         private Type(String s) {
             this.name = s;
