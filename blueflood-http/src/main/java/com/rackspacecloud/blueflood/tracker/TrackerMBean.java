@@ -21,8 +21,11 @@ import java.util.Set;
 public interface TrackerMBean {
 
     public void addTenant(String tenantId);
+    public void addMetricName(String metricName);
     public void removeTenant(String tenantId);
     public void removeAllTenants();
+    public void removeMetricName(String metricName);
+    public void removeAllMetricNames();
     public Set getTenants();
     public void setIsTrackingDelayedMetrics();
     public void resetIsTrackingDelayedMetrics();
