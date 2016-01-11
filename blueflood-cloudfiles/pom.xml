@@ -20,7 +20,8 @@
   <parent>
     <artifactId>blueflood</artifactId>
     <groupId>com.rackspacecloud</groupId>
-    <version>2.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+    <version>${BLUEFLOOD_VERSION}</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
