@@ -106,7 +106,7 @@ public interface BasicRollupsOutputSerializer<T> {
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodCounterRollup)
-                    return ((BluefloodCounterRollup) rollup).getCount();
+                    return ((BluefloodCounterRollup) rollup).getSampleCount();
                 else if (rollup instanceof BluefloodSetRollup)
                     return ((BluefloodSetRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodEnumRollup)
