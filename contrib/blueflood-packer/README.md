@@ -44,7 +44,7 @@ First, however, if you're testing an image you're working on in a branch, you ne
 
 [`https://atlas.hashicorp.com/blueflood/build-configurations/blueflood/variables`](https://atlas.hashicorp.com/blueflood/build-configurations/blueflood/variables)
 
-And set the variable `GIT_BRANCH` to your branch name.  You should reset this to master when you're done.  This only affects the git checkout that occurs in the `blueflood.sh` script.  
+And create or set the variable `GIT_BRANCH_FOR_PACKER` to your branch name.  You should reset this to master when you're done.  This only affects the git checkout that occurs in the `blueflood.sh` script.  
 
 > Note that pushing a branch should be taken care of automatically by passing the [`ATLAS_BUILD_GITHUB_BRANCH`](https://atlas.hashicorp.com/help/packer/builds/build-environment#environment-variables) variable into the script.  At the time of this writing, this variable was not working for us.
 

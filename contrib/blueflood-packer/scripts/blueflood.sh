@@ -59,7 +59,7 @@ sleep 10 #TODO: wait for cassandra to be alive a little more gracefully
 cqlsh -f ./src/cassandra/cli/load.cdl
 
 ##### Start Blueflood
-service blueflood start
+service blueflood start || { echo 'blueflood failed to start' ; exit 1; }
 
 ##### iptables rules for all these services
 #####
