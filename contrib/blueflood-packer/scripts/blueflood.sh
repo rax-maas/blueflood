@@ -24,7 +24,7 @@ sudo apt-get update -y >/dev/null
 
 ### Install apps
 ## also try '-o=Dpkg::Use-Pty=0' to quiet things down if -q or -qq doesn't work
-sudo apt-get -q install -y oracle-java7-installer cassandra=2.1.1 elasticsearch
+sudo apt-get -qq install -y oracle-java7-installer cassandra=2.1.1 elasticsearch
 
 ##### Cassandra post-install
 sudo service cassandra stop
@@ -39,27 +39,27 @@ sudo service elasticsearch start
 ### Install Blueflood
 
 ##### Get Blueflood stuff
-##### TODO: probably just cloning from git is better than some of these curls....
 
-mkdir blueflood; cd blueflood
-mkdir logs
+##### Clone repo
+git clone https://github.com/rackerlabs/blueflood
+cd blueflood
+git checkout $GIT_BRANCH_FOR_PACKER # will default to master if empty
 
+##### Grab latest release jar rather than building from scratch
 curl -s -L https://github.com/rackerlabs/blueflood/releases/latest | egrep -o 'rackerlabs/blueflood/releases/download/rax-release-.*/blueflood-all-.*-jar-with-dependencies.jar' |  xargs -I % curl -C - -L https://github.com/% --create-dirs -o blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar
-curl -s https://gist.githubusercontent.com/stackedsax/588f609b52b7adaf034d/raw/2db9049ba2ab782c719f63929892e5da971a74d2/blueflood.conf -o /etc/init/blueflood.conf
-curl -s https://raw.githubusercontent.com/rackerlabs/blueflood/master/demo/local/config/blueflood.conf --create-dirs -o ./demo/local/config/blueflood.conf
-curl -s https://raw.githubusercontent.com/rackerlabs/blueflood/master/demo/local/config/blueflood-log4j.properties --create-dirs -o demo/local/config/blueflood-log4j.properties
-curl -s -O https://raw.githubusercontent.com/rackerlabs/blueflood/enums-feature/src/cassandra/cli/load.cdl
 
+##### Copy upstart config into place
+cp contrib/blueflood-packer/upstart/blueflood.conf /etc/init/blueflood.conf
+
+##### chown because, I dunno, why not?
 sudo chown -R vagrant:vagrant .
 
 ##### Load schema
 sleep 10 #TODO: wait for cassandra to be alive a little more gracefully
-cqlsh -f load.cdl
+cqlsh -f ./src/cassandra/cli/load.cdl
 
 ##### Start Blueflood
-
 service blueflood start
-
 
 ##### iptables rules for all these services
 #####
@@ -69,7 +69,7 @@ service blueflood start
 #####         want to see things from the point of view of the host machine.
 ##### note 2: 
 #####         Cassandra explicitly cannot bind to 0.0.0.0, as mentioned here:
-#####         https://wiki.apache.org/cassandra/FAQ.  
+#####         https://wiki.apache.org/cassandra/FAQ.
 #####         While Elasticsearch 1.7 binds to 0.0.0.0, Elasticsearch 2.0 defaults 
 #####         to the loopback device.
 #####         I figured I would just set these rules up rather than bind netty to 
