@@ -90,7 +90,7 @@ public class FakeMetricDataGenerator {
             Points.Point<BluefloodCounterRollup> point = new Points.Point<BluefloodCounterRollup>(timeNow, new BluefloodCounterRollup()
                     .withCount(i + 1000)
                     .withRate((double) i)
-                    .withSampleCount(1));
+                    .withSampleCount(i+1));
             points.add(point);
         }
         return points;

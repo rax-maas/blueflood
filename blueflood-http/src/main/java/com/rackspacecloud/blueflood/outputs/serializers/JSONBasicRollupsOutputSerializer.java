@@ -94,8 +94,6 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
         JSONObject filterStatsObject = null;
         long numPoints = 1;
         
-        
-        
         // todo: adding getCount() to Rollup interface will simplify this block.
         // because of inheritance, GaugeRollup needs to come before BasicRollup. sorry.
         if (point.getData() instanceof BluefloodGaugeRollup) {
