@@ -204,7 +204,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
     }
 
     public void run() {
+        run(null, null);
+    }
+    public void run(Long maxNumIterations, Long maxMillisRunTime) {
         thread = Thread.currentThread();
+
+        long startTime = System.currentTimeMillis();
+        long numIterations = 0;
 
         while (true) {
             long startRun = System.currentTimeMillis();
@@ -229,6 +235,19 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 }
             }
             long endRun = System.currentTimeMillis();
+
+            long currentTime = System.currentTimeMillis();
+            if (maxMillisRunTime != null &&
+                    currentTime - startTime > maxMillisRunTime.longValue()) {
+                break;
+            }
+
+            numIterations++;
+            if (maxNumIterations != null &&
+                    numIterations >= maxNumIterations) {
+                break;
+            }
+
             if (endRun - startRun > pollerPeriod)
                 log.error("It took longer than {} to poll for rollups.", pollerPeriod);
             else
