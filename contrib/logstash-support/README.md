@@ -25,3 +25,5 @@ wget https://github.com/stuart-warren/logit/releases/download/v0.5.11/logit-0.5.
 mvn install:install-file -Dfile=target/logit/logit-0.5.11.jar -DgroupId=com.stuartwarren -DartifactId=logit -Dversion=0.5.11 -Dpackaging=jar -DlocalRepositoryPath=./mavenrepo
 ```
 
+* Build and check in your files
+
