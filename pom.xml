@@ -245,6 +245,12 @@
       </modules>
     </profile>
     <profile>
+      <id>logstash-support</id>
+      <modules>
+        <module>contrib/logstash-support</module>
+      </modules>
+    </profile>
+    <profile>
       <id>release</id>
       <build>
         <plugins>
