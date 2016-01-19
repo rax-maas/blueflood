@@ -74,4 +74,100 @@ public class ConfigurationTest {
         System.setProperty("foo", "TRUE");
         Assert.assertTrue(config.getBooleanProperty("foo"));
     }
+
+    @Test
+    public void testSystemPropertiesOverrideConfigurationValues() {
+        Configuration config = Configuration.getInstance();
+
+        try {
+            Assert.assertEquals("75",
+                    config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS));
+
+            System.setProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString(), "something else");
+
+            Assert.assertEquals("something else",
+                    config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS));
+        } finally {
+            System.clearProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString());
+        }
+    }
+
+    @Test
+    public void testGettingValuesCreatesOriginals() {
+
+        final String keyName = CoreConfig.ROLLUP_KEYSPACE.toString();
+
+        try {
+            // arrange
+            Configuration config = Configuration.getInstance();
+
+            Map<Object, Object> props = config.getAllProperties();
+
+            // preconditions
+            Assert.assertTrue(
+                    "props should already have 'ROLLUP_KEYSPACE', because that's a default",
+                    props.containsKey(keyName));
+            Assert.assertFalse(
+                    "props should not contain 'original.ROLLUP_KEYSPACE' yet",
+                    props.containsKey("original." + keyName));
+
+            // act
+            System.setProperty(keyName, "some value");
+            config.setProperty(keyName, "some other value");
+            String value = config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE);
+            Assert.assertEquals("some value", value);
+
+            // assert
+            Map<Object, Object> props2 = config.getAllProperties();
+
+            Assert.assertTrue(
+                    "props2 should already have 'ROLLUP_KEYSPACE', because that's a default",
+                    props2.containsKey(keyName));
+            Assert.assertTrue(
+                    "props2 should now contain 'original.ROLLUP_KEYSPACE'",
+                    props2.containsKey("original." + keyName));
+
+            Assert.assertEquals("some value", config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE));
+            Assert.assertEquals("some other value", config.getStringProperty("original." + keyName));
+
+        } finally {
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testGetPropertiesDoesntWorkForDefaults() {
+
+        Configuration config = Configuration.getInstance();
+
+        Assert.assertEquals(
+                "19180",
+                config.getStringProperty(CoreConfig.DEFAULT_CASSANDRA_PORT));
+
+        Map props = config.getProperties();
+
+        Assert.assertFalse(props.containsKey(CoreConfig.DEFAULT_CASSANDRA_PORT.toString()));
+    }
+
+    @Test
+    public void testGetPropertiesWorksForNonDefaults() {
+
+        final String keyName = "abcdef";
+
+        // arrange
+        Configuration config = Configuration.getInstance();
+
+        // preconditions
+        Map props = config.getProperties();
+        Assert.assertFalse(props.containsKey(keyName));
+
+        // act
+        config.setProperty(keyName, "123456");
+
+        // assert
+        Map props2 = config.getProperties();
+        Assert.assertTrue(props2.containsKey(keyName));
+
+
+    }
 }

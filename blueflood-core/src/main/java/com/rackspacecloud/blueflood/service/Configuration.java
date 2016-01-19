@@ -65,6 +65,20 @@ public class Configuration {
         return Collections.unmodifiableMap(props);
     }
 
+    public Map<Object, Object> getAllProperties() {
+
+        // includes defaults values, which are not captured by the above getProperties method
+
+        Map<Object, Object> map = new HashMap<Object, Object>();
+        for (Object key : defaultProps.keySet()) {
+            map.put(key, defaultProps.getProperty(key.toString()));
+        }
+        for (Object key : props.keySet()) {
+            map.put(key, props.getProperty(key.toString()));
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
     public String getStringProperty(Enum<? extends ConfigDefaults> name) {
         return getStringProperty(name.toString());
     }
