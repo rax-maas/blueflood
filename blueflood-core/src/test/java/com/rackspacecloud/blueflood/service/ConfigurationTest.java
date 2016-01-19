@@ -56,6 +56,8 @@ public class ConfigurationTest {
         Assert.assertEquals("NONE", config.getStringProperty(CoreConfig.SHARDS));
     }
 
+    // list of strings
+
     @Test
     public void testMultipleCommaSeparatedItemsShouldYieldTheSameNumberOfElements() {
 
@@ -101,6 +103,8 @@ public class ConfigurationTest {
         Assert.assertArrayEquals(expected, actual.toArray());
     }
 
+    // boolean values
+
     @Test
     public void testNullShouldBeInterpretedAsBooleanFalse() {
 
@@ -112,6 +116,8 @@ public class ConfigurationTest {
 
         Assert.assertTrue(Configuration.booleanFromString("TRUE"));
     }
+
+    // override behavior
 
     @Test
     public void testSystemPropertiesOverrideConfigurationValues() {
@@ -133,6 +139,8 @@ public class ConfigurationTest {
             config.clearProperty(keyName);
         }
     }
+
+    // originals
 
     @Test
     public void testGettingValuesCreatesOriginals() {
@@ -176,6 +184,8 @@ public class ConfigurationTest {
             System.clearProperty(keyName);
         }
     }
+
+    // getProperties
 
     @Test
     public void testGetPropertiesDoesntWorkForDefaults() {
