@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigurationTest {
@@ -56,38 +57,60 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testGetListProperty() {
-        Configuration config = Configuration.getInstance();
-        Assert.assertEquals(config.getStringProperty(CoreConfig.QUERY_MODULES), "");
-        Assert.assertTrue(config.getListProperty(CoreConfig.QUERY_MODULES).isEmpty());
-        System.setProperty("QUERY_MODULES", "a");
-        Assert.assertEquals(config.getListProperty(CoreConfig.QUERY_MODULES).size(), 1);
-        System.setProperty("QUERY_MODULES", "a,b , c");
-        Assert.assertEquals(Arrays.asList("a","b","c"), config.getListProperty(CoreConfig.QUERY_MODULES));
+    public void testMultipleCommaSeparatedItemsShouldYieldTheSameNumberOfElements() {
+
+        String[] expected = { "a", "b", "c" };
+        List<String> actual = Configuration.stringListFromString("a,b,c");
+
+        Assert.assertArrayEquals(expected, actual.toArray());
+    }
+
+    @Test
+    public void testWhitespaceBetweenElementsIsNotSignificant() {
+
+        String[] expected = { "a", "b", "c" };
+        List<String> actual = Configuration.stringListFromString("a,  b,c");
+
+        Assert.assertArrayEquals(expected, actual.toArray());
+    }
+
+    @Test
+    public void testLeadingWhitespaceIsKept() {
+
+        String[] expected = { "   a", "b", "c" };
+        List<String> actual = Configuration.stringListFromString("   a,b,c");
+
+        Assert.assertArrayEquals(expected, actual.toArray());
+    }
+
+    @Test
+    public void testTrailingWhitespaceIsKept() {
+
+        String[] expected = { "a", "b", "c   " };
+        List<String> actual = Configuration.stringListFromString("a,b,c   ");
+
+        Assert.assertArrayEquals(expected, actual.toArray());
+    }
+
+    @Test
+    public void testConsecutiveCommasDontProduceEmptyElements() {
+
+        String[] expected = { "a", "b", "c" };
+        List<String> actual = Configuration.stringListFromString("a,,,b,c");
+
+        Assert.assertArrayEquals(expected, actual.toArray());
     }
 
     @Test
     public void testNullShouldBeInterpretedAsBooleanFalse() {
 
-        // arrange
-        Configuration config = Configuration.getInstance();
-
-        // precondition
-        Assert.assertEquals(config.getStringProperty("foo"), null);
-
-        // assert
-        Assert.assertFalse(config.getBooleanProperty("foo"));
+        Assert.assertFalse(Configuration.booleanFromString(null));
     }
 
     @Test
     public void test_TRUE_ShouldBeInterpretedAsBooleanTrue() {
 
-        // arrange
-        Configuration config = Configuration.getInstance();
-        System.setProperty("foo", "TRUE");
-
-        // assert
-        Assert.assertTrue(config.getBooleanProperty("foo"));
+        Assert.assertTrue(Configuration.booleanFromString("TRUE"));
     }
 
     @Test
