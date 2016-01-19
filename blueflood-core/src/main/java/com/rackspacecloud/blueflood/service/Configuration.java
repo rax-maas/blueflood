@@ -95,36 +95,50 @@ public class Configuration {
         return getIntegerProperty(name.toString());
     }
     public int getIntegerProperty(String name) {
-        return Integer.parseInt(getStringProperty(name));
+        return intFromString(getStringProperty(name));
+    }
+    public static int intFromString(String value) {
+        return Integer.parseInt(value);
     }
 
     public float getFloatProperty(Enum<? extends ConfigDefaults> name) {
         return getFloatProperty(name.toString());
     }
     public float getFloatProperty(String name) {
-        return Float.parseFloat(getStringProperty(name));
+        return floatFromString(getStringProperty(name));
+    }
+    public static float floatFromString(String value) {
+        return Float.parseFloat(value);
     }
 
     public long getLongProperty(Enum<? extends ConfigDefaults> name) {
         return getLongProperty(name.toString());
     }
     public long getLongProperty(String name) {
-        return Long.parseLong(getStringProperty(name));
+        return longFromString(getStringProperty(name));
+    }
+    public static long longFromString(String value) {
+        return Long.parseLong(value);
     }
 
     public boolean getBooleanProperty(Enum<? extends ConfigDefaults> name) {
         return getBooleanProperty(name.toString());
     }
-
     public boolean getBooleanProperty(String name) {
-        return "true".equalsIgnoreCase(getStringProperty(name));
+        return booleanFromString(getStringProperty(name));
+    }
+    public static boolean booleanFromString(String value) {
+        return "true".equalsIgnoreCase(value);
     }
 
     public List<String> getListProperty(Enum<? extends ConfigDefaults> name) {
         return getListProperty(name.toString());
     }
     public List<String> getListProperty(String name) {
-        List<String> list = Lists.newArrayList(getStringProperty(name).split("\\s*,\\s*"));
+        return stringListFromString(getStringProperty(name));
+    }
+    public static List<String> stringListFromString(String value) {
+        List<String> list = Lists.newArrayList(value.split("\\s*,\\s*"));
         list.removeAll(Arrays.asList("", null));
         return list;
     }
