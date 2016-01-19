@@ -92,18 +92,22 @@ public class ConfigurationTest {
 
     @Test
     public void testSystemPropertiesOverrideConfigurationValues() {
+
+        final String keyName = CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString();
+
         Configuration config = Configuration.getInstance();
 
         try {
             Assert.assertEquals("75",
                     config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS));
 
-            System.setProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString(), "something else");
+            System.setProperty(keyName, "something else");
 
             Assert.assertEquals("something else",
                     config.getStringProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS));
         } finally {
-            System.clearProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS.toString());
+            System.clearProperty(keyName);
+            config.clearProperty(keyName);
         }
     }
 

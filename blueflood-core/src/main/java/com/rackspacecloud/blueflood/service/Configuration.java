@@ -133,4 +133,9 @@ public class Configuration {
     public void setProperty(String name, String val) {
       props.setProperty(name, val);
     }
+
+    @VisibleForTesting
+    public void clearProperty(String name) {
+        props.remove(name);
+    }
 }
