@@ -67,11 +67,26 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testBooleanProperty() {
+    public void testNullShouldBeInterpretedAsBooleanFalse() {
+
+        // arrange
         Configuration config = Configuration.getInstance();
+
+        // precondition
         Assert.assertEquals(config.getStringProperty("foo"), null);
+
+        // assert
         Assert.assertFalse(config.getBooleanProperty("foo"));
+    }
+
+    @Test
+    public void test_TRUE_ShouldBeInterpretedAsBooleanTrue() {
+
+        // arrange
+        Configuration config = Configuration.getInstance();
         System.setProperty("foo", "TRUE");
+
+        // assert
         Assert.assertTrue(config.getBooleanProperty("foo"));
     }
 
