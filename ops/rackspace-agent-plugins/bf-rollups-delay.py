@@ -17,7 +17,7 @@
 import pycassa
 import sys
 import time
-import logging
+
 from collections import defaultdict
 
 SLOTS = 4032
@@ -120,18 +120,13 @@ def print_stats_for_metrics_state(metrics_state_for_shards):
 
 def main(servers):
     try:
-        logging.basicConfig(format='%(asctime)s %(message)s',
-                            filename='/tmp/bf-rollup.log', level=logging.DEBUG)
         shards = range(128)
-        logging.debug('getting metrics state for shards')
         metrics_state_for_shards = get_metrics_state_for_shards(shards,
                                                                 servers)
         print 'status ok bf_health_check'
-        logging.debug('printing stats for metrics state')
         print_stats_for_metrics_state(metrics_state_for_shards)
         # find_duplicates(shards, metrics_for_shards)
     except Exception, ex:
-        logging.exception(ex)
         print "status error", ex
         raise ex
 
