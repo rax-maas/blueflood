@@ -25,7 +25,7 @@ public class RollupServiceTest {
 
         Assert.assertNotNull(service);
 
-        service.run(null, 120000L);
+        service.run(null, 120000L); // default SCHEDULE_POLL_PERIOD is 60 seconds
 
         Assert.assertTrue(true);
     }
