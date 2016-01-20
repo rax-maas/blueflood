@@ -216,60 +216,6 @@ public class ConfigurationTest {
         }
     }
 
-    // originals
-
-    @Test
-    public void testGettingValuesCreatesOriginals() {
-
-        final String keyName = CoreConfig.ROLLUP_KEYSPACE.toString();
-
-        // The behavior of getStringProperty() when it creates new 'original.*'
-        // entries is very convoluted. It requires:
-        //  1. A system property named $NAME exists
-        //  2. A property named "original.$NAME" does NOT exist in the props object
-        //  3. A property named $NAME does exist in the props object
-        // Hence the calls to System.setProperty and config.setProperty below
-        // with different values. That way, we create the 'original.*' entry
-        // from the intended source and can test it.
-
-        try {
-            // arrange
-            Configuration config = Configuration.getInstance();
-
-            Map<Object, Object> props = config.getAllProperties();
-
-            // preconditions
-            Assert.assertTrue(
-                    "props should already have 'ROLLUP_KEYSPACE', because that's a default",
-                    props.containsKey(keyName));
-            Assert.assertFalse(
-                    "props should not contain 'original.ROLLUP_KEYSPACE' yet",
-                    props.containsKey("original." + keyName));
-
-            // act
-            System.setProperty(keyName, "some value");
-            config.setProperty(keyName, "some other value");
-            String value = config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE);
-            Assert.assertEquals("some value", value);
-
-            // assert
-            Map<Object, Object> props2 = config.getAllProperties();
-
-            Assert.assertTrue(
-                    "props2 should already have 'ROLLUP_KEYSPACE', because that's a default",
-                    props2.containsKey(keyName));
-            Assert.assertTrue(
-                    "props2 should now contain 'original.ROLLUP_KEYSPACE'",
-                    props2.containsKey("original." + keyName));
-
-            Assert.assertEquals("some value", config.getStringProperty(CoreConfig.ROLLUP_KEYSPACE));
-            Assert.assertEquals("some other value", config.getStringProperty("original." + keyName));
-
-        } finally {
-            System.clearProperty(keyName);
-        }
-    }
-
     // getProperties
 
     @Test
