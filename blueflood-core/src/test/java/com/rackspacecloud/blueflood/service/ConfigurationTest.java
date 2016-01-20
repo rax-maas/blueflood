@@ -223,6 +223,15 @@ public class ConfigurationTest {
 
         final String keyName = CoreConfig.ROLLUP_KEYSPACE.toString();
 
+        // The behavior of getStringProperty() when it creates new 'original.*'
+        // entries is very convoluted. It requires:
+        //  1. A system property named $NAME exists
+        //  2. A property named "original.$NAME" does NOT exist in the props object
+        //  3. A property named $NAME does exist in the props object
+        // Hence the calls to System.setProperty and config.setProperty below
+        // with different values. That way, we create the 'original.*' entry
+        // from the intended source and can test it.
+
         try {
             // arrange
             Configuration config = Configuration.getInstance();
