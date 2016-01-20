@@ -57,13 +57,21 @@ public class Configuration {
         }
     }
 
+    /**
+     * Convert the existing configuration values into a Map. Does not include defaults from the defaultProps object.
+     *
+     * @return an unmodifiable Map
+     */
     public Map<Object,Object> getProperties() {
         return Collections.unmodifiableMap(props);
     }
 
+    /**
+     * Convert the existing configuration values into a Map, including those specified in defaultProps.
+     *
+     * @return an unmodifiable Map
+     */
     public Map<Object, Object> getAllProperties() {
-
-        // includes defaults values, which are not captured by the above getProperties method
 
         Map<Object, Object> map = new HashMap<Object, Object>();
         for (Object key : defaultProps.keySet()) {
@@ -72,6 +80,7 @@ public class Configuration {
         for (Object key : props.keySet()) {
             map.put(key, props.getProperty(key.toString()));
         }
+
         return Collections.unmodifiableMap(map);
     }
 
