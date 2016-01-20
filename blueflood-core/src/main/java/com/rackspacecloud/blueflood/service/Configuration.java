@@ -24,10 +24,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 
-/**
- * java/conf/bf-dev.con has an exhaustive description of each configuration option.
- *
- */
 public class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
@@ -61,8 +57,31 @@ public class Configuration {
         }
     }
 
+    /**
+     * Convert the existing configuration values into a Map. Does not include defaults from the defaultProps object.
+     *
+     * @return an unmodifiable Map
+     */
     public Map<Object,Object> getProperties() {
         return Collections.unmodifiableMap(props);
+    }
+
+    /**
+     * Convert the existing configuration values into a Map, including those specified in defaultProps.
+     *
+     * @return an unmodifiable Map
+     */
+    public Map<Object, Object> getAllProperties() {
+
+        Map<Object, Object> map = new HashMap<Object, Object>();
+        for (Object key : defaultProps.keySet()) {
+            map.put(key, defaultProps.getProperty(key.toString()));
+        }
+        for (Object key : props.keySet()) {
+            map.put(key, props.getProperty(key.toString()));
+        }
+
+        return Collections.unmodifiableMap(map);
     }
 
     public String getStringProperty(Enum<? extends ConfigDefaults> name) {
@@ -81,36 +100,50 @@ public class Configuration {
         return getIntegerProperty(name.toString());
     }
     public int getIntegerProperty(String name) {
-        return Integer.parseInt(getStringProperty(name));
+        return intFromString(getStringProperty(name));
+    }
+    public static int intFromString(String value) {
+        return Integer.parseInt(value);
     }
 
     public float getFloatProperty(Enum<? extends ConfigDefaults> name) {
         return getFloatProperty(name.toString());
     }
     public float getFloatProperty(String name) {
-        return Float.parseFloat(getStringProperty(name));
+        return floatFromString(getStringProperty(name));
+    }
+    public static float floatFromString(String value) {
+        return Float.parseFloat(value);
     }
 
     public long getLongProperty(Enum<? extends ConfigDefaults> name) {
         return getLongProperty(name.toString());
     }
     public long getLongProperty(String name) {
-        return Long.parseLong(getStringProperty(name));
+        return longFromString(getStringProperty(name));
+    }
+    public static long longFromString(String value) {
+        return Long.parseLong(value);
     }
 
     public boolean getBooleanProperty(Enum<? extends ConfigDefaults> name) {
         return getBooleanProperty(name.toString());
     }
-
     public boolean getBooleanProperty(String name) {
-        return "true".equalsIgnoreCase(getStringProperty(name));
+        return booleanFromString(getStringProperty(name));
+    }
+    public static boolean booleanFromString(String value) {
+        return "true".equalsIgnoreCase(value);
     }
 
     public List<String> getListProperty(Enum<? extends ConfigDefaults> name) {
         return getListProperty(name.toString());
     }
     public List<String> getListProperty(String name) {
-        List<String> list = Lists.newArrayList(getStringProperty(name).split("\\s*,\\s*"));
+        return stringListFromString(getStringProperty(name));
+    }
+    public static List<String> stringListFromString(String value) {
+        List<String> list = Lists.newArrayList(value.split("\\s*,\\s*"));
         list.removeAll(Arrays.asList("", null));
         return list;
     }
@@ -118,5 +151,10 @@ public class Configuration {
     @VisibleForTesting
     public void setProperty(String name, String val) {
       props.setProperty(name, val);
+    }
+
+    @VisibleForTesting
+    public void clearProperty(String name) {
+        props.remove(name);
     }
 }
