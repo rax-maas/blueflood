@@ -117,6 +117,82 @@ public class ConfigurationTest {
         Assert.assertTrue(Configuration.booleanFromString("TRUE"));
     }
 
+    // integer values
+
+    @Test
+    public void testIntegerOneShouldBeInterpretedAsOne() {
+        Assert.assertEquals(1, Configuration.intFromString("1"));
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testIntegerLeadingWhitespaceShouldBeIgnored() {
+        int value = Configuration.intFromString("   1");
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testIntegerTrailingWhitespaceShouldBeIgnored() {
+        int value = Configuration.intFromString("1   ");
+    }
+
+    // long values
+
+    @Test
+    public void testLongOneShouldBeInterpretedAsOne() {
+        Assert.assertEquals(1L, Configuration.longFromString("1"));
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testLongLeadingWhitespaceShouldBeRejected() {
+        long value = Configuration.longFromString("   1");
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testLongTrailingWhitespaceShouldBeRejected() {
+        long value = Configuration.longFromString("1   ");
+    }
+
+    // float values
+
+    @Test
+    public void testFloatOneShouldBeInterpretedAsOne() {
+        Assert.assertEquals(1.0f, Configuration.floatFromString("1"), 0.00001f);
+    }
+
+    @Test
+    public void testFloatExtendedFormat() {
+        Assert.assertEquals(-1100.0f, Configuration.floatFromString("-1.1e3"), 0.00001f);
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testFloatExtendedFormatSpaceBeforeDotIsInvalid() {
+        Assert.assertEquals(-1100.0f, Configuration.floatFromString("-1 .1e3"), 0.00001f);
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testFloatExtendedFormatSpaceAfterDotIsInvalid() {
+        Assert.assertEquals(-1100.0f, Configuration.floatFromString("-1. 1e3"), 0.00001f);
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testFloatExtendedFormatSpaceBeforeExponentMarkerIsInvalid() {
+        Assert.assertEquals(-1100.0f, Configuration.floatFromString("-1.1 e3"), 0.00001f);
+    }
+
+    @Test(expected=NumberFormatException.class)
+    public void testFloatExtendedFormatSpaceAfterExponentMarkerIsInvalid() {
+        Assert.assertEquals(-1100.0f, Configuration.floatFromString("-1.1e 3"), 0.00001f);
+    }
+
+    @Test
+    public void testFloatLeadingWhitespaceShouldBeIgnored() {
+        Assert.assertEquals(1.0f, Configuration.floatFromString("   1"), 0.00001f);
+    }
+
+    @Test
+    public void testFloatTrailingWhitespaceShouldBeIgnored() {
+        Assert.assertEquals(1.0f, Configuration.floatFromString("1   "), 0.00001f);
+    }
+
     // override behavior
 
     @Test
