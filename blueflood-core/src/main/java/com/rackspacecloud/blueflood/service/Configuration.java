@@ -24,10 +24,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 
-/**
- * java/conf/bf-dev.con has an exhaustive description of each configuration option.
- *
- */
 public class Configuration {
     private static final Properties defaultProps = new Properties();
     private static Properties props;
