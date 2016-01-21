@@ -388,6 +388,94 @@ public class ConfigurationTest {
         }
     }
 
+    @Test
+    public void testAfterAnOriginalIsCreatedSystemPropertyNoLongerOverrides() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");              // A
+            config.setProperty(keyName, "some other value");        // B
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("some value", value); // equal to the sysprop A
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName2));
+
+            // act
+            System.setProperty(keyName, "another value");           // C
+            config.setProperty(keyName, "another another value");   // D
+            String value2 = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("another another value", value2); // _not_ equal to the sysprop C
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("another another value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName2));
+
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testAfterAnOriginalIsCreatedItIsNeverUpdated() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");              // A
+            config.setProperty(keyName, "some other value");        // B
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("some value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName2)); // equal to config value B
+
+            // act
+            System.setProperty(keyName, "another value");           // C
+            config.setProperty(keyName, "another another value");   // D
+            String value2 = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("another another value", value2);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("another another value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName2)); // _still_ equal to config value B
+
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
 
     @Test
     public void testOriginals5() {
