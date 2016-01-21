@@ -270,6 +270,249 @@ public class ConfigurationTest {
         }
     }
 
+    @Test
+    public void testOriginals1() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertNull(value);
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals2() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            config.setProperty(keyName, "some value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("some value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals3() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+
+            Assert.assertEquals("some value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals4() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");
+            config.setProperty(keyName, "some other value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+
+            Assert.assertEquals("some value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+
+    @Test
+    public void testOriginals5() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            config.setProperty(keyName2, "more value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertNull(value);
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("more value", Configuration.props.getProperty(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals6() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            config.setProperty(keyName, "some value");
+            config.setProperty(keyName2, "more value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+            Assert.assertEquals("some value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("more value", Configuration.props.getProperty(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals7() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");
+            config.setProperty(keyName2, "more value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+
+            Assert.assertNull(value);
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("more value", Configuration.props.getProperty(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
+    @Test
+    public void testOriginals8() {
+
+        // arrange
+        final String keyName = "some-key-name";
+        final String keyName2 = "original." + keyName;
+        Configuration config = Configuration.getInstance();
+
+        try {
+            // precondition
+            Assert.assertFalse(Configuration.props.containsKey(keyName));
+            Assert.assertFalse(Configuration.props.containsKey(keyName2));
+
+            // act
+            System.setProperty(keyName, "some value");
+            config.setProperty(keyName, "some other value");
+            config.setProperty(keyName2, "more value");
+            String value = config.getStringProperty(keyName);
+
+            // assert
+
+            Assert.assertEquals("some other value", value);
+            Assert.assertTrue(Configuration.props.containsKey(keyName));
+            Assert.assertEquals("some other value", Configuration.props.getProperty(keyName));
+            Assert.assertTrue(Configuration.props.containsKey(keyName2));
+            Assert.assertEquals("more value", Configuration.props.getProperty(keyName2));
+        } finally {
+            Configuration.props.remove(keyName);
+            Configuration.props.remove(keyName2);
+            System.clearProperty(keyName);
+        }
+    }
+
     // getProperties
 
     @Test
