@@ -88,7 +88,9 @@ public class Configuration {
         return getStringProperty(name.toString());
     }
     public String getStringProperty(String name) {
-        if (System.getProperty(name) != null) {
+        if (System.getProperty(name) != null && !props.containsKey("original." + name)) {
+            if (props.containsKey(name))
+                props.put("original." + name, props.get(name));
             props.put(name, System.getProperty(name));
         }
         return props.getProperty(name);
