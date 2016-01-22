@@ -148,13 +148,17 @@ public class Configuration {
         return list;
     }
 
-    @VisibleForTesting
     public void setProperty(String name, String val) {
       props.setProperty(name, val);
     }
+    public void setProperty(Enum<? extends ConfigDefaults> name, String value) {
+        setProperty(name.toString(), value);
+    }
 
-    @VisibleForTesting
     public void clearProperty(String name) {
         props.remove(name);
+    }
+    public void clearProperty(Enum<? extends ConfigDefaults> name) {
+        clearProperty(name.toString());
     }
 }
