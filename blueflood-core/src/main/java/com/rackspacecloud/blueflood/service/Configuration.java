@@ -25,8 +25,8 @@ import java.net.URL;
 import java.util.*;
 
 public class Configuration {
-    public static final Properties defaultProps = new Properties();
-    public static Properties props;
+    private static final Properties defaultProps = new Properties();
+    private static Properties props;
     private static final Configuration INSTANCE = new Configuration();
 
     public static Configuration getInstance() {
