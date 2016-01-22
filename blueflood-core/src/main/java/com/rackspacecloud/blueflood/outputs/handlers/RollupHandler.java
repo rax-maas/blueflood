@@ -65,6 +65,9 @@ public class RollupHandler {
     private static final Meter exceededQueryTimeout = Metrics.meter(RollupHandler.class, "Batched Metrics Query Duration Exceeded Timeout");
     private static final Histogram queriesSizeHist = Metrics.histogram(RollupHandler.class, "Total queries");
 
+    private static final Timer timerCassandraReadRollupOnRead = Metrics.timer( RollupHandler.class, "cassandraReadForRollupOnRead" );
+    private static final Timer timerRepairRollupsOnRead = Metrics.timer( RollupHandler.class, "repairRollupsOnRead" );
+
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
     private ListeningExecutorService rollupsOnReadExecutor = null;
@@ -288,12 +291,17 @@ public class RollupHandler {
     }
 
     private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
+        Timer.Context c = timerRepairRollupsOnRead.time();
+
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
 
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
         for (Range r : ranges) {
             try {
+                Timer.Context cRead = timerCassandraReadRollupOnRead.time();
                 MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+                cRead.stop();
+
                 Points dataToRoll = data.getData();
                 if (dataToRoll.isEmpty()) {
                     continue;
@@ -307,6 +315,8 @@ public class RollupHandler {
                 log.error("Exception computing rollups during read: ", ex);
             }
         }
+
+        c.stop();
 
         return repairedPoints;
     }
