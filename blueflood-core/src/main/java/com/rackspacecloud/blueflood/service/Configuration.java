@@ -96,6 +96,17 @@ public class Configuration {
         return props.getProperty(name);
     }
 
+    public static String getRawStringProperty(Enum<? extends ConfigDefaults> name) {
+        return getRawStringProperty(name.toString());
+    }
+    public static String getRawStringProperty(String name) {
+        return props.getProperty(name);
+    }
+
+    public static boolean containsKey(String key) {
+        return props.containsKey(key);
+    }
+
     public int getIntegerProperty(Enum<? extends ConfigDefaults> name) {
         return getIntegerProperty(name.toString());
     }
@@ -155,10 +166,10 @@ public class Configuration {
         setProperty(name.toString(), value);
     }
 
-    public void clearProperty(String name) {
+    public static void clearProperty(String name) {
         props.remove(name);
     }
-    public void clearProperty(Enum<? extends ConfigDefaults> name) {
+    public static void clearProperty(Enum<? extends ConfigDefaults> name) {
         clearProperty(name.toString());
     }
 }
