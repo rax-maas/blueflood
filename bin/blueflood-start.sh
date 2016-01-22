@@ -12,6 +12,12 @@ SCRIPTDIR=`pwd`/`dirname $0`
 # top level source directory
 TOPDIR=$SCRIPTDIR/..
 
+if [ ! -d $TOPDIR/blueflood-all/target ]; then
+    echo "Error: blueflood-all/target directory does not exist. Please run build:"
+    echo "    mvn clean package -P all-modules"
+    exit 1
+fi
+
 JAVA=/usr/bin/java
 
 $JAVA \
