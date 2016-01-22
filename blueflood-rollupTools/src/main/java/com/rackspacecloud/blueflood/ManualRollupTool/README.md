@@ -36,7 +36,11 @@ Setting `METRICS_5M_ENABLED` to true will rollup 5m resolution from raw metrics,
 
 Example run of manual rollup tool:
 
-`java -Dblueflood.config=file:/home/chinmay/bf-RollupTool.conf -Dlog4j.configuration=file:/home/chinmay/log4jRollupTool.properties >-Xms1G -Xmx2G -cp blueflood-rax-all-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.RunRollupTool`
+```
+java -Dblueflood.config=file:/home/chinmay/bf-RollupTool.conf \
+     -Dlog4j.configuration=file:/home/chinmay/log4jRollupTool.properties >-Xms1G -Xmx2G \
+   -cp blueflood-rax-all-1.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.RunRollupTool
+```
 
 
 
