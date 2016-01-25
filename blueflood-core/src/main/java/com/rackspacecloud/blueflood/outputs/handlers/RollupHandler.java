@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RollupHandler {
     private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
@@ -67,6 +69,17 @@ public class RollupHandler {
 
     private static final Timer timerCassandraReadRollupOnRead = Metrics.timer( RollupHandler.class, "cassandraReadForRollupOnRead" );
     private static final Timer timerRepairRollupsOnRead = Metrics.timer( RollupHandler.class, "repairRollupsOnRead" );
+    private static final Timer timerRollupFromPoints = Metrics.timer( RollupHandler.class, "rollupFromPoints" );
+
+
+    private static final AtomicInteger rangeCount = new AtomicInteger( 0 );
+    private static final Gauge gaugeRange = new Gauge<Integer>() {
+
+        @Override
+        public Integer getValue() {
+            return rangeCount.get();
+        }
+    };
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
@@ -296,6 +309,9 @@ public class RollupHandler {
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
 
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
+
+        int count = 0;
+
         for (Range r : ranges) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
@@ -306,7 +322,9 @@ public class RollupHandler {
                 if (dataToRoll.isEmpty()) {
                     continue;
                 }
+                Timer.Context cRollup = timerRollupFromPoints.time();
                 Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
+                cRollup.stop();
 
                 if (rollup.hasData()) {
                     repairedPoints.add(new Points.Point(r.getStart(), rollup));
@@ -314,9 +332,12 @@ public class RollupHandler {
             } catch (IOException ex) {
                 log.error("Exception computing rollups during read: ", ex);
             }
+            count++;
         }
 
         c.stop();
+
+        rangeCount.set( count );
 
         return repairedPoints;
     }
