@@ -16,10 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.*;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -80,6 +77,11 @@ public class RollupHandler {
             return rangeCount.get();
         }
     };
+
+    static {
+
+        Metrics.getRegistry().register( MetricRegistry.name( RollupHandler.class, "rollupRangeCount"), gaugeRange );
+    }
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
