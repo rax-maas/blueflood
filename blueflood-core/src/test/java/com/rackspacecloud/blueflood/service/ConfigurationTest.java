@@ -224,7 +224,7 @@ public class ConfigurationTest {
         }
     }
 
-    // originals
+    // originals, a.k.a. backup keys
 
     @Test
     public void testGettingValuesCreatesOriginals() {
@@ -279,7 +279,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals1() {
+    public void testWhenNoSyspropExistsAndTheKeyIsntPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeNullAndNoBackupCreated() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -295,9 +295,16 @@ public class ConfigurationTest {
             String value = config.getStringProperty(keyName);
 
             // assert
+
+            // return value is null
             Assert.assertNull(value);
+
+            // the key is not present
             Assert.assertFalse(Configuration.containsKey(keyName));
+
+            // the backup key is not present
             Assert.assertFalse(Configuration.containsKey(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -306,7 +313,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals2() {
+    public void testWhenNoSyspropExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeThePreviouslySetValueAndNoBackupCreated() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -323,10 +330,17 @@ public class ConfigurationTest {
             String value = config.getStringProperty(keyName);
 
             // assert
+
+            // return value is previously-set value
             Assert.assertEquals("some value", value);
+
+            // key is present and its value is equal to what we set it to
             Assert.assertTrue(Configuration.containsKey(keyName));
             Assert.assertEquals("some value", Configuration.getRawStringProperty(keyName));
+
+            //backup key is not present
             Assert.assertFalse(Configuration.containsKey(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -335,7 +349,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals3() {
+    public void testWhenSyspropExistsAndTheKeyIsntPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeSyspropValueAndNoBackupCreated() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -353,10 +367,16 @@ public class ConfigurationTest {
 
             // assert
 
+            // return value is system property value
             Assert.assertEquals("some value", value);
+
+            // the key has been added and its value is that of the sysprop
             Assert.assertTrue(Configuration.containsKey(keyName));
             Assert.assertEquals("some value", Configuration.getRawStringProperty(keyName));
+
+            // the backup key has not been added
             Assert.assertFalse(Configuration.containsKey(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -365,7 +385,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals4() {
+    public void testWhenSyspropExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsntPresentThenReturnValueShouldBeSyspropValueAndNoBackupCreated() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -384,11 +404,17 @@ public class ConfigurationTest {
 
             // assert
 
+            // return value is the sysprop
             Assert.assertEquals("some value", value);
+
+            // the key is present and its value has been changed to that of the sysprop
             Assert.assertTrue(Configuration.containsKey(keyName));
             Assert.assertEquals("some value", Configuration.getRawStringProperty(keyName));
+
+            // the backup key has been added and its value is the previously-set value of the (non-backup) key
             Assert.assertTrue(Configuration.containsKey(keyName2));
             Assert.assertEquals("some other value", Configuration.getRawStringProperty(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -484,9 +510,8 @@ public class ConfigurationTest {
         }
     }
 
-
     @Test
-    public void testOriginals5() {
+    public void testWhenSyspropDoesntExistAndTheKeyIsntPresentInConfigAndTheBackupKeyIsPresentThenReturnValueShouldBeNullAndBackupRemainsAsIs() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -503,10 +528,17 @@ public class ConfigurationTest {
             String value = config.getStringProperty(keyName);
 
             // assert
+
+            // return value is null
             Assert.assertNull(value);
+
+            // the key is not added
             Assert.assertFalse(Configuration.containsKey(keyName));
+
+            // the backup key is still present and has the same value
             Assert.assertTrue(Configuration.containsKey(keyName2));
             Assert.assertEquals("more value", Configuration.getRawStringProperty(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -515,7 +547,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals6() {
+    public void testWhenSyspropDoesntExistAndTheKeyIsPresentInConfigAndTheBackupKeyIsPresentThenReturnValueShouldBeKeysValueAndBackupRemainsAsIs() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -533,11 +565,18 @@ public class ConfigurationTest {
             String value = config.getStringProperty(keyName);
 
             // assert
+
+            // return value is previously-set value
             Assert.assertEquals("some value", value);
+
+            // key is present and its value is equal to what we set it to
             Assert.assertTrue(Configuration.containsKey(keyName));
             Assert.assertEquals("some value", Configuration.getRawStringProperty(keyName));
+
+            // the backup key is still present and has the same value
             Assert.assertTrue(Configuration.containsKey(keyName2));
             Assert.assertEquals("more value", Configuration.getRawStringProperty(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -546,7 +585,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals7() {
+    public void testWhenSyspropExistsAndTheKeyIsntPresentInConfigAndTheBackupKeyIsPresentThenReturnValueShouldBeNullAndBackupRemainsAsIs() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -565,10 +604,16 @@ public class ConfigurationTest {
 
             // assert
 
+            // return value is null (not sysprop as we might expect)
             Assert.assertNull(value);
+
+            // key is not present
             Assert.assertFalse(Configuration.containsKey(keyName));
+
+            // the backup key is still present and has the same value
             Assert.assertTrue(Configuration.containsKey(keyName2));
             Assert.assertEquals("more value", Configuration.getRawStringProperty(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
@@ -577,7 +622,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void testOriginals8() {
+    public void testWhenSyspropExistsAndTheKeyIsPresentInConfigAndTheBackupKeyIsPresentThenReturnValueShouldBeKeysValueAndBackupRemainsAsIs() {
 
         // arrange
         final String keyName = "some-key-name";
@@ -597,11 +642,17 @@ public class ConfigurationTest {
 
             // assert
 
+            // return value is null (not sysprop as we might expect)
             Assert.assertEquals("some other value", value);
+
+            // key is present and its value is equal to what we set it to
             Assert.assertTrue(Configuration.containsKey(keyName));
             Assert.assertEquals("some other value", Configuration.getRawStringProperty(keyName));
+
+            // the backup key is still present and has the same value
             Assert.assertTrue(Configuration.containsKey(keyName2));
             Assert.assertEquals("more value", Configuration.getRawStringProperty(keyName2));
+
         } finally {
             Configuration.clearProperty(keyName);
             Configuration.clearProperty(keyName2);
