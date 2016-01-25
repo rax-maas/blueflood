@@ -1,4 +1,6 @@
-#! /usr/bin/python
+#!/usr/bin/env python
+'''Blueflood Rollup Delay'''
+'''For each rollup level, lists the number of slots which need to processed by blueflood.  For the 5m range, one day is 288 slots.'''
 # Licensed to Rackspace under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,11 +15,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License."
+#
+# The following is an example 'criteria' for a Rackspace Monitoring Alarm:
+#
+# if (metric['metrics_5m_delay'] > 300 ) {
+#     return new AlarmStatus( WARNING, 'metrics_5m_delay has > 300 slots waiting to be rolled up.' );
+# }
+#
 
 import pycassa
 import sys
 import time
 import logging
+import os
+import argparse
 from collections import defaultdict
 
 SLOTS = 4032
@@ -55,13 +66,9 @@ def get_metrics_state_for_shard(shard, cf):
     return states
 
 
-def _get_server_list(servers_string):
-    return [x.strip() for x in servers_string.split(',')]
-
-
 def get_metrics_state_for_shards(shards, servers):
     pool = pycassa.ConnectionPool('DATA',
-                                  server_list=_get_server_list(servers))
+                                  server_list=servers)
     cf = pycassa.ColumnFamily(pool, 'metrics_state')
     metrics_state_for_shards = {}
 
@@ -113,27 +120,34 @@ def print_stats_for_metrics_state(metrics_state_for_shards):
 
         if (len(across_shards_most_delay)):
             output[resolution] = max(across_shards_most_delay)
+        else:
+            output[resolution] = 0
 
     for resol, delay in output.items():
-        print 'metric %s float %f slots' % ('_'.join([resol, 'delay']), delay)
+        print 'metric %s uint32 %u' % ('_'.join([resol, 'delay']), delay)
 
 
-def main(servers):
+def main():
+    parser = argparse.ArgumentParser(description='For each rollup level, lists the number of slots which need to '
+                                                 'be processed by blueflood.  One day is approximately 300 slots.')
+    parser.add_argument( '-s', '--servers', help='Cassandra server IP addresses, space separated', required=True, nargs="+")
+    args = parser.parse_args()
+
     try:
+        logfile = os.path.expanduser('~') + '/bf-rollup.log'
         logging.basicConfig(format='%(asctime)s %(message)s',
-                            filename='/tmp/bf-rollup.log', level=logging.DEBUG)
+                            filename=logfile, level=logging.DEBUG)
         shards = range(128)
         logging.debug('getting metrics state for shards')
         metrics_state_for_shards = get_metrics_state_for_shards(shards,
-                                                                servers)
+                                                                args.servers)
         print 'status ok bf_health_check'
         logging.debug('printing stats for metrics state')
         print_stats_for_metrics_state(metrics_state_for_shards)
-        # find_duplicates(shards, metrics_for_shards)
     except Exception, ex:
         logging.exception(ex)
         print "status error", ex
         raise ex
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()
