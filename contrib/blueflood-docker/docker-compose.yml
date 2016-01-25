@@ -1,0 +1,23 @@
+blueflood:
+  build: .
+  links:
+    - cassandra
+    - elasticsearch
+  ports:
+        - "19000:19000"
+        - "20000:20000"
+        - "9180:9180"
+
+cassandra:
+  image: cassandra:2.1
+
+cassandran:
+  image: cassandra:2.1
+  links:
+    - cassandra:seed
+  environment:
+    - CASSANDRA_SEEDS=seed
+
+elasticsearch:
+  image: elasticsearch:1.7
+  command: elasticsearch -Des.cluster.name="blueflood"

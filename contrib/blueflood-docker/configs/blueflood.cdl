@@ -1,0 +1,516 @@
+-- this cdl file create the main tables for blueflood in cassandra using the cqlsh client
+-- usage:
+--   $ cqlsh hostname -f prod_curr.cdl -u username -p password
+-- example:
+--   $ cqlsh 127.0.0.1 -f prod_curr.cdl
+
+CREATE KEYSPACE IF NOT EXISTS "DATA" WITH replication = {
+  'class': 'SimpleStrategy',
+  'replication_factor': '1'
+};
+
+USE "DATA";
+
+CREATE TABLE IF NOT EXISTS metrics_1440m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_20m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_240m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_5m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_60m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_discovery (
+  key text,
+  column1 text,
+  value text,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_enum (
+  key text,
+  column1 bigint,
+  value text,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_excess_enums (
+  key text,
+  column1 bigint,
+  value bigint,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_full (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=172800 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_histogram_1440m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_histogram_20m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_histogram_240m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_histogram_5m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_histogram_60m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_locator (
+  key bigint,
+  column1 text,
+  value text,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='ALL' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_metadata (
+  key text,
+  column1 text,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='ALL' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_1440m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_20m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_240m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_5m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_60m (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_preaggregated_full (
+  key text,
+  column1 bigint,
+  value blob,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_state (
+  key bigint,
+  column1 text,
+  value bigint,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='KEYS_ONLY' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
+
+CREATE TABLE IF NOT EXISTS metrics_string (
+  key text,
+  column1 bigint,
+  value text,
+  PRIMARY KEY ((key), column1)
+) WITH COMPACT STORAGE AND
+  bloom_filter_fp_chance=0.010000 AND
+  caching='ALL' AND
+  comment='' AND
+  dclocal_read_repair_chance=0.000000 AND
+  gc_grace_seconds=864000 AND
+  index_interval=128 AND
+  read_repair_chance=0.100000 AND
+  replicate_on_write='true' AND
+  populate_io_cache_on_flush='false' AND
+  default_time_to_live=0 AND
+  speculative_retry='NONE' AND
+  memtable_flush_period_in_ms=0 AND
+  compaction={'class': 'SizeTieredCompactionStrategy'} AND
+  compression={'chunk_length_kb': '64', 'sstable_compression': 'SnappyCompressor'};
