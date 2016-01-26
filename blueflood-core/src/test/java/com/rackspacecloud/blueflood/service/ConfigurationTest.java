@@ -37,31 +37,38 @@ public class ConfigurationTest {
 
     @Test
     public void testConfiguration() {
-        Configuration config = Configuration.getInstance();
-        Map<Object, Object> properties = config.getProperties();
+        try {
+            Configuration config = Configuration.getInstance();
+            Map<Object, Object> properties = config.getProperties();
 
-        Assert.assertNotNull(properties);
+            Assert.assertNotNull(properties);
 
-        Assert.assertEquals("127.0.0.1:19180", config.getStringProperty(CoreConfig.CASSANDRA_HOSTS));
-        System.setProperty("CASSANDRA_HOSTS", "127.0.0.2");
-        Assert.assertEquals("127.0.0.2", config.getStringProperty(CoreConfig.CASSANDRA_HOSTS));
+            Assert.assertEquals("127.0.0.1:19180", config.getStringProperty(CoreConfig.CASSANDRA_HOSTS));
+            System.setProperty("CASSANDRA_HOSTS", "127.0.0.2");
+            Assert.assertEquals("127.0.0.2", config.getStringProperty(CoreConfig.CASSANDRA_HOSTS));
 
-        Assert.assertEquals(60000, config.getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD));
-
+            Assert.assertEquals(60000, config.getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD));
+        } finally {
+            System.clearProperty("CASSANDRA_HOSTS");
+        }
     }
 
     @Test
     public void testInitWithBluefloodConfig() throws IOException {
-        Configuration config = Configuration.getInstance();
-        Assert.assertNull(config.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("ALL", config.getStringProperty(CoreConfig.SHARDS));
+        try {
+            Configuration config = Configuration.getInstance();
+            Assert.assertNull(config.getStringProperty("TEST_PROPERTY"));
+            Assert.assertEquals("ALL", config.getStringProperty(CoreConfig.SHARDS));
 
-        String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
-        System.setProperty("blueflood.config", "file://" + configPath);
-        config.init();
+            String configPath = new File("src/test/resources/bf-override-config.properties").getAbsolutePath();
+            System.setProperty("blueflood.config", "file://" + configPath);
+            config.init();
 
-        Assert.assertEquals("foo", config.getStringProperty("TEST_PROPERTY"));
-        Assert.assertEquals("NONE", config.getStringProperty(CoreConfig.SHARDS));
+            Assert.assertEquals("foo", config.getStringProperty("TEST_PROPERTY"));
+            Assert.assertEquals("NONE", config.getStringProperty(CoreConfig.SHARDS));
+        } finally {
+            System.clearProperty("blueflood.config");
+        }
     }
 
     // list of strings
