@@ -326,11 +326,12 @@ public class RollupHandler {
                 }
                 Timer.Context cRollup = timerRollupFromPoints.time();
                 Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
-                cRollup.stop();
 
                 if (rollup.hasData()) {
                     repairedPoints.add(new Points.Point(r.getStart(), rollup));
                 }
+                cRollup.stop();
+
             } catch (IOException ex) {
                 log.error("Exception computing rollups during read: ", ex);
             }
