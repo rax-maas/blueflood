@@ -80,7 +80,7 @@ public class RollupHandler {
 
     static {
 
-        Metrics.getRegistry().register( MetricRegistry.name( RollupHandler.class, "rollupRangeCount"), gaugeRange );
+        Metrics.getRegistry().register( MetricRegistry.name( RollupHandler.class, "rollup-Range-Count"), gaugeRange );
     }
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
@@ -191,7 +191,7 @@ public class RollupHandler {
         if (locators.size() == 1) {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 Timer.Context context = rollupsOnReadTimers.RR_SPLOT_TIMER.timer.time();
-                repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
+           // TODO: turn off splot     repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
                 context.stop();
             }
         } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
