@@ -153,6 +153,7 @@ public class HttpAnnotationsEndToEndTest {
     @AfterClass
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
+        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
         if (esSetup != null) {
             esSetup.terminate();
         }

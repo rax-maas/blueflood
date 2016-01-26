@@ -95,8 +95,8 @@ public class MetadataCacheBatchedModeIntegrationTest extends IntegrationTestBase
     // TODO: Ideally, Configuration has setXXX methods so we don't have to do this.
     @After
     public void tearDown() throws Exception {
-        System.setProperty(CoreConfig.META_CACHE_BATCHED_WRITES.name(), "false");
-        System.setProperty(CoreConfig.META_CACHE_BATCHED_READS.name(), "false");
+        System.clearProperty(CoreConfig.META_CACHE_BATCHED_WRITES.name());
+        System.clearProperty(CoreConfig.META_CACHE_BATCHED_READS.name());
         Configuration.getInstance().init();
     }
 }
