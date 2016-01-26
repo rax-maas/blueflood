@@ -13,12 +13,10 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -49,27 +47,17 @@ public class HistogramSerializationTest {
 
     @Test
     public void testSerializationDeserializationVersion1() throws Exception {
-        if (System.getProperty("GENERATE_HIST_SERIALIZATION") != null) {
-            OutputStream os = new FileOutputStream("src/test/resources/serializations/histogram_version_" +
-                    Constants.VERSION_1_HISTOGRAM + ".bin", false);
 
-            os.write(Base64.encodeBase64(HistogramSerializer.get().toByteBuffer(histogramRollup).array()));
-            os.write("\n".getBytes());
-            os.close();
-        }
-
-        Assert.assertTrue(new File("src/test/resources/serializations").exists());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(Base64.encodeBase64(HistogramSerializer.get().toByteBuffer(histogramRollup).array()));
+        baos.write("\n".getBytes());
+        baos.close();
 
         // ensure we can read historical serializations.
-        int version = 0;
-        int maxVersion = Constants.VERSION_1_HISTOGRAM;
-        while (version <= maxVersion) {
-            BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/histogram_version_" + version + ".bin"));
-            ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            HistogramRollup histogramRollupDes = HistogramSerializer.get().fromByteBuffer(bb);
-            Assert.assertTrue(areHistogramsEqual(histogramRollup, histogramRollupDes));
-            version++;
-        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
+        ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
+        HistogramRollup histogramRollupDes = HistogramSerializer.get().fromByteBuffer(bb);
+        Assert.assertTrue(areHistogramsEqual(histogramRollup, histogramRollupDes));
     }
 
     @Test
