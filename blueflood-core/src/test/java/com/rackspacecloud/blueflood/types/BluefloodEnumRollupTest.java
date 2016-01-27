@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.*;
 
-public class BluefloodEnumRollupTest {
+public class BluefloodEnumRollupTest extends BaseRollupTest {
 
     @Test
     public void testGetCountOfAllUniqueValuesEnumRollup() throws IOException{
@@ -111,15 +111,5 @@ public class BluefloodEnumRollupTest {
         ArrayList<String> enums3 = rollup3.getStringEnumValues();
         Assert.assertTrue("enums3 should contain r3.1", enums3.contains("r3.1"));
         Assert.assertTrue("enums3 should contain r3.2", enums3.contains("r3.2"));
-    }
-
-    public static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
-        Points<T> points = new Points<T>();
-        long time = initialTime;
-        for (T v : values) {
-            points.add(new Points.Point<T>(time, v));
-            time += timeDelta;
-        }
-        return points;
     }
 }
