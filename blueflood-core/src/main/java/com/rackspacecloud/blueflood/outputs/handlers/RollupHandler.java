@@ -358,6 +358,8 @@ public class RollupHandler {
             rCount++;
         }
 
+        c.stop();
+
         /*
         for (Range r : ranges) {
             try {
