@@ -199,7 +199,6 @@ public class SerializationTest {
                     //       1) having one iteration to verify that we can serialize for matched types.
                     //       2) having various other tests that verify that serialization breaks in expected ways when
                     //          types are mismatched
-                    ex.printStackTrace();
                     continue;
                 } catch (RuntimeException ex) {
                     if (ex.getCause() == null) throw ex;
