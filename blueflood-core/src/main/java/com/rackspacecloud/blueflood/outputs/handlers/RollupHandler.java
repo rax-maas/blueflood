@@ -86,6 +86,9 @@ public class RollupHandler {
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
     private ListeningExecutorService rollupsOnReadExecutor = null;
+
+    private ListeningExecutorService repairRollupsOnReadExecutor = null;
+
     /*
       Timeout for rollups on read applicable only when operations are done async. for sync rollups on read
       it will be the astyanax operation timeout.
@@ -112,6 +115,12 @@ public class RollupHandler {
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Rollups on Read Executors").build();
             rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
+
+            ThreadPoolExecutor repairRollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
+                    .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withName("Repair Rollups on Read Executors").build();
+            repairRollupsOnReadExecutor= MoreExecutors.listeningDecorator(repairRollupsOnReadExecutors);
         }
     }
 
@@ -305,15 +314,51 @@ public class RollupHandler {
         return retValue;
     }
 
-    private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
+    private List<Points.Point> repairRollupsOnRead(final Locator locator, Granularity g, long from, long to) {
         Timer.Context c = timerRepairRollupsOnRead.time();
 
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
 
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
 
-        int count = 0;
 
+        ArrayList<ListenableFuture<Rollup>> futures = new ArrayList<ListenableFuture<Rollup>>();
+
+        List<Range> listRange = new ArrayList<Range>();
+
+        // first loop gets data
+        for (final Range r : ranges) {
+
+            listRange.add( r );
+            futures.add( repairRollupsOnReadExecutor.submit( new Callable<Rollup>() {
+
+                @Override
+                public Rollup call() {
+
+                    return repairRollupHelper( locator, r );
+                }
+            }));
+        }
+
+        int rCount = 0;
+        // second loop adds to repairedPoints
+        for( Future<Rollup> f : futures ) {
+
+            try {
+                Rollup rollup = f.get( rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit() );
+
+                if ( rollup != null || rollup.hasData() ) {
+                    repairedPoints.add( new Points.Point( listRange.get( rCount ).getStart(), rollup ) );
+                }
+            } catch (Exception e ) {
+
+                log.error( "TODO", e );
+            }
+
+            rCount++;
+        }
+
+        /*
         for (Range r : ranges) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
@@ -335,14 +380,30 @@ public class RollupHandler {
             } catch (IOException ex) {
                 log.error("Exception computing rollups during read: ", ex);
             }
-            count++;
         }
-
-        c.stop();
-
-        rangeCount.set( count );
+        */
 
         return repairedPoints;
+    }
+
+    private Rollup repairRollupHelper( Locator locator, Range r ) {
+
+        Rollup rollup = null;
+
+        try {
+
+            MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+
+            Points dataToRoll = data.getData();
+
+            if (!dataToRoll.isEmpty()) {
+                rollup = RollupHandler.rollupFromPoints( dataToRoll );
+            }
+
+        } catch (IOException ex) {
+            log.error("Exception computing rollups during read: ", ex);
+        }
+        return rollup;
     }
 
     private static long minTime(Points<?> points) {
