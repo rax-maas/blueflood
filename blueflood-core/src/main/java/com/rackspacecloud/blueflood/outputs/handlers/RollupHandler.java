@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
@@ -114,12 +115,14 @@ public class RollupHandler {
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Rollups on Read Executors").build();
-            rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
+            InstrumentedThreadPoolExecutor.instrument( rollupsOnReadExecutors, "Rollups on Read Executors" );
+            rollupsOnReadExecutor = MoreExecutors.listeningDecorator( rollupsOnReadExecutors );
 
             ThreadPoolExecutor repairRollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Repair Rollups on Read Executors").build();
+            InstrumentedThreadPoolExecutor.instrument( repairRollupsOnReadExecutors, "Repair Rollups on Read Executors" );
             repairRollupsOnReadExecutor= MoreExecutors.listeningDecorator(repairRollupsOnReadExecutors);
         }
     }
