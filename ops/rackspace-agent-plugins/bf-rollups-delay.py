@@ -135,8 +135,8 @@ def main():
     parser = argparse.ArgumentParser(description='For each rollup level, lists the number of slots which need to '
                                                  'be processed by blueflood.  One day is approximately 300 slots.')
     parser.add_argument( '-s', '--servers', help='Cassandra server IP addresses, space separated', required=True, nargs="+")
-    parser.add_argument( '-i', '--info', help='Print out the unprocessed slots for each shard, for the given granuality.  Default: metrics_5m',
-                         required=False, nargs="?", choices=['metrics_5m', 'metrics_20m', 'metrics_60m', 'metrics_240m', 'metrics_1440m'] )
+    parser.add_argument( '-v', '--verbose', help='Print out the unprocessed slots for each shard, for the given granuality.  Default: metrics_5m',
+                         required=False, nargs="?", choices=['metrics_5m', 'metrics_20m', 'metrics_60m', 'metrics_240m', 'metrics_1440m'], const='metrics_5m' )
     args = parser.parse_args()
 
     try:
@@ -150,7 +150,7 @@ def main():
         print 'status ok bf_health_check'
         logging.debug('printing stats for metrics state')
         print_stats_for_metrics_state(metrics_state_for_shards,
-                                      args.info)
+                                      args.verbose)
     except Exception, ex:
         logging.exception(ex)
         print "status error", ex
