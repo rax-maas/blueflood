@@ -322,40 +322,36 @@ public class RollupHandler {
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
 
 
-        ArrayList<ListenableFuture<Rollup>> futures = new ArrayList<ListenableFuture<Rollup>>();
+        ArrayList<ListenableFuture<Points.Point>> futures = new ArrayList<ListenableFuture<Points.Point>>();
 
-        List<Range> listRange = new ArrayList<Range>();
 
         // first loop gets data
         for (final Range r : ranges) {
 
-            listRange.add( r );
-            futures.add( repairRollupsOnReadExecutor.submit( new Callable<Rollup>() {
+            futures.add( repairRollupsOnReadExecutor.submit( new Callable<Points.Point>() {
 
                 @Override
-                public Rollup call() {
+                public Points.Point call() {
 
                     return repairRollupHelper( locator, r );
                 }
             }));
         }
 
-        int rCount = 0;
         // second loop adds to repairedPoints
-        for( Future<Rollup> f : futures ) {
+        for( Future<Points.Point> f : futures ) {
 
             try {
-                Rollup rollup = f.get( rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit() );
+                Points.Point point = f.get( rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit() );
 
-                if ( rollup != null || rollup.hasData() ) {
-                    repairedPoints.add( new Points.Point( listRange.get( rCount ).getStart(), rollup ) );
-                }
+                if( point != null )
+                    repairedPoints.add( point );
+
             } catch (Exception e ) {
 
                 log.error( "TODO", e );
             }
 
-            rCount++;
         }
 
         c.stop();
@@ -388,9 +384,7 @@ public class RollupHandler {
         return repairedPoints;
     }
 
-    private Rollup repairRollupHelper( Locator locator, Range r ) {
-
-        Rollup rollup = null;
+    private Points.Point repairRollupHelper( Locator locator, Range r ) {
 
         try {
 
@@ -398,14 +392,21 @@ public class RollupHandler {
 
             Points dataToRoll = data.getData();
 
-            if (!dataToRoll.isEmpty()) {
-                rollup = RollupHandler.rollupFromPoints( dataToRoll );
+            if (dataToRoll.isEmpty())
+                return null;
+
+
+            Rollup rollup = RollupHandler.rollupFromPoints( dataToRoll );
+
+            if ( rollup.hasData() ) {
+                return new Points.Point( r.getStart(), rollup );
             }
+
 
         } catch (IOException ex) {
             log.error("Exception computing rollups during read: ", ex);
         }
-        return rollup;
+        return null;
     }
 
     private static long minTime(Points<?> points) {
