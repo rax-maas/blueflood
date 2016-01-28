@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.io.serializers;
 
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.types.BluefloodSetRollup;
+import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
@@ -13,7 +14,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
-public class SetRollupSerializerTest extends BaseRollupSerializerTest {
+public class SetRollupSerializerTest {
 
     private static Set set1 = Sets.newHashSet(new Integer(10), new Integer(20), new Integer(30));
     private static Set set2 = Sets.newHashSet("aaa", "bbb", "ccc");
@@ -26,7 +27,7 @@ public class SetRollupSerializerTest extends BaseRollupSerializerTest {
         BluefloodSetRollup setRollup3 = new BluefloodSetRollup().withObject(set3);
 
         BluefloodSetRollup setsRollup = BluefloodSetRollup.buildRollupFromSetRollups(
-                asPoints(BluefloodSetRollup.class, System.currentTimeMillis(), 300, setRollup1, setRollup2, setRollup3));
+                Rollups.asPoints(BluefloodSetRollup.class, System.currentTimeMillis(), 300, setRollup1, setRollup2, setRollup3));
         Assert.assertEquals(3, setsRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

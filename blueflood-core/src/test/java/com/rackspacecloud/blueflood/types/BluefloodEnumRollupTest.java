@@ -16,13 +16,14 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
 
-public class BluefloodEnumRollupTest extends BaseRollupTest {
+public class BluefloodEnumRollupTest {
 
     @Test
     public void testGetCountOfAllUniqueValuesEnumRollup() throws IOException{
@@ -32,7 +33,7 @@ public class BluefloodEnumRollupTest extends BaseRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(100L, 10L).withHashedEnumValue(200L,10L).withHashedEnumValue(300L,10L);
         Assert.assertTrue(rollup1.getCount() == 3);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 6);
     }
 
@@ -44,7 +45,7 @@ public class BluefloodEnumRollupTest extends BaseRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(40L, 10L).withHashedEnumValue(40L,10L).withHashedEnumValue(40L,10L);
         Assert.assertTrue(rollup1.getCount() == 1);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 1);
     }
 
@@ -56,7 +57,7 @@ public class BluefloodEnumRollupTest extends BaseRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(30L, 10L).withHashedEnumValue(40L,10L).withHashedEnumValue(50L,10L);
         Assert.assertTrue(rollup1.getCount() == 3);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 3);
 
         List<Long> lfound = new ArrayList<Long>(er.getHashedEnumValuesWithCounts().keySet());

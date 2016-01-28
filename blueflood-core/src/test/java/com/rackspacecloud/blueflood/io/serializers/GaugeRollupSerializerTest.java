@@ -17,6 +17,7 @@ package com.rackspacecloud.blueflood.io.serializers;
 
 import com.rackspacecloud.blueflood.types.BluefloodGaugeRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
+import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
@@ -27,18 +28,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 
-public class GaugeRollupSerializerTest extends BaseRollupSerializerTest {
+public class GaugeRollupSerializerTest {
 
     @Test
     public void testSerializerDeserializerV1() throws Exception {
         BluefloodGaugeRollup gauge1 = BluefloodGaugeRollup.buildFromRawSamples(
-                                        asPoints(SimpleNumber.class, System.currentTimeMillis(), 300, new SimpleNumber(10L)));
+                                        Rollups.asPoints(SimpleNumber.class, System.currentTimeMillis(), 300, new SimpleNumber(10L)));
         BluefloodGaugeRollup gauge2 = BluefloodGaugeRollup.buildFromRawSamples(
-                asPoints(SimpleNumber.class, System.currentTimeMillis()-100, 300, new SimpleNumber(1234567L)));
+                Rollups.asPoints(SimpleNumber.class, System.currentTimeMillis()-100, 300, new SimpleNumber(1234567L)));
         BluefloodGaugeRollup gauge3 = BluefloodGaugeRollup.buildFromRawSamples(
-                asPoints(SimpleNumber.class, System.currentTimeMillis()-200, 300, new SimpleNumber(10.4D)));
+                Rollups.asPoints(SimpleNumber.class, System.currentTimeMillis()-200, 300, new SimpleNumber(10.4D)));
         BluefloodGaugeRollup gaugesRollup = BluefloodGaugeRollup.buildFromGaugeRollups(
-                asPoints(BluefloodGaugeRollup.class, System.currentTimeMillis(), 300, gauge1, gauge2, gauge3));
+                Rollups.asPoints(BluefloodGaugeRollup.class, System.currentTimeMillis(), 300, gauge1, gauge2, gauge3));
         Assert.assertEquals(3, gaugesRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
