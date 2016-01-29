@@ -16,9 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ConfigurationTest {
+
+    @Before
+    public void setup() throws IOException {
+        Configuration.getInstance().init();
+    }
 
     @After
     public void tearDown() throws IOException {
