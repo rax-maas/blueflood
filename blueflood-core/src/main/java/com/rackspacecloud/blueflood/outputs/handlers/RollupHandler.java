@@ -16,9 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.*;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -42,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RollupHandler {
     private static final Logger log = LoggerFactory.getLogger(RollupHandler.class);
@@ -64,6 +63,25 @@ public class RollupHandler {
     protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
     private static final Meter exceededQueryTimeout = Metrics.meter(RollupHandler.class, "Batched Metrics Query Duration Exceeded Timeout");
     private static final Histogram queriesSizeHist = Metrics.histogram(RollupHandler.class, "Total queries");
+
+    private static final Timer timerCassandraReadRollupOnRead = Metrics.timer( RollupHandler.class, "cassandraReadForRollupOnRead" );
+    private static final Timer timerRepairRollupsOnRead = Metrics.timer( RollupHandler.class, "repairRollupsOnRead" );
+    private static final Timer timerRollupFromPoints = Metrics.timer( RollupHandler.class, "rollupFromPoints" );
+
+
+    private static final AtomicInteger rangeCount = new AtomicInteger( 0 );
+    private static final Gauge gaugeRange = new Gauge<Integer>() {
+
+        @Override
+        public Integer getValue() {
+            return rangeCount.get();
+        }
+    };
+
+    static {
+
+        Metrics.getRegistry().register( MetricRegistry.name( RollupHandler.class, "rollup-Range-Count"), gaugeRange );
+    }
 
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
@@ -173,7 +191,7 @@ public class RollupHandler {
         if (locators.size() == 1) {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 Timer.Context context = rollupsOnReadTimers.RR_SPLOT_TIMER.timer.time();
-                repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
+           // TODO: turn off splot     repairMetrics(metricData.getKey(), metricData.getValue(), from, to, g);
                 context.stop();
             }
         } else if (locators.size() > 1 && Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT) == false) {
@@ -288,25 +306,41 @@ public class RollupHandler {
     }
 
     private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
+        Timer.Context c = timerRepairRollupsOnRead.time();
+
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
 
         Iterable<Range> ranges = Range.rangesForInterval(g, g.snapMillis(from), to);
+
+        int count = 0;
+
         for (Range r : ranges) {
             try {
+                Timer.Context cRead = timerCassandraReadRollupOnRead.time();
                 MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
+                cRead.stop();
+
                 Points dataToRoll = data.getData();
                 if (dataToRoll.isEmpty()) {
                     continue;
                 }
+                Timer.Context cRollup = timerRollupFromPoints.time();
                 Rollup rollup = RollupHandler.rollupFromPoints(dataToRoll);
 
                 if (rollup.hasData()) {
                     repairedPoints.add(new Points.Point(r.getStart(), rollup));
                 }
+                cRollup.stop();
+
             } catch (IOException ex) {
                 log.error("Exception computing rollups during read: ", ex);
             }
+            count++;
         }
+
+        c.stop();
+
+        rangeCount.set( count );
 
         return repairedPoints;
     }
