@@ -89,7 +89,7 @@ def _get_slot_for_time(now_millis, gran):
     return (GRAN_MAPPINGS[gran]['max_slots'] * full_slot) / SLOTS
 
 
-def print_stats_for_metrics_state(metrics_state_for_shards):
+def print_stats_for_metrics_state(metrics_state_for_shards, print_res):
     delayed_slots = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
     now = int(time.time() * 1000)
 
@@ -109,6 +109,10 @@ def print_stats_for_metrics_state(metrics_state_for_shards):
                     delayed_slots[
                         resolution][shard][slot] = current_slot - slot
 
+                    if ( print_res == resolution ):
+                        print "shard: %4s        last_active_key: %19s        rolled_up_at_key: %19s  current_slot: %s slot: %s" % ( shard, last_active_key, rolled_up_at_key, current_slot, slot)
+                        print "             last_active_timestamp: %19s  rolled_up_at_timestamp: %19s" % (last_active_timestamp, rolled_up_at_timestamp)
+                        print "             last_active_timestamp: %19s  rolled_up_at_timestamp: %19s" % ( time.strftime( '%Y-%m-%d %H:%M:%S', time.localtime( last_active_timestamp/1000)), time.strftime( '%Y-%m-%d %H:%M:%S', time.localtime(rolled_up_at_timestamp/1000)) )
     output = {}
     for resolution in GRAN_MAPPINGS.keys():
         across_shards_most_delay = []
@@ -131,6 +135,8 @@ def main():
     parser = argparse.ArgumentParser(description='For each rollup level, lists the number of slots which need to '
                                                  'be processed by blueflood.  One day is approximately 300 slots.')
     parser.add_argument( '-s', '--servers', help='Cassandra server IP addresses, space separated', required=True, nargs="+")
+    parser.add_argument( '-v', '--verbose', help='Print out the unprocessed slots for each shard, for the given granuality.  Default: metrics_5m',
+                         required=False, nargs="?", choices=['metrics_5m', 'metrics_20m', 'metrics_60m', 'metrics_240m', 'metrics_1440m'], const='metrics_5m' )
     args = parser.parse_args()
 
     try:
@@ -143,7 +149,8 @@ def main():
                                                                 args.servers)
         print 'status ok bf_health_check'
         logging.debug('printing stats for metrics state')
-        print_stats_for_metrics_state(metrics_state_for_shards)
+        print_stats_for_metrics_state(metrics_state_for_shards,
+                                      args.verbose)
     except Exception, ex:
         logging.exception(ex)
         print "status error", ex
