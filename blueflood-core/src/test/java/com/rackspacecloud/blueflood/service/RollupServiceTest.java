@@ -1,14 +1,23 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.utils.Util;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
 public class RollupServiceTest {
+
+    @Before
+    public void setup() throws IOException {
+        Configuration.getInstance().init();
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        Configuration.getInstance().init();
+    }
 
     @Test
     public void testRollupServiceWithDefaultConfigs() {
