@@ -115,14 +115,14 @@ public class RollupHandler {
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Rollups on Read Executors").build();
-            InstrumentedThreadPoolExecutor.instrument( rollupsOnReadExecutors, "Rollups on Read Executors" );
+            InstrumentedThreadPoolExecutor.instrument( rollupsOnReadExecutors, "Rollups on Read Executors:" + this.hashCode() );
             rollupsOnReadExecutor = MoreExecutors.listeningDecorator( rollupsOnReadExecutors );
 
             ThreadPoolExecutor repairRollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
                     .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Repair Rollups on Read Executors").build();
-            InstrumentedThreadPoolExecutor.instrument( repairRollupsOnReadExecutors, "Repair Rollups on Read Executors" );
+            InstrumentedThreadPoolExecutor.instrument( repairRollupsOnReadExecutors, "Repair Rollups on Read Executors:" + this.hashCode() );
             repairRollupsOnReadExecutor= MoreExecutors.listeningDecorator(repairRollupsOnReadExecutors);
         }
     }
