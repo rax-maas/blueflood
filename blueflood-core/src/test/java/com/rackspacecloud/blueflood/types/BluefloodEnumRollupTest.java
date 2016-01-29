@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ public class BluefloodEnumRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(100L, 10L).withHashedEnumValue(200L,10L).withHashedEnumValue(300L,10L);
         Assert.assertTrue(rollup1.getCount() == 3);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 6);
     }
 
@@ -44,7 +45,7 @@ public class BluefloodEnumRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(40L, 10L).withHashedEnumValue(40L,10L).withHashedEnumValue(40L,10L);
         Assert.assertTrue(rollup1.getCount() == 1);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 1);
     }
 
@@ -56,7 +57,7 @@ public class BluefloodEnumRollupTest {
         BluefloodEnumRollup rollup1 = new BluefloodEnumRollup().withHashedEnumValue(30L, 10L).withHashedEnumValue(40L,10L).withHashedEnumValue(50L,10L);
         Assert.assertTrue(rollup1.getCount() == 3);
 
-        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
+        BluefloodEnumRollup er = BluefloodEnumRollup.buildRollupFromEnumRollups(Rollups.asPoints(BluefloodEnumRollup.class, 0, 300, rollup, rollup1));
         Assert.assertTrue(er.getCount() == 3);
 
         List<Long> lfound = new ArrayList<Long>(er.getHashedEnumValuesWithCounts().keySet());
@@ -111,15 +112,5 @@ public class BluefloodEnumRollupTest {
         ArrayList<String> enums3 = rollup3.getStringEnumValues();
         Assert.assertTrue("enums3 should contain r3.1", enums3.contains("r3.1"));
         Assert.assertTrue("enums3 should contain r3.2", enums3.contains("r3.2"));
-    }
-
-    public static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
-        Points<T> points = new Points<T>();
-        long time = initialTime;
-        for (T v : values) {
-            points.add(new Points.Point<T>(time, v));
-            time += timeDelta;
-        }
-        return points;
     }
 }
