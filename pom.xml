@@ -177,7 +177,9 @@
         <version>3.0.1</version>
         <configuration>
           <jacocoReports>
+            <jacocoReport>blueflood-core/target/site/jacoco/jacoco.xml</jacocoReport>
             <jacocoReport>blueflood-core/target/site/jacoco-it/jacoco.xml</jacocoReport>
+            <jacocoReport>blueflood-http/target/site/jacoco/jacoco.xml</jacocoReport>
             <jacocoReport>blueflood-http/target/site/jacoco-it/jacoco.xml</jacocoReport>
           </jacocoReports>
         </configuration>
