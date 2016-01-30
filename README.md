@@ -36,7 +36,7 @@ This jar contains all the dependencies necessary to run Blueflood with a very si
 
 ### Running
 
-The best place to start is the [10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10minuteguide).
+The best place to start is the [10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10-Minute-Guide).
 In a nutshell, you must do this:
 
     java -cp /path/to/uber.jar \
