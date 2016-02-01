@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
@@ -38,16 +39,16 @@ import java.util.concurrent.TimeUnit;
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
-    public static void validateCassandraHosts() {
+    public static void validateCassandraHosts() throws BluefloodServiceStarterException {
         String hosts = Configuration.getInstance().getStringProperty(CoreConfig.CASSANDRA_HOSTS);
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
-            System.exit(-1);
+            SystemExit(-1);
         }
         for (String host : hosts.split(",")) {
             if (!host.matches("[\\d\\w\\.]+:\\d+")) {
                 log.error("Invalid Cassandra host found in Configuration option 'CASSANDRA_HOSTS' -- Should be of the form <hostname>:<port>");
-                System.exit(-1);
+                SystemExit(-1);
             }
         }
     }
@@ -82,14 +83,14 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startIngestServices(ScheduleContext context) {
+    private static void startIngestServices(ScheduleContext context) throws BluefloodServiceStarterException {
         // start up ingestion services.
         Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty(CoreConfig.INGEST_MODE)) {
             List<String> modules = config.getListProperty(CoreConfig.INGESTION_MODULES);
             if (modules.isEmpty()) {
                 log.error("Ingestion mode is enabled, however no ingestion modules are enabled!");
-                System.exit(1);
+                SystemExit(1);
             }
             ClassLoader classLoader = IngestionService.class.getClassLoader();
             final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
@@ -110,19 +111,19 @@ public class BluefloodServiceStarter {
                     services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of ingestion service class for: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate ingestion service module: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (RuntimeException e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (Throwable e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 }
             }
 
@@ -137,14 +138,14 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startQueryServices() {
+    private static void startQueryServices() throws BluefloodServiceStarterException {
         // start up query services.
         Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty(CoreConfig.QUERY_MODE)) {
             List<String> modules = config.getListProperty(CoreConfig.QUERY_MODULES);
             if (modules.isEmpty()) {
                 log.error("Query mode is enabled, however no query modules are enabled!");
-                System.exit(1);
+                SystemExit(1);
             }
             ClassLoader classLoader = QueryService.class.getClassLoader();
             final List<QueryService> queryServices = new ArrayList<QueryService>();
@@ -161,19 +162,19 @@ public class BluefloodServiceStarter {
                     services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of query service class for: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting query service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate query service module: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (RuntimeException e) {
                     log.error("Error starting query service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 } catch (Throwable e) {
                     log.error("Error starting query service: " + module, e);
-                    System.exit(1);
+                    SystemExit(1);
                 }
             }
             log.info("Started " + services_started + " query services");
@@ -247,7 +248,7 @@ public class BluefloodServiceStarter {
         }
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws BluefloodServiceStarterException {
         // load configuration.
         Configuration config = Configuration.getInstance();
 
@@ -312,5 +313,18 @@ public class BluefloodServiceStarter {
         startRollupService(rollupContext);
         startEventListenerModules();
         log.info("All blueflood services started");
+    }
+
+    @VisibleForTesting
+    public static boolean ThrowInsteadOfExit = false;
+
+    private static void SystemExit(int status) throws BluefloodServiceStarterException {
+        if (ThrowInsteadOfExit) {
+            throw new BluefloodServiceStarterException(
+                    String.format("Told to exit with status %d", status));
+        } else {
+            System.exit(status);
+        }
+
     }
 }

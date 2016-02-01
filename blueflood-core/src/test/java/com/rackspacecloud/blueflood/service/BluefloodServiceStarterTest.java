@@ -2,10 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import static junit.framework.Assert.*;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 
@@ -53,10 +50,12 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.CASSANDRA_MAX_RETRIES, "5");
         config.setProperty("ELASTICSEARCH_HOSTS", "localhost:9300");
         config.setProperty("ELASTICSEARCH_CLUSTERNAME", "elasticsearch");
+
+        BluefloodServiceStarter.ThrowInsteadOfExit = true;
     }
 
     @Test
-    public void testStartup() {
+    public void testStartup() throws BluefloodServiceStarterException {
         String[] args = new String[0];
         BluefloodServiceStarter.main(args);
 
