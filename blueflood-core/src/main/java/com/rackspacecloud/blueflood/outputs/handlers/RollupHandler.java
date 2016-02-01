@@ -116,8 +116,8 @@ public class RollupHandler {
             rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
 
             ThreadPoolExecutor repairRollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
-                    .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
-                    .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
+                    .withCorePoolSize( 30000 )
+                    .withMaxPoolSize( 30000 )
                     .withName("Repair Rollups on Read Executors").build();
              repairRollupsOnReadExecutor= MoreExecutors.listeningDecorator(repairRollupsOnReadExecutors);
         }
