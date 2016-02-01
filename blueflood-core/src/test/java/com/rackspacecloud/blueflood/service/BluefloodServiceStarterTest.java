@@ -228,6 +228,26 @@ public class BluefloodServiceStarterTest {
         assertNull(ex);
     }
 
+    @Test
+    public void testEventListenerServiceEnabledWithDummyModule() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.EVENT_LISTENER_MODULES, "com.rackspacecloud.blueflood.service.DummyEventListenerService");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.main(args);
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNull(ex);
+    }
+
     @After
     public void tearDown() throws IOException {
         Configuration config = Configuration.getInstance();
