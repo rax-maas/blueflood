@@ -68,6 +68,7 @@ public class RollupHandler {
     private static final Timer timerRepairRollupsOnRead = Metrics.timer( RollupHandler.class, "repairRollupsOnRead" );
     private static final Timer timerRepairMetrics = Metrics.timer( RollupHandler.class, "repairMetrics" );
     private static final Timer timerRollupFromPoints = Metrics.timer( RollupHandler.class, "rollupFromPoints" );
+    private static final Timer timerRorCalcUnits = Metrics.timer( RollupHandler.class, "ROR Calc Units" );
 
     private static final AtomicInteger rangeCount = new AtomicInteger( 0 );
     private static final Gauge gaugeRange = new Gauge<Integer>() {
@@ -147,6 +148,8 @@ public class RollupHandler {
         List<SearchResult> units = null;
         List<Locator> locators = new ArrayList<Locator>();
 
+        Timer.Context c = timerRorCalcUnits.time();
+
         for (String metric : metrics) {
             locators.add(Locator.createLocatorFromPathComponents(tenantId, metric));
         }
@@ -188,6 +191,8 @@ public class RollupHandler {
             }
         }
 
+        c.stop();
+        
         if (locators.size() == 1) {
             for (final Map.Entry<Locator, MetricData> metricData : metricDataMap.entrySet()) {
                 Timer.Context context = rollupsOnReadTimers.RR_SPLOT_TIMER.timer.time();
