@@ -150,8 +150,50 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.INGEST_MODE, "true");
-        config.setProperty(CoreConfig.INGESTION_MODULES, "");
         config.setProperty(CoreConfig.INGESTION_MODULES, "com.rackspacecloud.blueflood.service.DummyIngestionService");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.main(args);
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNull(ex);
+    }
+
+    @Test
+    public void testQueryModeEnabledWithoutModules() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.QUERY_MODE, "true");
+        config.setProperty(CoreConfig.QUERY_MODULES, "");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.main(args);
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNotNull(ex);
+        assertEquals(1, ex.getStatus());
+    }
+
+    @Test
+    public void testQueryModeEnabledWithDummyModule() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.QUERY_MODE, "true");
+        config.setProperty(CoreConfig.QUERY_MODULES, "com.rackspacecloud.blueflood.service.DummyQueryService");
         String[] args = new String[0];
 
         // when
