@@ -320,7 +320,7 @@ public class BluefloodServiceStarter {
 
     private static void SystemExit(int status) throws BluefloodServiceStarterException {
         if (ThrowInsteadOfExit) {
-            throw new BluefloodServiceStarterException(
+            throw new BluefloodServiceStarterException(status,
                     String.format("Told to exit with status %d", status));
         } else {
             System.exit(status);
