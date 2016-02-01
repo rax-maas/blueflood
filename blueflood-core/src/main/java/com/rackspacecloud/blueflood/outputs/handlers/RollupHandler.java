@@ -86,8 +86,6 @@ public class RollupHandler {
     private static final boolean ROLLUP_REPAIR = Configuration.getInstance().getBooleanProperty(CoreConfig.REPAIR_ROLLUPS_ON_READ);
     private ExecutorService ESUnitExecutor = null;
     private ListeningExecutorService rollupsOnReadExecutor = null;
-    private ListeningExecutorService repairRollupsOnReadExecutor = null;
-
     /*
       Timeout for rollups on read applicable only when operations are done async. for sync rollups on read
       it will be the astyanax operation timeout.
@@ -114,12 +112,6 @@ public class RollupHandler {
                     .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_THREADS))
                     .withName("Rollups on Read Executors").build();
             rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
-
-            ThreadPoolExecutor repairRollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
-                    .withCorePoolSize( 30000 )
-                    .withMaxPoolSize( 30000 )
-                    .withName("Repair Rollups on Read Executors").build();
-             repairRollupsOnReadExecutor= MoreExecutors.listeningDecorator(repairRollupsOnReadExecutors);
         }
     }
 
@@ -317,7 +309,7 @@ public class RollupHandler {
         return retValue;
     }
 
-    private List<Points.Point> repairRollupsOnRead(final Locator locator, Granularity g, long from, long to) {
+    private List<Points.Point> repairRollupsOnRead(Locator locator, Granularity g, long from, long to) {
         Timer.Context c = timerRepairRollupsOnRead.time();
 
         List<Points.Point> repairedPoints = new ArrayList<Points.Point>();
@@ -326,46 +318,6 @@ public class RollupHandler {
 
         int count = 0;
 
-        ArrayList<ListenableFuture<Points.Point>> futures = new ArrayList<ListenableFuture<Points.Point>>();
-
-
-        // first loop gets data
-        for (final Range r : ranges) {
-
-            futures.add( repairRollupsOnReadExecutor.submit( new Callable<Points.Point>() {
-
-                @Override
-                public Points.Point call() {
-
-                    return repairRollupHelper( locator, r );
-                }
-            }));
-
-            count++;
-        }
-
-        rangeCount.set( count );
-
-        // second loop adds to repairedPoints
-        for( Future<Points.Point> f : futures ) {
-
-            try {
-                Points.Point point = f.get( rollupOnReadTimeout.getValue(), rollupOnReadTimeout.getUnit() );
-
-                if( point != null )
-                    repairedPoints.add( point );
-
-            } catch (Exception e ) {
-
-                log.error( "TODO", e );
-            }
-
-        }
-
-        c.stop();
-
-
-/*
         for (Range r : ranges) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
@@ -394,39 +346,8 @@ public class RollupHandler {
         rangeCount.set( count );
 
         c.stop();
-*/
 
         return repairedPoints;
-    }
-
-
-    private Points.Point repairRollupHelper( Locator locator, Range r ) {
-
-        try {
-            Timer.Context cRead = timerCassandraReadRollupOnRead.time();
-            MetricData data = AstyanaxReader.getInstance().getDatapointsForRange(locator, r, Granularity.FULL);
-            cRead.stop();
-
-            Points dataToRoll = data.getData();
-
-            if (dataToRoll.isEmpty())
-                return null;
-
-            Timer.Context cRollup = timerRollupFromPoints.time();
-            Rollup rollup = RollupHandler.rollupFromPoints( dataToRoll );
-
-            if ( rollup.hasData() ) {
-                cRollup.stop();
-                return new Points.Point( r.getStart(), rollup );
-            }
-            else
-                cRollup.stop();
-
-        } catch (IOException ex) {
-            log.error("Exception computing rollups during read: ", ex);
-        }
-
-        return null;
     }
 
     private static long minTime(Points<?> points) {
