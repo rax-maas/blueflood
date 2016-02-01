@@ -6,7 +6,6 @@ import org.junit.*;
 
 import java.io.IOException;
 
-@Ignore
 public class BluefloodServiceStarterTest {
 
     @Before
