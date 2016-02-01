@@ -296,8 +296,10 @@ public class BluefloodServiceStarter {
                     TimeUnit.MINUTES.toMillis(savePeriodMins));
         }
 
-        // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
-        new RestartGauge(Metrics.getRegistry(), RollupService.class);
+        if (!SkipInstantiateRestartGauge) {
+            // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
+            new RestartGauge(Metrics.getRegistry(), RollupService.class);
+        }
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
@@ -314,6 +316,9 @@ public class BluefloodServiceStarter {
         startEventListenerModules();
         log.info("All blueflood services started");
     }
+
+    @VisibleForTesting
+    public static boolean SkipInstantiateRestartGauge = false;
 
     @VisibleForTesting
     public static boolean ThrowInsteadOfExit = false;

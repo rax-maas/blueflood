@@ -44,13 +44,14 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.GRAPHITE_PORT, "2003");
         config.setProperty(CoreConfig.GRAPHITE_PREFIX, "unconfiguredNode.metrics.");
         config.setProperty(CoreConfig.INGEST_MODE, "false");
-        config.setProperty(CoreConfig.ROLLUP_MODE, "true");
+        config.setProperty(CoreConfig.ROLLUP_MODE, "false");
         config.setProperty(CoreConfig.QUERY_MODE, "false");
         config.setProperty(CoreConfig.CASSANDRA_MAX_RETRIES, "5");
         config.setProperty("ELASTICSEARCH_HOSTS", "localhost:9300");
         config.setProperty("ELASTICSEARCH_CLUSTERNAME", "elasticsearch");
 
         BluefloodServiceStarter.ThrowInsteadOfExit = true;
+        BluefloodServiceStarter.SkipInstantiateRestartGauge = true;
     }
 
     @Test
@@ -67,7 +68,6 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarterException ex = null;
@@ -88,7 +88,6 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "something");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarterException ex = null;
@@ -109,7 +108,6 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "127.0.0.1");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarterException ex = null;
@@ -122,6 +120,50 @@ public class BluefloodServiceStarterTest {
         // then
         assertNotNull(ex);
         assertEquals(-1, ex.getStatus());
+    }
+
+    @Test
+    public void testIngestModeEnabledWithoutModules() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.INGEST_MODE, "true");
+        config.setProperty(CoreConfig.INGESTION_MODULES, "");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.main(args);
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNotNull(ex);
+        assertEquals(1, ex.getStatus());
+    }
+
+    @Test
+    public void testIngestModeEnabledWithModules() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.INGEST_MODE, "true");
+        config.setProperty(CoreConfig.INGESTION_MODULES, "");
+        config.setProperty(CoreConfig.INGESTION_MODULES, "com.rackspacecloud.blueflood.service.DummyIngestionService");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.main(args);
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNull(ex);
     }
 
     @After
