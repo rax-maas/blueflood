@@ -23,6 +23,8 @@ public class DummyIngestionService implements IngestionService {
             throw new UnsupportedOperationException("startService was called more than once");
         }
         startServiceCalled = true;
+        this.context = context;
+        this.writer = writer;
     }
 
     boolean shutdownServiceCalled = false;
