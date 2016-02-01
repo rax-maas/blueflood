@@ -147,7 +147,7 @@ public enum CoreConfig implements ConfigDefaults {
     // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
     ES_UNIT_THREADS("50"),
     ENUM_READ_THREADS("20"),
-    ROLLUP_ON_READ_THREADS("20000"),
+    ROLLUP_ON_READ_THREADS("25000"),
     TURN_OFF_RR_MPLOT("false"),
 
     DELAYED_METRICS_MILLIS("300000"),
