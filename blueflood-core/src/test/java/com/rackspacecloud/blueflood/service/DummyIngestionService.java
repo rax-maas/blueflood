@@ -2,7 +2,22 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DummyIngestionService implements IngestionService {
+
+    static List<DummyIngestionService> instances = new ArrayList<DummyIngestionService>();
+    public static List<DummyIngestionService> getInstances() {
+        return instances;
+    }
+    public static DummyIngestionService getMostRecentInstance() {
+        return instances.get(instances.size() - 1);
+    }
+
+    public DummyIngestionService() {
+        instances.add(this);
+    }
 
     boolean startServiceCalled = false;
     public boolean getStartServiceCalled() {

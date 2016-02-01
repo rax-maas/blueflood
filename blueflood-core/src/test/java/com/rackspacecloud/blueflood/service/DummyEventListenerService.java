@@ -1,6 +1,21 @@
 package com.rackspacecloud.blueflood.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DummyEventListenerService implements EventListenerService {
+
+    static List<DummyEventListenerService> instances = new ArrayList<DummyEventListenerService>();
+    public static List<DummyEventListenerService> getInstances() {
+        return instances;
+    }
+    public static DummyEventListenerService getMostRecentInstance() {
+        return instances.get(instances.size() - 1);
+    }
+
+    public DummyEventListenerService() {
+        instances.add(this);
+    }
 
     boolean startServiceCalled = false;
     public boolean getStartServiceCalled() {

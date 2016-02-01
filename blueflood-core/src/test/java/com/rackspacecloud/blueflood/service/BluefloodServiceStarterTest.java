@@ -163,6 +163,13 @@ public class BluefloodServiceStarterTest {
 
         // then
         assertNull(ex);
+
+        assertNotNull(DummyIngestionService.getInstances());
+        assertEquals(1, DummyIngestionService.getInstances().size());
+        assertNotNull(DummyIngestionService.getMostRecentInstance());
+
+        assertTrue(DummyIngestionService.getMostRecentInstance().getStartServiceCalled());
+        assertFalse(DummyIngestionService.getMostRecentInstance().getShutdownServiceCalled());
     }
 
     @Test
@@ -206,6 +213,12 @@ public class BluefloodServiceStarterTest {
 
         // then
         assertNull(ex);
+
+        assertNotNull(DummyQueryService.getInstances());
+        assertEquals(1, DummyQueryService.getInstances().size());
+        assertNotNull(DummyQueryService.getMostRecentInstance());
+
+        assertTrue(DummyQueryService.getMostRecentInstance().getStartServiceCalled());
     }
 
     @Test
@@ -246,6 +259,12 @@ public class BluefloodServiceStarterTest {
 
         // then
         assertNull(ex);
+
+        assertNotNull(DummyEventListenerService.getInstances());
+        assertEquals(1, DummyEventListenerService.getInstances().size());
+        assertNotNull(DummyEventListenerService.getMostRecentInstance());
+
+        assertTrue(DummyEventListenerService.getMostRecentInstance().getStartServiceCalled());
     }
 
     @After
