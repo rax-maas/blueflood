@@ -61,6 +61,69 @@ public class BluefloodServiceStarterTest {
         assertNotNull(args);
     }
 
+    @Test
+    public void testNoCassandraHostsFailsValidation() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.validateCassandraHosts();
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNotNull(ex);
+        assertEquals(-1, ex.getStatus());
+    }
+
+    @Test
+    public void testInvalidCassandraHostsFailsValidation() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "something");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.validateCassandraHosts();
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNotNull(ex);
+        assertEquals(-1, ex.getStatus());
+    }
+
+    @Test
+    public void testCassandraHostWithoutPortFailsValidation() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "127.0.0.1");
+        String[] args = new String[0];
+
+        // when
+        BluefloodServiceStarterException ex = null;
+        try {
+            BluefloodServiceStarter.validateCassandraHosts();
+        } catch (BluefloodServiceStarterException e) {
+            ex = e;
+        }
+
+        // then
+        assertNotNull(ex);
+        assertEquals(-1, ex.getStatus());
+    }
+
     @After
     public void tearDown() throws IOException {
         Configuration config = Configuration.getInstance();
