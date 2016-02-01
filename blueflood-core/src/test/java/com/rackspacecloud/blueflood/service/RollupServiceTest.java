@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+@Ignore
 public class RollupServiceTest {
 
     @Before
