@@ -15,17 +15,6 @@ public class BluefloodServiceStarterTest {
 
         config.init();
 
-        // take from demo/local/config/blueflood.conf
-        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "127.0.0.1:9160");
-        config.setProperty(CoreConfig.DEFAULT_CASSANDRA_PORT, "9160");
-        config.setProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS, "70");
-        config.setProperty(CoreConfig.QUERY_MODULES, "com.rackspacecloud.blueflood.service.HttpQueryService");
-        config.setProperty(CoreConfig.INGESTION_MODULES, "com.rackspacecloud.blueflood.service.HttpIngestionService");
-        config.setProperty(CoreConfig.DISCOVERY_MODULES, "com.rackspacecloud.blueflood.io.ElasticIO");
-        config.setProperty(CoreConfig.EVENTS_MODULES, "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-        config.setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES, "com.rackspacecloud.blueflood.io.EnumElasticIO");
-        config.setProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS, "20");
-
         config.setProperty(CoreConfig.ZOOKEEPER_CLUSTER, "NONE");
 
         config.setProperty(CoreConfig.INGEST_MODE, "false");
