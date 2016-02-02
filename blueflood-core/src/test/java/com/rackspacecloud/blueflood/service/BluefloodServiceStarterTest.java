@@ -21,7 +21,7 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.ROLLUP_MODE, "false");
         config.setProperty(CoreConfig.QUERY_MODE, "false");
 
-        BluefloodServiceStarter.SkipInstantiateRestartGauge = true;
+        BluefloodServiceStarter.shouldInstantiateRestartGauge = false;
     }
 
     @Test

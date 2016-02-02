@@ -303,7 +303,7 @@ public class BluefloodServiceStarter {
                     TimeUnit.MINUTES.toMillis(savePeriodMins));
         }
 
-        if (!SkipInstantiateRestartGauge) {
+        if (shouldInstantiateRestartGauge) {
             // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
             new RestartGauge(Metrics.getRegistry(), RollupService.class);
         }
@@ -325,5 +325,5 @@ public class BluefloodServiceStarter {
     }
 
     @VisibleForTesting
-    public static boolean SkipInstantiateRestartGauge = false;
+    public static boolean shouldInstantiateRestartGauge = true;
 }
