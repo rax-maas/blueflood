@@ -118,7 +118,6 @@ public class BluefloodServiceStarterTest {
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.INGEST_MODE, "true");
         config.setProperty(CoreConfig.INGESTION_MODULES, "");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
@@ -134,7 +133,6 @@ public class BluefloodServiceStarterTest {
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.INGEST_MODE, "true");
         config.setProperty(CoreConfig.INGESTION_MODULES, "com.rackspacecloud.blueflood.service.DummyIngestionService");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
@@ -155,7 +153,6 @@ public class BluefloodServiceStarterTest {
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.QUERY_MODE, "true");
         config.setProperty(CoreConfig.QUERY_MODULES, "");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
@@ -171,7 +168,6 @@ public class BluefloodServiceStarterTest {
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.QUERY_MODE, "true");
         config.setProperty(CoreConfig.QUERY_MODULES, "com.rackspacecloud.blueflood.service.DummyQueryService");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
@@ -190,7 +186,6 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.ROLLUP_MODE, "true");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
@@ -205,7 +200,6 @@ public class BluefloodServiceStarterTest {
         // given
         Configuration config = Configuration.getInstance();
         config.setProperty(CoreConfig.EVENT_LISTENER_MODULES, "com.rackspacecloud.blueflood.service.DummyEventListenerService");
-        String[] args = new String[0];
 
         // when
         BluefloodServiceStarter.run();
