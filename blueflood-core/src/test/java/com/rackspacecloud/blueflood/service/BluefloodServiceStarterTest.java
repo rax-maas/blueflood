@@ -57,7 +57,7 @@ public class BluefloodServiceStarterTest {
     @Test
     public void testStartup() {
         String[] args = new String[0];
-        BluefloodServiceStarter.main(args);
+        BluefloodServiceStarter.run();
 
         assertNotNull(args);
     }
@@ -134,7 +134,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }
@@ -156,7 +156,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }
@@ -184,7 +184,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }
@@ -206,7 +206,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }
@@ -232,7 +232,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }
@@ -252,7 +252,7 @@ public class BluefloodServiceStarterTest {
         // when
         BluefloodServiceStarterException ex = null;
         try {
-            BluefloodServiceStarter.main(args);
+            BluefloodServiceStarter.run();
         } catch (BluefloodServiceStarterException e) {
             ex = e;
         }

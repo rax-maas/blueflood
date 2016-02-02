@@ -249,6 +249,13 @@ public class BluefloodServiceStarter {
     }
 
     public static void main(String args[]) {
+        try {
+            run();
+        } catch (BluefloodServiceStarterException e) {
+            System.exit(e.status);
+        }
+    }
+    public static void run() {
         // load configuration.
         Configuration config = Configuration.getInstance();
 
