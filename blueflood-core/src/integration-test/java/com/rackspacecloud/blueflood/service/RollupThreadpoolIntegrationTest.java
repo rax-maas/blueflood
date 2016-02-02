@@ -24,7 +24,9 @@ import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 // this test used to measure rollups that were refused, but we don't care anymore. Not it makes sure that all rollups
@@ -32,10 +34,17 @@ import org.junit.Test;
 public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
     private static final Integer threadsInRollupPool = 2;
 
-    static {
+    @Before
+    public void setup() {
         // run this test with a configuration so that threadpool queue size is artificially constrained smaller.
         System.setProperty("MAX_ROLLUP_READ_THREADS", threadsInRollupPool.toString());
         System.setProperty("MAX_ROLLUP_WRITE_THREADS", threadsInRollupPool.toString());
+    }
+
+    @After
+    public void tearDown() {
+        System.clearProperty("MAX_ROLLUP_READ_THREADS");
+        System.clearProperty("MAX_ROLLUP_WRITE_THREADS");
     }
 
     @Test

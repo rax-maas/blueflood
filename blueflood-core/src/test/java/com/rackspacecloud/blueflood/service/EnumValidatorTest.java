@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import java.util.*;
@@ -48,6 +49,11 @@ public class EnumValidatorTest {
         // set locators
         locators = new HashSet<Locator>();
         locators.add(locator1);
+    }
+
+    @After
+    public void tearDown() {
+        System.clearProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD.name());
     }
 
     private EnumValidator setupEnumValidatorWithMock(Set<Locator> locators) {

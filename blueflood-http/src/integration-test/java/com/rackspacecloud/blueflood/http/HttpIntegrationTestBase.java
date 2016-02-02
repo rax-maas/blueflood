@@ -108,6 +108,9 @@ public class HttpIntegrationTestBase {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
+        System.clearProperty(CoreConfig.DISCOVERY_MODULES.name());
+        System.clearProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name());
+        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
 
         if (esSetup != null) {
             esSetup.terminate();
