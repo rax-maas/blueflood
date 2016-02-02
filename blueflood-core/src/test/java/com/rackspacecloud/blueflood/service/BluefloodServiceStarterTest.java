@@ -54,11 +54,19 @@ public class BluefloodServiceStarterTest {
     }
 
     @Test
-    public void testStartup() {
-        String[] args = new String[0];
+    public void testAllModesDisabled() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.INGEST_MODE, "false");
+        config.setProperty(CoreConfig.QUERY_MODE, "false");
+        config.setProperty(CoreConfig.ROLLUP_MODE, "false");
+
+        // when
         BluefloodServiceStarter.run();
 
-        assertNotNull(args);
+        // then
+        // no exception was thrown
     }
 
     @Test(expected = BluefloodServiceStarterException.class)
