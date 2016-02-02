@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class BluefloodServiceStarter {
     private static final Logger log = LoggerFactory.getLogger(BluefloodServiceStarter.class);
 
-    public static void validateCassandraHosts() throws BluefloodServiceStarterException {
+    public static void validateCassandraHosts() {
         String hosts = Configuration.getInstance().getStringProperty(CoreConfig.CASSANDRA_HOSTS);
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
@@ -83,7 +83,7 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startIngestServices(ScheduleContext context) throws BluefloodServiceStarterException {
+    private static void startIngestServices(ScheduleContext context) {
         // start up ingestion services.
         Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty(CoreConfig.INGEST_MODE)) {
@@ -138,7 +138,7 @@ public class BluefloodServiceStarter {
         }
     }
 
-    private static void startQueryServices() throws BluefloodServiceStarterException {
+    private static void startQueryServices() {
         // start up query services.
         Configuration config = Configuration.getInstance();
         if (config.getBooleanProperty(CoreConfig.QUERY_MODE)) {
@@ -248,7 +248,7 @@ public class BluefloodServiceStarter {
         }
     }
 
-    public static void main(String args[]) throws BluefloodServiceStarterException {
+    public static void main(String args[]) {
         // load configuration.
         Configuration config = Configuration.getInstance();
 
@@ -323,7 +323,7 @@ public class BluefloodServiceStarter {
     @VisibleForTesting
     public static boolean ThrowInsteadOfExit = false;
 
-    private static void SystemExit(int status) throws BluefloodServiceStarterException {
+    private static void SystemExit(int status) {
         if (ThrowInsteadOfExit) {
             throw new BluefloodServiceStarterException(status,
                     String.format("Told to exit with status %d", status));

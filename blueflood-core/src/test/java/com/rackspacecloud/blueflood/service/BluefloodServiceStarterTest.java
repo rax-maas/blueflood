@@ -55,7 +55,7 @@ public class BluefloodServiceStarterTest {
     }
 
     @Test
-    public void testStartup() throws BluefloodServiceStarterException {
+    public void testStartup() {
         String[] args = new String[0];
         BluefloodServiceStarter.main(args);
 
