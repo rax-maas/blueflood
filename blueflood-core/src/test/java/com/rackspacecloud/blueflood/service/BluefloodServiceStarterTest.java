@@ -50,7 +50,6 @@ public class BluefloodServiceStarterTest {
         config.setProperty("ELASTICSEARCH_HOSTS", "localhost:9300");
         config.setProperty("ELASTICSEARCH_CLUSTERNAME", "elasticsearch");
 
-        BluefloodServiceStarter.ThrowInsteadOfExit = true;
         BluefloodServiceStarter.SkipInstantiateRestartGauge = true;
     }
 

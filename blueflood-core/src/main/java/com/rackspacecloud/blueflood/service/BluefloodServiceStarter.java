@@ -43,12 +43,12 @@ public class BluefloodServiceStarter {
         String hosts = Configuration.getInstance().getStringProperty(CoreConfig.CASSANDRA_HOSTS);
         if (!(hosts.length() >= 3)) {
             log.error("No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
-            SystemExit(-1);
+            throw new BluefloodServiceStarterException(-1, "No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
         }
         for (String host : hosts.split(",")) {
             if (!host.matches("[\\d\\w\\.]+:\\d+")) {
                 log.error("Invalid Cassandra host found in Configuration option 'CASSANDRA_HOSTS' -- Should be of the form <hostname>:<port>");
-                SystemExit(-1);
+                throw new BluefloodServiceStarterException(-1, "Invalid Cassandra host found in Configuration option 'CASSANDRA_HOSTS' -- Should be of the form <hostname>:<port>");
             }
         }
     }
@@ -90,7 +90,7 @@ public class BluefloodServiceStarter {
             List<String> modules = config.getListProperty(CoreConfig.INGESTION_MODULES);
             if (modules.isEmpty()) {
                 log.error("Ingestion mode is enabled, however no ingestion modules are enabled!");
-                SystemExit(1);
+                throw new BluefloodServiceStarterException(1, "Ingestion mode is enabled, however no ingestion modules are enabled!");
             }
             ClassLoader classLoader = IngestionService.class.getClassLoader();
             final List<IngestionService> ingestionServices = new ArrayList<IngestionService>();
@@ -111,19 +111,19 @@ public class BluefloodServiceStarter {
                     services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of ingestion service class for: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Unable to create instance of ingestion service class for: " + module, e);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting ingestion service: " + module, e);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate ingestion service module: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Unable to locate ingestion service module: " + module, e);
                 } catch (RuntimeException e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting ingestion service: " + module, e);
                 } catch (Throwable e) {
                     log.error("Error starting ingestion service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting ingestion service: " + module, e);
                 }
             }
 
@@ -145,7 +145,7 @@ public class BluefloodServiceStarter {
             List<String> modules = config.getListProperty(CoreConfig.QUERY_MODULES);
             if (modules.isEmpty()) {
                 log.error("Query mode is enabled, however no query modules are enabled!");
-                SystemExit(1);
+                throw new BluefloodServiceStarterException(1, "Query mode is enabled, however no query modules are enabled!");
             }
             ClassLoader classLoader = QueryService.class.getClassLoader();
             final List<QueryService> queryServices = new ArrayList<QueryService>();
@@ -162,19 +162,19 @@ public class BluefloodServiceStarter {
                     services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of query service class for: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Unable to create instance of query service class for: " + module, e);
                 } catch (IllegalAccessException e) {
                     log.error("Error starting query service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting query service: " + module, e);
                 } catch (ClassNotFoundException e) {
                     log.error("Unable to locate query service module: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Unable to locate query service module: " + module, e);
                 } catch (RuntimeException e) {
                     log.error("Error starting query service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting query service: " + module, e);
                 } catch (Throwable e) {
                     log.error("Error starting query service: " + module, e);
-                    SystemExit(1);
+                    throw new BluefloodServiceStarterException(1, "Error starting query service: " + module, e);
                 }
             }
             log.info("Started " + services_started + " query services");
@@ -326,17 +326,4 @@ public class BluefloodServiceStarter {
 
     @VisibleForTesting
     public static boolean SkipInstantiateRestartGauge = false;
-
-    @VisibleForTesting
-    public static boolean ThrowInsteadOfExit = false;
-
-    private static void SystemExit(int status) {
-        if (ThrowInsteadOfExit) {
-            throw new BluefloodServiceStarterException(status,
-                    String.format("Told to exit with status %d", status));
-        } else {
-            System.exit(status);
-        }
-
-    }
 }
