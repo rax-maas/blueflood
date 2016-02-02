@@ -27,82 +27,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class ElasticIOTest {
-    private static final int NUM_PARENT_ELEMENTS = 30;
-    private static final List<String> CHILD_ELEMENTS = Arrays.asList("A", "B", "C");
-    private static final int NUM_GRANDCHILD_ELEMENTS = 3;
-    private static final int NUM_DOCS = NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size() * NUM_GRANDCHILD_ELEMENTS;
-    private static final String TENANT_A = "ratanasv";
-    private static final String TENANT_B = "someotherguy";
-    private static final String TENANT_C = "someothergal";
-    private static final String UNIT = "horse length";
-    private static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
-    private ElasticIO elasticIO;
-    private EsSetup esSetup;
+public class ElasticIOTest extends BaseElasticTest {
 
-    private static SearchResult createExpectedResult(String tenantId, int x, String y, int z, String unit) {
-        Locator locator = createTestLocator(tenantId, x, y, z);
-        return new SearchResult(tenantId, locator.getMetricName(), unit);
-    }
-    private static Locator createTestLocator(String tenantId, int x, String y, int z) {
-        String xs = (x < 10 ? "0" : "") + String.valueOf(x);
-        return Locator.createLocatorFromPathComponents(
-                tenantId, "one", "two", "three" + xs,
-                "four" + y,
-                "five" + String.valueOf(z));
-    }
-
-    private static List<Locator> createComplexTestLocators(String tenantId) {
-        Locator locator;
-        List<Locator> locators = new ArrayList<Locator>();
-        locatorMap.put(tenantId, locators);
-        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
-            for (String y : CHILD_ELEMENTS) {
-                for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
-                    locator = createTestLocator(tenantId, x, y, z);
-                    locators.add(locator);
-                }
-            }
-        }
-        return locators;
-    }
-
-    private static List<IMetric> createTestMetrics(String tenantId) {
-        Metric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
-        List<Locator> locators = createComplexTestLocators(tenantId);
-        for (Locator locator : locators) {
-            metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
-            metrics.add(metric);
-        }
-        return metrics;
-    }
-
-    private static List<IMetric> createTestMetricsFromInterface(String tenantId) {
-        IMetric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
-        BluefloodCounterRollup counter = new BluefloodCounterRollup();
-
-        List<Locator> locators = createComplexTestLocators(tenantId);
-        for (Locator locator : locators) {
-            metric = new PreaggregatedMetric(0, locator, new TimeValue(1, TimeUnit.DAYS), counter);
-            metrics.add(metric);
-        }
-        return metrics;
-    }
 
     @Before
     public void setup() throws IOException {
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
+        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         elasticIO = new ElasticIO(esSetup.client());
@@ -134,7 +69,7 @@ public class ElasticIOTest {
         Assert.assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
         final String expectedIndex =
                 "index {" +
-                        "[" + ElasticIO.INDEX_NAME_WRITE + "]" +
+                        "[" + ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "]" +
                         "[" + ElasticIO.ES_DOCUMENT_TYPE + "]" +
                         "["+ TENANT_A + ":" + METRIC_NAME + "], " +
                         "source[{" +
@@ -269,7 +204,7 @@ public class ElasticIOTest {
     @Test
     public void testDeDupMetrics() throws Exception {
         // New index name and the locator to be written to it
-        String ES_DUP = ElasticIO.INDEX_NAME_WRITE + "_2";
+        String ES_DUP = ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "_2";
         Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
         // Metric is aleady there in old
         List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
@@ -287,7 +222,7 @@ public class ElasticIOTest {
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
         // Set up aliases
         esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
-                .addAlias(ElasticIO.INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+                .addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
@@ -296,4 +231,132 @@ public class ElasticIOTest {
         elasticIO.setINDEX_NAME_READ(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ.getDefaultValue());
         elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
+
+
+    @Test
+    public void testGetNextTokenWithoutPrefix1() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "";
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Assert.assertEquals("Invalid total number of results", 1, results.size());
+        Assert.assertEquals("Next token mismatch", "one", results.get(0).getToken());
+        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+    }
+
+    @Test
+    public void testGetNextTokenWithoutPrefix2() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "";
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add("foo.bar.baz");
+        }});
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one|true");
+            add("foo|true");
+        }};
+
+        Assert.assertEquals("Invalid total number of results", 2, results.size());
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+    @Test
+    public void testGetNextTokenSingleLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "one";
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Assert.assertEquals("Invalid total number of results", 1, results.size());
+        Assert.assertEquals("Next token mismatch", "two", results.get(0).getToken());
+        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+    }
+
+    @Test
+    public void testGetNextTokenWithWildCardPrefix1() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "*";
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add("foo.bar.baz");
+        }});
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("two|true");
+            add("bar|true");
+        }};
+
+        Assert.assertEquals("Invalid total number of results", 2, results.size());
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+    @Test
+    public void testGetNextTokenWithMultiLevelPrefix() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "one.two";
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
+        for (TokenInfo tokenInfo: results) {
+            Assert.assertTrue(tokenInfo.isNextLevel());
+        }
+    }
+
+    @Test
+    public void testGetNextTokenWithWildCardPrefix2() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "one.two.three*";
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size(), results.size());
+        for (TokenInfo tokenInfo: results) {
+            Assert.assertTrue(tokenInfo.isNextLevel());
+        }
+    }
+
+    @Test
+    public void testGetNextTokenWithWildCardPrefix3() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "one.{two,foo}.[ta]*";
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add("one.foo.any.bar.baz");
+        }});
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("fourA|true");
+            add("fourB|true");
+            add("fourC|true");
+            add("bar|true");
+        }};
+
+        Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+    @Test
+    public void testGetNextTokenWithWildCardPrefix4() throws Exception {
+        String tenantId = TENANT_A;
+        String prefix = "*.*";
+
+        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+
+        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
+        for (TokenInfo tokenInfo: results) {
+            Assert.assertTrue(tokenInfo.isNextLevel());
+        }
+    }
+
+
 }
