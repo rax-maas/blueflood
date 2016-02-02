@@ -61,7 +61,7 @@ public class BluefloodServiceStarterTest {
         assertNotNull(args);
     }
 
-    @Test
+    @Test(expected = BluefloodServiceStarterException.class)
     public void testNoCassandraHostsFailsValidation() {
 
         // given
@@ -69,19 +69,13 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "");
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.validateCassandraHosts();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.validateCassandraHosts();
 
         // then
-        assertNotNull(ex);
-        assertEquals(-1, ex.getStatus());
+        // exception was thrown
     }
 
-    @Test
+    @Test(expected = BluefloodServiceStarterException.class)
     public void testInvalidCassandraHostsFailsValidation() {
 
         // given
@@ -89,19 +83,13 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "something");
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.validateCassandraHosts();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.validateCassandraHosts();
 
         // then
-        assertNotNull(ex);
-        assertEquals(-1, ex.getStatus());
+        // exception was thrown
     }
 
-    @Test
+    @Test(expected = BluefloodServiceStarterException.class)
     public void testCassandraHostWithoutPortFailsValidation() {
 
         // given
@@ -109,19 +97,13 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.CASSANDRA_HOSTS, "127.0.0.1");
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.validateCassandraHosts();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.validateCassandraHosts();
 
         // then
-        assertNotNull(ex);
-        assertEquals(-1, ex.getStatus());
+        // exception was thrown
     }
 
-    @Test
+    @Test(expected = BluefloodServiceStarterException.class)
     public void testIngestModeEnabledWithoutModules() {
 
         // given
@@ -131,16 +113,10 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNotNull(ex);
-        assertEquals(1, ex.getStatus());
+        // exception was thrown
     }
 
     @Test
@@ -153,16 +129,9 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNull(ex);
-
         assertNotNull(DummyIngestionService.getInstances());
         assertEquals(1, DummyIngestionService.getInstances().size());
         assertNotNull(DummyIngestionService.getMostRecentInstance());
@@ -171,7 +140,7 @@ public class BluefloodServiceStarterTest {
         assertFalse(DummyIngestionService.getMostRecentInstance().getShutdownServiceCalled());
     }
 
-    @Test
+    @Test(expected = BluefloodServiceStarterException.class)
     public void testQueryModeEnabledWithoutModules() {
 
         // given
@@ -181,16 +150,10 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNotNull(ex);
-        assertEquals(1, ex.getStatus());
+        // exception was thrown
     }
 
     @Test
@@ -203,16 +166,9 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNull(ex);
-
         assertNotNull(DummyQueryService.getInstances());
         assertEquals(1, DummyQueryService.getInstances().size());
         assertNotNull(DummyQueryService.getMostRecentInstance());
@@ -229,15 +185,10 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNull(ex);
+        // no exception thrown
     }
 
     @Test
@@ -249,16 +200,9 @@ public class BluefloodServiceStarterTest {
         String[] args = new String[0];
 
         // when
-        BluefloodServiceStarterException ex = null;
-        try {
-            BluefloodServiceStarter.run();
-        } catch (BluefloodServiceStarterException e) {
-            ex = e;
-        }
+        BluefloodServiceStarter.run();
 
         // then
-        assertNull(ex);
-
         assertNotNull(DummyEventListenerService.getInstances());
         assertEquals(1, DummyEventListenerService.getInstances().size());
         assertNotNull(DummyEventListenerService.getMostRecentInstance());
