@@ -40,9 +40,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String ENUMS_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE);
     public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
 
+    private int MAX_RESULT_LIMIT = 100000;
     private final int LEVEL_0 = 0;
     private final int LEVEL_1 = 1;
     private final String REGEX_TOKEN_DELIMTER = "\\.";
+
+    //grabs chars until the next "." which is basically a token
+    private static String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]+";
+
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
         return search(tenant, Arrays.asList(query));
@@ -52,39 +57,43 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
         String[] indexes = getIndexesToSearch();
 
-        return searchByIndexes(tenant, queries, indexes);
+        return searchESByIndexes(tenant, queries, indexes);
     }
 
-    private List<SearchResult> searchByIndexes(String tenant, List<String> queries, String[] indexes) {
+    private List<SearchResult> searchESByIndexes(String tenant, List<String> queries, String[] indexes) {
         List<SearchResult> results = new ArrayList<SearchResult>();
         Timer.Context multiSearchCtx = searchTimer.time();
-        queryBatchHistogram.update(queries.size());
-        BoolQueryBuilder bqb = boolQuery();
-        QueryBuilder qb;
+        SearchResponse response;
+        try {
+            queryBatchHistogram.update(queries.size());
+            BoolQueryBuilder bqb = boolQuery();
+            QueryBuilder qb;
 
-        for (String query : queries) {
-            GlobPattern pattern = new GlobPattern(query);
-            if (!pattern.hasWildcard()) {
-                qb = termQuery(ESFieldLabel.metric_name.name(), query);
-            } else {
-                qb = regexpQuery(ESFieldLabel.metric_name.name(), pattern.compiled().toString());
+            for (String query : queries) {
+                GlobPattern pattern = new GlobPattern(query);
+                if (!pattern.hasWildcard()) {
+                    qb = termQuery(ESFieldLabel.metric_name.name(), query);
+                } else {
+                    qb = regexpQuery(ESFieldLabel.metric_name.name(), pattern.compiled().toString());
+                }
+
+                bqb.should(boolQuery()
+                                .must(termQuery(ESFieldLabel.tenantId.toString(), tenant))
+                                .must(qb)
+                );
             }
 
-            bqb.should(boolQuery()
-                            .must(termQuery(ESFieldLabel.tenantId.toString(), tenant))
-                            .must(qb)
-            );
+            response = client.prepareSearch(indexes)
+                    .setRouting(tenant)
+                    .setSize(MAX_RESULT_LIMIT)
+                    .setVersion(true)
+                    .setQuery(bqb)
+                    .execute()
+                    .actionGet();
+        } finally {
+            multiSearchCtx.stop();
         }
 
-        SearchResponse response = client.prepareSearch(indexes)
-                .setRouting(tenant)
-                .setSize(100000)
-                .setVersion(true)
-                .setQuery(bqb)
-                .execute()
-                .actionGet();
-
-        multiSearchCtx.stop();
 
         for (SearchHit hit : response.getHits().getHits()) {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
@@ -106,65 +115,87 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
         Timer.Context getPathsTimerCtx = getNextTokensTimer.time();
 
-        int totalTokensInPrefix = 0;
+        SearchResponse response;
 
-        if (prefix != null && !prefix.isEmpty()) {
+        try {
+            //for a given prefix, get upto next two levels of tokens
+            String regexForNext2Levels = regexforNextNLevels(prefix, 2);
+            response = getMetricTokensFromES(tenant, regexForNext2Levels);
 
-            //prefix is a glob and in glob's "." is not a special character.
-            totalTokensInPrefix = getTotalTokensInPrefix(prefix);
+        } finally {
+            getPathsTimerCtx.stop();
         }
-
-        String regexforNext2Levels = regexforNextNLevels(prefix, 2);
-        SearchResponse response = aggregateByMetricTokens(tenant, regexforNext2Levels);
-
-        getPathsTimerCtx.stop();
-
-        Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
         final Set<String> tokensWithNextLevel = new LinkedHashSet<String>();
         final Map<Integer, Set<String>> completeMetricNamesByLevel = new HashMap<Integer, Set<String>>();
 
-        processMetricTokensAggregate(aggregateTerms,
-                totalTokensInPrefix, tokensWithNextLevel, completeMetricNamesByLevel);
+        //parse next level of tokens from response and also identify complete metric names
+        computeNextLevelOfTokens(response,
+                prefix, tokensWithNextLevel, completeMetricNamesByLevel);
+
 
         Set<String> enumValuesAs1LevelSet = new LinkedHashSet<String>();
         Map<String, Boolean> tokensWithEnumsAs2LevelMap = new LinkedHashMap<String, Boolean>();
 
-        for (String metricName: completeMetricNamesByLevel.get(LEVEL_1)) {
-            tokensWithEnumsAs2LevelMap.put(metricName.substring(metricName.lastIndexOf(".") + 1), false);
-        }
-
-        if (completeMetricNamesByLevel.get(LEVEL_0).size() > 0 ||
-                completeMetricNamesByLevel.get(LEVEL_1).size() > 0) {
-
-            searchForEnumValues(tenant, prefix, enumValuesAs1LevelSet, tokensWithEnumsAs2LevelMap);
-        }
+        //For a given prefix, search for enum values, if necessary
+        searchForEnumValues(tenant, prefix, completeMetricNamesByLevel,
+                enumValuesAs1LevelSet, tokensWithEnumsAs2LevelMap);
 
         return prepareResults(tokensWithNextLevel,
                 tokensWithEnumsAs2LevelMap, enumValuesAs1LevelSet);
     }
 
-    private void searchForEnumValues(String tenant, String prefix, Set<String> enumValuesAs1LevelSet, Map<String, Boolean> tokensWithEnumsAs2LevelMap) {
-        List<String> queries = new ArrayList<String>();
 
-        //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
-        queries.add(prefix + "*");
+    /**
+     * For the given prefix, if there are complete metric names at level 0 or 1,
+     * we need to determine if any of these metric names have enum values.
+     *
+     * If they do, for level 0, enum values will be used as next level of tokens and for level 1,
+     * they would be used to determine if level 1 token has next level.
+     *
+     * @param tenant
+     * @param prefix
+     * @param completeMetricNamesByLevel
+     * @param enumValuesAs1LevelSet
+     * @param tokensWithEnumsAs2LevelMap
+     */
+    private void searchForEnumValues(String tenant, String prefix,
+                                     Map<Integer, Set<String>> completeMetricNamesByLevel,
+                                     Set<String> enumValuesAs1LevelSet,
+                                     Map<String, Boolean> tokensWithEnumsAs2LevelMap) {
 
-        List<SearchResult> searchResults = searchByIndexes(tenant, queries, new String[] {ENUMS_INDEX_NAME_READ});
-        for (SearchResult searchResult: searchResults) {
-            if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
+        for (String metricName : completeMetricNamesByLevel.get(LEVEL_1)) {
+            tokensWithEnumsAs2LevelMap.put(metricName.substring(metricName.lastIndexOf(".") + 1), false);
+        }
 
-                String metricName = searchResult.getMetricName();
-                String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
+        //Only if there are complete metric names at level 0 or 1, look if they have enum values.
+        if (completeMetricNamesByLevel.get(LEVEL_0).size() > 0 ||
+                completeMetricNamesByLevel.get(LEVEL_1).size() > 0) {
 
-                int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
+            List<String> queries = new ArrayList<String>();
 
-                if (enumMetricLevel == LEVEL_0) {
-                    enumValuesAs1LevelSet.addAll(searchResult.getEnumValues());
-                } else if (enumMetricLevel == LEVEL_1) {
+            //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
+            queries.add(prefix + "*");
 
-                    String key = searchResult.getMetricName();
-                    tokensWithEnumsAs2LevelMap.put(key.substring(key.lastIndexOf(".") + 1), true);
+            List<SearchResult> searchResults = searchESByIndexes(tenant, queries, new String[]{ENUMS_INDEX_NAME_READ});
+            for (SearchResult searchResult: searchResults) {
+                if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
+
+                    String metricName = searchResult.getMetricName();
+                    String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
+
+                    int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
+
+                    if (enumMetricLevel == LEVEL_0) {
+
+                        //enum values are grabbed as next level of tokens
+                        enumValuesAs1LevelSet.addAll(searchResult.getEnumValues());
+                    } else if (enumMetricLevel == LEVEL_1) {
+
+                        //level 1 tokens are set to true to indicate presence of next level(enum values).
+                        String key = searchResult.getMetricName();
+                        tokensWithEnumsAs2LevelMap.put(key.substring(key.lastIndexOf(".") + 1), true);
+                    }
                 }
             }
         }
@@ -232,7 +263,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * @param regexMetricName
      * @return
      */
-    private SearchResponse aggregateByMetricTokens(final String tenant, final String regexMetricName) {
+    private SearchResponse getMetricTokensFromES(final String tenant, final String regexMetricName) {
 
         AggregationBuilder aggregationBuilder =
                 AggregationBuilders.terms(METRICS_TOKENS_AGGREGATE)
@@ -258,15 +289,23 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * 2) For the metric names which do not fall under above category, identifies if any of them are complete metric
      *    names at a given prefix level(LEVEL_0) or at a next level(LEVEL_1).
      *
-     * @param aggregateTerms
-     * @param totalTokensInPrefix
-     * @param tokensWithNextLevel  Next level of tokens for a given prefix which also have subsequent next level
+     * @param response ES response
+     * @param prefix
+     * @param tokensWithNextLevel`WithNextLevel  Next level of tokens for a given prefix which also have subsequent next level
      * @param completeMetricNamesByLevel contains complete metric names.
      */
-    private void processMetricTokensAggregate(final Terms aggregateTerms,
-                                              final int totalTokensInPrefix,
-                                              final Set<String> tokensWithNextLevel,
-                                              final Map<Integer, Set<String>> completeMetricNamesByLevel) {
+    private void computeNextLevelOfTokens(final SearchResponse response,
+                                          final String prefix,
+                                          final Set<String> tokensWithNextLevel,
+                                          final Map<Integer, Set<String>> completeMetricNamesByLevel) {
+
+        int totalTokensInPrefix = 0;
+
+        if (prefix != null && !prefix.isEmpty()) {
+
+            //prefix is a glob and in glob's "." is not a special character.
+            totalTokensInPrefix = getTotalTokensInPrefix(prefix);
+        }
 
         //0 indicates ground level. if prefix is foo.bar, 0 is at foo.bar level
         final Map<String, Long> partialMetrics0LevelMap = new LinkedHashMap<String, Long>();
@@ -275,6 +314,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         final Map<String, Long> partialMetrics1LevelMap = new LinkedHashMap<String, Long>();
         final Map<String, Long> partialMetrics1LevelAggMap = new LinkedHashMap<String, Long>();
 
+        Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
         for (Terms.Bucket bucket: aggregateTerms.getBuckets()) {
             final String key = bucket.getKey();
@@ -415,9 +455,6 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      */
     private String regexforNextNLevels(final String prefix, final int level) {
 
-        //grabs chars until the next "." which is basically a token
-        String regexToGrabSingleToken = "[^.]+";
-
         if (prefix == null || prefix.isEmpty()) {
             /**
              * We are trying to get first level of metric name. For a given metric foo.bar.baz, the current
@@ -431,7 +468,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
              */
 
             //get metric names which have only two levels. For example: foo.bar, x.y
-            return regexToGrabSingleToken + REGEX_TOKEN_DELIMTER + regexToGrabSingleToken;
+            return REGEX_TO_GRAB_SINGLE_TOKEN + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN;
 
         } else {
 
@@ -443,12 +480,12 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                 // get metric names which matches the given prefix and have either one or two next levels,
                 // Ex: For metric foo.bar.baz.qux, if prefix=*, we should get foo.bar, foo.bar.baz. We are not
                 // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
-                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + regexToGrabSingleToken + ")" + "{1," + level + "}";
+                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN + ")" + "{1," + level + "}";
             } else {
 
                 // get metric names which matches the given prefix and have either one or two next levels,
                 // Ex: For metric foo.bar.baz.qux, if prefix=foo.bar, get foo.bar, foo.bar.baz, foo.bar.baz.qux
-                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + regexToGrabSingleToken + ")" + "{0," + level + "}";
+                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN + ")" + "{0," + level + "}";
             }
         }
 
@@ -461,3 +498,4 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     protected abstract SearchResult convertHitToMetricDiscoveryResult(SearchHit hit);
 
 }
+
