@@ -441,6 +441,7 @@ public class HttpHandlerIntegrationTest {
     
     @AfterClass
     public static void shutdown() {
+        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
         if (esSetup != null) {
             esSetup.terminate();
         }

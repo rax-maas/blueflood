@@ -77,8 +77,10 @@
           <excludes>
             <exclude>**/*Integration*.java</exclude>
           </excludes>
-          <parallel>classes</parallel>
-          <threadCount>5</threadCount>
+          <!-- configuration values are static, and tests interfere with each
+               other when run in parallel. -->
+          <!--<parallel>classes</parallel>-->
+          <!--<threadCount>5</threadCount>-->
         </configuration>
       </plugin>
 

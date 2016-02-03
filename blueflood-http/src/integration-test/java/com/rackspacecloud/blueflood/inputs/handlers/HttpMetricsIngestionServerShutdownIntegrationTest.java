@@ -134,6 +134,7 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     @AfterClass
     public static void shutdown() {
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
+        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
         if (esSetup != null) {
             esSetup.terminate();
         }
