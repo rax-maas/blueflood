@@ -309,7 +309,6 @@ public class BluefloodServiceStarter {
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
-        final String zkCluster = config.getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER);
         final ScheduleContext rollupContext =
                 new ScheduleContext(System.currentTimeMillis(), shards);
 

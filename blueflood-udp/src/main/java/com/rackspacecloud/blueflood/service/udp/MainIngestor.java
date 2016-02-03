@@ -100,7 +100,7 @@ public class MainIngestor {
 
         log.info("Configuration is good");
 
-        boolean useZookeeper = !"NONE".equals(config.getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER));
+        boolean useZookeeper = false;
         log.info("Using zookeeper? " + useZookeeper);
     }
 }

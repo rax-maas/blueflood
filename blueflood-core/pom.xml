@@ -102,8 +102,6 @@
                 <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
               </systemPropertyVariables>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
-              <!-- do not require zookeeper for these tests. -->
-              <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties</argLine>
               <argLine>${jacoco.agent.it.argLine}</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
