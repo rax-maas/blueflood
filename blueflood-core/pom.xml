@@ -29,6 +29,7 @@
 
   <properties>
     <cassandra.skip>false</cassandra.skip>
+    <powermock.version>1.6.2</powermock.version>
   </properties>
 
   <build>
@@ -266,6 +267,19 @@
       <artifactId>histogram</artifactId>
       <version>3.2.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-api-mockito</artifactId>
+      <version>1.4.9</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-module-junit4</artifactId>
+      <version>1.4.9</version>
+      <scope>test</scope>
+    </dependency>
+
 
   </dependencies>
 

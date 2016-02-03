@@ -1,15 +1,27 @@
 package com.rackspacecloud.blueflood.service;
 
-import static junit.framework.Assert.*;
-
-import org.junit.*;
+import com.codahale.metrics.MetricRegistry;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 
+import static junit.framework.Assert.*;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(BluefloodServiceStarter.class)
+@PowerMockIgnore("javax.management.*")
 public class BluefloodServiceStarterTest {
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
 
         Configuration config = Configuration.getInstance();
 
@@ -21,7 +33,8 @@ public class BluefloodServiceStarterTest {
         config.setProperty(CoreConfig.ROLLUP_MODE, "false");
         config.setProperty(CoreConfig.QUERY_MODE, "false");
 
-        BluefloodServiceStarter.shouldInstantiateRestartGauge = false;
+        PowerMockito.spy(BluefloodServiceStarter.class);
+        PowerMockito.doReturn(mock(MetricRegistry.class)).when(BluefloodServiceStarter.class, "getRegistry");
     }
 
     @Test
