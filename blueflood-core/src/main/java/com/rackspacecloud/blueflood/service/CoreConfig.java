@@ -77,7 +77,7 @@ public enum CoreConfig implements ConfigDefaults {
     SHARD_PULL_PERIOD("20000"),
 
     // blueflood uses zookeeper to acquire locks before working on shards
-    ZOOKEEPER_CLUSTER("127.0.0.1:22181"),
+    ZOOKEEPER_CLUSTER("NONE"),
 
     // 20 min
     SHARD_LOCK_HOLD_PERIOD_MS("1200000"),
