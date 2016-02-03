@@ -92,15 +92,6 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         registerMBean();
     }
 
-    public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
-        this.scheduleTime = currentTimeMillis;
-        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
-        ZKBasedShardLockManager lockManager = new ZKBasedShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
-        lockManager.init(new TimeValue(5, TimeUnit.SECONDS));
-        this.lockManager = lockManager;
-        registerMBean();
-    }
-
     public void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
     public long getCurrentTimeMillis() { return scheduleTime; }
 
