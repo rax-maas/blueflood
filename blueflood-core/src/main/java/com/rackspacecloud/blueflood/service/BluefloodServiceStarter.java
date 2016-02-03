@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -303,10 +304,8 @@ public class BluefloodServiceStarter {
                     TimeUnit.MINUTES.toMillis(savePeriodMins));
         }
 
-        if (shouldInstantiateRestartGauge) {
-            // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
-            new RestartGauge(Metrics.getRegistry(), RollupService.class);
-        }
+        // has the side-effect of causing static initialization of Metrics, starting instrumentation reporting.
+        new RestartGauge(getRegistry(), RollupService.class);
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
@@ -324,6 +323,8 @@ public class BluefloodServiceStarter {
         log.info("All blueflood services started");
     }
 
-    @VisibleForTesting
-    public static boolean shouldInstantiateRestartGauge = true;
+    public static MetricRegistry getRegistry() {
+        return Metrics.getRegistry();
+    }
+
 }
