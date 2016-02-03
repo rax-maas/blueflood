@@ -114,8 +114,6 @@
               <excludes>
                 <!-- requires an API service -->
                 <exclude>**/InternalApiIntegrationTest.java</exclude>
-                <!-- this one requires a live zookeeper -->
-                <exclude>**/ScheduleContextIntegrationTest.java</exclude>
               </excludes>
             </configuration>
           </execution>
