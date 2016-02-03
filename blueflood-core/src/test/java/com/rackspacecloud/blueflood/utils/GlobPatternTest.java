@@ -9,7 +9,7 @@ import java.util.regex.PatternSyntaxException;
 public class GlobPatternTest {
 
     @Test
-    public void testGlobToRegex1() {
+    public void testGlobMatchingAnyChar() {
 
         String glob = "*";
         String expectedRegex = ".*";
@@ -19,7 +19,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testGlobToRegex2() {
+    public void testEmptyGlob() {
 
         String glob = "";
         String expectedRegex = "";
@@ -29,7 +29,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testGlobToRegex3() {
+    public void testGlobWithWildcards1() {
 
         String glob = "foo.bar$1.(cat).baz|qux.dog+";
         String expectedRegex = "foo\\.bar\\$1\\.\\(cat\\)\\.baz\\|qux\\.dog\\+";
@@ -39,7 +39,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob1() {
+    public void testMetricNameGlob() {
 
         String glob = "foo.bar.*";
         String expectedRegex = "foo\\.bar\\..*";
@@ -49,7 +49,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob2() {
+    public void testMetricNameGlobWithWildCards() {
 
         String glob = "f*.bar.*";
         String expectedRegex = "f.*\\.bar\\..*";
@@ -59,7 +59,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob5() {
+    public void testMetricNameWithMatchingSingleChar() {
 
         String glob = "foo?";
         String expectedRegex = "foo.";
@@ -69,7 +69,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob6() {
+    public void testMetricNameWithMatchingAnyChar() {
 
         String glob = "foo*";
         String expectedRegex = "foo.*";
@@ -79,7 +79,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob7() {
+    public void testMetricNameWithGlobSyntax() {
 
         String glob = "foo.{*}";
         String expectedRegex = "foo\\.(.*)";
@@ -90,7 +90,7 @@ public class GlobPatternTest {
 
     //I would expect this test to pass but it did not. Anything inside brackets [ ] should be left unescaped.
     @Ignore
-    public void testMetricNameGlob8() {
+    public void testVariousGlobSyntax1() {
 
         String glob = "fo[^ab.co].*]";
         String expectedRegex = "fo[^ab.co]\\..*]";
@@ -100,7 +100,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob9() {
+    public void testVariousGlobSyntax2() {
 
         String glob = "[!abc]oo.*]";
         String expectedRegex = "[^abc]oo\\..*]";
@@ -110,7 +110,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob3() {
+    public void testMetricNameWithVariousGlobSyntax() {
 
         String glob = "foo.[bz]*.*";
         String expectedRegex = "foo\\.[bz].*\\..*";
@@ -120,7 +120,7 @@ public class GlobPatternTest {
     }
 
     @Test
-    public void testMetricNameGlob4() {
+    public void testMetricNameGlobWithoutWildCard() {
 
         String glob = "foo.bar";
         String expectedRegex = "foo\\.bar";
@@ -130,13 +130,13 @@ public class GlobPatternTest {
     }
 
     @Test(expected = PatternSyntaxException.class)
-    public void invalidGlob1() {
+    public void invalidGlobWithUnclosedBracket() {
         String glob = "foo.[bar.*";
         GlobPattern pattern = new GlobPattern(glob);
     }
 
     @Test(expected = NullPointerException.class)
-    public void invalidGlob2() {
+    public void testNullGlob() {
         String glob = null;
         GlobPattern pattern = new GlobPattern(glob);
     }

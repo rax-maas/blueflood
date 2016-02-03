@@ -111,7 +111,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         if (prefix != null && !prefix.isEmpty()) {
 
             //prefix is a glob and in glob's "." is not a special character.
-            totalTokensInPrefix = prefix.split(REGEX_TOKEN_DELIMTER).length;
+            totalTokensInPrefix = getTotalTokensInPrefix(prefix);
         }
 
         String regexforNext2Levels = regexforNextNLevels(prefix, 2);
@@ -137,33 +137,41 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         if (completeMetricNamesByLevel.get(LEVEL_0).size() > 0 ||
                 completeMetricNamesByLevel.get(LEVEL_1).size() > 0) {
 
-            List<String> queries = new ArrayList<String>();
-
-            //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
-            queries.add(prefix + "*");
-
-            List<SearchResult> searchResults = searchByIndexes(tenant, queries, new String[] {ENUMS_INDEX_NAME_READ});
-            for (SearchResult searchResult: searchResults) {
-                if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
-
-                    String metricName = searchResult.getMetricName();
-                    String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
-
-                    int enumMetricLevel = tokens.length - totalTokensInPrefix;
-
-                    if (enumMetricLevel == LEVEL_0) {
-                        enumValuesAs1LevelSet.addAll(searchResult.getEnumValues());
-                    } else if (enumMetricLevel == LEVEL_1) {
-
-                        String key = searchResult.getMetricName();
-                        tokensWithEnumsAs2LevelMap.put(key.substring(key.lastIndexOf(".") + 1), true);
-                    }
-                }
-            }
+            searchForEnumValues(tenant, prefix, enumValuesAs1LevelSet, tokensWithEnumsAs2LevelMap);
         }
 
         return prepareResults(tokensWithNextLevel,
                 tokensWithEnumsAs2LevelMap, enumValuesAs1LevelSet);
+    }
+
+    private void searchForEnumValues(String tenant, String prefix, Set<String> enumValuesAs1LevelSet, Map<String, Boolean> tokensWithEnumsAs2LevelMap) {
+        List<String> queries = new ArrayList<String>();
+
+        //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
+        queries.add(prefix + "*");
+
+        List<SearchResult> searchResults = searchByIndexes(tenant, queries, new String[] {ENUMS_INDEX_NAME_READ});
+        for (SearchResult searchResult: searchResults) {
+            if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
+
+                String metricName = searchResult.getMetricName();
+                String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
+
+                int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
+
+                if (enumMetricLevel == LEVEL_0) {
+                    enumValuesAs1LevelSet.addAll(searchResult.getEnumValues());
+                } else if (enumMetricLevel == LEVEL_1) {
+
+                    String key = searchResult.getMetricName();
+                    tokensWithEnumsAs2LevelMap.put(key.substring(key.lastIndexOf(".") + 1), true);
+                }
+            }
+        }
+    }
+
+    private int getTotalTokensInPrefix(String prefix) {
+        return prefix.split(REGEX_TOKEN_DELIMTER).length;
     }
 
     /**
@@ -273,32 +281,43 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             final String[] tokens = key.split(REGEX_TOKEN_DELIMTER);
 
             /**
-             * Lets say we get these buckets with prefix of 'foo'. foo should have a doc_count that
-             * matches the sum of all its next levels(only one level deep) which is 3. In the example
-             * below 'foo.bar' is a bar by itself and so its count will be higher than its sublevels.
+             * Lets say we ingest these metrics
+             *
+             *     metric        indices
+             *   -----------     -------
+             *   foo.bar.baz -> [foo, foo.bar, foo.bar.baz, bar, baz]
+             *   foo.bar     -> [foo, foo.bar, bar]
+             *
+             * If we get buckets with the prefix 'foo', foo will have doc_count that matches all its
+             * immediate sublevels, in this case only foo.bar. If you look at indices above these foo
+             * index points to 2 documents.
+             *
+             * Notice how foo.bar has a doc_count which is higher than its immediate sublevels, in this
+             * case it is foo.bar.baz. Its higher because foo.bar is a metric in itself. We can use this
+             * logic to determine of a given index is a complete metric name or not.
              *
              * "buckets" : [ {
-             *     "key"        : "foo",
-             *     "doc_count"  : 3
-             * }, {
-             *     "key"        : "foo.bar",
-             *     "doc_count"  : 3
-             * }, {
-             *     "key"        : "foo.bar.baz",
-             *     "doc_count"  : 1
-             * }, {
-             *     "key"        : "foo.bar.qux",
-             *     "doc_count"  : 1
-             * } ]
+             *     "key" : "foo",
+             *     "doc_count" : 2
+             *   }, {
+             *     "key" : "foo.bar",
+             *     "doc_count" : 2
+             *   }, {
+             *     "key" : "foo.bar.baz",
+             *     "doc_count" : 1
+             } ]
              *
              * For this data,
-             *  partialbars0LevelMap     : {"foo" -> "3"}
-             *  partialbars0LevelAggMap  : {"foo" -> "3"}
              *
-             *  partialbars1LevelMap     : {"foo.bar" -> "3"}
-             *  partialbars1LevelAggMap  : {"foo.bar" -> "2"}
+             *  partialMetrics0LevelMap     : {"foo" -> "2"} (Contains all indexes at level 0)
+             *  partialMetrics0LevelAggMap  : {"foo" -> "2"} (Contains aggregate of doc_count of immediate sub levels,
+             *                                                in this case foo.bar)
              *
-             *  tokensWithquxLevels      : {'bar'}
+             *  partialMetrics1LevelMap     : {"foo.bar" -> "2"} (Contains all indexes at level 1)
+             *  partialMetrics1LevelAggMap  : {"foo.bar" -> "1"} (Contains aggregate of doc_count of immediate sub
+             *                                                    levels, in this case foo.bar.baz)
+             *
+             *  tokensWithNextLevel      : {'bar'}
              */
 
             switch (tokens.length - totalTokensInPrefix) {
