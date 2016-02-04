@@ -99,8 +99,5 @@ public class MainIngestor {
         }
 
         log.info("Configuration is good");
-
-        boolean useZookeeper = false;
-        log.info("Using zookeeper? " + useZookeeper);
     }
 }
