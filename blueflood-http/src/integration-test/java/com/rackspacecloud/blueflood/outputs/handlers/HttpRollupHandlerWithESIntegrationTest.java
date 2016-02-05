@@ -31,6 +31,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.junit.*;
 
 import java.net.URI;
@@ -64,7 +65,9 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         vendor = new HttpClientVendor();
         client = vendor.getClient();
 
-        esSetup = new EsSetup();
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))

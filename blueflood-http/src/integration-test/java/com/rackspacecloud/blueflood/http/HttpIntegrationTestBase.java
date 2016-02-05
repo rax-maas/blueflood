@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.http;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 import com.rackspacecloud.blueflood.io.*;
@@ -72,7 +73,9 @@ public class HttpIntegrationTestBase {
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
         // setup elasticsearch
-        esSetup = new EsSetup();
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(ElasticIO.INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))

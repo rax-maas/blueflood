@@ -16,6 +16,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
@@ -33,7 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.elasticsearch.common.settings.ImmutableSettings;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

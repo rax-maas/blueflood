@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.*;
@@ -71,7 +72,9 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
