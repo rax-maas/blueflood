@@ -41,12 +41,10 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
 
     private int MAX_RESULT_LIMIT = 100000;
-    private final int LEVEL_0 = 0;
-    private final int LEVEL_1 = 1;
-    private final String REGEX_TOKEN_DELIMTER = "\\.";
+    public static final String REGEX_TOKEN_DELIMTER = "\\.";
 
     //grabs chars until the next "." which is basically a token
-    private static String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]+";
+    private static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]+";
 
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
@@ -119,121 +117,91 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
         try {
             //for a given prefix, get upto next two levels of tokens
-            String regexForNext2Levels = regexforNextNLevels(prefix, 2);
+            String regexForNext2Levels = regexForNextNLevels(prefix, 2);
             response = getMetricTokensFromES(tenant, regexForNext2Levels);
 
         } finally {
             getPathsTimerCtx.stop();
         }
 
-        final Set<String> tokensWithNextLevel = new LinkedHashSet<String>();
-        final Map<Integer, Set<String>> completeMetricNamesByLevel = new HashMap<Integer, Set<String>>();
-
-        //parse next level of tokens from response and also identify complete metric names
-        computeNextLevelOfTokens(response,
-                prefix, tokensWithNextLevel, completeMetricNamesByLevel);
+        MetricIndexData metricIndexData = buildMetricIndexData(response, prefix);
 
 
-        Set<String> enumValuesAs1LevelSet = new LinkedHashSet<String>();
-        Map<String, Boolean> tokensWithEnumsAs2LevelMap = new LinkedHashMap<String, Boolean>();
+        TokenInfoListBuilder tokenInfoBuilder = new TokenInfoListBuilder();
+        //tokens at next level which also have subsequent next level
+        tokenInfoBuilder.addTokenWithNextLevel(metricIndexData.getTokensWithNextLevel());
 
-        //For a given prefix, search for enum values, if necessary
-        searchForEnumValues(tenant, prefix, completeMetricNamesByLevel,
-                enumValuesAs1LevelSet, tokensWithEnumsAs2LevelMap);
+        Set<String> completeMetricsAtPrefixLevel = metricIndexData.getBaseLevelCompleteMetricNames();
+        Set<String> completeMetricsAtPrefixNextLevel = metricIndexData.getNextLevelCompleteMetricNames();
 
-        return prepareResults(tokensWithNextLevel,
-                tokensWithEnumsAs2LevelMap, enumValuesAs1LevelSet);
+        //for tokens after prefix which dont have subsequent next level, initialize with next level as false.
+        for (String nextLevelMetricName: completeMetricsAtPrefixNextLevel) {
+            tokenInfoBuilder.addToken(nextLevelMetricName.substring(nextLevelMetricName.lastIndexOf(".") + 1), false);
+        }
+
+        //Only if there are complete metric names at either prefix level or its next level, look if they have enum values.
+        if (completeMetricsAtPrefixLevel.size() > 0 || completeMetricsAtPrefixNextLevel.size() > 0) {
+
+            searchForEnumValues(tenant, prefix, tokenInfoBuilder);
+        }
+
+        return tokenInfoBuilder.build();
     }
 
 
     /**
-     * For the given prefix, if there are complete metric names at level 0 or 1,
+     * For the given prefix, if there are complete metric names at prefix level or its next level,
      * we need to determine if any of these metric names have enum values.
      *
-     * If they do, for level 0, enum values will be used as next level of tokens and for level 1,
-     * they would be used to determine if level 1 token has next level.
+     * If they do,for prefix level, enum values will be used as next level of tokens and for prefix
+     * next level, they would be used to determine if next level tokens have subsequent next level or not.
      *
      * @param tenant
      * @param prefix
-     * @param completeMetricNamesByLevel
-     * @param enumValuesAs1LevelSet
-     * @param tokensWithEnumsAs2LevelMap
+     * @param tokenInfoBuilder
+     * @return
      */
-    private void searchForEnumValues(String tenant, String prefix,
-                                     Map<Integer, Set<String>> completeMetricNamesByLevel,
-                                     Set<String> enumValuesAs1LevelSet,
-                                     Map<String, Boolean> tokensWithEnumsAs2LevelMap) {
+    private TokenInfoListBuilder searchForEnumValues(final String tenant, String prefix,
+                                                TokenInfoListBuilder tokenInfoBuilder) {
 
-        for (String metricName : completeMetricNamesByLevel.get(LEVEL_1)) {
-            tokensWithEnumsAs2LevelMap.put(metricName.substring(metricName.lastIndexOf(".") + 1), false);
-        }
+        List<String> queries = new ArrayList<String>();
 
-        //Only if there are complete metric names at level 0 or 1, look if they have enum values.
-        if (completeMetricNamesByLevel.get(LEVEL_0).size() > 0 ||
-                completeMetricNamesByLevel.get(LEVEL_1).size() > 0) {
+        //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
+        queries.add(prefix + "*");
 
-            List<String> queries = new ArrayList<String>();
+        List<SearchResult> searchResults = searchESByIndexes(tenant, queries, new String[]{ENUMS_INDEX_NAME_READ});
+        for (SearchResult searchResult: searchResults) {
 
-            //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
-            queries.add(prefix + "*");
+            if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
 
-            List<SearchResult> searchResults = searchESByIndexes(tenant, queries, new String[]{ENUMS_INDEX_NAME_READ});
-            for (SearchResult searchResult: searchResults) {
-                if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
+                String metricName = searchResult.getMetricName();
+                String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
 
-                    String metricName = searchResult.getMetricName();
-                    String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
+                int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
 
-                    int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
+                if (enumMetricLevel == 0) {
 
-                    if (enumMetricLevel == LEVEL_0) {
+                    //for metrics at prefix level, enum values are grabbed as next level of tokens
+                    tokenInfoBuilder.addEnumValues(searchResult.getEnumValues());
+                } else if (enumMetricLevel == 1) {
 
-                        //enum values are grabbed as next level of tokens
-                        enumValuesAs1LevelSet.addAll(searchResult.getEnumValues());
-                    } else if (enumMetricLevel == LEVEL_1) {
-
-                        //level 1 tokens are set to true to indicate presence of next level(enum values).
-                        String key = searchResult.getMetricName();
-                        tokensWithEnumsAs2LevelMap.put(key.substring(key.lastIndexOf(".") + 1), true);
-                    }
+                    //for metrics at prefix next level, next level tokens are marked as true
+                    String key = searchResult.getMetricName();
+                    tokenInfoBuilder.addToken(key.substring(key.lastIndexOf(".") + 1), true);
                 }
             }
         }
+
+        return tokenInfoBuilder;
     }
 
     private int getTotalTokensInPrefix(String prefix) {
+
+        if (prefix == null || prefix.isEmpty())
+            return 0;
+
         return prefix.split(REGEX_TOKEN_DELIMTER).length;
     }
-
-    /**
-     *
-     * @param tokensWithTwoLevels contains tokens after prefix which also have next level
-     * @param tokensWithEnumsAsNextLevelMap contains tokens after prefix which have enums as next level
-     * @param enumValues1LevelSet  contains enum values which the given prefix has
-     * @returns a list of TokenInfo
-     */
-    private ArrayList<TokenInfo> prepareResults(final Set<String> tokensWithTwoLevels,
-                                                final Map<String, Boolean> tokensWithEnumsAsNextLevelMap,
-                                                final Set<String> enumValues1LevelSet) {
-
-        //We add all the tokens which have the next level to resultList
-        final ArrayList<TokenInfo> resultList = new ArrayList<TokenInfo>();
-        for (String token : tokensWithTwoLevels) {
-            resultList.add(new TokenInfo(token, true));
-        }
-
-        //indicates that there are enums for the given prefix.
-        for (String enumValue: enumValues1LevelSet) {
-            resultList.add(new TokenInfo(enumValue, false));
-        }
-
-        //indicates that there are enums at the second level for the given prefix.
-        for (Map.Entry<String, Boolean> entry : tokensWithEnumsAsNextLevelMap.entrySet()) {
-            resultList.add(new TokenInfo(entry.getKey(), entry.getValue()));
-        }
-        return resultList;
-    }
-
 
     /**
      * Performs terms aggregation by metric_name which returns doc_count by
@@ -282,165 +250,16 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
 
-    /**
-     * From a given terms aggregate results, it identifies the following kind of tokens
-     *
-     * 1) Next level of tokens for a given prefix which also have subsequent next level (not checking for enums yet)
-     * 2) For the metric names which do not fall under above category, identifies if any of them are complete metric
-     *    names at a given prefix level(LEVEL_0) or at a next level(LEVEL_1).
-     *
-     * @param response ES response
-     * @param prefix
-     * @param tokensWithNextLevel`WithNextLevel  Next level of tokens for a given prefix which also have subsequent next level
-     * @param completeMetricNamesByLevel contains complete metric names.
-     */
-    private void computeNextLevelOfTokens(final SearchResponse response,
-                                          final String prefix,
-                                          final Set<String> tokensWithNextLevel,
-                                          final Map<Integer, Set<String>> completeMetricNamesByLevel) {
+    private MetricIndexData buildMetricIndexData(final SearchResponse response, final String prefix) {
 
-        int totalTokensInPrefix = 0;
-
-        if (prefix != null && !prefix.isEmpty()) {
-
-            //prefix is a glob and in glob's "." is not a special character.
-            totalTokensInPrefix = getTotalTokensInPrefix(prefix);
-        }
-
-        //0 indicates ground level. if prefix is foo.bar, 0 is at foo.bar level
-        final Map<String, Long> partialMetrics0LevelMap = new LinkedHashMap<String, Long>();
-        final Map<String, Long> partialMetrics0LevelAggMap = new LinkedHashMap<String, Long>();
-
-        final Map<String, Long> partialMetrics1LevelMap = new LinkedHashMap<String, Long>();
-        final Map<String, Long> partialMetrics1LevelAggMap = new LinkedHashMap<String, Long>();
-
+        MetricIndexData metricIndexData = new MetricIndexData(getTotalTokensInPrefix(prefix));
         Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
         for (Terms.Bucket bucket: aggregateTerms.getBuckets()) {
-            final String key = bucket.getKey();
-            final String[] tokens = key.split(REGEX_TOKEN_DELIMTER);
-
-            /**
-             * Lets say we ingest these metrics
-             *
-             *     metric        indices
-             *   -----------     -------
-             *   foo.bar.baz -> [foo, foo.bar, foo.bar.baz, bar, baz]
-             *   foo.bar     -> [foo, foo.bar, bar]
-             *
-             * If we get buckets with the prefix 'foo', foo will have doc_count that matches all its
-             * immediate sublevels, in this case only foo.bar. If you look at indices above these foo
-             * index points to 2 documents.
-             *
-             * Notice how foo.bar has a doc_count which is higher than its immediate sublevels, in this
-             * case it is foo.bar.baz. Its higher because foo.bar is a metric in itself. We can use this
-             * logic to determine of a given index is a complete metric name or not.
-             *
-             * "buckets" : [ {
-             *     "key" : "foo",
-             *     "doc_count" : 2
-             *   }, {
-             *     "key" : "foo.bar",
-             *     "doc_count" : 2
-             *   }, {
-             *     "key" : "foo.bar.baz",
-             *     "doc_count" : 1
-             } ]
-             *
-             * For this data,
-             *
-             *  partialMetrics0LevelMap     : {"foo" -> "2"} (Contains all indexes at level 0)
-             *  partialMetrics0LevelAggMap  : {"foo" -> "2"} (Contains aggregate of doc_count of immediate sub levels,
-             *                                                in this case foo.bar)
-             *
-             *  partialMetrics1LevelMap     : {"foo.bar" -> "2"} (Contains all indexes at level 1)
-             *  partialMetrics1LevelAggMap  : {"foo.bar" -> "1"} (Contains aggregate of doc_count of immediate sub
-             *                                                    levels, in this case foo.bar.baz)
-             *
-             *  tokensWithNextLevel      : {'bar'}
-             */
-
-            switch (tokens.length - totalTokensInPrefix) {
-                case 2:
-
-                    //for prefix foo, if ES query returns foo.bar.baz, we are grabbing 'bar' as next token.
-                    String nextToken = tokens[totalTokensInPrefix];
-                    tokensWithNextLevel.add(nextToken);
-
-                    //calculate aggregate for foo.bar
-                    aggregateCountInMap(partialMetrics1LevelAggMap,
-                            bucket.getDocCount(), key.substring(0, key.lastIndexOf(".")));
-                    break;
-
-                case 1:
-
-                    //for prefix foo, if ES query returns foo.bar, we are calculating aggregate for foo
-                    partialMetrics1LevelMap.put(key, bucket.getDocCount());
-                    aggregateCountInMap(partialMetrics0LevelAggMap,
-                            bucket.getDocCount(), key.substring(0, key.lastIndexOf(".")));
-                    break;
-
-                case 0:
-
-                    //for prefix foo, if ES query returns foo
-                    partialMetrics0LevelMap.put(key, bucket.getDocCount());
-                    break;
-
-                default:
-                    break;
-            }
+            metricIndexData.add(bucket.getKey(), bucket.getDocCount());
         }
 
-
-        completeMetricNamesByLevel.put(LEVEL_0,
-                findCompleteMetricNames(partialMetrics0LevelMap, partialMetrics0LevelAggMap));
-        completeMetricNamesByLevel.put(LEVEL_1,
-                findCompleteMetricNames(partialMetrics1LevelMap, partialMetrics1LevelAggMap));
-    }
-
-    /**
-     * For the given inputMap, updates the count for the given key.
-     * Adds a new entry if key is not already present.
-     *
-     * @param inputMap
-     * @param newCount
-     * @param key
-     */
-    private void aggregateCountInMap(final Map<String, Long> inputMap, final Long newCount, String key) {
-        if (inputMap.get(key) != null) {
-            inputMap.put(key, inputMap.get(key) + newCount);
-        } else {
-            inputMap.put(key, newCount);
-        }
-    }
-
-    /**
-     * Composes a list of complete metric names by comparing the doc count of the given metric name
-     * to the aggregate count of its immediate next sub level.
-     *
-     * @param partialMetricsMap
-     * @param partialMetricsAggregateMap contains the aggregate count of sublevel of metric names in partialMetricsMap
-     * @return
-     */
-    private Set<String> findCompleteMetricNames(final Map<String, Long> partialMetricsMap,
-                                                final Map<String, Long> partialMetricsAggregateMap) {
-
-        Set<String> completeMetricNames = new HashSet<String>();
-        for (Map.Entry<String, Long> entry : partialMetricsMap.entrySet()) {
-
-            String key = entry.getKey();
-
-            if (partialMetricsAggregateMap.get(key) == null) {
-
-                //if the metric name has a bucket with no sub levels, its a complete metric name.
-                completeMetricNames.add(key);
-            } else if (partialMetricsAggregateMap.get(key) < entry.getValue()) {
-
-                //if total doc count is greater than its sub levels, its a complete metric name
-                completeMetricNames.add(key);
-            }
-        }
-        return completeMetricNames;
+        return metricIndexData;
     }
 
     /**
@@ -453,7 +272,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * @param level
      * @return
      */
-    private String regexforNextNLevels(final String prefix, final int level) {
+    private String regexForNextNLevels(final String prefix, final int level) {
 
         if (prefix == null || prefix.isEmpty()) {
             /**
@@ -475,7 +294,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             GlobPattern prefixPattern = new GlobPattern(prefix);
             String prefixRegex = prefixPattern.compiled().toString();
 
-            if (prefix.equals("*")) {
+            if (getTotalTokensInPrefix(prefix) == 1) {
 
                 // get metric names which matches the given prefix and have either one or two next levels,
                 // Ex: For metric foo.bar.baz.qux, if prefix=*, we should get foo.bar, foo.bar.baz. We are not

@@ -15,7 +15,7 @@ public class GlobPatternTest {
         String expectedRegex = ".*";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -25,7 +25,7 @@ public class GlobPatternTest {
         String expectedRegex = "";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -35,7 +35,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo\\.bar\\$1\\.\\(cat\\)\\.baz\\|qux\\.dog\\+";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -45,7 +45,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo\\.bar\\..*";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -55,7 +55,7 @@ public class GlobPatternTest {
         String expectedRegex = "f.*\\.bar\\..*";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -65,7 +65,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo.";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo.*";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -85,7 +85,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo\\.(.*)";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     //I would expect this test to pass but it did not. Anything inside brackets [ ] should be left unescaped.
@@ -96,7 +96,7 @@ public class GlobPatternTest {
         String expectedRegex = "fo[^ab.co]\\..*]";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -106,7 +106,7 @@ public class GlobPatternTest {
         String expectedRegex = "[^abc]oo\\..*]";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -116,7 +116,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo\\.[bz].*\\..*";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class GlobPatternTest {
         String expectedRegex = "foo\\.bar";
 
         GlobPattern pattern = new GlobPattern(glob);
-        Assert.assertEquals("Invalid regex", expectedRegex, pattern.compiled().toString());
+        Assert.assertEquals(expectedRegex, pattern.compiled().toString());
     }
 
     @Test(expected = PatternSyntaxException.class)
