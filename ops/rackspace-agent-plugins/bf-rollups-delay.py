@@ -100,8 +100,8 @@ def print_stats_for_metrics_state(metrics_state_for_shards, print_res):
             for slot in range(max_slots):
                 last_active_key = ',' .join([resolution, str(slot), 'A'])
                 rolled_up_at_key = ',' .join([resolution, str(slot), 'X'])
-                last_active_timestamp = states_per_shard[last_active_key]
-                rolled_up_at_timestamp = states_per_shard[rolled_up_at_key]
+                last_active_timestamp = states_per_shard[last_active_key] if last_active_key in states_per_shard else 0
+                rolled_up_at_timestamp = states_per_shard[rolled_up_at_key] if rolled_up_at_key in states_per_shard else 0
                 current_slot = _get_slot_for_time(now, resolution)
                 if (current_slot > slot
                         and rolled_up_at_timestamp < last_active_timestamp):
@@ -110,9 +110,16 @@ def print_stats_for_metrics_state(metrics_state_for_shards, print_res):
                         resolution][shard][slot] = current_slot - slot
 
                     if ( print_res == resolution ):
+
                         print "shard: %4s        last_active_key: %19s        rolled_up_at_key: %19s  current_slot: %s slot: %s" % ( shard, last_active_key, rolled_up_at_key, current_slot, slot)
                         print "             last_active_timestamp: %19s  rolled_up_at_timestamp: %19s" % (last_active_timestamp, rolled_up_at_timestamp)
                         print "             last_active_timestamp: %19s  rolled_up_at_timestamp: %19s" % ( time.strftime( '%Y-%m-%d %H:%M:%S', time.localtime( last_active_timestamp/1000)), time.strftime( '%Y-%m-%d %H:%M:%S', time.localtime(rolled_up_at_timestamp/1000)) )
+
+                if ( print_res == resolution ):  
+                    if (last_active_key not in states_per_shard):
+                        print "WARNING: %s does not exist in shard %s" % (last_active_key, shard)
+                    if (rolled_up_at_key not in states_per_shard):
+                        print "WARNING: %s does not exist in shard %s" % (rolled_up_at_key, shard)
     output = {}
     for resolution in GRAN_MAPPINGS.keys():
         across_shards_most_delay = []
