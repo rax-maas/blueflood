@@ -99,8 +99,5 @@ public class MainIngestor {
         }
 
         log.info("Configuration is good");
-
-        boolean useZookeeper = !"NONE".equals(config.getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER));
-        log.info("Using zookeeper? " + useZookeeper);
     }
 }

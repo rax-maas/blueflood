@@ -27,8 +27,6 @@ public class BluefloodServiceStarterTest {
 
         config.init();
 
-        config.setProperty(CoreConfig.ZOOKEEPER_CLUSTER, "NONE");
-
         config.setProperty(CoreConfig.INGEST_MODE, "false");
         config.setProperty(CoreConfig.ROLLUP_MODE, "false");
         config.setProperty(CoreConfig.QUERY_MODE, "false");
