@@ -16,12 +16,43 @@ public class MetricIndexDataTest {
     private static final Pattern patternToCreateMetricIndices = Pattern.compile("([^.]+)");
 
     @Test
+    public void testTokensWithNextLevelSingleIndex() {
+        MetricIndexData mi = new MetricIndexData(2);
+        mi.add("a.b.c.d", 1);
+
+        assertEquals("tokens with next level", 1, mi.getTokensWithNextLevel().size());
+        assertTrue("token value", mi.getTokensWithNextLevel().contains("c"));
+        assertEquals("base level tokens", 0, mi.getBaseLevelCompleteMetricNames().size());
+        assertEquals("next level tokens", 0 , mi.getNextLevelCompleteMetricNames().size());
+    }
+
+    @Test
+    public void testLevel0CompleteMetricNameSingleIndex() {
+        MetricIndexData mi = new MetricIndexData(2);
+        mi.add("a.b", 1);
+
+        assertEquals("tokens with next level", 0, mi.getTokensWithNextLevel().size());
+        assertEquals("base level tokens", 1, mi.getBaseLevelCompleteMetricNames().size());
+        assertEquals("next level tokens", 0 , mi.getNextLevelCompleteMetricNames().size());
+    }
+
+    @Test
+    public void testLevel1CompleteMetricNameSingleIndex() {
+        MetricIndexData mi = new MetricIndexData(2);
+        mi.add("a.b.c", 1);
+
+        assertEquals("tokens with next level", 0, mi.getTokensWithNextLevel().size());
+        assertEquals("base level tokens", 0, mi.getBaseLevelCompleteMetricNames().size());
+        assertEquals("next level tokens", 1, mi.getNextLevelCompleteMetricNames().size());
+    }
+
+    @Test
     public void testNoCompleteMetricName() {
 
-        //metric indexes generated for a metric foo.bar.baz.qux
-        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo.bar.baz.qux");
-        }});
+        }};
+        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, "foo.bar");
 
         //for prefix foo.bar
         MetricIndexData mi = new MetricIndexData(2);
@@ -38,11 +69,11 @@ public class MetricIndexDataTest {
     @Test
     public void testLevel0CompleteMetricName() {
 
-        //metric indexes generated for a metric foo.bar.baz.qux, foo.bar
-        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo.bar.baz.qux");
             add("foo.bar");
-        }});
+        }};
+        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, "foo.bar");
 
         //for prefix foo.bar
         MetricIndexData mi = new MetricIndexData(2);
@@ -58,11 +89,11 @@ public class MetricIndexDataTest {
     @Test
     public void testLevel1CompleteMetricName() {
 
-        //metric indexes generated for a metric foo.bar.baz.qux, foo.bar.baz
-        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo.bar.baz.qux");
             add("foo.bar.baz");
-        }});
+        }};
+        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, "foo.bar");
 
         //for prefix foo.bar
         MetricIndexData mi = new MetricIndexData(2);
@@ -76,14 +107,12 @@ public class MetricIndexDataTest {
 
     @Test
     public void testMetricIndexesBuilderSingleMetricName() {
-        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo.bar.baz");
-        }});
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo");
 
         Set<String> expectedIndexes = new HashSet<String>() {{
-            add("foo|1");
-            add("bar|1");
-            add("baz|1");
             add("foo.bar|1");
             add("foo.bar.baz|1");
         }};
@@ -93,12 +122,28 @@ public class MetricIndexDataTest {
 
     @Test
     public void testMetricIndexesBuilderSingleMetricName1() {
-        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo");
-        }});
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "");
 
         Set<String> expectedIndexes = new HashSet<String>() {{
-            add("foo|1");
+        }};
+
+        verifyMetricIndexes(metricIndexMap, expectedIndexes);
+    }
+
+    @Test
+    public void testMetricIndexesBuilderLongMetrics() {
+        ArrayList<String> metricNames = new ArrayList<String>() {{
+            add("foo.bar.baz.qux.x.y");
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo.bar");
+
+        Set<String> expectedIndexes = new HashSet<String>() {{
+            add("foo.bar|1");
+            add("foo.bar.baz|1");
+            add("foo.bar.baz.qux|1");
         }};
 
         verifyMetricIndexes(metricIndexMap, expectedIndexes);
@@ -106,16 +151,50 @@ public class MetricIndexDataTest {
 
     @Test
     public void testMetricIndexesBuilderMultipleMetrics() {
-        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(new ArrayList<String>() {{
+        ArrayList<String> metricNames = new ArrayList<String>() {{
+            add("foo.bar.baz.qux.x.y");
+            add("foo.bar.baz.qux");
             add("foo.bar.baz");
-            add("foo.bar");
-        }});
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo.bar");
 
         Set<String> expectedIndexes = new HashSet<String>() {{
-            add("foo|2");
-            add("bar|2");
-            add("baz|1");
+            add("foo.bar|3");
+            add("foo.bar.baz|3");
+            add("foo.bar.baz.qux|2");
+        }};
+
+        verifyMetricIndexes(metricIndexMap, expectedIndexes);
+    }
+
+
+    @Test
+    public void testSingleLevelPrefix() {
+        ArrayList<String> metricNames = new ArrayList<String>() {{
+            add("foo.bar.baz.x.y.z");
+            add("foo.bar");
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo");
+
+        Set<String> expectedIndexes = new HashSet<String>() {{
             add("foo.bar|2");
+            add("foo.bar.baz|1");
+        }};
+
+        verifyMetricIndexes(metricIndexMap, expectedIndexes);
+    }
+
+    @Test
+    public void testSingleLevelWildcardPrefix() {
+        ArrayList<String> metricNames = new ArrayList<String>() {{
+            add("foo.bar.baz.x.y.z");
+            add("moo.bar");
+        }};
+        Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "*");
+
+        Set<String> expectedIndexes = new HashSet<String>() {{
+            add("moo.bar|1");
+            add("foo.bar|1");
             add("foo.bar.baz|1");
         }};
 
@@ -151,7 +230,7 @@ public class MetricIndexDataTest {
      * @param metricNames
      * @return
      */
-    private Map<String, Long> buildMetricIndexesSimilarToES(List<String> metricNames) {
+    private Map<String, Long> buildMetricIndexesSimilarToES(List<String> metricNames, String prefix) {
         Map<String, Long> metricIndexMap = new HashMap<String, Long>();
 
         for (String metricName: metricNames) {
@@ -185,6 +264,17 @@ public class MetricIndexDataTest {
             }
         }
 
-        return Collections.unmodifiableMap(metricIndexMap);
+        EnumElasticIO enumElasticIO = new EnumElasticIO();
+        Pattern patternToGetNext2Levels = Pattern.compile(enumElasticIO.regexForNextNLevels(prefix, 2));
+
+        Map<String, Long> outputMap = new HashMap<String, Long>();
+        for (Map.Entry<String, Long> entry: metricIndexMap.entrySet()) {
+            Matcher matcher = patternToGetNext2Levels.matcher(entry.getKey());
+            if (matcher.matches()) {
+                outputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return outputMap;
     }
 }

@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.google.common.collect.Iterables;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.client.Client;
@@ -29,11 +30,16 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class EnumElasticIOTest extends BaseElasticTest {
 
@@ -216,7 +222,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
         Assert.assertEquals(TENANT_1, result.getTenantId());
         Assert.assertEquals(METRIC_NAME_A1, result.getMetricName());
         Assert.assertNotNull(result.getEnumValues());
-        Assert.assertTrue(result.getEnumValues().equals(enumValues));
+        assertTrue(result.getEnumValues().equals(enumValues));
     }
 
     @Test
@@ -244,31 +250,31 @@ public class EnumElasticIOTest extends BaseElasticTest {
         Assert.assertEquals("results2 should have 3 results", 3, results2.size());
 
         // assert results1
-        Assert.assertTrue("results1 should contain tenant1 entry1", results1.contains(tenant1Entry1));
-        Assert.assertTrue("results1 should contain tenant1 entry2", results1.contains(tenant1Entry2));
-        Assert.assertTrue("results1 should contain tenant1 entry3", results1.contains(tenant1Entry3));
-        Assert.assertTrue("results1 should contain tenant1 entry4", results1.contains(tenant1Entry4));
-        Assert.assertTrue("results1 should not contain tenant2 entry1", !results1.contains(tenant2Entry1));
-        Assert.assertTrue("results1 should not contain tenant2 entry2", !results1.contains(tenant2Entry2));
-        Assert.assertTrue("results1 should not contain tenant2 entry3", !results1.contains(tenant2Entry3));
+        assertTrue("results1 should contain tenant1 entry1", results1.contains(tenant1Entry1));
+        assertTrue("results1 should contain tenant1 entry2", results1.contains(tenant1Entry2));
+        assertTrue("results1 should contain tenant1 entry3", results1.contains(tenant1Entry3));
+        assertTrue("results1 should contain tenant1 entry4", results1.contains(tenant1Entry4));
+        assertTrue("results1 should not contain tenant2 entry1", !results1.contains(tenant2Entry1));
+        assertTrue("results1 should not contain tenant2 entry2", !results1.contains(tenant2Entry2));
+        assertTrue("results1 should not contain tenant2 entry3", !results1.contains(tenant2Entry3));
 
         // assert results2
-        Assert.assertTrue("results2 should contain tenant2 entry1", results2.contains(tenant2Entry1));
-        Assert.assertTrue("results2 should contain tenant2 entry2", results2.contains(tenant2Entry2));
-        Assert.assertTrue("results2 should contain tenant2 entry3", results2.contains(tenant2Entry3));
-        Assert.assertTrue("results2 should not contain tenant1 entry1", !results2.contains(tenant1Entry1));
-        Assert.assertTrue("results2 should not contain tenant1 entry2", !results2.contains(tenant1Entry2));
+        assertTrue("results2 should contain tenant2 entry1", results2.contains(tenant2Entry1));
+        assertTrue("results2 should contain tenant2 entry2", results2.contains(tenant2Entry2));
+        assertTrue("results2 should contain tenant2 entry3", results2.contains(tenant2Entry3));
+        assertTrue("results2 should not contain tenant1 entry1", !results2.contains(tenant1Entry1));
+        assertTrue("results2 should not contain tenant1 entry2", !results2.contains(tenant1Entry2));
 
         // results3 = search *.m1 for tenant1
         List<SearchResult> results3 = enumElasticIO.search(TENANT_1, "*.m1");
         Assert.assertEquals("results3 should have 2 results", 2, results3.size());
-        Assert.assertTrue("results3 should contain tenant1 entry1", results3.contains(tenant1Entry1));
-        Assert.assertTrue("results3 should contain tenant1 entry3", results3.contains(tenant1Entry3));
-        Assert.assertTrue("results3 should not contain tenant1 entry2", !results3.contains(tenant1Entry2));
-        Assert.assertTrue("results3 should not contain tenant1 entry4", !results3.contains(tenant1Entry4));
-        Assert.assertTrue("results3 should not contain tenant2 entry1", !results3.contains(tenant2Entry1));
-        Assert.assertTrue("results3 should not contain tenant2 entry2", !results3.contains(tenant2Entry2));
-        Assert.assertTrue("results3 should not contain tenant2 entry3", !results3.contains(tenant2Entry3));
+        assertTrue("results3 should contain tenant1 entry1", results3.contains(tenant1Entry1));
+        assertTrue("results3 should contain tenant1 entry3", results3.contains(tenant1Entry3));
+        assertTrue("results3 should not contain tenant1 entry2", !results3.contains(tenant1Entry2));
+        assertTrue("results3 should not contain tenant1 entry4", !results3.contains(tenant1Entry4));
+        assertTrue("results3 should not contain tenant2 entry1", !results3.contains(tenant2Entry1));
+        assertTrue("results3 should not contain tenant2 entry2", !results3.contains(tenant2Entry2));
+        assertTrue("results3 should not contain tenant2 entry3", !results3.contains(tenant2Entry3));
     }
 
     @Test
@@ -292,9 +298,9 @@ public class EnumElasticIOTest extends BaseElasticTest {
         SearchResult result2 =  new SearchResult(TENANT_1, METRIC_NAME_A2, null, enumValues);
         SearchResult result3 =  new SearchResult(TENANT_1, METRIC_NAME_B1, null, enumValues);
 
-        Assert.assertTrue("results should contain result1", results.contains(result1));
-        Assert.assertTrue("results should contain result2", results.contains(result2));
-        Assert.assertTrue("results should contain result3", results.contains(result3));
+        assertTrue("results should contain result1", results.contains(result1));
+        assertTrue("results should contain result2", results.contains(result2));
+        assertTrue("results should contain result3", results.contains(result3));
     }
 
     @Test
@@ -324,6 +330,176 @@ public class EnumElasticIOTest extends BaseElasticTest {
         }};
 
         verifyTokenAndNextLevelFlag(resultsTenant2, expectedResultsTenant2);
+    }
+
+    @Test
+    public void testRegexForTokensForAPrefix() {
+        String regex = enumElasticIO.regexForNextNLevels("foo.bar", 2);
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
+            add("foo.bar.baz");
+            add("foo.bar.baz.qux");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("foo.bar.baz.qux.x");
+            add("moo.bar.baz.qux");
+            add("moo.bar.baz");
+        }};
+
+        Set<String> matchedMetricIndexes = new HashSet<String>();
+        Pattern pattern = Pattern.compile(regex);
+        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
+
+            Matcher matcher = pattern.matcher(metricIndex);
+            if (matcher.matches()) {
+                matchedMetricIndexes.add(metricIndex);
+            }
+        }
+
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
+        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
+        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
+        assertTrue("matched indexes should not contain these indexes",
+                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+    }
+
+    @Test
+    public void testRegexForTokensForAPrefixWithWildCard() {
+        String regex = enumElasticIO.regexForNextNLevels("foo.bar.*", 2);
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar.baz");
+            add("foo.bar.baz.qux");
+            add("foo.bar.baz.qux.x");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("foo.bar");
+            add("foo.bar.baz.qux.x.y");
+            add("moo.bar.baz");
+        }};
+
+        Set<String> matchedMetricIndexes = new HashSet<String>();
+        Pattern pattern = Pattern.compile(regex);
+        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
+
+            Matcher matcher = pattern.matcher(metricIndex);
+            if (matcher.matches()) {
+                matchedMetricIndexes.add(metricIndex);
+            }
+        }
+
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
+        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
+        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
+        assertTrue("matched indexes should not contain these indexes",
+                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+    }
+
+    @Test
+    public void testRegexForTokensForASingleLevelPrefix() {
+        String regex = enumElasticIO.regexForNextNLevels("foo", 2);
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
+            add("foo.bar.baz");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("test");
+            add("foo.bar.baz.qux");
+        }};
+
+        Set<String> matchedMetricIndexes = new HashSet<String>();
+        Pattern pattern = Pattern.compile(regex);
+        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
+
+            Matcher matcher = pattern.matcher(metricIndex);
+            if (matcher.matches()) {
+                matchedMetricIndexes.add(metricIndex);
+            }
+        }
+
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
+        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
+        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
+        assertTrue("matched indexes should not contain these indexes",
+                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+    }
+
+    @Test
+    public void testRegexForTokensForASingleLevelWildCardPrefix() {
+        String regex = enumElasticIO.regexForNextNLevels("*", 2);
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
+            add("foo.bar.baz");
+            add("x.y.z");
+            add("a.b");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("x");
+            add("test");
+            add("foo.bar.baz.qux");
+        }};
+
+        Set<String> matchedMetricIndexes = new HashSet<String>();
+        Pattern pattern = Pattern.compile(regex);
+        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
+
+            Matcher matcher = pattern.matcher(metricIndex);
+            if (matcher.matches()) {
+                matchedMetricIndexes.add(metricIndex);
+            }
+        }
+
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
+        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
+        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
+        assertTrue("matched indexes should not contain these indexes",
+                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+    }
+
+    @Test
+    public void testRegexForTokensForEmptyPrefix() {
+        String regex = enumElasticIO.regexForNextNLevels("", 2);
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
+            add("a.b");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("x");
+            add("test");
+            add("foo.bar.baz");
+            add("x.y.z");
+            add("foo.bar.baz.qux");
+        }};
+
+        Set<String> matchedMetricIndexes = new HashSet<String>();
+        Pattern pattern = Pattern.compile(regex);
+        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
+
+            Matcher matcher = pattern.matcher(metricIndex);
+            if (matcher.matches()) {
+                matchedMetricIndexes.add(metricIndex);
+            }
+        }
+
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
+        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
+        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
+        assertTrue("matched indexes should not contain these indexes",
+                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
     }
 
     @Test

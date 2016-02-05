@@ -89,9 +89,6 @@ public class MetricIndexData {
          * metricIndexSameLevelMap   -> {foo.bar -> (2, 2)}     (all indexes which are of same length as baseLevel)
          * metricIndexNextLevelMap   -> {foo.bar.baz -> (2, 1)} (all indexes which are more than the length of baseLevel by one)
          *
-         *                           (Ex: foo.bar.baz has actualDocCount of 2, but total doc count of all its children,
-         *                            which in this case is only foo.bar.baz, is 1. So foo.bar.baz must be metric by itself)
-         *
          */
 
         switch (tokens.length - baseLevel) {
@@ -161,6 +158,17 @@ public class MetricIndexData {
         return getCompleteMetricNames(metricIndexNextLevelMap);
     }
 
+    /**
+     *  Compares actualDocCount and total docCount of its immediate children of an index
+     *  to determine if the metric index is a complete metric name or not.
+     *
+     *  For the ES response shown in class description, for a baseLevel of 2,
+     *  foo.bar.baz has actualDocCount of 2, but total doc count of all its children,
+     *  which in this case is only foo.bar.baz, is 1. So foo.bar.baz must be metric by itself
+     *
+     * @param metricIndexMap
+     * @return
+     */
     private Set<String> getCompleteMetricNames(Map<String, MetricIndexDocCount> metricIndexMap) {
 
         Set<String> completeMetricNames = new HashSet<String>();

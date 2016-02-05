@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static junit.framework.Assert.assertTrue;
+
 public class BaseElasticTest {
 
     protected static final int NUM_PARENT_ELEMENTS = 30;
@@ -107,8 +109,8 @@ public class BaseElasticTest {
     protected void verifyTokenAndNextLevelFlag(List<TokenInfo> results, Set<String> expectedResults) {
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
         Set<String> formattedResults = formatForComparision(results);
-        Assert.assertTrue("Expected results contains all of api results", expectedResults.containsAll(formattedResults));
-        Assert.assertTrue("API results contains all of expected results", formattedResults.containsAll(expectedResults));
+        assertTrue("Expected results contains all of api results", expectedResults.containsAll(formattedResults));
+        assertTrue("API results contains all of expected results", formattedResults.containsAll(expectedResults));
     }
 
     protected Set<String> formatForComparision(List<TokenInfo> results) {

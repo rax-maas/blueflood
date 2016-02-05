@@ -44,7 +44,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static final String REGEX_TOKEN_DELIMTER = "\\.";
 
     //grabs chars until the next "." which is basically a token
-    private static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]+";
+    private static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
 
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
@@ -272,7 +272,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * @param level
      * @return
      */
-    private String regexForNextNLevels(final String prefix, final int level) {
+    protected String regexForNextNLevels(final String prefix, final int level) {
 
         if (prefix == null || prefix.isEmpty()) {
             /**
@@ -292,7 +292,8 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         } else {
 
             GlobPattern prefixPattern = new GlobPattern(prefix);
-            String prefixRegex = prefixPattern.compiled().toString();
+
+            String prefixRegex = prefixPattern.compiled().toString().replaceAll("\\.\\*", REGEX_TO_GRAB_SINGLE_TOKEN);
 
             if (getTotalTokensInPrefix(prefix) == 1) {
 
