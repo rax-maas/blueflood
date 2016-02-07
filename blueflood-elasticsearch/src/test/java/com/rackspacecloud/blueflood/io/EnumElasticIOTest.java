@@ -520,7 +520,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenForEnumsWithPrefix1() throws Exception {
+    public void testGetNextTokenForEnumsWithPrefix() throws Exception {
 
         createEnumTestMetrics();
 
@@ -604,7 +604,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testWithEnumMetricAtNextLevel1() throws Exception {
+    public void testWithEnumMetricAtNextLevelWithWildCardPrefix() throws Exception {
 
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
@@ -631,7 +631,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
 
     @Test
-    public void testWithEnumMetricAtSameLevel() throws Exception {
+    public void testWithEnumMetricAtSameLevelWithWildCard() throws Exception {
 
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
@@ -763,7 +763,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testWithEnumMetricAtSameLevel1() throws Exception {
+    public void testWithEnumMetricAtSameLevel() throws Exception {
 
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));

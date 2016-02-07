@@ -234,7 +234,7 @@ public class ElasticIOTest extends BaseElasticTest {
 
 
     @Test
-    public void testGetNextTokenWithoutPrefix1() throws Exception {
+    public void testGetNextTokenWithoutPrefix() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "";
 
@@ -246,7 +246,7 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithoutPrefix2() throws Exception {
+    public void testGetNextTokenWithoutPrefixMultipleMetrics() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "";
 
@@ -278,7 +278,7 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefix1() throws Exception {
+    public void testGetNextTokenWithWildCardPrefixAtLevel0() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "*";
 
@@ -311,7 +311,7 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefix2() throws Exception {
+    public void testGetNextTokenWithWildCardPrefixAtTheEnd() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "one.two.three*";
 
@@ -324,7 +324,7 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefix3() throws Exception {
+    public void testGetNextTokenWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "one.{two,foo}.[ta]*";
 
@@ -346,7 +346,7 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefix4() throws Exception {
+    public void testGetNextTokenWithMultiWildCardPrefix() throws Exception {
         String tenantId = TENANT_A;
         String prefix = "*.*";
 
