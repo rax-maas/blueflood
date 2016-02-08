@@ -71,7 +71,7 @@ public class MetricIndexData {
      * and stores it accordingly.
      *
      * @param metricIndex
-     * @param docCount is document count
+     * @param docCount is document(metric name) count
      */
     public void add(String metricIndex, long docCount) {
 
