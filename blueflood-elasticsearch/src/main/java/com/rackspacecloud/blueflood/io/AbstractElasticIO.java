@@ -27,7 +27,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
     // todo: these should be instances per client.
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
-    protected final Timer getNextTokensTimer = Metrics.timer(getClass(), "getNextTokens Duration");
+    protected final Timer esMetricTokensQueryTimer = Metrics.timer(getClass(), "ES Metric Tokens Query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
     protected Meter classCastExceptionMeter = Metrics.meter(getClass(), "Failed Cast to IMetric");
@@ -111,7 +111,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      */
     public List<TokenInfo> getNextTokens(final String tenant, final String prefix) throws Exception {
 
-        Timer.Context getPathsTimerCtx = getNextTokensTimer.time();
+        Timer.Context esMetricTokensQueryTimerCtx = esMetricTokensQueryTimer.time();
 
         SearchResponse response;
 
@@ -121,7 +121,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             response = getMetricTokensFromES(tenant, regexForNext2Levels);
 
         } finally {
-            getPathsTimerCtx.stop();
+            esMetricTokensQueryTimerCtx.stop();
         }
 
         MetricIndexData metricIndexData = buildMetricIndexData(response, prefix);
