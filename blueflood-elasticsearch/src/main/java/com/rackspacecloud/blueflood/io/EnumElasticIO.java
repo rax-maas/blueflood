@@ -41,19 +41,9 @@ import java.util.*;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
-public class EnumElasticIO implements DiscoveryIO {
+public class EnumElasticIO extends AbstractElasticIO {
 
-    public static String ENUMS_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE);
-    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
-    public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
     public static final String ENUMS_DOCUMENT_TYPE = "metrics";
-
-    private Client client;
-    private final Timer searchTimer = Metrics.timer(EnumElasticIO.class, "Search Duration");
-    private final Timer writeTimer = Metrics.timer(EnumElasticIO.class, "Write Duration");
-    private final Histogram batchHistogram = Metrics.histogram(EnumElasticIO.class, "Batch Sizes");
-    private Meter classCastExceptionMeter = Metrics.meter(EnumElasticIO.class, "Failed Cast to IMetric");
-    private Histogram queryBatchHistogram = Metrics.histogram(EnumElasticIO.class, "Query Batch Size");
 
     public EnumElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -127,47 +117,23 @@ public class EnumElasticIO implements DiscoveryIO {
                 .setRouting(metricDiscovery.getTenantId());
     }
 
-    public List<SearchResult> search(String tenant, String query) throws Exception {
-        return search(tenant, Arrays.asList(query));
+    @VisibleForTesting
+    public void setINDEX_NAME_WRITE (String indexNameWrite) {
+        ENUMS_INDEX_NAME_WRITE = indexNameWrite;
     }
 
-    public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
-        List<SearchResult> results = new ArrayList<SearchResult>();
-        Timer.Context multiSearchCtx = searchTimer.time();
-        queryBatchHistogram.update(queries.size());
-        BoolQueryBuilder bqb = boolQuery();
-        QueryBuilder qb;
-
-        for (String query : queries) {
-            GlobPattern pattern = new GlobPattern(query);
-            if (!pattern.hasWildcard()) {
-                qb = termQuery(ESFieldLabel.metric_name.name(), query);
-            } else {
-                qb = regexpQuery(ESFieldLabel.metric_name.name(), pattern.compiled().toString());
-            }
-            bqb.should(boolQuery()
-                    .must(termQuery(ESFieldLabel.tenantId.toString(), tenant))
-                    .must(qb)
-            );
-        }
-
-        // search both ENUMS_INDEX_NAME_READ and ELASTICSEARCH_INDEX_NAME_READ
-        SearchResponse response = client.prepareSearch(ENUMS_INDEX_NAME_READ, ELASTICSEARCH_INDEX_NAME_READ)
-                .setRouting(tenant)
-                .setSize(100000)
-                .setVersion(true)
-                .setQuery(bqb)
-                .execute()
-                .actionGet();
-        multiSearchCtx.stop();
-        for (SearchHit hit : response.getHits().getHits()) {
-            SearchResult result = convertHitToEnumMetricDiscoveryResult(hit);
-            results.add(result);
-        }
-        return dedupResults(results);
+    @VisibleForTesting
+    public void setINDEX_NAME_READ (String indexNameRead) {
+        ENUMS_INDEX_NAME_READ = indexNameRead;
     }
 
-    private static SearchResult convertHitToEnumMetricDiscoveryResult(SearchHit hit) {
+    @Override
+    protected String[] getIndexesToSearch() {
+        return new String[] {ENUMS_INDEX_NAME_READ, ELASTICSEARCH_INDEX_NAME_READ};
+    }
+
+    @Override
+    protected SearchResult convertHitToMetricDiscoveryResult(SearchHit hit) {
 
         SearchResult result;
         Map<String, Object> source = hit.getSource();
@@ -187,7 +153,8 @@ public class EnumElasticIO implements DiscoveryIO {
         return result;
     }
 
-    private List<SearchResult> dedupResults(List<SearchResult> results) {
+    @Override
+    protected  List<SearchResult> dedupResults(List<SearchResult> results) {
         HashMap<String, SearchResult> dedupedResults = new HashMap<String, SearchResult>();
         for (SearchResult result : results) {
             //check if result has enum_values
@@ -204,15 +171,6 @@ public class EnumElasticIO implements DiscoveryIO {
         return Lists.newArrayList(dedupedResults.values());
     }
 
-    @VisibleForTesting
-    public void setINDEX_NAME_WRITE (String indexNameWrite) {
-        ENUMS_INDEX_NAME_WRITE = indexNameWrite;
-    }
-
-    @VisibleForTesting
-    public void setINDEX_NAME_READ (String indexNameRead) {
-        ENUMS_INDEX_NAME_READ = indexNameRead;
-    }
 
     @VisibleForTesting
     public void setClient(Client client) {

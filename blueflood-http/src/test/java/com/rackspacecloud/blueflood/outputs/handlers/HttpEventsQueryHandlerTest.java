@@ -29,13 +29,13 @@ import java.util.*;
 
 import static org.mockito.Mockito.*;
 
-public class HttpEventsQueryHandlerTest {
+public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
 
     private EventsIO searchIO;
     private HttpEventsQueryHandler handler;
     private ChannelHandlerContext context;
     private Channel channel;
-    private static final String TENANT = "tenant";
+
 
     public HttpEventsQueryHandlerTest() {
         searchIO = mock(EventsIO.class);
@@ -46,26 +46,15 @@ public class HttpEventsQueryHandlerTest {
         when(channel.write(anyString())).thenReturn(new SucceededChannelFuture(channel));
     }
 
-    private HttpRequest createGetRequest(String uri) {
-        return createRequest(HttpMethod.GET, uri, "");
-    }
-
-    private HttpRequest createRequest(HttpMethod method, String uri, String requestBody) {
-        DefaultHttpRequest rawRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, method, "/v2.0/" + TENANT + "/events/" + uri);
-        rawRequest.setHeader("tenantId", TENANT);
-        if (!requestBody.equals(""))
-            rawRequest.setContent(ChannelBuffers.copiedBuffer(requestBody.getBytes()));
-        return HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(rawRequest);
-    }
 
     @Test
     public void testElasticSearchSearchNotCalledEmptyQuery() throws Exception {
-        handler.handle(context, createGetRequest(""));
+        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/events/"));
         verify(searchIO, never()).search(TENANT, new HashMap<String, List<String>>());
     }
 
     private void testQuery(String query, Map<String, List<String>> params) throws Exception {
-        handler.handle(context, createGetRequest(query));
+        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/events/" + query));
         verify(searchIO).search(TENANT, params);
     }
 
