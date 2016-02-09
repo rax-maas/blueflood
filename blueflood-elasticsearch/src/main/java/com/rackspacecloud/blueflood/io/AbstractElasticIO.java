@@ -27,7 +27,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
     // todo: these should be instances per client.
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
-    protected final Timer getNextTokensTimer = Metrics.timer(getClass(), "getNextTokens Duration");
+    protected final Timer getNextTokensTimer = Metrics.timer(getClass(), "getNextTokens ES metric index query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
     protected Meter classCastExceptionMeter = Metrics.meter(getClass(), "Failed Cast to IMetric");
