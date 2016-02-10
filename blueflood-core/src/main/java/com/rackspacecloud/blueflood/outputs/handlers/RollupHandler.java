@@ -181,8 +181,7 @@ public class RollupHandler {
                         metricDataMap.get(locator).setUnit(searchResult.getUnit());
                 }
             } catch (Exception e) {
-                log.warn("Exception encountered while getting units from ES, unit will be set to unknown in query results");
-                log.debug(e.getMessage(), e);
+                log.warn("Exception encountered while getting units from ES, unit will be set to unknown in query results", e);
             }
         }
 
@@ -212,7 +211,7 @@ public class RollupHandler {
             } catch (Exception e) {
                 aggregateFuture.cancel(true);
                 exceededQueryTimeout.mark();
-                log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
+                log.warn("Exception encountered while doing rollups on read, incomplete rollups will be returned.", e);
             }
             context.stop();
         }
@@ -344,7 +343,7 @@ public class RollupHandler {
                 repairedPoints.addAll( subList );
             }
         } catch (Exception e) {
-            log.warn(String.format("Exception encountered while doing rollups on read, incomplete rollups will be returned. %s", e.getMessage()));
+            log.warn("Exception encountered while doing rollups on read, incomplete rollups will be returned.", e);
         }
 
         c.stop();
@@ -366,7 +365,7 @@ public class RollupHandler {
 
         long rangeSize = ROLLUP_ON_READ_REPAIR_SIZE_PER_THREAD * g.milliseconds();
 
-        for ( long start = g.snapMillis( from ); start < to ; ) {
+        for ( long start = from; start < to ; ) {
 
             long end = (start + rangeSize) < to ? (start + rangeSize ) : to;
 
