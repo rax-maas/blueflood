@@ -89,7 +89,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         final String metric_name = "call_xyz_api";
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "src/test/resources/sample_multi_enums_payload.json");
+        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json");
         Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity());
 
