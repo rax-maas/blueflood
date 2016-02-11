@@ -210,7 +210,8 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testHttpAggregatedIngestionHappyCase() throws Exception {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                        getClass().getClassLoader().getResourceAsStream("sample_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
@@ -238,7 +239,8 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testHttpAggregatedMultiIngestionHappyCase() throws Exception {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_aggregated_payload.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                            getClass().getClassLoader().getResourceAsStream("sample_multi_aggregated_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);
@@ -276,7 +278,8 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_enums_payload.json")));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                        getClass().getClassLoader().getResourceAsStream("sample_multi_enums_payload.json")));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);

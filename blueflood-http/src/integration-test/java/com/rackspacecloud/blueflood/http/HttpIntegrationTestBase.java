@@ -30,11 +30,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.*;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
@@ -102,7 +100,6 @@ public class HttpIntegrationTestBase {
         client = vendor.getClient();
     }
 
-
     @AfterClass
     public static void shutdown() {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
@@ -136,7 +133,9 @@ public class HttpIntegrationTestBase {
 
         // get payload
         StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(payloadFilePath)));
+        BufferedReader reader = new BufferedReader(
+                                    new InputStreamReader(
+                                        getClass().getClassLoader().getResourceAsStream(payloadFilePath)));
         String curLine = reader.readLine();
         while (curLine != null) {
             sb = sb.append(curLine);

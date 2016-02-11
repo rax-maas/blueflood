@@ -16,22 +16,16 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
+import org.junit.runner.RunWith;
+
 import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import com.rackspacecloud.blueflood.utils.InMemoryMetadataIO;
 
@@ -40,7 +34,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
