@@ -508,6 +508,26 @@ public class ScheduleContextTest {
     }
 
     @Test
+    public void testGetNextScheduledIncrementsRunningCount() {
+
+        // given
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        int shard = ringShards.get(0);
+        ctx.update(now-2, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        Assert.assertEquals(0, ctx.getRunningCount());
+
+        // when
+        SlotKey next = ctx.getNextScheduled();
+
+        // then
+        Assert.assertEquals(1, ctx.getRunningCount());
+    }
+
+    @Test
     public void testGetNextScheduledReturnsTheSmallestGranularity() {
 
         // given
@@ -637,6 +657,40 @@ public class ScheduleContextTest {
 
         // then
         Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testPushBackToScheduled_DOES_NOT_DecrementsRunningCount() {
+
+        // This functionality is probably wrong. It's related to a fairly rare
+        // failure condition so it shouldn't happen often. Nevertheless, we
+        // should fix it so that re-scheduling a slot should pull it out of the
+        // 'running' category, since it's no longer actually running.
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        Assert.assertEquals(1, ctx.getRunningCount());
+
+        // when
+        ctx.pushBackToScheduled(next, true);
+
+        // then
+        Assert.assertEquals(1, ctx.getRunningCount());
     }
 
     @Test
