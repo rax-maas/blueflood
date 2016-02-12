@@ -410,4 +410,21 @@ public class ScheduleContextTest {
         Assert.assertEquals(0, ctx.getScheduledCount());
     }
 
+    @Test
+    public void testScheduleSlotsOlderThanAddsToScheduledCount() {
+
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, 4, ringShards.get(0));
+        ctx.update(now-2, ringShards.get(0));
+
+        // precondition
+        Assert.assertEquals(0, ctx.getScheduledCount());
+
+        // when
+        ctx.scheduleSlotsOlderThan(1);
+
+        // then
+        Assert.assertEquals(1, ctx.getScheduledCount());
+    }
 }
