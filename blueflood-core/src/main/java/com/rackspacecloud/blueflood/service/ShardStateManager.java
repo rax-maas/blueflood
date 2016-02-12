@@ -86,8 +86,10 @@ public class ShardStateManager {
     }
 
     protected UpdateStamp getUpdateStamp(SlotKey slotKey) {
-        return this.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity())
-                .slotToUpdateStampMap.get(slotKey.getSlot());
+        SlotStateManager slotStateManager = this.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity());
+        UpdateStamp stamp = slotStateManager.slotToUpdateStampMap.get(slotKey.getSlot());
+        return stamp;
+
     }
 
     // Side effect: mark dirty slots as clean
