@@ -609,4 +609,90 @@ public class ScheduleContextTest {
         // then
         Assert.assertNull(next);
     }
+
+    @Test
+    public void testPushBackToScheduledIncrementsScheduledCount() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        Assert.assertEquals(0, ctx.getScheduledCount());
+
+        // when
+        ctx.pushBackToScheduled(next, true);
+
+        // then
+        Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testPushBackToScheduledChangesStateBackToActive() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+        Granularity coarserGran = null;
+        try {
+            coarserGran = gran.coarser();
+        } catch (GranularityException e) {
+            Assert.fail("Couldn't get the next coarser granularity");
+        }
+        int coarserSlot = coarserGran.slot(updateTime);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ShardStateManager mgr = ctx.getShardStateManager();
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        UpdateStamp stamp = mgr.getUpdateStamp(SlotKey.of(gran, slot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Running, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        // when
+        ctx.pushBackToScheduled(next, true);
+
+        // then
+        stamp = mgr.getUpdateStamp(next);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+    }
 }
