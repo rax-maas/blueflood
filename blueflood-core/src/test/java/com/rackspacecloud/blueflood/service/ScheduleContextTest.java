@@ -631,6 +631,24 @@ public class ScheduleContextTest {
     }
 
     @Test
+    public void testGetNextScheduledWhenNoneAreScheduledReturnsNull() {
+
+        // given
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+
+        // precondition
+        Assert.assertEquals(0, ctx.getScheduledCount());
+
+        // when
+        SlotKey next = ctx.getNextScheduled();
+
+        // then
+        Assert.assertNull(next);
+        Assert.assertEquals(0, ctx.getScheduledCount());
+    }
+
+    @Test
     public void testPushBackToScheduledIncrementsScheduledCount() {
 
         // given
@@ -748,5 +766,118 @@ public class ScheduleContextTest {
         Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
+    }
+
+    @Test
+    public void testPushBackToScheduledOnNonRunningSlotDoesntChangeState() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+        SlotKey slotKey = SlotKey.of(gran, slot, shard);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ShardStateManager mgr = ctx.getShardStateManager();
+        ctx.update(updateTime, shard);
+
+        // precondition
+        UpdateStamp stamp = mgr.getUpdateStamp(slotKey);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        // when
+        ctx.pushBackToScheduled(slotKey, true);
+
+        // then
+        stamp = mgr.getUpdateStamp(slotKey);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+    }
+
+    @Test
+    public void testPushBackToScheduledOnNonRunningSlot_DOES_ChangeScheduledCount() {
+
+        // This seems incorrect. If we were to accidentally call
+        // pushBackToScheduled on a slot that wasn't running, we would
+        // effectively bypass the scheduleSlotsOlderThan method
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+        SlotKey slotKey = SlotKey.of(gran, slot, shard);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+
+        // precondition
+        Assert.assertEquals(0, ctx.getScheduledCount());
+
+        // when
+        ctx.pushBackToScheduled(slotKey, true);
+
+        // then
+        Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testPushBackToScheduledOnNonRunningSlotDoesntChangeRunningCount() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+        SlotKey slotKey = SlotKey.of(gran, slot, shard);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+
+        // precondition
+        Assert.assertEquals(0, ctx.getRunningCount());
+
+        // when
+        ctx.pushBackToScheduled(slotKey, true);
+
+        // then
+        Assert.assertEquals(0, ctx.getRunningCount());
+    }
+
+    @Test(expected=NullPointerException.class)
+    public void testPushBackToScheduledWithoutFirstUpdatingThrowsException() {
+
+        // This appears to be due to the
+        // SlotStateManager.slotToUpdateStampMap map not being populated until
+        // update() is called.
+
+        // given
+        long now = 1234000L;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+        SlotKey slotKey = SlotKey.of(gran, slot, shard);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        //ctx.update(updateTime, shard);
+
+        // precondition
+        Assert.assertEquals(0, ctx.getScheduledCount());
+        Assert.assertEquals(0, ctx.getRunningCount());
+
+        // when
+        ctx.pushBackToScheduled(slotKey, true);
+
+        // then
+        // an NPE is thrown
     }
 }
