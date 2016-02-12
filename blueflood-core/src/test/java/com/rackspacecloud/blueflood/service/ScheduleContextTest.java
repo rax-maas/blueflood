@@ -697,10 +697,10 @@ public class ScheduleContextTest {
     @Test
     public void testPushBackToScheduled_DOES_NOT_DecrementsRunningCount() {
 
-        // This functionality is probably wrong. It's related to a fairly rare
-        // failure condition so it shouldn't happen often. Nevertheless, we
-        // should fix it so that re-scheduling a slot should pull it out of the
-        // 'running' category, since it's no longer actually running.
+        // TODO: This functionality is probably wrong. It's related to a fairly
+        // rare failure condition so it shouldn't happen often. Nevertheless,
+        // we should fix it so that re-scheduling a slot should pull it out of
+        // the 'running' category, since it's no longer actually running.
 
         // given
         long now = 1234000L;
@@ -821,7 +821,7 @@ public class ScheduleContextTest {
     @Test
     public void testPushBackToScheduledOnNonRunningSlot_DOES_ChangeScheduledCount() {
 
-        // This seems incorrect. If we were to accidentally call
+        // TODO: This seems incorrect. If we were to accidentally call
         // pushBackToScheduled on a slot that wasn't running, we would
         // effectively bypass the scheduleSlotsOlderThan method
 
