@@ -485,28 +485,4 @@ public class ScheduleContextTest {
         // then
         Assert.assertEquals(1, ctx.getScheduledCount());
     }
-
-    @Test
-    public void testScheduleSlotsOlderThanSmallestGranularityOnlyAddsOneToScheduledCount() {
-
-        // here we update for a time just over five minutes ago. five minutes
-        // is the smallest granularity, so we might expect that this update
-        // would dirty both of the two most recent 5min slots. however, the
-        // ScheduleContext will only mark the oldest of them as dirty.
-
-        long now = 1234000L;
-        long fiveMinutes = 5 * 60 * 1000;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        ctx.update(now-fiveMinutes-1, ringShards.get(0));
-
-        // precondition
-        Assert.assertEquals(0, ctx.getScheduledCount());
-
-        // when
-        ctx.scheduleSlotsOlderThan(fiveMinutes);
-
-        // then
-        Assert.assertEquals(1, ctx.getScheduledCount());
-    }
-
 }
