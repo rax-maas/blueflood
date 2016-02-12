@@ -905,18 +905,8 @@ public class ScheduleContextTest {
         long now = 1234000L;
         long updateTime = now - 2;
         int shard = ringShards.get(0);
-        Granularity gran = Granularity.MIN_5;
-        int slot = gran.slot(now);
-        Granularity coarserGran = null;
-        try {
-            coarserGran = gran.coarser();
-        } catch (GranularityException e) {
-            Assert.fail("Couldn't get the next coarser granularity");
-        }
-        int coarserSlot = coarserGran.slot(updateTime);
 
         ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        ShardStateManager mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
         ctx.scheduleSlotsOlderThan(1);
 
@@ -938,18 +928,8 @@ public class ScheduleContextTest {
         long now = 1234000L;
         long updateTime = now - 2;
         int shard = ringShards.get(0);
-        Granularity gran = Granularity.MIN_5;
-        int slot = gran.slot(now);
-        Granularity coarserGran = null;
-        try {
-            coarserGran = gran.coarser();
-        } catch (GranularityException e) {
-            Assert.fail("Couldn't get the next coarser granularity");
-        }
-        int coarserSlot = coarserGran.slot(updateTime);
 
         ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        ShardStateManager mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
         ctx.scheduleSlotsOlderThan(1);
 
