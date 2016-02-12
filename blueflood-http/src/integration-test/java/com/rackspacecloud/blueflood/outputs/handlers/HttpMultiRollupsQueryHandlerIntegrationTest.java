@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
@@ -36,7 +34,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         final String tenant_id = "333333";
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "src/test/resources/sample_payload.json");
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json");
         Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity());
 
@@ -91,7 +89,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         final String metric_name = "call_xyz_api";
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "src/test/resources/sample_multi_enums_payload.json");
+        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json");
         Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity());
 

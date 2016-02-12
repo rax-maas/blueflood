@@ -38,10 +38,9 @@
   <build>
     <testResources>
       <testResource>
-        <directory>src/integration-test/java</directory>
+        <directory>src/test/resources</directory>
       </testResource>
     </testResources>
-
 
     <plugins>
       <!-- Used to add source directories to our build. -->
@@ -197,7 +196,6 @@
       <scope>test</scope>
       <optional>true</optional>
     </dependency>
-
   </dependencies>
 
 </project>
