@@ -385,4 +385,29 @@ public class ScheduleContextTest {
         try { Thread.sleep(2100); } catch (Exception ex) {}
         Assert.assertFalse(ctx.getRecentlyScheduledShards().contains(shard));
     }
+
+    @Test
+    public void testUpdateCreatesActiveDirtyStamp() {
+
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, 4, ringShards.get(0));
+
+        // precondition
+        Assert.assertEquals(0, ctx.getScheduledCount());
+        UpdateStamp stamp = ctx.getShardStateManager().getUpdateStamp(slotkey);
+        Assert.assertNull(stamp);
+
+        // when
+        ctx.update(now, ringShards.get(0));
+
+        // then
+        stamp = ctx.getShardStateManager().getUpdateStamp(slotkey);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(now, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals(0, ctx.getScheduledCount());
+    }
+
 }
