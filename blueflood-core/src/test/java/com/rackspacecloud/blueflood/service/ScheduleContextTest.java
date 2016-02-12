@@ -488,6 +488,23 @@ public class ScheduleContextTest {
     }
 
     @Test
+    public void testScheduleSlotsOlderThanSetsHasScheduled() {
+
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(now-2, ringShards.get(0));
+
+        // precondition
+        Assert.assertFalse(ctx.hasScheduled());
+
+        // when
+        ctx.scheduleSlotsOlderThan(1);
+
+        // then
+        Assert.assertTrue(ctx.hasScheduled());
+    }
+
+    @Test
     public void testGetNextScheduledDecrementsScheduledCount() {
 
         // given
