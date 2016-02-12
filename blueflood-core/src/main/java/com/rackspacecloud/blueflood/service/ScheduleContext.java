@@ -267,6 +267,14 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
     }
 
+    @VisibleForTesting
+    // returns the number of currently running rollups.
+    int getRunningCount() {
+        synchronized (runningSlots) {
+            return runningSlots.size();
+        }
+    }
+
     public Map<Integer, UpdateStamp> getSlotStamps(Granularity gran, int shard) {
         return shardStateManager.getSlotStateManager(shard, gran).getSlotStamps();
     }
