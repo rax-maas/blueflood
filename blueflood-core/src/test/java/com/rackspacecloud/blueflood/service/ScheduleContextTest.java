@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -484,5 +485,128 @@ public class ScheduleContextTest {
 
         // then
         Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testGetNextScheduledDecrementsScheduledCount() {
+
+        // given
+        long now = 1234000L;
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        int shard = ringShards.get(0);
+        ctx.update(now-2, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        Assert.assertEquals(1, ctx.getScheduledCount());
+
+        // when
+        SlotKey next = ctx.getNextScheduled();
+
+        // then
+        Assert.assertEquals(0, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testGetNextScheduledReturnsTheSmallestGranularity() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // when
+        SlotKey next = ctx.getNextScheduled();
+
+        // then
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+    }
+
+    @Test
+    public void testGetNextScheduledChangesStateToRunning() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(updateTime);
+        Granularity coarserGran = null;
+        try {
+            coarserGran = gran.coarser();
+        } catch (GranularityException e) {
+            Assert.fail("Couldn't get the next coarser granularity");
+        }
+        int coarserSlot = coarserGran.slot(updateTime);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ShardStateManager mgr = ctx.getShardStateManager();
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        UpdateStamp stamp = mgr.getUpdateStamp(SlotKey.of(gran, slot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        // when
+        SlotKey next = ctx.getNextScheduled();
+
+        // then
+        stamp = mgr.getUpdateStamp(next);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Running, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+
+        stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+    }
+
+    @Test
+    public void testGetNextScheduledSecondTimeReturnsNull() {
+
+        // given
+        long now = 1234000L;
+        long updateTime = now - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot = gran.slot(now);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertNotNull(next);
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        // when
+        next = ctx.getNextScheduled();
+
+        // then
+        Assert.assertNull(next);
     }
 }
