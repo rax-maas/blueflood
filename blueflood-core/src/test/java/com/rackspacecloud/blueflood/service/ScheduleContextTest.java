@@ -873,7 +873,7 @@ public class ScheduleContextTest {
     @Test(expected=NullPointerException.class)
     public void testPushBackToScheduledWithoutFirstUpdatingThrowsException() {
 
-        // This appears to be due to the
+        // TODO: This appears to be due to the
         // SlotStateManager.slotToUpdateStampMap map not being populated until
         // update() is called.
 
