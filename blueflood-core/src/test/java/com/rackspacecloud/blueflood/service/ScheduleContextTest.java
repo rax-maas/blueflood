@@ -899,6 +899,86 @@ public class ScheduleContextTest {
     }
 
     @Test
+    public void testPushBackToScheduledRescheduleImmediately() {
+
+        // given
+        long now = 1234000L;
+        long fiveMinutes = 5 * 60 * 1000;
+        long updateTime1 = now - 2;
+        long updateTime2 = now - fiveMinutes - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot1 = gran.slot(now);
+        int slot2 = gran.slot(now - fiveMinutes);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime1, shard);
+        ctx.update(updateTime2, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        Assert.assertEquals(2, ctx.getScheduledCount());
+
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot2, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        Assert.assertEquals(1, ctx.getScheduledCount());
+
+        // when
+        ctx.pushBackToScheduled(next, true);
+
+        // then
+        Assert.assertEquals(2, ctx.getScheduledCount());
+        next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot2, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+        Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testPushBackToScheduledDontRescheduleImmediately() {
+
+        // given
+        long now = 1234000L;
+        long fiveMinutes = 5 * 60 * 1000;
+        long updateTime1 = now - 2;
+        long updateTime2 = now - fiveMinutes - 2;
+        int shard = ringShards.get(0);
+        Granularity gran = Granularity.MIN_5;
+        int slot1 = gran.slot(now);
+        int slot2 = gran.slot(now - fiveMinutes);
+
+        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ctx.update(updateTime1, shard);
+        ctx.update(updateTime2, shard);
+        ctx.scheduleSlotsOlderThan(1);
+
+        // precondition
+        Assert.assertEquals(2, ctx.getScheduledCount());
+
+        SlotKey next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot2, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+
+        Assert.assertEquals(1, ctx.getScheduledCount());
+
+        // when
+        ctx.pushBackToScheduled(next, false);
+
+        // then
+        Assert.assertEquals(2, ctx.getScheduledCount());
+        next = ctx.getNextScheduled();
+        Assert.assertEquals(shard, next.getShard());
+        Assert.assertEquals(slot1, next.getSlot());
+        Assert.assertEquals(gran, next.getGranularity());
+        Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
     public void testClearFromRunningDecrementsRunningCount() {
 
         // given
