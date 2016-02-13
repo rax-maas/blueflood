@@ -908,8 +908,6 @@ public class ScheduleContextTest {
         long updateTime2 = now - fiveMinutes - 2;
         int shard = ringShards.get(0);
         Granularity gran = Granularity.MIN_5;
-        int slot1 = gran.slot(now);
-        int slot2 = gran.slot(now - fiveMinutes);
 
         ScheduleContext ctx = new ScheduleContext(now, ringShards);
         ctx.update(updateTime1, shard);
@@ -921,8 +919,8 @@ public class ScheduleContextTest {
 
         SlotKey next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
-        Assert.assertEquals(slot2, next.getSlot());
         Assert.assertEquals(gran, next.getGranularity());
+        int nextSlot = next.getSlot();
 
         Assert.assertEquals(1, ctx.getScheduledCount());
 
@@ -933,7 +931,7 @@ public class ScheduleContextTest {
         Assert.assertEquals(2, ctx.getScheduledCount());
         next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
-        Assert.assertEquals(slot2, next.getSlot());
+        Assert.assertEquals(nextSlot, next.getSlot());
         Assert.assertEquals(gran, next.getGranularity());
         Assert.assertEquals(1, ctx.getScheduledCount());
     }
@@ -961,8 +959,9 @@ public class ScheduleContextTest {
 
         SlotKey next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
-        Assert.assertEquals(slot2, next.getSlot());
         Assert.assertEquals(gran, next.getGranularity());
+        int nextSlot = next.getSlot();
+        int otherSlot = (nextSlot == slot1 ? slot2 : slot1);
 
         Assert.assertEquals(1, ctx.getScheduledCount());
 
@@ -973,7 +972,7 @@ public class ScheduleContextTest {
         Assert.assertEquals(2, ctx.getScheduledCount());
         next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
-        Assert.assertEquals(slot1, next.getSlot());
+        Assert.assertEquals(otherSlot, next.getSlot());
         Assert.assertEquals(gran, next.getGranularity());
         Assert.assertEquals(1, ctx.getScheduledCount());
     }
