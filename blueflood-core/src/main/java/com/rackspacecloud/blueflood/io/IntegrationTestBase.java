@@ -195,6 +195,11 @@ public class IntegrationTestBase {
         return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
+    protected Metric getRandomIntMetricMaxValue(final Locator locator, long timestamp, int max) {
+        locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
+        return new Metric(locator, rand.nextInt( max ), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
+    }
+
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
         locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.UNKNOWN.unit);
         return new Metric(locator, getRandomStringMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));

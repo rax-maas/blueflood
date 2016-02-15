@@ -15,6 +15,8 @@
  */
 package com.rackspacecloud.blueflood.outputs;
 
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
@@ -25,129 +27,274 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
 
+/**
+ * This class writes FULL data for a 48 hour period and then rolls up only a 5 hour portion from the middle of the 48 hours.
+ *
+ * Then the following conditions are tested, for both Single Plot and Multi Plot:
+ * <li> Where the front part of a requested range needs to be rolled-up-on-read and the back half is already rolled up.
+ * <li> Where the back part of a requested range needs to be rolled-up-on-read and the front half is already rolled up.
+ * <li> Where the entire range needs to be rolled up.
+ *
+ * These tests verify that the correct timestamp keys are generated as well as that the total average of all FULL values
+ * and the returned rolled up values are within 5%.
+ *
+ * NOTE:
+ * <li> The MPLOT tests depend upon CoreConfig.TURN_OFF_RR_MPLOT == false, which is currently the default setting.
+ *
+ */
 public class RollupHandlerIntegrationTest extends IntegrationTestBase {
     RollupHandler rollupHandler = new RollupHandler();
 
-    private void writeFullData(
-            Locator locator,
-            long baseMillis,
-            int hours,
-            AstyanaxWriter writer) throws Exception {
+    private String acctId = "rollupIntegrationTest" + IntegrationTestBase.randString(8);
+    private List<String> metricList = new ArrayList<String>( Arrays.asList( "rollupHandlerIntegrationTest1," + randString( 8 ),
+            "rollupHandlerIntegrationTest2," + randString( 8 ),
+            "rollupHandlerIntegrationTest3," + randString( 8 ) ));
+
+    private List<Locator> locatorList = new ArrayList<Locator>();
+
+    private long hours = 48;
+    private long startMS = 1432147283000L; // some point during 20 May 2015.
+    private long endMS = startMS + (1000 * 60 * 60 * hours); // 48 hours of data
+
+    private long startRollupMS = startMS + (1000 * 60 * 60 * (hours/2 - 5));
+    private long endRollupMS = startMS + (1000 * 60 * 60 * (hours/2));
+
+    @Before
+    public void initData() throws Exception {
+
+        for( String metric : metricList ) {
+
+            locatorList.add( Locator.createLocatorFromPathComponents( acctId, metric ) );
+        }
+
+        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AstyanaxReader reader = AstyanaxReader.getInstance();
+
+        writeFullData( writer );
+        writeRollups( reader, writer );
+    }
+
+    private void writeRollups( AstyanaxReader reader, AstyanaxWriter writer ) throws GranularityException, java.io.IOException, ConnectionException {
+
+
+        for( Locator locator : locatorList ) {
+            ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
+            for ( Range range : Range.getRangesToRollup( Granularity.FULL, startRollupMS, endRollupMS ) ) {
+                // each range should produce one average
+                Points<SimpleNumber> input = reader.getDataToRoll( SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL );
+                BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples( input );
+
+                writes.add( new SingleRollupWriteContext( basicRollup,
+                        locator,
+                        Granularity.FULL.coarser(),
+                        CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL.coarser() ),
+                        range.start ) );
+            }
+            writer.insertRollups( writes );
+        }
+    }
+
+    private void writeFullData( AstyanaxWriter writer ) throws Exception {
+
         // insert something every minute for 48h
-        for (int i = 0; i < 60 * hours; i++) {
-            final long curMillis = baseMillis + i * 60000;
-            List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(getRandomIntMetric(locator, curMillis));
-            writer.insertFull(metrics);
+        for ( Locator locator : locatorList ) {
+            for ( int i = 0; i < 60 * hours; i++ ) {
+                final long curMillis = startMS + i * 60000;
+                List<Metric> metrics = new ArrayList<Metric>();
+                metrics.add( getRandomIntMetricMaxValue( locator, curMillis, 100 ) );
+                writer.insertFull( metrics );
+            }
         }
     }
 
     @Test
-    public void testRollupsOnReadGenerationLeft() throws Exception {
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1432147283000L; // some point during 20 May 2015.
-        int hours = 48;
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
-        final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
-        final long offset = 15*60*1000; // offset for generating missing rollups
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
-        List<String> locatorList = new ArrayList<String>();
-        locatorList.add(metricName);
+    public void testSplotRollupsOnReadGenerationLeft() throws Exception {
 
-        writeFullData(locator, baseMillis, hours, writer);
+        List<String> metric = new ArrayList<String>();
+        metric.add( metricList.get( 0 ) );
+        Locator locator = locatorList.get( 0 );
 
-        // Generate 5m rollups with missing ranges on the left
-        ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis + offset, endMillis)) {
-            // each range should produce one average
-            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
-            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, metric, startMS, endRollupMS, Granularity.MIN_5);
+        Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get(locator).getData().getPoints();
 
-
-            writes.add(new SingleRollupWriteContext(basicRollup,
-                    locator,
-                    Granularity.FULL.coarser(),
-                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL.coarser()),
-                    range.start));
+        // test keys
+        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, startMS, endRollupMS).iterator();
+        for (Long timestamp : points.keySet() ) {
+            Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
         }
-        writer.insertRollups(writes);
 
-        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, locatorList, baseMillis, endMillis, Granularity.MIN_5);
-        Set<Map.Entry<Long, Points.Point>> points = metricDataMap.get(locator).getData().getPoints().entrySet();
-        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis).iterator();
-        for (Map.Entry<Long, Points.Point> point : points) {
-            Assert.assertEquals(repairedRanges.next().getStart(), (long)point.getKey());
+        // test value
+        double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
+        double rollMean = meanOfPointCollectionRoll( points.values() );
+
+        Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
+    }
+
+    @Test
+    public void testSplotRollupsOnReadGenerationRight() throws Exception {
+
+        List<String> metric = new ArrayList<String>();
+        metric.add( metricList.get( 0 ) );
+        Locator locator = locatorList.get( 0 );
+
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, metric, startRollupMS, endMS, Granularity.MIN_5);
+        Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get(locator).getData().getPoints();
+
+        // test keys
+        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, startRollupMS, endMS).iterator();
+        for (Long timestamp : points.keySet() ) {
+            Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
+        }
+
+        // test value
+        double fullMean = fullPointsMean( metric, locator, startRollupMS, endMS );
+        double rollMean = meanOfPointCollectionRoll( points.values() );
+
+        Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
+    }
+
+    @Test
+    public void testSplotRollupsOnReadGenerationEntireRange() throws Exception {
+
+        List<String> metric = new ArrayList<String>();
+        metric.add( metricList.get( 0 ) );
+        Locator locator = locatorList.get( 0 );
+
+        // start 1 hour after rollups ended
+        long start = endRollupMS + 1000 * 60 * 60;
+
+        // test keys
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, metric, start, endMS, Granularity.MIN_5);
+        Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get(locator).getData().getPoints();
+
+        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, start, endMS).iterator();
+        for (Long timestamp : points.keySet()) {
+            Assert.assertEquals(repairedRanges.next().getStart(), timestamp.longValue() );
+        }
+
+        // test value
+        double fullMean = fullPointsMean( metric, locator, start, endMS );
+        double rollMean = meanOfPointCollectionRoll( points.values() );
+
+        Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
+    }
+
+    @Test
+    public void testMplotRollupsOnReadGenerationLeft() throws Exception {
+
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, metricList, startMS, endRollupMS, Granularity.MIN_5);
+
+        for( int i = 0; i < locatorList.size(); i++ ) {
+
+            Locator locator = locatorList.get( i );
+            List<String> metric = new ArrayList<String>();
+            metric.add( metricList.get( i ) );
+
+            // test keys
+            Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get( locator ).getData().getPoints();
+            Iterator<Range> repairedRanges = Range.getRangesToRollup( Granularity.FULL, startMS, endRollupMS ).iterator();
+            for ( Long timestamp : points.keySet() ) {
+                Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
+            }
+
+            // test value
+            double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
+            double rollMean = meanOfPointCollectionRoll( points.values() );
+
+            Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
         }
     }
 
     @Test
-    public void testRollupsOnReadGenerationRight() throws Exception {
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1432147283000L; // some point during 20 May 2015.
-        int hours = 48;
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer2," + randString(8);
-        final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
-        final long offset = 15*60*1000; // offset for generating missing rollups
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
-        List<String> locatorList = new ArrayList<String>();
-        locatorList.add(metricName);
+    public void testMplotRollupsOnReadGenerationRight() throws Exception {
 
-        writeFullData(locator, baseMillis, hours, writer);
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, metricList, startRollupMS, endMS, Granularity.MIN_5);
 
-        // Generate 5m rollups with missing ranges on the left
-        ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis -  offset)) {
-            // each range should produce one average
-            Points<SimpleNumber> input = reader.getDataToRoll(SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL);
-            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
+        for( int i = 0; i < locatorList.size(); i++ ) {
 
+            Locator locator = locatorList.get( i );
+            List<String> metric = new ArrayList<String>();
+            metric.add( metricList.get( i ) );
 
-            writes.add(new SingleRollupWriteContext(basicRollup,
-                    locator,
-                    Granularity.FULL.coarser(),
-                    CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL.coarser()),
-                    range.start));
-        }
-        writer.insertRollups(writes);
+            // test keys
+            Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get( locator ).getData().getPoints();
+            Iterator<Range> repairedRanges = Range.getRangesToRollup( Granularity.FULL, startRollupMS, endMS ).iterator();
+            for ( Long timestamp : points.keySet() ) {
+                Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
+            }
 
-        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, locatorList, baseMillis, endMillis, Granularity.MIN_5);
-        Set<Map.Entry<Long, Points.Point>> points = metricDataMap.get(locator).getData().getPoints().entrySet();
-        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis).iterator();
-        for (Map.Entry<Long, Points.Point> point : points) {
-            Assert.assertEquals(repairedRanges.next().getStart(), (long)point.getKey());
+            // test value
+            double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
+            double rollMean = meanOfPointCollectionRoll( points.values() );
+
+            Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
         }
     }
 
     @Test
-    public void testRollupsOnReadGenerationEntireRange() throws Exception {
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1432147283000L; // some point during 20 May 2015.
-        int hours = 48;
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer3," + randString(8);
-        final long endMillis = baseMillis + (1000 * 60 * 60 * hours);
-        final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
-        List<String> locatorList = new ArrayList<String>();
-        locatorList.add(metricName);
+    public void testMplotRollupsOnReadGenerationEntireRange() throws Exception {
 
-        writeFullData(locator, baseMillis, hours, writer);
+        // start 1 hour after rollups ended
+        long start = endRollupMS + 1000 * 60 * 60;
 
-        // Entire 5m rollups are missing
+        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity( acctId, metricList, start, endMS, Granularity.MIN_5 );
 
-        Map<Locator, MetricData> metricDataMap = rollupHandler.getRollupByGranularity(acctId, locatorList, baseMillis, endMillis, Granularity.MIN_5);
-        Set<Map.Entry<Long, Points.Point>> points = metricDataMap.get(locator).getData().getPoints().entrySet();
-        Iterator<Range> repairedRanges = Range.getRangesToRollup(Granularity.FULL, baseMillis, endMillis).iterator();
-        for (Map.Entry<Long, Points.Point> point : points) {
-            Assert.assertEquals(repairedRanges.next().getStart(), (long)point.getKey());
+        for( int i = 0; i < locatorList.size(); i++ ) {
+
+            Locator locator = locatorList.get( i );
+            List<String> metric = new ArrayList<String>();
+            metric.add( metricList.get( i ) );
+
+            // test keys
+            Map<Long, Points.Point<BasicRollup>> points = metricDataMap.get( locator ).getData().getPoints();
+            Iterator<Range> repairedRanges = Range.getRangesToRollup( Granularity.FULL, start, endMS ).iterator();
+            for ( Long timestamp : points.keySet() ) {
+                Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
+            }
+
+            // test value
+            double fullMean = fullPointsMean( metric, locator, start, endMS );
+            double rollMean = meanOfPointCollectionRoll( points.values() );
+
+            Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
         }
     }
+
+    private double meanOfPointCollectionFull( Collection<Points.Point<SimpleNumber>> fullPoints ) {
+        double sum = 0;
+        for( Points.Point<SimpleNumber> p : fullPoints ) {
+
+            sum += p.getData().getValue().intValue();
+        }
+
+        return sum / fullPoints.size();
+    }
+
+    private double meanOfPointCollectionRoll( Collection<Points.Point<BasicRollup>> fullPoints ) {
+        long sum = 0;
+        for( Points.Point<BasicRollup> p : fullPoints ) {
+
+            sum += p.getData().getAverage().toLong();
+        }
+
+        return sum / fullPoints.size();
+    }
+
+    private double fullPointsMean( List<String> metric, Locator locator, long start, long end ) {
+
+        Collection<Points.Point<SimpleNumber>> fullPoints = rollupHandler.getRollupByGranularity( acctId, metric, start, end, Granularity.FULL )
+                .get( locator ).getData().getPoints().values();
+        return meanOfPointCollectionFull( fullPoints );
+    }
+
+    private double getEpsilon( double fullMean, double rollMean ) {
+        return Math.abs( Math.max(fullMean, rollMean) * .05 );
+    }
+
+
 }
