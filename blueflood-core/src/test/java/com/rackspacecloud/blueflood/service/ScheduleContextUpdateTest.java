@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import org.junit.Assert;
@@ -12,19 +11,19 @@ import java.util.List;
 
 public class ScheduleContextUpdateTest {
 
-    private static List<Integer> ringShards;
+    private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
+    private static int shard = 0;
 
     @Before
     public void setUp() {
-        ringShards = new ArrayList<Integer>() {{ add(0); }};
     }
 
     @Test
     public void testUpdateCreatesActiveDirtyStamp() {
 
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, 4, ringShards.get(0));
+        ScheduleContext ctx = new ScheduleContext(now, shards);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, 4, shards.get(0));
 
         // precondition
         Assert.assertEquals(0, ctx.getScheduledCount());
@@ -32,7 +31,7 @@ public class ScheduleContextUpdateTest {
         Assert.assertNull(stamp);
 
         // when
-        ctx.update(now, ringShards.get(0));
+        ctx.update(now, shards.get(0));
 
         // then
         stamp = ctx.getShardStateManager().getUpdateStamp(slotkey);
@@ -47,13 +46,13 @@ public class ScheduleContextUpdateTest {
     public void testUpdateMarksSlotsDirtyAtAllGranularities() {
 
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
         ShardStateManager mgr = ctx.getShardStateManager();
-        SlotKey slotkey5 = SlotKey.of(Granularity.MIN_5, 4, ringShards.get(0));
-        SlotKey slotkey20 = SlotKey.of(Granularity.MIN_20, 1, ringShards.get(0));
-        SlotKey slotkey60 = SlotKey.of(Granularity.MIN_60, 0, ringShards.get(0));
-        SlotKey slotkey240 = SlotKey.of(Granularity.MIN_240, 0, ringShards.get(0));
-        SlotKey slotkey1440 = SlotKey.of(Granularity.MIN_1440, 0, ringShards.get(0));
+        SlotKey slotkey5 = SlotKey.of(Granularity.MIN_5, 4, shards.get(0));
+        SlotKey slotkey20 = SlotKey.of(Granularity.MIN_20, 1, shards.get(0));
+        SlotKey slotkey60 = SlotKey.of(Granularity.MIN_60, 0, shards.get(0));
+        SlotKey slotkey240 = SlotKey.of(Granularity.MIN_240, 0, shards.get(0));
+        SlotKey slotkey1440 = SlotKey.of(Granularity.MIN_1440, 0, shards.get(0));
 
         // precondition
         Assert.assertEquals(0, ctx.getScheduledCount());
@@ -64,7 +63,7 @@ public class ScheduleContextUpdateTest {
         Assert.assertNull(mgr.getUpdateStamp(slotkey1440));
 
         // when
-        ctx.update(now, ringShards.get(0));
+        ctx.update(now, shards.get(0));
 
         // then
         UpdateStamp stamp;

@@ -11,11 +11,11 @@ import java.util.List;
 
 public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
 
-    private static List<Integer> ringShards;
+    private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
+    private static int shard = 0;
 
     @Before
     public void setUp() {
-        ringShards = new ArrayList<Integer>() {{ add(0); }};
     }
 
     @Test
@@ -26,10 +26,10 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
         long fiveMinutes = 5 * 60 * 1000;
         long updateTime1 = now - 2;
         long updateTime2 = now - fiveMinutes - 2;
-        int shard = ringShards.get(0);
+        int shard = shards.get(0);
         Granularity gran = Granularity.MIN_5;
 
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime1, shard);
         ctx.update(updateTime2, shard);
         ctx.scheduleSlotsOlderThan(1);
@@ -64,12 +64,12 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
         long fiveMinutes = 5 * 60 * 1000;
         long updateTime1 = now - 2;
         long updateTime2 = now - fiveMinutes - 2;
-        int shard = ringShards.get(0);
+        int shard = shards.get(0);
         Granularity gran = Granularity.MIN_5;
         int slot1 = gran.slot(now);
         int slot2 = gran.slot(now - fiveMinutes);
 
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime1, shard);
         ctx.update(updateTime2, shard);
         ctx.scheduleSlotsOlderThan(1);

@@ -12,19 +12,19 @@ import java.util.List;
 
 public class ScheduleContextScheduleSlotsOlderThanTest {
 
-    private static List<Integer> ringShards;
+    private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
+    private static int shard = 0;
 
     @Before
     public void setUp() {
-        ringShards = new ArrayList<Integer>() {{ add(0); }};
     }
 
     @Test
     public void testScheduleSlotsOlderThanAddsToScheduledCount() {
 
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        ctx.update(now-2, ringShards.get(0));
+        ScheduleContext ctx = new ScheduleContext(now, shards);
+        ctx.update(now - 2, shards.get(0));
 
         // precondition
         Assert.assertEquals(0, ctx.getScheduledCount());
@@ -40,8 +40,8 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     public void testScheduleSlotsOlderThanSetsHasScheduled() {
 
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        ctx.update(now-2, ringShards.get(0));
+        ScheduleContext ctx = new ScheduleContext(now, shards);
+        ctx.update(now - 2, shards.get(0));
 
         // precondition
         Assert.assertFalse(ctx.hasScheduled());
@@ -58,8 +58,8 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
 
         // given
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        int shard = ringShards.get(0);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
+        int shard = shards.get(0);
         ctx.update(now-2, shard);
         ctx.scheduleSlotsOlderThan(1);
 
@@ -78,8 +78,8 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
 
         // given
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
-        int shard = ringShards.get(0);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
+        int shard = shards.get(0);
         ctx.update(now-2, shard);
         ctx.scheduleSlotsOlderThan(1);
 
@@ -99,11 +99,11 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
         // given
         long now = 1234000L;
         long updateTime = now - 2;
-        int shard = ringShards.get(0);
+        int shard = shards.get(0);
         Granularity gran = Granularity.MIN_5;
         int slot = gran.slot(now);
 
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime, shard);
         ctx.scheduleSlotsOlderThan(1);
 
@@ -122,7 +122,7 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
         // given
         long now = 1234000L;
         long updateTime = now - 2;
-        int shard = ringShards.get(0);
+        int shard = shards.get(0);
         Granularity gran = Granularity.MIN_5;
         int slot = gran.slot(updateTime);
         Granularity coarserGran = null;
@@ -133,7 +133,7 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
         }
         int coarserSlot = coarserGran.slot(updateTime);
 
-        ScheduleContext ctx = new ScheduleContext(now, ringShards);
+        ScheduleContext ctx = new ScheduleContext(now, shards);
         ShardStateManager mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
         ctx.scheduleSlotsOlderThan(1);
