@@ -15,18 +15,21 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
     private static int shard = 0;
 
+    long now;
+    ScheduleContext ctx;
+
     @Before
     public void setUp() {
+
+        now = 1234000L;
+        ctx = new ScheduleContext(now, shards);
+        ctx.update(now - 2, shards.get(0));
     }
 
     @Test
     public void testScheduleSlotsOlderThanAddsToScheduledCount() {
 
-        long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ctx.update(now - 2, shards.get(0));
-
-        // precondition
+        // given
         Assert.assertEquals(0, ctx.getScheduledCount());
 
         // when
@@ -39,11 +42,7 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     @Test
     public void testScheduleSlotsOlderThanSetsHasScheduled() {
 
-        long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ctx.update(now - 2, shards.get(0));
-
-        // precondition
+        // given
         Assert.assertFalse(ctx.hasScheduled());
 
         // when

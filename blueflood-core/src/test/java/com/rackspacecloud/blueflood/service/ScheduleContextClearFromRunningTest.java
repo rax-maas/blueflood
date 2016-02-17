@@ -15,22 +15,36 @@ public class ScheduleContextClearFromRunningTest {
     private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
     private static int shard = 0;
 
+    long now;
+    long updateTime;
+    Granularity gran;
+    int slot;
+    Granularity coarserGran;
+    int coarserSlot;
+
+    ScheduleContext ctx;
+    ShardStateManager mgr;
+
     @Before
-    public void setUp() {
+    public void setUp() throws GranularityException {
+
+        now = 1234000L;
+        updateTime = now - 2;
+        gran = Granularity.MIN_5;
+        slot = gran.slot(now);
+        coarserGran = gran.coarser();
+        coarserSlot = coarserGran.slot(updateTime);
+
+        ctx = new ScheduleContext(now, shards);
+        mgr = ctx.getShardStateManager();
+        ctx.update(updateTime, shard);
+        ctx.scheduleSlotsOlderThan(1);
     }
 
     @Test
     public void testClearFromRunningDecrementsRunningCount() {
 
         // given
-        long now = 1234000L;
-        long updateTime = now - 2;
-
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
-
-        // precondition
         SlotKey next = ctx.getNextScheduled();
         Assert.assertEquals(1, ctx.getRunningCount());
 
@@ -45,14 +59,6 @@ public class ScheduleContextClearFromRunningTest {
     public void testClearFromRunningDoesntChangeScheduledCount() {
 
         // given
-        long now = 1234000L;
-        long updateTime = now - 2;
-
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
-
-        // precondition
         SlotKey next = ctx.getNextScheduled();
         Assert.assertEquals(0, ctx.getScheduledCount());
 
@@ -67,24 +73,6 @@ public class ScheduleContextClearFromRunningTest {
     public void testClearFromRunningChangesStateToRolled() {
 
         // given
-        long now = 1234000L;
-        long updateTime = now - 2;
-        Granularity gran = Granularity.MIN_5;
-        int slot = gran.slot(now);
-        Granularity coarserGran = null;
-        try {
-            coarserGran = gran.coarser();
-        } catch (GranularityException e) {
-            Assert.fail("Couldn't get the next coarser granularity");
-        }
-        int coarserSlot = coarserGran.slot(updateTime);
-
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ShardStateManager mgr = ctx.getShardStateManager();
-        ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
-
-        // precondition
         SlotKey next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
         Assert.assertEquals(slot, next.getSlot());

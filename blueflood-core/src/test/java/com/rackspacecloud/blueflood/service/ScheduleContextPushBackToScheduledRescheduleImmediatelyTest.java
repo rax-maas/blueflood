@@ -14,22 +14,32 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
     private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
     private static int shard = 0;
 
+
+    long now;
+    long fiveMinutes;
+    long updateTime1;
+    long updateTime2;
+    Granularity gran;
+    int slot1;
+    int slot2;
+    ScheduleContext ctx;
+    SlotKey next;
+    int nextSlot;
+    int otherSlot;
+
     @Before
     public void setUp() {
-    }
 
-    @Test
-    public void testPushBackToScheduledRescheduleImmediately() {
+        now = 1234000L;
+        fiveMinutes = 5 * 60 * 1000;
+        updateTime1 = now - 2;
+        updateTime2 = now - fiveMinutes - 2;
+        shard = shards.get(0);
+        gran = Granularity.MIN_5;
+        slot1 = gran.slot(now);
+        slot2 = gran.slot(now - fiveMinutes);
 
-        // given
-        long now = 1234000L;
-        long fiveMinutes = 5 * 60 * 1000;
-        long updateTime1 = now - 2;
-        long updateTime2 = now - fiveMinutes - 2;
-        int shard = shards.get(0);
-        Granularity gran = Granularity.MIN_5;
-
-        ScheduleContext ctx = new ScheduleContext(now, shards);
+        ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime1, shard);
         ctx.update(updateTime2, shard);
         ctx.scheduleSlotsOlderThan(1);
@@ -37,12 +47,17 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
         // precondition
         Assert.assertEquals(2, ctx.getScheduledCount());
 
-        SlotKey next = ctx.getNextScheduled();
+        next = ctx.getNextScheduled();
         Assert.assertEquals(shard, next.getShard());
         Assert.assertEquals(gran, next.getGranularity());
-        int nextSlot = next.getSlot();
+        nextSlot = next.getSlot();
+        otherSlot = (nextSlot == slot1 ? slot2 : slot1);
 
         Assert.assertEquals(1, ctx.getScheduledCount());
+    }
+
+    @Test
+    public void testPushBackToScheduledRescheduleImmediately() {
 
         // when
         ctx.pushBackToScheduled(next, true);
@@ -58,32 +73,6 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
 
     @Test
     public void testPushBackToScheduledDontRescheduleImmediately() {
-
-        // given
-        long now = 1234000L;
-        long fiveMinutes = 5 * 60 * 1000;
-        long updateTime1 = now - 2;
-        long updateTime2 = now - fiveMinutes - 2;
-        int shard = shards.get(0);
-        Granularity gran = Granularity.MIN_5;
-        int slot1 = gran.slot(now);
-        int slot2 = gran.slot(now - fiveMinutes);
-
-        ScheduleContext ctx = new ScheduleContext(now, shards);
-        ctx.update(updateTime1, shard);
-        ctx.update(updateTime2, shard);
-        ctx.scheduleSlotsOlderThan(1);
-
-        // precondition
-        Assert.assertEquals(2, ctx.getScheduledCount());
-
-        SlotKey next = ctx.getNextScheduled();
-        Assert.assertEquals(shard, next.getShard());
-        Assert.assertEquals(gran, next.getGranularity());
-        int nextSlot = next.getSlot();
-        int otherSlot = (nextSlot == slot1 ? slot2 : slot1);
-
-        Assert.assertEquals(1, ctx.getScheduledCount());
 
         // when
         ctx.pushBackToScheduled(next, false);
