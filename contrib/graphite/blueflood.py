@@ -21,7 +21,10 @@ except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
 
-# curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
+# curl -XPOST -H "Accept: application/json, text/plain, */*"
+#             -H "Content-Type: application/x-www-form-urlencoded"
+#             'http://127.0.0.1:8888/render'
+#             -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
 
 secs_per_res = {
@@ -209,7 +212,9 @@ class TenantBluefloodFinder(threading.Thread):
     elif (query_depth > 1) and (submetric_alias in self.submetric_aliases):
       for metric in self.find_metrics(complete_pattern):
         if self.complete(metric, complete_len):
-          yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
+          yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]),
+                                        TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
+                                                              self.enable_submetrics, self.submetric_aliases, None))
 
     #everything else is a branch node
     else: 
@@ -224,13 +229,17 @@ class TenantBluefloodFinder(threading.Thread):
       metric_parts = metric.split('.')
       yield BranchNode('.'.join(metric_parts[:complete_len]))
     else:
-      yield TenantBluefloodLeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
+      yield TenantBluefloodLeafNode(metric,
+                                    TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
+                                                          self.enable_submetrics, self.submetric_aliases, None))
 
   def make_enum_nodes(self, metric, enums, pattern):
     for e in enums:
       metric_with_enum = metric + '.' + e
       if fnmatch.fnmatchcase(metric_with_enum, pattern):
-        yield TenantBluefloodLeafNode(metric_with_enum, TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, e))
+        yield TenantBluefloodLeafNode(metric_with_enum,
+                                      TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint,
+                                                            self.enable_submetrics, self.submetric_aliases, e))
 
 
 
@@ -258,6 +267,9 @@ class TenantBluefloodFinder(threading.Thread):
             yield n
 
   def find_nodes(self, query):
+    """
+    Returns a list of metric names based on a glob pattern, and corresponds to the BF "/search" endpoint.
+    """
     #yields all valid metric names matching glob based query
     try:
       print "TenantBluefloodFinder.query: " + str(query.pattern)
@@ -277,6 +289,9 @@ class TenantBluefloodFinder(threading.Thread):
      raise e
 
   def fetch_multi(self, nodes, start_time, end_time):
+    """
+    Returns the data for a list of metrics and corresponds to the BF "multiplot" endpoint.
+    """
     return self.client.fetch_multi(nodes, start_time, end_time)
 
   def find_events_endpoint(self, endpoint, tenant):

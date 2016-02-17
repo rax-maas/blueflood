@@ -9,7 +9,7 @@ import threading
 from blueflood import TenantBluefloodFinder, TenantBluefloodReader, TenantBluefloodLeafNode, \
      BluefloodClient, auth, calc_res, secs_per_res, NonNestedDataKey, NestedDataKey
 
-#To run these test you need to set up the environment vars below
+#To run these tests you need to set up the environment vars below
 try:
   auth_api_key = os.environ['AUTH_API_KEY']
   auth_user_name = os.environ['AUTH_USER_NAME']
@@ -66,6 +66,8 @@ class BluefloodTests(TestCase):
   TenantBluefloodFinder.find_metrics_with_enum_values = mock_find_metrics_with_enum_values
 
   def setUp(self):
+    if not (auth_config or no_auth_config):
+        self.fail("Failing: Environment variables not set")
     self.alias_key = '_avg'
     config = {'blueflood':
               {'urls':["http://dummy.com"],
@@ -476,9 +478,25 @@ class BluefloodTests(TestCase):
       self.assertSequenceEqual(time_info, (1426120000, 1426147300, 300))
       self.assertDictEqual(dictionary,
                            {'e.f.g': 
-                            [6421.18, 8643.402222222223, 10865.624444444446, 13087.846666666668, 15310.06888888889, 17532.291111111113, 19754.513333333336, 21976.73555555556, 24198.95777777778, 26421.18, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], 
+                            [6421.18, 8643.402222222223, 10865.624444444446, 13087.846666666668, 15310.06888888889,
+                             17532.291111111113, 19754.513333333336, 21976.73555555556, 24198.95777777778, 26421.18,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None],
                             'a.b.c': 
-                            [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 4449.97, 4926.160476190476, 5402.350952380953, 5878.541428571429, 6354.731904761905, 6830.922380952381, 7307.112857142857, 7783.303333333333, 8259.49380952381, 8735.684285714287, 9211.874761904764, 9688.065238095242, 10164.255714285719, 10640.446190476196, 11116.636666666673, 11592.82714285715, 12069.017619047627, 12545.208095238104, 13021.39857142858, 13497.589047619058, 13973.779523809535, 14449.97, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]})
+                            [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, 4449.97, 4926.160476190476, 5402.350952380953, 5878.541428571429,
+                             6354.731904761905, 6830.922380952381, 7307.112857142857, 7783.303333333333,
+                             8259.49380952381, 8735.684285714287, 9211.874761904764, 9688.065238095242,
+                             10164.255714285719, 10640.446190476196, 11116.636666666673, 11592.82714285715,
+                             12069.017619047627, 12545.208095238104, 13021.39857142858, 13497.589047619058,
+                             13973.779523809535, 14449.97, None, None, None, None, None, None, None, None, None, None,
+                             None, None, None, None, None, None, None, None, None, None]})
 
     with requests_mock.mock() as m:
       m.post(endpoint, json=exc_callback, status_code=200)
@@ -573,10 +591,12 @@ class BluefloodTests(TestCase):
                    {u'timestamp': third_time, u'enum_values': {u'v1': third_val}, u'numPoints': 3}]
 
     ret = b.process_path(values, start_time, end_time, step, data_key)
-    self.assertSequenceEqual(ret, (None, None, first_val, first_val + 4, first_val + 8, second_val, second_val + 4, second_val + 8, third_val , None, None))
+    self.assertSequenceEqual(ret, (None, None, first_val, first_val + 4, first_val + 8, second_val,
+                                   second_val + 4, second_val + 8, third_val , None, None))
 
     ret = b.process_path(enum_values, start_time, end_time, step, enum_data_key)
-    self.assertSequenceEqual(ret, (None, None, first_val, first_val + 4, first_val + 8, second_val, second_val + 4, second_val + 8, third_val , None, None))
+    self.assertSequenceEqual(ret, (None, None, first_val, first_val + 4, first_val + 8, second_val,
+                                   second_val + 4, second_val + 8, third_val , None, None))
 
 if __name__ == '__main__':
   unittest.main()
