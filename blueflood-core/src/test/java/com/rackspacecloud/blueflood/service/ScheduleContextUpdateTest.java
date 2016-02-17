@@ -54,10 +54,7 @@ public class ScheduleContextUpdateTest {
 
         // then
         UpdateStamp stamp = ctx.getShardStateManager().getUpdateStamp(slotkey5);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
         Assert.assertEquals(0, ctx.getScheduledCount());
     }
 
@@ -78,35 +75,28 @@ public class ScheduleContextUpdateTest {
         UpdateStamp stamp;
 
         stamp = mgr.getUpdateStamp(slotkey5);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
 
         stamp = mgr.getUpdateStamp(slotkey20);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
 
         stamp = mgr.getUpdateStamp(slotkey60);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
 
         stamp = mgr.getUpdateStamp(slotkey240);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
 
         stamp = mgr.getUpdateStamp(slotkey1440);
-        Assert.assertNotNull(stamp);
-        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
-        Assert.assertEquals(now, stamp.getTimestamp());
-        Assert.assertTrue(stamp.isDirty());
+        assertStampStateAndTimestampAndDirtyFlag(stamp, UpdateStamp.State.Active, now, true);
 
         Assert.assertEquals(0, ctx.getScheduledCount());
+    }
+
+    private void assertStampStateAndTimestampAndDirtyFlag(UpdateStamp stamp, UpdateStamp.State state, long timestamp, boolean dirty) {
+
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(state, stamp.getState());
+        Assert.assertEquals(timestamp, stamp.getTimestamp());
+        Assert.assertEquals(dirty, stamp.isDirty());
     }
 }
