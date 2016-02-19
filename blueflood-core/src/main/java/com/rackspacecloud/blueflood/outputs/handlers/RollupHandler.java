@@ -102,13 +102,11 @@ public class RollupHandler {
             rollupsOnReadExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
         }
 
-        if (!Configuration.getInstance().getBooleanProperty(CoreConfig.TURN_OFF_RR_MPLOT)) {
-            ThreadPoolExecutor rollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
-                    .withCorePoolSize( Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_REPAIR_THREADS ))
-                    .withMaxPoolSize( Configuration.getInstance().getIntegerProperty( CoreConfig.ROLLUP_ON_READ_REPAIR_THREADS ) )
-                    .withName( "Create Repair Points Rollups on Read Executors" ).build();
-            createRepairPointsExecutor = MoreExecutors.listeningDecorator(rollupsOnReadExecutors);
-        }
+        ThreadPoolExecutor createRepairrollupsOnReadExecutors = new ThreadPoolBuilder().withUnboundedQueue()
+                .withCorePoolSize( Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_REPAIR_THREADS ))
+                .withMaxPoolSize( Configuration.getInstance().getIntegerProperty( CoreConfig.ROLLUP_ON_READ_REPAIR_THREADS ) )
+                .withName( "Create Repair Points Rollups on Read Executors" ).build();
+        createRepairPointsExecutor = MoreExecutors.listeningDecorator(createRepairrollupsOnReadExecutors);
     }
 
     private enum plotTimers {
@@ -343,6 +341,8 @@ public class RollupHandler {
                 repairedPoints.addAll( subList );
             }
         } catch (Exception e) {
+            aggregateFuture.cancel(true);
+            exceededQueryTimeout.mark();
             log.warn("Exception encountered while doing rollups on read, incomplete rollups will be returned.", e);
         }
 
