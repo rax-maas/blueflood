@@ -44,7 +44,7 @@ dpkg -i /tmp/elasticsearch-$es_version.deb
 update-rc.d elasticsearch defaults 95 10
 mv /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/elasticsearch-default.yml
 echo cluster.name: es_grafana > /etc/elasticsearch/elasticsearch.yml
-echo network.host: 127.0.0.1 >> /etc/elasticsearch/elasticsearch.yml
+echo network.host: 192.168.50.4 >> /etc/elasticsearch/elasticsearch.yml
 /etc/init.d/elasticsearch start
 htpasswd -b -c /etc/nginx/.htpasswd $apache_auth_user $apache_auth_password
 curl -o /tmp/grafana-$gr_version.tar.gz http://grafanarel.s3.amazonaws.com/grafana-$gr_version.tar.gz
@@ -57,10 +57,10 @@ export heat_one_parameter='$1'
 export heat_host_parameter='$host'
 cat > /etc/nginx/sites-available/grafana << EOL
 upstream graphite {
-  server 127.0.0.1:8888;
+  server 192.168.50.4:8888;
 }
 upstream elasticsearch {
-  server 127.0.0.1:9200;
+  server 192.168.50.4:9200;
 }
 server {
   listen 80;
@@ -145,11 +145,11 @@ function (Settings) {
     datasources: {
       graphite: {
         type: 'graphite',
-        url: 'http://'+window.location.hostname+':4567/graphite',
+        url: 'http://'+window.location.hostname+'/graphite',
       },
       elasticsearch: {
         type: 'elasticsearch',
-        url: 'http://'+window.location.hostname+':4567/elasticsearch',
+        url: 'http://'+window.location.hostname+'/elasticsearch',
         index: 'grafana-dash',
         grafanaDB: true,
       },
@@ -185,7 +185,7 @@ start on runlevel [2345]
 stop on runlevel [!2345]
 console log
 respawn
-exec gunicorn -b 127.0.0.1:8888 -w 8 graphite_api.app:app
+exec gunicorn -b 192.168.50.4:8888 -w 8 graphite_api.app:app
 EOL
 cat > /root/.raxrc << EOL
 [credentials]
