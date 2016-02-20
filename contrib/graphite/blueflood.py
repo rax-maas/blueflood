@@ -13,6 +13,9 @@ import fnmatch
 import Queue
 import threading
 
+import logging
+
+logger = logging.getLogger('blueflood_finder')
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -59,6 +62,7 @@ def calc_res(start, stop):
 class TenantBluefloodFinder(threading.Thread):
   __fetch_multi__ = 'tenant_blueflood'
   __fetch_events__ = 'tenant_blueflood'
+
   def __init__(self, config=None):
     print("Blueflood Finder v31")
     threading.Thread.__init__(self)
@@ -270,6 +274,7 @@ class TenantBluefloodFinder(threading.Thread):
     """
     Returns a list of metric names based on a glob pattern, and corresponds to the BF "/search" endpoint.
     """
+    logger.debug("find_nodes query: %s", query)
     #yields all valid metric names matching glob based query
     try:
       print "TenantBluefloodFinder.query: " + str(query.pattern)
