@@ -40,4 +40,4 @@ To run test, run the below command
 
 To run tests you can also run
 
-    nosetests
+    nosetests -v

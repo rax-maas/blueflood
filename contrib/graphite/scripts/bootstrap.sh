@@ -16,10 +16,18 @@ apache_auth_password="grafana"
 gr_version="1.8.1"
 es_version="1.3.4"
 rax_tenant="836986"
-rax_username="<username>"
-rax_apikey="<api key>"
-rax_auth_indicator="rax_auth"
-bf_url=http://staging.metrics.api.rackspacecloud.com
+
+#staging
+#rax_username="<username>"
+#rax_apikey="<api key>"
+#rax_auth_indicator="rax_auth"
+#bf_url=http://staging.metrics.api.rackspacecloud.com
+
+#local
+rax_username="local"
+rax_apikey="local"
+rax_auth_indicator=""
+bf_url=http://192.168.50.1:20000
 
 exec 2>&1
 exec 1>/tmp/bash-debug.log
@@ -89,9 +97,10 @@ ln -s /etc/nginx/sites-available/grafana /etc/nginx/sites-enabled/grafana
 pip install gunicorn
 pip install --upgrade "git+http://github.com/rackerlabs/graphite-api.git@george/fetch_multi_with_patches"
 
+#WE still get the latest code for blueflood_grafana_plugin
+git -C /tmp clone https://github.com/rackerlabs/blueflood.git
+git -C /tmp/blueflood checkout master
 # Using local code instead of downloading from git
-# git -C /tmp clone https://github.com/rackerlabs/blueflood.git
-# git -C /tmp/blueflood checkout master
 # cd /tmp/blueflood/contrib/graphite
 cd /vagrant
 python setup.py install
