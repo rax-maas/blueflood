@@ -16,94 +16,156 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.regex.Pattern;
+
+import static org.junit.Assert.*;
 
 public class JSONMetricsContainerTest {
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final StringWriter writer = new StringWriter();
-    private final TypeFactory typeFactory = TypeFactory.defaultInstance();
 
+    public static final String PAST_COLLECTION_TIME_REGEX = ".* is more than '259200000' milliseconds into the past\\.$";
+    public static final String FUTURE_COLLECTION_TIME_REGEX = ".* is more than '600000' milliseconds into the future\\.$";
+    public static final String NO_TENANT_ID_REGEX = ".* No tenantId is provided for the metric\\.";
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final long MINUTE = 60000;
+
+    private final TypeFactory typeFactory = TypeFactory.defaultInstance();
+    private final long current = System.currentTimeMillis();
     @Test
     public void testJSONMetricsContainerConstruction() throws Exception {
-        // This part tests Jackson JSON mapper
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
-                mapper.readValue(
-                        generateJSONMetricsData(),
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.JSONMetric.class)
-                );
-        // Construct the JSONMetricsContainter from JSON metric objects
-        JSONMetricsContainer jsonMetricsContainer = new JSONMetricsContainer("ac1", jsonMetrics);
+         // Construct the JSONMetricsContainter from JSON metric objects
+        JSONMetricsContainer jsonMetricsContainer = getContainer( "ac1", generateJSONMetricsData() );
 
         List<Metric> metricsCollection = jsonMetricsContainer.toMetrics();
 
-        Assert.assertTrue(metricsCollection.size() == 2);
-        Assert.assertEquals("ac1.mzord.duration", metricsCollection.get(0).getLocator().toString());
-        Assert.assertEquals(Long.MAX_VALUE, metricsCollection.get(0).getMetricValue());
-        Assert.assertEquals(1234566, metricsCollection.get(0).getTtlInSeconds());
-        Assert.assertEquals(1234567890L, metricsCollection.get(0).getCollectionTime());
-        Assert.assertEquals("milliseconds", metricsCollection.get(0).getUnit());
-        Assert.assertEquals("N", metricsCollection.get(0).getDataType().toString());
+        assertTrue( jsonMetricsContainer.getValidationErrors().isEmpty() );
+        assertTrue( metricsCollection.size() == 2 );
+        assertEquals( "ac1.mzord.duration", metricsCollection.get( 0 ).getLocator().toString() );
+        assertEquals( Long.MAX_VALUE, metricsCollection.get( 0 ).getMetricValue() );
+        assertEquals( 1234566, metricsCollection.get( 0 ).getTtlInSeconds() );
+        assertTrue( current - metricsCollection.get( 0 ).getCollectionTime() < MINUTE );
+        assertEquals( "milliseconds", metricsCollection.get( 0 ).getUnit() );
+        assertEquals( "N", metricsCollection.get( 0 ).getDataType().toString() );
 
-        Assert.assertEquals("ac1.mzord.status", metricsCollection.get(1).getLocator().toString());
-        Assert.assertEquals("Website is up", metricsCollection.get(1).getMetricValue());
-        Assert.assertEquals("unknown", metricsCollection.get(1).getUnit());
-        Assert.assertEquals("S", metricsCollection.get(1).getDataType().toString());
+        assertEquals( "ac1.mzord.status", metricsCollection.get( 1 ).getLocator().toString() );
+        assertEquals( "Website is up", metricsCollection.get( 1 ).getMetricValue() );
+        assertEquals( "unknown", metricsCollection.get( 1 ).getUnit() );
+        assertEquals( "S", metricsCollection.get( 1 ).getDataType().toString() );
     }
 
     @Test
-    public void testBigIntHandling() {
-        String jsonBody = "[{\"collectionTime\":1401302372775,\"ttlInSeconds\":172800,\"metricValue\":18446744073709000000,\"metricName\":\"used\",\"unit\":\"unknown\"}]";
+    public void testBigIntHandling() throws IOException {
+        String jsonBody = "[{\"collectionTime\": " + current + ",\"ttlInSeconds\":172800,\"metricValue\":18446744073709000000,\"metricName\":\"used\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container = null;
-        try {
-            List<JSONMetricsContainer.JSONMetric> jsonMetrics =
-                mapper.readValue(
-                        jsonBody,
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.JSONMetric.class)
-                );
-            container = new JSONMetricsContainer("786659", jsonMetrics);
-        } catch (Exception e) {
-            Assert.fail("Jackson failed to parse a big int");
-        }
+        JSONMetricsContainer container = getContainer( "786659", jsonBody );
 
-        try {
-            List<Metric> metrics = container.toMetrics();
-        } catch (Exception ex) {
-            Assert.fail();
-        }
+        List<Metric> metrics = container.toMetrics();
+        assertTrue( container.getValidationErrors().isEmpty() );
     }
 
     @Test
     public void testDelayedMetric() throws Exception {
-        String jsonBody = "[{\"collectionTime\":1401302372775,\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+        long time = current - 1000 - Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_MILLIS);
+        String jsonBody = "[{\"collectionTime\": " + time  + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container = null;
+        JSONMetricsContainer container = getContainer("786659", jsonBody );
 
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
-                mapper.readValue(
-                        jsonBody,
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.JSONMetric.class)
-                );
-        container = new JSONMetricsContainer("786659", jsonMetrics);
+        // has a side-effect required by areDelayedMetricsPresent()
         List<Metric> metrics = container.toMetrics();
-        Assert.assertTrue(container.areDelayedMetricsPresent());
+
+        assertTrue( container.getValidationErrors().isEmpty() );
+        assertTrue( container.areDelayedMetricsPresent() );
     }
 
     @Test
     public void testDelayedMetricFalseForRecentMetric() throws Exception {
-        String jsonBody = "[{\"collectionTime\":"+System.currentTimeMillis()+",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+        String jsonBody = "[{\"collectionTime\":" + current + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container = null;
+        JSONMetricsContainer container = getContainer( "786659", jsonBody );
+
+        // has a side-effect required by areDelayedMetricsPresent()
+        List<Metric> metrics = container.toMetrics();
+
+        assertTrue( container.getValidationErrors().isEmpty() );
+        assertFalse( container.areDelayedMetricsPresent() );
+    }
+
+    @Test
+    public void testScopedJsonMetric() throws IOException {
+        String jsonBody = "[{\"tenantId\": 12345, \"collectionTime\":" + current + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container =  getScopedContainer( "786659", jsonBody);
+        assertTrue( container.getValidationErrors().isEmpty() );
+    }
+
+    @Test
+    public void testScopedJsonMetricNoTenantFail() throws IOException {
+        String jsonBody = "[{\"collectionTime\":" + current + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container =  getScopedContainer( "786659", jsonBody );
+        List<String> errors = container.getValidationErrors();
+
+        assertEquals( 1, errors.size() );
+        assertTrue( Pattern.matches( NO_TENANT_ID_REGEX, errors.get( 0 ) ) );
+    }
+
+    @Test
+    public void testNoCollectionTime() throws IOException {
+
+        String jsonBody = "[{\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = getContainer( "786659", jsonBody );
+        List<String> errors = container.getValidationErrors();
+
+        assertEquals( 1, errors.size() );
+        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+    }
+
+    @Test
+    public void testCollectionTimeFutureFail() throws IOException {
+
+        long time = current + 1000 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        String jsonBody = "[{\"collectionTime\":" + time + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = getContainer( "786659", jsonBody );
+        List<String> errors = container.getValidationErrors();
+        assertEquals( 1, errors.size() );
+        assertTrue(  Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+    }
+
+    @Test
+    public void testCollectionTimePastFail() throws IOException {
+
+        long time = current - 1000 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        String jsonBody = "[{\"collectionTime\":" + time + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
+
+        JSONMetricsContainer container = getContainer( "786659", jsonBody );
+        List<String> errors = container.getValidationErrors();
+        assertEquals( 1, errors.size() );
+        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+    }
+
+    private JSONMetricsContainer getScopedContainer( String name, String jsonBody ) throws java.io.IOException {
+
+        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+                mapper.readValue(
+                        jsonBody,
+                        typeFactory.constructCollectionType(List.class,
+                                JSONMetricsContainer.ScopedJSONMetric.class)
+                );
+        return new JSONMetricsContainer( name, jsonMetrics);
+    }
+    private JSONMetricsContainer getContainer( String name, String jsonBody ) throws java.io.IOException {
 
         List<JSONMetricsContainer.JSONMetric> jsonMetrics =
                 mapper.readValue(
@@ -111,41 +173,42 @@ public class JSONMetricsContainerTest {
                         typeFactory.constructCollectionType(List.class,
                                 JSONMetricsContainer.JSONMetric.class)
                 );
-        container = new JSONMetricsContainer("786659", jsonMetrics);
-        List<Metric> metrics = container.toMetrics();
-        Assert.assertFalse(container.areDelayedMetricsPresent());
+        return new JSONMetricsContainer( name, jsonMetrics);
     }
 
-    public static List<Map<String, Object>> generateMetricsData() throws Exception {
+    public static List<Map<String, Object>> generateMetricsData( String metricPrefix, long collectionTime ) {
+
         List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
 
         // Long metric value
         Map<String, Object> testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", "mzord.duration");
+        testMetric.put("metricName", metricPrefix + "mzord.duration");
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
         testMetric.put("metricValue", Long.MAX_VALUE);
-        testMetric.put("collectionTime", 1234567890L);
+        testMetric.put("collectionTime", collectionTime );
         metricsList.add(testMetric);
 
         // String metric value
         testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", "mzord.status");
+        testMetric.put("metricName", metricPrefix + "mzord.status");
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");
         testMetric.put("metricValue", "Website is up");
-        testMetric.put("collectionTime", 1234567890L);
+        testMetric.put("collectionTime", collectionTime );
         metricsList.add(testMetric);
 
         // null metric value. This shouldn't be in the final list of metrics because we ignore null valued metrics.
         testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", "mzord.hipster");
+        testMetric.put("metricName", metricPrefix + "mzord.hipster");
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");
         testMetric.put("metricValue", null);
-        testMetric.put("collectionTime", 1234567890L);
+        testMetric.put("collectionTime", collectionTime );
         metricsList.add(testMetric);
+
         return metricsList;
+
     }
 
     public static List<Map<String, Object>> generateAnnotationsData() throws Exception {
@@ -163,26 +226,48 @@ public class JSONMetricsContainerTest {
     }
 
     public static String generateJSONAnnotationsData() throws Exception {
-        mapper.writeValue(writer, generateAnnotationsData());
-        final String jsonString = writer.toString();
 
-        return jsonString;
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateAnnotationsData());
+
+        return writer.toString();
     }
 
-    public static String generateJSONMetricsData() throws Exception {
-        mapper.writeValue(writer, generateMetricsData());
-        final String jsonString = writer.toString();
+    public static String generateJSONMetricsData( long collectionTime ) throws Exception {
 
-        return jsonString;
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsData( "", collectionTime ));
+
+        return writer.toString();
+    }
+
+    public static String generateJSONMetricsData( String metricPrefix, long collectionTime ) throws Exception {
+
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsData( metricPrefix, collectionTime ));
+
+        return writer.toString();
+    }
+
+
+    public static String generateJSONMetricsData( String metricPrefix ) throws Exception {
+        return generateJSONMetricsData( metricPrefix, System.currentTimeMillis() );
+    }
+
+
+    public static String generateJSONMetricsData() throws Exception {
+        return generateJSONMetricsData( System.currentTimeMillis() );
     }
 
     public static String generateMultitenantJSONMetricsData() throws Exception {
+        long collectionTime = System.currentTimeMillis();
+
         List<Map<String, Object>> dataOut = new ArrayList<Map<String, Object>>();
-        for (Map<String, Object> stringObjectMap : generateMetricsData()) {
+        for (Map<String, Object> stringObjectMap : generateMetricsData( "", collectionTime )) {
             stringObjectMap.put("tenantId", "tenantOne");
             dataOut.add(stringObjectMap);
         }
-        for (Map<String, Object> stringObjectMap : generateMetricsData()) {
+        for (Map<String, Object> stringObjectMap : generateMetricsData( "", collectionTime )) {
             stringObjectMap.put("tenantId", "tenantTwo");
             dataOut.add(stringObjectMap);
         }

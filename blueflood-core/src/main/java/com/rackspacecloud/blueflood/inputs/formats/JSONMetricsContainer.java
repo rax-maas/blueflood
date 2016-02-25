@@ -21,10 +21,12 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -33,20 +35,24 @@ public class JSONMetricsContainer {
     private final List<JSONMetric> jsonMetrics;
     private List<Metric> delayedMetrics;
     private static final long delayedMetricsMillis = Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_MILLIS);
+    private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
     public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
         this.tenantId = tenantId;
         this.jsonMetrics = metrics;
     }
 
-    public boolean isValid() {
+    public List<String> getValidationErrors() {
+
+        List<String> errors = new ArrayList<String>();
+
         // Validate that any ScopedJSONMetric is actually scoped to a tenant.
         for (JSONMetric jsonMetric : this.jsonMetrics) {
-            if (!jsonMetric.isValid()) {
-                return false;
-            }
+            errors.addAll( jsonMetric.getValidationErrors() );
         }
-        return true;
+
+        return errors;
     }
 
     public List<Metric> toMetrics() {
@@ -132,8 +138,20 @@ public class JSONMetricsContainer {
         }
 
         @JsonIgnore
-        public boolean isValid() {
-            return true;
+        public List<String> getValidationErrors() {
+
+            long current = System.currentTimeMillis();
+
+            List<String> errors = new ArrayList<String>();
+
+            // collectionTime is an optional parameter
+            if ( collectionTime > current + futureDiff )
+                errors.add( "'" + metricName + "': 'collectionTime' '" + collectionTime + "' is more than '" + futureDiff + "' milliseconds into the future." );
+
+            if ( collectionTime < current - pastDiff )
+                errors.add( "'" + metricName + "': 'collectionTime' '" + collectionTime + "' is more than '" + pastDiff + "' milliseconds into the past." );
+
+            return errors;
         }
     }
 
@@ -144,9 +162,17 @@ public class JSONMetricsContainer {
 
         public void setTenantId(String tenantId) { this.tenantId = tenantId; }
 
+        @Override
         @JsonIgnore
-        public boolean isValid() {
-            return (tenantId != null && super.isValid());
+        public List<String> getValidationErrors() {
+
+            List<String> errors = super.getValidationErrors();
+
+            if( StringUtils.isBlank( tenantId ) ) {
+                errors.add( "'" + getMetricName() + "': No tenantId is provided for the metric." );
+            }
+
+            return errors;
         }
     }
 }
