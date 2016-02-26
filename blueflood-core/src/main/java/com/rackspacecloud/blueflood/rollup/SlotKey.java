@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Immutable data structure representing the current slot being checked. 3-tuple of (shard, slot, granularity).
+ * Immutable data structure representing the current slot being checked.
+ * 3-tuple of (shard, slot, granularity).
  *
  * @author Jeeyoung Kim
  */
@@ -92,6 +93,24 @@ public final class SlotKey {
         }
     }
 
+    /**
+     * This method creates a collection of SlotKeys that are within the same
+     * timespan of the current SlotKey but of a finer granularity. For example,
+     * a SlotKey of granularity MIN_20 will have four child keys, each of
+     * granularity MIN_5.
+     *
+     * This method is recursive, so that it also includes
+     * the current SlotKey's children and their children, and so on, down to
+     * the finest granularity. For example, a SlotKey of granularity MIN_1440
+     * will have 6 immediate children of granularity MIN_240, 6*4=24 descendant
+     * SlotKeys of granularity MIN_60, 6*4*3=72 descendant SlotKeys of
+     * granularity MIN_20, 6*4*3*4=288 descendant SlotKeys of granularity MIN_5,
+     * and 6*4*3*4*1=288 descendant SlotKeys of granularity FULL; in that case,
+     * the top-level call of this method will return a collection of 678
+     * descendants.
+     *
+     * @return a Collection of all descendant SlotKeys
+     */
     public Collection<SlotKey> getChildrenKeys() {
         if (granularity == Granularity.FULL) {
             return ImmutableList.of();
