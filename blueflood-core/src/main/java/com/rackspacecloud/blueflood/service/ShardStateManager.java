@@ -182,26 +182,33 @@ public class ShardStateManager {
          *
          * Imagine metrics are flowing in from multiple ingestor nodes. The
          * ingestion path updates schedule context while writing metrics to
-         * cassandra.(See BatchWriter) We cannot make any ordering guarantees
-         * on the metrics. So every metric that comes in updates the slot state
-         * to its collection time.
+         * cassandra.(See
+         * {@link com.rackspacecloud.blueflood.inputs.processors.BatchWriter BatchWriter}).
+         * We cannot make any ordering guarantees on the metrics. So every
+         * metric that comes in updates the slot state to its collection time.
+         * <p>
          *
-         * This state gets pushed in cassandra by ShardStatePusher and read on
+         * This state gets pushed in cassandra by {@link ShardStatePusher} and read on
          * the rollup slave. Rollup slave is going to update its state to
-         * ACTIVE as long as the timestamp does not match. Rollup slave shard
-         * map can be in 3 states: 1) Active 2) Rolled 3) Running. Every ACTIVE
-         * update is taken for Rolled and Running states, but if the shard map
-         * is already in an ACTIVE state, then the update happens only if the
-         * timestamp of update coming in if greater than what we have. On
-         * Rollup slave it means eventually when it rolls up data for the
-         * ACTIVE slot, it will be marked with the collection time belonging to
-         * a metric which was generated later.
+         * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Active ACTIVE}
+         * as long as the timestamp does not match. Rollup slave shard
+         * map can be in 3 states:
+         * 1) {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Active Active}
+         * 2) {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Rolled Rolled}
+         * 3) {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Running Running}.
+         * Every {@code ACTIVE} update is taken for Rolled and Running states,
+         * but if the shard map is already in an {@code ACTIVE} state, then the
+         * update happens only if the timestamp of update coming in if greater
+         * than what we have. On Rollup slave it means eventually when it rolls
+         * up data for the {@code ACTIVE} slot, it will be marked with the
+         * collection time belonging to a metric which was generated later.
+         * <p>
          *
          * For a case of multiple ingestors, it means eventually higher
          * timestamp will win, and will be updated even if that ingestor did
          * not receive metric with that timestamp and will stop triggering the
-         * state to ACTIVE on rollup host. After this convergence is reached
-         * the last rollup time match with the last active times on all
+         * state to {@code ACTIVE} on rollup host. After this convergence is
+         * reached the last rollup time match with the last active times on all
          * ingestor nodes.
          *
          */

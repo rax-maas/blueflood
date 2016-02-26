@@ -46,35 +46,51 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * The ScheduleContext class coordinates access to the states of slots. It
- * mediates between the rollup service, the ingestion service, and the database.
+ * The {@code ScheduleContext} class coordinates access to the states of slots.
+ * It mediates between the rollup service, the ingestion service, and the
+ * database.
+ * <p>
  *
  * The class's chief purpose is to coordinate access to slots' states and the
- * list of slots that need to be re-rolled between RollupService,
- * IngestionService, and Cassandra. There's several other classes and
- * components involved, but those are the most important.
+ * list of slots that need to be re-rolled between {@link RollupService},
+ * {@link IngestionService}, and the database. There's several other classes
+ * and components involved, but those are the most important.
+ * <p>
  *
  * When ingestion services receive incoming metrics, they will change the
- * associated slot's state to Active (needs to be re-rolled) by calling
- * update(). That state information will be persisted to the database by the
- * ShardStatePusher class. On the rollup nodes, the ShardStatePuller will read
- * the state info into memory by calling SlotStateManager.updateSlotOnRead().
+ * associated slot's state to
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Active Active}
+ * (needs to be re-rolled) by calling {@link #update(long, int)}. That state
+ * information will be persisted to the database by the
+ * {@link ShardStatePusher} class. On the rollup nodes, the
+ * {@link ShardStatePuller} will read the state info into memory by calling
+ * {@link com.rackspacecloud.blueflood.service.ShardStateManager.SlotStateManager#updateSlotOnRead(SlotState)}.
  * The rollup service will then identity slots that need to be re-rolled (by
- * calling scheduleSlotsOlderThan), pick a slot to rollup and mark it as
- * Running (via getNextScheduled), do the rollup, and then mark the slot as
- * Rolled (via clearFromRunning).
+ * calling {@link #scheduleSlotsOlderThan(long)}), pick a slot to rollup and
+ * mark it as
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Running Running}
+ * (via {@link #getNextScheduled()} ), do the rollup, and then mark the slot as
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Rolled Rolled}
+ * (via {@link #clearFromRunning(SlotKey)}).
+ * <p>
  *
  * If doing the rollup fails for some reason, the rollup service will call
- * pushBackToScheduled, to return the slot to the queue of slots to be rolled.
+ * {@link #pushBackToScheduled(SlotKey, boolean)}, to return the slot to the
+ * queue of slots to be rolled.
+ * <p>
  *
- * There are additional methods for managing shards (addShard and removeShard)
- * which don't appear to be used.
+ * There are additional methods for managing shards ({@link #addShard(int)} and
+ * {@link #removeShard(int)}) which don't appear to be used.
+ * <p>
  *
  * There are also methods which provide information about the state of things
- * (e.g. getScheduledCount, getSlotStamps, getRecentlyScheduledShards,
- * getMetricsState) which either aren't used, are only used for testing, or are
- * used to provide information to external system via JMX or yammer metrics.
- *
+ * (e.g. {@link #getScheduledCount()},
+ * {@link #getSlotStamps(Granularity, int)},
+ * {@link #getRecentlyScheduledShards()},
+ * {@link #getMetricsState(int, String, int)}) which either aren't used, are
+ * only used for testing, or are used to provide information to external system
+ * via JMX or yammer metrics.
+ * <p>
  *
  *
  *
@@ -111,10 +127,10 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     private final Set<SlotKey> scheduledSlots = new HashSet<SlotKey>();
 
     /**
-     * same information as scheduledSlots, but order is preserved. The ordered
-     * property is only needed for getting the the next scheduled slot, but
-     * most operations are concerned with if a slot is scheduled or not. When
-     * you update one, you must update the other.
+     * same information as {@link #scheduledSlots}, but order is preserved. The
+     * ordered property is only needed for getting the the next scheduled slot,
+     * but most operations are concerned with if a slot is scheduled or not.
+     * When you update one, you must update the other.
      */
     private final List<SlotKey> orderedScheduledSlots = new ArrayList<SlotKey>();
     
@@ -172,12 +188,13 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     }
 
     /**
-     * Loop through all slots that are older than maxAgeMillis, at all
+     * Loop through all slots that are older than {@code maxAgeMillis}, at all
      * granularities, in all managed shards. If any are found that are not
-     * already running or scheduled, then add them to the set of scheduled
-     * slots. Note that maxAgeMillis is an age value, not a timestamp. If the
-     * difference between now and a given slot's UpdateStamp in milliseconds is
-     * greater than maxAgeMillis, then that slot will scheduled.
+     * already running or scheduled, then add them to the queue of scheduled
+     * slots. Note that {@code maxAgeMillis} is an age value, not a timestamp.
+     * If the difference between {@link #scheduleTime} and a given slot's
+     * {@link UpdateStamp} in milliseconds is greater than
+     * {@code maxAgeMillis}, then that slot will scheduled.
      *
      * @param maxAgeMillis
      */
@@ -282,10 +299,11 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
 
     /**
      * Take the given slot out of the running group, and put it back into the
-     * scheduled group. If rescheduleImmediately is true, the slot will be the
-     * next slot returned by a call to getNextScheduled(). If
-     * rescheduleImmediately is false, then the given slot will go to the end
-     * of the line, as when it was first scheduled by scheduleSlotsOlderThan().
+     * scheduled group. If {@code rescheduleImmediately} is true, the slot will
+     * be the next slot returned by a call to {@link #getNextScheduled()}. If
+     * {@code rescheduleImmediately} is false, then the given slot will go to
+     * the end of the line, as when it was first scheduled by
+     * {@link #scheduleSlotsOlderThan(long)}.
      *
      * @param key
      * @param rescheduleImmediately
@@ -380,9 +398,10 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     }
 
     /**
-     * Normal ticker behavior is to return nanoseconds elapsed since VM
-     * started. This returns milliseconds since the epoch based upon
-     * ScheduleContext's internal representation of time (scheduleTime).
+     * Normal {@link com.google.common.base.Ticker Ticker} behavior is to
+     * return nanoseconds elapsed since VM started. This returns milliseconds
+     * since the epoch based upon {@code ScheduleContext}'s internal
+     * representation of time ({@link #scheduleTime}).
      *
      * @return an anonymous Ticker object
      */

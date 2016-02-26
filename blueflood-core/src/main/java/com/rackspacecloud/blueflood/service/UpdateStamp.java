@@ -65,10 +65,10 @@ public class UpdateStamp {
     /**
      * The current state of a slot.
      *
-     * In the database, there are only two states we care about: Active and
-     * Rolled. Running is a ephemeral state during runtime.  It degrades to
-     * Active during a save restore (indicating it is not finished and should,
-     * therefore, not be considered rolled.
+     * In the database, there are only two states we care about: {@code Active}
+     * and {@code Rolled}. {@code Running} is a ephemeral state during runtime.
+     * It degrades to {@code Active} during a save restore (indicating it is
+     * not finished and should, therefore, not be considered rolled.
      */
     public enum State {
 
