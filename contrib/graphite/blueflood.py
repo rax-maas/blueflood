@@ -153,7 +153,7 @@ class TenantBluefloodFinder(threading.Thread):
 
   def find_metrics(self, query):
     #BF search command that returns metric names without enum values
-    return self.find_metrics_with_enum_values(query).keys()
+    return self.find_metrics_with_enum_values(query)
 
   def find_nodes_with_submetrics(self, query):
     # By definition, when using submetrics, the names of all Leafnodes must end in a submetric alias
@@ -197,7 +197,7 @@ class TenantBluefloodFinder(threading.Thread):
       # First modify the pattern to get a superset that includes already complete
       #  submetrics
       new_pattern = complete_pattern + '*'
-      for metric in self.find_metrics(new_pattern):
+      for (metric, enums) in self.find_metrics(new_pattern).items():
         metric_parts = metric.split('.')
         if self.complete(metric, complete_len) and fnmatch.fnmatchcase(metric, complete_pattern):
           for alias, _ in self.submetric_aliases.items():
@@ -214,7 +214,7 @@ class TenantBluefloodFinder(threading.Thread):
 
     #if searching for a particular submetric alias, create a leaf node for it
     elif (query_depth > 1) and (submetric_alias in self.submetric_aliases):
-      for metric in self.find_metrics(complete_pattern):
+      for (metric, enums) in self.find_metrics(complete_pattern).items():
         if self.complete(metric, complete_len):
           yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]),
                                         TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
@@ -222,18 +222,21 @@ class TenantBluefloodFinder(threading.Thread):
 
     #everything else is a branch node
     else: 
-      for metric in self.find_metrics(query.pattern):
+      for (metric, enums) in self.find_metrics(query.pattern).items():
         metric_parts = metric.split('.')
         if not self.complete(metric, complete_len):
           yield BranchNode('.'.join(metric_parts[:query_depth]))
 
 
-  def make_non_enum_node(self, metric, complete_len):
+  def make_non_enum_node(self, metric, enums, complete_len):
     if not self.complete(metric, complete_len):
       metric_parts = metric.split('.')
       yield BranchNode('.'.join(metric_parts[:complete_len]))
     else:
-      yield TenantBluefloodLeafNode(metric,
+      if enums:
+        yield BranchNode(metric)
+      else:
+        yield TenantBluefloodLeafNode(metric,
                                     TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
                                                           self.enable_submetrics, self.submetric_aliases, None))
 
@@ -257,8 +260,9 @@ class TenantBluefloodFinder(threading.Thread):
       self.metrics_q.put(enum_name)
 
     # find non enum nodes
-    for metric in self.find_metrics(query.pattern):
-      for n in self.make_non_enum_node(metric, complete_len):
+    for (metric, enums) in self.find_metrics(query.pattern).items():
+      for n in self.make_non_enum_node(metric, enums, complete_len):
+        logger.debug("Node: %s", n)
         yield n
 
     # get the results of the background read to add enums
@@ -268,6 +272,7 @@ class TenantBluefloodFinder(threading.Thread):
         metric_len = len(metric.split('.'))
         if enums and (metric_len + 1 == complete_len):
           for n in self.make_enum_nodes(metric, enums, query.pattern):
+            logger.debug("Node: %s", n)
             yield n
 
   def find_nodes(self, query):

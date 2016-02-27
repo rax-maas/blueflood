@@ -19,11 +19,11 @@ bf_query_url = 'http://localhost:20000/v2.0/836986/metrics/search?include_enum_v
 
 def generate_metric_names():
     # The below code generate metric names's which match the below regex.
-    #         one\.two\.three[0-2][0-9].four[A-C].five[0-2]
+    #         one\.two\.three00\.four[A-C]\.five[0-2]
     #
     # Examples:
     #         one.two.three00.fourA.five0
-    #         one.two.three29.fourC.five2
+    #         one.two.three00.fourB.five2
     metric_names = []
     for i in xrange(0, num_parent_elements):
         for j in child_element_suffix:
@@ -35,6 +35,17 @@ def generate_metric_names():
     metric_names.append('one.two.three00.fourD')
 
     return metric_names
+
+
+def generate_enum_metrics():
+    metric_data = [('one.two.three00.fourA.five100', ['ev1-1', 'ev2-1']),
+                   ('one.two.three00.fourD.five100', ['ev1-2', 'ev2-2']),
+                   ('one.two.three00.fourE',         ['ev1', 'ev2']),
+                   ('one.two.three00',               ['fourA', 'fourB']),
+                   ('foo1.bar2',                     ['ev1', 'ev2'])]
+
+    # metric with enum values
+    return metric_data
 
 
 def ingest_metric_data(url, payload):
@@ -75,14 +86,7 @@ def get_epoch_time():
 
 def insert_enum_metrics():
     epoch_time = get_epoch_time()
-    metric_data = []
-
-    # metric with enum values
-    metric_data.append(('one.two.three00.fourA.five100', ['ev1-1', 'ev2-1']))
-    metric_data.append(('one.two.three00.fourD.five100', ['ev1-2', 'ev2-2']))
-    metric_data.append(('one.two.three00.fourE', ['ev1', 'ev2']))
-    metric_data.append(('one.two.three00', ['fourA', 'fourB']))
-    metric_data.append(('foo1.bar2', ['ev1', 'ev2']))
+    metric_data = generate_enum_metrics()
 
     print "Ingesting enum metrics of size %s" % len(metric_data)
     payload = []
