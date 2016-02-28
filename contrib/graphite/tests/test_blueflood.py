@@ -4,9 +4,11 @@ import requests_mock
 from graphite_api import storage
 from graphite_api.node import BranchNode
 import logging.config
+import os
 import blueflood as bf
 
-logging.config.fileConfig('logging.conf')
+logging_file = os.path.join(os.path.dirname(__file__), 'logging.ini')
+logging.config.fileConfig(logging_file)
 
 
 class TestBlueFlood(TestCase):

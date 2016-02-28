@@ -36,8 +36,4 @@ The auth tests require env variables to be set as follows:
 
 To run test, run the below command
 
-    coverage run --source . tests.py; coverage html -d /tmp/test
-
-To run tests you can also run
-
     nosetests -v

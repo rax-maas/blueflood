@@ -10,7 +10,8 @@ import logging.config
 from blueflood import TenantBluefloodFinder, TenantBluefloodReader, TenantBluefloodLeafNode, \
      BluefloodClient, auth, calc_res, secs_per_res, NonNestedDataKey, NestedDataKey
 
-logging.config.fileConfig('logging.conf')
+logging_file = os.path.join(os.path.dirname(__file__), 'logging.ini')
+logging.config.fileConfig(logging_file)
 
 #To run these tests you need to set up the environment vars below
 try:
