@@ -6,8 +6,11 @@ import requests_mock
 import sys
 import urllib
 import threading
+import logging.config
 from blueflood import TenantBluefloodFinder, TenantBluefloodReader, TenantBluefloodLeafNode, \
      BluefloodClient, auth, calc_res, secs_per_res, NonNestedDataKey, NestedDataKey
+
+logging.config.fileConfig('logging.conf')
 
 #To run these tests you need to set up the environment vars below
 try:

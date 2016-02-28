@@ -3,7 +3,10 @@ import requests
 import requests_mock
 from graphite_api import storage
 from graphite_api.node import BranchNode
+import logging.config
 import blueflood as bf
+
+logging.config.fileConfig('logging.conf')
 
 
 class TestBlueFlood(TestCase):
