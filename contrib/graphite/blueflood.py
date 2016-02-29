@@ -290,10 +290,6 @@ class TenantBluefloodFinder(threading.Thread):
 
     except Exception as e:
      logger.exception("Exception in Blueflood find_nodes: ")
-     exc_info = sys.exc_info()
-     tb = traceback.format_exception(*exc_info)
-     for line in tb:
-       logger.debug(line)
      raise e
 
   def fetch_multi(self, nodes, start_time, end_time):
@@ -586,10 +582,6 @@ class BluefloodClient(object):
 
     except Exception as e:
       logger.exception("Exception in Blueflood fetch_multi: ")
-      exc_info = sys.exc_info()
-      tb = traceback.format_exception(*exc_info)
-      for line in tb:
-        logger.debug(line)
       raise e
 
 
