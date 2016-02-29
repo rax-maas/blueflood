@@ -162,4 +162,4 @@ public class Instrumentation implements InstrumentationMBean {
     }
 }
 
-interface InstrumentationMBean {}
+
