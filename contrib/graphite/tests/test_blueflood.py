@@ -1,4 +1,4 @@
-from unittest import TestCase, skip
+from unittest import TestCase
 import requests
 import requests_mock
 from graphite_api import storage
@@ -187,7 +187,6 @@ class TestBlueFlood(TestCase):
         self.verify_find_nodes_call(prefix, expected_branch_nodes, expected_leaf_nodes,
                                     self.bff, bf_mock_response, bf_enum_mock_response)
 
-    # @skip("Does not work as expected")
     def test_find_nodes_enum_as_next_level(self):
         prefix = 'one.two.three00.fourA.*'
         bf_mock_response = [{"metric": "one.two.three00.fourA.five100", "enum_values": ["ev1-1", "ev2-1"]},
