@@ -82,7 +82,8 @@ public class MetricIndexData {
          * For the ES response shown in class description, for a baseLevel of 2,
          * the data is classified as follows
          *
-         * tokensWithNextLevelSet    -> {bar}               (tokens after baseLevel which also have a subsequent level)
+         * tokensWithNextLevelSet    -> {foo.bar}               (partial metric name with tokens after baseLevel which
+         *                                                       also have a subsequent level)
          *
          * Both these maps maintain data in the form {metricIndex, (actualDocCount, childrenTotalDocCount)}
          *
@@ -93,8 +94,12 @@ public class MetricIndexData {
 
         switch (tokens.length - baseLevel) {
             case 2:
-                String nextToken = tokens[baseLevel];
-                tokensWithNextLevelSet.add(nextToken);
+                if (baseLevel > 0) {
+                    tokensWithNextLevelSet.add(metricIndex.substring(0, metricIndex.lastIndexOf(".")));
+                } else {
+                    tokensWithNextLevelSet.add(metricIndex.substring(0, metricIndex.indexOf(".")));
+                }
+
 
                 //For foo.bar.baz.aux, baseLevel=2, we update children doc count of foo.bar.baz
                 addChildrenDocCount(metricIndexNextLevelMap,

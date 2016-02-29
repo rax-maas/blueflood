@@ -50,14 +50,15 @@ public class TokenInfoListBuilderTest {
     @Test
     public void testAddingEnumValues() {
         TokenInfoListBuilder tokenListBuilder = new TokenInfoListBuilder();
+        final String metricName = "foo.bar.baz";
         final String enumValue = "ev1";
-        tokenListBuilder.addEnumValues(new ArrayList<String>() {{
+        tokenListBuilder.addEnumValues(metricName, new ArrayList<String>() {{
             add(enumValue);
         }});
 
         List<TokenInfo> resultList = tokenListBuilder.build();
         Assert.assertEquals("result size", 1, resultList.size());
-        Assert.assertEquals("result value", enumValue, resultList.get(0).getToken());
+        Assert.assertEquals("result value", metricName + "." + enumValue, resultList.get(0).getToken());
     }
 
     @Test

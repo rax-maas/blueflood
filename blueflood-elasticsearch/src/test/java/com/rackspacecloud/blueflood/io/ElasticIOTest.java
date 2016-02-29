@@ -273,7 +273,7 @@ public class ElasticIOTest extends BaseElasticTest {
         List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "two", results.get(0).getToken());
+        Assert.assertEquals("Next token mismatch", "one.two", results.get(0).getToken());
         Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
     }
 
@@ -289,8 +289,8 @@ public class ElasticIOTest extends BaseElasticTest {
         List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
 
         Set<String> expectedResults = new HashSet<String>() {{
-            add("two|true");
-            add("bar|true");
+            add("one.two|true");
+            add("foo.bar|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", 2, results.size());
@@ -317,7 +317,7 @@ public class ElasticIOTest extends BaseElasticTest {
 
         List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
 
-        Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size(), results.size());
+        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (TokenInfo tokenInfo: results) {
             Assert.assertTrue(tokenInfo.isNextLevel());
         }
@@ -326,19 +326,19 @@ public class ElasticIOTest extends BaseElasticTest {
     @Test
     public void testGetNextTokenWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "one.{two,foo}.[ta]*";
+        String prefix = "one.{two,foo}.[ta]hree00";
 
         createTestMetrics(tenantId, new HashSet<String>() {{
-            add("one.foo.any.bar.baz");
+            add("one.foo.three00.bar.baz");
         }});
 
         List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
 
         Set<String> expectedResults = new HashSet<String>() {{
-            add("fourA|true");
-            add("fourB|true");
-            add("fourC|true");
-            add("bar|true");
+            add("one.two.three00.fourA|true");
+            add("one.two.three00.fourB|true");
+            add("one.two.three00.fourC|true");
+            add("one.foo.three00.bar|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());

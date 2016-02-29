@@ -21,7 +21,7 @@ public class MetricIndexDataTest {
         mi.add("a.b.c.d", 1);
 
         assertEquals("tokens with next level", 1, mi.getTokensWithNextLevel().size());
-        assertTrue("token value", mi.getTokensWithNextLevel().contains("c"));
+        assertTrue("token value", mi.getTokensWithNextLevel().contains("a.b.c"));
         assertEquals("base level tokens", 0, mi.getBaseLevelCompleteMetricNames().size());
         assertEquals("next level tokens", 0 , mi.getNextLevelCompleteMetricNames().size());
     }
@@ -61,7 +61,7 @@ public class MetricIndexDataTest {
         }
 
         assertEquals("Tokens with next level count", 1, mi.getTokensWithNextLevel().size());
-        assertEquals("Tokens with next level", true, mi.getTokensWithNextLevel().contains("baz"));
+        assertEquals("Tokens with next level", true, mi.getTokensWithNextLevel().contains("foo.bar.baz"));
         assertEquals("level 0 complete metric names count", 0, mi.getBaseLevelCompleteMetricNames().size());
         assertEquals("level 1 complete metric names count", 0, mi.getNextLevelCompleteMetricNames().size());
     }

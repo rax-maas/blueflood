@@ -313,8 +313,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         List<TokenInfo> resultsTenant1 = enumElasticIO.getNextTokens(tenantId, prefix);
         Set<String> expectedResultsTenant1 = new HashSet<String>() {{
-            add("m1|true");
-            add("m2|true");
+            add("a.m1|true");
+            add("a.m2|true");
         }};
 
         verifyTokenAndNextLevelFlag(resultsTenant1, expectedResultsTenant1);
@@ -324,9 +324,9 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         List<TokenInfo> resultsTenant2 = enumElasticIO.getNextTokens(tenantId, prefix);
         Set<String> expectedResultsTenant2 = new HashSet<String>() {{
-            add("m1|true");
-            add("m2|true");
-            add("m3|true");
+            add("b.m1|true");
+            add("b.m2|true");
+            add("b.m3|true");
         }};
 
         verifyTokenAndNextLevelFlag(resultsTenant2, expectedResultsTenant2);
@@ -529,9 +529,9 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
         Set<String> expectedResults = new HashSet<String>() {{
-            add("v1|false");
-            add("v2|false");
-            add("v3|false");
+            add("a.m1.v1|false");
+            add("a.m1.v2|false");
+            add("a.m1.v3|false");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
@@ -583,10 +583,10 @@ public class EnumElasticIOTest extends BaseElasticTest {
         // since we picked the prefix as one level below a complete metric name, tokens returned will have
         // next level only if the complete metric name is an enum.
         Set<String> expectedResults = new HashSet<String>() {{
-            add("five0|false");
-            add("five1|false");
-            add("five2|false");
-            add("five100|true");
+            add("one.two.three00.fourA.five0|false");
+            add("one.two.three00.fourA.five1|false");
+            add("one.two.three00.fourA.five2|false");
+            add("one.two.three00.fourA.five100|true");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
@@ -595,8 +595,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
         List<TokenInfo> results1 = enumElasticIO.getNextTokens(tenantId, prefix1);
 
         Set<String> expectedResults1 = new HashSet<String>() {{
-            add("ev1|false");
-            add("ev2|false");
+            add("one.two.three00.fourA.five100.ev1|false");
+            add("one.two.three00.fourA.five100.ev2|false");
 
         }};
 
@@ -621,8 +621,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
         //since we picked the prefix as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("two|true");
-            add("bar|true");
+            add("one.two|true");
+            add("foo.bar|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -638,7 +638,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         // prefix at the same level of an enum metric. Also prefix has regular metrics as next level
         // which in this case would be one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00.four*";
+        final String prefix = "one.two.three00.four[A,D]";
 
         //enum metric at the same level of prefix
         final String enumMetricName = "one.two.three00.fourD";
@@ -650,11 +650,11 @@ public class EnumElasticIOTest extends BaseElasticTest {
         //since we picked the prefix as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("five0|false");
-            add("five1|false");
-            add("five2|false");
-            add("ev1|false");
-            add("ev2|false");
+            add("one.two.three00.fourA.five0|false");
+            add("one.two.three00.fourA.five1|false");
+            add("one.two.three00.fourA.five2|false");
+            add("one.two.three00.fourD.ev1|false");
+            add("one.two.three00.fourD.ev2|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -680,8 +680,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         //for this prefix, the only next level is the enum values of enum metric
         Set<String> expectedResults = new HashSet<String>() {{
-            add("ev1|false");
-            add("ev2|false");
+            add("one.two.three00.fourA.five100.ev1|false");
+            add("one.two.three00.fourA.five100.ev2|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -696,7 +696,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         // prefix has enum metrics at the same level and next level. Also prefix has regular metrics as next level
         // which in this case would be one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00.four*";
+        final String prefix = "one.two.three00.four[A,D]";
 
         //enum metric at the same level of prefix
         final String enumMetricName1 = "one.two.three00.fourD";
@@ -721,11 +721,11 @@ public class EnumElasticIOTest extends BaseElasticTest {
         //since we picked the prefix as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("five0|false");
-            add("five1|false");
-            add("five2|false");
-            add("ev1-1|false");
-            add("five100|true");
+            add("one.two.three00.fourA.five0|false");
+            add("one.two.three00.fourA.five1|false");
+            add("one.two.three00.fourA.five2|false");
+            add("one.two.three00.fourD.ev1-1|false");
+            add("one.two.three00.fourD.five100|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -753,10 +753,10 @@ public class EnumElasticIOTest extends BaseElasticTest {
         // there is a complete metric name as next level of prefix.
         // there is also an incomplete metric name with the same same token as the complete one
         Set<String> expectedResults = new HashSet<String>() {{
-            add("fourA|false");
-            add("fourA|true");
-            add("fourB|true");
-            add("fourC|true");
+            add("one.two.three00.fourA|false");
+            add("one.two.three00.fourA|true");
+            add("one.two.three00.fourB|true");
+            add("one.two.three00.fourC|true");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
@@ -788,12 +788,12 @@ public class EnumElasticIOTest extends BaseElasticTest {
         // there is complete enum metric name at the same level as prefix
         // there are also metrics which have next levels for the given prefix.
         Set<String> expectedResults = new HashSet<String>() {{
-            add("fourA|false");
-            add("fourB|false");
-            add("fourC|false");
-            add("fourA|true");
-            add("fourB|true");
-            add("fourC|true");
+            add("one.two.three00.fourA|false");
+            add("one.two.three00.fourB|false");
+            add("one.two.three00.fourC|false");
+            add("one.two.three00.fourA|true");
+            add("one.two.three00.fourB|true");
+            add("one.two.three00.fourC|true");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);

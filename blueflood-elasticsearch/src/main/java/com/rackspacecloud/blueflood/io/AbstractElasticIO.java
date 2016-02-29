@@ -136,7 +136,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
         //for tokens after prefix which dont have subsequent next level, initialize with next level as false.
         for (String nextLevelMetricName: completeMetricsAtPrefixNextLevel) {
-            tokenInfoBuilder.addToken(nextLevelMetricName.substring(nextLevelMetricName.lastIndexOf(".") + 1), false);
+            tokenInfoBuilder.addToken(nextLevelMetricName, false);
         }
 
         //Only if there are complete metric names at either prefix level or its next level, look if they have enum values.
@@ -182,12 +182,11 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                 if (enumMetricLevel == 0) {
 
                     //for metrics at prefix level, enum values are grabbed as next level of tokens
-                    tokenInfoBuilder.addEnumValues(searchResult.getEnumValues());
+                    tokenInfoBuilder.addEnumValues(metricName, searchResult.getEnumValues());
                 } else if (enumMetricLevel == 1) {
 
                     //for metrics at prefix next level, next level tokens are marked as true
-                    String key = searchResult.getMetricName();
-                    tokenInfoBuilder.addToken(key.substring(key.lastIndexOf(".") + 1), true);
+                    tokenInfoBuilder.addToken(searchResult.getMetricName(), true);
                 }
             }
         }
