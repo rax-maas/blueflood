@@ -13,6 +13,9 @@ import fnmatch
 import Queue
 import threading
 
+import logging
+
+logger = logging.getLogger('blueflood_finder')
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -21,7 +24,10 @@ except ImportError:
     from graphite.intervals import Interval, IntervalSet
     from graphite.node import LeafNode, BranchNode
 
-# curl -XPOST -H "Accept: application/json, text/plain, */*" -H "Content-Type: application/x-www-form-urlencoded" 'http://127.0.0.1:8888/render' -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
+# curl -XPOST -H "Accept: application/json, text/plain, */*"
+#             -H "Content-Type: application/x-www-form-urlencoded"
+#             'http://127.0.0.1:8888/render'
+#             -d "target=rackspace.*.*.*.*.*.*.*.*.available&from=-6h&until=now&format=json&maxDataPoints=1552"
 
 
 secs_per_res = {
@@ -56,8 +62,9 @@ def calc_res(start, stop):
 class TenantBluefloodFinder(threading.Thread):
   __fetch_multi__ = 'tenant_blueflood'
   __fetch_events__ = 'tenant_blueflood'
+
   def __init__(self, config=None):
-    print("Blueflood Finder v31")
+    logger.debug("Blueflood Finder v31")
     threading.Thread.__init__(self)
     if os.path.isfile("/root/pdb-flag"):
       import remote_pdb
@@ -93,20 +100,20 @@ class TenantBluefloodFinder(threading.Thread):
     self.bf_query_endpoint = urls[0]
     self.enable_submetrics = enable_submetrics
     self.submetric_aliases = submetric_aliases
-    self.client = BluefloodClient(self.bf_query_endpoint, self.tenant, 
+    self.client = BluefloodClient(self.bf_query_endpoint, self.tenant,
                                   self.enable_submetrics, self.submetric_aliases)
     self.daemon = True
     self.start()
-    print("BF finder submetrics enabled: ", enable_submetrics)
+    logger.debug("BF finder submetrics enabled: %s", enable_submetrics)
 
-  
+
   def run(self):
     #This separate thread allows queued reads to happen in the background
-    print("BF enum thread started: ")
+    logger.debug("BF enum thread started: ")
     while not self.exit_flag:
       metric = self.metrics_q.get()
       self.data_q.put(self.find_metrics_with_enum_values(metric))
-        
+
 
   def complete(self, metric, complete_len):
     #returns true if metric is a complete metric name wrt the query
@@ -127,7 +134,7 @@ class TenantBluefloodFinder(threading.Thread):
 
   def find_metrics_with_enum_values(self, query):
     #BF search command that returns enum values as well as metric names
-    print "BluefloodClient.find_metrics: " + str(query)
+    logger.info("BluefloodClient.find_metrics: %s", str(query))
     payload = {'query': query}
     headers = auth.headers()
     endpoint = self.find_metrics_endpoint(self.bf_query_endpoint, self.tenant)
@@ -146,7 +153,7 @@ class TenantBluefloodFinder(threading.Thread):
 
   def find_metrics(self, query):
     #BF search command that returns metric names without enum values
-    return self.find_metrics_with_enum_values(query).keys()
+    return self.find_metrics_with_enum_values(query)
 
   def find_nodes_with_submetrics(self, query):
     # By definition, when using submetrics, the names of all Leafnodes must end in a submetric alias
@@ -158,7 +165,7 @@ class TenantBluefloodFinder(threading.Thread):
     # 2. When you have a query contains a valid submetric alias, i.e a complete metric name followed
     #    by a valid submetric alias like "._avg"
 
-    # Every submetric leaf node is covered by one of the above two cases.  Everything else is a 
+    # Every submetric leaf node is covered by one of the above two cases.  Everything else is a
     # branch node.
 
     def submetric_is_enum_value(submetric_alias):
@@ -170,9 +177,9 @@ class TenantBluefloodFinder(threading.Thread):
     complete_len = query_depth - 1
     # The pattern which all complete metrics will match
     complete_pattern = '.'.join(query_parts[:-1])
-    
-    #handle enums 
-    # enums are required to have an "enum" submetric alias so 
+
+    #handle enums
+    # enums are required to have an "enum" submetric alias so
     # this is the only read required, (no background read.)
     if (query_depth > 2) and (submetric_alias in self.submetric_aliases):
       if (submetric_is_enum_value(submetric_alias)):
@@ -186,18 +193,18 @@ class TenantBluefloodFinder(threading.Thread):
       #  followed by a ".*". If so, we are requesting a list of submetric
       #  names, so return leaf nodes for each submetric alias that is
       #  enabled
-      
+
       # First modify the pattern to get a superset that includes already complete
       #  submetrics
       new_pattern = complete_pattern + '*'
-      for metric in self.find_metrics(new_pattern):
+      for (metric, enums) in self.find_metrics(new_pattern).items():
         metric_parts = metric.split('.')
         if self.complete(metric, complete_len) and fnmatch.fnmatchcase(metric, complete_pattern):
           for alias, _ in self.submetric_aliases.items():
             yield TenantBluefloodLeafNode('.'.join(metric_parts + [alias]),
-                                          TenantBluefloodReader(metric, self.tenant, 
-                                                                self.bf_query_endpoint, 
-                                                                self.enable_submetrics, 
+                                          TenantBluefloodReader(metric, self.tenant,
+                                                                self.bf_query_endpoint,
+                                                                self.enable_submetrics,
                                                                 self.submetric_aliases, None))
         else:
           # Make sure the branch nodes match the original pattern
@@ -207,30 +214,39 @@ class TenantBluefloodFinder(threading.Thread):
 
     #if searching for a particular submetric alias, create a leaf node for it
     elif (query_depth > 1) and (submetric_alias in self.submetric_aliases):
-      for metric in self.find_metrics(complete_pattern):
+      for (metric, enums) in self.find_metrics(complete_pattern).items():
         if self.complete(metric, complete_len):
-          yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]), TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
+          yield TenantBluefloodLeafNode('.'.join([metric, submetric_alias]),
+                                        TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
+                                                              self.enable_submetrics, self.submetric_aliases, None))
 
     #everything else is a branch node
-    else: 
-      for metric in self.find_metrics(query.pattern):
+    else:
+      for (metric, enums) in self.find_metrics(query.pattern).items():
         metric_parts = metric.split('.')
         if not self.complete(metric, complete_len):
           yield BranchNode('.'.join(metric_parts[:query_depth]))
 
 
-  def make_non_enum_node(self, metric, complete_len):
+  def make_non_enum_node(self, metric, enums, complete_len):
     if not self.complete(metric, complete_len):
       metric_parts = metric.split('.')
       yield BranchNode('.'.join(metric_parts[:complete_len]))
     else:
-      yield TenantBluefloodLeafNode(metric, TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, None))
+      if enums:
+        yield BranchNode(metric)
+      else:
+        yield TenantBluefloodLeafNode(metric,
+                                    TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
+                                                          self.enable_submetrics, self.submetric_aliases, None))
 
   def make_enum_nodes(self, metric, enums, pattern):
     for e in enums:
       metric_with_enum = metric + '.' + e
       if fnmatch.fnmatchcase(metric_with_enum, pattern):
-        yield TenantBluefloodLeafNode(metric_with_enum, TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint, self.enable_submetrics, self.submetric_aliases, e))
+        yield TenantBluefloodLeafNode(metric_with_enum,
+                                      TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint,
+                                                            self.enable_submetrics, self.submetric_aliases, e))
 
 
 
@@ -244,8 +260,9 @@ class TenantBluefloodFinder(threading.Thread):
       self.metrics_q.put(enum_name)
 
     # find non enum nodes
-    for metric in self.find_metrics(query.pattern):
-      for n in self.make_non_enum_node(metric, complete_len):
+    for (metric, enums) in self.find_metrics(query.pattern).items():
+      for n in self.make_non_enum_node(metric, enums, complete_len):
+        logger.debug("Node: %s", n)
         yield n
 
     # get the results of the background read to add enums
@@ -255,12 +272,16 @@ class TenantBluefloodFinder(threading.Thread):
         metric_len = len(metric.split('.'))
         if enums and (metric_len + 1 == complete_len):
           for n in self.make_enum_nodes(metric, enums, query.pattern):
+            logger.debug("Node: %s", n)
             yield n
 
   def find_nodes(self, query):
+    """
+    Returns a list of metric names based on a glob pattern, and corresponds to the BF "/search" endpoint.
+    """
     #yields all valid metric names matching glob based query
     try:
-      print "TenantBluefloodFinder.query: " + str(query.pattern)
+      logger.debug("TenantBluefloodFinder.query: %s", str(query.pattern))
 
       if self.enable_submetrics:
         return self.find_nodes_with_submetrics(query)
@@ -268,15 +289,13 @@ class TenantBluefloodFinder(threading.Thread):
         return self.find_nodes_without_submetrics(query)
 
     except Exception as e:
-     print "Exception in Blueflood find_nodes: "
-     print e
-     exc_info = sys.exc_info()
-     tb = traceback.format_exception(*exc_info)
-     for line in tb:
-       print(line)
+     logger.exception("Exception in Blueflood find_nodes: ")
      raise e
 
   def fetch_multi(self, nodes, start_time, end_time):
+    """
+    Returns the data for a list of metrics and corresponds to the BF "multiplot" endpoint.
+    """
     return self.client.fetch_multi(nodes, start_time, end_time)
 
   def find_events_endpoint(self, endpoint, tenant):
@@ -300,7 +319,7 @@ class TenantBluefloodFinder(threading.Thread):
       return r
 
 class TenantBluefloodReader(object):
-  __slots__ = ('metric', 'tenant', 'bf_query_endpoint', 
+  __slots__ = ('metric', 'tenant', 'bf_query_endpoint',
                'enable_submetrics', 'submetric_aliases', 'enum_value')
   supported = True
 
@@ -368,7 +387,7 @@ class BluefloodClient(object):
 
   def fixup(self, values, fixup_list):
     # Replace the None's in "values" with interpolations of the
-    # surrounding non-null values 
+    # surrounding non-null values
     # "fixup_list" lists the null datapoints in the values
     if fixup_list:
       #preserve the type of the values
@@ -381,8 +400,8 @@ class BluefloodClient(object):
       for x in range(start + 1, end):
         nextval += increment
         values[x] = set_type(nextval)
-      
-    
+
+
   def process_path(self, values, start_time, end_time, step, data_key):
     # Generates datapoints in graphite-api format
     # Graphite-api requires the points be "step" seconds apart in time
@@ -434,7 +453,8 @@ class BluefloodClient(object):
       headers['X-Auth-Token'] = auth.get_token(True)
       r = requests.post(url, params=payload, data=json.dumps(metric_list), headers=headers)
     if r.status_code != 200:
-      print("get_metric_data failed; response: ", endpoint, r.status_code, tenant, metric_list)
+      logger.info("get_metric_data failed endpoint: [%s] status code: [%s] tenant: [%s] metric_list: [%s]",
+                   endpoint, r.status_code, tenant, metric_list)
       return None
     else:
       return r.json()['metrics']
@@ -490,7 +510,7 @@ class BluefloodClient(object):
     if new_total >= self.maxlen_per_req:
       return False
     return True
-  
+
   def gen_next_group(self, remaining_paths, groups):
     # creates a group of metrics that doesn't exceed limits
     cur_metric = 0
@@ -507,7 +527,7 @@ class BluefloodClient(object):
     # the input expected by the BF mplot api.
     # These differ when submetrics are used because the submetric alias
     # is included in the graphite path but the BF metric name.
-    # Also, if enums are used, the enum_value is included in the 
+    # Also, if enums are used, the enum_value is included in the
     # graphite path, but not the BF metric name
     path_set = set()
     paths = []
@@ -546,7 +566,7 @@ class BluefloodClient(object):
                       for g in groups])
     responses = responses or []
     return responses
-  
+
   def fetch_multi(self, nodes, start_time, end_time):
     try:
       res = calc_res(start_time, end_time)
@@ -561,12 +581,7 @@ class BluefloodClient(object):
       return (time_info, dictionary)
 
     except Exception as e:
-      print "Exception in Blueflood fetch_multi: "
-      print e
-      exc_info = sys.exc_info()
-      tb = traceback.format_exception(*exc_info)
-      for line in tb:
-        print(line)
+      logger.exception("Exception in Blueflood fetch_multi: ")
       raise e
 
 
@@ -586,7 +601,7 @@ class NonNestedDataKey(object):
       return None
     else:
       return value[self.key1]
-    
+
 class NestedDataKey(object):
   #as the name implies a "NestedDataKey is used to deref
   # a nested value
@@ -596,7 +611,7 @@ class NestedDataKey(object):
 
   def exists(self, value):
     return self.key1 in value and self.key2 in value[self.key1]
-    
+
   def get_datapoints(self, value):
     if not self.exists(value):
       return None
