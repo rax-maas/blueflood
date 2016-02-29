@@ -14,15 +14,6 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.service;
+package com.rackspacecloud.blueflood.io;
 
-public interface IngestionContext {
-    /**
-     * Marks a slot dirty. This is only called on a subset of host environments
-     * where Blueflood runs.
-     *
-     * @param millis current timestamp.
-     * @param shard shard to be updated. value within [0, 128).
-     */
-    public void update(long millis, int shard);
-}
+public interface InstrumentationMBean {}

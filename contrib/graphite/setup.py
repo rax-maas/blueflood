@@ -28,6 +28,8 @@ setup(
   ),
   install_requires=(
       'requests',
+      'graphite_api',
+      'python-dateutil'
   ),
   test_suite='tests',
 )

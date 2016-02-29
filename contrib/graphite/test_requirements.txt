@@ -1,0 +1,4 @@
+coverage
+nose
+nose-cover3
+requests_mock

@@ -17,11 +17,23 @@
 package com.rackspacecloud.blueflood.service;
 
 /**
- * This class basically serves to annotate a timestamp to indicate if it marks an update or a remove action.
+ * This class basically serves to annotate a timestamp to indicate if it marks
+ * an update or a remove action.
  */
 public class UpdateStamp {
+
     private long timestamp;
+
+    /**
+     * Whether or not the given slot needs to be re-rolled, or is currently in
+     * the process of re-rolling.
+     */
     private State state;
+
+    /**
+     * Whether or not the info about a slot needs to be persisted to the
+     * database.
+     */
     private boolean dirty;
     
     public UpdateStamp(long timestamp, State state, boolean dirty) {
@@ -49,16 +61,27 @@ public class UpdateStamp {
     }
     
     public String toString() { return timestamp + "," + state.code; }
-    
+
+    /**
+     * The current state of a slot.
+     *
+     * In the database, there are only two states we care about: {@code Active}
+     * and {@code Rolled}. {@code Running} is a ephemeral state during runtime.
+     * It degrades to {@code Active} during a save restore (indicating it is
+     * not finished and should, therefore, not be considered rolled.
+     */
     public enum State {
-        // in the database, there are only two states we care about: Active and Rolled.  Running is a ephemeral state
-        // during runtime.  It degrades to Active during a save restore (indicating it is not finished and should,
-        // therefore, not be considered rolled.
-        Active("A"), Running("A"), Rolled("X");
+
+        Active("A"),
+        Running("A"),
+        Rolled("X");
+
         private final String code;
+
         private State(String code) {
             this.code = code;
         }
+
         public String code() { return code; }
     }
 }
