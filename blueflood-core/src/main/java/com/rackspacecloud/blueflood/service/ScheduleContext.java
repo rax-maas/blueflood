@@ -44,13 +44,63 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
-// keeps track of dirty slots in memory. Operations must be threadsafe.
-// todo: explore using ReadWrite locks (might not make a difference).
-
 /**
- * Each node is responsible for sharded slots (time ranges) of rollups.  This class keeps track of the execution of
- * those rollups and the states they are in.  
- * 
+ *
+ * The {@code ScheduleContext} class coordinates access to the states of slots.
+ * It mediates between the rollup service, the ingestion service, and the
+ * database.
+ * <p>
+ *
+ * The class's chief purpose is to coordinate access to slots' states and the
+ * list of slots that need to be re-rolled between {@link RollupService},
+ * {@link IngestionService}, and the database. There's several other classes
+ * and components involved, but those are the most important.
+ * <p>
+ *
+ * When ingestion services receive incoming metrics, they will change the
+ * associated slot's state to
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Active Active}
+ * (needs to be re-rolled) by calling {@link #update(long, int)}. That state
+ * information will be persisted to the database by the
+ * {@link ShardStatePusher} class. On the rollup nodes, the
+ * {@link ShardStatePuller} will read the state info into memory by calling
+ * {@link com.rackspacecloud.blueflood.service.ShardStateManager.SlotStateManager#updateSlotOnRead(SlotState)}.
+ * The rollup service will then identity slots that need to be re-rolled (by
+ * calling {@link #scheduleSlotsOlderThan(long)}), pick a slot to rollup and
+ * mark it as
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Running Running}
+ * (via {@link #getNextScheduled()} ), do the rollup, and then mark the slot as
+ * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Rolled Rolled}
+ * (via {@link #clearFromRunning(SlotKey)}).
+ * <p>
+ *
+ * If doing the rollup fails for some reason, the rollup service will call
+ * {@link #pushBackToScheduled(SlotKey, boolean)}, to return the slot to the
+ * queue of slots to be rolled.
+ * <p>
+ *
+ * There are additional methods for managing shards ({@link #addShard(int)} and
+ * {@link #removeShard(int)}) which don't appear to be used.
+ * <p>
+ *
+ * There are also methods which provide information about the state of things
+ * (e.g. {@link #getScheduledCount()},
+ * {@link #getSlotStamps(Granularity, int)},
+ * {@link #getRecentlyScheduledShards()},
+ * {@link #getMetricsState(int, String, int)}) which either aren't used, are
+ * only used for testing, or are used to provide information to external system
+ * via JMX or yammer metrics.
+ * <p>
+ *
+ *
+ *
+ * keeps track of dirty slots in memory. Operations must be threadsafe.
+ * todo: explore using ReadWrite locks (might not make a difference).
+ *
+ * Each node is responsible for sharded slots (time ranges) of rollups. This
+ * class keeps track of the execution of those rollups and the states they are
+ * in.
+ *
  * When synchronizing multiple collections, do it in this order: scheduled -> running.
  */
 public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
@@ -60,7 +110,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     private final ShardStateManager shardStateManager;
     private transient long scheduleTime = 0L;
     
-    // these shards have been scheduled in the last 10 minutes.
+    /** these shards have been scheduled in the last 10 minutes. */
     private final Cache<Integer, Long> recentlyScheduledShards = CacheBuilder.newBuilder()
             .maximumSize(Constants.NUMBER_OF_SHARDS)
             .expireAfterWrite(10, TimeUnit.MINUTES)
@@ -70,19 +120,24 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     //
     private final Meter shardOwnershipChanged = Metrics.meter(ScheduleContext.class, "Shard Change Before Running");
 
-    // these are all the slots that are scheduled to run in no particular order. the collection is synchronized to 
-    // control updates.
+    /**
+     * these are all the slots that are scheduled to run in no particular order.
+     * the collection is synchronized to control updates.
+     */
     private final Set<SlotKey> scheduledSlots = new HashSet<SlotKey>();
-    
-    // same information as scheduledSlots, but order is preserved.  The ordered property is only needed for getting the
-    // the next scheduled slot, but most operations are concerned with if a slot is scheduled or not.  When you update
-    // one, you must update the other.
+
+    /**
+     * same information as {@link #scheduledSlots}, but order is preserved. The
+     * ordered property is only needed for getting the the next scheduled slot,
+     * but most operations are concerned with if a slot is scheduled or not.
+     * When you update one, you must update the other.
+     */
     private final List<SlotKey> orderedScheduledSlots = new ArrayList<SlotKey>();
     
-    // slots that are running are not scheduled.
+    /** slots that are running are not scheduled. */
     private final Map<SlotKey, Long> runningSlots = new HashMap<SlotKey, Long>();
 
-    // shard lock manager
+    /** shard lock manager */
     private final ShardLockManager lockManager;
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
@@ -103,8 +158,9 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * {@inheritDoc}
      */
     public void update(long millis, int shard) {
-        // there are two update paths. for managed shards, we must guard the scheduled and running collections.  but
-        // for unmanaged shards, we just let the update happen uncontested.
+        // there are two update paths. for managed shards, we must guard the
+        // scheduled and running collections. but for unmanaged shards, we just
+        // let the update happen uncontested.
         final Timer.Context dirtyTimerCtx = markSlotDirtyTimer.time();
         try {
             if (log.isTraceEnabled()) {
@@ -119,7 +175,8 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                     synchronized (scheduledSlots) { //put
                         SlotKey key = SlotKey.of(g, slot, shard);
                         if (scheduledSlots.remove(key) && log.isDebugEnabled()) {
-                            log.debug("descheduled {}.", key);// don't worry about orderedScheduledSlots
+                            // don't worry about orderedScheduledSlots
+                            log.debug("descheduled {}.", key);
                         }
                     }
                 }
@@ -130,7 +187,17 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
     }
 
-    // iterates over all active slots, scheduling those that haven't been updated in maxAgeMillis.
+    /**
+     * Loop through all slots that are older than {@code maxAgeMillis}, at all
+     * granularities, in all managed shards. If any are found that are not
+     * already running or scheduled, then add them to the queue of scheduled
+     * slots. Note that {@code maxAgeMillis} is an age value, not a timestamp.
+     * If the difference between {@link #scheduleTime} and a given slot's
+     * {@link UpdateStamp} in milliseconds is greater than
+     * {@code maxAgeMillis}, then that slot will scheduled.
+     *
+     * @param maxAgeMillis
+     */
     // only one thread should be calling in this puppy.
     void scheduleSlotsOlderThan(long maxAgeMillis) {
         long now = scheduleTime;
@@ -192,10 +259,16 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
         return canWork;
     }
-    
-    // returns the next scheduled key. It has a few side effects: 1) it resets update tracking for that slot, 2) it adds
-    // the key to the set of running rollups.
-    @VisibleForTesting SlotKey getNextScheduled() {
+
+    /**
+     * Returns the next scheduled key. It has a few side effects:
+     *      1) it resets update tracking for that slot
+     *      2) it adds the key to the set of running rollups.
+     *
+     * @return
+     */
+    @VisibleForTesting
+    SlotKey getNextScheduled() {
         synchronized (scheduledSlots) {
             if (scheduledSlots.size() == 0)
                 return null;
@@ -204,9 +277,12 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 int slot = key.getSlot();
                 Granularity gran = key.getGranularity();
                 int shard = key.getShard();
-                // notice how we change the state, but the timestamp remained the same. this is important.  When the
-                // state is evaluated (i.e., in Reader.getShardState()) we need to realize that when timstamps are the
-                // same (this will happen), that a remove always wins during the coalesce.
+
+                // notice how we change the state, but the timestamp remained
+                // the same. this is important.  When the state is evaluated
+                // (i.e., in Reader.getShardState()) we need to realize that
+                // when timstamps are the same (this will happen), that a
+                // remove always wins during the coalesce.
                 scheduledSlots.remove(key);
 
                 if (canWorkOnShard(shard)) {
@@ -220,7 +296,18 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
             }
         }
     }
-    
+
+    /**
+     * Take the given slot out of the running group, and put it back into the
+     * scheduled group. If {@code rescheduleImmediately} is true, the slot will
+     * be the next slot returned by a call to {@link #getNextScheduled()}. If
+     * {@code rescheduleImmediately} is false, then the given slot will go to
+     * the end of the line, as when it was first scheduled by
+     * {@link #scheduleSlotsOlderThan(long)}.
+     *
+     * @param key
+     * @param rescheduleImmediately
+     */
     void pushBackToScheduled(SlotKey key, boolean rescheduleImmediately) {
         synchronized (scheduledSlots) {
             synchronized (runningSlots) {
@@ -238,32 +325,54 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
             }
         }
     }
-    
-    // remove rom the list of running slots.
+
+    /**
+     * Remove the given slot from the running group after it has been
+     * successfully re-rolled.
+     *
+     * @param slotKey
+     */
     void clearFromRunning(SlotKey slotKey) {
         synchronized (runningSlots) {
             runningSlots.remove(slotKey);
             UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
             shardStateManager.setAllCoarserSlotsDirtyForSlot(slotKey);
-            // Update the stamp to Rolled state if and only if the current state is running.
-            // If the current state is active, it means we received a delayed put which toggled the status to Active.
+
+            // Update the stamp to Rolled state if and only if the current state
+            // is running. If the current state is active, it means we received
+            // a delayed put which toggled the status to Active.
             if (stamp.getState() == UpdateStamp.State.Running) {
                 stamp.setState(UpdateStamp.State.Rolled);
-                // Note: Rollup state will be updated to the last ACTIVE timestamp which caused rollup process to kick in.
+                // Note: Rollup state will be updated to the last ACTIVE
+                // timestamp which caused rollup process to kick in.
                 stamp.setDirty(true);
             }
         }
     }
 
-    // true if anything is scheduled.
+    /**
+     * true if anything is scheduled.
+     */
     boolean hasScheduled() {
         return getScheduledCount() > 0;
     }
-    
-    // returns the number of scheduled rollups.
+
+    /**
+     * returns the number of scheduled rollups.
+     */
     int getScheduledCount() {
         synchronized (scheduledSlots) {
             return scheduledSlots.size();
+        }
+    }
+
+    /**
+     * returns the number of currently running rollups.
+     */
+    @VisibleForTesting
+    int getRunningCount() {
+        synchronized (runningSlots) {
+            return runningSlots.size();
         }
     }
 
@@ -288,8 +397,15 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         return new TreeSet<Integer>(recentlyScheduledShards.asMap().keySet());
     }
 
-    // Normal ticker behavior is to return nanoseconds elapsed since VM started.
-    // This returns milliseconds since the epoch based upon ScheduleContext's internal representation of time (scheduleTime).
+    /**
+     * Normal {@link com.google.common.base.Ticker Ticker} behavior is to
+     * return nanoseconds elapsed since VM started. This returns milliseconds
+     * since the epoch based upon {@code ScheduleContext}'s internal
+     * representation of time ({@link #scheduleTime}).
+     *
+     * @return an anonymous Ticker object
+     */
+    //
     public Ticker asMillisecondsSinceEpochTicker() {
         return new Ticker() {
             @Override
