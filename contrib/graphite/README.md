@@ -11,8 +11,20 @@ Get the [blueflood](https://github.com/rackerlabs/blueflood) repo from github. E
     virtualenv bf-finder
     source bf-finder/bin/activate
     pip install .
+<<<<<<< Updated upstream
 
 
+=======
+ 
+## Development environment on vagrant
+
+We can setup grafana server on a vagrant vm which visualizes local blueflood using BF finder. To spin up 
+vagrant vm use the below commands.
+
+    vagrant box add ubuntu/trusty64
+    vagrant up
+    
+>>>>>>> Stashed changes
 ###Tests
 
 After finishing setup above you can do the below command to install test dependencies.
