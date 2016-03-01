@@ -93,8 +93,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  *
  *
+ * Previous comments, left in case we need them:
+ * Keeps track of dirty slots in memory. Operations must be threadsafe.
  *
- * keeps track of dirty slots in memory. Operations must be threadsafe.
  * todo: explore using ReadWrite locks (might not make a difference).
  *
  * Each node is responsible for sharded slots (time ranges) of rollups. This
