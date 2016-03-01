@@ -152,7 +152,12 @@ public enum CoreConfig implements ConfigDefaults {
     ENUM_VALIDATOR_THREADS("20"),
     ENUM_UNIQUE_VALUES_THRESHOLD("100"),
     ENUM_VALIDATOR_ENABLED("true"),
-    EXCESS_ENUM_READER_SLEEP("600000");
+    EXCESS_ENUM_READER_SLEEP("600000"),
+    // 3 days - this matches the TTL for our metrics_full table, we don't accept anything older than the TTL.
+    BEFORE_CURRENT_COLLECTIONTIME_MS("259200000"),
+    // 10 minutes
+    AFTER_CURRENT_COLLECTIONTIME_MS("600000");
+
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

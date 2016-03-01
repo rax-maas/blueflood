@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -34,7 +35,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,8 +42,10 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 import static org.mockito.Mockito.*;
+import static org.junit.Assert.*;
 
 public class HttpHandlerIntegrationTest {
     private static HttpIngestionService httpIngestionService;
@@ -84,20 +86,69 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpIngestionHappyCase() throws Exception {
+
+        String prefix = "HttpIngestionHappyCase";
+
+        long start = System.currentTimeMillis() - 20000;
+        long end = System.currentTimeMillis() + 20000;
+
         HttpPost post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData(),
+        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData( prefix ),
+                ContentType.APPLICATION_JSON);
+        post.setEntity( entity );
+        HttpResponse response = client.execute(post);
+
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
+            // assert that the update method on the ScheduleContext object was called and completed successfully
+            // Now read the metrics back from cass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
+            final Locator locator = Locator.createLocatorFromPathComponents( "acTEST", prefix + "mzord.duration" );
+            Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
+                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points.getPoints().size() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
+    public void testHttpIngestionInvalidPastCollectionTime() throws Exception {
+        long time = System.currentTimeMillis() - 600000 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        HttpPost post = new HttpPost(getMetricsURI());
+        HttpEntity entity = new StringEntity( JSONMetricsContainerTest.generateJSONMetricsData( time ) ,
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        verify(context, atLeastOnce()).update(anyLong(), anyInt());
-        // assert that the update method on the ScheduleContext object was called and completed successfully
-        // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
-        final Locator locator = Locator.createLocatorFromPathComponents("acTEST", "mzord.duration");
-        Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
-                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points.getPoints().size());
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+
+        String[] output = getBodyArray( response );
+
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, output[ 1 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, output[ 2 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, output[ 3 ] ) );
+    }
+
+    @Test
+    public void testHttpIngestionInvalidFutureCollectionTime() throws Exception {
+        long time = System.currentTimeMillis() + 600000 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        HttpPost post = new HttpPost(getMetricsURI());
+        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData( time ),
+                ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        HttpResponse response = client.execute(post);
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+
+        String[] output = getBodyArray( response );
+
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, output[ 1 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, output[ 2 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, output[ 3 ] ) );
     }
 
     @Test
@@ -105,20 +156,20 @@ public class HttpHandlerIntegrationTest {
         final int batchSize = 1;
         final String tenant_id = "333333";
         String event = createTestEvent(batchSize);
-        postEvent(event, tenant_id);
+        postEvent( event, tenant_id );
 
         //Sleep for a while
-        Thread.sleep(1200);
+        Thread.sleep( 1200 );
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertEquals(batchSize, results.size());
+        assertEquals( batchSize, results.size() );
 
         query = new HashMap<String, List<String>>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
         results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertEquals(batchSize, results.size());
+        assertEquals( batchSize, results.size() );
     }
 
     @Test
@@ -133,15 +184,15 @@ public class HttpHandlerIntegrationTest {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertFalse(batchSize == results.size()); //Only saving the first event of the batch, so the result size will be 1.
-        Assert.assertTrue(results.size() == 1);
+        assertFalse( batchSize == results.size() ); //Only saving the first event of the batch, so the result size will be 1.
+        assertTrue( results.size() == 1 );
 
         query = new HashMap<String, List<String>>();
         query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
         query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
         results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertFalse(batchSize == results.size());
-        Assert.assertTrue(results.size() == 1);
+        assertFalse( batchSize == results.size() );
+        assertTrue( results.size() == 1 );
     }
 
     @Test
@@ -153,17 +204,17 @@ public class HttpHandlerIntegrationTest {
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         Map<String, List<String>> query = new HashMap<String, List<String>>();
-        query.put(Event.tagsParameterName, Arrays.asList("deployment"));
+        query.put( Event.tagsParameterName, Arrays.asList( "deployment" ) );
 
         List<Map<String, Object>> results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertEquals(batchSize, results.size());
+        assertEquals( batchSize, results.size() );
 
         query = new HashMap<String, List<String>>();
-        query.put(Event.fromParameterName, Arrays.asList(String.valueOf(baseMillis - 86400000)));
-        query.put(Event.untilParameterName, Arrays.asList(String.valueOf(baseMillis + (86400000*3))));
+        query.put( Event.fromParameterName, Arrays.asList( String.valueOf( baseMillis - 86400000 ) ) );
+        query.put( Event.untilParameterName, Arrays.asList( String.valueOf( baseMillis + ( 86400000 * 3 ) ) ) );
 
         results = eventsSearchIO.search(tenant_id, query);
-        Assert.assertEquals(batchSize, results.size());
+        assertEquals( batchSize, results.size() );
     }
 
     @Test
@@ -180,11 +231,11 @@ public class HttpHandlerIntegrationTest {
         HttpEntity entity = new StringEntity(requestBody,
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
-        post.setHeader(Event.FieldLabels.tenantId.name(), "456854");
-        HttpResponse response = client.execute(post);
+        post.setHeader( Event.FieldLabels.tenantId.name(), "456854" );
+        HttpResponse response = client.execute( post );
         String responseString = EntityUtils.toString(response.getEntity());
-        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
-        Assert.assertTrue(responseString.contains("Invalid Data:"));
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertTrue( responseString.contains( "Invalid Data:" ) );
     }
 
     @Test
@@ -203,8 +254,8 @@ public class HttpHandlerIntegrationTest {
         post.setHeader(Event.FieldLabels.tenantId.name(), "456854");
         HttpResponse response = client.execute(post);
         String responseString = EntityUtils.toString(response.getEntity());
-        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
-        Assert.assertTrue(responseString.contains("Invalid Data:"));
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertTrue( responseString.contains( "Invalid Data:" ) );
     }
 
     @Test
@@ -225,15 +276,19 @@ public class HttpHandlerIntegrationTest {
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        verify(context, atLeastOnce()).update(anyLong(), anyInt());
-        final Locator locator = Locator.
-                createLocatorFromPathComponents("333333", "internal", "packets_received");
-        Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
-                locator, new Range(1389211220, 1389211240),
-                CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points.getPoints().size());
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
+            final Locator locator = Locator.
+                    createLocatorFromPathComponents( "333333", "internal", "packets_received" );
+            Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
+                    locator, new Range( 1389211220, 1389211240 ),
+                    CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points.getPoints().size() );
+        } finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
@@ -254,25 +309,29 @@ public class HttpHandlerIntegrationTest {
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        verify(context, atLeastOnce()).update(anyLong(), anyInt());
 
-        final Locator locator = Locator.createLocatorFromPathComponents("5405532", "G200ms");
-        Points<BluefloodGaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll(BluefloodGaugeRollup.class,
-                locator, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodGaugeRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points.getPoints().size());
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
-        final Locator locator1 = Locator.createLocatorFromPathComponents("5405577", "internal.bad_lines_seen");
-        Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll(BluefloodCounterRollup.class,
-                locator1, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodCounterRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points1.getPoints().size());
+            final Locator locator = Locator.createLocatorFromPathComponents( "5405532", "G200ms" );
+            Points<BluefloodGaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodGaugeRollup.class,
+                    locator, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodGaugeRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points.getPoints().size() );
 
-        final Locator locator2 = Locator.createLocatorFromPathComponents("5405577", "call_xyz_api");
-        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
-                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points2.getPoints().size());
+            final Locator locator1 = Locator.createLocatorFromPathComponents( "5405577", "internal.bad_lines_seen" );
+            Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
+                    locator1, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points1.getPoints().size() );
 
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+            final Locator locator2 = Locator.createLocatorFromPathComponents( "5405577", "call_xyz_api" );
+            Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
+                    locator2, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points2.getPoints().size() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
@@ -293,30 +352,44 @@ public class HttpHandlerIntegrationTest {
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        verify(context, atLeastOnce()).update(anyLong(), anyInt());
 
-        final Locator locator2 = Locator.createLocatorFromPathComponents("99988877", "call_xyz_api");
-        Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class,
-                locator2, new Range(1439231323000L, 1439231325000L), CassandraModel.getColumnFamily(BluefloodEnumRollup.class, Granularity.FULL));
-        Assert.assertEquals(2, points2.getPoints().size());
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+            final Locator locator2 = Locator.createLocatorFromPathComponents( "99988877", "call_xyz_api" );
+            Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
+                    locator2, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+            assertEquals( 2, points2.getPoints().size() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
     public void testBadRequests() throws Exception {
         HttpPost post = new HttpPost(getMetricsURI());
         HttpResponse response = client.execute(post);  // no body
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 400);
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+        try {
+            assertEquals( response.getStatusLine().getStatusCode(), 400 );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
 
         post = new HttpPost(getMetricsURI());
         HttpEntity entity = new StringEntity("Some incompatible json body", ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         response = client.execute(post);
-        Assert.assertEquals(response.getStatusLine().getStatusCode(), 400);
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+        try {
+            assertEquals( response.getStatusLine().getStatusCode(), 400 );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
@@ -333,12 +406,21 @@ public class HttpHandlerIntegrationTest {
         baos.close();
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
     public void testMultiTenantBatching() throws Exception{
+
+        long start = System.currentTimeMillis() - 120000;
+        long end = System.currentTimeMillis() + 120000;
+
         URIBuilder builder = getMetricsURIBuilder()
                 .setPath("/v2.0/acTest/ingest/multi");
         HttpPost post = new HttpPost(builder.build());
@@ -348,21 +430,24 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
 
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        verify(context, atLeastOnce()).update(anyLong(), anyInt());
-        // assert that the update method on the ScheduleContext object was called and completed successfully
-        // Now read the metrics back from dcass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
-        final Locator locator = Locator.createLocatorFromPathComponents("tenantOne", "mzord.duration");
-        Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
-                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, points.getPoints().size());
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
+            // assert that the update method on the ScheduleContext object was called and completed successfully
+            // Now read the metrics back from cass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
+            final Locator locator = Locator.createLocatorFromPathComponents( "tenantOne", "mzord.duration" );
+            Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
+                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            assertEquals( 1, points.getPoints().size() );
 
-        final Locator locatorTwo = Locator.createLocatorFromPathComponents("tenantTwo", "mzord.duration");
-        Points<SimpleNumber> pointsTwo = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class,
-                locator, new Range(1234567878, 1234567900), CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL));
-        Assert.assertEquals(1, pointsTwo.getPoints().size());
-
-        EntityUtils.consume(response.getEntity()); // Releases connection apparently
+            final Locator locatorTwo = Locator.createLocatorFromPathComponents( "tenantTwo", "mzord.duration" );
+            Points<SimpleNumber> pointsTwo = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
+                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            assertEquals( 1, pointsTwo.getPoints().size() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
@@ -376,7 +461,7 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
 
-        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
     }
 
     @Test
@@ -391,7 +476,19 @@ public class HttpHandlerIntegrationTest {
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
 
-        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
+        String[] output= getBodyArray( response );
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 1 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 2 ] ) );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 3 ] ) );
+    }
+
+    private String[] getBodyArray( HttpResponse response ) throws IOException {
+        StringWriter sw = new StringWriter();
+        IOUtils.copy( response.getEntity().getContent(), sw );
+        IOUtils.closeQuietly( response.getEntity().getContent() );
+        return sw.toString().split( System.lineSeparator() );
     }
 
     private URI getMetricsURI() throws URISyntaxException {
