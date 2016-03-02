@@ -18,33 +18,36 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
+import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.handlers.wrappers.TestGsonParsing;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
-import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Collection;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import static junit.framework.Assert.*;
+
 
 public class HttpAggregatedIngestionTests {
-    
+
+    public static final long TIME_DIFF = 2000;
+
     private AggregatedPayload payload;
-    
+
+    private final String  prefix = "pref.";
+
     @Before
     public void buildPayload() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
+
+        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")), prefix );
         payload = HttpAggregatedIngestionHandler.createPayload(json);
     }
     
@@ -56,45 +59,77 @@ public class HttpAggregatedIngestionTests {
     @Test
     public void testGsonNumberConversions() {
         Number doubleNum = new LazilyParsedNumber("2.321");
-        Assert.assertEquals(Double.parseDouble("2.321"), PreaggregateConversions.resolveNumber(doubleNum));
+        assertEquals( Double.parseDouble( "2.321" ), PreaggregateConversions.resolveNumber( doubleNum ) );
         
         Number longNum = new LazilyParsedNumber("12345");
-        Assert.assertEquals(Long.parseLong("12345"), PreaggregateConversions.resolveNumber(longNum));
+        assertEquals( Long.parseLong( "12345" ), PreaggregateConversions.resolveNumber( longNum ) );
     }
     
     @Test
     public void testCounters() {
         Collection<PreaggregatedMetric> counters = PreaggregateConversions.convertCounters("1", 1, 15000, payload.getCounters());
-        Assert.assertEquals(6, counters.size());
+        assertEquals( 6, counters.size() );
         ensureSerializability(counters);
     }
     
     @Test
     public void testGauges() {
         Collection<PreaggregatedMetric> gauges = PreaggregateConversions.convertGauges("1", 1, payload.getGauges());
-        Assert.assertEquals(4, gauges.size());
+        assertEquals( 4, gauges.size() );
         ensureSerializability(gauges);
     }
      
     @Test
     public void testSets() {
         Collection<PreaggregatedMetric> sets = PreaggregateConversions.convertSets("1", 1, payload.getSets());
-        Assert.assertEquals(2, sets.size());
+        assertEquals( 2, sets.size() );
         ensureSerializability(sets);
     }
     
     @Test
     public void testTimers() {
         Collection<PreaggregatedMetric> timers = PreaggregateConversions.convertTimers("1", 1, payload.getTimers());
-        Assert.assertEquals(4, timers.size());
+        assertEquals( 4, timers.size() );
         ensureSerializability(timers);
     }
 
     @Test
     public void testEnums() {
         Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, payload.getEnums());
-        Assert.assertEquals(1, enums.size());
+        assertEquals( 1, enums.size() );
         ensureSerializability(enums);
+    }
+
+    @Test
+    public void testTimestampInTheFuture() throws IOException {
+
+        long timestamp = System.currentTimeMillis() + TIME_DIFF
+                + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")),
+                timestamp, prefix );
+        payload = HttpAggregatedIngestionHandler.createPayload(json );
+
+        List<String> errors = payload.getValidationErrors();
+
+        assertEquals( 1, errors.size() );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+    }
+
+    @Test
+    public void testTimestampInThePast() throws IOException {
+
+        long timestamp = System.currentTimeMillis() - TIME_DIFF
+                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")),
+                timestamp, prefix );
+        payload = HttpAggregatedIngestionHandler.createPayload(json );
+
+        List<String> errors = payload.getValidationErrors();
+
+        assertEquals( 1, errors.size() );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
     }
 
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics

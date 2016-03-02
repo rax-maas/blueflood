@@ -26,7 +26,6 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 

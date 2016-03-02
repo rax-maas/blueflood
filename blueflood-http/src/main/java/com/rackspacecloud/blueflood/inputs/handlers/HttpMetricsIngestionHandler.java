@@ -61,6 +61,18 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
     private static final Timer persistingTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion persisting timer");
 
+    public static String getResponseBody( List<String> errors ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append( "The following errors have been encountered:" + System.lineSeparator() );
+
+        for( String error : errors ) {
+
+            sb.append( error + System.lineSeparator() );
+        }
+        return sb.toString();
+    }
+
+
     public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
@@ -180,17 +192,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         } finally {
             requestCount.dec();
         }
-    }
-
-    private String getResponseBody( List<String> errors ) {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "The following errors have been encountered:" + System.lineSeparator() );
-
-        for( String error : errors ) {
-
-            sb.append( error + System.lineSeparator() );
-        }
-        return sb.toString();
     }
 
     private void forceTTLsIfConfigured(List<Metric> containerMetrics) {

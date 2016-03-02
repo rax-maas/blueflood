@@ -16,87 +16,48 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
-import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
+
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
-public class HttpHandlerIntegrationTest {
-    private static HttpIngestionService httpIngestionService;
-    private static HttpClientVendor vendor;
-    private static DefaultHttpClient client;
-    private static Collection<Integer> manageShards = new HashSet<Integer>();
-    private static int httpPort;
-    private static ScheduleContext context;
-    private static EventsIO eventsSearchIO;
-    private static EsSetup esSetup;
+public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
+
+    static private final String TID = "acTEST";
+
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
-
-    @BeforeClass
-    public static void setUp() throws Exception{
-        System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-        Configuration.getInstance().init();
-        httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
-        manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
-
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
-        server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
-
-        httpIngestionService = new HttpIngestionService();
-        httpIngestionService.setMetricsIngestionServer(server);
-        httpIngestionService.startService(context, new AstyanaxMetricsWriter());
-
-        vendor = new HttpClientVendor();
-        client = vendor.getClient();
-    }
 
     @Test
     public void testHttpIngestionHappyCase() throws Exception {
 
-        String prefix = "HttpIngestionHappyCase";
+        String prefix = getPrefix();
 
-        long start = System.currentTimeMillis() - 20000;
-        long end = System.currentTimeMillis() + 20000;
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
 
-        HttpPost post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData( prefix ),
-                ContentType.APPLICATION_JSON);
-        post.setEntity( entity );
-        HttpResponse response = client.execute(post);
+        HttpResponse response = postGenMetric( TID, prefix, postPath );
+
+        String[] errors = getBodyArray( response );
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
@@ -115,13 +76,12 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpIngestionInvalidPastCollectionTime() throws Exception {
+
+        String prefix = "HttpIngestionInvalidPastCollectionTime";
+
         long time = System.currentTimeMillis() - 600000 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        HttpPost post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity( JSONMetricsContainerTest.generateJSONMetricsData( time ) ,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        HttpResponse response = postGenMetric( TID, prefix, postPath, time );
 
         assertEquals( 400, response.getStatusLine().getStatusCode() );
 
@@ -134,16 +94,14 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpIngestionInvalidFutureCollectionTime() throws Exception {
+
+        String prefix = getPrefix();
+
         long time = System.currentTimeMillis() + 600000 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        HttpPost post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData( time ),
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        HttpResponse response = postGenMetric( TID, prefix, postPath, time );
 
         assertEquals( 400, response.getStatusLine().getStatusCode() );
-
         String[] output = getBodyArray( response );
 
         assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, output[ 1 ] ) );
@@ -156,7 +114,14 @@ public class HttpHandlerIntegrationTest {
         final int batchSize = 1;
         final String tenant_id = "333333";
         String event = createTestEvent(batchSize);
-        postEvent( event, tenant_id );
+        HttpResponse response = postEvent( tenant_id, event );
+
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
 
         //Sleep for a while
         Thread.sleep( 1200 );
@@ -177,7 +142,14 @@ public class HttpHandlerIntegrationTest {
         final int batchSize = 5;
         final String tenant_id = "333444";
         String event = createTestEvent(batchSize);
-        postEvent(event, tenant_id);
+        HttpResponse response = postEvent( tenant_id, event );
+
+        try {
+            assertEquals( 200, response.getStatusLine().getStatusCode() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
 
         //Sleep for a while
         Thread.sleep(1200);
@@ -217,22 +189,46 @@ public class HttpHandlerIntegrationTest {
         assertEquals( batchSize, results.size() );
     }
 
+    @Ignore
+    @Test
+    public void testHttpAnnotationIngestionInvalidPastCollectionTime() {
+
+        assertTrue( false );
+    }
+
+    @Ignore
+    @Test
+    public void testHttpAnnotationIngestionInvalidFutureCollectionTime() {
+
+        assertTrue( false );
+    }
+
+    @Ignore
+    @Test
+    public void testHttpMultiAnnotationIngestionInvalidPastCollectionTime() {
+
+        assertTrue( false );
+    }
+
+    @Ignore
+    @Test
+    public void testHttpMultiAnnotationIngestionInvalidFutureCollectionTime() {
+
+        assertTrue( false );
+    }
+
+
     @Test
     public void testIngestingInvalidJAnnotationsJSON() throws Exception {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPort).setPath("/v2.0/456854/events");
-        HttpPost post = new HttpPost(builder.build());
+
         String requestBody = //Invalid JSON with single inverted commas instead of double.
                 "{'when':346550008," +
                         "'what':'Dummy Event'," +
                         "'data':'Dummy Data'," +
                         "'tags':'deployment'}";
 
-        HttpEntity entity = new StringEntity(requestBody,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        post.setHeader( Event.FieldLabels.tenantId.name(), "456854" );
-        HttpResponse response = client.execute( post );
+        HttpResponse response = postEvent( "456854", requestBody );
+
         String responseString = EntityUtils.toString(response.getEntity());
         assertEquals( 400, response.getStatusLine().getStatusCode() );
         assertTrue( responseString.contains( "Invalid Data:" ) );
@@ -240,50 +236,68 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testIngestingInvalidAnnotationsData() throws Exception {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPort).setPath("/v2.0/456854/events");
-        HttpPost post = new HttpPost(builder.build());
+
         String requestBody = //Invalid Data.
                 "{\"how\":346550008," +
                         "\"why\":\"Dummy Event\"," +
                         "\"info\":\"Dummy Data\"," +
                         "\"tickets\":\"deployment\"}";
-        HttpEntity entity = new StringEntity(requestBody,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        post.setHeader(Event.FieldLabels.tenantId.name(), "456854");
-        HttpResponse response = client.execute(post);
+
+        HttpResponse response = postEvent( "456854", requestBody );
+
         String responseString = EntityUtils.toString(response.getEntity());
         assertEquals( 400, response.getStatusLine().getStatusCode() );
         assertTrue( responseString.contains( "Invalid Data:" ) );
     }
 
     @Test
-    public void testHttpAggregatedIngestionHappyCase() throws Exception {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-                                        getClass().getClassLoader().getResourceAsStream("sample_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
+    public void testHttpAggregatedIngestionInvalidPastCollectionTime() throws IOException, URISyntaxException {
 
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/333333/ingest/aggregated");
-        HttpPost post = new HttpPost(builder.build());
-        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        long timestamp = System.currentTimeMillis() - TIME_DIFF
+                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", timestamp, getPrefix() );
+
+        String[] errors = getBodyArray(  response );
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals( 2, errors.length );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ));
+    }
+
+    @Test
+    public void testHttpAggregatedIngestionInvalidFutureCollectionTime() throws IOException, URISyntaxException {
+
+        long timestamp = System.currentTimeMillis() + TIME_DIFF
+                + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", timestamp, getPrefix() );
+
+        String[] errors = getBodyArray(  response );
+
+        assertEquals(  400, response.getStatusLine().getStatusCode() );
+        assertEquals( 2, errors.length );
+        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ));
+    }
+
+
+    @Test
+    public void testHttpAggregatedIngestionHappyCase() throws Exception {
+
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
+
+        String prefix = getPrefix();
+
+        HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", prefix );
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
             final Locator locator = Locator.
-                    createLocatorFromPathComponents( "333333", "internal", "packets_received" );
+                    createLocatorFromPathComponents( "333333", prefix + "internal", "packets_received" );
             Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
-                    locator, new Range( 1389211220, 1389211240 ),
+                    locator, new Range( start, end ),
                     CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
             assertEquals( 1, points.getPoints().size() );
         } finally {
@@ -293,40 +307,31 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpAggregatedMultiIngestionHappyCase() throws Exception {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-                                            getClass().getClassLoader().getResourceAsStream("sample_multi_aggregated_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
 
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/333333/ingest/aggregated/multi");
-        HttpPost post = new HttpPost(builder.build());
-        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
+
+        String prefix = getPrefix();
+
+        HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json", prefix );
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
-            final Locator locator = Locator.createLocatorFromPathComponents( "5405532", "G200ms" );
+            final Locator locator = Locator.createLocatorFromPathComponents( "5405532", prefix + "G200ms" );
             Points<BluefloodGaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodGaugeRollup.class,
-                    locator, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodGaugeRollup.class, Granularity.FULL ) );
+                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodGaugeRollup.class, Granularity.FULL ) );
             assertEquals( 1, points.getPoints().size() );
 
-            final Locator locator1 = Locator.createLocatorFromPathComponents( "5405577", "internal.bad_lines_seen" );
+            final Locator locator1 = Locator.createLocatorFromPathComponents( "5405577", prefix + "internal.bad_lines_seen" );
             Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
-                    locator1, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
+                    locator1, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
             assertEquals( 1, points1.getPoints().size() );
 
-            final Locator locator2 = Locator.createLocatorFromPathComponents( "5405577", "call_xyz_api" );
+            final Locator locator2 = Locator.createLocatorFromPathComponents( "5405577", prefix + "call_xyz_api" );
             Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
-                    locator2, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+                    locator2, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
             assertEquals( 1, points2.getPoints().size() );
         }
         finally {
@@ -336,30 +341,21 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-                                        getClass().getClassLoader().getResourceAsStream("sample_multi_enums_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
 
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/333333/ingest/aggregated/multi");
-        HttpPost post = new HttpPost(builder.build());
-        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
+
+        String prefix = getPrefix();
+
+        HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_enums_payload.json", prefix );
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
-            final Locator locator2 = Locator.createLocatorFromPathComponents( "99988877", "call_xyz_api" );
+            final Locator locator2 = Locator.createLocatorFromPathComponents( "99988877", prefix + "call_xyz_api" );
             Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
-                    locator2, new Range( 1439231323000L, 1439231325000L ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+                    locator2, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
             assertEquals( 2, points2.getPoints().size() );
         }
         finally {
@@ -369,8 +365,9 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testBadRequests() throws Exception {
-        HttpPost post = new HttpPost(getMetricsURI());
-        HttpResponse response = client.execute(post);  // no body
+
+
+        HttpResponse response = httpPost( TID, postPath, "" );
 
         try {
             assertEquals( response.getStatusLine().getStatusCode(), 400 );
@@ -379,10 +376,7 @@ public class HttpHandlerIntegrationTest {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
         }
 
-        post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity("Some incompatible json body", ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        response = client.execute(post);
+        response = httpPost( TID, postPath, "Some incompatible json body" );
 
         try {
             assertEquals( response.getStatusLine().getStatusCode(), 400 );
@@ -394,7 +388,11 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testCompressedRequests() throws Exception{
-        HttpPost post = new HttpPost(getMetricsURI());
+
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath( "/v2.0/acTEST/ingest" );
+
+        HttpPost post = new HttpPost( builder.build() );
         String content = JSONMetricsContainerTest.generateJSONMetricsData();
         ByteArrayOutputStream baos = new ByteArrayOutputStream(content.length());
         GZIPOutputStream gzipOut = new GZIPOutputStream(baos);
@@ -418,17 +416,10 @@ public class HttpHandlerIntegrationTest {
     @Test
     public void testMultiTenantBatching() throws Exception{
 
-        long start = System.currentTimeMillis() - 120000;
-        long end = System.currentTimeMillis() + 120000;
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
 
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/acTest/ingest/multi");
-        HttpPost post = new HttpPost(builder.build());
-        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
-        HttpEntity entity = new StringEntity(content,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+        HttpResponse response = httpPost( TID, postMultiPath, JSONMetricsContainerTest.generateMultitenantJSONMetricsData() );
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
@@ -452,55 +443,35 @@ public class HttpHandlerIntegrationTest {
 
     @Test
     public void testMultiTenantFailureForSingleTenantHandler() throws Exception {
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/acTest/ingest");
-        HttpPost post = new HttpPost(builder.build());
-        String content = JSONMetricsContainerTest.generateMultitenantJSONMetricsData();
-        HttpEntity entity = new StringEntity(content,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        HttpResponse response = httpPost( TID, postPath, JSONMetricsContainerTest.generateMultitenantJSONMetricsData() );
+        try {
+            assertEquals( 400, response.getStatusLine().getStatusCode() );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
     public void testMultiTenantFailureWithoutTenant() throws Exception {
-        // 400 if sending for other tenants without actually stamping a tenant id on the incoming metrics
-        URIBuilder builder = getMetricsURIBuilder()
-                .setPath("/v2.0/acTest/ingest/multi");
-        HttpPost post = new HttpPost(builder.build());
-        String content = JSONMetricsContainerTest.generateJSONMetricsData();
-        HttpEntity entity = new StringEntity(content,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        HttpResponse response = client.execute(post);
+
+        HttpResponse response = postGenMetric( TID, "", postMultiPath );
 
         String[] output= getBodyArray( response );
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 1 ] ) );
-        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 2 ] ) );
-        assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 3 ] ) );
+        try {
+            assertEquals( 400, response.getStatusLine().getStatusCode() );
+            assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 1 ] ) );
+            assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 2 ] ) );
+            assertTrue( Pattern.matches( JSONMetricsContainerTest.NO_TENANT_ID_REGEX, output[ 3 ] ) );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
-    private String[] getBodyArray( HttpResponse response ) throws IOException {
-        StringWriter sw = new StringWriter();
-        IOUtils.copy( response.getEntity().getContent(), sw );
-        IOUtils.closeQuietly( response.getEntity().getContent() );
-        return sw.toString().split( System.lineSeparator() );
-    }
-
-    private URI getMetricsURI() throws URISyntaxException {
-        return getMetricsURIBuilder().build();
-    }
-
-    private URIBuilder getMetricsURIBuilder() throws URISyntaxException {
-        return new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPort).setPath("/v2.0/acTEST/ingest");
-    }
-
-    private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
+    private void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
         ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
@@ -514,19 +485,7 @@ public class HttpHandlerIntegrationTest {
         eventsSearchIO.insert(tenant, eventList);
     }
 
-    private HttpResponse postEvent(String requestBody, String tenantId) throws Exception {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPort).setPath("/v2.0/" + tenantId + "/events");
-        HttpPost post = new HttpPost(builder.build());
-        HttpEntity entity = new StringEntity(requestBody,
-                ContentType.APPLICATION_JSON);
-        post.setEntity(entity);
-        post.setHeader(Event.FieldLabels.tenantId.name(), tenantId);
-        HttpResponse response = client.execute(post);
-        return response;
-    }
-
-    private static String createTestEvent(int batchSize) throws Exception {
+    private String createTestEvent(int batchSize) throws Exception {
         StringBuilder events = new StringBuilder();
         for (int i=0; i<batchSize; i++) {
             Event event = new Event();
@@ -537,21 +496,5 @@ public class HttpHandlerIntegrationTest {
             events.append(new ObjectMapper().writeValueAsString(event));
         }
         return events.toString();
-    }
-    
-    @AfterClass
-    public static void shutdown() {
-        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
-
-        if (vendor != null) {
-            vendor.shutdown();
-        }
-
-        if (httpIngestionService != null) {
-            httpIngestionService.shutdownService();
-        }
     }
 }
