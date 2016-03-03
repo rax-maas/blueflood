@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.TokenInfo;
+import com.rackspacecloud.blueflood.io.MetricToken;
 import junit.framework.Assert;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -18,17 +18,17 @@ import java.util.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class HttpMetricNameTokensHandlerTest extends BaseHandlerTest {
+public class HttpMetricTokensHandlerTest extends BaseHandlerTest {
 
     private DiscoveryIO mockDiscoveryHandle = mock(DiscoveryIO.class);
     private ChannelHandlerContext context;
     private Channel channel;
 
-    private HttpMetricNameTokensHandler handler;
+    private HttpMetricTokensHandler handler;
 
     @Before
     public void setup() {
-        handler = new HttpMetricNameTokensHandler(mockDiscoveryHandle);
+        handler = new HttpMetricTokensHandler(mockDiscoveryHandle);
 
         channel = mock(Channel.class);
         context = mock(ChannelHandlerContext.class);
@@ -39,42 +39,42 @@ public class HttpMetricNameTokensHandlerTest extends BaseHandlerTest {
 
     @Test
     public void emptyPrefix() throws Exception {
-        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/next_token"));
-        verify(mockDiscoveryHandle, times(1)).getNextTokens(anyString(), anyString());
+        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/metric_name/search"));
+        verify(mockDiscoveryHandle, never()).getMetricTokens(anyString(), anyString());
     }
 
     @Test
-    public void invalidPrefixSize() throws Exception {
-        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/next_token?prefix=foo&prefix=bar"));
-        verify(mockDiscoveryHandle, never()).getNextTokens(anyString(), anyString());
+    public void invalidQuerySize() throws Exception {
+        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/metric_name/search?query=foo&query=bar"));
+        verify(mockDiscoveryHandle, never()).getMetricTokens(anyString(), anyString());
     }
 
 
     @Test
-    public void validPrefix() throws Exception {
-        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/next_token?prefix=foo"));
-        verify(mockDiscoveryHandle, times(1)).getNextTokens(anyString(), anyString());
+    public void validQuery() throws Exception {
+        handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/metric_name/search?query=foo"));
+        verify(mockDiscoveryHandle, times(1)).getMetricTokens(anyString(), anyString());
     }
 
     @Test
     public void testOutput() throws ParseException {
-        List<TokenInfo> inputTokenInfos = new ArrayList<TokenInfo>() {{
-            add(new TokenInfo("foo", true));
-            add(new TokenInfo("bar", true));
+        List<MetricToken> inputMetricTokens = new ArrayList<MetricToken>() {{
+            add(new MetricToken("foo", false));
+            add(new MetricToken("bar", false));
         }};
 
-        String output = handler.getSerializedJSON(inputTokenInfos);
+        String output = handler.getSerializedJSON(inputMetricTokens);
         JSONParser jsonParser = new JSONParser();
         JSONArray tokenInfos = (JSONArray) jsonParser.parse(output);
 
         Assert.assertEquals("Unexpected result size", 2, tokenInfos.size());
 
         Set<String> expectedOutputSet = new HashSet<String>();
-        for (TokenInfo tokenInfo: inputTokenInfos) {
-            expectedOutputSet.add(tokenInfo.getToken() + "|" + tokenInfo.isNextLevel());
+        for (MetricToken metricToken : inputMetricTokens) {
+            expectedOutputSet.add(metricToken.getPath() + "|" + metricToken.isLeaf());
         }
         Set<String> outputSet = new HashSet<String>();
-        for (int i = 0; i< inputTokenInfos.size(); i++) {
+        for (int i = 0; i< inputMetricTokens.size(); i++) {
             JSONObject object = (JSONObject) tokenInfos.get(i);
 
             Iterator it = object.entrySet().iterator();
@@ -91,9 +91,9 @@ public class HttpMetricNameTokensHandlerTest extends BaseHandlerTest {
 
     @Test
     public void testEmptyOutput() throws ParseException {
-        List<TokenInfo> inputTokenInfos = new ArrayList<TokenInfo>();
+        List<MetricToken> inputMetricTokens = new ArrayList<MetricToken>();
 
-        String output = handler.getSerializedJSON(inputTokenInfos);
+        String output = handler.getSerializedJSON(inputMetricTokens);
         JSONParser jsonParser = new JSONParser();
         JSONArray tokenInfos = (JSONArray) jsonParser.parse(output);
 

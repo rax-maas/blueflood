@@ -238,11 +238,11 @@ public class ElasticIOTest extends BaseElasticTest {
         String tenantId = TENANT_A;
         String prefix = "";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "one", results.get(0).getToken());
-        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+        Assert.assertEquals("Next token mismatch", "one", results.get(0).getPath());
+        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isLeaf());
     }
 
     @Test
@@ -254,7 +254,7 @@ public class ElasticIOTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one|true");
@@ -270,11 +270,11 @@ public class ElasticIOTest extends BaseElasticTest {
         String tenantId = TENANT_A;
         String prefix = "one";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "one.two", results.get(0).getToken());
-        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+        Assert.assertEquals("Next token mismatch", "one.two", results.get(0).getPath());
+        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isLeaf());
     }
 
     @Test
@@ -286,7 +286,7 @@ public class ElasticIOTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two|true");
@@ -302,11 +302,11 @@ public class ElasticIOTest extends BaseElasticTest {
         String tenantId = TENANT_A;
         String prefix = "one.two";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        for (MetricToken metricToken : results) {
+            Assert.assertTrue(metricToken.isLeaf());
         }
     }
 
@@ -315,11 +315,11 @@ public class ElasticIOTest extends BaseElasticTest {
         String tenantId = TENANT_A;
         String prefix = "one.two.three*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        for (MetricToken metricToken : results) {
+            Assert.assertTrue(metricToken.isLeaf());
         }
     }
 
@@ -332,7 +332,7 @@ public class ElasticIOTest extends BaseElasticTest {
             add("one.foo.three00.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two.three00.fourA|true");
@@ -350,11 +350,11 @@ public class ElasticIOTest extends BaseElasticTest {
         String tenantId = TENANT_A;
         String prefix = "*.*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, prefix);
 
         Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        for (MetricToken metricToken : results) {
+            Assert.assertTrue(metricToken.isLeaf());
         }
     }
 

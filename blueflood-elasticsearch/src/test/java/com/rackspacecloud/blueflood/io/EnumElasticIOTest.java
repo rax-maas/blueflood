@@ -304,37 +304,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenForEnumsMultiTenant() throws Exception {
-
-        createEnumTestMetrics();
-
-        String tenantId = TENANT_1;
-        String prefix = "a";
-
-        List<TokenInfo> resultsTenant1 = enumElasticIO.getNextTokens(tenantId, prefix);
-        Set<String> expectedResultsTenant1 = new HashSet<String>() {{
-            add("a.m1|true");
-            add("a.m2|true");
-        }};
-
-        verifyTokenAndNextLevelFlag(resultsTenant1, expectedResultsTenant1);
-
-        tenantId = TENANT_2;
-        prefix = "b";
-
-        List<TokenInfo> resultsTenant2 = enumElasticIO.getNextTokens(tenantId, prefix);
-        Set<String> expectedResultsTenant2 = new HashSet<String>() {{
-            add("b.m1|true");
-            add("b.m2|true");
-            add("b.m3|true");
-        }};
-
-        verifyTokenAndNextLevelFlag(resultsTenant2, expectedResultsTenant2);
-    }
-
-    @Test
-    public void testRegexForTokensForAPrefix() {
-        String regex = enumElasticIO.regexForNextNLevels("foo.bar", 2);
+    public void testRegexToGrabMetricTokens() {
+        String regex = enumElasticIO.regexForPrevToNextLevel("foo.bar.*");
 
         Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
             add("foo.bar");
@@ -349,97 +320,96 @@ public class EnumElasticIOTest extends BaseElasticTest {
             add("moo.bar.baz");
         }};
 
-        Set<String> matchedMetricIndexes = new HashSet<String>();
-        Pattern pattern = Pattern.compile(regex);
-        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
-
-            Matcher matcher = pattern.matcher(metricIndex);
-            if (matcher.matches()) {
-                matchedMetricIndexes.add(metricIndex);
-            }
-        }
-
-        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
-        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
-        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
-        assertTrue("matched indexes should not contain these indexes",
-                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
     }
 
     @Test
-    public void testRegexForTokensForAPrefixWithWildCard() {
-        String regex = enumElasticIO.regexForNextNLevels("foo.bar.*", 2);
+    public void testRegexToGrabMetricTokensWithoutWildcardTwoLevels() {
+        String regex = enumElasticIO.regexForPrevToNextLevel("foo.bar");
 
         Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
             add("foo.bar.baz");
-            add("foo.bar.baz.qux");
-            add("foo.bar.baz.qux.x");
         }};
 
         Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
             add("foo");
+            add("foo.bar.baz.qux");
+            add("moo.bar.baz");
+        }};
+
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
+    }
+
+
+    @Test
+    public void testRegexToGrabMetricTokensWithoutWildcardOneLevel() {
+        String regex = enumElasticIO.regexForPrevToNextLevel("foo");
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
             add("foo.bar");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("foo.bar.baz");
+            add("test");
+            add("foo.bar.baz.qux");
+        }};
+
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
+    }
+
+    @Test
+    public void testRegexToGrabMetricTokensWithoutWildcardThreeLevels() {
+        String regex = enumElasticIO.regexForPrevToNextLevel("foo.bar.baz");
+
+        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
+            add("foo.bar");
+            add("foo.bar.baz");
+            add("foo.bar.baz.qux");
+        }};
+
+        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
+            add("foo");
+            add("foo.bar.xxx");
+            add("foo.bar.baz.qux.x");
             add("foo.bar.baz.qux.x.y");
             add("moo.bar.baz");
         }};
 
-        Set<String> matchedMetricIndexes = new HashSet<String>();
-        Pattern pattern = Pattern.compile(regex);
-        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
-
-            Matcher matcher = pattern.matcher(metricIndex);
-            if (matcher.matches()) {
-                matchedMetricIndexes.add(metricIndex);
-            }
-        }
-
-        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
-        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
-        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
-        assertTrue("matched indexes should not contain these indexes",
-                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
     }
 
     @Test
-    public void testRegexForTokensForASingleLevelPrefix() {
-        String regex = enumElasticIO.regexForNextNLevels("foo", 2);
+    public void testRegexToGrabMetricTokensPartialWildcardThreeLevels() {
+        String regex = enumElasticIO.regexForPrevToNextLevel("foo.bar.b*");
 
         Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
             add("foo.bar");
             add("foo.bar.baz");
+            add("foo.bar.baz1");
+            add("foo.bar.baz.qux");
         }};
 
         Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
             add("foo");
-            add("test");
-            add("foo.bar.baz.qux");
+            add("foo.bar.xxx");
+            add("foo.bar.xxx.qux");
+            add("foo.bar.baz.qux.x");
+            add("foo.bar.baz.qux.x.y");
+            add("moo.bar.baz");
         }};
 
-        Set<String> matchedMetricIndexes = new HashSet<String>();
-        Pattern pattern = Pattern.compile(regex);
-        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
-
-            Matcher matcher = pattern.matcher(metricIndex);
-            if (matcher.matches()) {
-                matchedMetricIndexes.add(metricIndex);
-            }
-        }
-
-        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
-        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
-        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
-        assertTrue("matched indexes should not contain these indexes",
-                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
     }
 
     @Test
     public void testRegexForTokensForASingleLevelWildCardPrefix() {
-        String regex = enumElasticIO.regexForNextNLevels("*", 2);
+        String regex = enumElasticIO.regexForPrevToNextLevel("*");
 
         Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
             add("foo.bar");
-            add("foo.bar.baz");
-            add("x.y.z");
             add("a.b");
         }};
 
@@ -447,9 +417,16 @@ public class EnumElasticIOTest extends BaseElasticTest {
             add("foo");
             add("x");
             add("test");
+            add("foo.bar.baz");
+            add("x.y.z");
             add("foo.bar.baz.qux");
         }};
 
+        validateRegex(regex, metricIndexesToBeMatched, metricIndexesThatShouldNotMatch);
+    }
+
+
+    private void validateRegex(String regex, Set<String> metricIndexesToBeMatched, Set<String> metricIndexesThatShouldNotMatch) {
         Set<String> matchedMetricIndexes = new HashSet<String>();
         Pattern pattern = Pattern.compile(regex);
         for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
@@ -460,99 +437,115 @@ public class EnumElasticIOTest extends BaseElasticTest {
             }
         }
 
-        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
         assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
         assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
         assertTrue("matched indexes should not contain these indexes",
                 Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testRegexForTokensForEmptyPrefix() {
-        String regex = enumElasticIO.regexForNextNLevels("", 2);
-
-        Set<String> metricIndexesToBeMatched = new HashSet<String>() {{
-            add("foo.bar");
-            add("a.b");
-        }};
-
-        Set<String> metricIndexesThatShouldNotMatch = new HashSet<String>() {{
-            add("foo");
-            add("x");
-            add("test");
-            add("foo.bar.baz");
-            add("x.y.z");
-            add("foo.bar.baz.qux");
-        }};
-
-        Set<String> matchedMetricIndexes = new HashSet<String>();
-        Pattern pattern = Pattern.compile(regex);
-        for (String metricIndex: Iterables.concat(metricIndexesThatShouldNotMatch, metricIndexesToBeMatched)) {
-
-            Matcher matcher = pattern.matcher(metricIndex);
-            if (matcher.matches()) {
-                matchedMetricIndexes.add(metricIndex);
-            }
-        }
-
-        assertEquals("matched indexes size", metricIndexesToBeMatched.size(), matchedMetricIndexes.size());
-        assertTrue("All matched metric indexes should be valid", metricIndexesToBeMatched.containsAll(matchedMetricIndexes));
-        assertTrue("matched metric indexes should not be more than expected", matchedMetricIndexes.containsAll(metricIndexesToBeMatched));
-        assertTrue("matched indexes should not contain these indexes",
-                Collections.disjoint(metricIndexesToBeMatched, metricIndexesThatShouldNotMatch));
+        enumElasticIO.regexForPrevToNextLevel("");
     }
 
     @Test
-    public void testGetNextTokenForEnumsWithoutPrefix() throws Exception {
+    public void testGetMetricTokenForEnumsSingleLevelWildcardQuery() throws Exception {
 
         createEnumTestMetrics();
 
         String tenantId = TENANT_1;
-        String prefix = "";
+        String query = "*";
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
         Set<String> expectedResults = new HashSet<String>() {{
-            add("a|true");
-            add("b|true");
+            add("a|false");
+            add("b|false");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
     }
 
     @Test
-    public void testGetNextTokenForEnumsWithPrefix() throws Exception {
+    public void testGetMetricTokenForTwoLevelWildCardQuery() throws Exception {
+
+        createEnumTestMetrics();
+
+        String tenantId = TENANT_1;
+        String prefix = "a.m1.*";
+
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, prefix);
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("a.m1.v1|true");
+            add("a.m1.v2|true");
+            add("a.m1.v3|true");
+        }};
+
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+    @Test
+    public void testGetMetricTokenForTwoLevelQuery() throws Exception {
 
         createEnumTestMetrics();
 
         String tenantId = TENANT_1;
         String prefix = "a.m1";
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, prefix);
         Set<String> expectedResults = new HashSet<String>() {{
-            add("a.m1.v1|false");
-            add("a.m1.v2|false");
-            add("a.m1.v3|false");
+            add("a.m1|false");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
     }
 
+
     @Test
-    public void testGetNextTokenWithCompleteMetricName() throws Exception {
+    public void testGetMetricTokenForEnumsMultiTenant() throws Exception {
+
+        createEnumTestMetrics();
+
+        String tenantId = TENANT_1;
+        String query = "a.*";
+
+        List<MetricToken> resultsTenant1 = enumElasticIO.getMetricTokens(tenantId, query);
+        Set<String> expectedResultsTenant1 = new HashSet<String>() {{
+            add("a.m1|false");
+            add("a.m2|false");
+        }};
+
+        verifyTokenAndNextLevelFlag(resultsTenant1, expectedResultsTenant1);
+
+        tenantId = TENANT_2;
+        query = "b.*";
+
+        List<MetricToken> resultsTenant2 = enumElasticIO.getMetricTokens(tenantId, query);
+        Set<String> expectedResultsTenant2 = new HashSet<String>() {{
+            add("b.m1|false");
+            add("b.m2|false");
+            add("b.m3|false");
+        }};
+
+        verifyTokenAndNextLevelFlag(resultsTenant2, expectedResultsTenant2);
+    }
+
+    @Test
+    public void testGetMetricTokenWithCompleteMetricName() throws Exception {
 
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
         //complete metric name
-        final String prefix = "one.two.three00.fourA.five0";
+        final String query = "one.two.three00.fourA.five0.*";
 
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
         Assert.assertEquals("Invalid total number of results", 0, results.size());
     }
 
     @Test
-    public void testGetNextTokenWithNonExistentMetricName() throws Exception {
+    public void testGetMetricTokenWithNonExistentMetricName() throws Exception {
 
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
@@ -561,7 +554,7 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String prefix = "xxx.yyy.zzz";
 
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, prefix);
         Assert.assertEquals("Invalid total number of results", 0, results.size());
     }
 
@@ -571,32 +564,32 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        //prefix as one level behind complete metric name. In this case one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00.fourA";
+        //query as one level behind complete metric name. In this case one.two.three00.fourA.five[0-2]
+        final String query = "one.two.three00.fourA.*";
 
-        //enum metric at the next level of prefix
+        //enum metric at the next level of query
         final String enumMetricName = "one.two.three00.fourA.five100";
         createSingleEnumTestMetric(tenantId, enumMetricName);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        // since we picked the prefix as one level below a complete metric name, tokens returned will have
+        // since we picked the query as one level below a complete metric name, tokens returned will have
         // next level only if the complete metric name is an enum.
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA.five0|false");
-            add("one.two.three00.fourA.five1|false");
-            add("one.two.three00.fourA.five2|false");
-            add("one.two.three00.fourA.five100|true");
+            add("one.two.three00.fourA.five0|true");
+            add("one.two.three00.fourA.five1|true");
+            add("one.two.three00.fourA.five2|true");
+            add("one.two.three00.fourA.five100|false");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
 
-        final String prefix1 = "one.two.three00.fourA.five100";
-        List<TokenInfo> results1 = enumElasticIO.getNextTokens(tenantId, prefix1);
+        final String query1 = "one.two.three00.fourA.five100.*";
+        List<MetricToken> results1 = enumElasticIO.getMetricTokens(tenantId, query1);
 
         Set<String> expectedResults1 = new HashSet<String>() {{
-            add("one.two.three00.fourA.five100.ev1|false");
-            add("one.two.three00.fourA.five100.ev2|false");
+            add("one.two.three00.fourA.five100.ev1|true");
+            add("one.two.three00.fourA.five100.ev2|true");
 
         }};
 
@@ -609,20 +602,20 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        final String prefix = "*";
+        final String query = "*.*";
 
-        //enum metric at the next level of prefix
+        //enum metric at the next level of query
         final String enumMetricName = "foo.bar";
 
         createSingleEnumTestMetric(tenantId, enumMetricName);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        //since we picked the prefix as one same level as an enum metric, it should grab the enum
+        //since we picked the query as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two|true");
-            add("foo.bar|true");
+            add("one.two|false");
+            add("foo.bar|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -638,23 +631,23 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         // prefix at the same level of an enum metric. Also prefix has regular metrics as next level
         // which in this case would be one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00.four[A,D]";
+        final String prefix = "one.two.three00.four[A,D].*";
 
         //enum metric at the same level of prefix
         final String enumMetricName = "one.two.three00.fourD";
 
         createSingleEnumTestMetric(tenantId, enumMetricName);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, prefix);
 
         //since we picked the prefix as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA.five0|false");
-            add("one.two.three00.fourA.five1|false");
-            add("one.two.three00.fourA.five2|false");
-            add("one.two.three00.fourD.ev1|false");
-            add("one.two.three00.fourD.ev2|false");
+            add("one.two.three00.fourA.five0|true");
+            add("one.two.three00.fourA.five1|true");
+            add("one.two.three00.fourA.five2|true");
+            add("one.two.three00.fourD.ev1|true");
+            add("one.two.three00.fourD.ev2|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -669,19 +662,19 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        // prefix at same level of complete metric name and also a complete enum metric name.
-        final String prefix = "one.two.three*.four*.five*";
+        // query at same level of complete metric name and also a complete enum metric name.
+        final String query = "one.two.three*.four*.five*.*";
 
-        //enum metric at the same level of prefix
+        //enum metric at the same level of query
         final String enumMetricName = "one.two.three00.fourA.five100";
         createSingleEnumTestMetric(tenantId, enumMetricName);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        //for this prefix, the only next level is the enum values of enum metric
+        //for this query, the only next level is the enum values of enum metric
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA.five100.ev1|false");
-            add("one.two.three00.fourA.five100.ev2|false");
+            add("one.two.three00.fourA.five100.ev1|true");
+            add("one.two.three00.fourA.five100.ev2|true");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -694,14 +687,14 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        // prefix has enum metrics at the same level and next level. Also prefix has regular metrics as next level
+        // query has enum metrics at the same level and next level. Also query has regular metrics as next level
         // which in this case would be one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00.four[A,D]";
+        final String query = "one.two.three00.four[A,D].*";
 
-        //enum metric at the same level of prefix
+        //enum metric at the same level of query
         final String enumMetricName1 = "one.two.three00.fourD";
 
-        //enum metric at next level of prefix
+        //enum metric at next level of query
         final String enumMetricName2 = "one.two.three00.fourD.five100";
 
         Map<String, List<String>> enumData = new HashMap<String, List<String>>();
@@ -716,16 +709,16 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
         createEnumTestMetrics(tenantId, enumData);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        //since we picked the prefix as one same level as an enum metric, it should grab the enum
+        //since we picked the query as one same level as an enum metric, it should grab the enum
         //values of the metric as next level of tokens
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA.five0|false");
-            add("one.two.three00.fourA.five1|false");
-            add("one.two.three00.fourA.five2|false");
-            add("one.two.three00.fourD.ev1-1|false");
-            add("one.two.three00.fourD.five100|true");
+            add("one.two.three00.fourA.five0|true");
+            add("one.two.three00.fourA.five1|true");
+            add("one.two.three00.fourA.five2|true");
+            add("one.two.three00.fourD.ev1-1|true");
+            add("one.two.three00.fourD.five100|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
@@ -738,8 +731,8 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        //prefix as one level behind complete metric name. In this case one.two.three00.fourA.five[0-2]
-        final String prefix = "one.two.three00";
+        //query as one level behind complete metric name. In this case one.two.three00.fourA.five[0-2]
+        final String query = "one.two.three00.*";
 
         //complete metric name which is a part of existing metric name one.two.three00.fourA.five[0-2]
         final String metricName = "one.two.three00.fourA";
@@ -748,15 +741,42 @@ public class EnumElasticIOTest extends BaseElasticTest {
             add(metricName);
         }});
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        // there is a complete metric name as next level of prefix.
+        // there is a complete metric name as next level of query.
         // there is also an incomplete metric name with the same same token as the complete one
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one.two.three00.fourA|false");
             add("one.two.three00.fourA|true");
-            add("one.two.three00.fourB|true");
-            add("one.two.three00.fourC|true");
+            add("one.two.three00.fourA|false");
+            add("one.two.three00.fourB|false");
+            add("one.two.three00.fourC|false");
+        }};
+
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+    @Test
+    public void testWithOnlyMetricAtNextLevel() throws Exception {
+
+        final String tenantId = TENANT_A;
+        createTestMetrics(createTestMetrics(tenantId));
+
+        //query as one level behind complete metric name. In this case one.two.three00.fourA.five[0-2]
+        final String query = "one.two.three00.m*";
+
+        //complete metric name which is a part of existing metric name one.two.three00.fourA.five[0-2]
+        final String metricName = "one.two.three00.metric";
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add(metricName);
+        }});
+
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
+
+        // there is a complete metric name as next level of query.
+        // there is also an incomplete metric name with the same same token as the complete one
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.two.three00.metric|true");
         }};
 
         verifyTokenAndNextLevelFlag(results, expectedResults);
@@ -768,14 +788,14 @@ public class EnumElasticIOTest extends BaseElasticTest {
         final String tenantId = TENANT_A;
         createTestMetrics(createTestMetrics(tenantId));
 
-        final String prefix = "one.two.three00";
+        final String query = "one.two.three00.*";
 
-        //enum metric at same level of prefix
+        //enum metric at same level of query
         final String enumMetricName = "one.two.three00";
 
         Map<String, List<String>> enumData = new HashMap<String, List<String>>();
 
-        //enum values same as the next token of the given prefix
+        //enum values same as the next token of the given query
         enumData.put(enumMetricName, new ArrayList<String>() {{
             add("fourA");
             add("fourB");
@@ -783,10 +803,10 @@ public class EnumElasticIOTest extends BaseElasticTest {
         }});
         createEnumTestMetrics(tenantId, enumData);
 
-        List<TokenInfo> results = enumElasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
 
-        // there is complete enum metric name at the same level as prefix
-        // there are also metrics which have next levels for the given prefix.
+        // there is complete enum metric name at the same level as query
+        // there are also metrics which have next levels for the given query.
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two.three00.fourA|false");
             add("one.two.three00.fourB|false");
@@ -796,6 +816,31 @@ public class EnumElasticIOTest extends BaseElasticTest {
             add("one.two.three00.fourC|true");
         }};
 
+        verifyTokenAndNextLevelFlag(results, expectedResults);
+    }
+
+
+    @Test
+    public void testWithOnlyEnumMetricAtSameLevel() throws Exception {
+
+        final String tenantId = TENANT_A;
+        createTestMetrics(createTestMetrics(tenantId));
+
+        // query at same level of complete metric name and also a complete enum metric name.
+        final String query = "one.two.three*.fourA.e*";
+
+        //enum metric at the same level of query
+        final String enumMetricName = "one.two.three00.fourA.enummetric";
+        createSingleEnumTestMetric(tenantId, enumMetricName);
+
+        List<MetricToken> results = enumElasticIO.getMetricTokens(tenantId, query);
+
+        //for this query, the only next level is the enum values of enum metric
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.two.three00.fourA.enummetric|false");
+        }};
+
+        Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
         verifyTokenAndNextLevelFlag(results, expectedResults);
     }
 
