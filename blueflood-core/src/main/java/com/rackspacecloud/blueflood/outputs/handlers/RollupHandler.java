@@ -77,9 +77,10 @@ public class RollupHandler {
     /*
       Timeout for rollups on read applicable only when operations are done async. for sync rollups on read
       it will be the astyanax operation timeout.
-      TODO: Hard-coded for now, make configurable if need be
      */
-    private TimeValue rollupOnReadTimeout = new TimeValue(10, TimeUnit.SECONDS);
+    private TimeValue rollupOnReadTimeout = new TimeValue(
+                                                Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS),
+                                                TimeUnit.SECONDS);
 
     public RollupHandler() {
 

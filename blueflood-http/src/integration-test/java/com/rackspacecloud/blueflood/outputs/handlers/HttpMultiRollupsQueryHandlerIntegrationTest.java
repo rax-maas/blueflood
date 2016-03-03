@@ -19,14 +19,24 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
     private final long fromTime = 1389124830L;
     private final long toTime = 1439231325000L;
+
+    @Before
+    public void setup() throws Exception {
+        // this is to help with Travis, which intermittently fail the following tests due
+        // to timeout
+        Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
+    }
 
     @Test
     public void testMultiplotQuery() throws Exception {
