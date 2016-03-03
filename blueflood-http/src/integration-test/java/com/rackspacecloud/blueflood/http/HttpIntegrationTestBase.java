@@ -59,6 +59,10 @@ public class HttpIntegrationTestBase {
     @BeforeClass
     public static void setUp() throws Exception{
         Configuration.getInstance().init();
+        // This is to help with Travis, which intermittently fail the following tests due
+        // to getting TimeoutException. This is done here because it needs to be before
+        // RollupHandler is instantiated.
+        Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
         System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
         System.setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.EnumElasticIO");
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");

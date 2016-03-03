@@ -31,13 +31,6 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
     private final long fromTime = 1389124830L;
     private final long toTime = 1439231325000L;
 
-    @Before
-    public void setup() throws Exception {
-        // this is to help with Travis, which intermittently fail the following tests due
-        // to timeout
-        Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
-    }
-
     @Test
     public void testMultiplotQuery() throws Exception {
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
