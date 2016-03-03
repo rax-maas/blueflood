@@ -4,7 +4,7 @@
         "timestamp":"%TIMESTAMP%",
         "enums": [
             {
-                "name": "%PREFIX%call_xyz_api",
+                "name": "call_xyz_api%POSTFIX%",
                 "value": "OK"
             }
         ]
@@ -14,7 +14,7 @@
         "timestamp":"%TIMESTAMP%",
         "enums": [
             {
-                "name": "%PREFIX%call_xyz_api",
+                "name": "call_xyz_api%POSTFIX%",
                 "value": "OK"
             }
         ]
@@ -24,7 +24,7 @@
         "timestamp":"%TIMESTAMP%",
         "enums": [
             {
-                "name": "%PREFIX%call_xyz_api",
+                "name": "call_xyz_api%POSTFIX%",
                 "value": "ERROR"
             }
         ]

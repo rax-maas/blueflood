@@ -12,45 +12,13 @@ import java.io.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class TestGsonParsing {
 
-    private static final String TIMESTAMP = "\"%TIMESTAMP%\"";
-    private static final String PREFIX = "%PREFIX%";
-
-    private String prefix = "prefix";
-
-    public static String getJsonFromFile( Reader reader, String prefix ) throws IOException {
-
-        return getJsonFromFile( reader, System.currentTimeMillis(), prefix );
-    }
-
-    public static String getJsonFromFile( Reader reader, long timestamp, String prefix ) throws IOException {
-        StringWriter writer = new StringWriter();
-
-        IOUtils.copy( reader, writer );
-        IOUtils.closeQuietly( reader );
-
-        String json = writer.toString();
-
-        // JSON might have several entries for the same metric.  If they have the same timestamp, they coudl overwrite
-        // each other in the case of enums.  Not using sleep() here to increment the time as to not have to deal with
-        // interruptedexception.  Rather, incrementing the time by 1 ms.
-
-        long increment = 0;
-
-        while( json.contains( TIMESTAMP ) ) {
-
-            json = json.replaceFirst( TIMESTAMP, Long.toString( timestamp + increment++ ) );
-        }
-
-        json = json.replace( PREFIX, prefix );
-
-        return json;
-    }
+    private String postfix = "postfix";
 
     private String json;
     private long current = System.currentTimeMillis();
@@ -58,7 +26,7 @@ public class TestGsonParsing {
     @Before
     public void readJsonFile() throws IOException, InterruptedException {
 
-        json = getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")), prefix );
+        json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ), postfix );
     }
     
     @Test
@@ -97,13 +65,13 @@ public class TestGsonParsing {
         assertNotNull(payload);
         Map<String, BluefloodTimer> timers = asMap(payload.getTimers());
         
-        assertEquals(4, timers.get( prefix + "4444444.T1s").getHistogram().size());
-        assertEquals(11, timers.get( prefix + "3333333.T29s").getHistogram().size());
-        assertEquals(11, timers.get( prefix + "3333333.T200ms").getHistogram().size());
+        assertEquals(4, timers.get( "4444444.T1s" + postfix ).getHistogram().size());
+        assertEquals(11, timers.get( "3333333.T29s" + postfix ).getHistogram().size());
+        assertEquals(11, timers.get( "3333333.T200ms" + postfix ).getHistogram().size());
         
         // this one is non-existant in the json, but we do not want a null map.
-        assertNotNull(timers.get( prefix + "3333333.T10s").getHistogram());
-        assertEquals(0, timers.get( prefix + "3333333.T10s").getHistogram().size());
+        assertNotNull(timers.get( "3333333.T10s" + postfix ).getHistogram());
+        assertEquals(0, timers.get( "3333333.T10s" + postfix ).getHistogram().size());
     }
     
     @Test
@@ -113,10 +81,10 @@ public class TestGsonParsing {
         assertNotNull(payload);
         Map<String, BluefloodTimer> timers = asMap(payload.getTimers());
         
-        assertEquals(5, timers.get( prefix + "4444444.T1s").getPercentiles().size());
-        assertEquals(5, timers.get( prefix + "3333333.T29s").getPercentiles().size());
-        assertEquals(5, timers.get( prefix + "3333333.T10s").getPercentiles().size());
-        assertEquals(5, timers.get( prefix + "3333333.T200ms").getPercentiles().size());
+        assertEquals(5, timers.get( "4444444.T1s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T29s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T10s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T200ms" + postfix ).getPercentiles().size());
     }
     
     private static Map<String, BluefloodTimer> asMap(Collection<BluefloodTimer> timers) {

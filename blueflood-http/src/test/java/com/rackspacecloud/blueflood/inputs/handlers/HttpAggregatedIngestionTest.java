@@ -18,9 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.TestGsonParsing;
 import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -34,20 +32,21 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static junit.framework.Assert.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 
-public class HttpAggregatedIngestionTests {
+public class HttpAggregatedIngestionTest {
 
-    public static final long TIME_DIFF = 2000;
+    public static final long TIME_DIFF_MS = 2000;
 
     private AggregatedPayload payload;
 
-    private final String  prefix = "pref.";
+    private final String postfix = ".post";
 
     @Before
     public void buildPayload() throws IOException {
 
-        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")), prefix );
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ), postfix );
         payload = HttpAggregatedIngestionHandler.createPayload(json);
     }
     
@@ -58,6 +57,7 @@ public class HttpAggregatedIngestionTests {
     
     @Test
     public void testGsonNumberConversions() {
+
         Number doubleNum = new LazilyParsedNumber("2.321");
         assertEquals( Double.parseDouble( "2.321" ), PreaggregateConversions.resolveNumber( doubleNum ) );
         
@@ -103,33 +103,33 @@ public class HttpAggregatedIngestionTests {
     @Test
     public void testTimestampInTheFuture() throws IOException {
 
-        long timestamp = System.currentTimeMillis() + TIME_DIFF
+        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")),
-                timestamp, prefix );
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ),
+                timestamp, postfix );
         payload = HttpAggregatedIngestionHandler.createPayload(json );
 
         List<String> errors = payload.getValidationErrors();
 
         assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( JSONMetricsContainerTest.FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
     }
 
     @Test
     public void testTimestampInThePast() throws IOException {
 
-        long timestamp = System.currentTimeMillis() - TIME_DIFF
+        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        String json = TestGsonParsing.getJsonFromFile( new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")),
-                timestamp, prefix );
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ),
+                timestamp, postfix );
         payload = HttpAggregatedIngestionHandler.createPayload(json );
 
         List<String> errors = payload.getValidationErrors();
 
         assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( JSONMetricsContainerTest.PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
     }
 
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics

@@ -20,12 +20,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
@@ -46,16 +43,16 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         long start = System.currentTimeMillis() - TIME_DIFF;
         long end = System.currentTimeMillis() + TIME_DIFF;
 
-        String prefix = getPrefix();
+        String postfix = getPostfix();
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", prefix);
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix);
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // query for multiplot metric and assert results
         HttpResponse query_response = queryMultiplot(tenant_id, start, end, "200", "FULL", "",
-                "['" + prefix + "3333333.G1s','" + prefix + "3333333.G10s']");
+                "['3333333.G1s" + postfix + "','3333333.G10s" + postfix + "']");
         assertEquals( "Should get status 200 from query server for multiplot POST", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
@@ -74,7 +71,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         JsonObject metric1 = metrics.get( 1 ).getAsJsonObject();
         metricMap.put(  metric1.get( "metric" ).getAsString(), metric1 );
 
-        JsonObject metricCheck1 = metricMap.get( prefix + "3333333.G1s" );
+        JsonObject metricCheck1 = metricMap.get( "3333333.G1s" + postfix );
         assertNotNull( metricCheck1 );
 
         assertEquals( "unknown", metricCheck1.get( "unit" ).getAsString() );
@@ -88,7 +85,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         assertEquals( 397, data0a.get( "latest" ).getAsInt() );
 
 
-        JsonObject metricCheck2 = metricMap.get( prefix + "3333333.G10s" );
+        JsonObject metricCheck2 = metricMap.get( "3333333.G10s" + postfix );
         assertNotNull( metricCheck2 );
 
         assertEquals( "unknown", metricCheck2.get( "unit" ).getAsString() );
@@ -108,14 +105,14 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         long start = System.currentTimeMillis() - TIME_DIFF;
         long end = System.currentTimeMillis() + TIME_DIFF;
 
-        String prefix = getPrefix();
+        String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "99988877";
-        final String metric_name = prefix + "call_xyz_api";
+        final String metric_name = "call_xyz_api" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json", prefix);
+        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 

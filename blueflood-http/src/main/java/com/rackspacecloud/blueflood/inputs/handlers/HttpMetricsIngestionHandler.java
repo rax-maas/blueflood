@@ -48,6 +48,9 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
+
+    public static final String ERROR_HEADER = "The following errors have been encountered:";
+
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
 
@@ -63,7 +66,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     public static String getResponseBody( List<String> errors ) {
         StringBuilder sb = new StringBuilder();
-        sb.append( "The following errors have been encountered:" + System.lineSeparator() );
+        sb.append( ERROR_HEADER + System.lineSeparator() );
 
         for( String error : errors ) {
 

@@ -68,23 +68,41 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
             // block until things get ingested.
             requestCount.inc();
             List<AggregatedPayload> bundleList = createBundleList(body);
-            MetricsCollection collection = new MetricsCollection();
 
-            for (AggregatedPayload bundle : bundleList) {
-                collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+            List<String> errors = new ArrayList<String>();
+
+            for( AggregatedPayload payload : bundleList ) {
+
+                errors.addAll( payload.getValidationErrors() );
             }
 
-            ListenableFuture<List<Boolean>> futures = processor.apply(collection);
-            List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
-            for (Boolean persisted : persisteds) {
-                if (!persisted) {
-                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    return;
+            if( errors.isEmpty() ) {
+
+                MetricsCollection collection = new MetricsCollection();
+
+                for (AggregatedPayload bundle : bundleList) {
+                    collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
                 }
+
+                ListenableFuture<List<Boolean>> futures = processor.apply(collection);
+                List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+                for (Boolean persisted : persisteds) {
+                    if (!persisted) {
+                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        return;
+                    }
+                }
+
+                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
             }
+            else {
 
-            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                DefaultHandler.sendResponse( ctx,
+                        request,
+                        HttpMetricsIngestionHandler.getResponseBody( errors ),
+                        HttpResponseStatus.BAD_REQUEST );
 
+            }
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));
             log.error(ex.getMessage(), ex);

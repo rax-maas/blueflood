@@ -3,23 +3,23 @@
     "timestamp":"%TIMESTAMP%",
     "enums": [
         {
-            "name": "%PREFIX%enum_metric_test",
+            "name": "enum_metric_test%POSTFIX%",
             "value": "v3"
         },
         {
-            "name": "%PREFIX%enum_metric_test",
+            "name": "enum_metric_test%POSTFIX%",
             "value": "v1"
         },
         {
-            "name": "%PREFIX%enum_metric_test",
+            "name": "enum_metric_test%POSTFIX%",
             "value": "v1"
         },
         {
-            "name": "%PREFIX%enum_metric_test",
+            "name": "enum_metric_test%POSTFIX%",
             "value": "v2"
         },
         {
-            "name": "%PREFIX%enum_metric_test",
+            "name": "enum_metric_test%POSTFIX%",
             "value": "v3"
         }
     ]

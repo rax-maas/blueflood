@@ -31,17 +31,17 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     @Test
     public void testSingleplotQuery() throws Exception {
 
-        long start = System.currentTimeMillis() - TIME_DIFF;
-        long end = System.currentTimeMillis() + TIME_DIFF;
+        long start = System.currentTimeMillis() - TIME_DIFF_MS;
+        long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
-        String prefix = getPrefix();
+        String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
-        final String metric_name = prefix + "3333333.G1s";
+        final String metric_name = "3333333.G1s" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", prefix );
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix );
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
@@ -75,17 +75,17 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     @Test
     public void testSingleplotQueryWithEnum() throws Exception {
 
-        long start = System.currentTimeMillis() - TIME_DIFF;
-        long end = System.currentTimeMillis() + TIME_DIFF;
+        long start = System.currentTimeMillis() - TIME_DIFF_MS;
+        long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
-        String prefix = getPrefix();
+        String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
-        final String metric_name = prefix + "enum_metric_test";
+        final String metric_name = "enum_metric_test" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", prefix );
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", postfix );
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 

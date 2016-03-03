@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.http;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 import com.rackspacecloud.blueflood.io.*;
@@ -33,6 +32,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
 
 import java.io.*;
@@ -41,12 +41,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
-import static com.rackspacecloud.blueflood.inputs.handlers.wrappers.TestGsonParsing.getJsonFromFile;
 import static org.mockito.Mockito.spy;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpIntegrationTestBase {
 
-    public static final long TIME_DIFF = 2000;
+    public static final long TIME_DIFF_MS = 20000;
 
     protected static HttpClient client;
     protected static ScheduleContext context;
@@ -141,31 +141,33 @@ public class HttpIntegrationTestBase {
         }
     }
 
-    public HttpResponse postGenMetric( String tenantId, String prefix, String url ) throws Exception {
+    public HttpResponse postGenMetric( String tenantId, String postfix, String url ) throws Exception {
 
-        return httpPost( tenantId, url,  JSONMetricsContainerTest.generateJSONMetricsData( prefix ) );
+        return httpPost( tenantId, url, generateJSONMetricsData( postfix ) );
     }
 
-    public HttpResponse postGenMetric( String tenantId, String prefix, String url, long time ) throws Exception {
+    public HttpResponse postGenMetric( String tenantId, String postfix, String url, long time ) throws Exception {
 
-        return httpPost( tenantId, url,  JSONMetricsContainerTest.generateJSONMetricsData( prefix, time ) );
+        return httpPost( tenantId, url, generateJSONMetricsData( postfix, time ) );
     }
 
-    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, String prefix) throws URISyntaxException, IOException {
+    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, String postfix) throws URISyntaxException, IOException {
         // post metric to ingestion server for a tenantId
         // urlPath is path for url ingestion after the hostname
         // payloadFilepath is location of the payload for the POST content entity
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ), prefix );
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
+                postfix );
         return httpPost( tenantId, urlPath, json );
     }
 
-    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, long timestamp, String prefix ) throws URISyntaxException, IOException {
+    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, long timestamp, String postfix ) throws URISyntaxException, IOException {
         // post metric to ingestion server for a tenantId
         // urlPath is path for url ingestion after the hostname
         // payloadFilepath is location of the payload for the POST content entity
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ), timestamp, prefix );
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
+                timestamp, postfix );
         return httpPost( tenantId, urlPath, json );
     }
 
@@ -274,13 +276,37 @@ public class HttpIntegrationTestBase {
     }
 
     protected String[] getBodyArray( HttpResponse response ) throws IOException {
-        StringWriter sw = new StringWriter();
-        IOUtils.copy( response.getEntity().getContent(), sw );
-        IOUtils.closeQuietly( response.getEntity().getContent() );
-        return sw.toString().split( System.lineSeparator() );
+
+        try {
+            StringWriter sw = new StringWriter();
+            IOUtils.copy( response.getEntity().getContent(), sw );
+            return sw.toString().split( System.lineSeparator() );
+        }
+        finally {
+            IOUtils.closeQuietly( response.getEntity().getContent() );
+        }
     }
 
-    protected String getPrefix() {
-        return random.nextInt( 99999 ) + ".";
+    protected String getPostfix() {
+        return "."  + random.nextInt( 99999 );
+    }
+
+
+    protected String createTestEvent( int batchSize ) throws Exception {
+
+        return createTestEvent( batchSize, System.currentTimeMillis() );
+    }
+
+    protected String createTestEvent(int batchSize, long timestamp) throws Exception {
+        StringBuilder events = new StringBuilder();
+        for (int i=0; i<batchSize; i++) {
+            Event event = new Event();
+            event.setWhat("deployment "+i);
+            event.setWhen( timestamp );
+            event.setData("deploying prod "+i);
+            event.setTags("deployment "+i);
+            events.append(new ObjectMapper().writeValueAsString(event));
+        }
+        return events.toString();
     }
 }

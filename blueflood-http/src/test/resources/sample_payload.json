@@ -4,49 +4,49 @@
     "flushInterval": 15000,
     "gauges":[
         {
-            "name":"%PREFIX%4444444.G200ms",
+            "name":"4444444.G200ms%POSTFIX%",
             "value":145
         },{
-            "name":"%PREFIX%3333333.G1s",
+            "name":"3333333.G1s%POSTFIX%",
             "value":397
         },{
-            "name":"%PREFIX%3333333.G10s",
+            "name":"3333333.G10s%POSTFIX%",
             "value":56
         },{
-            "name":"%PREFIX%internal.timestamp_lag",
+            "name":"internal.timestamp_lag%POSTFIX%",
             "value":0
         }
     ],
     "counters":[
         {
-            "name":"%PREFIX%internal.bad_lines_seen",
+            "name":"internal.bad_lines_seen%POSTFIX%",
             "value":0,
             "rate":0
         },{
-            "name":"%PREFIX%internal.packets_received",
+            "name":"internal.packets_received%POSTFIX%",
             "value":317,
             "rate":21.133333333333333
         },{
-            "name":"%PREFIX%3333333.C200ms",
+            "name":"3333333.C200ms%POSTFIX%",
             "value":74,
             "rate":4.933333333333334
         },{
-            "name":"%PREFIX%3333333.C1s",
+            "name":"3333333.C1s%POSTFIX%",
             "value":15,
             "rate":1
         },{
-            "name":"%PREFIX%3333333.C29s",
+            "name":"3333333.C29s%POSTFIX%",
             "value":1,
             "rate":0.06666666666666667
         },{
-            "name":"%PREFIX%4444444.C10s",
+            "name":"4444444.C10s%POSTFIX%",
             "value":1,
             "rate":0.06666666666666667
         }
     ],
     "timers":[
         {
-            "name":"%PREFIX%3333333.T200ms",
+            "name":"3333333.T200ms%POSTFIX%",
             "count":74,
             "rate":4.933333333333334,
             "min":1,
@@ -80,30 +80,30 @@
                 "bin_inf":0
             }
         },{
-            "name":"%PREFIX%4444444.T1s","count":15,"rate":1,"min":43,"max":497,"sum":3865,"avg":257.6666666666667,"median":234,"std":149.02020742913433,
+            "name":"4444444.T1s%POSTFIX%","count":15,"rate":1,"min":43,"max":497,"sum":3865,"avg":257.6666666666667,"median":234,"std":149.02020742913433,
             "percentiles":{"50":{"avg":134.5,"max":234,"sum":1076},"75":{"avg":188.63636363636363,"max":369,"sum":2075},"98":{"avg":257.6666666666667,"max":497,"sum":3865},"99":{"avg":257.6666666666667,"max":497,"sum":3865},"999":{"avg":321,"max":321,"sum":321}},
             "histogram":{"bin_100":4,"bin_250":4,"bin_500":7,"bin_inf":0}
         },{
-            "name":"%PREFIX%3333333.T29s","count":1,"rate":0.06666666666666667,"min":321,"max":321,"sum":321,"avg":321,"median":321,"std":0,
+            "name":"3333333.T29s%POSTFIX%","count":1,"rate":0.06666666666666667,"min":321,"max":321,"sum":321,"avg":321,"median":321,"std":0,
             "percentiles":{"50":{"avg":321,"max":321,"sum":321},"75":{"avg":321,"max":321,"sum":321},"98":{"avg":321,"max":321,"sum":321},"99":{"avg":321,"max":321,"sum":321},"999":{"avg":321,"max":321,"sum":321}},
             "histogram":{"bin_50":0,"bin_100":0,"bin_150":0,"bin_200":0,"bin_250":0,"bin_300":0,"bin_350":1,"bin_400":0,"bin_450":0,"bin_500":0,"bin_inf":0}
         },{
-            "name":"%PREFIX%3333333.T10s","count":1,"rate":0.06666666666666667,"min":214,"max":214,"sum":214,"avg":214,"median":214,"std":0,
+            "name":"3333333.T10s%POSTFIX%","count":1,"rate":0.06666666666666667,"min":214,"max":214,"sum":214,"avg":214,"median":214,"std":0,
             "percentiles":{"50":{"avg":214,"max":214,"sum":214},"75":{"avg":214,"max":214,"sum":214},"98":{"avg":214,"max":214,"sum":214},"99":{"avg":214,"max":214,"sum":214},"999":{"avg":214,"max":214,"sum":214}}
         }
     ],
     "sets":[
         {
-            "name":"%PREFIX%3333333.S500ms",
+            "name":"3333333.S500ms%POSTFIX%",
             "values":["cow","dog","cat","loris","narwhal","platypus","chicken","nutria","pangolin","horse"]
         }, {
-            "name":"%PREFIX%4444444.S1s",
+            "name":"4444444.S1s%POSTFIX%",
             "values":["platypus","dog","pangolin","loris","chicken","narwhal","cow","cat","nutria"]
         }
     ],
     "enums":[
         {
-            "name":"%PREFIX%call_xyz_api",
+            "name":"call_xyz_api%POSTFIX%",
             "value":"400"
         }
     ]

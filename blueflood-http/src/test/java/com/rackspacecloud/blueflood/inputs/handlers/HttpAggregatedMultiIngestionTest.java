@@ -24,28 +24,26 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-public class HttpAggregatedMultiIngestionTests {
+import static com.rackspacecloud.blueflood.TestUtils.*;
+
+
+public class HttpAggregatedMultiIngestionTest {
     
     private List<AggregatedPayload> bundleList;
-    
+
+    private final String postfix = ".pref";
+
     @Before
     public void buildBundle() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_multi_aggregated_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
+
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_multi_aggregated_payload.json" ) ),
+                postfix );
         bundleList = HttpAggregatedMultiIngestionHandler.createBundleList(json);
     }
 
