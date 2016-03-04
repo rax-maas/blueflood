@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.junit.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -49,7 +50,10 @@ public class HttpAnnotationsIntegrationTest {
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         vendor = new HttpClientVendor();
         client = vendor.getClient();
-        esSetup = new EsSetup();
+
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))

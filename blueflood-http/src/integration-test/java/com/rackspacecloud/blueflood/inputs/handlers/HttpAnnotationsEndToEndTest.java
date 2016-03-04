@@ -16,6 +16,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
@@ -33,6 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -69,7 +71,9 @@ public class HttpAnnotationsEndToEndTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))

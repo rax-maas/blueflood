@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +72,9 @@ public class EnumElasticIOTest extends BaseElasticTest {
 
     @Before
     public void setup() throws IOException {
-        esSetup = new EsSetup();
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
         esSetup.execute(EsSetup.deleteAll());
         esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))

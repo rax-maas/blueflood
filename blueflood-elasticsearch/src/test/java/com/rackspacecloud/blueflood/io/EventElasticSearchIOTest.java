@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.types.Event;
 import junit.framework.Assert;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -118,10 +119,10 @@ public class EventElasticSearchIOTest {
 
     @Before
     public void setup() throws Exception {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup
-                .createIndex(EventElasticSearchIO.EVENT_INDEX)
+        esSetup = new EsSetup(ImmutableSettings.settingsBuilder()
+                .put("shield.enabled", false)
+                .build());
+        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withMapping(EventElasticSearchIO.ES_TYPE, EsSetup.fromClassPath("events_mapping.json")));
         searchIO = new EventElasticSearchIO(esSetup.client());
 

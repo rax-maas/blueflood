@@ -38,6 +38,19 @@
     </plugins>
   </build>
 
+  <repositories>
+    <repository>
+      <id>elasticsearch-releases</id>
+      <url>http://maven.elasticsearch.org/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <dependencies>
 
     <dependency>
@@ -49,7 +62,22 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>1.7.1</version>
+      <version>1.7.4</version>
+    </dependency>
+
+    <!-- add the Shield jar as a dependency -->
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-shield</artifactId>
+      <version>1.3.3</version>
+    </dependency>
+
+    <!-- add the License jar as a dependency -->
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-license-plugin</artifactId>
+      <version>1.0.0</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>

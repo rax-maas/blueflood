@@ -5,3 +5,4 @@ path.work: /tmp/elasticsearch-for-bf/work
 
 path.logs: /tmp/elasticsearch-for-bf/logs
 
+shield.enabled: false
