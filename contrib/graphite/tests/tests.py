@@ -325,14 +325,15 @@ class BluefloodTests(TestCase):
 
   
   def test_find_nodes(self):
-    endpoint = self.finder.find_metrics_endpoint(self.finder.bf_query_endpoint, self.finder.tenant)
+    endpoint = self.finder.find_nodes_endpoint(self.finder.bf_query_endpoint, self.finder.tenant)
+    endpoint_old = self.finder.find_metrics_endpoint(self.finder.bf_query_endpoint, self.finder.tenant)
 
     # one time through without submetrics
     self.finder.enable_submetrics = False
     with requests_mock.mock() as m:
       #test 401 errors
       query = FindQuery("*", 1, 2)
-      m.get(endpoint, json={}, status_code=401)
+      m.get(endpoint, json=[], status_code=401)
       metrics = self.finder.find_nodes(query)
       self.assertTrue(list(metrics) == [])
 
@@ -347,22 +348,14 @@ class BluefloodTests(TestCase):
 
     get_path = lambda x: x.path
 
-    def query_test(query_pattern, fg_data, search_results, bg_data=[]):
+    def query_test(query_pattern, fg_data, search_results):
       # query_pattern is the pattern to search for
       # fg_data is the data returned by the "mainthread" call to find metrics
       # search_results are the expected results
-      # bg_data - non submetric calls do 2 calls to find_metrics, (one in a background thread,)
-      #   bg_data simulates what gets returnd by the background thread
       def json_callback(request, context):
         print("json thread callback" + threading.current_thread().name)
         full_query = "include_enum_values=true&" + urllib.urlencode({'query':query_pattern}).lower()
-        if not self.finder.enable_submetrics:
-          if request.query == full_query:
-            return fg_data
-          else:
-            return bg_data
-        else:
-          return fg_data
+        return fg_data
       qlen = len(query_pattern.split("."))
       with requests_mock.mock() as m:
         query = FindQuery(query_pattern, 1, 2)
@@ -371,101 +364,115 @@ class BluefloodTests(TestCase):
         self.assertSetEqual(set(map(get_path, list(metrics))),
                                  set(map(get_start(qlen), search_results)))
 
+    def query_test_with_submetrics(query_pattern, fg_data, search_results, bg_data=[]):
+      # query_pattern is the pattern to search for
+      # fg_data is the data returned by the "mainthread" call to find metrics
+      # search_results are the expected results
+      # bg_data - non submetric calls do 2 calls to find_metrics, (one in a background thread,)
+      #   bg_data simulates what gets returnd by the background thread
+      def json_callback(request, context):
+        print("json thread callback" + threading.current_thread().name)
+        full_query = "include_enum_values=true&" + urllib.urlencode({'query':query_pattern}).lower()
+        return fg_data
+      qlen = len(query_pattern.split("."))
+      with requests_mock.mock() as m:
+        query = FindQuery(query_pattern, 1, 2)
+        m.get(endpoint_old, json=json_callback, status_code=200)
+        metrics = self.finder.find_nodes(query)
+        self.assertSetEqual(set(map(get_path, list(metrics))),
+                                 set(map(get_start(qlen), search_results)))
+
+
     enum_vals = ['v1', 'v2']
 
     query_test("*",
-               [{u'metric': self.metric1, u'unit': u'percent'},
-                {u'metric': self.metric2, u'unit': u'percent'}],
-               [self.metric1, self.metric2])
+               [{'a': False},
+                {'b': False}],
+               ['a', 'b'])
 
     query_test("a.*",
-               [{u'metric': self.metric1, u'unit': u'percent'}],
-               [self.metric1])
-
-    query_test("a.*",
-               [{u'metric': self.metric1 + 'd', u'unit': u'percent'}],
-               [self.metric1],
-               [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}])
+               [{'a.b': False}],
+               ['a.b'])
 
     query_test("a.b.*",
-               [{u'metric': self.metric1, u'unit': u'percent'}],
+               [{'a.b.c': True}],
                [self.metric1])
 
     query_test("a.b.c",
-               [{u'metric': self.metric1, u'unit': u'percent'}],
+               [{'a.b.c': True}],
                [self.metric1])
 
     query_test("a.b.c.*",
-               [{u'metric': self.metric1 + '.d.e', u'unit': u'percent'}],
-               [self.metric1 + '.' + v for v in enum_vals] + [self.metric1 + '.d.e'],
-               [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}])
+               [{'a.b.c.d': False},
+                {'a.b.c.v1': True},
+                {'a.b.c.v2': True}],
+               [self.metric1 + '.' + v for v in enum_vals] + [self.metric1 + '.d'])
 
     query_test("a.b.*.v*",
-               [{u'metric': self.metric1 + '.v.e', u'unit': u'percent'}],
-               [self.metric1 + '.' + v for v in enum_vals] + [self.metric1 + '.v.e'],
-               [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}])
+               [{'a.b.c.v': False},
+                {'a.b.c.v1': True},
+                {'a.b.c.v2': True}],
+               [self.metric1 + '.' + v for v in enum_vals] + [self.metric1 + '.v.e'])
 
     query_test("a.b.*.v*.*",
-               [{u'metric': self.metric1 + '.v.e.f', u'unit': u'percent'}],
-               [self.metric1 + '.v.e.f'],
-               [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}])
-
+               [{'a.b.c.v.e': False}],
+               [self.metric1 + '.v.e.f'])
 
     # now again, with submetrics
     self.finder.enable_submetrics = True
-    query_test("*", 
-               [{u'metric': self.metric1, u'unit': u'percent'}, 
+    query_test_with_submetrics("*",
+               [{u'metric': self.metric1, u'unit': u'percent'},
                {u'metric': self.metric2, u'unit': u'percent'}],
                [self.metric1, self.metric2])
 
-    query_test("a.*", 
+    query_test_with_submetrics("a.*",
                [{u'metric': self.metric1, u'unit': u'percent'}],
                [self.metric1])
 
-    query_test("a.*",
+    query_test_with_submetrics("a.*",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1])
 
-    query_test("a.b.*", 
+    query_test_with_submetrics("a.b.*",
                [{u'metric': self.metric1, u'unit': u'percent'},
                 {u'metric': 'a.bb.c', u'unit': u'percent'}],
                [self.metric1])
 
-    query_test("a.b.c", 
+    query_test_with_submetrics("a.b.c",
                [{u'metric': self.metric1, u'unit': u'percent'}],
                [self.metric1])
 
-    query_test("a.b.c.*", 
+    query_test_with_submetrics("a.b.c.*",
                [{u'metric': self.metric1, u'unit': u'percent'},
                {u'metric': (self.metric1 + 'd'), u'unit': u'percent'}],
                [self.metric1 + '.' + k for k in self.finder.submetric_aliases])
 
-    query_test("a.b.c.*", 
+    query_test_with_submetrics("a.b.c.*",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals},
                {u'metric': (self.metric1 + 'd'), u'unit': u'percent'}],
                [self.metric1 + '.' + k for k in self.finder.submetric_aliases])
 
-    query_test("a.b.c._avg", 
+    query_test_with_submetrics("a.b.c._avg",
                [{u'metric': self.metric1, u'unit': u'percent'}],
                [self.metric1 + '.' + self.alias_key])
 
-    query_test("a.b.c._avg", 
+    query_test_with_submetrics("a.b.c._avg",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1 + '.' + self.alias_key])
 
-    query_test("a.b.c.v1._enum", 
+    query_test_with_submetrics("a.b.c.v1._enum",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1 + '.v1'])
 
-    query_test("a.b.c.*._enum", 
+    query_test_with_submetrics("a.b.c.*._enum",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1 + '.' + v for v in enum_vals])
 
-    query_test("a.b.*.*._enum", 
+    query_test_with_submetrics("a.b.*.*._enum",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1 + '.' + v for v in enum_vals])
 
-    query_test("a.b.c.v*._enum", 
+    query_test_with_submetrics("a.b.c.v*._enum",
                [{u'metric': self.metric1, u'unit': u'percent', u'enum_values': enum_vals}],
                [self.metric1 + '.' + v for v in enum_vals])
 
