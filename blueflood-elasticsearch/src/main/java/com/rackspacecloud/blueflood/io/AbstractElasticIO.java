@@ -109,7 +109,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *
      * for metric names: foo.bar.xxx,
      *                   foo.bar.baz.qux,
-     *                   foo.bar.baz with enum values [one, two]
+     *                   foo.bar with enum values [one, two]
      *
      * for query=foo.bar.*, returns the below list of metric tokens
      *
