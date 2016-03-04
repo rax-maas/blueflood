@@ -5,7 +5,12 @@ The BF finder is the graphite plugin that allows graphite and grafana to use blu
 
 ### Setup
 
-Get the [blueflood](https://github.com/rackerlabs/blueflood) repo from github. Execute the following commands
+To install package from pypi using pip:
+
+    pip install blueflood-graphite-finder
+
+To install manually with code from github repo:
+    Get the [blueflood](https://github.com/rackerlabs/blueflood) repo from github. Execute the following commands
 
     cd $BLUEFLOOD_REPO_LOCATION/contrib/graphite
     virtualenv bf-finder
