@@ -19,9 +19,12 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
