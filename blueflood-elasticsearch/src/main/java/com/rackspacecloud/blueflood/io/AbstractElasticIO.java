@@ -115,8 +115,8 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *
      * new MetricToken("foo.bar.xxx", true)   <- From metric foo.bar.xxx
      * new MetricToken("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
-     * new MetricToken("foo.bar.one", true)   <- From metric foo.bar.baz
-     * new MetricToken("foo.bar.two", true)   <- From metric foo.bar.baz
+     * new MetricToken("foo.bar.one", true)   <- From metric foo.bar
+     * new MetricToken("foo.bar.two", true)   <- From metric foo.bar
      *
      * @param tenant
      * @param query is glob representation of hierarchical levels of token. Ex: foo.bar.*

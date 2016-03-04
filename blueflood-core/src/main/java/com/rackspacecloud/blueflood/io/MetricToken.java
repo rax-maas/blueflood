@@ -8,7 +8,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * token=foo, path=foo, isLeaf=false
  * token=bar, path=foo.bar, isLeaf=false
  * token=baz, path=foo.bar.baz, isLeaf=false
- * token=qux, path=foo.bar.bat.qux, isLeaf=true
+ * token=qux, path=foo.bar.baz.qux, isLeaf=true
  *
  */
 public final class MetricToken {
