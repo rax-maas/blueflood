@@ -20,7 +20,11 @@ public final class MetricToken {
     public MetricToken(String path, boolean isLeaf) {
         this.path = path;
         this.isLeaf = isLeaf;
-        this.token = path.substring(path.lastIndexOf(".") + 1);
+
+        if (path.lastIndexOf(".") > 0)
+            this.token = path.substring(path.lastIndexOf(".") + 1);
+        else
+            this.token = path;
     }
 
     public String getToken() {
