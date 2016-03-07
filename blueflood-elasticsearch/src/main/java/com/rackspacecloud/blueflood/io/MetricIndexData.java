@@ -53,8 +53,8 @@ public class MetricIndexData {
 
     private final int baseLevel;
 
-    //contains next level of tokens after baseLevel, which also have subsequent next level
-    private final Set<String> tokensWithNextLevelSet = new LinkedHashSet<String>();
+    //for token paths which have two levels after baseLevel, contains token paths upto next level from baseLevel
+    private final Set<String> tokenPathWithNextLevelSet = new LinkedHashSet<String>();
 
     //contains all metric indexes which are of the same length as baseLevel
     final Map<String, MetricIndexDocCount> metricIndexSameLevelMap = new HashMap<String, MetricIndexDocCount>();
@@ -82,7 +82,7 @@ public class MetricIndexData {
          * For the ES response shown in class description, for a baseLevel of 2,
          * the data is classified as follows
          *
-         * tokensWithNextLevelSet    -> {bar}               (tokens after baseLevel which also have a subsequent level)
+         * tokenPathWithNextLevelSet    -> {foo.bar.baz}   (Token paths which are at base + 1 level and also have a subsequent level.)
          *
          * Both these maps maintain data in the form {metricIndex, (actualDocCount, childrenTotalDocCount)}
          *
@@ -93,8 +93,12 @@ public class MetricIndexData {
 
         switch (tokens.length - baseLevel) {
             case 2:
-                String nextToken = tokens[baseLevel];
-                tokensWithNextLevelSet.add(nextToken);
+                if (baseLevel > 0) {
+                    tokenPathWithNextLevelSet.add(metricIndex.substring(0, metricIndex.lastIndexOf(".")));
+                } else {
+                    tokenPathWithNextLevelSet.add(metricIndex.substring(0, metricIndex.indexOf(".")));
+                }
+
 
                 //For foo.bar.baz.aux, baseLevel=2, we update children doc count of foo.bar.baz
                 addChildrenDocCount(metricIndexNextLevelMap,
@@ -122,16 +126,15 @@ public class MetricIndexData {
     }
 
     /**
-     * Returns next level of tokens after baseLevel which also have a subsequent
-     * next level.
+     * Token paths which are at base + 1 level and also have a subsequent level.
      *
      * Ex: For metrics foo.bar.baz.qux, foo.bar.baz
-     *      if baseLevel = 2, returns baz
+     *      if baseLevel = 2, returns foo.bar.baz
      *
      * @return
      */
-    public Set<String> getTokensWithNextLevel() {
-        return Collections.unmodifiableSet(tokensWithNextLevelSet);
+    public Set<String> getTokenPathsWithNextLevel() {
+        return Collections.unmodifiableSet(tokenPathWithNextLevelSet);
     }
 
     /**
@@ -142,7 +145,7 @@ public class MetricIndexData {
      *
      * @return
      */
-    public Set<String> getBaseLevelCompleteMetricNames() {
+    public Set<String> getCompleteMetricNamesAtBaseLevel() {
         return getCompleteMetricNames(metricIndexSameLevelMap);
     }
 
@@ -154,7 +157,7 @@ public class MetricIndexData {
      *
      * @return
      */
-    public Set<String> getNextLevelCompleteMetricNames() {
+    public Set<String> getCompleteMetricNamesAtBasePlusOneLevel() {
         return getCompleteMetricNames(metricIndexNextLevelMap);
     }
 

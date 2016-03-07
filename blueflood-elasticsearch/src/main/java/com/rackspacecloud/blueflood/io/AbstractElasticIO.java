@@ -9,6 +9,7 @@ import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.lang3.StringUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -18,6 +19,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -101,48 +104,56 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
     /**
-     * If we think of metric name(Ex: foo.bar.baz) as hierarchical tokens separated by delimiter("."),
-     * this API method would return the next level of tokens which follow the given prefix.
+     * This method returns a list of MetricToken's matching the given glob query. The enum
+     * values of a metric name are considered as an extension of metric name.
+     *
+     * for metric names: foo.bar.xxx,
+     *                   foo.bar.baz.qux,
+     *                   foo.bar with enum values [one, two]
+     *
+     * for query=foo.bar.*, returns the below list of metric tokens
+     *
+     * new MetricToken("foo.bar.xxx", true)   <- From metric foo.bar.xxx
+     * new MetricToken("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
+     * new MetricToken("foo.bar.one", true)   <- From metric foo.bar
+     * new MetricToken("foo.bar.two", true)   <- From metric foo.bar
      *
      * @param tenant
-     * @param prefix is glob representation
+     * @param query is glob representation of hierarchical levels of token. Ex: foo.bar.*
      * @return
      * @throws Exception
      */
-    public List<TokenInfo> getNextTokens(final String tenant, final String prefix) throws Exception {
+    public List<MetricToken> getMetricTokens(final String tenant, final String query) throws Exception {
 
         Timer.Context esMetricTokensQueryTimerCtx = esMetricTokensQueryTimer.time();
-
         SearchResponse response;
 
         try {
-            //for a given prefix, get upto next two levels of tokens
-            String regexForNext2Levels = regexForNextNLevels(prefix, 2);
-            response = getMetricTokensFromES(tenant, regexForNext2Levels);
-
+            response = getMetricTokensFromES(tenant, regexForPrevToNextLevel(query));
         } finally {
             esMetricTokensQueryTimerCtx.stop();
         }
 
-        MetricIndexData metricIndexData = buildMetricIndexData(response, prefix);
+        int totalTokens = getTotalTokens(query);
 
+        // if query = foo.bar.*, query has 3 levels, we pick base level as 2 since regex grabbed metric paths from level 2
+        int baseLevel = totalTokens - 1;
+        MetricIndexData metricIndexData = buildMetricIndexData(response, query, baseLevel);
 
-        TokenInfoListBuilder tokenInfoBuilder = new TokenInfoListBuilder();
-        //tokens at next level which also have subsequent next level
-        tokenInfoBuilder.addTokenWithNextLevel(metricIndexData.getTokensWithNextLevel());
+        MetricTokenListBuilder tokenInfoBuilder = new MetricTokenListBuilder();
+        //token paths matching query, which also have a next level.
+        tokenInfoBuilder.addTokenPathWithNextLevel(metricIndexData.getTokenPathsWithNextLevel());
 
-        Set<String> completeMetricsAtPrefixLevel = metricIndexData.getBaseLevelCompleteMetricNames();
-        Set<String> completeMetricsAtPrefixNextLevel = metricIndexData.getNextLevelCompleteMetricNames();
+        Set<String> completeMetricsMatchingQueryPrevLevel = metricIndexData.getCompleteMetricNamesAtBaseLevel();
+        Set<String> completeMetricsMatchingQuery = metricIndexData.getCompleteMetricNamesAtBasePlusOneLevel();
 
-        //for tokens after prefix which dont have subsequent next level, initialize with next level as false.
-        for (String nextLevelMetricName: completeMetricsAtPrefixNextLevel) {
-            tokenInfoBuilder.addToken(nextLevelMetricName.substring(nextLevelMetricName.lastIndexOf(".") + 1), false);
+        //For complete metric names matching query, initializing isLeaf as true(Will change if metric has enum values).
+        for (String nextLevelMetricName: completeMetricsMatchingQuery) {
+            tokenInfoBuilder.addTokenPath(nextLevelMetricName, true);
         }
 
-        //Only if there are complete metric names at either prefix level or its next level, look if they have enum values.
-        if (completeMetricsAtPrefixLevel.size() > 0 || completeMetricsAtPrefixNextLevel.size() > 0) {
-
-            searchForEnumValues(tenant, prefix, tokenInfoBuilder);
+        if (totalTokens > 1 && (completeMetricsMatchingQueryPrevLevel.size() > 0 || completeMetricsMatchingQuery.size() > 0)) {
+            searchForEnumValues(tenant, query, tokenInfoBuilder);
         }
 
         return tokenInfoBuilder.build();
@@ -150,24 +161,32 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
 
     /**
-     * For the given prefix, if there are complete metric names at prefix level or its next level,
+     * For the given query, if there are complete metric names at previous level of query or at query level,
      * we need to determine if any of these metric names have enum values.
      *
-     * If they do,for prefix level, enum values will be used as next level of tokens and for prefix
-     * next level, they would be used to determine if next level tokens have subsequent next level or not.
+     * If they do,for previous level of query, enum values will be used as the next level of tokens and for query
+     * level, they would be used to determine if metric name has next level or not.
      *
      * @param tenant
-     * @param prefix
+     * @param query
      * @param tokenInfoBuilder
      * @return
      */
-    private TokenInfoListBuilder searchForEnumValues(final String tenant, String prefix,
-                                                TokenInfoListBuilder tokenInfoBuilder) {
+    private MetricTokenListBuilder searchForEnumValues(final String tenant, String query,
+                                                MetricTokenListBuilder tokenInfoBuilder) {
+
+
+        String[] queryTokens = query.split(REGEX_TOKEN_DELIMTER);
+
+        //for query = foo.bar.*, we are finding if foo.bar* has enum values
+        int esQueryTokenLength = queryTokens.length - 1;
+        String enumQuery = StringUtils.join(queryTokens, REGEX_TOKEN_DELIMTER, 0, esQueryTokenLength);
 
         List<String> queries = new ArrayList<String>();
+        queries.add(enumQuery + "*");  //query is a glob. Adding '*' would get any metrics starting with the given query.
 
-        //prefix is a glob. Adding '*' would get any metrics starting with the given prefix.
-        queries.add(prefix + "*");
+        String queryRegex = getRegex(query);
+        Pattern pattern = Pattern.compile(queryRegex);
 
         List<SearchResult> searchResults = searchESByIndexes(tenant, queries, new String[]{ENUMS_INDEX_NAME_READ});
         for (SearchResult searchResult: searchResults) {
@@ -177,17 +196,24 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                 String metricName = searchResult.getMetricName();
                 String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
 
-                int enumMetricLevel = tokens.length - getTotalTokensInPrefix(prefix);
+                int enumMetricLevel = tokens.length - esQueryTokenLength;
 
                 if (enumMetricLevel == 0) {
+                    //for metrics at previous level of query, enum values are grabbed as next level of tokens
+                    for (String enumValue: searchResult.getEnumValues()) {
 
-                    //for metrics at prefix level, enum values are grabbed as next level of tokens
-                    tokenInfoBuilder.addEnumValues(searchResult.getEnumValues());
+                        String metricNameWithEnumExtension = metricName + "." + enumValue;
+                        Matcher matcher = pattern.matcher(metricNameWithEnumExtension);
+                        if (matcher.matches()) {
+                            tokenInfoBuilder.addMetricNameWithEnumExtension(metricNameWithEnumExtension);
+                        }
+                    }
                 } else if (enumMetricLevel == 1) {
-
-                    //for metrics at prefix next level, next level tokens are marked as true
-                    String key = searchResult.getMetricName();
-                    tokenInfoBuilder.addToken(key.substring(key.lastIndexOf(".") + 1), true);
+                    //for metrics at query level, metrics names are set with isLeaf as false
+                    Matcher matcher = pattern.matcher(searchResult.getMetricName());
+                    if (matcher.matches()) {
+                        tokenInfoBuilder.addTokenPath(searchResult.getMetricName(), false);
+                    }
                 }
             }
         }
@@ -195,12 +221,12 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         return tokenInfoBuilder;
     }
 
-    private int getTotalTokensInPrefix(String prefix) {
+    private int getTotalTokens(String query) {
 
-        if (prefix == null || prefix.isEmpty())
+        if (StringUtils.isEmpty(query))
             return 0;
 
-        return prefix.split(REGEX_TOKEN_DELIMTER).length;
+        return query.split(REGEX_TOKEN_DELIMTER).length;
     }
 
     /**
@@ -250,9 +276,9 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
 
-    private MetricIndexData buildMetricIndexData(final SearchResponse response, final String prefix) {
+    private MetricIndexData buildMetricIndexData(final SearchResponse response, final String query, final int baseLevel) {
 
-        MetricIndexData metricIndexData = new MetricIndexData(getTotalTokensInPrefix(prefix));
+        MetricIndexData metricIndexData = new MetricIndexData(baseLevel);
         Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
         for (Terms.Bucket bucket: aggregateTerms.getBuckets()) {
@@ -263,52 +289,76 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
     /**
-     * Returns regex which could grab upto next n levels of metric tokens from the given
-     * prefix level(including prefix level).
+     * Returns regex which could grab metric token paths from previous level to the next level
+     * for a given query.
      *
-     * (Some exceptions when prefix has only one level due to the nature of underlying data)
+     * (Some exceptions when query has only one level due to the nature of underlying data)
      *
-     * @param prefix
-     * @param level
+     * for metric names: foo.bar.baz,
+     *                   foo.bar.baz.qux,
+     *
+     * for query=foo.bar.*, the regex which this method returns will capture the following metric token paths.
+     *
+     *  "foo.bar"           <- previous to query level
+     *  "foo.bar.baz"       <- same to query level
+     *  "foo.bar.baz.qux"   <- next to query level
+     *
+     * @param query
      * @return
      */
-    protected String regexForNextNLevels(final String prefix, final int level) {
+    protected String regexForPrevToNextLevel(final String query) {
 
-        if (prefix == null || prefix.isEmpty()) {
-            /**
-             * We are trying to get first level of metric name. For a given metric foo.bar.baz, the current
-             * analyzer indexes the following values.
-             *
-             * foo, bar, baz, foo.bar, foo.bar.baz
-             *
-             * To grab only the first level, we first query to get indexes which are of the form
-             * <first_level_path>.<second_level_path>. We have to do this way because of 'bar' and 'baz'
-             * being indexed separately.
-             */
-
-            //get metric names which have only two levels. For example: foo.bar, x.y
-            return REGEX_TO_GRAB_SINGLE_TOKEN + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN;
-
-        } else {
-
-            GlobPattern prefixPattern = new GlobPattern(prefix);
-
-            String prefixRegex = prefixPattern.compiled().toString().replaceAll("\\.\\*", REGEX_TO_GRAB_SINGLE_TOKEN);
-
-            if (getTotalTokensInPrefix(prefix) == 1) {
-
-                // get metric names which matches the given prefix and have either one or two next levels,
-                // Ex: For metric foo.bar.baz.qux, if prefix=*, we should get foo.bar, foo.bar.baz. We are not
-                // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
-                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN + ")" + "{1," + level + "}";
-            } else {
-
-                // get metric names which matches the given prefix and have either one or two next levels,
-                // Ex: For metric foo.bar.baz.qux, if prefix=foo.bar, get foo.bar, foo.bar.baz, foo.bar.baz.qux
-                return prefixRegex + "(" + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN + ")" + "{0," + level + "}";
-            }
+        if (StringUtils.isEmpty(query)) {
+            throw new IllegalArgumentException("Query(glob) string cannot be null/empty");
         }
 
+        String queryRegex = getRegex(query);
+        int totalQueryTokens = getTotalTokens(query);
+
+        if (totalQueryTokens == 1) {
+
+            // get metric names which matches the given query and have a next level,
+            // Ex: For metric foo.bar.baz.qux, if query=*, we should get foo.bar, foo.bar.baz. We are not
+            // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
+            String baseRegex = convertRegexToCaptureUptoNextToken(queryRegex);
+            return baseRegex + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN;
+
+        } else if (totalQueryTokens == 2) {
+
+            return convertRegexToCaptureUptoNextToken(queryRegex) +
+                    "(" +
+                        REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN +
+                    ")" + "{0,1}";
+        } else {
+
+            String[] queryRegexParts = queryRegex.split("\\\\.");
+
+            String queryRegexUptoPrevLevel = StringUtils.join(queryRegexParts, REGEX_TOKEN_DELIMTER, 0, totalQueryTokens - 1);
+            String baseRegex = convertRegexToCaptureUptoNextToken(queryRegexUptoPrevLevel);
+
+            String queryRegexLastLevel = queryRegexParts[totalQueryTokens - 1];
+            String lastTokenRegex = convertRegexToCaptureUptoNextToken(queryRegexLastLevel);
+
+            // Ex: For metric foo.bar.baz.qux.xxx, if query=foo.bar.b*, get foo.bar, foo.bar.baz, foo.bar.baz.qux
+            // In this case baseRegex = "foo.bar", lastTokenRegex = "b[^.]*"' and the final
+            // regex is foo\.bar(\.b[^.]*(\.[^.]*){0,1}){0,1}
+            return baseRegex +
+                    "(" +
+                        REGEX_TOKEN_DELIMTER + lastTokenRegex +
+                        "(" +
+                            REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN +
+                        ")"  + "{0,1}" +
+                    ")" + "{0,1}";
+        }
+    }
+
+    private String convertRegexToCaptureUptoNextToken(String queryRegex) {
+        return queryRegex.replaceAll("\\.\\*", REGEX_TO_GRAB_SINGLE_TOKEN);
+    }
+
+    private String getRegex(String glob) {
+        GlobPattern pattern = new GlobPattern(glob);
+        return pattern.compiled().toString();
     }
 
     protected abstract String[] getIndexesToSearch();
