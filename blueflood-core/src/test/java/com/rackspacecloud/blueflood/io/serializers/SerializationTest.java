@@ -15,7 +15,6 @@
  */
 package com.rackspacecloud.blueflood.io.serializers;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.types.*;
@@ -233,7 +232,6 @@ public class SerializationTest {
     public void testCannotRoundtripBytesWillNullType() throws Throwable {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
-            ColumnFamily<Locator, Long> CF = null;
             ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
             byte[] actual = (byte[])NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertArrayEquals(expected, actual);

@@ -172,7 +172,7 @@ public class CassandraModel {
         }
     }
 
-    public static ColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
+    public static MetricColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
         if (dataType == null) {
             dataType = DataType.NUMERIC;
         }

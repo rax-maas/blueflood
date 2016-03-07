@@ -37,8 +37,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-// todo: This was moved into a source repo becuase tests in core and cm-specific depend on it.
-// We need to figure out the right maven codes to add blueflood-core test-jar stuff as a test dependency to cm-specific.
 public class IntegrationTestBase {
 
     public static class AstyanaxTester extends AstyanaxIO {
