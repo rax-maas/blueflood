@@ -19,7 +19,6 @@ import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
@@ -28,6 +27,7 @@ import com.rackspacecloud.blueflood.ManualRollupTool.service.RollupToolConfig;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -43,7 +43,7 @@ public class ManualRollup extends AstyanaxIO {
 
     private static final Meter nullRows = Metrics.meter(ManualRollup.class, "Null Rows Found");
     private static final Timer rerollTimerPerShard = Metrics.timer(ManualRollup.class, "Time taken to rollup per shard");
-    private static final Set<ColumnFamily> columnFamiliesEnabled = new HashSet<ColumnFamily>();
+    private static final Set<MetricColumnFamily> columnFamiliesEnabled = new HashSet<MetricColumnFamily>();
 
     private final ThreadPoolExecutor rollupExecutors = new ThreadPoolBuilder()
                     .withUnboundedQueue()
@@ -71,10 +71,10 @@ public class ManualRollup extends AstyanaxIO {
     public void startManualRollup() {
         System.out.println("Logging all (" + columnFamiliesEnabled.size() + ") columnfamilies that we will manually rollup FROM: " + START_MILLIS + "\tTO:" + STOP_MILLIS);
         log.info("Logging all (" + columnFamiliesEnabled.size() + ") columnfamilies that we will manually rollup FROM: " + START_MILLIS + "\tTO:" + STOP_MILLIS);
-        for (ColumnFamily columnFamily : columnFamiliesEnabled) {
+        for (MetricColumnFamily columnFamily : columnFamiliesEnabled) {
             log.info("\t~\tWILL manually rollup " + columnFamily.getName());
         }
-        for (ColumnFamily<Locator, Long> columnFamily : columnFamiliesEnabled) {
+        for (MetricColumnFamily columnFamily : columnFamiliesEnabled) {
             log.info("\t~\t~\tSTARTING to manually rollup " + columnFamily.getName());
             rollupCf(columnFamily);
             log.info("\t~\t~\tFinished rolling up " + columnFamily.getName());
@@ -82,7 +82,7 @@ public class ManualRollup extends AstyanaxIO {
         log.info("\t~\tCompleted");
     }
 
-    private void rollupCf(final ColumnFamily<Locator, Long> columnFamily) {
+    private void rollupCf(final MetricColumnFamily columnFamily) {
 
         final Granularity gran = Granularity.fromString(columnFamily.getName());
         Function<Row<Long, Locator>, Boolean> rowFunction = new Function<Row<Long, Locator>, Boolean>() {

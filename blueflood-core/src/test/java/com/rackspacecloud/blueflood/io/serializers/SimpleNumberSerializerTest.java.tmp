@@ -1,0 +1,31 @@
+package com.rackspacecloud.blueflood.io.serializers;
+
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
+import junit.framework.Assert;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+
+/**
+ * This class tests the SimpleNumberSerializer class, which is used
+ * by Blueflood to serialize raw metrics that are fetched from
+ * metrics_full column family.
+ *
+ */
+public class SimpleNumberSerializerTest {
+
+    // For some reasons, NumericSerializer.serializerFor(SimpleNumber.class)
+    // does not return SimpleNumberSerializer. Therefore this SimpleNumberSerializer
+    // class did not get tested from the SerializationTest.testFullResRoundTrip
+    // We are testing it here.
+
+    @Test
+    public void testSerializerDeserializerV1Test() throws Exception {
+        SimpleNumber num1 = new SimpleNumber(new Integer(10));
+        ByteBuffer byteBuffer = NumericSerializer.simpleNumberSerializer.toByteBuffer(num1);
+        SimpleNumber deserializedNum1 = NumericSerializer.simpleNumberSerializer.fromByteBuffer(byteBuffer);
+
+        Assert.assertEquals(num1, deserializedNum1);
+    }
+}

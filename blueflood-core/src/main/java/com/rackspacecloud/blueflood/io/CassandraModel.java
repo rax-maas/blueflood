@@ -157,7 +157,7 @@ public class CassandraModel {
         ALL_COLUMN_FAMILIES = Collections.unmodifiableList(cfs);
     }
 
-    public static ColumnFamily getColumnFamily(Class<? extends Rollup> type, Granularity granularity) {
+    public static MetricColumnFamily getColumnFamily(Class<? extends Rollup> type, Granularity granularity) {
         if (type.equals(SimpleNumber.class)) {
             return CF_METRICS_FULL;
         } else if (type.equals(BasicRollup.class)) {

@@ -129,6 +129,13 @@
     </dependency>
 
     <dependency>
+      <artifactId>blueflood-core</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
       <artifactId>blueflood-elasticsearch</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>

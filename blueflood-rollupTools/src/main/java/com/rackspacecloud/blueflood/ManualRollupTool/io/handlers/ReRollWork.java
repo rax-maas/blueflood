@@ -18,22 +18,19 @@ package com.rackspacecloud.blueflood.ManualRollupTool.io.handlers;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.ColumnFamily;
-import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.ManualRollupTool.io.ManualRollup;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 public class ReRollWork implements Callable<Boolean> {
     Locator locator;
@@ -56,8 +53,8 @@ public class ReRollWork implements Callable<Boolean> {
         try {
             RollupType rollupType = RollupType.BF_BASIC;
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
-            ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, gran.finer());
-            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
+            MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, gran.finer());
+            MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
 
             //Get Rollup Computer
             Rollup.Type rollupComputer = RollupRunnable.getRollupComputer(rollupType, gran.finer());
