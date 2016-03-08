@@ -17,10 +17,10 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -68,8 +68,8 @@ public class HistogramRollupRunnable extends RollupRunnable {
             // Read data and compute rollup
             Points<HistogramRollup> input;
             Rollup rollup = null;
-            ColumnFamily<Locator, Long> srcCF;
-            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(HistogramRollup.class, dstGran);
+            MetricColumnFamily srcCF;
+            MetricColumnFamily dstCF = CassandraModel.getColumnFamily(HistogramRollup.class, dstGran);
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(singleRollupReadContext.getLocator(),
                     MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 

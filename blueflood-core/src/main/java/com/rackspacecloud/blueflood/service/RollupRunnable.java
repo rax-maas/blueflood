@@ -19,11 +19,11 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.Sets;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -103,9 +103,9 @@ public class RollupRunnable implements Runnable {
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     rollupLocator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
-            ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
+            MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             Granularity dstGran = srcGran.coarser();
-            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, dstGran);
+            MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, dstGran);
 
             if (rollupType == RollupType.ENUM) {
                 singleRollupReadContext.getEnumMetricsMeterForGranularity(dstGran).mark();

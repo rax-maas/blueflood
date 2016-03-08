@@ -10,13 +10,11 @@ cache:
   directories:
     - $HOME/.m2
 
-install:
-  - mvn package -P all-modules dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
-
 script: 
-  - mvn verify -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
+  - mvn clean install -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
 
 after_success:
+  - mvn package -P all-modules dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
   - mvn jacoco:report jacoco:report-integration coveralls:report
 
 before_deploy:

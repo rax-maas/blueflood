@@ -19,10 +19,10 @@ package com.rackspacecloud.blueflood.service;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -576,7 +576,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
 
         int count = 0;
-            ColumnFamily<Locator, Long> CF_metrics_full = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
+            MetricColumnFamily CF_metrics_full = CassandraModel.getColumnFamily(BasicRollup.class, Granularity.FULL);
         Points<SimpleNumber> points = reader.getDataToRoll(SimpleNumber.class, locator,
                 new Range(baseMillis, baseMillis + 500000), CF_metrics_full);
         for (Map.Entry<Long, Points.Point<SimpleNumber>> data : points.getPoints().entrySet()) {

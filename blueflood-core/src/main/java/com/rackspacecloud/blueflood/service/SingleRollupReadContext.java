@@ -19,16 +19,12 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Range;
 
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class keeps track of what is happening in an rollup for a specific metric.

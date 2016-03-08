@@ -17,8 +17,8 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.collect.Lists;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -58,7 +58,7 @@ public class PreaggregatedMetricsIntegrationTest extends IntegrationTestBase {
     }
     
     private static Points<BluefloodTimerRollup> getTimerDataToRoll(AstyanaxReader reader, Locator locator, Range range, Granularity gran) throws IOException {
-        ColumnFamily<Locator, Long> cf = CassandraModel.getColumnFamily(BluefloodTimerRollup.class, gran);
+        MetricColumnFamily cf = CassandraModel.getColumnFamily(BluefloodTimerRollup.class, gran);
         return reader.getDataToRoll(BluefloodTimerRollup.class, locator, range, cf);
     }
     

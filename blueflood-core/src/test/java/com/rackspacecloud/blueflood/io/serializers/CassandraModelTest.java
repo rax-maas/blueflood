@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.RollupType;
@@ -13,7 +13,7 @@ public class CassandraModelTest {
 
     @Test
     public void test_getColumnFamily_RetrievesNumericCF_ForNullMetadata() {
-        ColumnFamily cf = CassandraModel.getColumnFamily(null, null, Granularity.FULL);
+        MetricColumnFamily cf = CassandraModel.getColumnFamily(null, null, Granularity.FULL);
         Assert.assertTrue(cf != null);
         Assert.assertTrue(cf.getName().equals(CassandraModel.CF_METRICS_FULL.getName()));
 
@@ -40,21 +40,21 @@ public class CassandraModelTest {
 
     @Test
     public void test_getColumnFamily_Retrieves_StringCF_ForNullRollupType() {
-        ColumnFamily cf = CassandraModel.getColumnFamily(null, DataType.STRING, Granularity.FULL);
+        MetricColumnFamily cf = CassandraModel.getColumnFamily(null, DataType.STRING, Granularity.FULL);
         Assert.assertTrue(cf != null);
         Assert.assertTrue(cf.getName().equals(CassandraModel.CF_METRICS_STRING.getName()));
     }
 
     @Test
     public void test_getColumnFamily_Retrieves_StringCF_ForNullRollupType_ForBooleans() {
-        ColumnFamily cf = CassandraModel.getColumnFamily(null, DataType.BOOLEAN, Granularity.FULL);
+        MetricColumnFamily cf = CassandraModel.getColumnFamily(null, DataType.BOOLEAN, Granularity.FULL);
         Assert.assertTrue(cf != null);
         Assert.assertTrue(cf.getName().equals(CassandraModel.CF_METRICS_STRING.getName()));
     }
 
     @Test
     public void test_getColumnFamily_Retrieves_CounterCF_ForNullDataType_ForCounters() {
-        ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.COUNTER, null, Granularity.FULL);
+        MetricColumnFamily cf = CassandraModel.getColumnFamily(RollupType.COUNTER, null, Granularity.FULL);
         Assert.assertTrue(cf != null);
         Assert.assertTrue(cf.getName().equals(CassandraModel.CF_METRICS_PREAGGREGATED_FULL.getName()));
     }

@@ -15,11 +15,9 @@
  */
 package com.rackspacecloud.blueflood.io.serializers;
 
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -71,7 +69,6 @@ public class StringSerializerTest {
     public void testCannotRoundtripStringWithNullType() throws Throwable {
         try {
             String expected = "this is a string";
-            ColumnFamily<Locator, Long> CF = null;
             ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
             String actual = (String)NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertEquals(expected, actual);
