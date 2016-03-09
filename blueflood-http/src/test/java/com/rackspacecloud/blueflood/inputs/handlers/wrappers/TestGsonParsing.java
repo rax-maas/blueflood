@@ -4,32 +4,29 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.rackspacecloud.blueflood.types.BluefloodTimer;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpAggregatedIngestionHandler;
-import junit.framework.Assert;
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
+
 public class TestGsonParsing {
-    
+
+    private String postfix = "postfix";
+
     private String json;
-    
+    private long current = System.currentTimeMillis();
+
     @Before
-    public void readJsonFile() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("src/test/resources/sample_payload.json")));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        json = sb.toString();
+    public void readJsonFile() throws IOException, InterruptedException {
+
+        json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ), postfix );
     }
     
     @Test
@@ -49,45 +46,45 @@ public class TestGsonParsing {
         Gson gson = new Gson();
         AggregatedPayload payload = gson.fromJson(json, AggregatedPayload.class);
 
-        Assert.assertNotNull(payload);
-        Assert.assertEquals("333333", payload.getTenantId());
-        Assert.assertEquals(1389211230L, payload.getTimestamp());
-        Assert.assertEquals(15000L, payload.getFlushIntervalMillis());
+        assertNotNull(payload);
+        assertEquals("333333", payload.getTenantId());
+        assertEquals(current, payload.getTimestamp(), 120000 );
+        assertEquals(15000L, payload.getFlushIntervalMillis());
         
-        Assert.assertEquals(4, payload.getGauges().size());
-        Assert.assertEquals(6, payload.getCounters().size());
-        Assert.assertEquals(4, payload.getTimers().size());
-        Assert.assertEquals(2, payload.getSets().size());
-        Assert.assertEquals(1, payload.getEnums().size());
+        assertEquals(4, payload.getGauges().size());
+        assertEquals(6, payload.getCounters().size());
+        assertEquals(4, payload.getTimers().size());
+        assertEquals(2, payload.getSets().size());
+        assertEquals(1, payload.getEnums().size());
     }
 
     @Test
     public void testHistograms() {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
         
-        Assert.assertNotNull(payload);
+        assertNotNull(payload);
         Map<String, BluefloodTimer> timers = asMap(payload.getTimers());
         
-        Assert.assertEquals(4, timers.get("4444444.T1s").getHistogram().size());
-        Assert.assertEquals(11, timers.get("3333333.T29s").getHistogram().size());
-        Assert.assertEquals(11, timers.get("3333333.T200ms").getHistogram().size());
+        assertEquals(4, timers.get( "4444444.T1s" + postfix ).getHistogram().size());
+        assertEquals(11, timers.get( "3333333.T29s" + postfix ).getHistogram().size());
+        assertEquals(11, timers.get( "3333333.T200ms" + postfix ).getHistogram().size());
         
         // this one is non-existant in the json, but we do not want a null map.
-        Assert.assertNotNull(timers.get("3333333.T10s").getHistogram());
-        Assert.assertEquals(0, timers.get("3333333.T10s").getHistogram().size());
+        assertNotNull(timers.get( "3333333.T10s" + postfix ).getHistogram());
+        assertEquals(0, timers.get( "3333333.T10s" + postfix ).getHistogram().size());
     }
     
     @Test
     public void testPercentiles() {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
         
-        Assert.assertNotNull(payload);
+        assertNotNull(payload);
         Map<String, BluefloodTimer> timers = asMap(payload.getTimers());
         
-        Assert.assertEquals(5, timers.get("4444444.T1s").getPercentiles().size());
-        Assert.assertEquals(5, timers.get("3333333.T29s").getPercentiles().size());
-        Assert.assertEquals(5, timers.get("3333333.T10s").getPercentiles().size());
-        Assert.assertEquals(5, timers.get("3333333.T200ms").getPercentiles().size());
+        assertEquals(5, timers.get( "4444444.T1s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T29s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T10s" + postfix ).getPercentiles().size());
+        assertEquals(5, timers.get( "3333333.T200ms" + postfix ).getPercentiles().size());
     }
     
     private static Map<String, BluefloodTimer> asMap(Collection<BluefloodTimer> timers) {

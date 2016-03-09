@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
-import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainerTest;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -42,6 +41,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import static org.mockito.Mockito.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpMetricsIngestionServerShutdownIntegrationTest {
 
@@ -85,13 +85,13 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
 
         // given
         HttpPost post = new HttpPost(getMetricsURI());
-        HttpEntity entity = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData(),
+        HttpEntity entity = new StringEntity( generateJSONMetricsData(),
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         HttpPost post2 = new HttpPost(getMetricsURI());
-        HttpEntity entity2 = new StringEntity(JSONMetricsContainerTest.generateJSONMetricsData(),
+        HttpEntity entity2 = new StringEntity( generateJSONMetricsData(),
                 ContentType.APPLICATION_JSON);
         post2.setEntity(entity2);
 

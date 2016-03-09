@@ -19,12 +19,10 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.types.Event;
-import junit.framework.Assert;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.*;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -33,6 +31,7 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
+import static junit.framework.Assert.*;
 
 public class HttpEventsIngestionHandlerTest {
 
@@ -55,7 +54,7 @@ public class HttpEventsIngestionHandlerTest {
         Event event = new Event() {
             {
                 setWhat("1");
-                setWhen(2);
+                setWhen( System.currentTimeMillis() );
                 setData("3");
                 setTags("4");
             }
@@ -87,34 +86,27 @@ public class HttpEventsIngestionHandlerTest {
         verify(searchIO).insert(TENANT, events);
     }
 
-    @Test public void testMalformedEventPut() throws Exception {
+    @Test
+    public void testMalformedEventPut() throws Exception {
         final String malformedJSON = "{\"when\":, what]}";
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
-        Assert.assertNotSame(argument.getValue().getContent().toString(Charset.defaultCharset()), "");
+        assertNotSame(argument.getValue().getContent().toString(Charset.defaultCharset()), "");
     }
 
-    @Test public void testMinimumEventPut() throws Exception {
+    @Test
+    public void testMinimumEventPut() throws Exception {
         Map<String, Object> event = new HashMap<String, Object>();
         event.put(Event.FieldLabels.data.name(), "data");
         ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
-        Assert.assertEquals(argument.getValue().getContent().toString(Charset.defaultCharset()), "Invalid Data: Event should contain at least 'what' field.");
-    }
 
-    @Test public void testApplyingCurrentTimeWhenEmpty() throws Exception {
-        Map<String, Object> event = createRandomEvent();
-        event.remove(Event.FieldLabels.when.name());
-        handler.handle(context, createPutOneEventRequest(event));
-        event.put(Event.FieldLabels.when.name(), convertDateTimeToTimestamp(new DateTime()));
-        verify(searchIO).insert(TENANT, Arrays.asList(event));
-    }
+        String error = argument.getValue().getContent().toString(Charset.defaultCharset());
 
-    private long convertDateTimeToTimestamp(DateTime date) {
-        return date.getMillis() / 1000;
+        assertEquals(argument.getValue().getContent().toString(Charset.defaultCharset()), "Invalid Data: " + HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least 'what' field.");
     }
 }

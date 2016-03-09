@@ -24,17 +24,13 @@ import org.codehaus.jackson.map.type.TypeFactory;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class JSONMetricsContainerTest {
-
-    public static final String PAST_COLLECTION_TIME_REGEX = ".* is more than '259200000' milliseconds into the past\\.$";
-    public static final String FUTURE_COLLECTION_TIME_REGEX = ".* is more than '600000' milliseconds into the future\\.$";
-    public static final String NO_TENANT_ID_REGEX = ".* No tenantId is provided for the metric\\.";
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final long MINUTE = 60000;
@@ -176,102 +172,4 @@ public class JSONMetricsContainerTest {
         return new JSONMetricsContainer( name, jsonMetrics);
     }
 
-    public static List<Map<String, Object>> generateMetricsData( String metricPrefix, long collectionTime ) {
-
-        List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
-
-        // Long metric value
-        Map<String, Object> testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", metricPrefix + "mzord.duration");
-        testMetric.put("ttlInSeconds", 1234566);
-        testMetric.put("unit", "milliseconds");
-        testMetric.put("metricValue", Long.MAX_VALUE);
-        testMetric.put("collectionTime", collectionTime );
-        metricsList.add(testMetric);
-
-        // String metric value
-        testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", metricPrefix + "mzord.status");
-        testMetric.put("ttlInSeconds", 1234566);
-        testMetric.put("unit", "unknown");
-        testMetric.put("metricValue", "Website is up");
-        testMetric.put("collectionTime", collectionTime );
-        metricsList.add(testMetric);
-
-        // null metric value. This shouldn't be in the final list of metrics because we ignore null valued metrics.
-        testMetric = new TreeMap<String, Object>();
-        testMetric.put("metricName", metricPrefix + "mzord.hipster");
-        testMetric.put("ttlInSeconds", 1234566);
-        testMetric.put("unit", "unknown");
-        testMetric.put("metricValue", null);
-        testMetric.put("collectionTime", collectionTime );
-        metricsList.add(testMetric);
-
-        return metricsList;
-
-    }
-
-    public static List<Map<String, Object>> generateAnnotationsData() throws Exception {
-        List<Map<String, Object>> annotationsList = new ArrayList<Map<String, Object>>();
-
-        // Long metric value
-        Map<String, Object> testAnnotation = new TreeMap<String, Object>();
-        testAnnotation.put("what","deployment");
-        testAnnotation.put("when", Calendar.getInstance().getTimeInMillis());
-        testAnnotation.put("tags","prod");
-        testAnnotation.put("data","app00.restart");
-
-        annotationsList.add(testAnnotation);
-        return annotationsList;
-    }
-
-    public static String generateJSONAnnotationsData() throws Exception {
-
-        StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, generateAnnotationsData());
-
-        return writer.toString();
-    }
-
-    public static String generateJSONMetricsData( long collectionTime ) throws Exception {
-
-        StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, generateMetricsData( "", collectionTime ));
-
-        return writer.toString();
-    }
-
-    public static String generateJSONMetricsData( String metricPrefix, long collectionTime ) throws Exception {
-
-        StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, generateMetricsData( metricPrefix, collectionTime ));
-
-        return writer.toString();
-    }
-
-
-    public static String generateJSONMetricsData( String metricPrefix ) throws Exception {
-        return generateJSONMetricsData( metricPrefix, System.currentTimeMillis() );
-    }
-
-
-    public static String generateJSONMetricsData() throws Exception {
-        return generateJSONMetricsData( System.currentTimeMillis() );
-    }
-
-    public static String generateMultitenantJSONMetricsData() throws Exception {
-        long collectionTime = System.currentTimeMillis();
-
-        List<Map<String, Object>> dataOut = new ArrayList<Map<String, Object>>();
-        for (Map<String, Object> stringObjectMap : generateMetricsData( "", collectionTime )) {
-            stringObjectMap.put("tenantId", "tenantOne");
-            dataOut.add(stringObjectMap);
-        }
-        for (Map<String, Object> stringObjectMap : generateMetricsData( "", collectionTime )) {
-            stringObjectMap.put("tenantId", "tenantTwo");
-            dataOut.add(stringObjectMap);
-        }
-
-        return mapper.writeValueAsString(dataOut);
-    }
 }

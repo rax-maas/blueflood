@@ -16,29 +16,40 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.EnumValidator;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
+
+import static org.junit.Assert.*;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpEnumIntegrationTest extends HttpIntegrationTestBase {
 
     @Test
     public void testMetricIngestionWithEnum() throws Exception {
+
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
-        final String metric_name = "enum_metric_test";
+
+        String postfix = getPostfix();
+        final String metric_name = "enum_metric_test" + postfix;
+
         Set<Locator> locators = new HashSet<Locator>();
         locators.add(Locator.createLocatorFromPathComponents(tenant_id, metric_name));
 
         // post enum metric for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json");
-        Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", postfix );
+        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // execute EnumValidator
@@ -50,12 +61,55 @@ public class HttpEnumIntegrationTest extends HttpIntegrationTestBase {
 
         // query for metric and assert results
         HttpResponse query_response = queryMetricIncludeEnum(tenant_id, metric_name);
-        Assert.assertEquals("Should get status 200 from query server for GET", 200, query_response.getStatusLine().getStatusCode());
+        assertEquals( "Should get status 200 from query server for GET", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
-        Assert.assertEquals(String.format("[{\"metric\":\"%s\",\"enum_values\":[\"v1\",\"v2\",\"v3\"]}]", metric_name), responseContent);
+        assertEquals( String.format( "[{\"metric\":\"%s\",\"enum_values\":[\"v1\",\"v2\",\"v3\"]}]", metric_name ), responseContent );
         EntityUtils.consume(query_response.getEntity());
     }
 
+    @Test
+    public void testHttpEnumIngestionInvalidPastCollectionTime() throws IOException, URISyntaxException {
+
+        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
+        final String tenant_id = "333333";
+
+        String postfix = getPostfix();
+
+        final String metric_name = postfix + "enum_metric_test";
+        Set<Locator> locators = new HashSet<Locator>();
+        locators.add(Locator.createLocatorFromPathComponents(tenant_id, metric_name));
+
+        // post enum metric for ingestion and verify
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", timestamp, postfix );
+
+        String[] errors = getBodyArray( response );
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals( ERROR_TITLE, errors[ 0 ] );
+        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+    }
+
+    @Test
+    public void testHttpEnumIngestionInvalidFutureCollectionTime() throws IOException, URISyntaxException {
+
+        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
+        final String tenant_id = "333333";
+
+        String postfix = getPostfix();
+
+        // post enum metric for ingestion and verify
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", timestamp, postfix );
+
+        String[] errors = getBodyArray( response );
+
+        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals( ERROR_TITLE, errors[ 0 ] );
+        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+    }
 }
