@@ -16,31 +16,44 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
+
 import org.junit.Test;
 
+import java.util.*;
+
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+
 public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
-    private final long fromTime = 1389124830L;
-    private final long toTime = 1439231325000L;
+
+    private static final long TIME_DIFF = 2000;
 
     @Test
     public void testMultiplotQuery() throws Exception {
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
 
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
+
+        String postfix = getPostfix();
+
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json");
-        Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix);
+        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // query for multiplot metric and assert results
-        HttpResponse query_response = queryMultiplot(tenant_id, fromTime, toTime, "200", "FULL", "", "['3333333.G1s','3333333.G10s']");
-        Assert.assertEquals("Should get status 200 from query server for multiplot POST", 200, query_response.getStatusLine().getStatusCode());
+        HttpResponse query_response = queryMultiplot(tenant_id, start, end, "200", "FULL", "",
+                "['3333333.G1s" + postfix + "','3333333.G10s" + postfix + "']");
+        assertEquals( "Should get status 200 from query server for multiplot POST", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
@@ -48,54 +61,64 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         JsonParser jsonParser = new JsonParser();
         JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
 
-        String expectedResponse = "{\n" +
-                "  \"metrics\": [\n" +
-                "    {\n" +
-                "      \"unit\": \"unknown\",\n" +
-                "      \"metric\": \"3333333.G1s\",\n" +
-                "      \"data\": [\n" +
-                "        {\n" +
-                "          \"numPoints\": 1,\n" +
-                "          \"timestamp\": 1382400000,\n" +
-                "          \"latest\": 397\n" +
-                "        }\n" +
-                "      ],\n" +
-                "      \"type\": \"number\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"unit\": \"unknown\",\n" +
-                "      \"metric\": \"3333333.G10s\",\n" +
-                "      \"data\": [\n" +
-                "        {\n" +
-                "          \"numPoints\": 1,\n" +
-                "          \"timestamp\": 1382400000,\n" +
-                "          \"latest\": 56\n" +
-                "        }\n" +
-                "      ],\n" +
-                "      \"type\": \"number\"\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}";
-        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
+        JsonArray metrics = responseObject.getAsJsonArray( "metrics" );
+        assertEquals( 2, metrics.size() );
 
-        Assert.assertEquals(expectedObject, responseObject);
-        EntityUtils.consume(query_response.getEntity());
+        Map<String, JsonObject> metricMap = new HashMap<String, JsonObject>();
+        JsonObject metric0 = metrics.get( 0 ).getAsJsonObject();
+        metricMap.put( metric0.get( "metric" ).getAsString(), metric0 );
+
+        JsonObject metric1 = metrics.get( 1 ).getAsJsonObject();
+        metricMap.put(  metric1.get( "metric" ).getAsString(), metric1 );
+
+        JsonObject metricCheck1 = metricMap.get( "3333333.G1s" + postfix );
+        assertNotNull( metricCheck1 );
+
+        assertEquals( "unknown", metricCheck1.get( "unit" ).getAsString() );
+        assertEquals( "number", metricCheck1.get( "type" ).getAsString() );
+        JsonArray data0 = metricCheck1.getAsJsonArray( "data" );
+        assertEquals( 1, data0.size() );
+
+        JsonObject data0a = data0.get( 0 ).getAsJsonObject();
+        assertTrue( data0a.has( "timestamp" ) );
+        assertEquals( 1, data0a.get( "numPoints" ).getAsInt() );
+        assertEquals( 397, data0a.get( "latest" ).getAsInt() );
+
+
+        JsonObject metricCheck2 = metricMap.get( "3333333.G10s" + postfix );
+        assertNotNull( metricCheck2 );
+
+        assertEquals( "unknown", metricCheck2.get( "unit" ).getAsString() );
+        assertEquals( "number", metricCheck2.get( "type" ).getAsString() );
+
+        JsonArray data1 = metricCheck2.getAsJsonArray( "data" );
+        assertEquals( 1, data1.size() );
+
+        JsonObject data1a = data1.get( 0 ).getAsJsonObject();
+        assertTrue( data1a.has( "timestamp" ) );
+        assertEquals( 1, data1a.get( "numPoints" ).getAsInt() );
+        assertEquals( 56, data1a.get( "latest" ).getAsInt() );
     }
 
     @Test
     public void testMultiplotQueryWithEnum() throws Exception {
+        long start = System.currentTimeMillis() - TIME_DIFF;
+        long end = System.currentTimeMillis() + TIME_DIFF;
+
+        String postfix = getPostfix();
+
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "99988877";
-        final String metric_name = "call_xyz_api";
+        final String metric_name = "call_xyz_api" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json");
-        Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
+        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
+        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // query for multiplot metric and assert results
-        HttpResponse query_response = queryMultiplot(tenant_id, fromTime, toTime, "", "FULL", "enum_values", String.format("['%s']", metric_name));
-        Assert.assertEquals("Should get status 200 from query server for multiplot POST", 200, query_response.getStatusLine().getStatusCode());
+        HttpResponse query_response = queryMultiplot(tenant_id, start, end, "", "FULL", "enum_values", String.format("['%s']", metric_name));
+        assertEquals( "Should get status 200 from query server for multiplot POST", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
@@ -103,33 +126,19 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         JsonParser jsonParser = new JsonParser();
         JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
 
-        String expectedResponse = String.format("{\n" +
-                "  \"metrics\": [\n" +
-                "    {\n" +
-                "      \"unit\": \"unknown\",\n" +
-                "      \"metric\": \"%s\",\n" +
-                "      \"data\": [\n" +
-                "        {\n" +
-                "          \"timestamp\": 1439231324001,\n" +
-                "          \"enum_values\": {\n" +
-                "            \"OK\": 1\n" +
-                "          }\n" +
-                "        },\n" +
-                "        {\n" +
-                "          \"timestamp\": 1439231324003,\n" +
-                "          \"enum_values\": {\n" +
-                "            \"ERROR\": 1\n" +
-                "          }\n" +
-                "        }\n" +
-                "      ],\n" +
-                "      \"type\": \"enum\"\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}", metric_name);
+        JsonArray metrics = responseObject.getAsJsonArray( "metrics" );
+        assertEquals( 1, metrics.size() );
 
-        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
+        JsonObject metric = metrics.get( 0 ).getAsJsonObject();
+        assertEquals( "unknown", metric.get( "unit" ).getAsString() );
+        assertEquals( metric_name, metric.get( "metric" ).getAsString() );
+        assertEquals( "enum", metric.get( "type" ).getAsString() );
 
-        Assert.assertEquals(expectedObject, responseObject);
-        EntityUtils.consume(query_response.getEntity());
+        JsonArray data = metric.getAsJsonArray( "data" );
+        assertEquals( 2, data.size() );
+
+        JsonObject data1 = data.get( 0 ).getAsJsonObject();
+        assertTrue( data1.has( "timestamp" ) );
+        assertEquals( 1, data1.getAsJsonObject( "enum_values" ).get( "OK" ).getAsInt() );
     }
 }

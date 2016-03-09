@@ -23,11 +23,11 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.internal.util.reflection.Whitebox;
@@ -37,8 +37,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-// todo: This was moved into a source repo becuase tests in core and cm-specific depend on it.
-// We need to figure out the right maven codes to add blueflood-core test-jar stuff as a test dependency to cm-specific.
 public class IntegrationTestBase {
 
     public static class AstyanaxTester extends AstyanaxIO {
@@ -237,7 +235,7 @@ public class IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
-        ColumnFamily<Locator, Long> destCF;
+        MetricColumnFamily destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
@@ -259,7 +257,7 @@ public class IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
-        ColumnFamily<Locator, Long> destCF;
+        MetricColumnFamily destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             destCF = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, destGranularity);

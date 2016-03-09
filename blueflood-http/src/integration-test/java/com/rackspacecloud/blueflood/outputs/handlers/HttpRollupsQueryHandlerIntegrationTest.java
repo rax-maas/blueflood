@@ -16,32 +16,38 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
 public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
-    private final long fromTime = 1389124830L;
-    private final long toTime = 1389211230L;
 
     @Test
     public void testSingleplotQuery() throws Exception {
+
+        long start = System.currentTimeMillis() - TIME_DIFF_MS;
+        long end = System.currentTimeMillis() + TIME_DIFF_MS;
+
+        String postfix = getPostfix();
+
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
-        final String metric_name = "3333333.G1s";
+        final String metric_name = "3333333.G1s" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json");
-        Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix );
+        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // query for multiplot metric and assert results
-        HttpResponse query_response = querySingleplot(tenant_id, metric_name, fromTime, toTime, "", "FULL", "");
-        Assert.assertEquals("Should get status 200 from query server for single view GET", 200, query_response.getStatusLine().getStatusCode());
+        HttpResponse query_response = querySingleplot(tenant_id, metric_name, start, end, "", "FULL", "");
+        assertEquals( "Should get status 200 from query server for single view GET", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
@@ -49,42 +55,43 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         JsonParser jsonParser = new JsonParser();
         JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
 
-        String expectedResponse = "{\n" +
-                "  \"unit\": \"unknown\",\n" +
-                "  \"values\": [\n" +
-                "    {\n" +
-                "      \"numPoints\": 1,\n" +
-                "      \"timestamp\": 1389211230,\n" +
-                "      \"latest\": 397\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"metadata\": {\n" +
-                "    \"limit\": null,\n" +
-                "    \"next_href\": null,\n" +
-                "    \"count\": 1,\n" +
-                "    \"marker\": null\n" +
-                "  }\n" +
-                "}";
-        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
+        assertEquals( "unknown", responseObject.get( "unit" ).getAsString() );
 
-        Assert.assertEquals(expectedObject, responseObject);
-        EntityUtils.consume(query_response.getEntity());
+        JsonArray values = responseObject.getAsJsonArray( "values" );
+        assertEquals( 1, values.size() );
+
+        JsonObject value = values.get( 0 ).getAsJsonObject();
+        assertEquals( 1, value.get( "numPoints" ).getAsInt() );
+        assertTrue( value.has( "timestamp" ) );
+        assertEquals( 397, value.get( "latest" ).getAsInt() );
+
+        JsonObject meta = responseObject.get( "metadata" ).getAsJsonObject();
+        assertTrue( meta.get( "limit" ).isJsonNull() );
+        assertTrue( meta.get( "next_href" ).isJsonNull() );
+        assertEquals( 1,  meta.get( "count" ).getAsInt() );
+        assertTrue( meta.get( "marker" ).isJsonNull() );
     }
 
     @Test
     public void testSingleplotQueryWithEnum() throws Exception {
+
+        long start = System.currentTimeMillis() - TIME_DIFF_MS;
+        long end = System.currentTimeMillis() + TIME_DIFF_MS;
+
+        String postfix = getPostfix();
+
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
         final String tenant_id = "333333";
-        final String metric_name = "enum_metric_test";
+        final String metric_name = "enum_metric_test" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json");
-        Assert.assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", postfix );
+        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         // query for multiplot metric and assert results
-        HttpResponse query_response = querySingleplot(tenant_id, metric_name, fromTime, toTime, "", "FULL", "");
-        Assert.assertEquals("Should get status 200 from query server for single view GET", 200, query_response.getStatusLine().getStatusCode());
+        HttpResponse query_response = querySingleplot(tenant_id, metric_name, start, end, "", "FULL", "");
+        assertEquals( "Should get status 200 from query server for single view GET", 200, query_response.getStatusLine().getStatusCode() );
 
         // assert response content
         String responseContent = EntityUtils.toString(query_response.getEntity(), "UTF-8");
@@ -92,28 +99,23 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         JsonParser jsonParser = new JsonParser();
         JsonObject responseObject = jsonParser.parse(responseContent).getAsJsonObject();
 
-        String expectedResponse = "{\n" +
-                "  \"unit\": \"unknown\",\n" +
-                "  \"values\": [\n" +
-                "    {\n" +
-                "      \"numPoints\": 1,\n" +
-                "      \"timestamp\": 1389211230,\n" +
-                "      \"enum_values\": {\n" +
-                "        \"v3\": 1\n" +
-                "      },\n" +
-                "      \"type\": \"enum\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"metadata\": {\n" +
-                "    \"limit\": null,\n" +
-                "    \"next_href\": null,\n" +
-                "    \"count\": 1,\n" +
-                "    \"marker\": null\n" +
-                "  }\n" +
-                "}";
-        JsonObject expectedObject = jsonParser.parse(expectedResponse).getAsJsonObject();
+        assertEquals( "unknown", responseObject.get( "unit" ).getAsString() );
 
-        Assert.assertEquals(expectedObject, responseObject);
-        EntityUtils.consume(query_response.getEntity());
+        JsonArray values = responseObject.getAsJsonArray( "values" );
+        assertEquals( 1, values.size() );
+
+        JsonObject value = values.get( 0 ).getAsJsonObject();
+
+        assertEquals( 1, value.get( "numPoints" ).getAsInt() );
+        assertTrue( value.has( "timestamp" ) );
+        assertEquals( 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
+        assertEquals( "enum", value.get( "type").getAsString() );
+
+        JsonObject meta = responseObject.getAsJsonObject( "metadata" );
+        assertTrue( meta.get( "limit" ).isJsonNull() );
+        assertTrue( meta.get( "next_href" ).isJsonNull() );
+        assertEquals( 1,  meta.get( "count" ).getAsInt() );
+        assertTrue( meta.get( "marker" ).isJsonNull() );
+
     }
 }

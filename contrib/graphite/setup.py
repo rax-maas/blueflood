@@ -4,15 +4,14 @@ from setuptools import setup
 version = '0.0.1'
 
 setup(
-  name='blueflood',
+  name='blueflood-graphite-finder',
   version=version,
-  url='https://github.com/rackerlabs/blueflood',
+  url='https://github.com/rackerlabs/blueflood/tree/master/contrib/graphite',
   license='APL2',
-  keywords='blueflood graphite metrics',
-  author='Gary Dusbabek',
-  author_email='gdusbabek@gmail.com',
-  description=('A plugin for using graphite-web with the cassandra-based '
-               'Blueflood storage backend'),
+  keywords='blueflood graphite finder metrics',
+  author='Rackspace Metrics',
+  author_email='cloudMetrics-dev@lists.rackspace.com',
+  description=('A plugin for using graphite-web and graphite-api with Blueflood'),
   py_modules=('blueflood','auth','rax_auth'),
   zip_safe=False,
   include_package_data=True,

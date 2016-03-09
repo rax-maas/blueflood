@@ -21,44 +21,59 @@ import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 
 import static org.mockito.Mockito.spy;
+import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpIntegrationTestBase {
+
+    public static final long TIME_DIFF_MS = 20000;
+
+    protected static HttpClient client;
+    protected static ScheduleContext context;
+    protected static EventsIO eventsSearchIO;
+    protected static EsSetup esSetup;
+
     private static HttpIngestionService httpIngestionService;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
-    private static DefaultHttpClient client;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
     private static int httpPortIngest;
     private static int httpPortQuery;
-    private static ScheduleContext context;
-    private static EventsIO eventsSearchIO;
-    private static EsSetup esSetup;
 
+    public final String postPath = "/v2.0/%s/ingest";
+    public final String postEventsPath = "/v2.0/%s/events";
+    public final String postMultiPath = "/v2.0/%s/ingest/multi";
     public final String postAggregatedPath = "/v2.0/%s/ingest/aggregated";
     public final String postAggregatedMultiPath = "/v2.0/%s/ingest/aggregated/multi";
+    private Random random = new Random( System.currentTimeMillis() );
 
     @BeforeClass
     public static void setUp() throws Exception{
         Configuration.getInstance().init();
+        // This is to help with Travis, which intermittently fail the following tests due
+        // to getting TimeoutException. This is done here because it needs to be before
+        // RollupHandler is instantiated.
+        Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
         System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
         System.setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.EnumElasticIO");
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
@@ -126,32 +141,62 @@ public class HttpIntegrationTestBase {
         }
     }
 
-    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath) throws URISyntaxException, IOException {
+    public HttpResponse postGenMetric( String tenantId, String postfix, String url ) throws Exception {
+
+        return httpPost( tenantId, url, generateJSONMetricsData( postfix ) );
+    }
+
+    public HttpResponse postGenMetric( String tenantId, String postfix, String url, long time ) throws Exception {
+
+        return httpPost( tenantId, url, generateJSONMetricsData( postfix, time ) );
+    }
+
+    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, String postfix) throws URISyntaxException, IOException {
         // post metric to ingestion server for a tenantId
         // urlPath is path for url ingestion after the hostname
         // payloadFilepath is location of the payload for the POST content entity
 
-        // get payload
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(
-                                    new InputStreamReader(
-                                        getClass().getClassLoader().getResourceAsStream(payloadFilePath)));
-        String curLine = reader.readLine();
-        while (curLine != null) {
-            sb = sb.append(curLine);
-            curLine = reader.readLine();
-        }
-        String json = sb.toString();
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
+                postfix );
+        return httpPost( tenantId, urlPath, json );
+    }
 
+    public HttpResponse postMetric(String tenantId, String urlPath, String payloadFilePath, long timestamp, String postfix ) throws URISyntaxException, IOException {
+        // post metric to ingestion server for a tenantId
+        // urlPath is path for url ingestion after the hostname
+        // payloadFilepath is location of the payload for the POST content entity
+
+        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
+                timestamp, postfix );
+        return httpPost( tenantId, urlPath, json );
+    }
+
+
+    public HttpResponse postEvent( String tenantId, String requestBody ) throws Exception {
+
+
+        HttpPost post = getHttpPost( tenantId, postEventsPath, requestBody );
+
+        post.setHeader( Event.FieldLabels.tenantId.name(), tenantId);
+        HttpResponse response = client.execute(post);
+        return response;
+    }
+
+    public HttpResponse httpPost( String tenantId, String urlPath, String json ) throws URISyntaxException, IOException {
+
+        HttpPost post = getHttpPost( tenantId, urlPath, json );
+
+        return client.execute(post);
+    }
+
+    private HttpPost getHttpPost( String tenantId, String urlPath, String json ) throws URISyntaxException {
         // build url to aggregated ingestion endpoint
         URIBuilder builder = getMetricsURIBuilder()
                 .setPath(String.format(urlPath, tenantId));
         HttpPost post = new HttpPost(builder.build());
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
         post.setEntity(entity);
-
-        // post and return response
-        return client.execute(post);
+        return post;
     }
 
     public HttpResponse queryMetricIncludeEnum(String tenantId, String metricName) throws URISyntaxException, IOException {
@@ -230,4 +275,38 @@ public class HttpIntegrationTestBase {
                 .setParameter("to", "200000000");
     }
 
+    protected String[] getBodyArray( HttpResponse response ) throws IOException {
+
+        try {
+            StringWriter sw = new StringWriter();
+            IOUtils.copy( response.getEntity().getContent(), sw );
+            return sw.toString().split( System.lineSeparator() );
+        }
+        finally {
+            IOUtils.closeQuietly( response.getEntity().getContent() );
+        }
+    }
+
+    protected String getPostfix() {
+        return "."  + random.nextInt( 99999 );
+    }
+
+
+    protected String createTestEvent( int batchSize ) throws Exception {
+
+        return createTestEvent( batchSize, System.currentTimeMillis() );
+    }
+
+    protected String createTestEvent(int batchSize, long timestamp) throws Exception {
+        StringBuilder events = new StringBuilder();
+        for (int i=0; i<batchSize; i++) {
+            Event event = new Event();
+            event.setWhat("deployment "+i);
+            event.setWhen( timestamp );
+            event.setData("deploying prod "+i);
+            event.setTags("deployment "+i);
+            events.append(new ObjectMapper().writeValueAsString(event));
+        }
+        return events.toString();
+    }
 }

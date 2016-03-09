@@ -129,6 +129,13 @@
     </dependency>
 
     <dependency>
+      <artifactId>blueflood-core</artifactId>
+      <groupId>com.rackspacecloud</groupId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
       <artifactId>blueflood-elasticsearch</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
@@ -170,7 +177,13 @@
       <version>4.3.3</version>
     </dependency>
 
-    <!-- testing dependencies -->
+      <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-io</artifactId>
+          <version>1.3.2</version>
+      </dependency>
+
+      <!-- testing dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

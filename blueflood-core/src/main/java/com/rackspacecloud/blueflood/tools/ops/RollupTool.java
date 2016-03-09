@@ -17,13 +17,13 @@
 package com.rackspacecloud.blueflood.tools.ops;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -134,8 +134,8 @@ public class RollupTool {
         try {
             //Get the source and destination column families
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, gran);
-            ColumnFamily<Locator, Long> srcCF = CassandraModel.getColumnFamily(rollupClass, gran.finer());
-            ColumnFamily<Locator, Long> dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
+            MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, gran.finer());
+            MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, gran);
             System.out.println("Calculating rollups for " + gran.name() + ". Reading from: " + srcCF.getName() + ". Writing to: " + dstCF.getName());
             //Get Rollup Computer
             Rollup.Type rollupComputer = RollupRunnable.getRollupComputer(rollupType, gran.finer());

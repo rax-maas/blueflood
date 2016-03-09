@@ -234,31 +234,31 @@ public class ElasticIOTest extends BaseElasticTest {
 
 
     @Test
-    public void testGetNextTokenWithoutPrefix() throws Exception {
+    public void testGetMetricTokens() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "";
+        String query = "*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "one", results.get(0).getToken());
-        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+        Assert.assertEquals("Next token mismatch", "one", results.get(0).getPath());
+        Assert.assertEquals("isLeaf for token", false, results.get(0).isLeaf());
     }
 
     @Test
-    public void testGetNextTokenWithoutPrefixMultipleMetrics() throws Exception {
+    public void testGetMetricTokensMultipleMetrics() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "";
+        String query = "*";
 
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("foo.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
-            add("one|true");
-            add("foo|true");
+            add("one|false");
+            add("foo|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", 2, results.size());
@@ -266,31 +266,31 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenSingleLevelPrefix() throws Exception {
+    public void testGetMetricTokensSingleLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "one";
+        String query = "one.*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "two", results.get(0).getToken());
-        Assert.assertEquals("Next level indicator wrong for token", true, results.get(0).isNextLevel());
+        Assert.assertEquals("Next token mismatch", "one.two", results.get(0).getPath());
+        Assert.assertEquals("Next level indicator wrong for token", false, results.get(0).isLeaf());
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefixAtLevel0() throws Exception {
+    public void testGetMetricTokensWithWildCardPrefixMultipleLevels() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "*";
+        String query = "*.*";
 
         createTestMetrics(tenantId, new HashSet<String>() {{
             add("foo.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
-            add("two|true");
-            add("bar|true");
+            add("one.two|false");
+            add("foo.bar|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", 2, results.size());
@@ -298,47 +298,47 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithMultiLevelPrefix() throws Exception {
+    public void testGetMetricTokensWithMultiLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "one.two";
+        String query = "one.two.*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        for (MetricToken metricToken : results) {
+            Assert.assertFalse("isLeaf value", metricToken.isLeaf());
         }
     }
 
     @Test
-    public void testGetNextTokenWithWildCardPrefixAtTheEnd() throws Exception {
+    public void testGetMetricTokensWithWildCardPrefixAtTheEnd() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "one.two.three*";
+        String query = "one.two.three*.*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size(), results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
+        for (MetricToken metricToken : results) {
+            Assert.assertFalse("isLeaf value", metricToken.isLeaf());;
         }
     }
 
     @Test
-    public void testGetNextTokenWithWildCardAndBracketsPrefix() throws Exception {
+    public void testGetMetricTokensWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "one.{two,foo}.[ta]*";
+        String query = "one.{two,foo}.[ta]hree00.*";
 
         createTestMetrics(tenantId, new HashSet<String>() {{
-            add("one.foo.any.bar.baz");
+            add("one.foo.three00.bar.baz");
         }});
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
-            add("fourA|true");
-            add("fourB|true");
-            add("fourC|true");
-            add("bar|true");
+            add("one.two.three00.fourA|false");
+            add("one.two.three00.fourB|false");
+            add("one.two.three00.fourC|false");
+            add("one.foo.three00.bar|false");
         }};
 
         Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
@@ -346,15 +346,15 @@ public class ElasticIOTest extends BaseElasticTest {
     }
 
     @Test
-    public void testGetNextTokenWithMultiWildCardPrefix() throws Exception {
+    public void testGetMetricTokensWithMultiWildCardPrefix() throws Exception {
         String tenantId = TENANT_A;
-        String prefix = "*.*";
+        String query = "*.*.*";
 
-        List<TokenInfo> results = elasticIO.getNextTokens(tenantId, prefix);
+        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
 
         Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (TokenInfo tokenInfo: results) {
-            Assert.assertTrue(tokenInfo.isNextLevel());
+        for (MetricToken metricToken : results) {
+            Assert.assertFalse("isLeaf value", metricToken.isLeaf());;
         }
     }
 

@@ -48,6 +48,9 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class HttpMetricsIngestionHandler implements HttpRequestHandler {
+
+    public static final String ERROR_HEADER = "The following errors have been encountered:";
+
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
 
@@ -60,6 +63,18 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     // Metrics
     private static final Timer jsonTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion json processing timer");
     private static final Timer persistingTimer = Metrics.timer(HttpMetricsIngestionHandler.class, "HTTP Ingestion persisting timer");
+
+    public static String getResponseBody( List<String> errors ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append( ERROR_HEADER + System.lineSeparator() );
+
+        for( String error : errors ) {
+
+            sb.append( error + System.lineSeparator() );
+        }
+        return sb.toString();
+    }
+
 
     public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.mapper = new ObjectMapper();
@@ -92,8 +107,19 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
             try {
                 jsonMetricsContainer = createContainer(body, tenantId);
-                if (!jsonMetricsContainer.isValid()) {
-                    throw new IOException("Invalid JSONMetricsContainer");
+
+                if (jsonMetricsContainer == null) {
+                    log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+                    DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
+                    return;
+                }
+
+                List<String> errors = jsonMetricsContainer.getValidationErrors();
+
+                if( !errors.isEmpty() ) {
+
+                    DefaultHandler.sendResponse( ctx, request, getResponseBody( errors ), HttpResponseStatus.BAD_REQUEST );
+                    return;
                 }
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
@@ -110,12 +136,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             } catch (Exception e) {
                 log.warn("Other exception while trying to parse content", e);
                 DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                return;
-            }
-
-            if (jsonMetricsContainer == null) {
-                log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
-                DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
                 return;
             }
 

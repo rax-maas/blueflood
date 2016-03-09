@@ -21,6 +21,8 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -41,6 +43,10 @@ import java.util.*;
 
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
+
+    private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
     private EventsIO searchIO;
     private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
@@ -59,13 +65,23 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
         final Timer.Context httpEventsIngestTimerContext = httpEventsIngestTimer.time();
         try {
             Event event = objectMapper.readValue(request.getContent().array(), Event.class);
-            if (event.getWhen() == 0) {
-                event.setWhen(new DateTime().getMillis() / 1000);
-            }
+
+            long timestamp = event.getWhen();
+            long current = System.currentTimeMillis();
+
 
             if (event.getWhat().equals("")) {
-                throw new InvalidDataException(String.format("Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
+                throw new InvalidDataException(String.format( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
             }
+
+            if ( timestamp > current + futureDiff ) {
+                throw new InvalidDataException( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "'" + event.getWhat() + "': 'when' '" + timestamp + "' is more than '" + futureDiff + "' milliseconds into the future." );
+            }
+
+            if ( timestamp < current - pastDiff ) {
+                throw new InvalidDataException( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "'" + event.getWhat() + "': 'when' '" + timestamp + "' is more than '" + pastDiff + "' milliseconds into the past." );
+            }
+
             searchIO.insert(tenantId, Arrays.asList(event.toMap()));
         } catch (JsonMappingException e) {
             log.error(String.format("Exception %s", e.toString()));

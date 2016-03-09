@@ -17,15 +17,14 @@
 package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.collect.ImmutableTable;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
 import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-
 import java.util.concurrent.TimeUnit;
 
 public class SafetyTtlProvider implements TenantTtlProvider {
@@ -47,15 +46,11 @@ public class SafetyTtlProvider implements TenantTtlProvider {
         for (Granularity granularity : Granularity.granularities()) {
             for (RollupType type : RollupType.values()) {
                 try {
-                    ColumnFamily cf = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
-
-                    if (cf instanceof CassandraModel.MetricColumnFamily) {
-                        CassandraModel.MetricColumnFamily metricCF = (CassandraModel.MetricColumnFamily) cf;
-                        TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-                        ttlMapBuilder.put(granularity, type, ttl);
-                    }
+                    MetricColumnFamily metricCF = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
+                    TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
+                    ttlMapBuilder.put(granularity, type, ttl);
                 } catch (IllegalArgumentException ex) {
-                    // pass
+
                 }
             }
         }
