@@ -254,7 +254,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *      }
      *  }
      *
-     * Execution hit of "map" works by using field values directly instead of ordinals
+     * Execution hint of "map" works by using field values directly instead of ordinals
      * in order to aggregate data per-bucket
      *
      * @param tenant
