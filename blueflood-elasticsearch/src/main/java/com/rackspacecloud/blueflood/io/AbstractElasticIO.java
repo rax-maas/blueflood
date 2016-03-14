@@ -247,11 +247,15 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *              "terms": {
      *                  "field" : "metric_name",
      *                  "include": "<regex>",
+     *                  "execution_hint": "map",
      *                  "size": 0
      *              }
      *          }
      *      }
      *  }
+     *
+     * Execution hint of "map" works by using field values directly instead of ordinals
+     * in order to aggregate data per-bucket
      *
      * @param tenant
      * @param regexMetricName
@@ -263,6 +267,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                 AggregationBuilders.terms(METRICS_TOKENS_AGGREGATE)
                         .field(ESFieldLabel.metric_name.name())
                         .include(regexMetricName)
+                        .executionHint("map")
                         .size(0);
 
         return client.prepareSearch(new String[] {ELASTICSEARCH_INDEX_NAME_READ})
