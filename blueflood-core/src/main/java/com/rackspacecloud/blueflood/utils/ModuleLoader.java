@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.utils;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.slf4j.Logger;
@@ -63,5 +64,10 @@ public class ModuleLoader {
         }
 
         return moduleInstance;
+    }
+
+    @VisibleForTesting
+    public static void clearCache() {
+        loadedModules.clear();
     }
 }
