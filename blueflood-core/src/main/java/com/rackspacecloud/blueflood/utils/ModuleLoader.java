@@ -37,7 +37,7 @@ public class ModuleLoader {
         List<String> modules = Configuration.getInstance().getListProperty(moduleName);
         if (modules.isEmpty())
             return null;
-        if (!modules.isEmpty() && modules.size() != 1) {
+        if (modules.size() != 1) {
             throw new RuntimeException("Cannot load service with more than one "+moduleName+" module");
         }
 
