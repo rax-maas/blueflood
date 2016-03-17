@@ -31,6 +31,22 @@ public class ModuleLoaderTest {
         // given
         Configuration.getInstance().setProperty(
                 CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.utils.DummyDiscoveryIO3");
+
+        // when
+        Object loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then
+        Assert.assertNotNull(loadedModule);
+        Assert.assertEquals(DummyDiscoveryIO3.class, loadedModule.getClass());
+    }
+
+    @Test
+    public void singleClassInDifferentPackageYieldsThatClass() {
+
+        // given
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
                 "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
 
         // when
