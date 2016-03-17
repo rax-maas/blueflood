@@ -196,4 +196,19 @@ public class ModuleLoaderTest {
         // then
         Assert.assertNull(loadedModule);
     }
+
+    @Test
+    public void classWithNoParameterlessConstructorYieldsNull() {
+
+        // given
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO4");
+
+        // when
+        Object loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then
+        Assert.assertNull(loadedModule); // ClassLoader.loadClass will throw an InstantiationException
+    }
 }
