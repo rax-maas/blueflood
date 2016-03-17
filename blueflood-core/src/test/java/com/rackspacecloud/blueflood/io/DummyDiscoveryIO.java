@@ -4,6 +4,9 @@ import com.rackspacecloud.blueflood.types.IMetric;
 
 import java.util.List;
 
+/**
+ * Used by {@link com.rackspacecloud.blueflood.utils.ModuleLoaderTest}
+ */
 public class DummyDiscoveryIO implements DiscoveryIO {
 
     @Override

@@ -142,7 +142,7 @@ public class ModuleLoaderTest {
         // changing the configuration value for that key, ModuleLoader will
         // still give us back the object that it loaded the first time. This is
         // the case even if we specify completely incompatible classes each
-        // time.
+        // time, which could lead to runtime casting exceptions.
 
         // given
         Configuration.getInstance().setProperty(
