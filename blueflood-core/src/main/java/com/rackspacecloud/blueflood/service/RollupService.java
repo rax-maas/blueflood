@@ -169,6 +169,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
             Executors.defaultThreadFactory(),
             new ThreadPoolExecutor.AbortPolicy()
         );
+        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
+
         final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
         rollupWriteExecutors = new ThreadPoolExecutor(
                 // "RollupWritesThreadpool",
@@ -179,7 +181,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 Executors.defaultThreadFactory(),
                 new ThreadPoolExecutor.AbortPolicy()
         );
-        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
         InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
 
         // create executor threadpool for EnumValidator
