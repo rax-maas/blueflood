@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -40,9 +41,9 @@ class LocatorFetchRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
-    private final ThreadPoolExecutor rollupReadExecutor;
+    private final ExecutorService rollupReadExecutor;
     private final ThreadPoolExecutor rollupWriteExecutor;
-    private final ThreadPoolExecutor enumValidatorExecutor;
+    private final ExecutorService enumValidatorExecutor;
     private final SlotKey parentSlotKey;
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
