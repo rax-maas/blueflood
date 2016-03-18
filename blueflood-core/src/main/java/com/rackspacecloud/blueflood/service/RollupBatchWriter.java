@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.threading.SizedExecutorService;
+import com.rackspacecloud.blueflood.threading.ThreadPoolSizedExecutorServiceAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,13 +29,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 // Batches rollup writes
 public class RollupBatchWriter {
     private final Logger log = LoggerFactory.getLogger(RollupBatchWriter.class);
-    private final ThreadPoolExecutor executor;
+    private final SizedExecutorService executor;
     private final RollupExecutionContext context;
     private final ConcurrentLinkedQueue<SingleRollupWriteContext> rollupQueue = new ConcurrentLinkedQueue<SingleRollupWriteContext>();
     private static final int ROLLUP_BATCH_MIN_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_BATCH_MIN_SIZE);
     private static final int ROLLUP_BATCH_MAX_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_BATCH_MAX_SIZE);
 
     public RollupBatchWriter(ThreadPoolExecutor executor, RollupExecutionContext context) {
+        this(new ThreadPoolSizedExecutorServiceAdapter(executor), context);
+    }
+    public RollupBatchWriter(SizedExecutorService executor, RollupExecutionContext context) {
         this.executor = executor;
         this.context = context;
     }
