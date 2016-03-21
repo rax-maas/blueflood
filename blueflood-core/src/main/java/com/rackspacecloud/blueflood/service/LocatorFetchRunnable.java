@@ -50,6 +50,7 @@ class LocatorFetchRunnable implements Runnable {
     private final ScheduleContext scheduleCtx;
     private final long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private final AstyanaxReader astyanaxReader;
 
     private static final boolean enableHistograms = Configuration.getInstance().
             getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
@@ -68,6 +69,14 @@ class LocatorFetchRunnable implements Runnable {
                          ExecutorService rollupReadExecutor,
                          SizedExecutorService rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor) {
+        this(scheduleCtx, destSlotKey, rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor, AstyanaxReader.getInstance());
+    }
+    LocatorFetchRunnable(ScheduleContext scheduleCtx,
+                         SlotKey destSlotKey,
+                         ExecutorService rollupReadExecutor,
+                         SizedExecutorService rollupWriteExecutor,
+                         ExecutorService enumValidatorExecutor,
+                         AstyanaxReader astyanaxReader) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
@@ -75,6 +84,7 @@ class LocatorFetchRunnable implements Runnable {
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
         this.enumValidatorExecutor = enumValidatorExecutor;
+        this.astyanaxReader = astyanaxReader;
     }
     
     public void run() {
@@ -103,7 +113,7 @@ class LocatorFetchRunnable implements Runnable {
 
         try {
             // get a list of all locators to rollup for a shard
-            locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
+            locators.addAll(astyanaxReader.getLocatorsToRollup(shard));
         } catch (RuntimeException e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + parentSlot, e);
