@@ -224,6 +224,6 @@ public class ModuleLoaderTest {
         Object loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
 
         // then
-        Assert.assertNull(loadedModule); // ClassLoader.loadClass will throw an IllegalAccessException
+        Assert.assertNull(loadedModule); // Class.newInstance will throw an IllegalAccessException
     }
 }
