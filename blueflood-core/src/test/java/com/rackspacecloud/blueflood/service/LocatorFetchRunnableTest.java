@@ -59,15 +59,15 @@ public class LocatorFetchRunnableTest {
         }};
         Set<Locator> expected = new HashSet<Locator>(locators);
 
-        when(astyanaxReader.getLocatorsToRollup(2)).thenReturn(locators);
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
 
         // when
-        Set<Locator> actual = lfr.getLocators(1, 2, executionContext);
+        Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(astyanaxReader, times(1)).getLocatorsToRollup(2);
+        verify(astyanaxReader, times(1)).getLocatorsToRollup(0);
         verifyNoMoreInteractions(astyanaxReader);
         verifyZeroInteractions(executionContext);
         Assert.assertEquals(expected, actual);
@@ -77,15 +77,15 @@ public class LocatorFetchRunnableTest {
     public void getLocatorsExceptionYieldsEmptySet() {
 
         // given
-        when(astyanaxReader.getLocatorsToRollup(2)).thenThrow(new RuntimeException(""));
+        when(astyanaxReader.getLocatorsToRollup(0)).thenThrow(new RuntimeException(""));
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
 
         // when
-        Set<Locator> actual = lfr.getLocators(1, 2, executionContext);
+        Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(astyanaxReader, times(1)).getLocatorsToRollup(2);
+        verify(astyanaxReader, times(1)).getLocatorsToRollup(0);
         verifyNoMoreInteractions(astyanaxReader);
         verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
         verifyNoMoreInteractions(executionContext);
