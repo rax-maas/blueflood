@@ -149,4 +149,46 @@ public class LocatorFetchRunnableTest {
         verifyNoMoreInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
     }
+
+    @Test
+    public void processLocatorTriggersRunnable() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(1, count);
+        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, never()).decrementReadCounter();
+    }
+
+    @Test
+    public void processLocatorIncrementsCount() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processLocator(1, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(2, count);
+        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, never()).decrementReadCounter();
+    }
 }
