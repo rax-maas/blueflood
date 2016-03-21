@@ -211,4 +211,19 @@ public class ModuleLoaderTest {
         // then
         Assert.assertNull(loadedModule); // ClassLoader.loadClass will throw an InstantiationException
     }
+
+    @Test
+    public void packagePrivateClassYieldsNull() {
+
+        // given
+        Configuration.getInstance().setProperty(
+                CoreConfig.DISCOVERY_MODULES,
+                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO5");
+
+        // when
+        Object loadedModule = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+
+        // then
+        Assert.assertNull(loadedModule); // ClassLoader.loadClass will throw an IllegalAccessException
+    }
 }
