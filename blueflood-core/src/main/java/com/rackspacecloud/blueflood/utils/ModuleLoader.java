@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.utils;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ public class ModuleLoader {
         List<String> modules = Configuration.getInstance().getListProperty(moduleName);
         if (modules.isEmpty())
             return null;
-        if (!modules.isEmpty() && modules.size() != 1) {
+        if (modules.size() != 1) {
             throw new RuntimeException("Cannot load service with more than one "+moduleName+" module");
         }
 
@@ -63,5 +64,10 @@ public class ModuleLoader {
         }
 
         return moduleInstance;
+    }
+
+    @VisibleForTesting
+    public static void clearCache() {
+        loadedModules.clear();
     }
 }
