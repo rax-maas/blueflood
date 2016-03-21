@@ -54,7 +54,7 @@ public class LocatorFetchRunnableTest {
         Configuration.getInstance().init();
     }
 
-    List<Locator> getTypcialLocators() {
+    List<Locator> getTypicalLocators() {
 
         final Locator locator1 = Locator.createLocatorFromPathComponents("tenant1", "a", "b", "c");
         final Locator locator2 = Locator.createLocatorFromPathComponents("tenant2", "a", "b", "x");
@@ -71,7 +71,7 @@ public class LocatorFetchRunnableTest {
     public void getLocatorsReturnsLocators() {
 
         // given
-        List<Locator> locators = getTypcialLocators();
+        List<Locator> locators = getTypicalLocators();
         Set<Locator> expected = new HashSet<Locator>(locators);
 
         when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
@@ -112,7 +112,7 @@ public class LocatorFetchRunnableTest {
     public void executeRollupForLocatorTriggersExecutionOfRollupRunnable() {
 
         // given
-        List<Locator> locators = getTypcialLocators();
+        List<Locator> locators = getTypicalLocators();
         when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
@@ -133,7 +133,7 @@ public class LocatorFetchRunnableTest {
     public void executeHistogramRollupForLocatorTriggersExecutionOfHistogramRollupRunnable() {
 
         // given
-        List<Locator> locators = getTypcialLocators();
+        List<Locator> locators = getTypicalLocators();
         when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
