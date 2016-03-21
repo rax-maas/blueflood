@@ -45,10 +45,8 @@ public class LocatorFetchRunnableTest {
                 enumValidatorExecutor, astyanaxReader);
     }
 
-    @Test
-    public void getLocatorsReturnsLocators() {
+    List<Locator> getTypcialLocators() {
 
-        // given
         final Locator locator1 = Locator.createLocatorFromPathComponents("tenant1", "a", "b", "c");
         final Locator locator2 = Locator.createLocatorFromPathComponents("tenant2", "a", "b", "x");
         final Locator locator3 = Locator.createLocatorFromPathComponents("tenant3", "d", "e", "f");
@@ -57,6 +55,14 @@ public class LocatorFetchRunnableTest {
             add(locator2);
             add(locator3);
         }};
+        return locators;
+    }
+
+    @Test
+    public void getLocatorsReturnsLocators() {
+
+        // given
+        List<Locator> locators = getTypcialLocators();
         Set<Locator> expected = new HashSet<Locator>(locators);
 
         when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
@@ -91,5 +97,47 @@ public class LocatorFetchRunnableTest {
         verifyNoMoreInteractions(executionContext);
         Assert.assertNotNull(actual);
         Assert.assertEquals(0, actual.size());
+    }
+
+    @Test
+    public void executeRollupForLocatorTriggersExecutionOfRollupRunnable() {
+
+        // given
+        List<Locator> locators = getTypcialLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        // when
+        lfr.executeRollupForLocator(executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        verify(rollupReadExecutor, times(1)).execute(Matchers.<RollupRunnable>any());
+        verifyNoMoreInteractions(rollupReadExecutor);
+        verify(executionContext, times(1)).incrementReadCounter();
+        verifyNoMoreInteractions(executionContext);
+        verifyZeroInteractions(rollupBatchWriter);
+    }
+
+    @Test
+    public void executeHistogramRollupForLocatorTriggersExecutionOfHistogramRollupRunnable() {
+
+        // given
+        List<Locator> locators = getTypcialLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        // when
+        lfr.executeHistogramRollupForLocator(executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        verify(rollupReadExecutor, times(1)).execute(Matchers.<HistogramRollupRunnable>any());
+        verifyNoMoreInteractions(rollupReadExecutor);
+        verify(executionContext, times(1)).incrementReadCounter();
+        verifyNoMoreInteractions(executionContext);
+        verifyZeroInteractions(rollupBatchWriter);
     }
 }
