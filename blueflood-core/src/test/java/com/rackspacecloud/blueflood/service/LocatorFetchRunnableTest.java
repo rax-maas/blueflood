@@ -5,11 +5,13 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.threading.SizedExecutorService;
 import com.rackspacecloud.blueflood.types.Locator;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +33,9 @@ public class LocatorFetchRunnableTest {
     LocatorFetchRunnable lfr;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
+
+        Configuration.getInstance().init();
 
         this.scheduleCtx = mock(ScheduleContext.class);
         this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
@@ -43,6 +47,11 @@ public class LocatorFetchRunnableTest {
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
                 destSlotKey, rollupReadExecutor, rollupWriteExecutor,
                 enumValidatorExecutor, astyanaxReader);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        Configuration.getInstance().init();
     }
 
     List<Locator> getTypcialLocators() {
