@@ -109,15 +109,8 @@ class LocatorFetchRunnable implements Runnable {
 
         final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
         final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
-        Set<Locator> locators = new HashSet<Locator>();
 
-        try {
-            // get a list of all locators to rollup for a shard
-            locators.addAll(astyanaxReader.getLocatorsToRollup(shard));
-        } catch (RuntimeException e) {
-            executionContext.markUnsuccessful(e);
-            log.error("Failed reading locators for slot: " + parentSlot, e);
-        }
+        Set<Locator> locators = getLocators(parentSlot, shard, executionContext);
 
         for (Locator locator : locators) {
             if (log.isTraceEnabled())
@@ -186,5 +179,18 @@ class LocatorFetchRunnable implements Runnable {
         }
 
         timerCtx.stop();
+    }
+
+    public Set<Locator> getLocators(int parentSlot, int shard, RollupExecutionContext executionContext) {
+        Set<Locator> locators = new HashSet<Locator>();
+
+        try {
+            // get a list of all locators to rollup for a shard
+            locators.addAll(astyanaxReader.getLocatorsToRollup(shard));
+        } catch (RuntimeException e) {
+            executionContext.markUnsuccessful(e);
+            log.error("Failed reading locators for slot: " + parentSlot, e);
+        }
+        return locators;
     }
 }
