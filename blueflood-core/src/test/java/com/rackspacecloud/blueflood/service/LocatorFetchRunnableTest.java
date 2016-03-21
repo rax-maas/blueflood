@@ -6,6 +6,7 @@ import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.threading.SizedExecutorService;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
@@ -18,6 +19,31 @@ import java.util.concurrent.ExecutorService;
 import static org.mockito.Mockito.*;
 
 public class LocatorFetchRunnableTest {
+
+
+    ScheduleContext scheduleCtx;
+    SlotKey destSlotKey;
+    ExecutorService rollupReadExecutor;
+    SizedExecutorService rollupWriteExecutor;
+    ExecutorService enumValidatorExecutor;
+    AstyanaxReader astyanaxReader;
+
+    LocatorFetchRunnable lfr;
+
+    @Before
+    public void setUp() {
+
+        this.scheduleCtx = mock(ScheduleContext.class);
+        this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
+        this.rollupReadExecutor = mock(ExecutorService.class);
+        this.rollupWriteExecutor = mock(SizedExecutorService.class);
+        this.enumValidatorExecutor = mock(ExecutorService.class);
+        this.astyanaxReader = mock(AstyanaxReader.class);
+
+        this.lfr = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor, astyanaxReader);
+    }
 
     @Test
     public void getLocatorsReturnsLocators() {
@@ -33,18 +59,7 @@ public class LocatorFetchRunnableTest {
         }};
         Set<Locator> expected = new HashSet<Locator>(locators);
 
-        AstyanaxReader astyanaxReader = mock(AstyanaxReader.class);
         when(astyanaxReader.getLocatorsToRollup(2)).thenReturn(locators);
-
-        ScheduleContext scheduleCtx = mock(ScheduleContext.class);
-        SlotKey destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
-        ExecutorService rollupReadExecutor = mock(ExecutorService.class);
-        SizedExecutorService rollupWriteExecutor = mock(SizedExecutorService.class);
-        ExecutorService enumValidatorExecutor = mock(ExecutorService.class);
-
-        LocatorFetchRunnable lfr = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor, astyanaxReader);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
 
@@ -62,18 +77,7 @@ public class LocatorFetchRunnableTest {
     public void getLocatorsExceptionYieldsEmptySet() {
 
         // given
-        AstyanaxReader astyanaxReader = mock(AstyanaxReader.class);
         when(astyanaxReader.getLocatorsToRollup(2)).thenThrow(new RuntimeException(""));
-
-        ScheduleContext scheduleCtx = mock(ScheduleContext.class);
-        SlotKey destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
-        ExecutorService rollupReadExecutor = mock(ExecutorService.class);
-        SizedExecutorService rollupWriteExecutor = mock(SizedExecutorService.class);
-        ExecutorService enumValidatorExecutor = mock(ExecutorService.class);
-
-        LocatorFetchRunnable lfr = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor, astyanaxReader);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
 
