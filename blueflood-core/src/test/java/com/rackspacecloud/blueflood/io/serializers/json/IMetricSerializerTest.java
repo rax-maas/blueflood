@@ -14,8 +14,9 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.json;
 
+import com.rackspacecloud.blueflood.io.serializers.json.IMetricSerializer;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;

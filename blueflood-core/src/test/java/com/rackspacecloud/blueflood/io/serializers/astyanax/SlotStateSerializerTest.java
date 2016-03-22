@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -26,15 +26,6 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 
 public class SlotStateSerializerTest {
-    @Test
-    public void testGranularityFromStateCol() {
-        Granularity myGranularity = SlotStateSerializer.granularityFromStateCol("metrics_full,1,okay");
-        Assert.assertNotNull(myGranularity);
-        Assert.assertEquals(myGranularity, Granularity.FULL);
-
-        myGranularity = SlotStateSerializer.granularityFromStateCol("FULL");
-        Assert.assertNull(myGranularity);
-    }
 
     @Test
     public void testToFromByteBuffer() {
@@ -50,20 +41,5 @@ public class SlotStateSerializerTest {
         Assert.assertEquals(origBuff, newBuff);
     }
 
-    @Test
-    public void testSlotFromStateCol() {
-        Assert.assertEquals(1, SlotStateSerializer.slotFromStateCol("metrics_full,1,okay"));
-    }
 
-    @Test
-    public void testStateFromStateCol() {
-        Assert.assertEquals("okay", SlotStateSerializer.stateCodeFromStateCol("metrics_full,1,okay"));
-    }
-
-    @Test
-    public void testStateFromStateCode() {
-        Assert.assertEquals(UpdateStamp.State.Active, SlotStateSerializer.stateFromCode("foo"));
-        Assert.assertEquals(UpdateStamp.State.Active, SlotStateSerializer.stateFromCode("A"));
-        Assert.assertEquals(UpdateStamp.State.Rolled, SlotStateSerializer.stateFromCode("X"));
-    }
 }

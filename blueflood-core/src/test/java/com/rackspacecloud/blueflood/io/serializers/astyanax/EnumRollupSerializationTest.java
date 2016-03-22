@@ -13,10 +13,10 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
-import com.rackspacecloud.blueflood.types.BluefloodEnumRollupTest;
 import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
@@ -42,32 +42,32 @@ public class EnumRollupSerializationTest {
         Assert.assertTrue(map.get((long)"enumValue2".hashCode()) == 15L);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new NumericSerializer.EnumRollupSerializer().toByteBuffer(e0).array()));
+        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e0).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.EnumRollupSerializer().toByteBuffer(e1).array()));
+        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.EnumRollupSerializer().toByteBuffer(e2).array()));
+        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.EnumRollupSerializer().toByteBuffer(er).array()));
+        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(er).array()));
         baos.write("\n".getBytes());
         baos.close();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
 
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodEnumRollup ee0 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
+        BluefloodEnumRollup ee0 = Serializers.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(e0, ee0);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodEnumRollup ee1 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
+        BluefloodEnumRollup ee1 = Serializers.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(e1, ee1);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodEnumRollup ee2 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
+        BluefloodEnumRollup ee2 = Serializers.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(e2, ee2);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodEnumRollup ee3 = NumericSerializer.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
+        BluefloodEnumRollup ee3 = Serializers.serializerFor(BluefloodEnumRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(er, ee3);
 
         Assert.assertFalse(ee0.equals(ee1));

@@ -37,8 +37,8 @@ import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
-import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -276,28 +276,28 @@ public class AstyanaxReader extends AstyanaxIO {
     // todo: this could be the basis for every rollup read method.
     // todo: A better interface may be to pass the serializer in instead of the class type.
     public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, final Locator locator, Range range, ColumnFamily<Locator, Long> cf) throws IOException {
-        AbstractSerializer serializer = NumericSerializer.serializerFor(type);
+        AbstractSerializer serializer = Serializers.serializerFor(type);
         // special cases. :( the problem here is that the normal full res serializer returns Number instances instead of
         // SimpleNumber instances.
         // todo: this logic will only become more complicated. It needs to be in its own method and the serializer needs
         // to be known before we ever get to this method (see above comment).
         if (cf == CassandraModel.CF_METRICS_FULL) {
-            serializer = NumericSerializer.simpleNumberSerializer;
+            serializer = Serializers.simpleNumberSerializer;
         } else if ( cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL) {
             // consider a method for this.  getSerializer(CF, TYPE);
             if (type.equals(BluefloodTimerRollup.class)) {
-                serializer = NumericSerializer.timerRollupInstance;
+                serializer = Serializers.timerRollupInstance;
             } else if (type.equals(BluefloodSetRollup.class)) {
-                serializer = NumericSerializer.setRollupInstance;
+                serializer = Serializers.setRollupInstance;
             } else if (type.equals(BluefloodGaugeRollup.class)) {
-                serializer = NumericSerializer.gaugeRollupInstance;
+                serializer = Serializers.gaugeRollupInstance;
             } else if (type.equals(BluefloodCounterRollup.class)) {
-                serializer = NumericSerializer.CounterRollupInstance;
+                serializer = Serializers.CounterRollupInstance;
             } else if (type.equals(BluefloodEnumRollup.class)) {
-                serializer = NumericSerializer.enumRollupInstance;
+                serializer = Serializers.enumRollupInstance;
             }
             else {
-                serializer = NumericSerializer.simpleNumberSerializer;
+                serializer = Serializers.simpleNumberSerializer;
             }
         }
 
@@ -525,7 +525,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         // todo: this will not work when we cannot derive data type from granularity. we will need to know what kind of
         // data we are asking for and use a specific reader method.
-        AbstractSerializer serializer = NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+        AbstractSerializer serializer = Serializers.serializerFor(RollupType.classOf(rollupType, gran));
 
         for (Column<Long> column : results) {
             try {
@@ -587,7 +587,7 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private Points.Point pointFromColumn(Column<Long> column, AbstractSerializer serializer) {
-        if (serializer instanceof NumericSerializer.RawSerializer) {
+        if (serializer instanceof Serializers.RawSerializer) {
             return new Points.Point(column.getName(), new SimpleNumber(column.getValue(serializer)));
         }
         else

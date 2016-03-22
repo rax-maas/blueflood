@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.io.serializers.SlotStateSerializer;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Test;

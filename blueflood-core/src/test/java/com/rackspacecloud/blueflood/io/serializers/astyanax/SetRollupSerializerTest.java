@@ -1,6 +1,7 @@
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
 import com.google.common.collect.Sets;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.BluefloodSetRollup;
 import com.rackspacecloud.blueflood.utils.Rollups;
 import junit.framework.Assert;
@@ -31,32 +32,32 @@ public class SetRollupSerializerTest {
         Assert.assertEquals(3, setsRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(setRollup1).array()));
+        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(setRollup2).array()));
+        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(setRollup3).array()));
+        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup3).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(setsRollup).array()));
+        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setsRollup).array()));
         baos.write("\n".getBytes());
         baos.close();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
 
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodSetRollup deserializedSet1 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+        BluefloodSetRollup deserializedSet1 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(setRollup1, deserializedSet1);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodSetRollup deserializedSet2 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+        BluefloodSetRollup deserializedSet2 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(setRollup2, deserializedSet2);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodSetRollup deserializedSet3 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+        BluefloodSetRollup deserializedSet3 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(setRollup3, deserializedSet3);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodSetRollup deserializedSet4 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+        BluefloodSetRollup deserializedSet4 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(setsRollup, deserializedSet4);
 
         Assert.assertFalse(deserializedSet1.equals(deserializedSet2));

@@ -32,8 +32,8 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
-import com.rackspacecloud.blueflood.io.serializers.StringMetadataSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -187,7 +187,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 mutationBatch.withRow(CassandraModel.CF_METRICS_FULL, metric.getLocator())
                         .putColumn(metric.getCollectionTime(),
                                 metric.getMetricValue(),
-                                NumericSerializer.serializerFor(Object.class),
+                                Serializers.serializerFor(Object.class),
                                 metric.getTtlInSeconds());
             } catch (RuntimeException e) {
                 log.error("Error serializing full resolution data", e);
@@ -294,7 +294,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                         mutation.putColumn(
                                 metric.getCollectionTime(),
                                 metric.getMetricValue(),
-                                (AbstractSerializer) (NumericSerializer.serializerFor(metric.getMetricValue().getClass())),
+                                (AbstractSerializer) (Serializers.serializerFor(metric.getMetricValue().getClass())),
                                 metric.getTtlInSeconds());
                     }
                 }
@@ -378,7 +378,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                         writeContext.getGranularity(),
                         writeContext.getRollup().getRollupType()).toSeconds();
             }
-            AbstractSerializer serializer = NumericSerializer.serializerFor(rollup.getClass());
+            AbstractSerializer serializer = Serializers.serializerFor(rollup.getClass());
             try {
                 mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())
                         .putColumn(writeContext.getTimestamp(),
