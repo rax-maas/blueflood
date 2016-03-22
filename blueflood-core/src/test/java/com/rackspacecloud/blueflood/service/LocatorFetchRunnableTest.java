@@ -329,4 +329,38 @@ public class LocatorFetchRunnableTest {
         verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
         verifyNoMoreInteractions(rollupReadExecutor);
     }
+
+    @Test
+    public void finishExecutionWhenSuccessful() {
+
+        // given
+        when(executionContext.wasSuccessful()).thenReturn(true);
+
+        // when
+        lfr.finishExecution(0, executionContext);
+
+        // then
+        verify(executionContext, times(1)).wasSuccessful();
+        verifyNoMoreInteractions(executionContext);
+        verify(scheduleCtx, times(1)).clearFromRunning(Matchers.<SlotKey>any());
+        verify(scheduleCtx).getCurrentTimeMillis();
+        verifyNoMoreInteractions(scheduleCtx);
+    }
+
+    @Test
+    public void finishExecutionWhenNotSuccessful() {
+
+        // given
+        when(executionContext.wasSuccessful()).thenReturn(false);
+
+        // when
+        lfr.finishExecution(0, executionContext);
+
+        // then
+        verify(executionContext, times(1)).wasSuccessful();
+        verifyNoMoreInteractions(executionContext);
+        verify(scheduleCtx, times(1)).pushBackToScheduled(Matchers.<SlotKey>any(), eq(false));
+        verify(scheduleCtx).getCurrentTimeMillis();
+        verifyNoMoreInteractions(scheduleCtx);
+    }
 }
