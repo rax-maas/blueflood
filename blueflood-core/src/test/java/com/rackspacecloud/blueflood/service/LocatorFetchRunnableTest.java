@@ -290,4 +290,46 @@ public class LocatorFetchRunnableTest {
         Assert.assertNotNull(executedRunnables.get(0));
         Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(0).getClass());
     }
+
+    @Test
+    public void processHistogramForLocatorTriggersRunnable() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processHistogramForLocator(0, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(1, count);
+        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, never()).decrementReadCounter();
+    }
+
+    @Test
+    public void processHistogramForLocatorIncrementsCount() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processHistogramForLocator(1, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(2, count);
+        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, never()).decrementReadCounter();
+    }
 }
