@@ -253,4 +253,41 @@ public class LocatorFetchRunnableTest {
         Assert.assertNotNull(executedRunnables.get(1));
         Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(1).getClass());
     }
+
+    @Test
+    public void processLocatorExceptionWithHistogramEnabledCausesOnlyFirstOfTwoRollupsToFail() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+        final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
+        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
+        doThrow(cause)
+            .doAnswer(new Answer() {
+                @Override
+                public Object answer(InvocationOnMock invocation) throws Throwable {
+                    executedRunnables.add((RollupRunnable) invocation.getArguments()[0]);
+                    return null;
+                }
+            }).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
+
+        // when
+        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(1, count);
+        verify(executionContext, times(2)).incrementReadCounter();
+        verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, times(1)).decrementReadCounter();
+        verifyNoMoreInteractions(executionContext);
+        verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
+        Assert.assertEquals(1, executedRunnables.size());
+        Assert.assertNotNull(executedRunnables.get(0));
+        Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(0).getClass());
+    }
 }
