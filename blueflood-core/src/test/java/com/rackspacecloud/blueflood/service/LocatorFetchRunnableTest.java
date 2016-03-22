@@ -35,6 +35,11 @@ public class LocatorFetchRunnableTest {
 
     LocatorFetchRunnable lfr;
 
+    RollupExecutionContext executionContext;
+    RollupBatchWriter rollupBatchWriter;
+
+    List<Locator> locators;
+
     @Before
     public void setUp() throws IOException {
 
@@ -50,6 +55,13 @@ public class LocatorFetchRunnableTest {
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
                 destSlotKey, rollupReadExecutor, rollupWriteExecutor,
                 enumValidatorExecutor, astyanaxReader);
+
+        executionContext = mock(RollupExecutionContext.class);
+        rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        locators = getTypicalLocators();
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
     }
 
     @After
@@ -74,12 +86,9 @@ public class LocatorFetchRunnableTest {
     public void getLocatorsReturnsLocators() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         Set<Locator> expected = new HashSet<Locator>(locators);
 
         when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
 
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
@@ -97,8 +106,6 @@ public class LocatorFetchRunnableTest {
         // given
         when(astyanaxReader.getLocatorsToRollup(0)).thenThrow(new RuntimeException(""));
 
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
 
@@ -114,12 +121,6 @@ public class LocatorFetchRunnableTest {
     @Test
     public void executeRollupForLocatorTriggersExecutionOfRollupRunnable() {
 
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
         // when
         lfr.executeRollupForLocator(executionContext, rollupBatchWriter, locators.get(0));
 
@@ -133,12 +134,6 @@ public class LocatorFetchRunnableTest {
 
     @Test
     public void executeHistogramRollupForLocatorTriggersExecutionOfHistogramRollupRunnable() {
-
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
 
         // when
         lfr.executeHistogramRollupForLocator(executionContext, rollupBatchWriter, locators.get(0));
@@ -154,14 +149,6 @@ public class LocatorFetchRunnableTest {
     @Test
     public void processLocatorTriggersRunnable() {
 
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
-
         // when
         int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
 
@@ -173,14 +160,6 @@ public class LocatorFetchRunnableTest {
 
     @Test
     public void processLocatorIncrementsCount() {
-
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
 
         // when
         int count = lfr.processLocator(1, executionContext, rollupBatchWriter, locators.get(0));
@@ -195,14 +174,8 @@ public class LocatorFetchRunnableTest {
     public void processLocatorExceptionCausesRollupToFail() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
 
         // when
         int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
@@ -217,7 +190,6 @@ public class LocatorFetchRunnableTest {
     public void processLocatorHistogramEnabledTriggersRunnables() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
         doAnswer(new Answer() {
             @Override
@@ -226,9 +198,6 @@ public class LocatorFetchRunnableTest {
                 return null;
             }
         }).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
 
         Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
 
@@ -253,7 +222,6 @@ public class LocatorFetchRunnableTest {
     public void processLocatorExceptionWithHistogramEnabledCausesOnlyFirstOfTwoRollupsToFail() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause)
@@ -264,9 +232,6 @@ public class LocatorFetchRunnableTest {
                     return null;
                 }
             }).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
 
         Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
 
@@ -288,14 +253,6 @@ public class LocatorFetchRunnableTest {
     @Test
     public void processHistogramForLocatorTriggersRunnable() {
 
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
-
         // when
         int count = lfr.processHistogramForLocator(0, executionContext, rollupBatchWriter, locators.get(0));
 
@@ -307,14 +264,6 @@ public class LocatorFetchRunnableTest {
 
     @Test
     public void processHistogramForLocatorIncrementsCount() {
-
-        // given
-        List<Locator> locators = getTypicalLocators();
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
 
         // when
         int count = lfr.processHistogramForLocator(1, executionContext, rollupBatchWriter, locators.get(0));
@@ -329,14 +278,8 @@ public class LocatorFetchRunnableTest {
     public void processHistogramForLocatorRejectedExecutionExceptionCausesRollupToFail() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         Throwable cause = new RejectedExecutionException("exception for testing purposes");
         doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
 
         // when
         int count = lfr.processHistogramForLocator(0, executionContext,
@@ -352,14 +295,8 @@ public class LocatorFetchRunnableTest {
     public void processHistogramForLocatorExceptionCausesRollupToFail() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
 
         // when
         int count = lfr.processHistogramForLocator(0, executionContext,
@@ -375,12 +312,8 @@ public class LocatorFetchRunnableTest {
     public void processLocatorTwoExceptionsWithHistogramEnabledCausesBothRollupsToFail() {
 
         // given
-        List<Locator> locators = getTypicalLocators();
         Throwable cause = new RejectedExecutionException("exception for testing purposes");
         doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
-        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
 
         Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
 
