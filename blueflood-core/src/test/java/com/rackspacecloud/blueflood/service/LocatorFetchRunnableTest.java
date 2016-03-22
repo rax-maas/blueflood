@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 
 import static org.mockito.Mockito.*;
 
@@ -322,5 +323,51 @@ public class LocatorFetchRunnableTest {
         Assert.assertEquals(2, count);
         verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
         verify(executionContext, never()).decrementReadCounter();
+    }
+
+    @Test
+    public void processHistogramForLocatorRejectedExecutionExceptionCausesRollupToFail() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        Throwable cause = new RejectedExecutionException("exception for testing purposes");
+        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processHistogramForLocator(0, executionContext,
+                rollupBatchWriter, locators.get(0));    // hits the first catch block in processHistogramForLocator
+
+        // then
+        Assert.assertEquals(0, count);
+        verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, times(1)).decrementReadCounter();
+    }
+
+    @Test
+    public void processHistogramForLocatorExceptionCausesRollupToFail() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
+        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processHistogramForLocator(0, executionContext,
+                rollupBatchWriter, locators.get(0));    // hits the second catch block in processHistogramForLocator
+
+        // then
+        Assert.assertEquals(0, count);
+        verify(executionContext, times(0)).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, times(1)).decrementReadCounter();
     }
 }
