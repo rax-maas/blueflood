@@ -54,9 +54,6 @@ class LocatorFetchRunnable implements Runnable {
 
     private final Range parentRange;
 
-    private static final boolean enableHistograms = Configuration.getInstance().
-            getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
-
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
@@ -171,7 +168,7 @@ class LocatorFetchRunnable implements Runnable {
             log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
         }
 
-        if (enableHistograms) {
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS)) {
             // Also, compute histograms. Histograms for > 5 MIN granularity are always computed from 5 MIN histograms.
             rollCount = processHistogramForLocator(rollCount, executionContext, rollupBatchWriter, locator);
         }
