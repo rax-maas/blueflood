@@ -191,4 +191,27 @@ public class LocatorFetchRunnableTest {
         verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
         verify(executionContext, never()).decrementReadCounter();
     }
+
+    @Test
+    public void processLocatorExceptionCausesRollupToFail() {
+
+        // given
+        List<Locator> locators = getTypicalLocators();
+        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
+        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
+
+        RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
+        RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
+
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // when
+        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
+
+        // then
+        Assert.assertEquals(0, count);
+        verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
+        verify(executionContext, times(1)).decrementReadCounter();
+    }
 }
