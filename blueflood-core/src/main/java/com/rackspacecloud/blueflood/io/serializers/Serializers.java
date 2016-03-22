@@ -17,25 +17,13 @@
 package com.rackspacecloud.blueflood.io.serializers;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
-import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.HistogramSerializer;
 import com.rackspacecloud.blueflood.io.serializers.metrics.*;
 import com.rackspacecloud.blueflood.types.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.Map;
-
-import static com.rackspacecloud.blueflood.io.Constants.*;
 
 public class Serializers {
     // NumericSerializer can be used with Rollup and full resolution metrics.
@@ -99,135 +87,6 @@ public class Serializers {
             return (AbstractSerializer<T>)fullInstance;
         else
             return (AbstractSerializer<T>)fullInstance;   
-    }
-
-    private static int sizeOf(Object o, byte type) 
-      throws IOException {
-        return sizeOf(o, type, VERSION_2_TIMER);
-    }
-
-    private static int sizeOf(Object o, byte type, byte timerVersion) 
-      throws IOException {
-        int sz = 0;
-        switch (type) {
-            case Constants.B_I32:
-                sz += 1 + 1; // version + type.
-                sz += CodedOutputStream.computeRawVarint32Size((Integer)o);
-                break;
-            case Constants.B_I64:
-                sz += 1 + 1; // version + type.
-                sz += CodedOutputStream.computeRawVarint64Size((Long)o);
-                break;
-            case Constants.B_DOUBLE:
-                sz += 1 + 1; // version + type.
-                sz += CodedOutputStream.computeDoubleSizeNoTag((Double)o);
-                break;
-            case Type.B_FLOAT_AS_DOUBLE:
-                sz += 1 + 1; // version + type.
-                sz += CodedOutputStream.computeDoubleSizeNoTag(((Float)o).doubleValue());
-                break;
-            case Type.B_ROLLUP:
-                sz += 1; // version
-                BasicRollup basicRollup = (BasicRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
-                if (basicRollup.getCount() > 0) {
-                    sz += sizeOf(basicRollup.getAverage(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(basicRollup.getVariance(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(basicRollup.getMinValue(), Type.B_ROLLUP_STAT);
-                    sz += sizeOf(basicRollup.getMaxValue(), Type.B_ROLLUP_STAT);
-                }
-                break;
-            case Type.B_SET:
-                sz += 1; // version
-                BluefloodSetRollup setRollup = (BluefloodSetRollup)o;
-                sz += CodedOutputStream.computeRawVarint32Size(setRollup.getCount());
-                for (Integer i : setRollup.getHashes()) {
-                    sz += CodedOutputStream.computeRawVarint32Size(i);
-                }
-                break;
-            case Type.B_ROLLUP_STAT:
-                sz = 1 + 1; // type + isFP.
-                AbstractRollupStat stat = (AbstractRollupStat)o;
-                sz += stat.isFloatingPoint() ?
-                        CodedOutputStream.computeDoubleSizeNoTag(stat.toDouble()) :
-                        CodedOutputStream.computeRawVarint64Size(stat.toLong());
-                return sz;
-            case Type.B_TIMER:
-                sz += 1; // version
-                BluefloodTimerRollup rollup = (BluefloodTimerRollup)o;
-                if (timerVersion == VERSION_1_TIMER) {
-                    sz += CodedOutputStream.computeRawVarint64Size((long) rollup.getSum());
-                } else if (timerVersion == VERSION_2_TIMER) {
-
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getSum());
-                } else {
-                    throw new SerializationException(String.format("Unexpected serialization version: %d", (int)timerVersion));                    
-                }
-                sz += CodedOutputStream.computeRawVarint64Size(rollup.getCount());
-                sz += CodedOutputStream.computeDoubleSizeNoTag(rollup.getRate());
-                sz += CodedOutputStream.computeRawVarint32Size(rollup.getSampleCount());
-                sz += sizeOf(rollup.getAverage(), Type.B_ROLLUP_STAT);
-                sz += sizeOf(rollup.getMaxValue(), Type.B_ROLLUP_STAT);
-                sz += sizeOf(rollup.getMinValue(), Type.B_ROLLUP_STAT);
-                sz += sizeOf(rollup.getVariance(), Type.B_ROLLUP_STAT);
-                
-                Map<String, BluefloodTimerRollup.Percentile> percentiles = rollup.getPercentiles();
-                sz += CodedOutputStream.computeRawVarint32Size(rollup.getPercentiles().size());
-                for (Map.Entry<String, BluefloodTimerRollup.Percentile> entry : percentiles.entrySet()) {
-                    sz += CodedOutputStream.computeStringSizeNoTag(entry.getKey());
-                    Number[] pctComponents = new Number[] {
-                            entry.getValue().getMean(),
-                    };
-                    for (Number num : pctComponents) {
-                        sz += 1; // type.
-                        if (num instanceof Long || num instanceof Integer) {
-                            sz += CodedOutputStream.computeRawVarint64Size(num.longValue());
-                        } else if (num instanceof Double || num instanceof Float) {
-                            sz += CodedOutputStream.computeDoubleSizeNoTag(num.doubleValue());
-                        }
-                    }
-                }
-                return sz;
-                
-            case Type.B_GAUGE:
-                // just like rollup up until a point.
-                sz += sizeOf(o, Type.B_ROLLUP);
-                
-                // here's where it gets different.
-                BluefloodGaugeRollup gauge = (BluefloodGaugeRollup)o;
-                sz += CodedOutputStream.computeRawVarint64Size(gauge.getTimestamp());
-                sz += 1; // type of latest value.
-                if (gauge.getLatestNumericValue() instanceof Long || gauge.getLatestNumericValue() instanceof Integer)
-                    sz += CodedOutputStream.computeRawVarint64Size(gauge.getLatestNumericValue().longValue());
-                else if (gauge.getLatestNumericValue() instanceof Double || gauge.getLatestNumericValue() instanceof Float)
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(gauge.getLatestNumericValue().doubleValue());
-                return sz;
-            case Type.B_ENUM:
-                sz += 1; // version
-                BluefloodEnumRollup en = (BluefloodEnumRollup)o;
-                Map<Long, Long> enValues = en.getHashedEnumValuesWithCounts();
-                sz += CodedOutputStream.computeRawVarint32Size(en.getCount());
-                for (Long enName  : enValues.keySet()) {
-                    sz+=CodedOutputStream.computeRawVarint64Size(enName);
-                    Long enValue = enValues.get(enName);
-                    sz+= CodedOutputStream.computeRawVarint64Size(enValue);
-                }
-                return sz;
-            case Type.B_COUNTER:
-                BluefloodCounterRollup counter = (BluefloodCounterRollup)o;
-                sz += 1; // version + rollup type.
-                sz += 1; // numeric type.
-                if (counter.getCount() instanceof Long || counter.getCount() instanceof Integer)
-                    sz += CodedOutputStream.computeRawVarint64Size(counter.getCount().longValue());
-                else if (counter.getCount() instanceof Double || counter.getCount() instanceof Float)
-                    sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getCount().doubleValue());
-                sz += CodedOutputStream.computeDoubleSizeNoTag(counter.getRate());
-                sz += CodedOutputStream.computeRawVarint32Size(counter.getSampleCount());
-                return sz;
-            default:
-                throw new IOException("Unexpected type: " + type);
-        }
-        return sz;
     }
     
     public static class RawSerializer extends AbstractSerializer<Object> {
