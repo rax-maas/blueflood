@@ -115,7 +115,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -136,7 +135,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -157,7 +155,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -178,7 +175,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -199,7 +195,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
 
@@ -222,7 +217,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
         final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
         doAnswer(new Answer() {
             @Override
@@ -259,7 +253,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
         final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause)
@@ -296,7 +289,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -317,7 +309,6 @@ public class LocatorFetchRunnableTest {
 
         // given
         List<Locator> locators = getTypicalLocators();
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
 
         RollupExecutionContext executionContext = mock(RollupExecutionContext.class);
         RollupBatchWriter rollupBatchWriter = mock(RollupBatchWriter.class);
