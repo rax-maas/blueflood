@@ -45,12 +45,23 @@ public abstract class AbstractSerDes {
     }
 
     // these two sizeOf*() methods are created mainly
-    // for code readability
-    protected int sizeOfSize() {
+    // for code readability in the subclasses
+
+    /**
+     * @return the number of byte(s) used in the serialized byte buffer
+     * to indicate the size of the byte buffer. The size of the byte
+     * buffer is the first byte in the buffer.
+     */
+    protected final int sizeOfSize() {
         return 1;
     }
 
-    protected int sizeOfType() {
+    /**
+     * @return the number of byte(s) used in the serialized byte buffer
+     * to indicate the type of the object being serialized. The type
+     * of the object is the second byte in the buffer.
+     */
+    protected final int sizeOfType() {
         return 1;
     }
 
