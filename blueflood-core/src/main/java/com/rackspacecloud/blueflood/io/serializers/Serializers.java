@@ -34,7 +34,7 @@ public class Serializers {
     public static AbstractSerializer<BluefloodTimerRollup> timerRollupInstance = new TimerRollupSerializer();
     public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    public static AbstractSerializer<BluefloodCounterRollup> counterRollupInstance = new CounterRollupSerializer();
+    public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
     public static AbstractSerializer<BluefloodEnumRollup> enumRollupInstance = new EnumRollupSerializer();
 
     static class Type {
@@ -64,7 +64,7 @@ public class Serializers {
         else if (type.equals(HistogramRollup.class))
             return (AbstractSerializer<T>) HistogramSerializer.get();
         else if (type.equals(BluefloodCounterRollup.class))
-            return (AbstractSerializer<T>) counterRollupInstance;
+            return (AbstractSerializer<T>) CounterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
         else if (type.equals(BluefloodEnumRollup.class))
@@ -93,6 +93,10 @@ public class Serializers {
 
         private static RawSerDes serDes = new RawSerDes();
 
+        // prevent people from instantiating this class
+        private RawSerializer() {
+        }
+
         @Override
         public ByteBuffer toByteBuffer(Object obj) {
             return serDes.serialize(obj);
@@ -108,6 +112,10 @@ public class Serializers {
     private static class SimpleNumberSerializer extends AbstractSerializer<SimpleNumber> {
 
         private static final RawSerializer rawSerde = new RawSerializer();
+
+        // prevent people from instantiating this class
+        private SimpleNumberSerializer() {
+        }
         
         @Override
         public ByteBuffer toByteBuffer(SimpleNumber obj) {
@@ -123,6 +131,10 @@ public class Serializers {
     private static class BasicRollupSerializer extends AbstractSerializer<BasicRollup> {
         private BasicRollupSerDes serDes = new BasicRollupSerDes();
 
+        // prevent people from instantiating this class
+        private BasicRollupSerializer() {
+        }
+
         @Override
         public ByteBuffer toByteBuffer(BasicRollup basicRollup) {
             return serDes.serialize(basicRollup);
@@ -137,6 +149,10 @@ public class Serializers {
     public static class TimerRollupSerializer extends AbstractSerializer<BluefloodTimerRollup> {
 
         private static TimerRollupSerDes serDes = new TimerRollupSerDes();
+
+        // prevent people from instantiating this class
+        private TimerRollupSerializer() {
+        }
 
         @Override
         public ByteBuffer toByteBuffer(BluefloodTimerRollup timerRollup) {
@@ -157,6 +173,10 @@ public class Serializers {
     public static class SetRollupSerializer extends AbstractSerializer<BluefloodSetRollup> {
 
         private static SetSerDes serDes = new SetSerDes();
+
+        // prevent people from instantiating this class
+        private SetRollupSerializer() {
+        }
         
         @Override
         public ByteBuffer toByteBuffer(BluefloodSetRollup setRollup) {
@@ -173,6 +193,10 @@ public class Serializers {
 
         private static GaugeSerDes serDes = new GaugeSerDes();
 
+        // prevent people from instantiating this class
+        private GaugeRollupSerializer() {
+        }
+
         @Override
         public ByteBuffer toByteBuffer(BluefloodGaugeRollup gaugeRollup) {
            return serDes.serialize(gaugeRollup);
@@ -187,6 +211,10 @@ public class Serializers {
     public static class EnumRollupSerializer extends AbstractSerializer<BluefloodEnumRollup> {
 
         private static EnumSerDes serDes = new EnumSerDes();
+
+        // prevent people from instantiating this class
+        private EnumRollupSerializer() {
+        }
 
         @Override
         public ByteBuffer toByteBuffer(BluefloodEnumRollup enumRollup) {
@@ -205,6 +233,10 @@ public class Serializers {
 
         private static CounterSerDes serDes = new CounterSerDes();
 
+        // prevent people from instantiating this class
+        private CounterRollupSerializer() {
+        }
+
         @Override
         public ByteBuffer toByteBuffer(BluefloodCounterRollup counterRollup) {
             return serDes.serialize(counterRollup);
@@ -214,5 +246,9 @@ public class Serializers {
         public BluefloodCounterRollup fromByteBuffer(ByteBuffer byteBuffer) {
             return serDes.deserialize(byteBuffer);
         }
+    }
+
+    // prevent people from instantiating this class
+    private Serializers() {
     }
 }
