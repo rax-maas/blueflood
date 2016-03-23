@@ -56,9 +56,9 @@ public class BluefloodGaugeRollupTest {
         
         if (System.getProperty("GENERATE_GAUGE_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/gauge_version_" + Constants.VERSION_1_ROLLUP + ".bin", false);
-            os.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(g0).array()));
+            os.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(g0).array()));
             os.write("\n".getBytes());
-            os.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(g1).array()));
+            os.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(g1).array()));
             os.write("\n".getBytes());
             os.close();
         }

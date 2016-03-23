@@ -28,14 +28,14 @@ import java.nio.ByteBuffer;
 public class Serializers {
     // NumericSerializer can be used with Rollup and full resolution metrics.
 
-    public static final AbstractSerializer<SimpleNumber> simpleNumberSerializer = new SimpleNumberSerializer();
-    private static AbstractSerializer<Object> fullInstance = new RawSerializer();
-    private static AbstractSerializer<BasicRollup> basicRollupInstance = new BasicRollupSerializer();
-    public static AbstractSerializer<BluefloodTimerRollup> timerRollupInstance = new TimerRollupSerializer();
-    public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
-    public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
-    public static AbstractSerializer<BluefloodEnumRollup> enumRollupInstance = new EnumRollupSerializer();
+    public static final SimpleNumberSerializer simpleNumberSerializer = new SimpleNumberSerializer();
+    private static RawSerializer fullInstance = new RawSerializer();
+    private static BasicRollupSerializer basicRollupInstance = new BasicRollupSerializer();
+    public static TimerRollupSerializer timerRollupInstance = new TimerRollupSerializer();
+    public static SetRollupSerializer setRollupInstance = new SetRollupSerializer();
+    public static GaugeRollupSerializer gaugeRollupInstance = new GaugeRollupSerializer();
+    public static CounterRollupSerializer counterRollupInstance = new CounterRollupSerializer();
+    public static EnumRollupSerializer enumRollupInstance = new EnumRollupSerializer();
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
@@ -64,7 +64,7 @@ public class Serializers {
         else if (type.equals(HistogramRollup.class))
             return (AbstractSerializer<T>) HistogramSerializer.get();
         else if (type.equals(BluefloodCounterRollup.class))
-            return (AbstractSerializer<T>) CounterRollupInstance;
+            return (AbstractSerializer<T>) counterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
         else if (type.equals(BluefloodEnumRollup.class))

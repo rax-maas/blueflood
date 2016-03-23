@@ -82,9 +82,9 @@ public class BluefloodSetRollupTest {
         
         if (System.getProperty("GENERATE_SET_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SET_ROLLUP + ".bin", false);
-            os.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(s0).array()));
+            os.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(s0).array()));
             os.write("\n".getBytes());
-            os.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(s1).array()));
+            os.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(s1).array()));
             os.write("\n".getBytes());
             os.close();
         }
