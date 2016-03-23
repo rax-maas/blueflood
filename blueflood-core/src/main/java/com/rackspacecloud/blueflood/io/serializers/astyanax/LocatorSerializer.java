@@ -25,11 +25,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 public class LocatorSerializer extends AbstractSerializer<Locator>{
-    private static final LocatorSerializer instance = new LocatorSerializer();
+    private static final LocatorSerializer INSTANCE = new LocatorSerializer();
     private static final Charset charset = Charsets.UTF_8;
 
     public static LocatorSerializer get() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override
