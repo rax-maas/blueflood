@@ -41,4 +41,8 @@ public class StringMetadataSerializer extends AbstractSerializer<String> {
     public String fromByteBuffer(ByteBuffer byteBuffer) {
         return deSer.deserialize(byteBuffer);
     }
+
+    // prevent people from instantiating this class
+    private StringMetadataSerializer() {
+    }
 }

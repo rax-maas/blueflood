@@ -41,4 +41,8 @@ public class SlotStateSerializer extends AbstractSerializer<SlotState> {
         String stringRep = StringSerializer.get().fromByteBuffer(byteBuffer);
         return serDes.deserialize(stringRep);
     }
+
+    // prevent people from instantiating this class
+    private SlotStateSerializer() {
+    }
 }

@@ -68,7 +68,7 @@ public class TimerSerializationTest {
         r0.setPercentile("bar", 0.0323d);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new Serializers.TimerRollupSerializer().toByteBuffer(r0).array()));
+        baos.write(Base64.encodeBase64(Serializers.timerRollupInstance.toByteBuffer(r0).array()));
         baos.write("\n".getBytes());
         baos.close();
 

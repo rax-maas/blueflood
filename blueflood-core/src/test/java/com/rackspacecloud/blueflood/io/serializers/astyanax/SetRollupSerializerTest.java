@@ -32,13 +32,13 @@ public class SetRollupSerializerTest {
         Assert.assertEquals(3, setsRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup1).array()));
+        baos.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(setRollup1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup2).array()));
+        baos.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(setRollup2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setRollup3).array()));
+        baos.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(setRollup3).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.SetRollupSerializer().toByteBuffer(setsRollup).array()));
+        baos.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(setsRollup).array()));
         baos.write("\n".getBytes());
         baos.close();
 

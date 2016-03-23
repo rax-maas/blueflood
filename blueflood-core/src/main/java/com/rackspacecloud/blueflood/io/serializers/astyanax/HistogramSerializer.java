@@ -39,4 +39,8 @@ public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
     public HistogramRollup fromByteBuffer(ByteBuffer byteBuffer) {
         return deSer.deserialize(byteBuffer);
     }
+
+    // prevent people from instantiating this class
+    private HistogramSerializer() {
+    }
 }

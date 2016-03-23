@@ -42,13 +42,13 @@ public class EnumRollupSerializationTest {
         Assert.assertTrue(map.get((long)"enumValue2".hashCode()) == 15L);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e0).array()));
+        baos.write(Base64.encodeBase64(Serializers.enumRollupInstance.toByteBuffer(e0).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e1).array()));
+        baos.write(Base64.encodeBase64(Serializers.enumRollupInstance.toByteBuffer(e1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(e2).array()));
+        baos.write(Base64.encodeBase64(Serializers.enumRollupInstance.toByteBuffer(e2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.EnumRollupSerializer().toByteBuffer(er).array()));
+        baos.write(Base64.encodeBase64(Serializers.enumRollupInstance.toByteBuffer(er).array()));
         baos.write("\n".getBytes());
         baos.close();
 

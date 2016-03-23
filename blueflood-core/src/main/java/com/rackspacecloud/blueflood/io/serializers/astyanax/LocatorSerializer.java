@@ -28,7 +28,6 @@ public class LocatorSerializer extends AbstractSerializer<Locator>{
     private static final LocatorSerializer instance = new LocatorSerializer();
     private static final Charset charset = Charsets.UTF_8;
 
-
     public static LocatorSerializer get() {
         return instance;
     }
@@ -44,5 +43,9 @@ public class LocatorSerializer extends AbstractSerializer<Locator>{
             return null;
         }
         return Locator.createLocatorFromDbKey(charset.decode(byteBuffer).toString());
+    }
+
+    // prevent people from instantiating this class
+    private LocatorSerializer() {
     }
 }

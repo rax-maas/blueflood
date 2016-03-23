@@ -33,9 +33,9 @@ public class CounterRollupSerializationTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        baos.write(Base64.encodeBase64(new Serializers.CounterRollupSerializer().toByteBuffer(c0).array()));
+        baos.write(Base64.encodeBase64(Serializers.counterRollupInstance.toByteBuffer(c0).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.CounterRollupSerializer().toByteBuffer(c1).array()));
+        baos.write(Base64.encodeBase64(Serializers.counterRollupInstance.toByteBuffer(c1).array()));
         baos.write("\n".getBytes());
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());

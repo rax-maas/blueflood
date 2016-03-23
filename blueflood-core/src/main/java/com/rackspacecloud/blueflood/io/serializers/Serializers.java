@@ -34,7 +34,7 @@ public class Serializers {
     public static AbstractSerializer<BluefloodTimerRollup> timerRollupInstance = new TimerRollupSerializer();
     public static AbstractSerializer<BluefloodSetRollup> setRollupInstance = new SetRollupSerializer();
     public static AbstractSerializer<BluefloodGaugeRollup> gaugeRollupInstance = new GaugeRollupSerializer();
-    public static AbstractSerializer<BluefloodCounterRollup> CounterRollupInstance = new CounterRollupSerializer();
+    public static AbstractSerializer<BluefloodCounterRollup> counterRollupInstance = new CounterRollupSerializer();
     public static AbstractSerializer<BluefloodEnumRollup> enumRollupInstance = new EnumRollupSerializer();
 
     static class Type {
@@ -64,7 +64,7 @@ public class Serializers {
         else if (type.equals(HistogramRollup.class))
             return (AbstractSerializer<T>) HistogramSerializer.get();
         else if (type.equals(BluefloodCounterRollup.class))
-            return (AbstractSerializer<T>) CounterRollupInstance;
+            return (AbstractSerializer<T>) counterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
         else if (type.equals(BluefloodEnumRollup.class))

@@ -44,13 +44,13 @@ public class GaugeRollupSerializerTest {
         Assert.assertEquals(3, gaugesRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(gauge1).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(gauge2).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(gauge3).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge3).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new Serializers.GaugeRollupSerializer().toByteBuffer(gaugesRollup).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gaugesRollup).array()));
         baos.write("\n".getBytes());
         baos.close();
 
