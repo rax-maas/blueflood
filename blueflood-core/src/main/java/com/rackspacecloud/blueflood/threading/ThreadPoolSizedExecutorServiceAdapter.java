@@ -27,76 +27,121 @@ public class ThreadPoolSizedExecutorServiceAdapter implements SizedExecutorServi
         this.executor = executor;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getActiveCount() {
         return executor.getActiveCount();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getPoolSize() {
         return executor.getPoolSize();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void shutdown() {
         executor.shutdown();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Runnable> shutdownNow() {
         return executor.shutdownNow();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isShutdown() {
         return executor.isShutdown();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isTerminated() {
         return executor.isTerminated();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         return executor.awaitTermination(timeout, unit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> Future<T> submit(Callable<T> task) {
         return executor.submit(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
         return executor.submit(task, result);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Future<?> submit(Runnable task) {
         return executor.submit(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         return executor.invokeAll(tasks);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
         return executor.invokeAll(tasks, timeout, unit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         return executor.invokeAny(tasks);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return executor.invokeAny(tasks, timeout, unit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void execute(Runnable command) {
         executor.execute(command);
