@@ -114,8 +114,9 @@ public class StubbedLocatorFetchRunnable extends LocatorFetchRunnable {
     public void setThrowsInterruptedException(boolean value) {
         throwsInterruptedException = value;
     }
+
     @Override
-    public void waitForRollups() throws InterruptedException {
+    protected void waitForRollups() throws InterruptedException {
         recordInteraction(MethodToken.waitForRollups);
 
         if (throwsInterruptedException) {

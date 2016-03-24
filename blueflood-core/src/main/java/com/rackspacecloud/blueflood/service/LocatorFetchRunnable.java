@@ -134,7 +134,7 @@ class LocatorFetchRunnable implements Runnable {
         finishExecution(waitStart, executionContext);
     }
 
-    public void waitForRollups() throws InterruptedException {
+    protected void waitForRollups() throws InterruptedException {
         Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
     }
 
