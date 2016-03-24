@@ -129,7 +129,7 @@ class LocatorFetchRunnable implements Runnable {
                 rollupBatchWriter.drainBatch(); // gets any remaining rollups enqueued for put. should be no-op after being called once
             }
             try {
-                Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
+                waitForRollups();
             } catch (InterruptedException ex) {
                 if (log.isTraceEnabled())
                     log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
@@ -142,6 +142,10 @@ class LocatorFetchRunnable implements Runnable {
             log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
 
         finishExecution(waitStart, executionContext);
+    }
+
+    public void waitForRollups() throws InterruptedException {
+        Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
     }
 
     public void finishExecution(long waitStart, RollupExecutionContext executionContext) {
