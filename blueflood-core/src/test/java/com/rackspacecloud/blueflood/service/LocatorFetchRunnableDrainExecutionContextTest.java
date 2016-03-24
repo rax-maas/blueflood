@@ -112,4 +112,64 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
         assertEquals(1, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
     }
+
+    @Test
+    public void drainExecutionContextWaitsForRollups() {
+
+        // given
+        when(executionContext.doneReading())
+                .thenReturn(false)
+                .thenReturn(false)
+                .thenReturn(false)
+                .thenReturn(true);
+        when(executionContext.doneWriting()).thenReturn(true);
+
+        // when
+        lfr.drainExecutionContext(0, 0, executionContext, rollupBatchWriter);
+
+        // then
+        verify(executionContext, times(4)).doneReading();
+        verify(executionContext, times(1)).doneWriting();
+        verifyNoMoreInteractions(executionContext);
+        verifyZeroInteractions(rollupBatchWriter);
+        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
+        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(rollupReadExecutor);
+        verifyZeroInteractions(rollupWriteExecutor);
+        verifyZeroInteractions(enumValidatorExecutor);
+        verifyZeroInteractions(astyanaxReader);
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).finishExecution(...)
+        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+    }
+
+    @Test
+    public void drainExecutionContextDoneReadingInFinallyBlock() {
+
+        // given
+        when(executionContext.doneReading())
+                .thenReturn(false)
+                .thenReturn(false)
+                .thenReturn(true)
+                .thenReturn(true);
+        when(executionContext.doneWriting()).thenReturn(true);
+
+        // when
+        lfr.drainExecutionContext(0, 0, executionContext, rollupBatchWriter);
+
+        // then
+        verify(executionContext, times(4)).doneReading();
+        verify(executionContext, times(1)).doneWriting();
+        verifyNoMoreInteractions(executionContext);
+        verifyZeroInteractions(rollupBatchWriter);
+        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
+        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(rollupReadExecutor);
+        verifyZeroInteractions(rollupWriteExecutor);
+        verifyZeroInteractions(enumValidatorExecutor);
+        verifyZeroInteractions(astyanaxReader);
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).finishExecution(...)
+        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+    }
 }
