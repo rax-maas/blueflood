@@ -111,8 +111,16 @@ public class StubbedLocatorFetchRunnable extends LocatorFetchRunnable {
         return new HashSet<Locator>();
     }
 
+    boolean throwsInterruptedException = false;
+    public void setThrowsInterruptedException(boolean value) {
+        throwsInterruptedException = value;
+    }
     @Override
     public void waitForRollups() throws InterruptedException {
         recordInteraction(MethodToken.waitForRollups);
+
+        if (throwsInterruptedException) {
+            throw new InterruptedException("exception for testing purposes");
+        }
     }
 }
