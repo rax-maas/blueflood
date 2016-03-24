@@ -139,7 +139,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
         assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).finishExecution(...)
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
         assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
     }
 
@@ -169,7 +169,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
         assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).finishExecution(...)
+        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
         assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
     }
 }
