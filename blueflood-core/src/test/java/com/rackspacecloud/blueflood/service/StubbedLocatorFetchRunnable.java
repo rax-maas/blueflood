@@ -2,19 +2,18 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.threading.SizedExecutorService;
 import com.rackspacecloud.blueflood.types.Locator;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class StubbedLocatorFetchRunnable extends LocatorFetchRunnable {
 
     public StubbedLocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
-                         SizedExecutorService rollupWriteExecutor,
+                         ThreadPoolExecutor rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor,
                          AstyanaxReader astyanaxReader) {
         super(scheduleCtx, destSlotKey, rollupReadExecutor, rollupWriteExecutor,

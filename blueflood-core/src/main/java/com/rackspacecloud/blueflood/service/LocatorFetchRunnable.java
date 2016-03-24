@@ -20,15 +20,12 @@ import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.threading.SizedExecutorService;
-import com.rackspacecloud.blueflood.threading.ThreadPoolSizedExecutorServiceAdapter;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +41,7 @@ class LocatorFetchRunnable implements Runnable {
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
     private final ExecutorService rollupReadExecutor;
-    private final SizedExecutorService rollupWriteExecutor;
+    private final ThreadPoolExecutor rollupWriteExecutor;
     private final ExecutorService enumValidatorExecutor;
     private final SlotKey parentSlotKey;
     private final ScheduleContext scheduleCtx;
@@ -60,20 +57,13 @@ class LocatorFetchRunnable implements Runnable {
                          ThreadPoolExecutor rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor) {
         this(scheduleCtx, destSlotKey, rollupReadExecutor,
-                new ThreadPoolSizedExecutorServiceAdapter(rollupWriteExecutor),
-                enumValidatorExecutor);
+                rollupWriteExecutor,
+                enumValidatorExecutor, AstyanaxReader.getInstance());
     }
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
-                         SizedExecutorService rollupWriteExecutor,
-                         ExecutorService enumValidatorExecutor) {
-        this(scheduleCtx, destSlotKey, rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor, AstyanaxReader.getInstance());
-    }
-    LocatorFetchRunnable(ScheduleContext scheduleCtx,
-                         SlotKey destSlotKey,
-                         ExecutorService rollupReadExecutor,
-                         SizedExecutorService rollupWriteExecutor,
+                         ThreadPoolExecutor rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor,
                          AstyanaxReader astyanaxReader) {
 

@@ -3,7 +3,6 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.threading.SizedExecutorService;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.After;
 import org.junit.Before;
@@ -13,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +24,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
     ScheduleContext scheduleCtx;
     SlotKey destSlotKey;
     ExecutorService rollupReadExecutor;
-    SizedExecutorService rollupWriteExecutor;
+    ThreadPoolExecutor rollupWriteExecutor;
     ExecutorService enumValidatorExecutor;
     AstyanaxReader astyanaxReader;
 
@@ -43,7 +43,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         this.scheduleCtx = mock(ScheduleContext.class);
         this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
         this.rollupReadExecutor = mock(ExecutorService.class);
-        this.rollupWriteExecutor = mock(SizedExecutorService.class);
+        this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
         this.astyanaxReader = mock(AstyanaxReader.class);
 
