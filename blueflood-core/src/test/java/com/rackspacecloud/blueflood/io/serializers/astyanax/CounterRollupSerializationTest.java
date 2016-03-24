@@ -13,8 +13,9 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.BluefloodCounterRollup;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
@@ -32,20 +33,20 @@ public class CounterRollupSerializationTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        baos.write(Base64.encodeBase64(new NumericSerializer.CounterRollupSerializer().toByteBuffer(c0).array()));
+        baos.write(Base64.encodeBase64(Serializers.counterRollupInstance.toByteBuffer(c0).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.CounterRollupSerializer().toByteBuffer(c1).array()));
+        baos.write(Base64.encodeBase64(Serializers.counterRollupInstance.toByteBuffer(c1).array()));
         baos.write("\n".getBytes());
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         BufferedReader reader = new BufferedReader(new InputStreamReader(bais));
 
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodCounterRollup cc0 = NumericSerializer.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
+        BluefloodCounterRollup cc0 = Serializers.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(c0, cc0);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodCounterRollup cc1 = NumericSerializer.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
+        BluefloodCounterRollup cc1 = Serializers.serializerFor(BluefloodCounterRollup.class).fromByteBuffer(bb);
 
         Assert.assertEquals(c1, cc1);
         Assert.assertFalse(cc0.equals(cc1));

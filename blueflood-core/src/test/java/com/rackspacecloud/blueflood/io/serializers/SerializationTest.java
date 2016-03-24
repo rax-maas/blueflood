@@ -17,6 +17,7 @@ package com.rackspacecloud.blueflood.io.serializers;
 
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.LocatorSerializer;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
@@ -84,16 +85,17 @@ public class SerializationTest {
             }
         }
     }
-    
+
     @Test
     public void testBadSerializationVersion() {
         byte[] buf = new byte[] {99, 99};  // hopefully we won't have 99 different serialization versions.
         for (Class type : SERIALIZABLE_TYPES) {
             try {
-                Object o = NumericSerializer.serializerFor(type).fromByteBuffer(ByteBuffer.wrap(buf));
+                Serializers.serializerFor(type).fromByteBuffer(ByteBuffer.wrap(buf));
                 Assert.fail(String.format("Should have errored out %s", type.getName()));
             } catch (RuntimeException ex) {
-                Assert.assertTrue(ex.getCause().getMessage().startsWith("Unexpected serialization version"));
+                Throwable cause = ex.getCause();
+                Assert.assertTrue("Serialization should fail for type: " + type, cause instanceof SerializationException);
             }
         }
     }
@@ -102,7 +104,7 @@ public class SerializationTest {
     public void testVersion2FullDeserializeBadType() throws Throwable {
         byte[] buf = new byte[] { 0, 2 };
         try {
-            NumericSerializer.serializerFor(Object.class).fromByteBuffer(ByteBuffer.wrap(buf));
+            Serializers.serializerFor(Object.class).fromByteBuffer(ByteBuffer.wrap(buf));
         } catch (RuntimeException e) {
             throw e.getCause();
         }
@@ -113,7 +115,7 @@ public class SerializationTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         for (Object o : TO_SERIALIZE_FULL) {
             // encode as base64 to make reading the output easier.
-            baos.write(Base64.encodeBase64(NumericSerializer.serializerFor(Object.class).toByteBuffer(o).array()));
+            baos.write(Base64.encodeBase64(Serializers.serializerFor(Object.class).toByteBuffer(o).array()));
             baos.write("\n".getBytes());
         }
         baos.close();
@@ -123,14 +125,14 @@ public class SerializationTest {
             ByteBuffer byteBuffer = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
             Assert.assertEquals(
                         String.format("Deserializing broken for TO_SERIALIZE_FULL[%d]=%s", i, TO_SERIALIZE_FULL[i].toString()),
-                        NumericSerializer.serializerFor(Object.class).fromByteBuffer(byteBuffer),
+                        Serializers.serializerFor(Object.class).fromByteBuffer(byteBuffer),
                         TO_SERIALIZE_FULL[i]);
         }
         
         // ensure that current round-tripping isn't broken.
         for (Object o : TO_SERIALIZE_FULL) {
-            ByteBuffer serialized = NumericSerializer.serializerFor(Object.class).toByteBuffer(o);
-            Assert.assertEquals(o, NumericSerializer.serializerFor(Object.class).fromByteBuffer(serialized));
+            ByteBuffer serialized = Serializers.serializerFor(Object.class).toByteBuffer(o);
+            Assert.assertEquals(o, Serializers.serializerFor(Object.class).fromByteBuffer(serialized));
         }
     }
 
@@ -140,7 +142,7 @@ public class SerializationTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
-            ByteBuffer bb = NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(basicRollup);
+            ByteBuffer bb = Serializers.serializerFor(BasicRollup.class).toByteBuffer(basicRollup);
             baos.write(Base64.encodeBase64(bb.array()));
             baos.write("\n".getBytes());
         }
@@ -149,7 +151,7 @@ public class SerializationTest {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
         for (int i = 0; i < TO_SERIALIZE_BASIC_ROLLUP.length; i++) {
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            BasicRollup basicRollup = NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb);
+            BasicRollup basicRollup = Serializers.serializerFor(BasicRollup.class).fromByteBuffer(bb);
             Assert.assertTrue(String.format("Deserialization for rollup TO_SERIALIZE_BASIC_ROLLUP[%d]=%s",
                                             i, TO_SERIALIZE_BASIC_ROLLUP[i]),
                                 TO_SERIALIZE_BASIC_ROLLUP[i].equals(basicRollup));
@@ -157,8 +159,8 @@ public class SerializationTest {
         
         // current round tripping.
         for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
-            ByteBuffer bb = NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(basicRollup);
-            Assert.assertTrue(basicRollup.equals(NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb)));
+            ByteBuffer bb = Serializers.serializerFor(BasicRollup.class).toByteBuffer(basicRollup);
+            Assert.assertTrue(basicRollup.equals(Serializers.serializerFor(BasicRollup.class).fromByteBuffer(bb)));
         }
     }
 
@@ -190,7 +192,7 @@ public class SerializationTest {
         for (Class type : SERIALIZABLE_TYPES) {
             for (int i = 0; i < inputs.length; i++) {
                 try {
-                    Object dst = NumericSerializer.serializerFor(type).fromByteBuffer(NumericSerializer.serializerFor(type).toByteBuffer(inputs[i]));
+                    Object dst = Serializers.serializerFor(type).fromByteBuffer(Serializers.serializerFor(type).toByteBuffer(inputs[i]));
                     Assert.assertEquals(String.format("busted at %s %d", type.getName(), i), expected[i], dst);
                 } catch (ClassCastException ex) {
                     // these are expected because of the various types.
@@ -219,7 +221,7 @@ public class SerializationTest {
         byte[] buf;
         int expectedBufferSize = 0;
         for (int i = 0; i < 10000000; i++) {
-            buf = NumericSerializer.serializerFor(Long.class).toByteBuffer(Long.MAX_VALUE).array();
+            buf = Serializers.serializerFor(Long.class).toByteBuffer(Long.MAX_VALUE).array();
             Assert.assertFalse(buf.length == 0);
             if (expectedBufferSize == 0)
                 expectedBufferSize = buf.length;
@@ -232,8 +234,8 @@ public class SerializationTest {
     public void testCannotRoundtripBytesWillNullType() throws Throwable {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
-            ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
-            byte[] actual = (byte[])NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
+            ByteBuffer bb = Serializers.serializerFor((Class) null).toByteBuffer(expected);
+            byte[] actual = (byte[]) Serializers.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertArrayEquals(expected, actual);
         } catch (RuntimeException ex) {
             throw ex.getCause();
@@ -244,7 +246,7 @@ public class SerializationTest {
     public void testCannotRoundtripBytes() throws Throwable {
         try {
             byte[] expected = new byte[] {1,2,3,4,5};
-            AbstractSerializer ser = NumericSerializer.serializerFor(SimpleNumber.class);
+            AbstractSerializer ser = Serializers.serializerFor(SimpleNumber.class);
             byte[] actual = (byte[])ser.fromByteBuffer(ser.toByteBuffer(expected));
             Assert.assertArrayEquals(expected, actual);
         } catch (RuntimeException ex) {
@@ -262,7 +264,7 @@ public class SerializationTest {
         Assert.assertEquals(7, metricHelperTypes.size());
 
         Set<Character> serializerTypes = new HashSet<Character>();
-        for (Field f : NumericSerializer.Type.class.getDeclaredFields())
+        for (Field f : Serializers.Type.class.getDeclaredFields())
             if (f.getType().equals(byte.class))
                 serializerTypes.add((char)((Byte)f.get(MetricHelper.Type.class)).byteValue());
         Assert.assertEquals(8, serializerTypes.size());
@@ -273,41 +275,5 @@ public class SerializationTest {
         // so that I know Sets.intersection is not making a fool of me.
         serializerTypes.add(metricHelperTypes.iterator().next());
         Assert.assertEquals(1, Sets.intersection(metricHelperTypes, serializerTypes).size());
-    }
-  
-    @Test
-    public void testRollupSerializationLargeCounts() throws IOException {
-        Points<BasicRollup> rollupGroup = new Points<BasicRollup>();
-        BasicRollup startingRollup = new BasicRollup();
-        startingRollup.setCount(500);
-        rollupGroup.add(new Points.Point<BasicRollup>(123456789L, startingRollup));
-        
-        for (int rollupCount = 0; rollupCount < 500; rollupCount++) {
-            Points<SimpleNumber> input = new Points<SimpleNumber>();
-            for (int fullResCount = 0; fullResCount < 500; fullResCount++) {
-                input.add(new Points.Point<SimpleNumber>(123456789L + fullResCount, new SimpleNumber(fullResCount + fullResCount * 3)));
-            }
-            BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
-            Points<BasicRollup> rollups = new Points<BasicRollup>();
-            rollups.add(new Points.Point<BasicRollup>(123456789L , basicRollup));
-            BasicRollup groupRollup = BasicRollup.buildRollupFromRollups(rollups);
-            rollupGroup.add(new Points.Point<BasicRollup>(123456789L, groupRollup));
-        }
-        
-        BasicRollup r = BasicRollup.buildRollupFromRollups(rollupGroup);
-
-        // serialization was broken.
-        ByteBuffer bb = NumericSerializer.serializerFor(BasicRollup.class).toByteBuffer(r);
-        Assert.assertEquals(r, NumericSerializer.serializerFor(BasicRollup.class).fromByteBuffer(bb));
-    }
-
-    @Test
-    public void testLocatorDeserializer() throws UnsupportedEncodingException {
-        String locatorString = "ac76PeGPSR.entZ4MYd1W.chJ0fvB5Ao.mzord.truncated";
-        ByteBuffer bb = ByteBuffer.wrap(locatorString.getBytes("UTF-8"));
-        Locator locatorFromString = Locator.createLocatorFromDbKey(locatorString);
-        Locator locatorDeserialized = LocatorSerializer.get().fromByteBuffer(bb);
-        Assert.assertEquals("Locator did not match after deserialization",
-                locatorFromString.toString(), locatorDeserialized.toString());
     }
 }

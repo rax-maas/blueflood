@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -117,7 +117,7 @@ public class HttpAggregatedMultiIngestionTest {
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {
         for (PreaggregatedMetric metric : metrics) {
-            AbstractSerializer serializer = NumericSerializer.serializerFor(metric.getMetricValue().getClass());
+            AbstractSerializer serializer = Serializers.serializerFor(metric.getMetricValue().getClass());
             serializer.toByteBuffer(metric.getMetricValue());
         }
     }

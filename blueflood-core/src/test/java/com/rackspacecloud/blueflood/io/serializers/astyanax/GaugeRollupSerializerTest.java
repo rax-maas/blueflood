@@ -13,8 +13,9 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.BluefloodGaugeRollup;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import com.rackspacecloud.blueflood.utils.Rollups;
@@ -43,32 +44,32 @@ public class GaugeRollupSerializerTest {
         Assert.assertEquals(3, gaugesRollup.getCount());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new NumericSerializer.GaugeRollupSerializer().toByteBuffer(gauge1).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge1).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.GaugeRollupSerializer().toByteBuffer(gauge2).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge2).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.GaugeRollupSerializer().toByteBuffer(gauge3).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gauge3).array()));
         baos.write("\n".getBytes());
-        baos.write(Base64.encodeBase64(new NumericSerializer.GaugeRollupSerializer().toByteBuffer(gaugesRollup).array()));
+        baos.write(Base64.encodeBase64(Serializers.gaugeRollupInstance.toByteBuffer(gaugesRollup).array()));
         baos.write("\n".getBytes());
         baos.close();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
 
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodGaugeRollup deserializedGauge1 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
+        BluefloodGaugeRollup deserializedGauge1 = Serializers.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(gauge1, deserializedGauge1);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodGaugeRollup deserializedGauge2 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
+        BluefloodGaugeRollup deserializedGauge2 = Serializers.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(gauge2, deserializedGauge2);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodGaugeRollup deserializedGauge3 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
+        BluefloodGaugeRollup deserializedGauge3 = Serializers.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(gauge3, deserializedGauge3);
 
         bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodGaugeRollup deserializedGauge4 = NumericSerializer.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
+        BluefloodGaugeRollup deserializedGauge4 = Serializers.serializerFor(BluefloodGaugeRollup.class).fromByteBuffer(bb);
         Assert.assertEquals(gaugesRollup, deserializedGauge4);
 
         Assert.assertFalse(deserializedGauge1.equals(deserializedGauge2));

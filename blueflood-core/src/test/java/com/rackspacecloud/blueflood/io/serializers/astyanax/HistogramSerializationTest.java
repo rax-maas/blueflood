@@ -13,10 +13,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
+import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -67,7 +68,8 @@ public class HistogramSerializationTest {
             HistogramSerializer.get().fromByteBuffer(ByteBuffer.wrap(buf));
             Assert.fail(String.format("Should have errored out. Such a version doesn't exist for histogram."));
         } catch (RuntimeException ex) {
-            Assert.assertTrue(ex.getCause().getMessage().startsWith("Unexpected serialization version"));
+            Throwable cause = ex.getCause();
+            Assert.assertTrue("Histogram serialization should fail", cause instanceof SerializationException);
         }
     }
 

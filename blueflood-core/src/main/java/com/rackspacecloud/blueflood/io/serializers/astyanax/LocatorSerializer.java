@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
 import com.rackspacecloud.blueflood.types.Locator;
 import com.google.common.base.Charsets;
@@ -25,12 +25,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 public class LocatorSerializer extends AbstractSerializer<Locator>{
-    private static final LocatorSerializer instance = new LocatorSerializer();
+    private static final LocatorSerializer INSTANCE = new LocatorSerializer();
     private static final Charset charset = Charsets.UTF_8;
 
-
     public static LocatorSerializer get() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override
@@ -44,5 +43,9 @@ public class LocatorSerializer extends AbstractSerializer<Locator>{
             return null;
         }
         return Locator.createLocatorFromDbKey(charset.decode(byteBuffer).toString());
+    }
+
+    // prevent people from instantiating this class
+    private LocatorSerializer() {
     }
 }

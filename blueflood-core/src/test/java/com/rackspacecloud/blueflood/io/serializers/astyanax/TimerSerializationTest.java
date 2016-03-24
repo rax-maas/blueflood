@@ -14,8 +14,9 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.BluefloodTimerRollup;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -42,13 +43,13 @@ public class TimerSerializationTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         //The V1 serialization is artificially constructed for the purposes of this test and should no longer be used.
-        baos.write(Base64.encodeBase64(new NumericSerializer.TimerRollupSerializer().toByteBufferWithV1Serialization(r0).array()));
+        baos.write(Base64.encodeBase64(Serializers.timerRollupInstance.toByteBufferWithV1Serialization(r0).array()));
         baos.write("\n".getBytes());
         baos.close();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodTimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
+        BluefloodTimerRollup r1 = Serializers.timerRollupInstance.fromByteBuffer(bb);
         Assert.assertEquals(r0, r1);
     }
 
@@ -67,13 +68,13 @@ public class TimerSerializationTest {
         r0.setPercentile("bar", 0.0323d);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(Base64.encodeBase64(new NumericSerializer.TimerRollupSerializer().toByteBuffer(r0).array()));
+        baos.write(Base64.encodeBase64(Serializers.timerRollupInstance.toByteBuffer(r0).array()));
         baos.write("\n".getBytes());
         baos.close();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
         ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-        BluefloodTimerRollup r1 = new NumericSerializer.TimerRollupSerializer().fromByteBuffer(bb);
+        BluefloodTimerRollup r1 = Serializers.timerRollupInstance.fromByteBuffer(bb);
         Assert.assertEquals(r0, r1);
     }
 }

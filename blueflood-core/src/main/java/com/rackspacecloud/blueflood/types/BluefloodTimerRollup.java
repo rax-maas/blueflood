@@ -110,10 +110,10 @@ public class BluefloodTimerRollup implements Rollup, IBasicRollup {
         return this;
     }
     
-    public AbstractRollupStat getAverage() { return average; }
-    public AbstractRollupStat getMaxValue() { return max; }
-    public AbstractRollupStat getMinValue() { return min; }
-    public AbstractRollupStat getVariance() { return variance; }
+    public Average getAverage() { return average; }
+    public MaxValue getMaxValue() { return max; }
+    public MinValue getMinValue() { return min; }
+    public Variance getVariance() { return variance; }
     
     public void setPercentile(String label, Number mean) {
         percentiles.put(label, new Percentile(mean));

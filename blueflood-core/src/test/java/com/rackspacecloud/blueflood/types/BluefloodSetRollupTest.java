@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import junit.framework.Assert;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
@@ -82,9 +82,9 @@ public class BluefloodSetRollupTest {
         
         if (System.getProperty("GENERATE_SET_SERIALIZATION") != null) {
             OutputStream os = new FileOutputStream("src/test/resources/serializations/set_version_" + Constants.VERSION_1_SET_ROLLUP + ".bin", false);
-            os.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(s0).array()));
+            os.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(s0).array()));
             os.write("\n".getBytes());
-            os.write(Base64.encodeBase64(new NumericSerializer.SetRollupSerializer().toByteBuffer(s1).array()));
+            os.write(Base64.encodeBase64(Serializers.setRollupInstance.toByteBuffer(s1).array()));
             os.write("\n".getBytes());
             os.close();
         }
@@ -98,11 +98,11 @@ public class BluefloodSetRollupTest {
             BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/serializations/set_version_" + version + ".bin"));
             
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            BluefloodSetRollup ss0 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+            BluefloodSetRollup ss0 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s0, ss0);
             
             bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
-            BluefloodSetRollup ss1 = NumericSerializer.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
+            BluefloodSetRollup ss1 = Serializers.serializerFor(BluefloodSetRollup.class).fromByteBuffer(bb);
             Assert.assertEquals(s1, ss1);
             
             Assert.assertFalse(ss0.equals(ss1));

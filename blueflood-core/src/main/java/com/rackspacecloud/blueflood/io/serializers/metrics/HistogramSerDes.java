@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.metrics;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
-import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.HistogramRollup;
@@ -30,15 +28,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
-    private static final HistogramSerializer INSTANCE = new HistogramSerializer();
+/**
+ * This class knows how to serialize/deserialize Histogram metrics.
+ */
+public class HistogramSerDes extends AbstractSerDes {
 
-    public static HistogramSerializer get() {
-        return INSTANCE;
-    }
-
-    @Override
-    public ByteBuffer toByteBuffer(HistogramRollup histogramRollup) {
+    public ByteBuffer serialize(HistogramRollup histogramRollup) {
         final Collection<Bin<SimpleTarget>> bins = filterZeroCountBins(histogramRollup.getBins());
         byte[] buf = new byte[computeSizeOfHistogramRollupOnDisk(bins)];
         try {
@@ -49,8 +44,7 @@ public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
         }
     }
 
-    @Override
-    public HistogramRollup fromByteBuffer(ByteBuffer byteBuffer) {
+    public HistogramRollup deserialize(ByteBuffer byteBuffer) {
         CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
 
         try {
@@ -59,7 +53,7 @@ public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
                 case Constants.VERSION_1_HISTOGRAM:
                     return deserializeV1Histogram(in);
                 default:
-                    throw new SerializationException("Unexpected serialization version");
+                    throw new SerializationException("Unexpected histogram serialization version: " + version);
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex) ;
@@ -91,7 +85,7 @@ public class HistogramSerializer extends AbstractSerializer<HistogramRollup> {
     }
 
     private int computeSizeOfHistogramRollupOnDisk(Collection<Bin<SimpleTarget>> bins) {
-        int size = 1; // for version
+        int size = sizeOfSize();
 
         for (Bin<SimpleTarget> bin : bins) {
             size += CodedOutputStream.computeDoubleSizeNoTag((bin.getMean()));

@@ -27,7 +27,7 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -120,7 +120,7 @@ public class AstyanaxIO {
         } else if (dataType.equals(DataType.BOOLEAN)) {
             return BooleanSerializer.get();
         } else {
-            return NumericSerializer.serializerFor(RollupType.classOf(rollupType, gran));
+            return Serializers.serializerFor(RollupType.classOf(rollupType, gran));
         }
     }
 }

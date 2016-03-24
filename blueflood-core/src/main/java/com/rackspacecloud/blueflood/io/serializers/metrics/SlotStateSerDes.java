@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -13,43 +13,32 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+package com.rackspacecloud.blueflood.io.serializers.metrics;
 
-package com.rackspacecloud.blueflood.io.serializers;
-
-import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SlotState;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 
-import java.nio.ByteBuffer;
+/**
+ * This class knows how to serialize/deserialize the SlotState objects.
+ */
+public class SlotStateSerDes {
 
-public class SlotStateSerializer extends AbstractSerializer<SlotState> {
-    private static final SlotStateSerializer INSTANCE = new SlotStateSerializer();
 
-    public static SlotStateSerializer get() {
-        return INSTANCE;
+    public static SlotState deserialize(String stateStr) {
+        Granularity g = granularityFromStateCol(stateStr);
+        Integer slot = slotFromStateCol(stateStr);
+        UpdateStamp.State state = stateFromCode(stateCodeFromStateCol(stateStr));
+        return new SlotState(g, slot, state);
     }
 
-    @Override
-    public ByteBuffer toByteBuffer(SlotState state) {
+    public String serialize(SlotState state) {
         Granularity gran = state.getGranularity();
         String stringRep = new StringBuilder().append(gran == null ? "null" : gran.name())
                 .append(",").append(state.getSlot())
                 .append(",").append(state == null ? "null" : state.getState().code())
                 .toString();
-
-        return StringSerializer.get().toByteBuffer(stringRep);
-    }
-
-    @Override
-    public SlotState fromByteBuffer(ByteBuffer byteBuffer) {
-        String stringRep = StringSerializer.get().fromByteBuffer(byteBuffer);
-        Granularity g = granularityFromStateCol(stringRep);
-        Integer slot = slotFromStateCol(stringRep);
-        UpdateStamp.State state = stateFromCode(stateCodeFromStateCol(stringRep));
-
-        return new SlotState(g, slot, state);
+        return stringRep;
     }
 
     protected static Granularity granularityFromStateCol(String s) {

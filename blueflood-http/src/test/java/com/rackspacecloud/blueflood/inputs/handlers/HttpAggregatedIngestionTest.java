@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.io.serializers.NumericSerializer;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
@@ -136,7 +136,7 @@ public class HttpAggregatedIngestionTest {
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {
         for (PreaggregatedMetric metric : metrics) {
-            AbstractSerializer serializer = NumericSerializer.serializerFor(metric.getMetricValue().getClass());
+            AbstractSerializer serializer = Serializers.serializerFor(metric.getMetricValue().getClass());
             serializer.toByteBuffer(metric.getMetricValue());
         }
     }

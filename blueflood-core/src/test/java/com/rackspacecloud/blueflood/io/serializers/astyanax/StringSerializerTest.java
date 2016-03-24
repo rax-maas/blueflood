@@ -13,11 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.rackspacecloud.blueflood.io.serializers;
+package com.rackspacecloud.blueflood.io.serializers.astyanax;
 
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.exceptions.UnexpectedStringSerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -33,7 +34,7 @@ public class StringSerializerTest {
     @Test(expected = SerializationException.class)
     public void testSerializerForStringShouldFail() throws Throwable {
         try {
-            NumericSerializer.serializerFor(String.class);
+            Serializers.serializerFor(String.class);
         } catch (RuntimeException re) {
             throw re.getCause();
         }
@@ -46,7 +47,7 @@ public class StringSerializerTest {
         ByteArrayOutputStream baos = serializeString(TEST_STRING);
         ByteBuffer byteBuffer = ByteBuffer.wrap(baos.toByteArray());
         try {
-            NumericSerializer.serializerFor(Object.class).fromByteBuffer(byteBuffer);
+            Serializers.serializerFor(Object.class).fromByteBuffer(byteBuffer);
         } catch (RuntimeException re) {
             throw re.getCause();
         }
@@ -58,7 +59,7 @@ public class StringSerializerTest {
         try {
             String serialized = "AHMWVGhpcyBpcyBhIHRlc3Qgc3RyaW5nLg==";
             ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(serialized.getBytes()));
-            NumericSerializer.serializerFor(SimpleNumber.class).fromByteBuffer(bb);
+            Serializers.serializerFor(SimpleNumber.class).fromByteBuffer(bb);
         } catch (RuntimeException ex) {
             throw ex.getCause();
         }
@@ -69,8 +70,8 @@ public class StringSerializerTest {
     public void testCannotRoundtripStringWithNullType() throws Throwable {
         try {
             String expected = "this is a string";
-            ByteBuffer bb = NumericSerializer.serializerFor((Class) null).toByteBuffer(expected);
-            String actual = (String)NumericSerializer.serializerFor((Class) null).fromByteBuffer(bb);
+            ByteBuffer bb = Serializers.serializerFor((Class) null).toByteBuffer(expected);
+            String actual = (String) Serializers.serializerFor((Class) null).fromByteBuffer(bb);
             Assert.assertEquals(expected, actual);
         } catch (RuntimeException ex) {
             throw ex.getCause();
