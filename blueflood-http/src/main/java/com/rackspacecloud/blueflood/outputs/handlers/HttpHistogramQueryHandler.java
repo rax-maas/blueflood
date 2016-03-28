@@ -86,7 +86,7 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        Tracker.track(request);
+        Tracker.getInstance().track(request);
 
         final String tenantId = request.getHeader("tenantId");
         final String metricName = request.getHeader("metricName");
@@ -136,7 +136,7 @@ public class HttpHistogramQueryHandler extends RollupHandler implements HttpRequ
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.trackResponse(request, response);
+        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
     }
 }

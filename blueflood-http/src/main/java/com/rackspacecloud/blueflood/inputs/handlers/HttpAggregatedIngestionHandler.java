@@ -65,7 +65,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        Tracker.track(request);
+        Tracker.getInstance().track(request);
 
         final Timer.Context timerContext = handlerTimer.time();
 

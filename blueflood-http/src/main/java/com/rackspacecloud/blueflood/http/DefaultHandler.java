@@ -56,7 +56,7 @@ public class DefaultHandler implements HttpRequestHandler {
                 response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
 
-            Tracker.trackResponse(request, response);
+            Tracker.getInstance().trackResponse(request, response);
             HttpResponder.respond(channel, request, response);
         } finally {
             sendResponseTimerContext.stop();
