@@ -97,8 +97,8 @@ class LocatorFetchRunnable implements Runnable {
         long waitStart = System.currentTimeMillis();
         int rollCount = 0;
 
-        final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
-        final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
+        final RollupExecutionContext executionContext = createRollupExecutionContext();
+        final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
         Set<Locator> locators = getLocators(executionContext);
 
@@ -110,6 +110,14 @@ class LocatorFetchRunnable implements Runnable {
         drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
 
         timerCtx.stop();
+    }
+
+    protected RollupExecutionContext createRollupExecutionContext() {
+        return new RollupExecutionContext(Thread.currentThread());
+    }
+
+    protected RollupBatchWriter createRollupBatchWriter(RollupExecutionContext executionContext) {
+        return new RollupBatchWriter(rollupWriteExecutor, executionContext);
     }
 
     public void drainExecutionContext(long waitStart, int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter) {
