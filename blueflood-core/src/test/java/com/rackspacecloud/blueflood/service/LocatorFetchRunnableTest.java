@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
 public class LocatorFetchRunnableTest {
@@ -114,7 +115,7 @@ public class LocatorFetchRunnableTest {
         verifyNoMoreInteractions(astyanaxReader);
         verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
         verifyNoMoreInteractions(executionContext);
-        Assert.assertNotNull(actual);
+        assertNotNull(actual);
         Assert.assertEquals(0, actual.size());
     }
 
@@ -212,9 +213,9 @@ public class LocatorFetchRunnableTest {
         verifyNoMoreInteractions(executionContext);
         verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
         Assert.assertEquals(2, executedRunnables.size());
-        Assert.assertNotNull(executedRunnables.get(0));
+        assertNotNull(executedRunnables.get(0));
         Assert.assertEquals(RollupRunnable.class, executedRunnables.get(0).getClass());
-        Assert.assertNotNull(executedRunnables.get(1));
+        assertNotNull(executedRunnables.get(1));
         Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(1).getClass());
     }
 
@@ -246,7 +247,7 @@ public class LocatorFetchRunnableTest {
         verifyNoMoreInteractions(executionContext);
         verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
         Assert.assertEquals(1, executedRunnables.size());
-        Assert.assertNotNull(executedRunnables.get(0));
+        assertNotNull(executedRunnables.get(0));
         Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(0).getClass());
     }
 
@@ -362,5 +363,26 @@ public class LocatorFetchRunnableTest {
         verify(scheduleCtx, times(1)).pushBackToScheduled(Matchers.<SlotKey>any(), eq(false));
         verify(scheduleCtx).getCurrentTimeMillis();
         verifyNoMoreInteractions(scheduleCtx);
+    }
+
+    @Test
+    public void createRollupExecutionContextReturnsValidObject() {
+        // when
+        RollupExecutionContext execCtx = lfr.createRollupExecutionContext();
+
+        // then
+        assertNotNull(execCtx);
+    }
+
+    @Test
+    public void createRollupBatchWriterReturnsValidObject() {
+        // given
+        RollupExecutionContext execCtx = lfr.createRollupExecutionContext();
+
+        // when
+        RollupBatchWriter batchWriter = lfr.createRollupBatchWriter(execCtx);
+
+        //then
+        assertNotNull(batchWriter);
     }
 }
