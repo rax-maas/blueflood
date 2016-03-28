@@ -7,6 +7,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,8 +15,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class LocatorFetchRunnableDrainExecutionContextTest {
@@ -28,7 +27,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
     ExecutorService enumValidatorExecutor;
     AstyanaxReader astyanaxReader;
 
-    StubbedLocatorFetchRunnable lfr;
+    LocatorFetchRunnable lfr;
 
     RollupExecutionContext executionContext;
     RollupBatchWriter rollupBatchWriter;
@@ -47,9 +46,13 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         this.enumValidatorExecutor = mock(ExecutorService.class);
         this.astyanaxReader = mock(AstyanaxReader.class);
 
-        this.lfr = new StubbedLocatorFetchRunnable(scheduleCtx, destSlotKey,
+        this.lfr = mock(LocatorFetchRunnable.class);
+        this.lfr.initialize(scheduleCtx, destSlotKey,
                 rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
                 astyanaxReader);
+        doCallRealMethod().when(lfr).drainExecutionContext(
+                anyLong(), anyInt(), Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
 
         executionContext = mock(RollupExecutionContext.class);
         rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -96,18 +99,27 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verify(executionContext, times(1)).doneWriting();
         verifyNoMoreInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
-        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
-        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertEquals(1, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+        verify(lfr).initialize(
+                Matchers.<ScheduleContext>any(),
+                Matchers.<SlotKey>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<ThreadPoolExecutor>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<AstyanaxReader>any());
+        verify(lfr).drainExecutionContext(anyLong(), anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
+        verify(lfr).finishExecution(anyLong(), Matchers.<RollupExecutionContext>any());
+        verifyNoMoreInteractions(lfr);
     }
 
     @Test
-    public void drainExecutionContextWaitsForRollups() {
+    public void drainExecutionContextWaitsForRollups() throws InterruptedException {
 
         // given
         when(executionContext.doneReading())
@@ -125,19 +137,28 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verify(executionContext, times(1)).doneWriting();
         verifyNoMoreInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
-        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
-        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
-        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+        verify(lfr).initialize(
+                Matchers.<ScheduleContext>any(),
+                Matchers.<SlotKey>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<ThreadPoolExecutor>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<AstyanaxReader>any());
+        verify(lfr).drainExecutionContext(anyLong(), anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
+        verify(lfr).finishExecution(anyLong(), Matchers.<RollupExecutionContext>any());
+        verify(lfr).waitForRollups();
+        verifyNoMoreInteractions(lfr);
     }
 
     @Test
-    public void drainExecutionContextDoneReadingInFinallyBlock() {
+    public void drainExecutionContextDoneReadingInFinallyBlock() throws InterruptedException {
 
         // given
         when(executionContext.doneReading())
@@ -155,22 +176,32 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verify(executionContext, times(1)).doneWriting();
         verifyNoMoreInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
-        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
-        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
-        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+        verify(lfr).initialize(
+                Matchers.<ScheduleContext>any(),
+                Matchers.<SlotKey>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<ThreadPoolExecutor>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<AstyanaxReader>any());
+        verify(lfr).drainExecutionContext(anyLong(), anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
+        verify(lfr).finishExecution(anyLong(), Matchers.<RollupExecutionContext>any());
+        verify(lfr).waitForRollups();
+        verifyNoMoreInteractions(lfr);
     }
 
     @Test
-    public void drainExecutionContextExceptionWhileWaitingHitsExceptionHandler() {
+    public void drainExecutionContextExceptionWhileWaitingHitsExceptionHandler() throws InterruptedException {
 
         // given
-        lfr.setThrowsInterruptedException(true);
+        Throwable cause = new InterruptedException("exception for testing purposes");
+        doThrow(cause).when(lfr).waitForRollups();
         when(executionContext.doneReading())
                 .thenReturn(false)
                 .thenReturn(false)
@@ -186,19 +217,28 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verify(executionContext, times(1)).doneWriting();
         verifyNoMoreInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
-        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
-        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
-        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+        verify(lfr).initialize(
+                Matchers.<ScheduleContext>any(),
+                Matchers.<SlotKey>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<ThreadPoolExecutor>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<AstyanaxReader>any());
+        verify(lfr).drainExecutionContext(anyLong(), anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
+        verify(lfr).finishExecution(anyLong(), Matchers.<RollupExecutionContext>any());
+        verify(lfr).waitForRollups();
+        verifyNoMoreInteractions(lfr);
     }
 
     @Test
-    public void drainExecutionContextWhenDoneReadingDrainsBatch() {
+    public void drainExecutionContextWhenDoneReadingDrainsBatch() throws InterruptedException {
 
         // given
         when(executionContext.doneReading()).thenReturn(true);
@@ -215,14 +255,23 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyNoMoreInteractions(executionContext);
         verify(rollupBatchWriter).drainBatch();
         verifyNoMoreInteractions(rollupBatchWriter);
-        verify(scheduleCtx, times(1)).getCurrentTimeMillis();
-        verifyNoMoreInteractions(scheduleCtx);
+        verifyZeroInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
         verifyZeroInteractions(astyanaxReader);
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.finishExecution)); // verify(lfr, times(1)).finishExecution(...)
-        assertTrue(lfr.wasMethodCalled(StubbedLocatorFetchRunnable.MethodToken.waitForRollups)); // verify(lfr, times(1)).waitForRollups(...)
-        assertEquals(2, lfr.getInteractions().size());  // verifyNoMoreInteractions(lfr)
+        verify(lfr).initialize(
+                Matchers.<ScheduleContext>any(),
+                Matchers.<SlotKey>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<ThreadPoolExecutor>any(),
+                Matchers.<ExecutorService>any(),
+                Matchers.<AstyanaxReader>any());
+        verify(lfr).drainExecutionContext(anyLong(), anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any());
+        verify(lfr).finishExecution(anyLong(), Matchers.<RollupExecutionContext>any());
+        verify(lfr).waitForRollups();
+        verifyNoMoreInteractions(lfr);
     }
 }
