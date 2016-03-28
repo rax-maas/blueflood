@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
@@ -40,16 +41,16 @@ class LocatorFetchRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
-    private final ExecutorService rollupReadExecutor;
-    private final ThreadPoolExecutor rollupWriteExecutor;
-    private final ExecutorService enumValidatorExecutor;
-    private final SlotKey parentSlotKey;
-    private final ScheduleContext scheduleCtx;
-    private final long serverTime;
+    private ExecutorService rollupReadExecutor;
+    private ThreadPoolExecutor rollupWriteExecutor;
+    private ExecutorService enumValidatorExecutor;
+    private SlotKey parentSlotKey;
+    private ScheduleContext scheduleCtx;
+    private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
-    private final AstyanaxReader astyanaxReader;
+    private AstyanaxReader astyanaxReader;
 
-    private final Range parentRange;
+    private Range parentRange;
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
@@ -66,6 +67,18 @@ class LocatorFetchRunnable implements Runnable {
                          ThreadPoolExecutor rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor,
                          AstyanaxReader astyanaxReader) {
+
+        initialize(scheduleCtx, destSlotKey, rollupReadExecutor,
+                rollupWriteExecutor, enumValidatorExecutor, astyanaxReader);
+    }
+
+    @VisibleForTesting
+    public void initialize(ScheduleContext scheduleCtx,
+                           SlotKey destSlotKey,
+                           ExecutorService rollupReadExecutor,
+                           ThreadPoolExecutor rollupWriteExecutor,
+                           ExecutorService enumValidatorExecutor,
+                           AstyanaxReader astyanaxReader) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
