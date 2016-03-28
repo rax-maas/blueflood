@@ -61,19 +61,7 @@
     </dependency>
 
     <dependency>
-      <artifactId>blueflood-udp</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <artifactId>blueflood-elasticsearch</artifactId>
-      <groupId>com.rackspacecloud</groupId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>blueflood-kafka</artifactId>
       <groupId>com.rackspacecloud</groupId>
       <version>${project.version}</version>
     </dependency>
