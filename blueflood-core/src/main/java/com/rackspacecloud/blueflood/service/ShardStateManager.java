@@ -38,7 +38,6 @@ public class ShardStateManager {
     final Set<Integer> shards; // Managed shards
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
-    private static final long millisInADay = 24 * 60 * 60 * 1000;
 
     private static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleEligibleSlots");
     // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
@@ -174,6 +173,7 @@ public class ShardStateManager {
         private final int shard;
         final Granularity granularity;
         final ConcurrentMap<Integer, UpdateStamp> slotToUpdateStampMap;
+        private static final long millisInADay = 24 * 60 * 60 * 1000;
 
         protected SlotStateManager(int shard, Granularity granularity) {
             this.shard = shard;
@@ -230,7 +230,7 @@ public class ShardStateManager {
                 // 1) new update coming in. We can be in 3 states 1) Active 2) Rolled 3) Running. Apply the update in all cases except when we are already active and
                 //    the triggering timestamp we have is greater or the stamp in memory is yet to be persisted i.e still dirty
 
-                // This "if" is equivalent to: 
+                // This "if" is equivalent to:
                 //  if (current is not active) || (current is older && clean)
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
                     // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
