@@ -58,7 +58,7 @@ public class ShardStateManager {
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);
         for (Integer shard : ALL_SHARDS) { // Why not just do this for managed shards?
-            shardToGranularityStates.put(shard, new ShardToGranularityMap(shard));
+            shardToGranularityStates.put(shard, new ShardToGranularityMap(this, shard));
         }
         this.serverTimeMillisecondTicker = ticker;
     }
@@ -160,11 +160,11 @@ public class ShardStateManager {
         final int shard;
         final Map<Granularity, SlotStateManager> granularityToSlots = new HashMap<Granularity, SlotStateManager>();
 
-        protected ShardToGranularityMap(int shard) {
+        protected ShardToGranularityMap(ShardStateManager parent, int shard) {
             this.shard = shard;
 
             for (Granularity granularity : Granularity.rollupGranularities()) {
-                granularityToSlots.put(granularity, new SlotStateManager(shard, granularity));
+                granularityToSlots.put(granularity, new SlotStateManager(parent, shard, granularity));
             }
         }
     }
@@ -174,8 +174,10 @@ public class ShardStateManager {
         final Granularity granularity;
         final ConcurrentMap<Integer, UpdateStamp> slotToUpdateStampMap;
         private static final long millisInADay = 24 * 60 * 60 * 1000;
+        private final ShardStateManager parent;
 
-        protected SlotStateManager(int shard, Granularity granularity) {
+        protected SlotStateManager(ShardStateManager parent, int shard, Granularity granularity) {
+            this.parent = parent;
             this.shard = shard;
             this.granularity = granularity;
             slotToUpdateStampMap = new ConcurrentHashMap<Integer, UpdateStamp>(granularity.numSlots());
