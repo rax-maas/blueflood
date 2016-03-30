@@ -30,13 +30,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class RollupEventEmitterTest {
-    String testEventName;
+
+    final String testEventName = "test";
+    final String testEventName2 = "test2";
+
     List<RollupEvent> store;
     Emitter<RollupEvent> emitter;
 
     @Before
     public void setUp() {
-        testEventName = "test";
         store = Collections.synchronizedList(new ArrayList<RollupEvent>());
         emitter = new Emitter<RollupEvent>();
     }
@@ -184,6 +186,94 @@ public class RollupEventEmitterTest {
 
         // then
         Assert.assertEquals(0, store.size());
+    }
+
+    @Test
+    public void emitOnlyTriggersForGivenEvent1() {
+
+        // given
+        Emitter.Listener<RollupEvent> listener = new EventListener();
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName2, listener);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+
+        // when
+        emitter.emit(testEventName, event1);
+
+        // then
+        Assert.assertEquals(1, store.size());
+        Assert.assertSame(event1, store.get(0));
+    }
+
+    @Test
+    public void emitOnlyTriggersForGivenEvent2() {
+
+        // given
+        Emitter.Listener<RollupEvent> listener = new EventListener();
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName2, listener);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+
+        // when
+        emitter.emit(testEventName2, event2);
+
+        // then
+        Assert.assertEquals(1, store.size());
+        Assert.assertSame(event2, store.get(0));
+    }
+
+    @Test
+    public void emitTriggersListenerInSameOrder1() {
+
+        // given
+        Emitter.Listener<RollupEvent> listener = new EventListener();
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName2, listener);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+
+        // when
+        emitter.emit(testEventName, event1);
+        emitter.emit(testEventName2, event2);
+
+        // then
+        Assert.assertEquals(2, store.size());
+        Assert.assertSame(event1, store.get(0));
+        Assert.assertSame(event2, store.get(1));
+    }
+
+    @Test
+    public void emitTriggersListenerInSameOrder2() {
+
+        // given
+        Emitter.Listener<RollupEvent> listener = new EventListener();
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName2, listener);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+
+        // when
+        emitter.emit(testEventName2, event2);
+        emitter.emit(testEventName, event1);
+
+        // then
+        Assert.assertEquals(2, store.size());
+        Assert.assertSame(event2, store.get(0));
+        Assert.assertSame(event1, store.get(1));
     }
 
     private class EventListener implements Emitter.Listener<RollupEvent> {
