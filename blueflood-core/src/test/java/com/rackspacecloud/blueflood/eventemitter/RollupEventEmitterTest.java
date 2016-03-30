@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.eventemitter;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import junit.framework.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,9 +30,16 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class RollupEventEmitterTest {
-    String testEventName = "test";
-    List<RollupEvent> store = Collections.synchronizedList(new ArrayList<RollupEvent>());
-    Emitter<RollupEvent> emitter = new Emitter<RollupEvent>();
+    String testEventName;
+    List<RollupEvent> store;
+    Emitter<RollupEvent> emitter;
+
+    @Before
+    public void setUp() {
+        testEventName = "test";
+        store = Collections.synchronizedList(new ArrayList<RollupEvent>());
+        emitter = new Emitter<RollupEvent>();
+    }
 
     @Test
     public void testEmitter() throws Exception {
