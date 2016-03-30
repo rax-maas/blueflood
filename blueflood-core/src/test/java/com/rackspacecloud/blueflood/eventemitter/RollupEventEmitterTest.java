@@ -25,6 +25,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 public class RollupEventEmitterTest {
     String testEventName = "test";
     List<RollupEvent> store = Collections.synchronizedList(new ArrayList<RollupEvent>());
@@ -88,6 +91,40 @@ public class RollupEventEmitterTest {
         store.clear();
         emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran", 0));
         Assert.assertEquals(store.size(), 0);
+    }
+
+    @Test
+    public void testOn() {
+
+        // given
+        final List<RollupEvent> events = new ArrayList<RollupEvent>();
+        Emitter.Listener<RollupEvent> listener = new Emitter.Listener<RollupEvent>() {
+            @Override
+            public void call(RollupEvent... args) {
+                Collections.addAll(events, args);
+            }
+        };
+
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+
+        emitter.on(testEventName, listener);
+        Assert.assertEquals(0, events.size());
+
+        // when
+        emitter.emit(testEventName, event1);
+
+        // then
+        Assert.assertEquals(1, events.size());
+        Assert.assertSame(event1, events.get(0));
+
+        // when
+        emitter.emit(testEventName, event2);
+
+        // then
+        Assert.assertEquals(2, events.size());
+        Assert.assertSame(event1, events.get(0));
+        Assert.assertSame(event2, events.get(1));
     }
 
     private class EventListener implements Emitter.Listener<RollupEvent> {
