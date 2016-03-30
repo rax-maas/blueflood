@@ -26,10 +26,8 @@
   <version>${BLUEFLOOD_VERSION}</version>
   <modules>
     <module>blueflood-core</module>
-    <module>blueflood-udp</module>
     <module>blueflood-elasticsearch</module>
     <module>blueflood-http</module>
-    <module>blueflood-kafka</module>
     <module>blueflood-cloudfiles</module>
     <module>blueflood-rollupTools</module>
   </modules>
