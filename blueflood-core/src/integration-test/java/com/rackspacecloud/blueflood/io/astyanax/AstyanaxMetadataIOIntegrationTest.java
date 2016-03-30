@@ -14,11 +14,14 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Assert;
 import org.junit.Test;

@@ -1,0 +1,147 @@
+package com.rackspacecloud.blueflood.io.datastax;
+
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
+import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.rackspacecloud.blueflood.io.IOConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+
+/**
+ * Created by shin4590 on 3/10/16.
+ */
+public class DatastaxIO {
+    private static final DatastaxIO INSTANCE = new DatastaxIO();
+    private static final Logger LOG = LoggerFactory.getLogger(DatastaxIO.class);
+    private static final IOConfig ioconfig = IOConfig.singleton();
+
+    private static  Cluster cluster;
+    private static Session session;
+
+//    private final static Meter hostMeter = utils.Metrics.meter(DatastaxIO.class, "Hosts Connected");
+//    private final static Meter openConnectionsMeter = utils.Metrics.meter(DatastaxIO.class, "Total Open Connections");
+//    private final static Meter inFlightQueriesMeter = utils.Metrics.meter(DatastaxIO.class, "Total InFlight Queries");
+//    private final static Meter trashedConnectionsMeter = utils.Metrics.meter(DatastaxIO.class, "Total Trashed Connections");
+//    private final static Meter maxLoadMeter = utils.Metrics.meter(DatastaxIO.class, "Maximum Load");
+
+    static {
+        connect();
+        monitorConnection();
+    }
+
+    public static DatastaxIO singleton() { return INSTANCE; }
+
+    private DatastaxIO() {
+    }
+
+    private static void connect() {
+        Set<InetSocketAddress> dbHosts = ioconfig.getUniqueBinaryTransportHostsAsInetSocketAddresses();
+
+        CodecRegistry codecRegistry = new CodecRegistry();
+
+        cluster = Cluster.builder()
+                .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc("datacenter1").build()))
+                .withPoolingOptions(getPoolingOptions(dbHosts.size()))
+                .withCodecRegistry(codecRegistry)
+                .withSocketOptions(getSocketOptions())
+                .addContactPointsWithPorts(dbHosts)
+                .build();
+
+        if ( LOG.isDebugEnabled() ) {
+            logDebugConnectionInfo();
+        }
+
+        try {
+            session = cluster.connect();
+        }
+        catch (NoHostAvailableException e){
+            // TODO: figure out how to bubble this up
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void logDebugConnectionInfo() {
+        if ( cluster == null ) {
+            throw new IllegalStateException("cluster is not initialized");
+        }
+        final Metadata metadata = cluster.getMetadata();
+        LOG.debug("Connected to cluster: " + metadata.getClusterName());
+        for (final Host host : metadata.getAllHosts()) {
+            LOG.debug(String.format("Datacenter: %s; Host: %s; Rack: %s\n",
+                      host.getDatacenter(), host.getAddress(), host.getRack()));
+        }
+    }
+
+    private static SocketOptions getSocketOptions() {
+        final SocketOptions socketOptions = new SocketOptions();
+        socketOptions.setConnectTimeoutMillis(ioconfig.getRequestTimeout())
+                     .setReadTimeoutMillis(ioconfig.getRequestTimeout());
+        return socketOptions;
+    }
+
+    private static PoolingOptions getPoolingOptions(int numHosts){
+
+        final PoolingOptions poolingOptions = new PoolingOptions();
+        poolingOptions
+                .setCoreConnectionsPerHost(HostDistance.LOCAL, 15)
+                .setMaxConnectionsPerHost(HostDistance.LOCAL, ioconfig.getMaxConnPerHost(numHosts))
+
+                .setCoreConnectionsPerHost(HostDistance.REMOTE, 2)
+                .setMaxConnectionsPerHost(HostDistance.REMOTE, 4)
+
+                // Time after which driver will send a dummy request to the host so that the connection
+                // is not dropped by intermediate network devices (routers, firewalls…).
+                // The heartbeat interval should be set higher than SocketOptions.readTimeoutMillis
+                .setHeartbeatIntervalSeconds(60);
+        return poolingOptions;
+    }
+
+    private static void monitorConnection() {
+        ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+        scheduled.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                Session.State state = getSession().getState();
+                Collection<Host> hosts = state.getConnectedHosts();
+                int totalHosts = hosts.size();
+                long totalOpenConnections = 0;
+                long totalInFlightQueries = 0;
+                long totalTrashedConnections = 0;
+                long totalMaxLoad =0;
+                for (Host host : hosts) {
+                    int openConnections = state.getOpenConnections(host);
+                    int inFlightQueries = state.getInFlightQueries(host);
+                    int trashedConnections = state.getTrashedConnections(host);
+                    int maxLoad = openConnections * 128;
+                    totalOpenConnections += openConnections;
+                    totalInFlightQueries += inFlightQueries;
+                    totalTrashedConnections += trashedConnections;
+                    totalMaxLoad += maxLoad;
+                }
+
+//                hostMeter.mark(totalHosts);
+//                openConnectionsMeter.mark(totalOpenConnections);
+//                inFlightQueriesMeter.mark(totalInFlightQueries);
+//                trashedConnectionsMeter.mark(totalTrashedConnections);
+//                maxLoadMeter.mark(totalMaxLoad);
+            }
+        }, 1, 1, TimeUnit.MINUTES);
+    }
+
+    public void close() { //Not to be used with time-series data.
+        session.close();
+        cluster.close();
+    }
+
+    public static Session getSession() {
+        return session;
+    }
+}

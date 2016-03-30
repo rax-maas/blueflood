@@ -22,6 +22,10 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.StringSerializer;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxRowCounterFunction;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -82,7 +86,7 @@ public class IntegrationTestBase {
     }
 
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
-    private static final Random rand = new Random(System.currentTimeMillis());
+    protected static final Random rand = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
     private static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
 

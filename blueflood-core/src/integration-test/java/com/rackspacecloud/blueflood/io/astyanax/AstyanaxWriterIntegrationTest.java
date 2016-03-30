@@ -14,8 +14,10 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Test;
 

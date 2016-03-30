@@ -60,6 +60,11 @@
         <artifactId>astyanax-core</artifactId>
         <version>1.56.34</version>
       </dependency>
+      <dependency>
+        <groupId>com.datastax.cassandra</groupId>
+        <artifactId>cassandra-driver-core</artifactId>
+        <version>3.0.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -170,6 +175,7 @@
             <configuration>
               <portNames>
                 <portName>cassandra.rpcPort</portName>
+                <portName>cassandra.nativeTransportPort</portName>
                 <portName>cassandra.jmxPort</portName>
                 <portName>cassandra.storagePort</portName>
                 <portName>cassandra.stopPort</portName>
@@ -226,6 +232,7 @@
           <!--There are issues when running tests inside vmware fusion on a filesystem mounted from the host machine-->
           <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}/</cassandraDir>
           <loadFailureIgnore>false</loadFailureIgnore>
+          <startNativeTransport>true</startNativeTransport>
         </configuration>
         <executions>
           <execution>

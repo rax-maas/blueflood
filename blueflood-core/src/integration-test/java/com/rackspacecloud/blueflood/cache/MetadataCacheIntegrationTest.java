@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.cache;
 
 import org.junit.runner.RunWith;
 
-import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;

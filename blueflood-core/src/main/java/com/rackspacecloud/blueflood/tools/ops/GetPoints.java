@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.tools.ops;
 
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;

@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;

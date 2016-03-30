@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.util.ArrayList;

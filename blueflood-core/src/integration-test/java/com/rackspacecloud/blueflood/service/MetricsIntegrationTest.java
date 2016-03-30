@@ -19,8 +19,10 @@ package com.rackspacecloud.blueflood.service;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.IOFactories;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
@@ -589,7 +591,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     public void testShardStateWriteRead() throws Exception {
         final Collection<Integer> shards = Lists.newArrayList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        ShardStateIO shardStateIO = IOFactories.singleton().getShardStateIO();
 
         // Simulate active or running state for all the slots for all granularities.
         for (int shard : shards) {
@@ -602,7 +604,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 }
                 allUpdates.put(granularity, updates);
             }
-            writer.persistShardState(shard, allUpdates);
+            shardStateIO.putShardState(shard, allUpdates);
         }
 
         // Now simulate rolled up state for all the slots for all granularities.
@@ -616,17 +618,16 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
                 }
                 allUpdates.put(granularity, updates);
             }
-            writer.persistShardState(shard, allUpdates);
+            shardStateIO.putShardState(shard, allUpdates);
         }
 
         // Now we would have the longest row for each shard because we filled all the slots.
         // Now test whether getShardState returns all the slots
-        AstyanaxReader reader = AstyanaxReader.getInstance();
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
         for (Integer shard : shards) {
-            Collection<SlotState> slotStates = reader.getShardState(shard);
+            Collection<SlotState> slotStates = shardStateIO.getShardState(shard);
             for (SlotState slotState : slotStates) {
                 shardStateManager.updateSlotOnRead(shard, slotState);
             }
@@ -642,22 +643,21 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     public void testUpdateStampCoaelescing() throws Exception {
         final int shard = 24;
         final int slot = 16;
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        ShardStateIO shardStateIO = IOFactories.singleton().getShardStateIO();
         Map<Granularity, Map<Integer, UpdateStamp>> updates = new HashMap<Granularity, Map<Integer, UpdateStamp>>();
         Map<Integer, UpdateStamp> slotUpdates = new HashMap<Integer, UpdateStamp>();
         updates.put(Granularity.MIN_5, slotUpdates);
         
         long time = 1234;
         slotUpdates.put(slot, new UpdateStamp(time++, UpdateStamp.State.Active, true));
-        writer.persistShardState(shard, updates);
+        shardStateIO.putShardState(shard, updates);
         
         slotUpdates.put(slot, new UpdateStamp(time++, UpdateStamp.State.Rolled, true));
-        writer.persistShardState(shard, updates);
-        
-        AstyanaxReader reader = AstyanaxReader.getInstance();
+        shardStateIO.putShardState(shard, updates);
+
         ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
 
-        Collection<SlotState> slotStates = reader.getShardState(shard);
+        Collection<SlotState> slotStates = shardStateIO.getShardState(shard);
         for (SlotState slotState : slotStates) {
             ctx.getShardStateManager().updateSlotOnRead(shard, slotState);
         }

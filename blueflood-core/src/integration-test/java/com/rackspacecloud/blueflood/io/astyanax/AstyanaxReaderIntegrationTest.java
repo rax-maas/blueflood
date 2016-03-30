@@ -14,12 +14,13 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;

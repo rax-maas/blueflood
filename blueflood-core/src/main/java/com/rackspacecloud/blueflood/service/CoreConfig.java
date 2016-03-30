@@ -22,8 +22,11 @@ package com.rackspacecloud.blueflood.service;
 public enum CoreConfig implements ConfigDefaults {
     CASSANDRA_HOSTS("127.0.0.1:19180"),
     DEFAULT_CASSANDRA_PORT("19180"),
+    CASSANDRA_BINXPORT_HOSTS("localhost:9042"),
+    CASSANDRA_BINXPORT_PORT("9042"),
     // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
     MAX_CASSANDRA_CONNECTIONS("75"),
+    CASSANDRA_DRIVER("astyanax"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
@@ -127,7 +130,7 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
+    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter"),
 
     METADATA_CACHE_PERSISTENCE_ENABLED("false"),
     METADATA_CACHE_PERSISTENCE_PATH("/dev/null"),

@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;

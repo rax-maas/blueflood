@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.io.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;

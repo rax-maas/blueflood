@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;

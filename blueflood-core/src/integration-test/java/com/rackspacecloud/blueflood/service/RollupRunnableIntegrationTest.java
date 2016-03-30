@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;

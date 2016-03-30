@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;

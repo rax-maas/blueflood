@@ -1,7 +1,10 @@
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.google.common.collect.Table;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.types.Locator;
 
 import java.io.IOException;

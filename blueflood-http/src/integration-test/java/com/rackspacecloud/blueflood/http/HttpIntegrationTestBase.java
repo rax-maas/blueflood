@@ -20,6 +20,7 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 import com.google.common.base.Function;
 import com.netflix.astyanax.model.Row;
 

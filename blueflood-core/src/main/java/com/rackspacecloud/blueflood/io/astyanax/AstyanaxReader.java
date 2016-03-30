@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
@@ -37,6 +37,8 @@ import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -81,9 +83,9 @@ public class AstyanaxReader extends AstyanaxIO {
      * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
      */
     public Map<String, String> getMetadataValues(Locator locator) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRIC_METADATA);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_METADATA_NAME);
         try {
-            final ColumnList<String> results = keyspace.prepareQuery(CassandraModel.CF_METRIC_METADATA)
+            final ColumnList<String> results = keyspace.prepareQuery(CassandraModel.CF_METRICS_METADATA)
                     .getKey(locator)
                     .execute().getResult();
             return new HashMap<String, String>(){{
@@ -92,7 +94,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             }};
         } catch (NotFoundException ex) {
-            Instrumentation.markNotFound(CassandraModel.CF_METRIC_METADATA);
+            Instrumentation.markNotFound(CassandraModel.CF_METRICS_METADATA_NAME);
             return null;
         } catch (ConnectionException e) {
             log.error("Error reading metadata value", e);
@@ -104,11 +106,11 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     public Table<Locator, String, String> getMetadataValues(Set<Locator> locators) {
-        ColumnFamily CF = CassandraModel.CF_METRIC_METADATA;
+        ColumnFamily CF = CassandraModel.CF_METRICS_METADATA;
         boolean isBatch = locators.size() > 1;
         Table<Locator, String, String> metaTable = HashBasedTable.create();
 
-        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF) : Instrumentation.getReadTimerContext(CF);
+        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF.getName()) : Instrumentation.getReadTimerContext(CF.getName());
         try {
             // We don't paginate this call. So we should make sure the number of reads is tolerable.
             // TODO: Think about paginating this call.
@@ -127,7 +129,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
-                Instrumentation.markNotFound(CF);
+                Instrumentation.markNotFound(CF.getName());
             } else {
                 if (isBatch) { Instrumentation.markBatchReadError(e); }
                 else { Instrumentation.markReadError(e); }
@@ -148,7 +150,7 @@ public class AstyanaxReader extends AstyanaxIO {
      * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
      */
     public String getLastStringValue(Locator locator) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING_NAME);
 
         try {
             ColumnList<Long> query = keyspace
@@ -161,7 +163,7 @@ public class AstyanaxReader extends AstyanaxIO {
             return query.isEmpty() ? null : query.getColumnByIndex(0).getStringValue();
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) {
-                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING);
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING_NAME);
             } else {
                 Instrumentation.markReadError(e);
             }
@@ -177,21 +179,21 @@ public class AstyanaxReader extends AstyanaxIO {
      * Returns the recently seen locators, i.e. those that should be rolled up, for a given shard.
      * 'Should' means:
      *  1) A locator is capable of rollup (it is not a string/boolean metric).
-     *  2) A locator has had new data in the past {@link com.rackspacecloud.blueflood.io.AstyanaxWriter.LOCATOR_TTL} seconds.
+     *  2) A locator has had new data in the past {@link AstyanaxWriter.LOCATOR_TTL} seconds.
      *
      * @param shard Number of the shard you want the recent locators for. 0-127 inclusive.
      * @return Collection of locators
      * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
      */
     public Collection<Locator> getLocatorsToRollup(long shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR.getName());
         try {
             RowQuery<Long, Locator> query = keyspace
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
             return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
-            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR);
+            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
             return Collections.emptySet();
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);
@@ -200,33 +202,6 @@ public class AstyanaxReader extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
-    }
-
-    /**
-     * Gets all ShardStates for a given shard.
-     *
-     * @param shard Shard to retrieve all SlotState objects for.
-     */
-    public Collection<SlotState> getShardState(int shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE);
-        final Collection<SlotState> slotStates = new LinkedList<SlotState>();
-        try {
-            ColumnList<SlotState> columns = keyspace.prepareQuery(CassandraModel.CF_METRICS_STATE)
-                    .getKey((long)shard)
-                    .execute()
-                    .getResult();
-
-            for (Column<SlotState> column : columns) {
-                slotStates.add(column.getName().withTimestamp(column.getLongValue()));
-            }
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error getting shard state for shard " + shard, e);
-            throw new RuntimeException(e);
-        } finally {
-            ctx.stop();
-        }
-        return slotStates;
     }
 
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
@@ -245,7 +220,7 @@ public class AstyanaxReader extends AstyanaxIO {
         final Map<Locator, ColumnList<Long>> columns = new HashMap<Locator, ColumnList<Long>>();
         final RangeBuilder rangeBuilder = new RangeBuilder().setStart(range.getStart()).setEnd(range.getStop());
 
-        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF) : Instrumentation.getReadTimerContext(CF);
+        Timer.Context ctx = isBatch ? Instrumentation.getBatchReadTimerContext(CF.getName()) : Instrumentation.getReadTimerContext(CF.getName());
         try {
             // We don't paginate this call. So we should make sure the number of reads is tolerable.
             // TODO: Think about paginating this call.
@@ -260,7 +235,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
-                Instrumentation.markNotFound(CF);
+                Instrumentation.markNotFound(CF.getName());
             } else {
                 if (isBatch) { Instrumentation.markBatchReadError(e); }
                 else { Instrumentation.markReadError(e); }
@@ -612,7 +587,7 @@ public class AstyanaxReader extends AstyanaxIO {
         };
 
         ColumnFamily CF = CassandraModel.CF_METRICS_EXCESS_ENUMS;
-        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF);
+        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF.getName());
         try {
             // Get all the Row Keys
             new AllRowsReader.Builder<Locator, Long>(keyspace, CassandraModel.CF_METRICS_EXCESS_ENUMS)
@@ -672,9 +647,9 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
-                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM);
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM_NAME);
             } else {
-                log.warn("Enum read query failed for column family " + CassandraModel.CF_METRICS_ENUM.getName(), e);
+                log.warn("Enum read query failed for column family " + CassandraModel.CF_METRICS_ENUM_NAME, e);
                 Instrumentation.markReadError(e);
             }
         }
@@ -700,9 +675,9 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         } catch (ConnectionException e) {
             if (e instanceof NotFoundException) { // TODO: Not really sure what happens when one of the keys is not found.
-                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM);
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_ENUM_NAME);
             } else {
-                log.warn("Enum String read query failed for column family " + CassandraModel.CF_METRICS_ENUM.getName(), e);
+                log.warn("Enum String read query failed for column family " + CassandraModel.CF_METRICS_ENUM_NAME, e);
                 Instrumentation.markReadError(e);
             }
         }

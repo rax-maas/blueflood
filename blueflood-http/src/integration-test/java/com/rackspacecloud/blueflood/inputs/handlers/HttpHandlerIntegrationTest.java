@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
