@@ -32,7 +32,6 @@ import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
-import com.rackspacecloud.blueflood.tracker.TrackerMBean;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
@@ -74,8 +73,6 @@ public class HttpMetricsIngestionServer {
 
     private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
 
-    public TrackerMBean tracker;
-
     public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
@@ -111,10 +108,10 @@ public class HttpMetricsIngestionServer {
         Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
         allOpenChannels.add(serverChannel);
 
-        log.info("Starting tracker service");
-        tracker = new Tracker();
+        //register the tracker MBean for JMX/jolokia
+        log.info("Registering tracker service");
+        Tracker.getInstance().register();
     }
-
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
         private RouteMatcher router;

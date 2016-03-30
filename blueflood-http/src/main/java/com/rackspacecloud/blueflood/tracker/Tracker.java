@@ -38,14 +38,40 @@ public class Tracker implements TrackerMBean {
 
     private static final Logger log = LoggerFactory.getLogger(Tracker.class);
     private static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
-    private static final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
+    private final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
 
-    static Set tenantIds = new HashSet();
-    static boolean isTrackingDelayedMetrics = false;
-    static Set<String> metricNames = new HashSet<String>();
+    // Tracker is a singleton
+    private static final Tracker instance = new Tracker();
+    private boolean isRegistered = false;
 
-    public Tracker() {
-        registerMBean();
+    private Set tenantIds = new HashSet();
+    private boolean isTrackingDelayedMetrics = false;
+    private Set<String> metricNames = new HashSet<String>();
+
+    // private constructor for singleton
+    private Tracker(){}
+
+    public static Tracker getInstance() {
+        return instance;
+    }
+
+    public synchronized void register() {
+        if (isRegistered) return;
+
+        try {
+            ObjectName objectName = new ObjectName(trackerName);
+
+            // register TrackerMBean only if not already registered
+            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            if (!mBeanServer.isRegistered(objectName)) {
+                ManagementFactory.getPlatformMBeanServer().registerMBean(instance, objectName);
+            }
+
+            isRegistered = true;
+
+        } catch (Exception exc) {
+            log.error("Unable to register mbean for " + instance.getClass().getSimpleName(), exc);
+        }
     }
 
     public void addTenant(String tenantId) {
@@ -88,11 +114,11 @@ public class Tracker implements TrackerMBean {
         log.info("[TRACKER] All metric names removed.");
     }
 
-    public static boolean isTracking(String tenantId) {
+    public boolean isTracking(String tenantId) {
         return tenantIds.contains(tenantId);
     }
 
-    public static boolean doesMessageContainMetricNames(String logmessage) {
+    public boolean doesMessageContainMetricNames(String logmessage) {
         boolean toLog = false;
 
         if (metricNames.size() == 0) {
@@ -113,21 +139,7 @@ public class Tracker implements TrackerMBean {
         return tenantIds;
     }
 
-    public void registerMBean() {
-        try {
-            ObjectName objectName = new ObjectName(trackerName);
-
-            // register TrackerMBean only if not already registered
-            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            if (!mBeanServer.isRegistered(objectName)) {
-                ManagementFactory.getPlatformMBeanServer().registerMBean(this, objectName);
-            }
-        } catch (Exception exc) {
-            log.error("Unable to register mbean for " + this.getClass().getSimpleName(), exc);
-        }
-    }
-
-    public static void track(HttpRequest request) {
+    public void track(HttpRequest request) {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the request if it is
         if (request == null) return;
 
@@ -162,7 +174,7 @@ public class Tracker implements TrackerMBean {
         }
     }
 
-    static String findTid( String uri ) {
+    String findTid( String uri ) {
 
         Matcher m = patternGetTid.matcher( uri );
 
@@ -172,14 +184,14 @@ public class Tracker implements TrackerMBean {
             return null;
     }
 
-    public static void trackDelayedMetricsTenant(String tenantid) {
+    public void trackDelayedMetricsTenant(String tenantid) {
         if (isTrackingDelayedMetrics) {
             String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s",tenantid);
             log.info(logMessage);
         }
     }
 
-    public static void trackResponse(HttpRequest request, HttpResponse response) {
+    public void trackResponse(HttpRequest request, HttpResponse response) {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the response if it is
         // HttpRequest is needed for original request uri and tenantId
         if (request == null) return;
@@ -209,7 +221,7 @@ public class Tracker implements TrackerMBean {
 
     }
 
-    static String getQueryParameters(HttpRequest httpRequest) {
+    String getQueryParameters(HttpRequest httpRequest) {
         String params = "";
         Map<String, List<String>> parameters = ((HTTPRequestWithDecodedQueryParams) httpRequest).getQueryParams();
 

@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -79,6 +80,10 @@ public class HttpMetricDataQueryServer {
                         Executors.newFixedThreadPool(workerThreads)));
         server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
         serverChannel =  (ServerChannel) server.bind(new InetSocketAddress(httpQueryHost, httpQueryPort));
+
+        //register the tracker MBean for JMX/jolokia
+        log.info("Registering tracker service");
+        Tracker.getInstance().register();
     }
 
     private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {

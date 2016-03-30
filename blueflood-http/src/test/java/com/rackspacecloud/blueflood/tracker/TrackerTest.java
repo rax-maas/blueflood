@@ -16,7 +16,7 @@ public class TrackerTest {
 
     @Before
     public void setUp() {
-        tracker = new Tracker();
+        tracker = Tracker.getInstance();
     }
 
     @Test
@@ -104,24 +104,24 @@ public class TrackerTest {
     @Test
     public void testFindTidFound() {
 
-        assertEquals( Tracker.findTid( "/v2.0/6000/views" ), "6000" );
+        assertEquals( tracker.findTid( "/v2.0/6000/views" ), "6000" );
     }
 
     @Test
          public void testTrackTenantNoVersion() {
 
-        assertEquals( Tracker.findTid( "/6000/views" ), null );
+        assertEquals( tracker.findTid( "/6000/views" ), null );
     }
 
     @Test
     public void testTrackTenantBadVersion() {
 
-        assertEquals( Tracker.findTid( "blah/6000/views" ), null );
+        assertEquals( tracker.findTid( "blah/6000/views" ), null );
     }
 
     @Test
     public void testTrackTenantTrailingSlash() {
 
-        assertEquals( Tracker.findTid( "/v2.0/6000/views/" ), "6000" );
+        assertEquals( tracker.findTid( "/v2.0/6000/views/" ), "6000" );
     }
 }

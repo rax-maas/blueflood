@@ -97,7 +97,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         try {
 
-            Tracker.track(request);
+            Tracker.getInstance().track(request);
 
             requestCount.inc();
             final String tenantId = request.getHeader("tenantId");
@@ -145,7 +145,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 forceTTLsIfConfigured(containerMetrics);
 
                 if (jsonMetricsContainer.areDelayedMetricsPresent()) {
-                    Tracker.trackDelayedMetricsTenant(tenantId);
+                    Tracker.getInstance().trackDelayedMetricsTenant(tenantId);
                 }
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
