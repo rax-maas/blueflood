@@ -35,16 +35,20 @@ public class RollupEventEmitterTest {
     final String testEventName2 = "test2";
 
     List<RollupEvent> store;
+    List<RollupEvent> store2;
     Emitter<RollupEvent> emitter;
     Emitter.Listener<RollupEvent> listener;
+    Emitter.Listener<RollupEvent> listener2;
     RollupEvent event1;
     RollupEvent event2;
 
     @Before
     public void setUp() {
         store = Collections.synchronizedList(new ArrayList<RollupEvent>());
+        store2 = Collections.synchronizedList(new ArrayList<RollupEvent>());
         emitter = new Emitter<RollupEvent>();
-        listener = new EventListener();
+        listener = new EventListener(store);
+        listener2 = new EventListener(store2);
         event1 = new RollupEvent(null, null, "event1", "gran", 0);
         event2 = new RollupEvent(null, null, "event2", "gran", 0);
     }
@@ -271,10 +275,36 @@ public class RollupEventEmitterTest {
         Assert.assertSame(event2, store.get(0));
     }
 
+    @Test
+    public void multipleAttachedListenersShouldAllBeTriggeredByOneEvent() {
+
+        // given
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName, listener2);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+        Assert.assertEquals(0, store2.size());
+
+        // when
+        emitter.emit(testEventName, event1);
+
+        // then
+        Assert.assertEquals(1, store.size());
+        Assert.assertSame(event1, store.get(0));
+
+        Assert.assertEquals(1, store2.size());
+        Assert.assertSame(event1, store2.get(0));
+    }
+
     private class EventListener implements Emitter.Listener<RollupEvent> {
+        public EventListener(List<RollupEvent> events) {
+            this.events = events;
+        }
+        final List<RollupEvent> events;
         @Override
         public void call(RollupEvent... rollupEventObjects) {
-            store.addAll(Arrays.asList(rollupEventObjects));
+            events.addAll(Arrays.asList(rollupEventObjects));
         }
     }
 }
