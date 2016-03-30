@@ -42,11 +42,18 @@ public class RollupEventEmitterTest {
     }
 
     @Test
-    public void testEmitter() throws Exception {
+    public void testSubscription() {
         EventListener elistener = new EventListener();
         //Test subscription
         emitter.on(testEventName, elistener);
         Assert.assertTrue(emitter.listeners(testEventName).contains(elistener));
+    }
+
+    @Test
+    public void testConcurrentEmission() throws InterruptedException, ExecutionException {
+        EventListener elistener = new EventListener();
+        //Test subscription
+        emitter.on(testEventName, elistener);
         //Test concurrent emission
         ThreadPoolExecutor executors = new ThreadPoolBuilder()
                 .withCorePoolSize(2)
@@ -77,9 +84,15 @@ public class RollupEventEmitterTest {
         startLatch.countDown();
         f1.get();
         f2.get();
-        Assert.assertEquals(store.size(),2);
+        Assert.assertEquals(store.size(), 2);
         Assert.assertTrue(store.contains(obj1));
         Assert.assertTrue(store.contains(obj2));
+    }
+
+    @Test
+    public void testUnsubscription() {
+        EventListener elistener = new EventListener();
+        emitter.on(testEventName, elistener);
         //Test unsubscription
         emitter.off(testEventName, elistener);
         Assert.assertFalse(emitter.listeners(testEventName).contains(elistener));
