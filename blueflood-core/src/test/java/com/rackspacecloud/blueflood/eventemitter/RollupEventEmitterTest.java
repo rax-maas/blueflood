@@ -276,6 +276,30 @@ public class RollupEventEmitterTest {
         Assert.assertSame(event1, store.get(1));
     }
 
+    @Test
+    public void offOnlyClearsForGivenEvent() {
+
+        // given
+        Emitter.Listener<RollupEvent> listener = new EventListener();
+        RollupEvent event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        RollupEvent event2 = new RollupEvent(null, null, "event2", "gran", 0);
+        emitter.on(testEventName, listener);
+        emitter.on(testEventName2, listener);
+
+        // precondition
+        Assert.assertEquals(0, store.size());
+
+        // when
+        emitter.off(testEventName);
+        emitter.emit(testEventName, event1);
+        emitter.emit(testEventName2, event2);
+
+        // then
+        Assert.assertEquals(1, store.size());
+        Assert.assertSame(event2, store.get(0));
+
+    }
+
     private class EventListener implements Emitter.Listener<RollupEvent> {
         @Override
         public void call(RollupEvent... rollupEventObjects) {
