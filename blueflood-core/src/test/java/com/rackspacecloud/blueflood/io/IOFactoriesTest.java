@@ -26,7 +26,6 @@ import static org.junit.Assert.*;
 @PowerMockIgnore({"javax.management.*", "com.rackspacecloud.blueflood.utils.Metrics", "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class, AstyanaxIO.class, AstyanaxShardStateIO.class})
 @RunWith(PowerMockRunner.class)
-@Ignore
 public class IOFactoriesTest {
 
     private static Configuration mockConfiguration;
@@ -44,12 +43,17 @@ public class IOFactoriesTest {
         mockShardStateAstyanaxIO();
     }
 
-    private static AstyanaxIO mockAstyanaxIO() {
+    private static AstyanaxIO mockAstyanaxIO() throws Exception {
         // These are needed because AstyanaxIO class has static initializer that
         // utilizes these configs. If we don't mock these calls, we will get NPE
         // somewhere.
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_HOSTS))).thenReturn("127.0.0.1:9160");
         when(mockConfiguration.getIntegerProperty(eq(CoreConfig.MAX_CASSANDRA_CONNECTIONS))).thenReturn(70);
+
+        // mock the InstrumentationConnectionPoolMonitor, which is
+        // used by AstyanaxIO
+        InstrumentedConnectionPoolMonitor mockConnPoolMon = PowerMockito.mock(InstrumentedConnectionPoolMonitor.class);
+        PowerMockito.whenNew(InstrumentedConnectionPoolMonitor.class).withAnyArguments().thenReturn(mockConnPoolMon);
 
         // mock the AstyanaxIO itself
         PowerMockito.suppress(PowerMockito.constructor(AstyanaxIO.class));
