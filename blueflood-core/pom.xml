@@ -29,7 +29,6 @@
 
   <properties>
     <cassandra.skip>false</cassandra.skip>
-    <!--<powermock.version>1.4.9</powermock.version>-->
     <powermock.version>1.6.4</powermock.version>
   </properties>
 
@@ -290,7 +289,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <!--<version>1.8.5</version>-->
       <version>1.10.19</version>
     </dependency>
 
