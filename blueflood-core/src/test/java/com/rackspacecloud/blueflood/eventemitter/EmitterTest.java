@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-public class RollupEventEmitterTest {
+public class EmitterTest {
 
     final String testEventName = "test";
     final String testEventName2 = "test2";
