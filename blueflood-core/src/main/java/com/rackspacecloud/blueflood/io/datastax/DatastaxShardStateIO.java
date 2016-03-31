@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2016 Rackspace.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * 	http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.rackspacecloud.blueflood.io.datastax;
 
 import com.codahale.metrics.Timer;
@@ -19,12 +34,17 @@ import java.util.*;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 /**
- * Created by shin4590 on 3/25/16.
+ * This class uses the Datastax driver to read/write ShardState from
+ * Cassandra metrics_state Column Family.
  */
 public class DatastaxShardStateIO implements ShardStateIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxShardStateIO.class);
-    private static final SlotStateSerDes serDes = new SlotStateSerDes();
+    private static final DatastaxShardStateIO INSTANCE = new DatastaxShardStateIO();
+
+    public static DatastaxShardStateIO singleton() { return INSTANCE; }
+
+    private final SlotStateSerDes serDes = new SlotStateSerDes();
 
     @Override
     public Collection<SlotState> getShardState(int shard) throws IOException {
@@ -37,7 +57,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
             Select.Where statement = QueryBuilder
                     .select()
                     .all()
-                    .from("\"DATA\"", CassandraModel.CF_METRICS_STATE_NAME)
+                    .from(CassandraModel.QUOTED_KEYSPACE, CassandraModel.CF_METRICS_STATE_NAME)
                     .where(eq("key", (long) shard));
             List<Row> results = session.execute(statement).all();
             for (Row row : results) {
@@ -79,7 +99,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
                 }
             }
             ResultSet results = session.execute(batch);
-            LOG.debug("results.size" + results.all().size());
+            LOG.debug("results.size=" + results.all().size());
         } finally {
             ctx.stop();
         }

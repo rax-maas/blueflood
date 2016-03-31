@@ -39,6 +39,13 @@ import com.rackspacecloud.blueflood.types.RollupType;
 
 import java.util.*;
 
+/**
+ * This class is a singleton that holds the necessary code that uses Astyanax
+ * driver to make connections to Cassandra. All of the consumer code needing
+ * to use datastax driver can use this class to get a {@link com.netflix.astyanax.Keyspace}
+ * and/or {@link com.netflix.astyanax.AstyanaxContext}
+ * object for the read/write statements to Cassandra.
+ */
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;

@@ -7,7 +7,6 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -73,9 +72,8 @@ public class IOFactoriesTest {
     @Test
     public void testNullDriverConfig() throws Exception {
 
-        IOFactories ioFactories = IOFactories.singleton();
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(null);
-
+        IOFactories ioFactories = IOFactories.singleton();
         ShardStateIO shardStateIO = ioFactories.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
@@ -83,9 +81,8 @@ public class IOFactoriesTest {
     @Test
     public void testEmptyStringDriverConfig() throws Exception {
 
-        IOFactories ioFactories = IOFactories.singleton();
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("");
-
+        IOFactories ioFactories = IOFactories.singleton();
         ShardStateIO shardStateIO = ioFactories.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
@@ -93,27 +90,18 @@ public class IOFactoriesTest {
     @Test
     public void testAstyanaxDriverConfig() throws Exception {
 
-        IOFactories ioFactories = IOFactories.singleton();
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(IOFactories.ASTYANAX_DRIVER);
-
+        IOFactories ioFactories = IOFactories.singleton();
         ShardStateIO shardStateIO = ioFactories.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
 
     @Test
     public void testDatastaxDriverConfig() {
-        IOFactories ioFactories = IOFactories.singleton();
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(IOFactories.DATASTAX_DRIVER);
 
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(IOFactories.DATASTAX_DRIVER);
+        IOFactories ioFactories = IOFactories.singleton();
         ShardStateIO shardStateIO = ioFactories.getShardStateIO();
         assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DatastaxShardStateIO);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testInvalidDriverConfig() {
-        IOFactories ioFactories = IOFactories.singleton();
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("bogusDriver");
-
-        ioFactories.getShardStateIO();
     }
 }
