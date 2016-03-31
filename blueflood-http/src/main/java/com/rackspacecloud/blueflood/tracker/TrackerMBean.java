@@ -27,6 +27,8 @@ public interface TrackerMBean {
     public void removeMetricName(String metricName);
     public void removeAllMetricNames();
     public Set getTenants();
+    public Set<String> getMetricNames();
     public void setIsTrackingDelayedMetrics();
     public void resetIsTrackingDelayedMetrics();
+    public boolean getIsTrackingDelayedMetrics();
 }
