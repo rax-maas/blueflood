@@ -38,12 +38,15 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
     private static final RollupEventEmitter instance = new RollupEventEmitter();
 
     public RollupEventEmitter() {
-        eventExecutors = new ThreadPoolBuilder()
+        this(new ThreadPoolBuilder()
                 .withName("RollupEventEmitter ThreadPool")
                 .withCorePoolSize(numberOfWorkers)
                 .withMaxPoolSize(numberOfWorkers)
                 .withUnboundedQueue()
-                .build();
+                .build());
+    }
+    public RollupEventEmitter(ExecutorService executor) {
+        eventExecutors = executor;
     }
 
     public static RollupEventEmitter getInstance() { return instance; }
