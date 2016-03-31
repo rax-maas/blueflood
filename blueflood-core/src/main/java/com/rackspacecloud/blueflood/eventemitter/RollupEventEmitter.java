@@ -34,7 +34,7 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
     private static final Logger log = LoggerFactory.getLogger(ModuleLoader.class);
     private static final int numberOfWorkers = 5;
     public static final String ROLLUP_EVENT_NAME = "rollup".intern();
-    private static ThreadPoolExecutor eventExecutors;
+    private static ExecutorService eventExecutors;
     private static final RollupEventEmitter instance = new RollupEventEmitter();
 
     private RollupEventEmitter() {
