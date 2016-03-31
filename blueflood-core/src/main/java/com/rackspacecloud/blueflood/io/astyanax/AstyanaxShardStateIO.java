@@ -40,9 +40,6 @@ import java.util.Map;
 public class AstyanaxShardStateIO implements ShardStateIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(AstyanaxShardStateIO.class);
-    private static final AstyanaxShardStateIO INSTANCE = new AstyanaxShardStateIO();
-
-    public static AstyanaxShardStateIO singleton() { return INSTANCE; }
 
     @Override
     public Collection<SlotState> getShardState(int shard) throws IOException {

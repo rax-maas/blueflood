@@ -40,9 +40,6 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 public class DatastaxShardStateIO implements ShardStateIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxShardStateIO.class);
-    private static final DatastaxShardStateIO INSTANCE = new DatastaxShardStateIO();
-
-    public static DatastaxShardStateIO singleton() { return INSTANCE; }
 
     private final SlotStateSerDes serDes = new SlotStateSerDes();
 
