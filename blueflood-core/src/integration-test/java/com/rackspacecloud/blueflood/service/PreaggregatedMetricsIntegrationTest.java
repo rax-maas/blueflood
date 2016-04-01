@@ -19,6 +19,8 @@ package com.rackspacecloud.blueflood.service;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;

@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -10,9 +10,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;

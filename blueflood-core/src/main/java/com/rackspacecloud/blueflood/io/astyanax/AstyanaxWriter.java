@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
@@ -32,6 +32,8 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -114,7 +116,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(Collection<Metric> metrics) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL_NAME);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
@@ -196,9 +198,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadataValue(Locator locator, String metaKey, String metaValue) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRIC_METADATA);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_METADATA_NAME);
         try {
-            keyspace.prepareColumnMutation(CassandraModel.CF_METRIC_METADATA, locator, metaKey)
+            keyspace.prepareColumnMutation(CassandraModel.CF_METRICS_METADATA, locator, metaKey)
                     .putValue(metaValue, StringMetadataSerializer.get(), null)
                     .execute();
         } catch (ConnectionException e) {
@@ -211,7 +213,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeExcessEnumMetric(Locator locator) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_EXCESS_ENUMS);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME);
         try {
             keyspace.prepareColumnMutation(CassandraModel.CF_METRICS_EXCESS_ENUMS, locator, 0L)
                     .putEmptyColumn(null).execute();
@@ -226,8 +228,8 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     public void writeMetadata(Table<Locator, String, String> metaTable) throws ConnectionException {
-        ColumnFamily cf = CassandraModel.CF_METRIC_METADATA;
-        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(cf);
+        ColumnFamily cf = CassandraModel.CF_METRICS_METADATA;
+        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(CassandraModel.CF_METRICS_METADATA_NAME);
         MutationBatch batch = keyspace.prepareMutationBatch();
 
         try {
@@ -260,7 +262,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     
     // generic IMetric insertion. All other metric insertion methods could use this one.
     public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(cf);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(cf.getName());
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
         try {
@@ -317,39 +319,6 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    public void persistShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> updates) throws ConnectionException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE);
-        try {
-            MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            ColumnListMutation<SlotState> mutation = mutationBatch.withRow(CassandraModel.CF_METRICS_STATE, (long)shard);
-            for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> granEntry : updates.entrySet()) {
-                Granularity g = granEntry.getKey();
-                for (Map.Entry<Integer, UpdateStamp> entry : granEntry.getValue().entrySet()) {
-                    // granularity,slot,state
-                    SlotState slotState = new SlotState(g, entry.getKey(), entry.getValue().getState());
-                    mutation.putColumn(slotState, entry.getValue().getTimestamp());
-                    /*
-                      Note: this method used to set the timestamp of the Cassandra column to entry.getValue().getTimestamp() * 1000, i.e. the collection time.
-                      That implementation was changed because it could cause delayed metrics not to rollup.
-                      Consider you are getting out of order metrics M1 and M2, with collection times T1 and T2 with T2>T1, belonging to same slot
-                      Assume M2 arrives first. The slot gets marked active and rolled up and the state is set as Rolled. Now, assume M1 arrives. We update the slot state to active,
-                      set the slot timestamp to T1, and while persisting we set it, we set the column timestamp to be T1*1000, but because the T1 < T2, Cassandra wasn't updating it.
-                     */
-                }
-            }
-            if (!mutationBatch.isEmpty())
-                try {
-                    mutationBatch.execute();
-                } catch (ConnectionException e) {
-                    Instrumentation.markWriteError(e);
-                    log.error("Error persisting shard state", e);
-                    throw e;
-                }
-        } finally {
-            ctx.stop();
-        }
-    }
-
     public static boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
@@ -362,7 +331,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         if (writeContexts.size() == 0) {
             return;
         }
-        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(writeContexts.get(0).getDestinationCF());
+        Timer.Context ctx = Instrumentation.getBatchWriteTimerContext(writeContexts.get(0).getDestinationCF().getName());
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();

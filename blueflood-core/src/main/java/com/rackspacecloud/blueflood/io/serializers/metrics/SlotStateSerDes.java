@@ -33,10 +33,13 @@ public class SlotStateSerDes {
     }
 
     public String serialize(SlotState state) {
-        Granularity gran = state.getGranularity();
+        return serialize(state.getGranularity(), state.getSlot(), state.getState());
+    }
+
+    public String serialize(Granularity gran, int slot, UpdateStamp.State state) {
         String stringRep = new StringBuilder().append(gran == null ? "null" : gran.name())
-                .append(",").append(state.getSlot())
-                .append(",").append(state == null ? "null" : state.getState().code())
+                .append(",").append(slot)
+                .append(",").append(state == null ? "null" : state.code())
                 .toString();
         return stringRep;
     }

@@ -29,7 +29,7 @@
 
   <properties>
     <cassandra.skip>false</cassandra.skip>
-    <powermock.version>1.4.9</powermock.version>
+    <powermock.version>1.6.4</powermock.version>
   </properties>
 
   <build>
@@ -113,6 +113,8 @@
               <systemPropertyVariables>
                 <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
                 <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
+                <CASSANDRA_BINXPORT_PORT>${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_PORT>
+                <CASSANDRA_BINXPORT_HOSTS>${cassandra.listenAddress}:${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_HOSTS>
               </systemPropertyVariables>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties ${jacoco.agent.it.argLine} -Xmx1024m -XX:MaxPermSize=256m</argLine>
@@ -169,12 +171,23 @@
       <groupId>com.netflix.astyanax</groupId>
       <artifactId>astyanax-cassandra</artifactId>
       <version>1.56.34</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.yammer.metrics</groupId>
+          <artifactId>metrics-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>com.netflix.astyanax</groupId>
       <artifactId>astyanax-recipes</artifactId>
       <version>1.56.34</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-core</artifactId>
     </dependency>
 
     <dependency>
@@ -198,7 +211,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>15.0</version>
+      <version>19.0</version>
     </dependency>
 
     <dependency>
@@ -214,33 +227,43 @@
     </dependency>
 
     <dependency>
-      <groupId>com.codahale.metrics</groupId>
+      <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.2</version>
     </dependency>
 
     <dependency>
-      <groupId>com.codahale.metrics</groupId>
+      <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-graphite</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.2</version>
     </dependency>
 
     <dependency>
-      <groupId>com.codahale.metrics</groupId>
+      <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-log4j</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.2</version>
     </dependency>
 
     <dependency>
-      <groupId>com.codahale.metrics</groupId>
+      <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-jvm</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.2</version>
     </dependency>
 
     <dependency>
       <groupId>com.aphyr</groupId>
       <artifactId>riemann-java-client</artifactId>
       <version>0.2.9</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.yammer.metrics</groupId>
+          <artifactId>metrics-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.codahale.metrics</groupId>
+          <artifactId>metrics-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- todo: get off alpha version! -->
@@ -266,7 +289,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
+      <version>1.10.19</version>
     </dependency>
 
     <dependency>

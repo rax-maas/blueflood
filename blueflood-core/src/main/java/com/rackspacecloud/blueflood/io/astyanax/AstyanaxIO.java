@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.io;
+package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -27,6 +27,9 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.IOConfig;
+import com.rackspacecloud.blueflood.io.InstrumentedConnectionPoolMonitor;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -36,16 +39,28 @@ import com.rackspacecloud.blueflood.types.RollupType;
 
 import java.util.*;
 
+/**
+ * This class is a singleton that holds the necessary code that uses Astyanax
+ * driver to make connections to Cassandra. All of the consumer code needing
+ * to use datastax driver can use this class to get a {@link com.netflix.astyanax.Keyspace}
+ * and/or {@link com.netflix.astyanax.AstyanaxContext}
+ * object for the read/write statements to Cassandra.
+ */
 public class AstyanaxIO {
     private static final AstyanaxContext<Keyspace> context;
     private static final Keyspace keyspace;
     protected static final Configuration config = Configuration.getInstance();
+    private static final IOConfig ioconfig = IOConfig.singleton();
+
+    private static AstyanaxIO INSTANCE = new AstyanaxIO();
 
     static {
         context = createPreferredHostContext();
         context.start();
         keyspace = context.getEntity();
     }
+
+    public static AstyanaxIO singleton() { return INSTANCE; }
 
     protected AstyanaxIO() {
     }
@@ -80,13 +95,12 @@ public class AstyanaxIO {
 
     private static ConnectionPoolConfigurationImpl createPreferredConnectionPoolConfiguration() {
         int port = config.getIntegerProperty(CoreConfig.DEFAULT_CASSANDRA_PORT);
-        Set<String> uniqueHosts = new HashSet<String>();
-        Collections.addAll(uniqueHosts, config.getStringProperty(CoreConfig.CASSANDRA_HOSTS).split(","));
+        Set<String> uniqueHosts = ioconfig.getUniqueHosts();
         int numHosts = uniqueHosts.size();
-        int maxConns = config.getIntegerProperty(CoreConfig.MAX_CASSANDRA_CONNECTIONS);
+        int connsPerHost = ioconfig.getMaxConnPerHost(numHosts);
+
         int timeout = config.getIntegerProperty(CoreConfig.CASSANDRA_REQUEST_TIMEOUT);
 
-        int connsPerHost = maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
         // This timeout effectively results in waiting a maximum of (timeoutWhenExhausted / numHosts) on each Host
         int timeoutWhenExhausted = config.getIntegerProperty(CoreConfig.MAX_TIMEOUT_WHEN_EXHAUSTED);
         timeoutWhenExhausted = Math.max(timeoutWhenExhausted, 1 * numHosts); // Minimum of 1ms per host

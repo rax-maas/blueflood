@@ -16,9 +16,10 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -26,7 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,24 +42,25 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ShardStateIntegrationTest extends IntegrationTestBase {
     
     private ShardStateIO io;
+    private List<Integer> shards;
     
-    public ShardStateIntegrationTest(ShardStateIO io) {
-        this.io = io;    
+    public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
+        this.io = io;
+        shards = shardsToTest;
     }
 
     @Test
     public void testSingleShardManager() {
         long time = 1234000L;
-        Collection<Integer> shards = Lists.newArrayList(1, 2, 3, 4);
         ScheduleContext ctx = new ScheduleContext(time, shards);
         ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), this.io);
         ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), this.io);
         
         for (long t = time; t < time + 10000000; t += 1000) {
-            ctx.update(t + 0, 1);
-            ctx.update(t + 2000, 2);
-            ctx.update(t + 4000, 3);
-            ctx.update(t + 6000, 4);
+            ctx.update(t + 0, shards.get(0));
+            ctx.update(t + 2000, shards.get(1));
+            ctx.update(t + 4000, shards.get(2));
+            ctx.update(t + 6000, shards.get(3));
         }
         
         time += 10000000 + 7;
@@ -159,8 +160,12 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         long time = 1234000L;
         // notice how they share shard 5.
         final int commonShard = 5;
-        final Collection<Integer> shardsA = Lists.newArrayList(1, 2, 3, 4, commonShard);
-        final Collection<Integer> shardsB = Lists.newArrayList(11, 22, 33, 44, commonShard);
+        final List<Integer> shardsA = Lists.newArrayList(shards);
+        shardsA.add(commonShard);
+        final List<Integer> shardsB = Lists.newArrayList(shardsA.get(0)*10,
+                                                         shardsA.get(1)*10,
+                                                         shardsA.get(2)*10,
+                                                         shardsA.get(3)*10, commonShard);
         Collection<Integer> allShards = new ArrayList<Integer>() {{
             for (int i : Iterables.concat(shardsA, shardsB))
                 add(i);
@@ -177,14 +182,14 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // send a few updates to all contexts.
         for (ScheduleContext ctx : new ScheduleContext[] { ctxA, ctxB }) {
             for (long t = time; t < time + 10000000; t += 1000) {
-                ctx.update(t + 0, 1);
-                ctx.update(t + 1000, 11);
-                ctx.update(t + 2000, 2);
-                ctx.update(t + 3000, 22);
-                ctx.update(t + 4000, 3);
-                ctx.update(t + 5000, 33);
-                ctx.update(t + 6000, 4);
-                ctx.update(t + 7000, 44);            
+                ctx.update(t + 0,    shardsA.get(0));
+                ctx.update(t + 1000, shardsB.get(0));
+                ctx.update(t + 2000, shardsA.get(1));
+                ctx.update(t + 3000, shardsB.get(1));
+                ctx.update(t + 4000, shardsA.get(2));
+                ctx.update(t + 5000, shardsB.get(2));
+                ctx.update(t + 6000, shardsA.get(3));
+                ctx.update(t + 7000, shardsB.get(3));
             }
         }
         
@@ -192,7 +197,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxA.setCurrentTimeMillis(time);
         ctxB.setCurrentTimeMillis(time);
         
-        // simulate a poll() cylce for each.
+        // simulate a poll() cycle for each.
         pushA.performOperation();
         pushB.performOperation();
         pullA.performOperation();
@@ -207,18 +212,18 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         time += 300000; // this pushes us forward at least one slot.
         
         // now do this: update ctxA, do 2 push/pull cycles on each state.  they should sill be the same.
-        ctxA.update(time,  1);
-        ctxA.update(time, 11);
-        ctxA.update(time, 2);
-        ctxA.update(time, 22);
+        ctxA.update(time,  shardsA.get(0));
+        ctxA.update(time, shardsB.get(0));
+        ctxA.update(time, shardsA.get(1));
+        ctxA.update(time, shardsB.get(1));
         ctxA.setCurrentTimeMillis(time);
         ctxB.setCurrentTimeMillis(time);
         
         // states should not be the same in some places.
-        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 1).equals(ctxB.getSlotStamps(Granularity.MIN_5, 1)));
-        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, 11).equals(ctxB.getSlotStamps(Granularity.MIN_5, 11)));
-        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 3).equals(ctxB.getSlotStamps(Granularity.MIN_5, 3)));
-        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, 33).equals(ctxB.getSlotStamps(Granularity.MIN_5, 33)));
+        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, shardsA.get(0)).equals(ctxB.getSlotStamps(Granularity.MIN_5, shardsA.get(0))));
+        Assert.assertFalse(ctxA.getSlotStamps(Granularity.MIN_5, shardsB.get(0)).equals(ctxB.getSlotStamps(Granularity.MIN_5, shardsB.get(0))));
+        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, shardsA.get(2)).equals(ctxB.getSlotStamps(Granularity.MIN_5, shardsA.get(2))));
+        Assert.assertTrue(ctxA.getSlotStamps(Granularity.MIN_5, shardsB.get(2)).equals(ctxB.getSlotStamps(Granularity.MIN_5, shardsB.get(2))));
         
         // this is where the syncing should happen. Order is important for a valid test.  A contains the updates, so
         // I want to put that one first.  B contains old data and it gets written second.  Part of what I'm verifying
@@ -543,8 +548,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Parameterized.Parameters
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
-        instances.add(new Object[] { new AstyanaxShardStateIO() });
-        instances.add(new Object[] { new InMemoryShardStateIO() });
+        instances.add(new Object[] { new AstyanaxShardStateIO(), Lists.newArrayList(1, 2, 3, 4) });
+        instances.add(new Object[] { new InMemoryShardStateIO(), Lists.newArrayList(5, 6, 7, 8) });
+        instances.add(new Object[] { new DatastaxShardStateIO(), Lists.newArrayList(1, 2, 3, 4) });
         return instances;
     }
     

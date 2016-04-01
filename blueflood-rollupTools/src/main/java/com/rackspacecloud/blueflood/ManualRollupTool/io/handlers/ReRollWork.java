@@ -18,8 +18,8 @@ package com.rackspacecloud.blueflood.ManualRollupTool.io.handlers;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.ManualRollupTool.io.ManualRollup;
