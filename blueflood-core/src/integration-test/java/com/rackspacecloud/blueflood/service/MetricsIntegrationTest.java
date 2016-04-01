@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.IOFactories;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
@@ -591,7 +591,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     public void testShardStateWriteRead() throws Exception {
         final Collection<Integer> shards = Lists.newArrayList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        ShardStateIO shardStateIO = IOFactories.singleton().getShardStateIO();
+        ShardStateIO shardStateIO = IOContainer.fromConfig().getShardStateIO();
 
         // Simulate active or running state for all the slots for all granularities.
         for (int shard : shards) {
@@ -643,7 +643,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     public void testUpdateStampCoaelescing() throws Exception {
         final int shard = 24;
         final int slot = 16;
-        ShardStateIO shardStateIO = IOFactories.singleton().getShardStateIO();
+        ShardStateIO shardStateIO = IOContainer.fromConfig().getShardStateIO();
         Map<Granularity, Map<Integer, UpdateStamp>> updates = new HashMap<Granularity, Map<Integer, UpdateStamp>>();
         Map<Integer, UpdateStamp> slotUpdates = new HashMap<Integer, UpdateStamp>();
         updates.put(Granularity.MIN_5, slotUpdates);

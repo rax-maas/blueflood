@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
 /**
- * This is the test class for {@link com.rackspacecloud.blueflood.io.IOFactories}
+ * This is the test class for {@link IOContainer}
  */
 // we ignore MBeans and Metrics stuff because a lot of them have static
 // initializer that don't work well when the caller of those classes
@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 @PowerMockIgnore({"javax.management.*", "com.rackspacecloud.blueflood.utils.Metrics", "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class, AstyanaxIO.class, AstyanaxShardStateIO.class})
 @RunWith(PowerMockRunner.class)
-public class IOFactoriesTest {
+public class IOContainerTest {
 
     private static Configuration mockConfiguration;
 
@@ -63,7 +63,6 @@ public class IOFactoriesTest {
     }
 
     private static AstyanaxShardStateIO mockShardStateAstyanaxIO() throws Exception {
-
         AstyanaxShardStateIO mockShardStateAstyanaxIO = PowerMockito.mock(AstyanaxShardStateIO.class);
         PowerMockito.whenNew(AstyanaxShardStateIO.class).withNoArguments().thenReturn(mockShardStateAstyanaxIO);
         return mockShardStateAstyanaxIO;
@@ -71,37 +70,63 @@ public class IOFactoriesTest {
 
     @Test
     public void testNullDriverConfig() throws Exception {
-
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(null);
-        IOFactories ioFactories = IOFactories.singleton();
-        ShardStateIO shardStateIO = ioFactories.getShardStateIO();
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
 
     @Test
     public void testEmptyStringDriverConfig() throws Exception {
-
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("");
-        IOFactories ioFactories = IOFactories.singleton();
-        ShardStateIO shardStateIO = ioFactories.getShardStateIO();
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
 
     @Test
     public void testAstyanaxDriverConfig() throws Exception {
-
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(IOFactories.ASTYANAX_DRIVER);
-        IOFactories ioFactories = IOFactories.singleton();
-        ShardStateIO shardStateIO = ioFactories.getShardStateIO();
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("astyanax");
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
     }
 
     @Test
     public void testDatastaxDriverConfig() {
-
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(IOFactories.DATASTAX_DRIVER);
-        IOFactories ioFactories = IOFactories.singleton();
-        ShardStateIO shardStateIO = ioFactories.getShardStateIO();
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DatastaxShardStateIO);
+    }
+
+    /**
+     * This class is the test class for {@link com.rackspacecloud.blueflood.io.IOContainer.DriverType}
+     */
+    public static class DriverTypeTest {
+
+        @Test
+        public void testNullDriver() {
+            IOContainer.DriverType driver = IOContainer.DriverType.getDriverType(null);
+            assertEquals("null driver config means astyanax", IOContainer.DriverType.ASTYANAX, driver);
+        }
+
+        @Test
+        public void testEmptyStringDriver() {
+            IOContainer.DriverType driver = IOContainer.DriverType.getDriverType(null);
+            assertEquals("empty string driver config means astyanax", IOContainer.DriverType.ASTYANAX, driver);
+        }
+
+        @Test
+        public void testAstyanaxDriver() {
+            IOContainer.DriverType driver = IOContainer.DriverType.getDriverType("astyanax");
+            assertEquals("astyanax driver config", IOContainer.DriverType.ASTYANAX, driver);
+        }
+
+        @Test
+        public void testDatastaxDriver() {
+            IOContainer.DriverType driver = IOContainer.DriverType.getDriverType("datastax");
+            assertEquals("datastax driver config", IOContainer.DriverType.DATASTAX, driver);
+        }
     }
 }
