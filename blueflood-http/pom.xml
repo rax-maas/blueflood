@@ -97,7 +97,6 @@
               <goal>integration-test</goal>
             </goals>
             <configuration>
-              <forkMode>always</forkMode>
               <systemPropertyVariables>
                 <CASSANDRA_HOSTS>${cassandra.listenAddress}:${cassandra.rpcPort}</CASSANDRA_HOSTS>
                 <DEFAULT_CASSANDRA_PORT>${cassandra.rpcPort}</DEFAULT_CASSANDRA_PORT>
@@ -205,13 +204,13 @@
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-module-junit4</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.4</version>
     </dependency>
 
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.4</version>
     </dependency>
 
     <dependency>

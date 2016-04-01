@@ -28,10 +28,9 @@ import org.slf4j.LoggerFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,6 +41,8 @@ public class Tracker implements TrackerMBean {
     private static final Logger log = LoggerFactory.getLogger(Tracker.class);
     private final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
 
+    private DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     // Tracker is a singleton
     private static final Tracker instance = new Tracker();
     private boolean isRegistered = false;
@@ -51,7 +52,10 @@ public class Tracker implements TrackerMBean {
     private Set<String> metricNames = new HashSet<String>();
 
     // private constructor for singleton
-    private Tracker(){}
+    private Tracker(){
+        // set dateFormatter to GMT since collectionTime for metrics should always be GMT/UTC
+        dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
 
     public static Tracker getInstance() {
         return instance;
@@ -112,7 +116,7 @@ public class Tracker implements TrackerMBean {
     }
 
     public Set<String> getMetricNames() {
-        return this.metricNames;
+        return metricNames;
     }
 
     public void setIsTrackingDelayedMetrics() {
@@ -126,7 +130,7 @@ public class Tracker implements TrackerMBean {
     }
 
     public boolean getIsTrackingDelayedMetrics() {
-        return this.isTrackingDelayedMetrics;
+        return isTrackingDelayedMetrics;
     }
 
     public boolean isTracking(String tenantId) {
@@ -217,11 +221,20 @@ public class Tracker implements TrackerMBean {
 
     public void trackDelayedMetricsTenant(String tenantid, List<Metric> delayedMetrics) {
         if (isTrackingDelayedMetrics) {
-            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s\n",tenantid);
-            for (Metric metric : delayedMetrics) {
-                logMessage += String.format("%s has collectionTime %d\n", metric.getLocator().toString(), metric.getCollectionTime());
-            }
+            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s", tenantid);
             log.info(logMessage);
+
+            // log individual delayed metrics locator and collectionTime
+            double delayedMinutes;
+            long nowMillis = System.currentTimeMillis();
+            for (Metric metric : delayedMetrics) {
+                delayedMinutes = (double)(nowMillis - metric.getCollectionTime()) / 1000 / 60;
+                logMessage = String.format("[TRACKER][DELAYED METRIC] %s has collectionTime %s which is delayed by %.2f minutes",
+                        metric.getLocator().toString(),
+                        dateFormatter.format(new Date(metric.getCollectionTime())),
+                        delayedMinutes);
+                log.info(logMessage);
+            }
         }
     }
 

@@ -66,6 +66,9 @@ public class TrackerTest {
 
     @Before
     public void setUp() {
+        // reset static logger mock for every new test setup
+        reset(loggerMock);
+
         // mock HttpRequest, method, queryParams, channelBuffer, responseStatus
         httpRequestMock = mock(HTTPRequestWithDecodedQueryParams.class);
         httpMethodMock = mock(HttpMethod.class);
@@ -85,7 +88,7 @@ public class TrackerTest {
         // setup delayed metrics
         Locator locator1 = Locator.createLocatorFromPathComponents(tenantId, "delayed", "metric1");
         Locator locator2 = Locator.createLocatorFromPathComponents(tenantId, "delayed", "metric2");
-        collectionTime = 1451606400000L;      // Jan 1, 2016
+        collectionTime = 1451606400000L;      // Jan 1, 2016 UTC
         TimeValue ttl = new TimeValue(3, TimeUnit.DAYS);
         Metric delayMetric1 = new Metric(locator1, 123, collectionTime, ttl, "");
         Metric delayMetric2 = new Metric(locator2, 456, collectionTime, ttl, "");
@@ -170,7 +173,7 @@ public class TrackerTest {
 
         tracker.removeAllMetricNames();
 
-        assertTrue("Everything should be logged",tracker.doesMessageContainMetricNames("Track.this.metricName"));
+        assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.metricName"));
         assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.anotherMetricNom"));
         assertTrue("Everything should be logged", tracker.doesMessageContainMetricNames("Track.this.randomMetricNameNom"));
     }
@@ -283,8 +286,14 @@ public class TrackerTest {
 
     @Test
     public void testTrackNullRequest() {
+        when(httpRequestMock.getUri()).thenReturn("/v2.0/" + tenantId + "/ingest");
+
+        // add tenant to track but provide a null request for tracking
         tracker.addTenant(tenantId);
         tracker.track(null);
+
+        // verify logger does not get called for tracking request
+        verify(httpRequestMock, never()).getUri();
         verify(loggerMock, atLeastOnce()).info((String)argCaptor.capture());
         assertThat(argCaptor.getValue().toString(), not(containsString("[TRACKER] POST request for tenantId " + tenantId)));
         assertThat(argCaptor.getValue().toString(), not(containsString("[TRACKER] GET request for tenantId " + tenantId)));
@@ -341,8 +350,15 @@ public class TrackerTest {
 
     @Test
     public void testTrackNullResponse() {
+        String requestUri = "/v2.0/" + tenantId + "/metrics/search";
+        when(httpRequestMock.getUri()).thenReturn(requestUri);
+
+        // add tenant to track but provide a null response for tracking
         tracker.addTenant(tenantId);
         tracker.trackResponse(httpRequestMock, null);
+
+        // verify logger does not get called for tracking response
+        verify(httpRequestMock, never()).getUri();
         verify(loggerMock, atLeastOnce()).info((String)argCaptor.capture());
         assertThat(argCaptor.getValue().toString(), not(containsString("[TRACKER] Response for tenantId " + tenantId)));
     }
@@ -369,12 +385,9 @@ public class TrackerTest {
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics started");
-        verify(loggerMock, atLeastOnce()).info((String) argCaptor.capture());
-        assertThat(argCaptor.getValue().toString(), containsString(
-                "[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId + "\n" +
-                        tenantId + ".delayed.metric1 has collectionTime " + collectionTime + "\n" +
-                        tenantId + ".delayed.metric2 has collectionTime " + collectionTime + "\n"));
-
+        verify(loggerMock, atLeastOnce()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, atLeastOnce()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1 has collectionTime 2016-01-01 00:00:00 which is delayed"));
+        verify(loggerMock, atLeastOnce()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric2 has collectionTime 2016-01-01 00:00:00 which is delayed"));
     }
 
     @Test
@@ -385,9 +398,9 @@ public class TrackerTest {
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics stopped");
-        verify(loggerMock, atLeastOnce()).info((String)argCaptor.capture());
-        assertThat(argCaptor.getValue().toString(), not(containsString(
-                "[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId + "\n")));
+        verify(loggerMock, never()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1 has collectionTime 2016-01-01 00:00:00"));
+        verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric2 has collectionTime 2016-01-01 00:00:00"));
     }
 
 }
