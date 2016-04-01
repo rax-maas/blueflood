@@ -26,7 +26,6 @@ import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +65,7 @@ import java.util.concurrent.TimeUnit;
  * {@link ShardStatePuller} will read the state info into memory by calling
  * {@link com.rackspacecloud.blueflood.service.ShardStateManager.SlotStateManager#updateSlotOnRead(SlotState)}.
  * The rollup service will then identity slots that need to be re-rolled (by
- * calling {@link #scheduleSlotsOlderThan(long)}), pick a slot to rollup and
+ * calling {@link #scheduleEligibleSlots(long, long)}), pick a slot to rollup and
  * mark it as
  * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Running Running}
  * (via {@link #getNextScheduled()} ), do the rollup, and then mark the slot as
@@ -198,9 +197,10 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * {@code maxAgeMillis}, then that slot will scheduled.
      *
      * @param maxAgeMillis
+     * @param delayedMetricsMaxAgeMillis
      */
     // only one thread should be calling in this puppy.
-    void scheduleSlotsOlderThan(long maxAgeMillis) {
+    void scheduleEligibleSlots(long maxAgeMillis, long delayedMetricsMaxAgeMillis) {
         long now = scheduleTime;
         ArrayList<Integer> shardKeys = new ArrayList<Integer>(shardStateManager.getManagedShards());
         Collections.shuffle(shardKeys);
@@ -210,7 +210,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // sync on map since we do not want anything added to or taken from it while we iterate.
                 synchronized (scheduledSlots) { // read
                     synchronized (runningSlots) { // read
-                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsOlderThan(now, maxAgeMillis);
+                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsEligibleForRollup(now, maxAgeMillis, delayedMetricsMaxAgeMillis);
                         if (slotsToWorkOn.size() == 0) {
                             continue;
                         }
@@ -282,7 +282,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // notice how we change the state, but the timestamp remained
                 // the same. this is important.  When the state is evaluated
                 // (i.e., in Reader.getShardState()) we need to realize that
-                // when timstamps are the same (this will happen), that a
+                // when timestamps are the same (this will happen), that a
                 // remove always wins during the coalesce.
                 scheduledSlots.remove(key);
 
@@ -304,7 +304,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * be the next slot returned by a call to {@link #getNextScheduled()}. If
      * {@code rescheduleImmediately} is false, then the given slot will go to
      * the end of the line, as when it was first scheduled by
-     * {@link #scheduleSlotsOlderThan(long)}.
+     * {@link #scheduleEligibleSlots(long, long)}.
      *
      * @param key
      * @param rescheduleImmediately
@@ -347,8 +347,17 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // Note: Rollup state will be updated to the last ACTIVE
                 // timestamp which caused rollup process to kick in.
                 stamp.setDirty(true);
+
+                //When state gets set to "X", before it got persisted, it might get scheduled for rollup
+                //again, if we get delayed metrics. To prevent this we temporarily set last rollup time with current
+                //time. This value wont get persisted.
+                stamp.setLastRollupTimestamp(getSystemCurrentTimeMillis());
             }
         }
+    }
+
+    protected long getSystemCurrentTimeMillis() {
+        return System.currentTimeMillis();
     }
 
     /**

@@ -6,9 +6,12 @@ import com.rackspacecloud.blueflood.rollup.SlotKey;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.mockito.Mockito.when;
 
 public class ScheduleContextClearFromRunningTest {
 
@@ -38,7 +41,7 @@ public class ScheduleContextClearFromRunningTest {
         ctx = new ScheduleContext(now, shards);
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
     }
 
     @Test
@@ -90,6 +93,10 @@ public class ScheduleContextClearFromRunningTest {
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
 
+        ctx = Mockito.spy(ctx);
+        long lastRollupTime = System.currentTimeMillis();
+        when(ctx.getSystemCurrentTimeMillis()).thenReturn(lastRollupTime);
+
         // when
         ctx.clearFromRunning(next);
 
@@ -99,11 +106,13 @@ public class ScheduleContextClearFromRunningTest {
         Assert.assertEquals(UpdateStamp.State.Rolled, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", lastRollupTime, stamp.getLastRollupTimestamp());
 
         stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
         Assert.assertNotNull(stamp);
         Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", 0, stamp.getLastRollupTimestamp());
     }
 }
