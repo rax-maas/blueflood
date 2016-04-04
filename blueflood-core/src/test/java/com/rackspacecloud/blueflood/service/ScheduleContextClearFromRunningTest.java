@@ -3,15 +3,14 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.Clock;
+import org.joda.time.Instant;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.mockito.Mockito.when;
 
 public class ScheduleContextClearFromRunningTest {
 
@@ -28,6 +27,8 @@ public class ScheduleContextClearFromRunningTest {
     ScheduleContext ctx;
     ShardStateManager mgr;
 
+    final long lastRollupTime = System.currentTimeMillis();
+
     @Before
     public void setUp() throws GranularityException {
 
@@ -38,7 +39,12 @@ public class ScheduleContextClearFromRunningTest {
         coarserGran = gran.coarser();
         coarserSlot = coarserGran.slot(updateTime);
 
-        ctx = new ScheduleContext(now, shards);
+        ctx = new ScheduleContext(now, shards, new Clock() {
+            @Override
+            public Instant now() {
+                return new Instant(lastRollupTime);
+            }
+        });
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
@@ -92,10 +98,6 @@ public class ScheduleContextClearFromRunningTest {
         Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
-
-        ctx = Mockito.spy(ctx);
-        long lastRollupTime = System.currentTimeMillis();
-        when(ctx.getSystemCurrentTimeMillis()).thenReturn(lastRollupTime);
 
         // when
         ctx.clearFromRunning(next);

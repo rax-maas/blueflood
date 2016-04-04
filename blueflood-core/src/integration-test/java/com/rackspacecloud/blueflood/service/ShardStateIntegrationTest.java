@@ -22,6 +22,7 @@ import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.ClockImpl;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -43,6 +44,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     
     private ShardStateIO io;
     private List<Integer> shards;
+
+    private final int DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 300000;
+    private final int ROLLUP_DELAY_MILLIS = 300000;
     
     public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
         this.io = io;
@@ -52,7 +56,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Test
     public void testSingleShardManager() {
         long time = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(time, shards);
+        ScheduleContext ctx = new ScheduleContext(time, shards, new ClockImpl());
         ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), this.io);
         ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), this.io);
         
@@ -89,8 +93,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public void testRollupFailureForDelayedMetrics() {
         long time = 1234000L;
         Collection<Integer> managedShards = Lists.newArrayList(0);
-        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
-        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
+        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards, new ClockImpl());
+        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards, new ClockImpl());
         // Shard workers for rollup ctx
         ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
         ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
@@ -104,7 +108,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + 600000);
-        rollupCtx.scheduleEligibleSlots(300000, 7200000);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -112,7 +116,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(300000, 7200000);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -124,7 +128,12 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ingestPusher.performOperation();
 
         rollupPuller.performOperation();
-        rollupCtx.scheduleEligibleSlots(300000, 7200000);
+
+        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
+
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -132,7 +141,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(300000, 7200000);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -145,7 +154,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // based on the timestamp on the finer slot's UpdateStamp, not based on the relative courser slot from the finer slot
         long time = 1386823200000L;
         final Collection<Integer> shards = Lists.newArrayList(123);
-        ScheduleContext ctxA = new ScheduleContext(time, shards);
+        ScheduleContext ctxA = new ScheduleContext(time, shards, new ClockImpl());
 
         ctxA.update(time, 123);
         ShardStateManager.SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
@@ -171,8 +180,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 add(i);
         }};
         
-        ScheduleContext ctxA = new ScheduleContext(time, shardsA);
-        ScheduleContext ctxB = new ScheduleContext(time, shardsB);
+        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new ClockImpl());
+        ScheduleContext ctxB = new ScheduleContext(time, shardsB, new ClockImpl());
 
         ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
         ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
@@ -209,7 +218,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 Assert.assertEquals(ctxA.getSlotStamps(g, shard), ctxB.getSlotStamps(g, shard));
         }
         
-        time += 300000; // this pushes us forward at least one slot.
+        time += ROLLUP_DELAY_MILLIS; // this pushes us forward at least one slot.
         
         // now do this: update ctxA, do 2 push/pull cycles on each state.  they should sill be the same.
         ctxA.update(time,  shardsA.get(0));
@@ -256,7 +265,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             for (int i : Iterables.concat(shardsA, shardsB)) add(i);
         }};
         
-        ScheduleContext ctxA = new ScheduleContext(time, shardsA);
+        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new ClockImpl());
         ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
         ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
         
@@ -273,7 +282,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxA.setCurrentTimeMillis(time);
         
         // should be ready to schedule.
-        ctxA.scheduleEligibleSlots(300000, 7200000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxA.getScheduledCount());
         
         // simulate slots getting run.
@@ -281,17 +290,17 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxA.getScheduledCount() > 0) {
             SlotKey slot = ctxA.getNextScheduled();
             ctxA.clearFromRunning(slot);
-            ctxA.scheduleEligibleSlots(300000, 7200000);
+            ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count);
         // verify that scheduling doesn't find anything else.
-        ctxA.scheduleEligibleSlots(300000, 7200000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
         
         // reloading under these circumstances (no updates) should not affect the schedule.
         pullA.performOperation();
-        ctxA.scheduleEligibleSlots(300000, 7200000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
     }
 
@@ -300,7 +309,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final long tryFor = 15000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-        final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
+        final ScheduleContext ctx = new ScheduleContext(time.get(), shards, new ClockImpl());
         final CountDownLatch latch = new CountDownLatch(2);
         final Throwable[] errBucket = new Throwable[2];
         Thread pushPull = new Thread() { public void run() {
@@ -353,7 +362,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final long tryFor = 1000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards), new ScheduleContext(time.get(), shards));
+        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards, new ClockImpl()), new ScheduleContext(time.get(), shards, new ClockImpl()));
         final List<ShardStateWorker> workers = Lists.newArrayList(new ShardStatePusher(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePuller(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePusher(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io),
@@ -414,21 +423,21 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         List<ShardStateWorker> allWorkers = new ArrayList<ShardStateWorker>(6);
 
         // Ingestor 1
-        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards);
+        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards, new ClockImpl());
         ShardStatePuller pullerIngestor1 = new ShardStatePuller(shards, ctxIngestor1.getShardStateManager(), this.io);
         ShardStatePusher pusherIngestor1 = new ShardStatePusher(shards, ctxIngestor1.getShardStateManager(), this.io);
         allWorkers.add(pullerIngestor1);
         allWorkers.add(pusherIngestor1);
 
         // Ingestor 2
-        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards);
+        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards, new ClockImpl());
         ShardStatePuller pullerIngestor2 = new ShardStatePuller(shards, ctxIngestor2.getShardStateManager(), this.io);
         ShardStatePusher pusherIngestor2 = new ShardStatePusher(shards, ctxIngestor2.getShardStateManager(), this.io);
         allWorkers.add(pullerIngestor2);
         allWorkers.add(pusherIngestor2);
 
         // Rollup slave
-        ScheduleContext ctxRollup = new ScheduleContext(time, shards);
+        ScheduleContext ctxRollup = new ScheduleContext(time, shards, new ClockImpl());
         ShardStatePuller pullerRollup = new ShardStatePuller(shards, ctxRollup.getShardStateManager(), this.io);
         ShardStatePusher pusherRollup = new ShardStatePusher(shards, ctxRollup.getShardStateManager(), this.io);
         allWorkers.add(pullerRollup);
@@ -445,7 +454,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
 
         ctxRollup.setCurrentTimeMillis(time + 600000L);
-        ctxRollup.scheduleEligibleSlots(300000L, 7200000);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -453,7 +462,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleEligibleSlots(300000L, 7200000);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -498,8 +507,12 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
         }
 
+        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, ctxRollup.getScheduledCount());
+
         // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
-        ctxRollup.scheduleEligibleSlots(300000, 7200000);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -507,7 +520,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleEligibleSlots(300000, 7200000);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now

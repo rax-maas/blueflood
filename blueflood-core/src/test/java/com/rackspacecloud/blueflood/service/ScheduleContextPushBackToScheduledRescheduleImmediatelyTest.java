@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.ClockImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
         slot1 = gran.slot(now);
         slot2 = gran.slot(now - fiveMinutes);
 
-        ctx = new ScheduleContext(now, shards);
+        ctx = new ScheduleContext(now, shards, new ClockImpl());
         ctx.update(updateTime1, shard);
         ctx.update(updateTime2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);

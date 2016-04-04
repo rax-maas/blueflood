@@ -25,6 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,10 +141,13 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     /** shard lock manager */
     private final ShardLockManager lockManager;
 
-    public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
+    private final Clock clock;
+
+    public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, Clock clock) {
         this.scheduleTime = currentTimeMillis;
         this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
         this.lockManager = new NoOpShardLockManager();
+        this.clock = clock;
         registerMBean();
     }
 
@@ -351,13 +355,9 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 //When state gets set to "X", before it got persisted, it might get scheduled for rollup
                 //again, if we get delayed metrics. To prevent this we temporarily set last rollup time with current
                 //time. This value wont get persisted.
-                stamp.setLastRollupTimestamp(getSystemCurrentTimeMillis());
+                stamp.setLastRollupTimestamp(clock.now().getMillis());
             }
         }
-    }
-
-    protected long getSystemCurrentTimeMillis() {
-        return System.currentTimeMillis();
     }
 
     /**

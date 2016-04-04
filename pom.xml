@@ -51,6 +51,7 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
     <slf4j.version>1.7.6</slf4j.version>
+    <jodatime.version>2.9</jodatime.version>
   </properties>
 
   <dependencyManagement>

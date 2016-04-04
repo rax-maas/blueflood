@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.utils.ClockImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -7,7 +8,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScheduleContextScheduleSlotsOlderThanTest {
+public class ScheduleContextScheduleEligibleSlotsTest {
 
     private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
     private static int shard = 0;
@@ -19,12 +20,12 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     public void setUp() {
 
         now = 1234000L;
-        ctx = new ScheduleContext(now, shards);
+        ctx = new ScheduleContext(now, shards, new ClockImpl());
         ctx.update(now - 2, shards.get(0));
     }
 
     @Test
-    public void testScheduleSlotsOlderThanAddsToScheduledCount() {
+    public void testScheduleEligibleSlotsAddsToScheduledCount() {
 
         // given
         Assert.assertEquals(0, ctx.getScheduledCount());
@@ -37,7 +38,7 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     }
 
     @Test
-    public void testScheduleSlotsOlderThanSetsHasScheduled() {
+    public void testScheduleEligibleSlotsSetsHasScheduled() {
 
         // given
         Assert.assertFalse(ctx.hasScheduled());
