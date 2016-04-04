@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.eventemitter;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -73,6 +74,7 @@ public class RollupEventEmitter extends Emitter<RollupEvent> {
                 .withUnboundedQueue()
                 .build());
     }
+    @VisibleForTesting
     public RollupEventEmitter(ExecutorService executor) {
         eventExecutors = executor;
     }
