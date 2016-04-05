@@ -42,9 +42,11 @@ public class RollupBatchWriter {
     public void enqueueRollupForWrite(SingleRollupWriteContext rollupWriteContext) {
         rollupQueue.add(rollupWriteContext);
         context.incrementWriteCounter();
-        // enqueue MIN_SIZE batches only if the threadpool is unsaturated. else, enqueue when we have >= MAX_SIZE pending
+        // enqueue MIN_SIZE batches only if the threadpool is unsaturated.
+        // else, enqueue when we have >= MAX_SIZE pending
         if (rollupQueue.size() >= ROLLUP_BATCH_MIN_SIZE) {
-            if (executor.getActiveCount() < executor.getPoolSize() || rollupQueue.size() >= ROLLUP_BATCH_MAX_SIZE) {
+            if (executor.getActiveCount() < executor.getPoolSize() ||
+                    rollupQueue.size() >= ROLLUP_BATCH_MAX_SIZE) {
                 drainBatch();
             }
         }
