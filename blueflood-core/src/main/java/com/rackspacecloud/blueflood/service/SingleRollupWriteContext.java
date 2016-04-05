@@ -31,6 +31,13 @@ public class SingleRollupWriteContext {
     private final MetricColumnFamily destinationCF;
     private final Granularity granularity;
 
+    public SingleRollupWriteContext(Rollup rollup,
+                                    SingleRollupReadContext singleRollupReadContext,
+                                    MetricColumnFamily dstCF) {
+        this(rollup, singleRollupReadContext.getLocator(),
+                singleRollupReadContext.getRollupGranularity(), dstCF,
+                singleRollupReadContext.getRange().getStart());
+    }
     @VisibleForTesting
     public SingleRollupWriteContext(Rollup rollup, Locator locator,
                                     Granularity granularity,
@@ -40,14 +47,6 @@ public class SingleRollupWriteContext {
         this.granularity = granularity;
         this.destinationCF = destCf;
         this.timestamp = timestamp;
-    }
-
-    public SingleRollupWriteContext(Rollup rollup,
-                                    SingleRollupReadContext singleRollupReadContext,
-                                    MetricColumnFamily dstCF) {
-        this(rollup, singleRollupReadContext.getLocator(),
-                singleRollupReadContext.getRollupGranularity(), dstCF,
-                singleRollupReadContext.getRange().getStart());
     }
 
     public Rollup getRollup() {
