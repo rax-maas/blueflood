@@ -54,7 +54,6 @@ public class RollupBatchWriter {
 
     public synchronized void drainBatch() {
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-        SingleRollupWriteContext ctx;
         try {
             for (int i=0; i<=ROLLUP_BATCH_MAX_SIZE; i++) {
                 writeContexts.add(rollupQueue.remove());
