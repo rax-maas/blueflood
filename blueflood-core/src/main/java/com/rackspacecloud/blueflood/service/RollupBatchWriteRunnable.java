@@ -27,10 +27,13 @@ import java.util.ArrayList;
 public class RollupBatchWriteRunnable  implements Runnable {
     private final RollupExecutionContext executionContext;
     private final ArrayList<SingleRollupWriteContext> writeContexts;
-    private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Per Batch");
-    private static final Timer batchWriteTimer = Metrics.timer(RollupService.class, "Rollup Batch Write");
+    private static final Histogram rollupsPerBatch =
+            Metrics.histogram(RollupService.class, "Rollups Per Batch");
+    private static final Timer batchWriteTimer =
+            Metrics.timer(RollupService.class, "Rollup Batch Write");
 
-    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts, RollupExecutionContext executionContext) {
+    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts,
+                                    RollupExecutionContext executionContext) {
         this.writeContexts = writeContexts;
         this.executionContext = executionContext;
     }
