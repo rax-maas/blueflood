@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 public class RollupBatchWriteRunnableTest {
 
     @Test
-    public void runSendsRollupsToWrierAndDecrementsCount() throws ConnectionException {
+    public void runSendsRollupsToWriterAndDecrementsCount() throws ConnectionException {
 
         // given
         ArrayList<SingleRollupWriteContext> wcs = new ArrayList<SingleRollupWriteContext>();
