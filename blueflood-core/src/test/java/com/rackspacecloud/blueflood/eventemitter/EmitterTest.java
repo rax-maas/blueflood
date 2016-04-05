@@ -88,7 +88,9 @@ public class EmitterTest {
                 return null;
             }
         });
-        Thread.sleep(1000);
+
+        Thread.sleep(1000); // wait for the threads to get to the startLatch.await() calls
+
         //Assert that store is empty before testing emission
         Assert.assertTrue(store.isEmpty());
         startLatch.countDown();
