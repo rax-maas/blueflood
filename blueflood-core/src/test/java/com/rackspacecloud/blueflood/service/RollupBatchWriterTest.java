@@ -151,4 +151,44 @@ public class RollupBatchWriterTest {
         verify(executor).execute(Matchers.<Runnable>any());
         verifyNoMoreInteractions(executor);
     }
+
+    @Test
+    public void enqueuingMaxSizeTriggersBatching() {
+
+        // given
+        ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
+        // if active count == pool size, the RollupBatchWriter will think the
+        // thread pool is saturated, and not drain
+        doReturn(1).when(executor).getActiveCount();
+        doReturn(1).when(executor).getPoolSize();
+
+        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
+        SingleRollupWriteContext[] srwcs = new SingleRollupWriteContext[100];
+        int i;
+        for (i = 0; i < 100; i++) {
+            srwcs[i] = mock(SingleRollupWriteContext.class);
+        }
+        // ROLLUP_BATCH_MAX_SIZE default value is 100
+
+        RollupBatchWriter rbw = new RollupBatchWriter(executor, ctx);
+
+        // when
+        for (i = 0; i < 100; i++) {
+            rbw.enqueueRollupForWrite(srwcs[i]);
+        }
+
+        // then
+        verify(ctx, times(100)).incrementWriteCounter();
+        verifyNoMoreInteractions(ctx);
+
+        for (i = 0; i < 100; i++) {
+            verifyZeroInteractions(srwcs[i]);
+        }
+
+        // if the queue size >= min size, then the executor will be queried
+        verify(executor, times(96)).getActiveCount();   // ROLLUP_BATCH_MAX_SIZE - ROLLUP_BATCH_MIN_SIZE + 1
+        verify(executor, times(96)).getPoolSize();
+        verify(executor).execute(Matchers.<Runnable>any());
+        verifyNoMoreInteractions(executor);
+    }
 }
