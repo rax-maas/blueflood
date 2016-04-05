@@ -577,7 +577,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> e0 : updates.entrySet()) {
                     for (Map.Entry<Integer, UpdateStamp> e1 : e0.getValue().entrySet()) {
                         SlotState state = new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState());
-                        state.withTimestamp(e1.getValue().getTimestamp());
+                        state.withTimestamp(e1.getValue().getTimestamp())
+                             .withLastUpdatedTimestamp(state.getLastUpdatedTimestamp());
+
                         states.add(state);
                     }
                 }
