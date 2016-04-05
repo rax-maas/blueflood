@@ -113,8 +113,8 @@ public class RollupBatchWriterTest {
 
         // given
         ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
-        // if active count == pool size, the RollupBatchWriter will think the
-        // thread pool is saturated, and not drain
+        // if active count < pool size, the RollupBatchWriter will think the
+        // thread pool is NOT saturated, and start batching
         doReturn(0).when(executor).getActiveCount();
         doReturn(1).when(executor).getPoolSize();
 
