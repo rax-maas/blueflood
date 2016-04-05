@@ -191,4 +191,42 @@ public class RollupBatchWriterTest {
         verify(executor).execute(Matchers.<Runnable>any());
         verifyNoMoreInteractions(executor);
     }
+
+    @Test
+    public void drainBatchWithNoItemsDoesNotTriggerBatching() {
+
+        // given
+        ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
+        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
+        RollupBatchWriter rbw = new RollupBatchWriter(executor, ctx);
+
+        // when
+        rbw.drainBatch();
+
+        // then
+        verifyZeroInteractions(ctx);
+
+        verifyZeroInteractions(executor);
+    }
+
+    @Test
+    public void drainBatchWithSingleItemTriggersBatching() {
+
+        // given
+        ThreadPoolExecutor executor = mock(ThreadPoolExecutor.class);
+        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
+        RollupBatchWriter rbw = new RollupBatchWriter(executor, ctx);
+        SingleRollupWriteContext srwc = mock(SingleRollupWriteContext.class);
+        rbw.enqueueRollupForWrite(srwc);
+
+        // when
+        rbw.drainBatch();
+
+        // then
+        verify(ctx).incrementWriteCounter();    // this invocation due to setup
+        verifyNoMoreInteractions(ctx);
+
+        verify(executor).execute(Matchers.<Runnable>any());
+        verifyNoMoreInteractions(executor);
+    }
 }
