@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Rackspace
+ * Copyright 2013 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,49 +17,40 @@
 package com.rackspacecloud.blueflood.eventemitter;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.SimpleNumber;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 
-public class RollupEventEmitterTest {
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
+public class EmitterTest {
 
     final String testEventName = "test";
     final String testEventName2 = "test2";
 
     List<RollupEvent> store;
     List<RollupEvent> store2;
-    RollupEventEmitter emitter;
+    Emitter<RollupEvent> emitter;
     Emitter.Listener<RollupEvent> listener;
     Emitter.Listener<RollupEvent> listener2;
     RollupEvent event1;
     RollupEvent event2;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() {
         store = Collections.synchronizedList(new ArrayList<RollupEvent>());
         store2 = Collections.synchronizedList(new ArrayList<RollupEvent>());
-        emitter = new RollupEventEmitter(new SynchronousExecutorService());
-
-        emitter.on(RollupEventEmitter.ROLLUP_EVENT_NAME, new Emitter.Listener() {
-            @Override
-            public void call(Object[] args) {
-                // do nothing
-            }
-        });
-        Points<SimpleNumber> points = new Points<SimpleNumber>();
-        Rollup rollup = Rollup.BasicFromRaw.compute(points);
-
+        emitter = new Emitter<RollupEvent>();
         listener = new EventListener(store);
         listener2 = new EventListener(store2);
-        event1 = new RollupEvent(null, rollup, "event1", "gran", 0);
-        event2 = new RollupEvent(null, rollup, "event2", "gran", 0);
+        event1 = new RollupEvent(null, null, "event1", "gran", 0);
+        event2 = new RollupEvent(null, null, "event2", "gran", 0);
     }
 
     @Test
@@ -78,12 +69,14 @@ public class RollupEventEmitterTest {
                 .withCorePoolSize(2)
                 .withMaxPoolSize(3)
                 .build();
+        final RollupEvent obj1 = new RollupEvent(null, null, "payload1", "gran", 0);
+        final RollupEvent obj2 = new RollupEvent(null, null, "payload2", "gran", 0);
         final CountDownLatch startLatch = new CountDownLatch(1);
         Future<Object> f1 = executors.submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 startLatch.await();
-                emitter.emit(testEventName, event1);
+                emitter.emit(testEventName, obj1);
                 return null;
             }
         });
@@ -91,7 +84,7 @@ public class RollupEventEmitterTest {
             @Override
             public Object call() throws Exception {
                 startLatch.await();
-                emitter.emit(testEventName, event2);
+                emitter.emit(testEventName, obj2);
                 return null;
             }
         });
@@ -104,8 +97,8 @@ public class RollupEventEmitterTest {
         f1.get();
         f2.get();
         Assert.assertEquals(store.size(), 2);
-        Assert.assertTrue(store.contains(event1));
-        Assert.assertTrue(store.contains(event2));
+        Assert.assertTrue(store.contains(obj1));
+        Assert.assertTrue(store.contains(obj2));
     }
 
     @Test
@@ -121,14 +114,13 @@ public class RollupEventEmitterTest {
     }
 
     @Test
-    public void testOnce() throws ExecutionException, InterruptedException {
+    public void testOnce() {
         //Test once
         emitter.once(testEventName, listener);
-        Future f = emitter.emit(testEventName, event1);
-        f.get();
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran", 0));
         Assert.assertEquals(store.size(), 1);
         store.clear();
-        emitter.emit(testEventName, event2);
+        emitter.emit(testEventName, new RollupEvent(null, null, "payload1", "gran", 0));
         Assert.assertEquals(store.size(), 0);
     }
 
@@ -305,39 +297,6 @@ public class RollupEventEmitterTest {
 
         Assert.assertEquals(1, store2.size());
         Assert.assertSame(event1, store2.get(0));
-    }
-
-    private class SynchronousExecutorService extends AbstractExecutorService {
-
-        @Override
-        public void shutdown() {
-            throw new UnsupportedOperationException("method not implemented");
-        }
-
-        @Override
-        public List<Runnable> shutdownNow() {
-            throw new UnsupportedOperationException("method not implemented");
-        }
-
-        @Override
-        public boolean isShutdown() {
-            throw new UnsupportedOperationException("method not implemented");
-        }
-
-        @Override
-        public boolean isTerminated() {
-            throw new UnsupportedOperationException("method not implemented");
-        }
-
-        @Override
-        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-            throw new UnsupportedOperationException("method not implemented");
-        }
-
-        @Override
-        public void execute(Runnable command) {
-            command.run();
-        }
     }
 
     private class EventListener implements Emitter.Listener<RollupEvent> {

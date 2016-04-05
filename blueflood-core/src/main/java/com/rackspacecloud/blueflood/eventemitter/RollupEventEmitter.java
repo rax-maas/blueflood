@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.eventemitter;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
@@ -30,20 +31,52 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.concurrent.*;
 
+/**
+ * @todo {@code RollupEventEmitter} should be modified so that it can be used
+ * as a drop-in replacement for {@link Emitter<RollupEvent>}.
+ *
+ * The {@code RollupEventEmitter} class violates the Liskov substitution
+ * principle, in that it doesn't behave the same as
+ * {@link Emitter<RollupEvent>}. Moreover, the differences in behavior depend
+ * upon particular details of the inputs.
+ *
+ * For example, if there is no listener registered for
+ * {@link RollupEventEmitter#ROLLUP_EVENT_NAME}, then *ALL* events are silently
+ * ignored. No other listeners will ever be notified of their events, even
+ * events of other names.
+ *
+ * Also, if any event doesn't have a {@link RollupEvent#rollup} of type
+ * {@link BasicRollup}, that event will be silently ignored. This is the case
+ * if the event's {@link RollupEvent#rollup} field is {@code null}, or if it's
+ * another rollup type, such as
+ * {@link com.rackspacecloud.blueflood.types.HistogramRollup}
+ *
+ * @todo Merge {@code RollupEventEmitter} and {@link Emitter<>} into a single
+ * class. {@link Emitter<>} doesn't appear to be used anywhere else.
+ *
+ * @todo Change the {@code eventPayload}/{@code args} parameter of
+ * {@link RollupEventEmitter#emit} from an array to a single item. There don't
+ * appear to be any parts of the codebase that use more than a single event
+ * argument.
+ */
 public class RollupEventEmitter extends Emitter<RollupEvent> {
     private static final Logger log = LoggerFactory.getLogger(ModuleLoader.class);
     private static final int numberOfWorkers = 5;
     public static final String ROLLUP_EVENT_NAME = "rollup".intern();
-    private static ThreadPoolExecutor eventExecutors;
+    private final ExecutorService eventExecutors;
     private static final RollupEventEmitter instance = new RollupEventEmitter();
 
-    private RollupEventEmitter() {
-        eventExecutors = new ThreadPoolBuilder()
+    public RollupEventEmitter() {
+        this(new ThreadPoolBuilder()
                 .withName("RollupEventEmitter ThreadPool")
                 .withCorePoolSize(numberOfWorkers)
                 .withMaxPoolSize(numberOfWorkers)
                 .withUnboundedQueue()
-                .build();
+                .build());
+    }
+    @VisibleForTesting
+    public RollupEventEmitter(ExecutorService executor) {
+        eventExecutors = executor;
     }
 
     public static RollupEventEmitter getInstance() { return instance; }
