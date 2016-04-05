@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.utils;
 
 import org.joda.time.Instant;
 
-public class ClockImpl implements Clock {
+public class DefaultClockImpl implements Clock {
 
     @Override
     public Instant now() {

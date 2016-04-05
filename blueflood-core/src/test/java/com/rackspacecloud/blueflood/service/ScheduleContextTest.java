@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Clock;
-import com.rackspacecloud.blueflood.utils.ClockImpl;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.Cache;
@@ -56,7 +56,7 @@ public class ScheduleContextTest {
     @Test
     public void testSimpleUpdateAndSchedule() {
         long clock = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(clock, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(clock, shards, new DefaultClockImpl());
         Collection<SlotKey> scheduled = new ArrayList<SlotKey>();
         Collection<SlotKey> expected = new ArrayList<SlotKey>();
 
@@ -150,7 +150,7 @@ public class ScheduleContextTest {
     @Test
     public void test48HoursSequential() {
         long clock = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(clock, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(clock, shards, new DefaultClockImpl());
         int count = 0;
 
         // every 30s for 48 hrs.
@@ -228,7 +228,7 @@ public class ScheduleContextTest {
     @Test
     public void test48HoursInterlaced() {
         long clock = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(clock, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(clock, shards, new DefaultClockImpl());
 
         int count = 0;
         // every 30s for 48 hrs.
@@ -252,7 +252,7 @@ public class ScheduleContextTest {
     @Test
     public void testMultithreadedness() {
         final AtomicLong clock = new AtomicLong(1234L);
-        final ScheduleContext ctx = new ScheduleContext(clock.get(), shards, new ClockImpl());
+        final ScheduleContext ctx = new ScheduleContext(clock.get(), shards, new DefaultClockImpl());
         final CountDownLatch latch = new CountDownLatch(3);
         final AtomicInteger updateCount = new AtomicInteger(0);
         final AtomicInteger scheduleCount = new AtomicInteger(0);
@@ -336,8 +336,8 @@ public class ScheduleContextTest {
         long time = 1234000;
         Collection<Integer> shardsA = Lists.newArrayList(0, 1);
         Collection<Integer> shardsB = Lists.newArrayList(2,3,4);
-        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new ClockImpl()); // 327,345,444,467,504,543, 32,426,476,571
-        ScheduleContext ctxB = new ScheduleContext(time, shardsB, new ClockImpl()); // 184,320,456,526, 435,499, 20,96,107,236,429
+        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new DefaultClockImpl()); // 327,345,444,467,504,543, 32,426,476,571
+        ScheduleContext ctxB = new ScheduleContext(time, shardsB, new DefaultClockImpl()); // 184,320,456,526, 435,499, 20,96,107,236,429
         Collection<Integer> allShards = Lists.newArrayList(0,1,2,3,4);
 
         time += 1000;
@@ -369,7 +369,7 @@ public class ScheduleContextTest {
     @Test
     public void testRecentlyScheduledShards() {
         long now = 1234000;
-        ScheduleContext ctx = new ScheduleContext(now, Util.parseShards("ALL"), new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, Util.parseShards("ALL"), new DefaultClockImpl());
         // change the cache with one that expires after 1 sec.
         Cache<Integer, Long> expiresQuickly = CacheBuilder.newBuilder().expireAfterWrite(2, TimeUnit.SECONDS).build();
         Whitebox.setInternalState(ctx, "recentlyScheduledShards", expiresQuickly);
@@ -400,7 +400,7 @@ public class ScheduleContextTest {
         Granularity gran = Granularity.MIN_5;
         int slot = gran.slot(now);
 
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         ctx.update(updateTime, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
 
@@ -423,7 +423,7 @@ public class ScheduleContextTest {
 
         // given
         long now = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
 
         // precondition
         Assert.assertEquals(0, ctx.getScheduledCount());
@@ -446,7 +446,7 @@ public class ScheduleContextTest {
         int slot = gran.slot(now);
         SlotKey slotKey = SlotKey.of(gran, slot, shard);
 
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         ShardStateManager mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
 
@@ -482,7 +482,7 @@ public class ScheduleContextTest {
         int slot = gran.slot(now);
         SlotKey slotKey = SlotKey.of(gran, slot, shard);
 
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         ctx.update(updateTime, shard);
 
         // precondition
@@ -505,7 +505,7 @@ public class ScheduleContextTest {
         int slot = gran.slot(now);
         SlotKey slotKey = SlotKey.of(gran, slot, shard);
 
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         ctx.update(updateTime, shard);
 
         // precondition
@@ -531,7 +531,7 @@ public class ScheduleContextTest {
         int slot = gran.slot(now);
         SlotKey slotKey = SlotKey.of(gran, slot, shard);
 
-        ScheduleContext ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ScheduleContext ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         //ctx.update(updateTime, shard);
 
         // precondition

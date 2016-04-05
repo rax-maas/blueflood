@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.utils.ClockImpl;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +20,7 @@ public class ScheduleContextScheduleEligibleSlotsTest {
     public void setUp() {
 
         now = 1234000L;
-        ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         ctx.update(now - 2, shards.get(0));
     }
 

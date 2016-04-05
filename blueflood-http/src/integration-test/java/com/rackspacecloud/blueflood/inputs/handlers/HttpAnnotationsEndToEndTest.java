@@ -23,7 +23,7 @@ import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.utils.ClockImpl;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -68,7 +68,7 @@ public class HttpAnnotationsEndToEndTest {
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards, new ClockImpl()));
+        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards, new DefaultClockImpl()));
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());

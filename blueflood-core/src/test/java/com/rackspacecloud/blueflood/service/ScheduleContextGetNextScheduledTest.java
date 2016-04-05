@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.utils.ClockImpl;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class ScheduleContextGetNextScheduledTest {
         coarserGran = gran.coarser();
         coarserSlot = coarserGran.slot(updateTime);
 
-        ctx = new ScheduleContext(now, shards, new ClockImpl());
+        ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
