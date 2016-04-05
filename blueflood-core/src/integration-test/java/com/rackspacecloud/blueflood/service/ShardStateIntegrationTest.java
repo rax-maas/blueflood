@@ -507,10 +507,6 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
         }
 
-        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
-        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
-        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, ctxRollup.getScheduledCount());
-
         // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
         ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
