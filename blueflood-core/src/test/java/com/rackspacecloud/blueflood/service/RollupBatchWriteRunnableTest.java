@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
