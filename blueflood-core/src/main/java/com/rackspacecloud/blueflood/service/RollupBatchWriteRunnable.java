@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -27,19 +28,30 @@ import java.util.ArrayList;
 public class RollupBatchWriteRunnable  implements Runnable {
     private final RollupExecutionContext executionContext;
     private final ArrayList<SingleRollupWriteContext> writeContexts;
-    private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Per Batch");
-    private static final Timer batchWriteTimer = Metrics.timer(RollupService.class, "Rollup Batch Write");
+    private final AstyanaxWriter astyanaxWriter;
+    private static final Histogram rollupsPerBatch =
+            Metrics.histogram(RollupService.class, "Rollups Per Batch");
+    private static final Timer batchWriteTimer =
+            Metrics.timer(RollupService.class, "Rollup Batch Write");
 
-    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts, RollupExecutionContext executionContext) {
+    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts,
+                                    RollupExecutionContext executionContext) {
+        this(writeContexts, executionContext, AstyanaxWriter.getInstance());
+    }
+    @VisibleForTesting
+    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts,
+                                    RollupExecutionContext executionContext,
+                                    AstyanaxWriter astyanaxWriter) {
         this.writeContexts = writeContexts;
         this.executionContext = executionContext;
+        this.astyanaxWriter = astyanaxWriter;
     }
 
     @Override
     public void run() {
         Timer.Context ctx = batchWriteTimer.time();
         try {
-            AstyanaxWriter.getInstance().insertRollups(writeContexts);
+            astyanaxWriter.insertRollups(writeContexts);
         } catch (ConnectionException e) {
             executionContext.markUnsuccessful(e);
         }
