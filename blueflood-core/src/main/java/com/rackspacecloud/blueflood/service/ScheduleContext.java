@@ -192,10 +192,18 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
     }
 
     /**
-     * Loop through all slots that are older than {@code maxAgeMillis}, at all
+     * Loop through all slots that are eligible for rollup, at all
      * granularities, in all managed shards. If any are found that are not
      * already running or scheduled, then add them to the queue of scheduled
-     * slots. Note that {@code maxAgeMillis} is an age value, not a timestamp.
+     * slots.
+     *
+     * Eligibility:
+     * 1) slots should be older than {@code maxAgeMillis}
+     * 2) If slot is identified as being picked for re-roll, slots should be
+     *    older than {@code delayedMetricsMaxAgeMillis}
+     *
+     * Note that both {@code maxAgeMillis} and {@code delayedMetricsMaxAgeMillis}
+     * are age values, not a timestamp.
      * If the difference between {@link #scheduleTime} and a given slot's
      * {@link UpdateStamp} in milliseconds is greater than
      * {@code maxAgeMillis}, then that slot will scheduled.
