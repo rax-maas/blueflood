@@ -26,6 +26,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -94,7 +95,7 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     private static final Timer batchedWritesTimerMetric = Metrics.timer(MetadataCache.class, "Metadata batched writes timer");
 
     private static final MetadataCache INSTANCE = new MetadataCache(defaultExpiration, defaultConcurrency);
-    private MetadataIO io = new AstyanaxMetadataIO();
+    private MetadataIO io = IOContainer.fromConfig().getMetadataIO();
     private static Timer cacheSaveTimer = Metrics.timer(MetadataCache.class, "Persistence Save");
     private static Timer cacheLoadTimer = Metrics.timer(MetadataCache.class, "Persistence Load");
     private static final Meter updatedMetricMeter = Metrics.meter(MetadataCache.class, "Received updated metric");
