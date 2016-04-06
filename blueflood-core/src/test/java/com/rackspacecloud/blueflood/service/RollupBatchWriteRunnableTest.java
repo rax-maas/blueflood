@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -18,13 +19,23 @@ import static org.mockito.Mockito.*;
 
 public class RollupBatchWriteRunnableTest {
 
+    ArrayList<SingleRollupWriteContext> wcs;
+    RollupExecutionContext ctx;
+    AstyanaxWriter writer;
+    RollupBatchWriteRunnable rbwr;
+
+    @Before
+    public void setUp() {
+        wcs = new ArrayList<SingleRollupWriteContext>();
+        ctx = mock(RollupExecutionContext.class);
+        writer = mock(AstyanaxWriter.class);
+        rbwr = new RollupBatchWriteRunnable(wcs, ctx, writer);
+    }
+
     @Test
     public void runSendsRollupsToWriterAndDecrementsCount() throws ConnectionException {
 
         // given
-        ArrayList<SingleRollupWriteContext> wcs = new ArrayList<SingleRollupWriteContext>();
-
-        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
         final AtomicLong decrementCount = new AtomicLong(0);
         Answer contextAnswer = new Answer() {
             @Override
@@ -36,7 +47,6 @@ public class RollupBatchWriteRunnableTest {
         doAnswer(contextAnswer).when(ctx).decrementWriteCounter(anyLong());
 
 
-        AstyanaxWriter writer = mock(AstyanaxWriter.class);
         final Object[] insertRollupsArg = new Object[1];
         Answer writerAnswer = new Answer() {
             @Override
@@ -47,8 +57,6 @@ public class RollupBatchWriteRunnableTest {
         };
         doAnswer(writerAnswer).when(writer).insertRollups(
                 Matchers.<ArrayList<SingleRollupWriteContext>>any());
-
-        RollupBatchWriteRunnable rbwr = new RollupBatchWriteRunnable(wcs, ctx, writer);
 
         // when
         rbwr.run();
@@ -66,14 +74,9 @@ public class RollupBatchWriteRunnableTest {
     public void connectionExceptionMarksUnsuccessful() throws ConnectionException {
 
         // given
-        ArrayList<SingleRollupWriteContext> wcs = new ArrayList<SingleRollupWriteContext>();
-        ArrayList<SingleRollupWriteContext> wcs2 = new ArrayList<SingleRollupWriteContext>();
-        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
-        AstyanaxWriter writer = mock(AstyanaxWriter.class);
         Throwable cause = new ConnectionException("exception for testing purposes") { };
         doThrow(cause).when(writer).insertRollups(
                 Matchers.<ArrayList<SingleRollupWriteContext>>any());
-        RollupBatchWriteRunnable rbwr = new RollupBatchWriteRunnable(wcs, ctx, writer);
 
         // when
         rbwr.run();
@@ -90,14 +93,9 @@ public class RollupBatchWriteRunnableTest {
     public void otherExceptionBreaksEverything() throws ConnectionException {
 
         // given
-        ArrayList<SingleRollupWriteContext> wcs = new ArrayList<SingleRollupWriteContext>();
-        ArrayList<SingleRollupWriteContext> wcs2 = new ArrayList<SingleRollupWriteContext>();
-        RollupExecutionContext ctx = mock(RollupExecutionContext.class);
-        AstyanaxWriter writer = mock(AstyanaxWriter.class);
         Throwable cause = new UnsupportedOperationException("exception for testing purposes");
         doThrow(cause).when(writer).insertRollups(
                 Matchers.<ArrayList<SingleRollupWriteContext>>any());
-        RollupBatchWriteRunnable rbwr = new RollupBatchWriteRunnable(wcs, ctx, writer);
 
         // when
         Throwable caught = null;
