@@ -6,13 +6,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.rackspacecloud.blueflood.io.MetadataIO;
+import com.rackspacecloud.blueflood.io.TestIO;
 import com.rackspacecloud.blueflood.types.Locator;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-public class InMemoryMetadataIO implements MetadataIO {
+public class InMemoryMetadataIO implements MetadataIO, TestIO {
     public final Table<Locator, String, String> backingTable = Tables.newCustomTable(
             Maps.<Locator, Map<String, String>>newHashMap(),
             new Supplier<Map<String, String>>() {
@@ -53,7 +54,7 @@ public class InMemoryMetadataIO implements MetadataIO {
     }
 
     @Override
-    public int getNumberOfRowsTest() throws IOException {
+    public long getKeyCount( String cf ) throws Exception {
         return backingTable.rowKeySet().size();
     }
 }

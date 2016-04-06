@@ -16,42 +16,51 @@
 
 package com.rackspacecloud.blueflood.io.astyanax;
 
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.TestIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
+
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
+
+    private TestIO testIO = new AstyanaxTestIO();
 
     @Test
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
-        assertNumberOfRows("metrics_string", 0);
-        assertNumberOfRows("metrics_full", 0);
-        assertNumberOfRows("metrics_locator", 0);
+
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_STRING_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_FULL_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_LOCATOR_NAME ) );
 
         writeMetric("string_metric", "This is a string test");
-        
-        assertNumberOfRows("metrics_string", 1);
-        assertNumberOfRows("metrics_full", 0);
-        assertNumberOfRows("metrics_locator", 0);
+
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_STRING_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_FULL_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_LOCATOR_NAME ) );
     }
 
     @Test
     public void testEnsureNumericMetricsDoNotEndUpInStringSpaces() throws Exception {
-        assertNumberOfRows("metrics_string", 0);
-        assertNumberOfRows("metrics_full", 0);
-        assertNumberOfRows("metrics_locator", 0);
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_STRING_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_FULL_NAME ) );
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_LOCATOR_NAME ) );
 
         writeMetric("long_metric", 64L);
-        
-        assertNumberOfRows("metrics_string", 0);
-        assertNumberOfRows("metrics_full", 1);
-        assertNumberOfRows("metrics_locator", 1);
+
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_STRING_NAME ) );
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_FULL_NAME ) );
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_LOCATOR_NAME ) );
+
     }
 
     @Test
     public void testMetadataGetsWritten() throws Exception {
-        assertNumberOfRows("metrics_metadata", 0);
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
+
 
         Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
@@ -71,32 +80,32 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         writer.writeMetadataValue(loc1, "e", "Some5String");
         writer.writeMetadataValue(loc1, "f", "Some6String");
 
-        assertNumberOfRows("metrics_metadata", 1);
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
 
         // new locator means new row.
         writer.writeMetadataValue(loc2, "a", "strrrrring");
-        assertNumberOfRows("metrics_metadata", 2);
+        assertEquals( 2, testIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
     }
 
     @Test
     public void testExcessEnumMetricGetsWritten() throws Exception {
-        assertNumberOfRows("metrics_excess_enums", 0);
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
         writer.writeExcessEnumMetric(loc1);
-        assertNumberOfRows("metrics_excess_enums", 1);
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         // new locator means new row.
         writer.writeExcessEnumMetric(loc2);
-        assertNumberOfRows("metrics_excess_enums", 2);
+        assertEquals( 2, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
     }
 
     @Test
     public void testExcessEnumMetricDoesNotDuplicates() throws Exception {
-        assertNumberOfRows("metrics_excess_enums", 0);
+        assertEquals( 0, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         Locator loc1 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
         Locator loc2 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
@@ -108,11 +117,11 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         writer.writeExcessEnumMetric(loc1);
         writer.writeExcessEnumMetric(loc2);
         writer.writeExcessEnumMetric(loc3);
-        assertNumberOfRows("metrics_excess_enums", 1);
+        assertEquals( 1, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         // new locator means new row.
         writer.writeExcessEnumMetric(loc4);
-        assertNumberOfRows("metrics_excess_enums", 2);
+        assertEquals( 2, testIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
     }
 
 }
