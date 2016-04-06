@@ -16,7 +16,11 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.base.Strings;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxTestIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxTestIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -34,6 +38,9 @@ public class IOContainer {
     private static final Configuration configuration = Configuration.getInstance();
 
     private ShardStateIO shardStateIO;
+    private MetadataIO metadataIO;
+    private TestIO testIO;
+
     // more IO classes to follow
 
     /**
@@ -54,11 +61,26 @@ public class IOContainer {
      * @param driver
      */
     public IOContainer(DriverType driver) {
+
         if ( driver == DriverType.DATASTAX ) {
+
             shardStateIO = new DatastaxShardStateIO();
+            metadataIO = new DatastaxMetadataIO();
+            testIO = new DatastaxTestIO();
+
         } else {
+
             shardStateIO = new AstyanaxShardStateIO();
+            metadataIO = new AstyanaxMetadataIO();
+            testIO = new AstyanaxTestIO();
         }
+    }
+
+    /**
+     * @return a utility class for tests
+     */
+    public TestIO getTestIO() {
+        return testIO;
     }
 
     /**
@@ -66,6 +88,13 @@ public class IOContainer {
      */
     public ShardStateIO getShardStateIO() {
         return shardStateIO;
+    }
+
+    /**
+     * @return a class for reading/writing Metadata
+     */
+    public MetadataIO getMetadataIO() {
+        return metadataIO;
     }
 
     /**
