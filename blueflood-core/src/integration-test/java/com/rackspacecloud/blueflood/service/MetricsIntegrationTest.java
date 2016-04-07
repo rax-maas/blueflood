@@ -29,7 +29,6 @@ import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Assert;
@@ -624,7 +623,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
 
         // Now we would have the longest row for each shard because we filled all the slots.
         // Now test whether getShardState returns all the slots
-        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards, new DefaultClockImpl());
+        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), shards);
         ShardStateManager shardStateManager = ctx.getShardStateManager();
 
         for (Integer shard : shards) {
@@ -656,7 +655,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         slotUpdates.put(slot, new UpdateStamp(time++, UpdateStamp.State.Rolled, true));
         shardStateIO.putShardState(shard, updates);
 
-        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard), new DefaultClockImpl());
+        ScheduleContext ctx = new ScheduleContext(System.currentTimeMillis(), Lists.newArrayList(shard));
 
         Collection<SlotState> slotStates = shardStateIO.getShardState(shard);
         for (SlotState slotState : slotStates) {

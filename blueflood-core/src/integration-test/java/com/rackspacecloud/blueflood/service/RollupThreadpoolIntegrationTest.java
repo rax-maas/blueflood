@@ -22,7 +22,6 @@ import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.After;
@@ -81,7 +80,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         Assert.assertTrue(threadsInRollupPool < locatorsForTestShard);
 
         // great. now lets schedule those puppies.
-        ScheduleContext ctx = new ScheduleContext(time, Util.parseShards(String.valueOf(shardToTest)), new DefaultClockImpl());
+        ScheduleContext ctx = new ScheduleContext(time, Util.parseShards(String.valueOf(shardToTest)));
         RollupService rollupService = new RollupService(ctx);
         rollupService.setKeepingServerTime(false);
 

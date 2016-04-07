@@ -23,7 +23,6 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -84,7 +83,7 @@ public class HttpIntegrationTestBase {
         httpPortIngest = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         httpPortQuery = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards, new DefaultClockImpl()));
+        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
         // setup elasticsearch
         esSetup = new EsSetup();

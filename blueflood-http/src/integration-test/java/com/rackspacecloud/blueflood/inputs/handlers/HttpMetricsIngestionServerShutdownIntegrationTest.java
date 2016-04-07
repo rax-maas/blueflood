@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -65,7 +64,7 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         Configuration.getInstance().init();
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
-        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards, new DefaultClockImpl()));
+        context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
         esSetup = new EsSetup();
         esSetup.execute(EsSetup.deleteAll());

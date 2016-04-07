@@ -2,7 +2,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,7 @@ public class ScheduleContextUpdateTest {
     public void setUp() {
 
         now = 1234000L;
-        ctx = new ScheduleContext(now, shards, new DefaultClockImpl());
+        ctx = new ScheduleContext(now, shards);
         mgr = ctx.getShardStateManager();
         slotkey5 = SlotKey.of(Granularity.MIN_5, 4, shards.get(0));
         slotkey20 = SlotKey.of(Granularity.MIN_20, 1, shards.get(0));

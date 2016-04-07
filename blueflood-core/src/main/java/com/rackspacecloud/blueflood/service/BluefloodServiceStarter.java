@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -311,7 +310,7 @@ public class BluefloodServiceStarter {
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
         final ScheduleContext rollupContext =
-                new ScheduleContext(System.currentTimeMillis(), shards, new DefaultClockImpl());
+                new ScheduleContext(System.currentTimeMillis(), shards);
 
         log.info("Starting blueflood services");
         startShardStateServices(rollupContext);

@@ -22,7 +22,6 @@ import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -56,7 +55,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Test
     public void testSingleShardManager() {
         long time = 1234000L;
-        ScheduleContext ctx = new ScheduleContext(time, shards, new DefaultClockImpl());
+        ScheduleContext ctx = new ScheduleContext(time, shards);
         ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), this.io);
         ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), this.io);
         
@@ -93,8 +92,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     public void testRollupFailureForDelayedMetrics() {
         long time = 1234000L;
         Collection<Integer> managedShards = Lists.newArrayList(0);
-        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards, new DefaultClockImpl());
-        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards, new DefaultClockImpl());
+        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
+        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
         // Shard workers for rollup ctx
         ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
         ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
@@ -154,7 +153,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         // based on the timestamp on the finer slot's UpdateStamp, not based on the relative courser slot from the finer slot
         long time = 1386823200000L;
         final Collection<Integer> shards = Lists.newArrayList(123);
-        ScheduleContext ctxA = new ScheduleContext(time, shards, new DefaultClockImpl());
+        ScheduleContext ctxA = new ScheduleContext(time, shards);
 
         ctxA.update(time, 123);
         ShardStateManager.SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
@@ -180,8 +179,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 add(i);
         }};
         
-        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new DefaultClockImpl());
-        ScheduleContext ctxB = new ScheduleContext(time, shardsB, new DefaultClockImpl());
+        ScheduleContext ctxA = new ScheduleContext(time, shardsA);
+        ScheduleContext ctxB = new ScheduleContext(time, shardsB);
 
         ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
         ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
@@ -265,7 +264,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             for (int i : Iterables.concat(shardsA, shardsB)) add(i);
         }};
         
-        ScheduleContext ctxA = new ScheduleContext(time, shardsA, new DefaultClockImpl());
+        ScheduleContext ctxA = new ScheduleContext(time, shardsA);
         ShardStateWorker pushA = new ShardStatePusher(allShards, ctxA.getShardStateManager(), this.io);
         ShardStateWorker pullA = new ShardStatePuller(allShards, ctxA.getShardStateManager(), this.io);
         
@@ -309,7 +308,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final long tryFor = 15000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-        final ScheduleContext ctx = new ScheduleContext(time.get(), shards, new DefaultClockImpl());
+        final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
         final CountDownLatch latch = new CountDownLatch(2);
         final Throwable[] errBucket = new Throwable[2];
         Thread pushPull = new Thread() { public void run() {
@@ -362,7 +361,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final long tryFor = 1000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
-        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards, new DefaultClockImpl()), new ScheduleContext(time.get(), shards, new DefaultClockImpl()));
+        final List<ScheduleContext> ctxs = Lists.newArrayList(new ScheduleContext(time.get(), shards), new ScheduleContext(time.get(), shards));
         final List<ShardStateWorker> workers = Lists.newArrayList(new ShardStatePusher(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePuller(shards, ctxs.get(0).getShardStateManager(), ShardStateIntegrationTest.this.io),
                 new ShardStatePusher(shards, ctxs.get(1).getShardStateManager(), ShardStateIntegrationTest.this.io),
@@ -423,21 +422,21 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         List<ShardStateWorker> allWorkers = new ArrayList<ShardStateWorker>(6);
 
         // Ingestor 1
-        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards, new DefaultClockImpl());
+        ScheduleContext ctxIngestor1 = new ScheduleContext(time, shards);
         ShardStatePuller pullerIngestor1 = new ShardStatePuller(shards, ctxIngestor1.getShardStateManager(), this.io);
         ShardStatePusher pusherIngestor1 = new ShardStatePusher(shards, ctxIngestor1.getShardStateManager(), this.io);
         allWorkers.add(pullerIngestor1);
         allWorkers.add(pusherIngestor1);
 
         // Ingestor 2
-        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards, new DefaultClockImpl());
+        ScheduleContext ctxIngestor2 = new ScheduleContext(time, shards);
         ShardStatePuller pullerIngestor2 = new ShardStatePuller(shards, ctxIngestor2.getShardStateManager(), this.io);
         ShardStatePusher pusherIngestor2 = new ShardStatePusher(shards, ctxIngestor2.getShardStateManager(), this.io);
         allWorkers.add(pullerIngestor2);
         allWorkers.add(pusherIngestor2);
 
         // Rollup slave
-        ScheduleContext ctxRollup = new ScheduleContext(time, shards, new DefaultClockImpl());
+        ScheduleContext ctxRollup = new ScheduleContext(time, shards);
         ShardStatePuller pullerRollup = new ShardStatePuller(shards, ctxRollup.getShardStateManager(), this.io);
         ShardStatePusher pusherRollup = new ShardStatePusher(shards, ctxRollup.getShardStateManager(), this.io);
         allWorkers.add(pullerRollup);
