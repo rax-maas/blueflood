@@ -16,6 +16,11 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.CassandraUtilsIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxCassandraUtilsIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxCassandraUtilsIO;
 import org.junit.runner.RunWith;
 
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
@@ -40,10 +45,12 @@ import java.util.concurrent.TimeUnit;
 @RunWith(Parameterized.class)
 public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
-    private final MetadataIO io;
+    private final MetadataIO metadataIO;
+    private final CassandraUtilsIO cassandraUtilsIO;
     
-    public MetadataCacheIntegrationTest(MetadataIO io) {
-        this.io = io;
+    public MetadataCacheIntegrationTest(MetadataIO mIO, CassandraUtilsIO tIO) {
+        metadataIO = mIO;
+        cassandraUtilsIO = tIO;
     }
 
     @Override
@@ -51,53 +58,47 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         super.setUp();
         
         // equivalent of database truncate.
-        if (io instanceof InMemoryMetadataIO) {
-            ((InMemoryMetadataIO)io).backingTable.clear();
+        if ( metadataIO instanceof InMemoryMetadataIO) {
+            ((InMemoryMetadataIO) metadataIO ).backingTable.clear();
         }
     }
     
     @Test
     public void testPut() throws Exception {
-        assertNumberOfRows("metrics_metadata", 0);
+        Assert.assertEquals( 0, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
         
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        cache.setIO(io);
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
-        Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "chk", "mz", "met");
+        cache.setIO( metadataIO );
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent", "chk", "mz", "met");
+        Locator loc2 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acTwo", "ent", "chk", "mz", "met");
         cache.put(loc1, "metaA", "some string");
         cache.put(loc1, "metaB", "fooz");
         cache.put(loc1, "metaC", "some other string");
 
-        if (io instanceof AstyanaxMetadataIO)
-            assertNumberOfRows("metrics_metadata", 1);
-        else
-            Assert.assertEquals(1, io.getNumberOfRowsTest());
-        
+        Assert.assertEquals( 1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
+
         cache.put(loc2, "metaA", "hello");
         
-        if (io instanceof AstyanaxMetadataIO)
-            assertNumberOfRows("metrics_metadata", 2);
-        else
-            Assert.assertEquals(2, io.getNumberOfRowsTest());
+        Assert.assertEquals( 2, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_METADATA_NAME ) );
     }
 
 
     @Test
     public void testGetNull() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        cache1.setIO(io);
+        cache1.setIO( metadataIO );
         Assert.assertNull(cache1.get(loc1, "foo"));
         Assert.assertNull(cache1.get(loc1, "foo"));
     }
 
     @Test
     public void testCollisions() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("ac76PeGPSR", "entZ4MYd1W", "chJ0fvB5Ao", "mzord", "truncated"); // put unit of bytes
-        Locator loc2 = Locator.createLocatorFromPathComponents("acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "ac76PeGPSR", "entZ4MYd1W", "chJ0fvB5Ao", "mzord", "truncated"); // put unit of bytes
+        Locator loc2 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I
 
         MetadataCache cache = MetadataCache.getInstance();
-        cache.setIO(io);
+        cache.setIO( metadataIO );
 
         cache.put(loc1, MetricMetadata.UNIT.name().toLowerCase(), "foo");
         String str = cache.get(loc2, MetricMetadata.TYPE.name().toLowerCase(), String.class);
@@ -106,12 +107,12 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testGet() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         MetadataCache cache2 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         
-        cache1.setIO(io);
-        cache2.setIO(io);
+        cache1.setIO( metadataIO );
+        cache2.setIO( metadataIO );
         
         // put in one, read in both.
         Class<String> expectedClass = String.class;
@@ -141,9 +142,9 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testPutsAreNotDuplicative() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent", "chk", "mz", "met");
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        cache1.setIO(io);
+        cache1.setIO( metadataIO );
         String key = "metaA";
         String v1 = new String("Hello");
         String v2 = new String("Hello");
@@ -156,13 +157,13 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testExpiration() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent.chk.mz.met");
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent.chk.mz.met");
 
         MetadataCache cache1 = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
         MetadataCache cache2 = MetadataCache.createLoadingCacheInstance(new TimeValue(3, TimeUnit.SECONDS), 1);
         
-        cache1.setIO(io);
-        cache2.setIO(io);
+        cache1.setIO( metadataIO );
+        cache2.setIO( metadataIO );
         
         // update in 1, should read out of both.
         Class<String> expectedClass = String.class;
@@ -188,8 +189,8 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     @Test
     public void testTypedGet() throws Exception {
         MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
-        cache.setIO(io);
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "chk", "mz", "met");
+        cache.setIO( metadataIO );
+        Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acOne", "ent", "chk", "mz", "met");
         String expectedString = "expected";
         
         cache.put(loc1, "str", expectedString);
@@ -210,7 +211,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         // DO NOT SET USING LOCAL IO INSTANCE!!!!
         
         // put an get a value with the old IO
-        Locator loc = Locator.createLocatorFromPathComponents("io_replacment", "a", "b", "c");
+        Locator loc = Locator.createLocatorFromPathComponents( getRandomTenantId(), "io_replacment", "a", "b", "c");
         Assert.assertNull(cache.get(loc, "foo"));
         cache.put(loc, "foo", "bar");
         Assert.assertNotNull(cache.get(loc, "foo"));
@@ -233,8 +234,8 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         MetadataCache cache0 = MetadataCache.createLoadingCacheInstance();
         cache0.setIO(new InMemoryMetadataIO());
         
-        Locator l0 = Locator.createLocatorFromPathComponents("1", "a", "b");
-        Locator l1 = Locator.createLocatorFromPathComponents("1", "c", "d");
+        Locator l0 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "1", "a", "b");
+        Locator l1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "1", "c", "d");
         cache0.put(l0, "foo" , "l0_foo");
         cache0.put(l0, "bar", "l0_bar");
         cache0.put(l1, "zee", "zzzzz");
@@ -267,8 +268,12 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     @Parameterized.Parameters
     public static Collection<Object[]> getIOs() {
         List<Object[]> ios = new ArrayList<Object[]>();
-        ios.add(new Object[] { new AstyanaxMetadataIO() });
-        ios.add(new Object[] { new InMemoryMetadataIO() });
+        ios.add(new Object[] { new AstyanaxMetadataIO(), new AstyanaxCassandraUtilsIO() });
+        ios.add(new Object[] { new DatastaxMetadataIO(), new DatastaxCassandraUtilsIO() });
+
+        InMemoryMetadataIO memIO = new InMemoryMetadataIO();
+        ios.add(new Object[] { memIO, memIO });
+
         return ios;
     }
 }

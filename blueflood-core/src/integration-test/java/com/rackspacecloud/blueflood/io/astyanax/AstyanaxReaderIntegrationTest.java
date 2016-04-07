@@ -64,15 +64,6 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    public void testCanReadMetadata() throws Exception {
-        Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        writer.writeMetadataValue(loc1, "foo", "bar");
-        Assert.assertEquals("bar", reader.getMetadataValues(loc1).get("foo"));
-    }
-
-    @Test
     public void testCanReadExcessEnumMetrics() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
