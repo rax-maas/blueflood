@@ -57,7 +57,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
                     .column("column1")
                     .column("value")
                     .writeTime("value")
-                    .from(CassandraModel.QUOTED_KEYSPACE, CassandraModel.CF_METRICS_STATE_NAME)
+                    .from(CassandraModel.CF_METRICS_STATE_NAME)
                     .where(eq("key", (long) shard));
             List<Row> results = session.execute(statement).all();
             for (Row row : results) {
@@ -82,7 +82,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
     @Override
     public void putShardState(int shard, Map<Granularity, Map<Integer, UpdateStamp>> slotTimes) throws IOException {
 
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STATE_NAME);
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE_NAME);
         Session session = DatastaxIO.getSession();
         Batch batch = QueryBuilder.batch();
 
@@ -92,8 +92,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
 
                 Set<Map.Entry<Integer, UpdateStamp>> entries = slotTimes.get(gran).entrySet();
                 for (Map.Entry<Integer, UpdateStamp> entry : entries) {
-                    Insert insert = QueryBuilder.insertInto(
-                            CassandraModel.QUOTED_KEYSPACE, CassandraModel.CF_METRICS_STATE_NAME)
+                    Insert insert = QueryBuilder.insertInto(CassandraModel.CF_METRICS_STATE_NAME)
                             .value("key", shard)
                             .value("column1", serDes.serialize(gran, entry.getKey(), entry.getValue().getState()))
                             .value("value", entry.getValue().getTimestamp());

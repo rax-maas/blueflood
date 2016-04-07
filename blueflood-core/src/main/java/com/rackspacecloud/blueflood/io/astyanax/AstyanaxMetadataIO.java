@@ -50,9 +50,4 @@ public class AstyanaxMetadataIO implements MetadataIO {
             throw new IOException(ex);
         }
     }
-
-    @Override
-    public int getNumberOfRowsTest() throws IOException {
-        throw new IOException("Not implemented");
-    }
 }

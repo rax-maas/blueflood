@@ -27,7 +27,7 @@ public class ShardStateIOIntegrationTest extends IntegrationTestBase {
     public void writeAstyanaxReadDatastax() throws Exception {
 
         // when we write with astyanax
-        int shard = rand.nextInt(127);
+        int shard = RAND.nextInt(127);
         Map<Granularity, Map<Integer, UpdateStamp>> data = generateRandomGranSlotTimestamp();
         astyanaxShardStateIO.putShardState(shard, data);
 
@@ -50,7 +50,7 @@ public class ShardStateIOIntegrationTest extends IntegrationTestBase {
     public void writeDatastaxReadAstyanax() throws Exception {
 
         // when we write with datastax
-        int shard = rand.nextInt(127);
+        int shard = RAND.nextInt(127);
         Map<Granularity, Map<Integer, UpdateStamp>> data = generateRandomGranSlotTimestamp();
         datastaxMetricsStateIO.putShardState(shard, data);
 
@@ -98,8 +98,8 @@ public class ShardStateIOIntegrationTest extends IntegrationTestBase {
         Map<Integer, UpdateStamp> slot2TsMap = new HashMap<Integer, UpdateStamp>();
         // generate data
         for (int count = 0; count<NUM_SLOTS; count++) {
-            int slot = rand.nextInt(127);
-            int randomTsDelta = rand.nextInt(5000);
+            int slot = RAND.nextInt(127);
+            int randomTsDelta = RAND.nextInt(5000);
             UpdateStamp ts = new UpdateStamp(System.currentTimeMillis()-randomTsDelta, UpdateStamp.State.Active, false);
             slot2TsMap.put(Integer.valueOf(slot), ts);
         }

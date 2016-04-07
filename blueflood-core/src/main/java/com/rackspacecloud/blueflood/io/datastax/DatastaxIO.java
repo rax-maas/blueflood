@@ -19,6 +19,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IOConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,7 @@ public class DatastaxIO {
         }
 
         try {
-            session = cluster.connect();
+            session = cluster.connect( CassandraModel.QUOTED_KEYSPACE );
         }
         catch (NoHostAvailableException e){
             // TODO: figure out how to bubble this up

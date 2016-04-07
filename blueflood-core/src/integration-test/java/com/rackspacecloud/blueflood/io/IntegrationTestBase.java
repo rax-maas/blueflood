@@ -86,13 +86,9 @@ public class IntegrationTestBase {
     }
 
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
-    protected static final Random rand = new Random(System.currentTimeMillis());
+    protected static final Random RAND = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
     private static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
-
-    protected final void assertNumberOfRows(String cf, int rows) throws Exception {
-        new AstyanaxTester().assertNumberOfRows(cf, rows);
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -180,12 +176,12 @@ public class IntegrationTestBase {
     protected static String randString(int length) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++)
-            sb.append(STRING_SEEDS[rand.nextInt(STRING_SEEDS.length)]);
+            sb.append( STRING_SEEDS[ RAND.nextInt( STRING_SEEDS.length ) ] );
         return sb.toString();
     }
 
     protected int getRandomIntMetricValue() {
-        return rand.nextInt();
+        return RAND.nextInt();
     }
 
     protected String getRandomStringMetricValue() {
@@ -199,7 +195,7 @@ public class IntegrationTestBase {
 
     protected Metric getRandomIntMetricMaxValue(final Locator locator, long timestamp, int max) {
         locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
-        return new Metric(locator, rand.nextInt( max ), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
+        return new Metric(locator, RAND.nextInt( max ), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
 
     protected Metric getRandomStringmetric(final Locator locator, long timestamp) {
@@ -212,7 +208,7 @@ public class IntegrationTestBase {
     }
 
     protected String pickAnEnumValue() {
-        int index = rand.nextInt(enumValueList.size() - 1);
+        int index = RAND.nextInt(enumValueList.size() - 1);
         return enumValueList.get(index);
     }
 
@@ -272,5 +268,10 @@ public class IntegrationTestBase {
         }
 
         AstyanaxWriter.getInstance().insertRollups(writeContexts);
+    }
+
+    protected String getRandomTenantId() {
+
+        return String.valueOf( RAND.nextInt( 5 ) );
     }
 }
