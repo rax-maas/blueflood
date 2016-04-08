@@ -22,6 +22,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class MinValueTest {
     private MinValue min;
 
@@ -129,5 +133,48 @@ public class MinValueTest {
         min = netBasicRollup.getMinValue();
         Assert.assertTrue(!min.isFloatingPoint());
         Assert.assertEquals(0L, min.toLong());
+    }
+
+    @Test
+    public void fullResInitialDoubleSetsValue() {
+
+        // when
+        min.handleFullResMetric(123.45d);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(123.45d, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void fullResInitialLongSetsValue() {
+
+        // when
+        min.handleFullResMetric(123L);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(123L, min.toLong());
+    }
+
+    @Test
+    public void fullResInitialIntegerSetsValue() {
+
+        // when
+        min.handleFullResMetric((int)123);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(123L, min.toLong());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void fullResInitialFloatThrowsException() {
+
+        // when
+        min.handleFullResMetric(123f);
+
+        // then
+        // the exception is thrown
     }
 }
