@@ -25,6 +25,8 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class MinValueTest {
     private MinValue min;
@@ -176,5 +178,40 @@ public class MinValueTest {
 
         // then
         // the exception is thrown
+    }
+
+
+
+    @Test
+    public void rollupInitialFloatingPointSetsValue() {
+
+        // given
+        double value = 123.45d;
+        IBasicRollup rollup = mock(IBasicRollup.class);
+        MinValue other = new MinValue(value);
+        doReturn(other).when(rollup).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(value, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void rollupInitialNonFloatingPointSetsValue() {
+
+        // given
+        long value = 123L;
+        IBasicRollup rollup = mock(IBasicRollup.class);
+        MinValue other = new MinValue(value);
+        doReturn(other).when(rollup).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup);
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(123L, min.toLong());
     }
 }
