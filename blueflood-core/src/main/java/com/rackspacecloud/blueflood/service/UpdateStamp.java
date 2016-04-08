@@ -45,9 +45,7 @@ public class UpdateStamp {
     }
 
     public UpdateStamp(long timestamp, State state, boolean dirty, long lastRollupTimestamp) {
-        this.timestamp = timestamp;
-        this.state = state;
-        this.dirty = dirty;
+        this(timestamp, state, dirty);
         this.lastRollupTimestamp = lastRollupTimestamp;
     }
 
