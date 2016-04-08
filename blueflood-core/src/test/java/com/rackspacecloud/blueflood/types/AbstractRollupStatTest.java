@@ -326,4 +326,32 @@ public class AbstractRollupStatTest {
         // then
         // the exception is thrown
     }
+
+    @Test
+    public void setLongDoesNotChangeDoubleValue() {
+
+        // given
+        double value = 123.45d;
+        SimpleStat stat = new SimpleStat(value);
+
+        // when
+        stat.setLongValue(678L);
+
+        // then
+        assertEquals(value, stat.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void setDoubleDoesNotChangeLongValue() {
+
+        // given
+        long value = 123L;
+        SimpleStat stat = new SimpleStat(value);
+
+        // when
+        stat.setDoubleValue(678.9d);
+
+        // then
+        assertEquals(value, stat.toLong());
+    }
 }
