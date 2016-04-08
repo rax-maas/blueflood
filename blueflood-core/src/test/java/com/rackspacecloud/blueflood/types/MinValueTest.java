@@ -180,6 +180,118 @@ public class MinValueTest {
         // the exception is thrown
     }
 
+    @Test
+    public void fullResInitialDoubleThenLesserDouble() {
+
+        // given
+        min.handleFullResMetric(123.45d);
+
+        // when
+        min.handleFullResMetric(122.45d);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(122.45d, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void fullResInitialDoubleThenGreaterDouble() {
+
+        // given
+        min.handleFullResMetric(123.45d);
+
+        // when
+        min.handleFullResMetric(124.45d);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(123.45d, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void fullResInitialDoubleThenLesserLong() {
+
+        // given
+        min.handleFullResMetric(123.45d);
+
+        // when
+        min.handleFullResMetric(122L);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(122L, min.toLong());
+    }
+
+    @Test
+    public void fullResInitialDoubleThenGreaterLong() {
+
+        // given
+        min.handleFullResMetric(123.45d);
+
+        // when
+        min.handleFullResMetric(124L);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(123.45d, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void fullResInitialLongThenLesserDouble() {
+
+        // given
+        min.handleFullResMetric(123L);
+
+        // when
+        min.handleFullResMetric(122.45d);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(122.45d, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void fullResInitialLongThenGreaterDouble() {
+
+        // given
+        min.handleFullResMetric(123L);
+
+        // when
+        min.handleFullResMetric(124.45d);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(123L, min.toLong());
+    }
+
+    @Test
+    public void fullResInitialLongThenLesserLong() {
+
+        // given
+        min.handleFullResMetric(123L);
+
+        // when
+        min.handleFullResMetric(122L);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(122L, min.toLong());
+    }
+
+    @Test
+    public void fullResInitialLongThenGreaterLong() {
+
+        // given
+        min.handleFullResMetric(123L);
+
+        // when
+        min.handleFullResMetric(124L);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(123L, min.toLong());
+    }
+
 
 
     @Test
