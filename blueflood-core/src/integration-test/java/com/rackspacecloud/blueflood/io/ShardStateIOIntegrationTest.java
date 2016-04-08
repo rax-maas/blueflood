@@ -40,6 +40,7 @@ public class ShardStateIOIntegrationTest extends IntegrationTestBase {
             assertNotNull("Slot2Timestamp map exists for granularity " + state.getGranularity(), slot2TsMap);
             UpdateStamp ts = slot2TsMap.get(state.getSlot());
             assertNotNull("UpdateStamp exists for slot " + state.getSlot());
+            assertTrue("Last update timestamp is retrieved", state.getLastUpdatedTimestamp() > 0);
 
             assertEquals("State is same for granularity " + state.getGranularity() + ", slot " + state.getSlot(), ts.getState(), state.getState());
         }
@@ -62,6 +63,7 @@ public class ShardStateIOIntegrationTest extends IntegrationTestBase {
             assertNotNull("Slot2Timestamp map exists for granularity " + state.getGranularity(), slot2TsMap);
             UpdateStamp ts = slot2TsMap.get(state.getSlot());
             assertNotNull("UpdateStamp exists for slot " + state.getSlot());
+            assertTrue("Last update timestamp is retrieved", state.getLastUpdatedTimestamp() > 0);
 
             assertEquals("State is same for granularity " + state.getGranularity() + ", slot " + state.getSlot(), ts.getState(), state.getState());
         }

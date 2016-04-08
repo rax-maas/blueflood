@@ -1,8 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.rollup.SlotKey;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,7 +7,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScheduleContextScheduleSlotsOlderThanTest {
+public class ScheduleContextScheduleEligibleSlotsTest {
 
     private static List<Integer> shards = new ArrayList<Integer>() {{ add(shard); }};
     private static int shard = 0;
@@ -27,26 +24,26 @@ public class ScheduleContextScheduleSlotsOlderThanTest {
     }
 
     @Test
-    public void testScheduleSlotsOlderThanAddsToScheduledCount() {
+    public void testScheduleEligibleSlotsAddsToScheduledCount() {
 
         // given
         Assert.assertEquals(0, ctx.getScheduledCount());
 
         // when
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
 
         // then
         Assert.assertEquals(1, ctx.getScheduledCount());
     }
 
     @Test
-    public void testScheduleSlotsOlderThanSetsHasScheduled() {
+    public void testScheduleEligibleSlotsSetsHasScheduled() {
 
         // given
         Assert.assertFalse(ctx.hasScheduled());
 
         // when
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
 
         // then
         Assert.assertTrue(ctx.hasScheduled());

@@ -22,6 +22,7 @@ public class SlotState {
     private Integer slot;
     private UpdateStamp.State state;
     private Long timestamp = null;
+    private long lastUpdatedTimestamp;
 
     public SlotState(Granularity g, int slot, UpdateStamp.State state) {
         this.granularity = g;
@@ -42,6 +43,16 @@ public class SlotState {
      */
     public SlotState withTimestamp(long timestamp) {
         this.timestamp = timestamp;
+        return this;
+    }
+
+    /**
+     *
+     * @param lastUpdatedTimestamp
+     * @return
+     */
+    public SlotState withLastUpdatedTimestamp(long lastUpdatedTimestamp) {
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
         return this;
     }
 
@@ -75,5 +86,9 @@ public class SlotState {
 
     public Long getTimestamp() {
         return timestamp;
+    }
+
+    public long getLastUpdatedTimestamp() {
+        return lastUpdatedTimestamp;
     }
 }

@@ -35,21 +35,30 @@ public class UpdateStamp {
      * database.
      */
     private boolean dirty;
-    
+
+    private long lastRollupTimestamp;
+
     public UpdateStamp(long timestamp, State state, boolean dirty) {
         setTimestamp(timestamp);
         setState(state);
         setDirty(dirty);
     }
-    
+
+    public UpdateStamp(long timestamp, State state, boolean dirty, long lastRollupTimestamp) {
+        this(timestamp, state, dirty);
+        this.lastRollupTimestamp = lastRollupTimestamp;
+    }
+
     public void setDirty(boolean b) { dirty = b; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
     public void setState(State state) { this.state = state; }
-    
+    public void setLastRollupTimestamp(long lastRollupTimestamp) { this.lastRollupTimestamp = lastRollupTimestamp; }
+
     public boolean isDirty() { return dirty; }
     public long getTimestamp() { return timestamp; }
     public State getState() { return state; }
-    
+    public long getLastRollupTimestamp() { return lastRollupTimestamp; }
+
     public int hashCode() {
         return (timestamp + state.code).hashCode();
     }

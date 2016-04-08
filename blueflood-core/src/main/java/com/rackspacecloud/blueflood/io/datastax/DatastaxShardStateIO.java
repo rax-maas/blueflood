@@ -53,19 +53,24 @@ public class DatastaxShardStateIO implements ShardStateIO {
         try {
             Select.Where statement = QueryBuilder
                     .select()
-                    .all()
+                    .column("key")
+                    .column("column1")
+                    .column("value")
+                    .writeTime("value")
                     .from(CassandraModel.CF_METRICS_STATE_NAME)
                     .where(eq("key", (long) shard));
             List<Row> results = session.execute(statement).all();
             for (Row row : results) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("Read shard: %d: - %s %s\n",
+                    LOG.debug(String.format("Read shard: %d: - %s %s writetime(value): %s\n",
                             row.getLong("key"),
                             row.getString("column1"),
-                            row.getLong("value")));
+                            row.getLong("value"),
+                            row.getLong("writetime(value)")));
                 }
                 SlotState state = serDes.deserialize(row.getString("column1"));
-                state.withTimestamp(row.getLong("value"));
+                state.withTimestamp(row.getLong("value"))
+                     .withLastUpdatedTimestamp(row.getLong("writetime(value)") / 1000); //write time is in micro seconds
                 slotStates.add(state);
             }
             return slotStates;

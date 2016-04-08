@@ -18,14 +18,17 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
+import org.joda.time.Instant;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.mockito.Mockito.when;
 
 public class ScheduleContextTest {
     private static final Logger log = LoggerFactory.getLogger("tests");
@@ -56,20 +61,20 @@ public class ScheduleContextTest {
 
         ctx.setCurrentTimeMillis(clock); // +0m
         ctx.update(clock, shards.get(0));
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 300000; // +5m
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         // at +5m nothing should be scheduled.
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 300000; // +10m
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         // at this point, metrics_full,4 should be scheduled, but not metrics_5m,4 even though it is older than 300s.
         // metrics_5m,4 cannot be scheduled because one of its children is scheduled.  once the child is removed and
         // scheduling is re-ran, it should appear though.  The next few lines test those assumptions.
@@ -81,30 +86,30 @@ public class ScheduleContextTest {
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,4,0"));
 
         // now, time doesn't change, but we re-evaluate slots that can be scheduled.
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertFalse(ctx.hasScheduled());
         expected.clear();
         scheduled.clear();
 
         // technically, we're one second away from when metrics_full,5 and metrics_5m,5 can be scheduled.
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 1000; // 1s
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,5,0"));
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,5,0"));
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertFalse(ctx.hasScheduled());
 
 
         clock += 3600000; // 1h
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,6,0"));
         Assert.assertFalse(ctx.hasScheduled());
@@ -112,32 +117,32 @@ public class ScheduleContextTest {
 
         // time doesn't change, but now that all the 5m slots have been scheduled, we should start seeing coarser slots
         // available for scheduling.
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_20m,1,0"));
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_20m,1,0"));
 
         // let's finish this off...
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_60m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_60m,0,0"));
 
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_240m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_240m,0,0"));
 
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_1440m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_1440m,0,0"));
 
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         Assert.assertFalse(ctx.hasScheduled());
     }
 
@@ -153,7 +158,7 @@ public class ScheduleContextTest {
             ctx.setCurrentTimeMillis(clock);
             ctx.update(clock, shards.get(0));
         }
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
 
         // 5m should include slots 4 through 578.
         String prefix = "metrics_5m,";
@@ -164,7 +169,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_5, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
 
         // 20m 1:143
         prefix = "metrics_20m,";
@@ -175,7 +180,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_20, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
 
         // 60m 0:47
         prefix = "metrics_60m,";
@@ -186,7 +191,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_60, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
 
         // 240m 0:11
         prefix = "metrics_240m,";
@@ -197,7 +202,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_240, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
 
         // 1440m 0:1
         prefix = "metrics_1440m,";
@@ -230,7 +235,7 @@ public class ScheduleContextTest {
             ctx.update(clock, shards.get(0));
             clock += 30000;
             ctx.setCurrentTimeMillis(clock);
-            ctx.scheduleSlotsOlderThan(300000);
+            ctx.scheduleEligibleSlots(300000, 7200000);
             while (ctx.hasScheduled()) {
                 count++;
                 SlotKey key = ctx.getNextScheduled();
@@ -274,7 +279,7 @@ public class ScheduleContextTest {
         final Thread schedule = new Thread("Scheduler") { public void run() {
             int count = 0;
             while (update.isAlive()) {
-                ctx.scheduleSlotsOlderThan(300000);
+                ctx.scheduleEligibleSlots(300000, 7200000);
                 count++;
                 // we sleep here because scheduling needs to happen periodically, not continually.  If there were no
                 // sleep here the update thread gets starved and has a hard time completing.
@@ -343,8 +348,8 @@ public class ScheduleContextTest {
         time += 500000;
         ctxA.setCurrentTimeMillis(time);
         ctxB.setCurrentTimeMillis(time);
-        ctxA.scheduleSlotsOlderThan(300000);
-        ctxB.scheduleSlotsOlderThan(300000);
+        ctxA.scheduleEligibleSlots(300000, 7200000);
+        ctxB.scheduleEligibleSlots(300000, 7200000);
 
         Assert.assertTrue(ctxA.hasScheduled());
         while (ctxA.hasScheduled()) {
@@ -375,7 +380,7 @@ public class ScheduleContextTest {
         ctx.update(now, otherShard);
         now += 300001;
         ctx.setCurrentTimeMillis(now);
-        ctx.scheduleSlotsOlderThan(300000);
+        ctx.scheduleEligibleSlots(300000, 7200000);
         
         // otherShard should be recently scheduled.
         Assert.assertTrue(ctx.getRecentlyScheduledShards().contains(otherShard));
@@ -396,7 +401,7 @@ public class ScheduleContextTest {
 
         ScheduleContext ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
 
         // precondition
         SlotKey next = ctx.getNextScheduled();
@@ -467,7 +472,7 @@ public class ScheduleContextTest {
 
         // TODO: This seems incorrect. If we were to accidentally call
         // pushBackToScheduled on a slot that wasn't running, we would
-        // effectively bypass the scheduleSlotsOlderThan method
+        // effectively bypass the scheduleEligibleSlots method
 
         // given
         long now = 1234000L;
@@ -538,4 +543,59 @@ public class ScheduleContextTest {
         // then
         // an NPE is thrown
     }
+
+    @Test
+    public void testSimpleUpdateAndScheduleWithDelayedMetrics() {
+        //testing for one slot -> 0
+
+        final long ROLLUP_DELAY_MILLIS = 300000; //5 mins
+        final long DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 1800000; //30 mins
+
+        final long initialCollectionTime = 1209600000000L;
+
+        long clock = initialCollectionTime;
+        Clock mockClock = Mockito.mock(Clock.class);
+
+        ScheduleContext ctx = new ScheduleContext(clock, shards, mockClock);
+        Collection<SlotKey> scheduled = new ArrayList<SlotKey>();
+        Collection<SlotKey> expected = new ArrayList<SlotKey>();
+
+        ctx.setCurrentTimeMillis(clock); // +0m
+        ctx.update(clock, shards.get(0)); //metric ingestion
+
+        clock = initialCollectionTime + ROLLUP_DELAY_MILLIS + 1; // a little bit over +5m
+        ctx.setCurrentTimeMillis(clock);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+
+        expected.add(SlotKey.parse("metrics_5m,0,0"));
+        while (ctx.hasScheduled())
+            scheduled.add(ctx.getNextScheduled());
+        Assert.assertEquals(expected, scheduled);
+
+        long lastRollupTime = clock;
+        when(mockClock.now()).thenReturn(new Instant(lastRollupTime));
+        ctx.clearFromRunning(SlotKey.parse("metrics_5m,0,0"));
+
+        //metrics_5m,0 is now rolled up.
+
+        scheduled.clear();
+
+        //delayed metrics for slot 4
+        ctx.update(initialCollectionTime + 1, shards.get(0)); //metric ingestion
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+
+        Assert.assertFalse("Rollup should not be scheduled for re-roll", ctx.hasScheduled());
+
+        //Trying for rollup again after DELAYED_METRICS_ROLLUP_DELAY_MILLIS past since last rollup
+        clock = lastRollupTime + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 1; //a little bit over 30 mins
+        ctx.setCurrentTimeMillis(clock);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+
+        while (ctx.hasScheduled())
+            scheduled.add(ctx.getNextScheduled());
+
+        Assert.assertEquals(expected, scheduled);
+        ctx.clearFromRunning(SlotKey.parse("metrics_5m,0,0"));
+    }
+
 }

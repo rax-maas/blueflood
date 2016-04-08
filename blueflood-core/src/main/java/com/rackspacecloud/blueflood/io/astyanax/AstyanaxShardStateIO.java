@@ -53,7 +53,9 @@ public class AstyanaxShardStateIO implements ShardStateIO {
                     .getResult();
 
             for (Column<SlotState> column : columns) {
-                slotStates.add(column.getName().withTimestamp(column.getLongValue()));
+                slotStates.add(column.getName()
+                                 .withTimestamp(column.getLongValue())
+                                 .withLastUpdatedTimestamp(column.getTimestamp() / 1000)); //write time is in micro seconds
             }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);

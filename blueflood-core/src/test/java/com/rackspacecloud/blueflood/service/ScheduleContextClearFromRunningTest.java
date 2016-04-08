@@ -3,6 +3,8 @@ package com.rackspacecloud.blueflood.service;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.Clock;
+import org.joda.time.Instant;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +27,8 @@ public class ScheduleContextClearFromRunningTest {
     ScheduleContext ctx;
     ShardStateManager mgr;
 
+    final long lastRollupTime = System.currentTimeMillis();
+
     @Before
     public void setUp() throws GranularityException {
 
@@ -35,10 +39,15 @@ public class ScheduleContextClearFromRunningTest {
         coarserGran = gran.coarser();
         coarserSlot = coarserGran.slot(updateTime);
 
-        ctx = new ScheduleContext(now, shards);
+        ctx = new ScheduleContext(now, shards, new Clock() {
+            @Override
+            public Instant now() {
+                return new Instant(lastRollupTime);
+            }
+        });
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
     }
 
     @Test
@@ -99,11 +108,13 @@ public class ScheduleContextClearFromRunningTest {
         Assert.assertEquals(UpdateStamp.State.Rolled, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", lastRollupTime, stamp.getLastRollupTimestamp());
 
         stamp = mgr.getUpdateStamp(SlotKey.of(coarserGran, coarserSlot, shard));
         Assert.assertNotNull(stamp);
         Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
         Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", 0, stamp.getLastRollupTimestamp());
     }
 }

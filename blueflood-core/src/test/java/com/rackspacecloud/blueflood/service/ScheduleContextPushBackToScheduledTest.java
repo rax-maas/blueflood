@@ -39,7 +39,7 @@ public class ScheduleContextPushBackToScheduledTest {
         ctx = new ScheduleContext(now, shards);
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
-        ctx.scheduleSlotsOlderThan(1);
+        ctx.scheduleEligibleSlots(1, 7200000);
     }
 
     @Test

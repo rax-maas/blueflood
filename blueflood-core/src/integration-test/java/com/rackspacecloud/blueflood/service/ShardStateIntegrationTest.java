@@ -43,6 +43,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     
     private ShardStateIO io;
     private List<Integer> shards;
+
+    private final int DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 300000;
+    private final int ROLLUP_DELAY_MILLIS = 300000;
     
     public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
         this.io = io;
@@ -104,7 +107,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + 600000);
-        rollupCtx.scheduleSlotsOlderThan(300000);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -112,7 +115,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleSlotsOlderThan(300000);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -124,7 +127,12 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ingestPusher.performOperation();
 
         rollupPuller.performOperation();
-        rollupCtx.scheduleSlotsOlderThan(300000);
+
+        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
+
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -132,7 +140,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleSlotsOlderThan(300000);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -209,7 +217,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 Assert.assertEquals(ctxA.getSlotStamps(g, shard), ctxB.getSlotStamps(g, shard));
         }
         
-        time += 300000; // this pushes us forward at least one slot.
+        time += ROLLUP_DELAY_MILLIS; // this pushes us forward at least one slot.
         
         // now do this: update ctxA, do 2 push/pull cycles on each state.  they should sill be the same.
         ctxA.update(time,  shardsA.get(0));
@@ -273,7 +281,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxA.setCurrentTimeMillis(time);
         
         // should be ready to schedule.
-        ctxA.scheduleSlotsOlderThan(300000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxA.getScheduledCount());
         
         // simulate slots getting run.
@@ -281,17 +289,17 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxA.getScheduledCount() > 0) {
             SlotKey slot = ctxA.getNextScheduled();
             ctxA.clearFromRunning(slot);
-            ctxA.scheduleSlotsOlderThan(300000);
+            ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count);
         // verify that scheduling doesn't find anything else.
-        ctxA.scheduleSlotsOlderThan(300000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
         
         // reloading under these circumstances (no updates) should not affect the schedule.
         pullA.performOperation();
-        ctxA.scheduleSlotsOlderThan(300000);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
     }
 
@@ -445,7 +453,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
 
         ctxRollup.setCurrentTimeMillis(time + 600000L);
-        ctxRollup.scheduleSlotsOlderThan(300000L);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -453,7 +461,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleSlotsOlderThan(300000L);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -499,7 +507,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
-        ctxRollup.scheduleSlotsOlderThan(300000);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -507,7 +515,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleSlotsOlderThan(300000);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -568,7 +576,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                 for (Map.Entry<Granularity, Map<Integer, UpdateStamp>> e0 : updates.entrySet()) {
                     for (Map.Entry<Integer, UpdateStamp> e1 : e0.getValue().entrySet()) {
                         SlotState state = new SlotState(e0.getKey(), e1.getKey(), e1.getValue().getState());
-                        state.withTimestamp(e1.getValue().getTimestamp());
+                        state.withTimestamp(e1.getValue().getTimestamp())
+                             .withLastUpdatedTimestamp(state.getLastUpdatedTimestamp());
+
                         states.add(state);
                     }
                 }
