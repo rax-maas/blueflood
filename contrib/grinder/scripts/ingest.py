@@ -57,12 +57,24 @@ class IngestThread(AbstractThread):
     self.slice = self.metrics[start:end]
 
   def generate_metric(self, time, tenant_id, metric_id):
+    ingest_delay_millis = default_config['ingest_delay_millis']
+    min_5_millis = 300000
+
+    if ingest_delay_millis > 0:
+      collection_times = [time,
+                          time - ingest_delay_millis - min_5_millis,
+                          time - ingest_delay_millis - min_5_millis * 2,
+                          time - ingest_delay_millis - min_5_millis * 3,
+                          time - ingest_delay_millis - min_5_millis * 4]
+    else:
+      collection_times = [time]
+
     return {'tenantId': str(tenant_id),
             'metricName': generate_metric_name(metric_id),
             'unit': self.generate_unit(tenant_id),
             'metricValue': random.randint(0, RAND_MAX),
             'ttlInSeconds': (2 * 24 * 60 * 60),
-            'collectionTime': time}
+            'collectionTime': random.choice(collection_times)}
 
   def generate_payload(self, time, batch):
     payload = map(lambda x:self.generate_metric(time,*x), batch)
