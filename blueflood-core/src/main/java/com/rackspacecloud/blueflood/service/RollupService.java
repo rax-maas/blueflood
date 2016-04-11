@@ -143,6 +143,21 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 .withUnboundedQueue()
                 .build();
 
+        initializeGauges();
+
+        locatorFetchExecutors = _locatorFetchExecutors;
+        InstrumentedThreadPoolExecutor.instrument(locatorFetchExecutors, "LocatorFetchThreadPool");
+
+        rollupReadExecutors = _rollupReadExecutors;
+        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
+
+        rollupWriteExecutors = _rollupWriteExecutors;
+        InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
+
+        this.enumValidatorExecutor = _enumValidatorExecutor;
+    }
+
+    public void initializeGauges() {
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName());
@@ -189,17 +204,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
-
-        locatorFetchExecutors = _locatorFetchExecutors;
-        InstrumentedThreadPoolExecutor.instrument(locatorFetchExecutors, "LocatorFetchThreadPool");
-
-        rollupReadExecutors = _rollupReadExecutors;
-        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
-
-        rollupWriteExecutors = _rollupWriteExecutors;
-        InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
-
-        this.enumValidatorExecutor = _enumValidatorExecutor;
     }
 
     public void forcePoll() {
