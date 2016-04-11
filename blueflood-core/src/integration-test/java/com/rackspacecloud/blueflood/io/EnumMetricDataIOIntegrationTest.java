@@ -33,7 +33,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 /**
- * Created by shin4590 on 4/10/16.
+ * This is the tests for {@link com.rackspacecloud.blueflood.io.EnumMetricDataIO} class
  */
 public class EnumMetricDataIOIntegrationTest extends IntegrationTestBase {
 
