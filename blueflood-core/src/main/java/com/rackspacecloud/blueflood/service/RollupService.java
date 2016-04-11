@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -155,6 +156,27 @@ public class RollupService implements Runnable, RollupServiceMBean {
         InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
 
         this.enumValidatorExecutor = _enumValidatorExecutor;
+    }
+    @VisibleForTesting
+    public RollupService(ScheduleContext context,
+                         ShardStateManager shardStateManager,
+                         ThreadPoolExecutor locatorFetchExecutors,
+                         ThreadPoolExecutor rollupReadExecutors,
+                         ThreadPoolExecutor rollupWriteExecutors,
+                         ThreadPoolExecutor enumValidatorExecutor,
+                         long rollupDelayMillis,
+                         long delayedMetricRollupDelayMillis) {
+
+        this.context = context;
+        this.shardStateManager = shardStateManager;
+        this.locatorFetchExecutors = locatorFetchExecutors;
+        this.rollupReadExecutors = rollupReadExecutors;
+        this.rollupWriteExecutors = rollupWriteExecutors;
+        this.enumValidatorExecutor = enumValidatorExecutor;
+        this.rollupDelayMillis = rollupDelayMillis;
+        this.delayedMetricRollupDelayMillis = delayedMetricRollupDelayMillis;
+
+        initializeGauges();
     }
 
     public void initializeGauges() {
