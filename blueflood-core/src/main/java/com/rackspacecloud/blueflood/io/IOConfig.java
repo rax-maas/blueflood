@@ -57,6 +57,7 @@ public class IOConfig {
      */
     protected Set<String> getUniqueBinaryTransportHosts() {
         Set<String> uniqueHosts = new HashSet<String>();
+        System.out.println("binxport_hosts=" + config.getStringProperty(CoreConfig.CASSANDRA_BINXPORT_HOSTS));
         Collections.addAll(uniqueHosts, config.getStringProperty(CoreConfig.CASSANDRA_BINXPORT_HOSTS).split(","));
         return uniqueHosts;
     }

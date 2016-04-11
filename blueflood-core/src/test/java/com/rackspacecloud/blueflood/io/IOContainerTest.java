@@ -95,6 +95,7 @@ public class IOContainerTest {
     @Test
     public void testDatastaxDriverConfig() {
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
+        IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DatastaxShardStateIO);
