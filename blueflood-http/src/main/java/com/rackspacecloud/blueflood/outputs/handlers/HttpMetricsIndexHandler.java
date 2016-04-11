@@ -96,7 +96,7 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             }
 
             // get enum values and add if applicable
-            ArrayList<String> enumValues = result.getEnumValues();
+            List<String> enumValues = result.getEnumValues();
             if (enumValues != null) {
                 // sort for consistent result ordering
                 Collections.sort(enumValues);

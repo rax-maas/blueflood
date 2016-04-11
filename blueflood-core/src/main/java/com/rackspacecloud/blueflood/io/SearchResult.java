@@ -17,12 +17,14 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.types.Locator;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class SearchResult {
     private final Locator locator;
     private final String unit;
-    private final ArrayList<String> enumValues;
+    private final List<String> enumValues;
 
     public SearchResult(String tenantId, String name, String unit) {
         this.locator = Locator.createLocatorFromDbKey(String.format("%s.%s", tenantId, name));
@@ -30,7 +32,7 @@ public class SearchResult {
         this.enumValues = null;
     }
 
-    public SearchResult(String tenantId, String name, String unit, ArrayList<String> enumValues) {
+    public SearchResult(String tenantId, String name, String unit, List<String> enumValues) {
         this.locator = Locator.createLocatorFromDbKey(String.format("%s.%s", tenantId, name));
         this.unit = unit;
         this.enumValues = enumValues;
@@ -48,7 +50,7 @@ public class SearchResult {
         return unit;
     }
 
-    public ArrayList<String> getEnumValues() {
+    public List<String> getEnumValues() {
         return enumValues;
     }
 
@@ -114,7 +116,7 @@ public class SearchResult {
             result = result && unit.equals(other.unit);
         }
 
-        ArrayList<String> otherEnumValues = other.getEnumValues();
+        List<String> otherEnumValues = other.getEnumValues();
         if ((enumValues != null) || (otherEnumValues != null)){
             boolean enumValuesEqual;
             if (enumValues != null) {
