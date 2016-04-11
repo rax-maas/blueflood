@@ -70,14 +70,9 @@ public class Points<T> {
         public boolean equals(Object obj) {
             if (obj == null || !(obj instanceof Point))
                 return false;
-            try {
-                Point<T> other = (Point<T>)obj;
-                return other.getTimestamp() == this.getTimestamp()
-                        && other.getData().equals(this.getData());
-            } catch (ClassCastException ex) {
-                // not a Point<T>, but a Point<X> instead?
-                return false;
-            }
+            Point<T> other = (Point<T>)obj;
+            return other.getTimestamp() == this.getTimestamp()
+                    && other.getData().equals(this.getData());
         }
     }
 }
