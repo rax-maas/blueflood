@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.rackspacecloud.blueflood.io.Constants;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -501,5 +502,12 @@ public class MinValueTest {
         // then
         assertFalse(min.isFloatingPoint());
         assertEquals(value1, min.toLong());
+    }
+
+    @Test
+    public void returnsTheCorrectStatType() {
+
+        // expect
+        assertEquals(Constants.MIN, min.getStatType());
     }
 }
