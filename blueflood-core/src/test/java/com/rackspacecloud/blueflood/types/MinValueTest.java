@@ -326,4 +326,180 @@ public class MinValueTest {
         assertFalse(min.isFloatingPoint());
         assertEquals(123L, min.toLong());
     }
+
+    @Test
+    public void rollupInitialDoubleThenLesserDouble() {
+
+        // given
+        double value1 = 123.45d;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        double value2 = 122.45d;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(value2, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void rollupInitialDoubleThenGreaterDouble() {
+
+        // given
+        double value1 = 123.45d;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        double value2 = 124.45d;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(value1, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void rollupInitialDoubleThenLesserLong() {
+
+        // given
+        double value1 = 123.45d;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        long value2 = 122L;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(value2, min.toLong());
+    }
+
+    @Test
+    public void rollupInitialDoubleThenGreaterLong() {
+
+        // given
+        double value1 = 123.45d;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        long value2 = 124L;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(value1, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void rollupInitialLongThenLesserDouble() {
+
+        // given
+        long value1 = 123L;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        double value2 = 122.45d;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertTrue(min.isFloatingPoint());
+        assertEquals(value2, min.toDouble(), 0.00001d);
+    }
+
+    @Test
+    public void rollupInitialLongThenGreaterDouble() {
+
+        // given
+        long value1 = 123L;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        double value2 = 124.45d;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(value1, min.toLong());
+    }
+
+    @Test
+    public void rollupInitialLongThenLesserLong() {
+
+        // given
+        long value1 = 123L;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        long value2 = 122L;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(value2, min.toLong());
+    }
+
+    @Test
+    public void rollupInitialLongThenGreaterLong() {
+
+        // given
+        long value1 = 123L;
+        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value1)).when(rollup1).getMinValue();
+
+        min.handleRollupMetric(rollup1);
+
+        long value2 = 124L;
+        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        doReturn(new MinValue(value2)).when(rollup2).getMinValue();
+
+        // when
+        min.handleRollupMetric(rollup2);
+
+        // then
+        assertFalse(min.isFloatingPoint());
+        assertEquals(value1, min.toLong());
+    }
 }
