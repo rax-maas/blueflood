@@ -20,7 +20,6 @@ import com.codahale.metrics.Timer;
 import com.datastax.driver.core.*;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.io.serializers.metrics.EnumSerDes;
 import com.rackspacecloud.blueflood.rollup.Granularity;

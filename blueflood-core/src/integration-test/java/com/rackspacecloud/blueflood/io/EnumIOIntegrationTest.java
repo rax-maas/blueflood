@@ -99,7 +99,7 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
             // read the enums from metrics_enum CF, via getEnumStringMappings()
             Map<Locator, List<String>> mapping = reader.getEnumStringMappings(locators);
-            org.junit.Assert.assertEquals("locator -> enum string mapping size", locatorToMetrics.size(), mapping.size());
+            assertEquals("locator -> enum string mapping size", locatorToMetrics.size(), mapping.size());
 
             for (Map.Entry<Locator, List<String>> entry : mapping.entrySet()) {
                 List<String> enumValues = entry.getValue();
