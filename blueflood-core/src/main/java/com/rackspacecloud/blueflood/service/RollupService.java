@@ -36,20 +36,25 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RollupService implements Runnable, RollupServiceMBean {
+
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
+
+    private final Timer polltimer = Metrics.timer(RollupService.class, "Poll Timer");
+    private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
+
     private final long rollupDelayMillis;
     private final long delayedMetricRollupDelayMillis;
 
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
-    private final Timer polltimer = Metrics.timer(RollupService.class, "Poll Timer");
-    private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
     private final ThreadPoolExecutor enumValidatorExecutor;
+
     private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
     private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
+
     private transient Thread thread;
 
     private long lastSlotCheckFinishedAt = 0L;
