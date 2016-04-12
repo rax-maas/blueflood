@@ -1,8 +1,9 @@
-package com.rackspacecloud.blueflood.io.astyanax;
+package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
