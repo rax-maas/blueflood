@@ -9,6 +9,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -471,5 +472,135 @@ public class RollupServiceTest {
         verifyNoMoreInteractions(context);
 
         verifyZeroInteractions(shardStateManager);
+    }
+
+    @Test
+    public void getOldestWithNullStampsReturnsEmptyCollection() {
+
+        // given
+        doReturn(null).when(context).getSlotStamps(Matchers.<Granularity>any(), anyInt());
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void getOldestWithEmptyStampsReturnsEmptyCollection() {
+
+        // given
+        HashMap<Integer, UpdateStamp> empty = new HashMap<Integer, UpdateStamp>();
+        doReturn(empty).when(context).getSlotStamps(Matchers.<Granularity>any(), anyInt());
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void getOldestWithSingleStampReturnsSame() {
+
+        // given
+        HashMap<Integer, UpdateStamp> stamps = new HashMap<Integer, UpdateStamp>();
+        long time = 1234L;
+        UpdateStamp stamp = new UpdateStamp(time, UpdateStamp.State.Active, false);
+        stamps.put(0, stamp);
+        when(context.getSlotStamps(Matchers.<Granularity>any(), anyInt()))
+                .thenReturn(stamps)
+                .thenReturn(null);
+
+        SlotState slotState = new SlotState(Granularity.MIN_5, 0, stamp.getState())
+                .withTimestamp(time);
+        String expected = slotState.toString();
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.contains(expected));
+    }
+
+    @Test
+    public void getOldestWithTimeInFutureReturnsEmpty() {
+
+        // given
+        HashMap<Integer, UpdateStamp> stamps = new HashMap<Integer, UpdateStamp>();
+        long time = System.currentTimeMillis() + 1234L;
+        UpdateStamp stamp = new UpdateStamp(time, UpdateStamp.State.Active, false);
+        stamps.put(0, stamp);
+        when(context.getSlotStamps(Matchers.<Granularity>any(), anyInt()))
+                .thenReturn(stamps)
+                .thenReturn(null);
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void getOldestWithTwoStampsTimeInFutureReturnsOlderOfTheTwo() {
+
+        // given
+        HashMap<Integer, UpdateStamp> stamps = new HashMap<Integer, UpdateStamp>();
+        long time1 = 1234L;
+        UpdateStamp stamp1 = new UpdateStamp(time1, UpdateStamp.State.Active, false);
+        stamps.put(0, stamp1);
+        long time2 = 1233L;
+        UpdateStamp stamp2 = new UpdateStamp(time2, UpdateStamp.State.Active, false);
+        stamps.put(1, stamp2);
+        when(context.getSlotStamps(Matchers.<Granularity>any(), anyInt()))
+                .thenReturn(stamps)
+                .thenReturn(null);
+
+        SlotState slotState = new SlotState(Granularity.MIN_5, 1, stamp2.getState())
+                .withTimestamp(time2);
+        String expected = slotState.toString();
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.contains(expected));
+    }
+
+    @Test
+    public void getOldestSkipsRolledStamps() {
+
+        // given
+        HashMap<Integer, UpdateStamp> stamps = new HashMap<Integer, UpdateStamp>();
+        long time1 = 1234L;
+        UpdateStamp stamp1 = new UpdateStamp(time1, UpdateStamp.State.Active, false);
+        stamps.put(0, stamp1);
+        long time2 = 1233L;
+        UpdateStamp stamp2 = new UpdateStamp(time2, UpdateStamp.State.Rolled, false);
+        stamps.put(1, stamp2);
+        when(context.getSlotStamps(Matchers.<Granularity>any(), anyInt()))
+                .thenReturn(stamps)
+                .thenReturn(null);
+
+        SlotState slotState = new SlotState(Granularity.MIN_5, 0, stamp1.getState())
+                .withTimestamp(time1);
+        String expected = slotState.toString();
+
+        // when
+        Collection<String> result = service.getOldestUnrolledSlotPerGranularity(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.contains(expected));
     }
 }
