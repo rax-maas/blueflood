@@ -242,7 +242,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     public void run() {
         thread = Thread.currentThread();
 
-        while (true) {
+        while (shouldKeepRunning()) {
             long startRun = System.currentTimeMillis();
 
             poll();
@@ -274,6 +274,16 @@ public class RollupService implements Runnable, RollupServiceMBean {
                     log.debug("RollupService poller woke up");
                 }
         }
+    }
+
+    private boolean keepRunning = true;
+    @VisibleForTesting
+    boolean shouldKeepRunning() {
+        return keepRunning;
+    }
+    @VisibleForTesting
+    void setShouldKeepRunning(boolean value) {
+        keepRunning = value;
     }
 
     //
