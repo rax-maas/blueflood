@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Utilities to operate on {@link com.rackspacecloud.blueflood.types.Locator} objects
  */
-public class Locators {
+public class LocatorsUtils {
 
     public static List<String> toStringList(final List<Locator> locators) {
         List<String> locatorStrs = new ArrayList<String>() {{

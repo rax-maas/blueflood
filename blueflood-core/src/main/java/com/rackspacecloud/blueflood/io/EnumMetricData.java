@@ -40,9 +40,9 @@ import java.util.concurrent.Future;
  * {@link com.rackspacecloud.blueflood.outputs.formats.MetricData}
  * objects that are used by services such as Rollup, Ingest and Query
  */
-public class EnumMetricDataIO {
+public class EnumMetricData {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EnumMetricDataIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EnumMetricData.class);
 
     private static final Configuration configuration = Configuration.getInstance();
     private static final ExecutorService taskExecutor = new ThreadPoolBuilder()
@@ -61,7 +61,7 @@ public class EnumMetricDataIO {
      *
      * @param reader
      */
-    public EnumMetricDataIO(EnumReader reader) {
+    public EnumMetricData(EnumReader reader) {
         enumReader = reader;
     }
 

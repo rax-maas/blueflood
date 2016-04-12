@@ -20,7 +20,6 @@ import com.datastax.driver.core.*;
 import com.google.common.collect.Multimap;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
@@ -38,9 +37,9 @@ import java.util.concurrent.ExecutionException;
  * This class deals with reading/writing metrics to the metrics_preaggregated_* column families
  * using Datastax driver
  */
-public class PreaggregatedMetricsIO extends AbstractMetricsIO {
+public class DatastaxPreaggregatedMetrics extends AbstractMetricsIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PreaggregatedMetricsIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DatastaxPreaggregatedMetrics.class);
 
     private final DatastaxEnumIO enumIO = new DatastaxEnumIO();
 

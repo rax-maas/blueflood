@@ -33,19 +33,19 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 /**
- * This is the tests for {@link com.rackspacecloud.blueflood.io.EnumMetricDataIO} class
+ * This is the tests for {@link EnumMetricData} class
  */
 public class EnumMetricDataIOIntegrationTest extends IntegrationTestBase {
 
     private Map<Locator, List<IMetric>> locatorToMetrics;
     private static DatastaxEnumIO datastaxEnumIO;
-    private static EnumMetricDataIO enumMetricDataIO;
+    private static EnumMetricData enumMetricDataIO;
 
     @BeforeClass
     public static void setup() {
 
         datastaxEnumIO = new DatastaxEnumIO();
-        enumMetricDataIO = new EnumMetricDataIO(datastaxEnumIO);
+        enumMetricDataIO = new EnumMetricData(datastaxEnumIO);
     }
 
     @Before

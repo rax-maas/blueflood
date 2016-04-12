@@ -30,7 +30,7 @@ import java.util.Collection;
  * This class deals with reading/writing metrics to the metrics_preaggregated_* column families
  * using Astyanax driver
  */
-public class PreaggregatedMetricsIO extends AbstractMetricsIO {
+public class AstyanaxPreaggregatedMetrics extends AbstractMetricsIO {
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family

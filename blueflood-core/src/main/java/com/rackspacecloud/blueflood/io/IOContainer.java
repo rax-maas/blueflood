@@ -47,12 +47,10 @@ public class IOContainer {
      *
      * @return IOContainer
      */
-    public static IOContainer fromConfig() {
+    public static synchronized IOContainer fromConfig() {
         if ( FROM_CONFIG_INSTANCE == null ) {
-            synchronized (IOContainer.class) {
                 String driver = configuration.getStringProperty(CoreConfig.CASSANDRA_DRIVER);
                 FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver));
-            }
         }
         return FROM_CONFIG_INSTANCE;
     }

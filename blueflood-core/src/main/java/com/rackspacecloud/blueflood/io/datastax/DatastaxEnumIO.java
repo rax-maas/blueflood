@@ -24,7 +24,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.io.serializers.metrics.EnumSerDes;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Locators;
+import com.rackspacecloud.blueflood.utils.LocatorsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,6 +140,7 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
      * @param locators
      * @return
      */
+    @Override
     public Table<Locator, Long, String> getEnumHashValuesForLocators(final List<Locator> locators) {
 
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_ENUM_NAME);
@@ -149,7 +150,7 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
         List<ResultSetFuture> resultsFuture = new ArrayList<ResultSetFuture>();
 
         try {
-            for (String locatorStr : Locators.toStringList(locators)) {
+            for (String locatorStr : LocatorsUtils.toStringList(locators)) {
                 resultsFuture.add(session.executeAsync(selectFromMetricsEnumStatement.bind(locatorStr)));
             }
 
@@ -207,6 +208,7 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
      * @param range
      * @return
      */
+    @Override
     public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
         Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamily);
         Session session = DatastaxIO.getSession();
@@ -215,7 +217,7 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
         List<ResultSetFuture> resultsFuture = new ArrayList<ResultSetFuture>();
 
         try {
-            for (String locatorStr : Locators.toStringList(locators)) {
+            for (String locatorStr : LocatorsUtils.toStringList(locators)) {
                 PreparedStatement statement = cfNameToSelectStatement.get(columnFamily);
                 statement.bind(locatorStr, range.getStart(), range.getStop());
                 resultsFuture.add(session.executeAsync(statement.bind(locatorStr, range.getStart(), range.getStop())));
