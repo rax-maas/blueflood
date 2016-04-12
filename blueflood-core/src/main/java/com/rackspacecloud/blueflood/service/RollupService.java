@@ -52,8 +52,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private final ThreadPoolExecutor rollupWriteExecutors;
     private final ThreadPoolExecutor enumValidatorExecutor;
 
-    private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
-    private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
+    private long pollerPeriod;
+    private final long configRefreshInterval;
 
     private transient Thread thread;
 
@@ -88,6 +88,10 @@ public class RollupService implements Runnable, RollupServiceMBean {
     }
 
     public RollupService(ScheduleContext context) {
+
+        pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
+        configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
+
         this.context = context;
         this.shardStateManager = context.getShardStateManager();
 
@@ -170,7 +174,9 @@ public class RollupService implements Runnable, RollupServiceMBean {
                          ThreadPoolExecutor rollupWriteExecutors,
                          ThreadPoolExecutor enumValidatorExecutor,
                          long rollupDelayMillis,
-                         long delayedMetricRollupDelayMillis) {
+                         long delayedMetricRollupDelayMillis,
+                         long pollerPeriod,
+                         long configRefreshInterval) {
 
         this.context = context;
         this.shardStateManager = shardStateManager;
@@ -180,6 +186,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
         this.enumValidatorExecutor = enumValidatorExecutor;
         this.rollupDelayMillis = rollupDelayMillis;
         this.delayedMetricRollupDelayMillis = delayedMetricRollupDelayMillis;
+        this.pollerPeriod = pollerPeriod;
+        this.configRefreshInterval = configRefreshInterval;
 
         initializeGauges();
     }
