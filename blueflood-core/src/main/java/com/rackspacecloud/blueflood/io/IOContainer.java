@@ -56,7 +56,7 @@ public class IOContainer {
     }
 
     @VisibleForTesting
-    static void resetInstance() {
+    static synchronized void resetInstance() {
         FROM_CONFIG_INSTANCE = null;
     }
 
