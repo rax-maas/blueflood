@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;

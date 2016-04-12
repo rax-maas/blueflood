@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.tracker;
 
 import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.types.Metric;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -27,45 +28,62 @@ import org.slf4j.LoggerFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Tracker implements TrackerMBean {
 
+    public static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
+
     private static final Logger log = LoggerFactory.getLogger(Tracker.class);
-    private static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
-    private static final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
+    private final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
 
-    static Set tenantIds = new HashSet();
-    static boolean isTrackingDelayedMetrics = false;
-    static Set<String> metricNames = new HashSet<String>();
+    private DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    public Tracker() {
-        registerMBean();
+    // Tracker is a singleton
+    private static final Tracker instance = new Tracker();
+    private boolean isRegistered = false;
+
+    private Set tenantIds = new HashSet();
+    private boolean isTrackingDelayedMetrics = false;
+    private Set<String> metricNames = new HashSet<String>();
+
+    // private constructor for singleton
+    private Tracker(){
+        // set dateFormatter to GMT since collectionTime for metrics should always be GMT/UTC
+        dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
+
+    public static Tracker getInstance() {
+        return instance;
+    }
+
+    public synchronized void register() {
+        if (isRegistered) return;
+
+        try {
+            ObjectName objectName = new ObjectName(trackerName);
+
+            // register TrackerMBean only if not already registered
+            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            if (!mBeanServer.isRegistered(objectName)) {
+                ManagementFactory.getPlatformMBeanServer().registerMBean(instance, objectName);
+            }
+
+            isRegistered = true;
+            log.info("MBean registered as " + trackerName);
+
+        } catch (Exception exc) {
+            log.error("Unable to register MBean " + trackerName, exc);
+        }
     }
 
     public void addTenant(String tenantId) {
         tenantIds.add(tenantId);
         log.info("[TRACKER] tenantId " + tenantId + " added.");
-    }
-
-    public void addMetricName(String metricName) {
-        metricNames.add(metricName);
-        log.info("[TRACKER] Metric name "+ metricName + " added.");
-    }
-
-    public void setIsTrackingDelayedMetrics() {
-        isTrackingDelayedMetrics = true;
-        log.info("[TRACKER] Tracking delayed metrics started");
-    }
-
-    public void resetIsTrackingDelayedMetrics() {
-        isTrackingDelayedMetrics = false;
-        log.info("[TRACKER] Tracking delayed metrics stopped");
     }
 
     public void removeTenant(String tenantId) {
@@ -78,6 +96,15 @@ public class Tracker implements TrackerMBean {
         log.info("[TRACKER] all tenants removed.");
     }
 
+    public Set getTenants() {
+        return tenantIds;
+    }
+
+    public void addMetricName(String metricName) {
+        metricNames.add(metricName);
+        log.info("[TRACKER] Metric name "+ metricName + " added.");
+    }
+
     public void removeMetricName(String metricName) {
         metricNames.remove(metricName);
         log.info("[TRACKER] Metric name "+ metricName + " removed.");
@@ -88,11 +115,29 @@ public class Tracker implements TrackerMBean {
         log.info("[TRACKER] All metric names removed.");
     }
 
-    public static boolean isTracking(String tenantId) {
+    public Set<String> getMetricNames() {
+        return metricNames;
+    }
+
+    public void setIsTrackingDelayedMetrics() {
+        isTrackingDelayedMetrics = true;
+        log.info("[TRACKER] Tracking delayed metrics started");
+    }
+
+    public void resetIsTrackingDelayedMetrics() {
+        isTrackingDelayedMetrics = false;
+        log.info("[TRACKER] Tracking delayed metrics stopped");
+    }
+
+    public boolean getIsTrackingDelayedMetrics() {
+        return isTrackingDelayedMetrics;
+    }
+
+    public boolean isTracking(String tenantId) {
         return tenantIds.contains(tenantId);
     }
 
-    public static boolean doesMessageContainMetricNames(String logmessage) {
+    public boolean doesMessageContainMetricNames(String logmessage) {
         boolean toLog = false;
 
         if (metricNames.size() == 0) {
@@ -109,25 +154,7 @@ public class Tracker implements TrackerMBean {
         return toLog;
     }
 
-    public Set getTenants() {
-        return tenantIds;
-    }
-
-    public void registerMBean() {
-        try {
-            ObjectName objectName = new ObjectName(trackerName);
-
-            // register TrackerMBean only if not already registered
-            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            if (!mBeanServer.isRegistered(objectName)) {
-                ManagementFactory.getPlatformMBeanServer().registerMBean(this, objectName);
-            }
-        } catch (Exception exc) {
-            log.error("Unable to register mbean for " + this.getClass().getSimpleName(), exc);
-        }
-    }
-
-    public static void track(HttpRequest request) {
+    public void track(HttpRequest request) {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the request if it is
         if (request == null) return;
 
@@ -162,30 +189,13 @@ public class Tracker implements TrackerMBean {
         }
     }
 
-    static String findTid( String uri ) {
-
-        Matcher m = patternGetTid.matcher( uri );
-
-        if( m.matches() )
-            return m.group( 1 );
-        else
-            return null;
-    }
-
-    public static void trackDelayedMetricsTenant(String tenantid) {
-        if (isTrackingDelayedMetrics) {
-            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s",tenantid);
-            log.info(logMessage);
-        }
-    }
-
-    public static void trackResponse(HttpRequest request, HttpResponse response) {
+    public void trackResponse(HttpRequest request, HttpResponse response) {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the response if it is
         // HttpRequest is needed for original request uri and tenantId
         if (request == null) return;
         if (response == null) return;
 
-        String tenantId = request.getHeader("tenantId");
+        String tenantId = findTid( request.getUri() );
         if (isTracking(tenantId)) {
             HttpResponseStatus status = response.getStatus();
             String messageBody = response.getContent().toString(Constants.DEFAULT_CHARSET);
@@ -209,7 +219,26 @@ public class Tracker implements TrackerMBean {
 
     }
 
-    static String getQueryParameters(HttpRequest httpRequest) {
+    public void trackDelayedMetricsTenant(String tenantid, List<Metric> delayedMetrics) {
+        if (isTrackingDelayedMetrics) {
+            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s", tenantid);
+            log.info(logMessage);
+
+            // log individual delayed metrics locator and collectionTime
+            double delayedMinutes;
+            long nowMillis = System.currentTimeMillis();
+            for (Metric metric : delayedMetrics) {
+                delayedMinutes = (double)(nowMillis - metric.getCollectionTime()) / 1000 / 60;
+                logMessage = String.format("[TRACKER][DELAYED METRIC] %s has collectionTime %s which is delayed by %.2f minutes",
+                        metric.getLocator().toString(),
+                        dateFormatter.format(new Date(metric.getCollectionTime())),
+                        delayedMinutes);
+                log.info(logMessage);
+            }
+        }
+    }
+
+    String getQueryParameters(HttpRequest httpRequest) {
         String params = "";
         Map<String, List<String>> parameters = ((HTTPRequestWithDecodedQueryParams) httpRequest).getQueryParams();
 
@@ -229,4 +258,13 @@ public class Tracker implements TrackerMBean {
         return params;
     }
 
+    String findTid( String uri ) {
+
+        Matcher m = patternGetTid.matcher( uri );
+
+        if( m.matches() )
+            return m.group( 1 );
+        else
+            return null;
+    }
 }

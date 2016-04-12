@@ -22,7 +22,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Meter;
 
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 

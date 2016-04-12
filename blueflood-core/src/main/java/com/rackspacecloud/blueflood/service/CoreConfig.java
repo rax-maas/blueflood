@@ -22,8 +22,22 @@ package com.rackspacecloud.blueflood.service;
 public enum CoreConfig implements ConfigDefaults {
     CASSANDRA_HOSTS("127.0.0.1:19180"),
     DEFAULT_CASSANDRA_PORT("19180"),
-    // This number is only accurate if MAX_CASSANDRA_CONNECTIONS is evenly divisible by number of hosts
+    CASSANDRA_BINXPORT_HOSTS("localhost:9042"),
+    CASSANDRA_BINXPORT_PORT("9042"),
+
+    // This number is only accurate if MAX_CASSANDRA_CONNECTIONS
+    // is evenly divisible by number of hosts. For its connection
+    // pool, the driver class calculate the max number of
+    // connections per host, by dividing this number with
+    // the number of hosts.
     MAX_CASSANDRA_CONNECTIONS("75"),
+
+    // This is the number of initial connections
+    // to be created by the connection pool of the
+    // datastax driver
+    INITIAL_CASSANDRA_CONNECTIONS("15"),
+
+    CASSANDRA_DRIVER("astyanax"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
@@ -127,7 +141,7 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.AstyanaxMetricsWriter"),
+    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter"),
 
     METADATA_CACHE_PERSISTENCE_ENABLED("false"),
     METADATA_CACHE_PERSISTENCE_PATH("/dev/null"),
@@ -136,6 +150,7 @@ public enum CoreConfig implements ConfigDefaults {
     
     // how long we typically wait to schedule a rollup.
     ROLLUP_DELAY_MILLIS("300000"),
+    DELAYED_METRICS_ROLLUP_DELAY_MILLIS("300000"),
     STRING_METRICS_DROPPED("false"),
     TENANTIDS_TO_KEEP(""),
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -23,6 +22,7 @@ public class SlotState {
     private Integer slot;
     private UpdateStamp.State state;
     private Long timestamp = null;
+    private long lastUpdatedTimestamp;
 
     public SlotState(Granularity g, int slot, UpdateStamp.State state) {
         this.granularity = g;
@@ -43,6 +43,16 @@ public class SlotState {
      */
     public SlotState withTimestamp(long timestamp) {
         this.timestamp = timestamp;
+        return this;
+    }
+
+    /**
+     *
+     * @param lastUpdatedTimestamp
+     * @return
+     */
+    public SlotState withLastUpdatedTimestamp(long lastUpdatedTimestamp) {
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
         return this;
     }
 
@@ -76,5 +86,9 @@ public class SlotState {
 
     public Long getTimestamp() {
         return timestamp;
+    }
+
+    public long getLastUpdatedTimestamp() {
+        return lastUpdatedTimestamp;
     }
 }

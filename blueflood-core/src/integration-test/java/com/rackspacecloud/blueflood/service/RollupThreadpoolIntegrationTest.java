@@ -18,8 +18,8 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;

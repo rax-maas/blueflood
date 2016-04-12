@@ -34,6 +34,10 @@ done
 
 echo "ELASTICSEARCH_HOSTS=$ELASTICSEARCH_PORT_9300_TCP_ADDR:9300" >> blueflood.conf
 
+cd ES-Setup
+./init-es.sh $ELASTICSEARCH_PORT_9200_TCP_ADDR:9200
+cd ..
+
 /usr/bin/java \
         -Dblueflood.config=file:./blueflood.conf \
         -Dlog4j.configuration=file:./blueflood-log4j.properties \

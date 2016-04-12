@@ -3,8 +3,8 @@ package com.rackspacecloud.blueflood.io;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.io.serializers.LocatorSerializer;
-import com.rackspacecloud.blueflood.io.serializers.SlotStateSerializer;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.LocatorSerializer;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -17,7 +17,38 @@ import java.util.concurrent.TimeUnit;
 
 public class CassandraModel {
     public static final String KEYSPACE = Configuration.getInstance().getStringProperty(CoreConfig.ROLLUP_KEYSPACE);
+    public static final String QUOTED_KEYSPACE = "\"" + KEYSPACE + "\"";
     public static final String CLUSTER = Configuration.getInstance().getStringProperty(CoreConfig.CLUSTER_NAME);
+
+    /**
+     * The following CF_*_NAME are the names of all of our Column Family
+     */
+    public static final String CF_METRICS_STATE_NAME = "metrics_state";
+    public static final String CF_METRICS_METADATA_NAME = "metrics_metadata";
+    public static final String CF_METRICS_LOCATOR_NAME = "metrics_locator";
+    public static final String CF_METRICS_STRING_NAME = "metrics_string";
+    public static final String CF_METRICS_ENUM_NAME = "metrics_enum";
+    public static final String CF_METRICS_EXCESS_ENUMS_NAME = "metrics_excess_enums";
+
+    public static final String CF_METRICS_FULL_NAME = "metrics_full";
+    public static final String CF_METRICS_5M_NAME = "metrics_5m";
+    public static final String CF_METRICS_20M_NAME = "metrics_20m";
+    public static final String CF_METRICS_60M_NAME = "metrics_60m";
+    public static final String CF_METRICS_240M_NAME = "metrics_240m";
+    public static final String CF_METRICS_1440M_NAME = "metrics_1440m";
+
+    public static final String CF_METRICS_PREAGGREGATED_FULL_NAME = "metrics_preaggregated_full";
+    public static final String CF_METRICS_PREAGGREGATED_5M_NAME = "metrics_preaggregated_5m";
+    public static final String CF_METRICS_PREAGGREGATED_20M_NAME = "metrics_preaggregated_20m";
+    public static final String CF_METRICS_PREAGGREGATED_60M_NAME = "metrics_preaggregated_60m";
+    public static final String CF_METRICS_PREAGGREGATED_240M_NAME = "metrics_preaggregated_240m";
+    public static final String CF_METRICS_PREAGGREGATED_1440M_NAME = "metrics_preaggregated_1440m";
+
+    public static final String CF_METRICS_HISTOGRAM_5M_NAME = "metrics_histogram_5m";
+    public static final String CF_METRICS_HISTOGRAM_20M_NAME = "metrics_histogram_20m";
+    public static final String CF_METRICS_HISTOGRAM_60M_NAME = "metrics_histogram_60m";
+    public static final String CF_METRICS_HISTOGRAM_240M_NAME = "metrics_histogram_240m";
+    public static final String CF_METRICS_HISTOGRAM_1440M_NAME = "metrics_histogram_1440m";
 
     /**
     * It is worth pointing out that the actual TTL value is calculated by taking the TimeValues below
@@ -29,45 +60,45 @@ public class CassandraModel {
     * For example, TimeValue of 1 will equate to a 5 day TTL.
     */
 
-    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily("metrics_full", new TimeValue(1, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily("metrics_5m", new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily("metrics_20m", new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily("metrics_60m", new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily("metrics_240m", new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily("metrics_1440m", new TimeValue(365, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily("metrics_string", new TimeValue(365 * 3, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily(CF_METRICS_FULL_NAME, new TimeValue(1, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily(CF_METRICS_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily(CF_METRICS_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily(CF_METRICS_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily(CF_METRICS_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily(CF_METRICS_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily(CF_METRICS_STRING_NAME, new TimeValue(365 * 3, TimeUnit.DAYS));
 
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily("metrics_preaggregated_full", new TimeValue(1, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily("metrics_preaggregated_5m", new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily("metrics_preaggregated_20m", new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily("metrics_preaggregated_60m", new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily("metrics_preaggregated_240m", new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily("metrics_preaggregated_1440m", new TimeValue(365, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(1, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
 
     public static final MetricColumnFamily CF_METRICS_HIST_FULL = CF_METRICS_FULL;
-    public static final MetricColumnFamily CF_METRICS_HIST_5M = new MetricColumnFamily("metrics_histogram_5m", new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_20M = new MetricColumnFamily("metrics_histogram_20m", new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_60M = new MetricColumnFamily("metrics_histogram_60m", new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_240M = new MetricColumnFamily("metrics_histogram_240m", new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_1440M = new MetricColumnFamily("metrics_histogram_1440m", new TimeValue(365, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_HIST_5M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_HIST_20M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_HIST_60M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_HIST_240M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_HIST_1440M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
 
-    public static final ColumnFamily<Locator, String> CF_METRIC_METADATA = new ColumnFamily<Locator, String>("metrics_metadata",
+    public static final ColumnFamily<Locator, String> CF_METRICS_METADATA = new ColumnFamily<Locator, String>(CF_METRICS_METADATA_NAME,
             LocatorSerializer.get(),
             StringSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>("metrics_enum",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>(CF_METRICS_ENUM_NAME,
             LocatorSerializer.get(),
             LongSerializer.get(),
             StringSerializer.get());
 
-    public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>("metrics_locator",
+    public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>(CF_METRICS_LOCATOR_NAME,
             LongSerializer.get(),
             LocatorSerializer.get());
-    public static final ColumnFamily<Long, SlotState> CF_METRICS_STATE = new ColumnFamily<Long, SlotState>("metrics_state",
+    public static final ColumnFamily<Long, SlotState> CF_METRICS_STATE = new ColumnFamily<Long, SlotState>(CF_METRICS_STATE_NAME,
             LongSerializer.get(),
             SlotStateSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_EXCESS_ENUMS = new ColumnFamily<Locator, Long>("metrics_excess_enums",
+    public static final ColumnFamily<Locator, Long> CF_METRICS_EXCESS_ENUMS = new ColumnFamily<Locator, Long>(CF_METRICS_EXCESS_ENUMS_NAME,
             LocatorSerializer.get(),
             LongSerializer.get());
 
@@ -81,7 +112,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-          CF_METRIC_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
+            CF_METRICS_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;

@@ -21,7 +21,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -34,6 +34,7 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +55,7 @@ public class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
     private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
-    private ThreadPoolExecutor enumValidatorExecutor;
+    private ExecutorService enumValidatorExecutor;
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -62,7 +63,7 @@ public class RollupRunnable implements Runnable {
         }
     }
 
-    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter, ThreadPoolExecutor enumValidatorExecutor) {
+    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter, ExecutorService enumValidatorExecutor) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
         this.rollupBatchWriter = rollupBatchWriter;

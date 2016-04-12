@@ -25,7 +25,7 @@ import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.rackspacecloud.blueflood.ManualRollupTool.io.handlers.ReRollWork;
 import com.rackspacecloud.blueflood.ManualRollupTool.service.RollupToolConfig;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.io.AstyanaxIO;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;

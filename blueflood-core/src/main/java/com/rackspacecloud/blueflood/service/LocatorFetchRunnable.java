@@ -17,7 +17,8 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AstyanaxReader;
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -26,9 +27,9 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -40,22 +41,44 @@ class LocatorFetchRunnable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LocatorFetchRunnable.class);
     private static final int LOCATOR_WAIT_FOR_ALL_SECS = 1000;
     
-    private final ThreadPoolExecutor rollupReadExecutor;
-    private final ThreadPoolExecutor rollupWriteExecutor;
-    private final ThreadPoolExecutor enumValidatorExecutor;
-    private final SlotKey parentSlotKey;
-    private final ScheduleContext scheduleCtx;
-    private final long serverTime;
+    private ExecutorService rollupReadExecutor;
+    private ThreadPoolExecutor rollupWriteExecutor;
+    private ExecutorService enumValidatorExecutor;
+    private SlotKey parentSlotKey;
+    private ScheduleContext scheduleCtx;
+    private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private AstyanaxReader astyanaxReader;
 
-    private static final boolean enableHistograms = Configuration.getInstance().
-            getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS);
+    private Range parentRange;
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
-                         ThreadPoolExecutor rollupReadExecutor,
+                         ExecutorService rollupReadExecutor,
                          ThreadPoolExecutor rollupWriteExecutor,
-                         ThreadPoolExecutor enumValidatorExecutor) {
+                         ExecutorService enumValidatorExecutor) {
+        this(scheduleCtx, destSlotKey, rollupReadExecutor,
+                rollupWriteExecutor,
+                enumValidatorExecutor, AstyanaxReader.getInstance());
+    }
+    LocatorFetchRunnable(ScheduleContext scheduleCtx,
+                         SlotKey destSlotKey,
+                         ExecutorService rollupReadExecutor,
+                         ThreadPoolExecutor rollupWriteExecutor,
+                         ExecutorService enumValidatorExecutor,
+                         AstyanaxReader astyanaxReader) {
+
+        initialize(scheduleCtx, destSlotKey, rollupReadExecutor,
+                rollupWriteExecutor, enumValidatorExecutor, astyanaxReader);
+    }
+
+    @VisibleForTesting
+    public void initialize(ScheduleContext scheduleCtx,
+                           SlotKey destSlotKey,
+                           ExecutorService rollupReadExecutor,
+                           ThreadPoolExecutor rollupWriteExecutor,
+                           ExecutorService enumValidatorExecutor,
+                           AstyanaxReader astyanaxReader) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
@@ -63,19 +86,21 @@ class LocatorFetchRunnable implements Runnable {
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
         this.enumValidatorExecutor = enumValidatorExecutor;
+        this.astyanaxReader = astyanaxReader;
+        this.parentRange = getGranularity().deriveRange(getParentSlot(), serverTime);
     }
-    
+
+    protected Granularity getGranularity() { return parentSlotKey.getGranularity(); }
+    protected int getParentSlot() { return parentSlotKey.getSlot(); }
+    protected int getShard() { return parentSlotKey.getShard(); }
+
     public void run() {
         final Timer.Context timerCtx = rollupLocatorExecuteTimer.time();
-        final Granularity gran = parentSlotKey.getGranularity();
-        final int parentSlot = parentSlotKey.getSlot();
-        final int shard = parentSlotKey.getShard();
-        final Range parentRange = gran.deriveRange(parentSlot, serverTime);
 
         try {
-            gran.finer();
+            getGranularity().finer();
         } catch (Exception ex) {
-            log.error("No finer granularity available than " + gran);
+            log.error("No finer granularity available than " + getGranularity());
             return;
         }
 
@@ -85,65 +110,37 @@ class LocatorFetchRunnable implements Runnable {
         long waitStart = System.currentTimeMillis();
         int rollCount = 0;
 
-        final RollupExecutionContext executionContext = new RollupExecutionContext(Thread.currentThread());
-        final RollupBatchWriter rollupBatchWriter = new RollupBatchWriter(rollupWriteExecutor, executionContext);
-        Set<Locator> locators = new HashSet<Locator>();
+        final RollupExecutionContext executionContext = createRollupExecutionContext();
+        final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
-        try {
-            // get a list of all locators to rollup for a shard
-            locators.addAll(AstyanaxReader.getInstance().getLocatorsToRollup(shard));
-        } catch (RuntimeException e) {
-            executionContext.markUnsuccessful(e);
-            log.error("Failed reading locators for slot: " + parentSlot, e);
-        }
+        Set<Locator> locators = getLocators(executionContext);
 
         for (Locator locator : locators) {
-            if (log.isTraceEnabled())
-                log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
-            try {
-                executionContext.incrementReadCounter();
-                final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, gran);
-                RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
-                rollupReadExecutor.execute(rollupRunnable);
-                rollCount += 1;
-            } catch (Throwable any) {
-                // continue on, but log the problem so that we can fix things later.
-                executionContext.markUnsuccessful(any);
-                executionContext.decrementReadCounter();
-                log.error(any.getMessage(), any);
-                log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
-            }
-
-            if (enableHistograms) {
-                // Also, compute histograms. Histograms for > 5 MIN granularity are always computed from 5 MIN histograms.
-                try {
-                    executionContext.incrementReadCounter();
-                    final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator,
-                            parentRange, gran);
-                    rollupReadExecutor.execute(new HistogramRollupRunnable(executionContext, singleRollupReadContext,
-                            rollupBatchWriter));
-                    rollCount += 1;
-                } catch (RejectedExecutionException ex) {
-                    executionContext.markUnsuccessful(ex); // We should ideally only recompute the failed locators alone.
-                    executionContext.decrementReadCounter();
-                    log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
-                    log.error("Exception: ", ex);
-                } catch (Exception ex) { // do not retrigger rollups when they fail. histograms are fine to be lost.
-                    executionContext.decrementReadCounter();
-                    log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
-                    log.error("Exception: ", ex);
-                }
-            }
+            rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator);
         }
         
         // now wait until ctx is drained. someone needs to be notified.
+        drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
+
+        timerCtx.stop();
+    }
+
+    protected RollupExecutionContext createRollupExecutionContext() {
+        return new RollupExecutionContext(Thread.currentThread());
+    }
+
+    protected RollupBatchWriter createRollupBatchWriter(RollupExecutionContext executionContext) {
+        return new RollupBatchWriter(rollupWriteExecutor, executionContext);
+    }
+
+    public void drainExecutionContext(long waitStart, int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter) {
         log.debug("Waiting for rollups to finish for " + parentSlotKey);
         while (!executionContext.doneReading() || !executionContext.doneWriting()) {
             if (executionContext.doneReading()) {
                 rollupBatchWriter.drainBatch(); // gets any remaining rollups enqueued for put. should be no-op after being called once
             }
             try {
-                Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
+                waitForRollups();
             } catch (InterruptedException ex) {
                 if (log.isTraceEnabled())
                     log.trace("Woken wile waiting for rollups to coalesce for {} {}", parentSlotKey);
@@ -155,6 +152,14 @@ class LocatorFetchRunnable implements Runnable {
         if (log.isDebugEnabled())
             log.debug("Finished {} rollups for (gran,slot,shard) {} in {}", new Object[] {rollCount, parentSlotKey, System.currentTimeMillis() - waitStart});
 
+        finishExecution(waitStart, executionContext);
+    }
+
+    protected void waitForRollups() throws InterruptedException {
+        Thread.currentThread().sleep(LOCATOR_WAIT_FOR_ALL_SECS * 1000);
+    }
+
+    public void finishExecution(long waitStart, RollupExecutionContext executionContext) {
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
             log.info("Successful completion of rollups for (gran,slot,shard) {} in {}", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
@@ -162,7 +167,71 @@ class LocatorFetchRunnable implements Runnable {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
         }
+    }
 
-        timerCtx.stop();
+    public int processLocator(int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
+        if (log.isTraceEnabled())
+            log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
+        try {
+            executeRollupForLocator(executionContext, rollupBatchWriter, locator);
+            rollCount += 1;
+        } catch (Throwable any) {
+            // continue on, but log the problem so that we can fix things later.
+            executionContext.markUnsuccessful(any);
+            executionContext.decrementReadCounter();
+            log.error(any.getMessage(), any);
+            log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
+        }
+
+        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS)) {
+            // Also, compute histograms. Histograms for > 5 MIN granularity are always computed from 5 MIN histograms.
+            rollCount = processHistogramForLocator(rollCount, executionContext, rollupBatchWriter, locator);
+        }
+        return rollCount;
+    }
+
+    public int processHistogramForLocator(int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
+        try {
+            executeHistogramRollupForLocator(executionContext, rollupBatchWriter, locator);
+            rollCount += 1;
+        } catch (RejectedExecutionException ex) {
+            executionContext.markUnsuccessful(ex); // We should ideally only recompute the failed locators alone.
+            executionContext.decrementReadCounter();
+            log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
+            log.error("Exception: ", ex);
+        } catch (Exception ex) { // do not retrigger rollups when they fail. histograms are fine to be lost.
+            executionContext.decrementReadCounter();
+            log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
+            log.error("Exception: ", ex);
+        }
+        return rollCount;
+    }
+
+    public void executeHistogramRollupForLocator(RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
+        executionContext.incrementReadCounter();
+        final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator,
+                parentRange, getGranularity());
+        rollupReadExecutor.execute(new HistogramRollupRunnable(executionContext, singleRollupReadContext,
+                rollupBatchWriter));
+    }
+
+    public void executeRollupForLocator(RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
+        executionContext.incrementReadCounter();
+        final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, getGranularity());
+        RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
+        rollupReadExecutor.execute(rollupRunnable);
+    }
+
+    public Set<Locator> getLocators(RollupExecutionContext executionContext) {
+        Set<Locator> locators = new HashSet<Locator>();
+
+        try {
+            // get a list of all locators to rollup for a shard
+            locators.addAll(astyanaxReader.getLocatorsToRollup(getShard()));
+        } catch (RuntimeException e) {
+            executionContext.markUnsuccessful(e);
+            log.error("Failed reading locators for slot: " + getParentSlot(), e);
+        }
+        return locators;
     }
 }

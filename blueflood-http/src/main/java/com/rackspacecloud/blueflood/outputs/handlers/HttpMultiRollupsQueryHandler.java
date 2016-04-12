@@ -75,7 +75,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        Tracker.track(request);
+        Tracker.getInstance().track(request);
 
         final String tenantId = request.getHeader("tenantId");
 
@@ -154,7 +154,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.trackResponse(request, response);
+        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
     }
 }

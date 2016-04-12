@@ -26,7 +26,7 @@ import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
-import com.rackspacecloud.blueflood.io.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
@@ -65,7 +65,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        Tracker.track(request);
+        Tracker.getInstance().track(request);
 
         final Timer.Context timerContext = handlerTimer.time();
 

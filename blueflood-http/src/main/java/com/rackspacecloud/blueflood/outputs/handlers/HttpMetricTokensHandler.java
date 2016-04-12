@@ -42,7 +42,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
 
         final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
 
-        Tracker.track(request);
+        Tracker.getInstance().track(request);
 
         final String tenantId = request.getHeader("tenantId");
 
@@ -81,7 +81,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.trackResponse(request, response);
+        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
     }
 

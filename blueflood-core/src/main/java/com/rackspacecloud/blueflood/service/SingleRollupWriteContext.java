@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -30,17 +31,22 @@ public class SingleRollupWriteContext {
     private final MetricColumnFamily destinationCF;
     private final Granularity granularity;
 
-    // public only for tests
-    public SingleRollupWriteContext(Rollup rollup, Locator locator, Granularity granularity, MetricColumnFamily destCf, Long timestamp) {
+    public SingleRollupWriteContext(Rollup rollup,
+                                    SingleRollupReadContext singleRollupReadContext,
+                                    MetricColumnFamily dstCF) {
+        this(rollup, singleRollupReadContext.getLocator(),
+                singleRollupReadContext.getRollupGranularity(), dstCF,
+                singleRollupReadContext.getRange().getStart());
+    }
+    @VisibleForTesting
+    public SingleRollupWriteContext(Rollup rollup, Locator locator,
+                                    Granularity granularity,
+                                    MetricColumnFamily destCf, Long timestamp) {
         this.rollup = rollup;
         this.locator = locator;
         this.granularity = granularity;
         this.destinationCF = destCf;
         this.timestamp = timestamp;
-    }
-
-    public SingleRollupWriteContext(Rollup rollup, SingleRollupReadContext singleRollupReadContext, MetricColumnFamily dstCF) {
-        this(rollup, singleRollupReadContext.getLocator(), singleRollupReadContext.getRollupGranularity(), dstCF, singleRollupReadContext.getRange().getStart());
     }
 
     public Rollup getRollup() {
