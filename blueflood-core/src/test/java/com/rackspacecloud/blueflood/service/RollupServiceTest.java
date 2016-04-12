@@ -8,6 +8,7 @@ import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertSame;
@@ -82,7 +83,7 @@ public class RollupServiceTest {
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 capture[0] = (Runnable)invocationOnMock.getArguments()[0];
 
-                // now that the runnable has been queue, stop the outer loop
+                // now that the runnable has been queued, stop the outer loop
                 service.setShouldKeepRunning(false);
 
                 return null;
@@ -111,4 +112,44 @@ public class RollupServiceTest {
         verifyZeroInteractions(enumValidatorExecutor);
     }
 
+    @Test
+    public void IfTheExecutionIsRejectedThenTheSlotKeyIsPushedBack() {
+
+        // given
+        when(context.hasScheduled()).thenReturn(true).thenReturn(false);
+
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, 2, 0);
+        doReturn(slotkey).when(context).getNextScheduled();
+
+        final RejectedExecutionException cause = new RejectedExecutionException("exception for testing purposes");
+        doAnswer(new Answer() {
+             @Override
+             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                 // now we're inside the loop, stop the outer loop
+                 service.setShouldKeepRunning(false);
+
+                 throw cause;
+             }
+        }).when(locatorFetchExecutors).execute(Matchers.<Runnable>any());
+
+        // when
+        service.run();
+
+        // then
+        verify(context).scheduleEligibleSlots(anyLong(), anyLong());  // from poll
+        verify(context, times(2)).hasScheduled();
+        verify(context).getNextScheduled();
+        verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
+        verify(context).pushBackToScheduled(Matchers.<SlotKey>any(), anyBoolean());
+        verifyNoMoreInteractions(context);
+
+        verifyZeroInteractions(shardStateManager);
+
+        verify(locatorFetchExecutors).execute(Matchers.<Runnable>any());
+        verifyNoMoreInteractions(locatorFetchExecutors);
+
+        verifyZeroInteractions(rollupReadExecutors);
+        verifyZeroInteractions(rollupWriteExecutors);
+        verifyZeroInteractions(enumValidatorExecutor);
+    }
 }
