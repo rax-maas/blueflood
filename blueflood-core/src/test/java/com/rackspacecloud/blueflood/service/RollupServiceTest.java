@@ -40,7 +40,7 @@ public class RollupServiceTest {
         enumValidatorExecutor = mock(ThreadPoolExecutor.class);
         rollupDelayMillis = 300000;
         delayedMetricRollupDelayMillis = 300000;
-        pollerPeriod = 60000;
+        pollerPeriod = 0;
         configRefreshInterval = 10000;
 
         service = new RollupService(context, shardStateManager,
