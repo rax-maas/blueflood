@@ -68,7 +68,7 @@ class IngestThread(AbstractThread):
                             time - ingest_delay_millis - min_5_millis * 2,
                             time - ingest_delay_millis - min_5_millis * 3,
                             time - ingest_delay_millis - min_5_millis * 4,
-                            time - ingest_delay_millis - min_5_millis * 24]
+                            time - ingest_delay_millis - min_5_millis * 12]
         collection_time = random.choice(collection_times)
 
     return {'tenantId': str(tenant_id),
