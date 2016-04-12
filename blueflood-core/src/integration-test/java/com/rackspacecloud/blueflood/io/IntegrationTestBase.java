@@ -290,8 +290,8 @@ public class IntegrationTestBase {
 
         // setup some Enum data
         long startTime = System.currentTimeMillis();
-        final Locator locator1 = Locator.createLocatorFromPathComponents(TENANT1, "my", "enum", "values");
-        final Locator locator2 = Locator.createLocatorFromPathComponents(TENANT2, "my", "enum", "values");
+        final Locator locator1 = Locator.createLocatorFromPathComponents(TENANT1, getClass().getSimpleName(), "my", "enum", "values");
+        final Locator locator2 = Locator.createLocatorFromPathComponents(TENANT2, getClass().getSimpleName(), "my", "enum", "values");
         List<IMetric> metrics = new ArrayList<IMetric>();
         PreaggregatedMetric metric = getEnumMetric(locator1, startTime - DELTA_MS);
         metrics.add(metric);

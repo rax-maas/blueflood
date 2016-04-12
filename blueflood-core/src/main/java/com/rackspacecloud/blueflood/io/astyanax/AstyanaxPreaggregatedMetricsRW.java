@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.AbstractMetricsIO;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
@@ -30,7 +30,7 @@ import java.util.Collection;
  * This class deals with reading/writing metrics to the metrics_preaggregated_* column families
  * using Astyanax driver
  */
-public class AstyanaxPreaggregatedMetrics extends AbstractMetricsIO {
+public class AstyanaxPreaggregatedMetricsRW extends AbstractMetricsRW {
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family

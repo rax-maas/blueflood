@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 
@@ -30,7 +29,7 @@ import java.util.Collection;
  * family. This contains some utility methods used/shared amongst various
  * implementation/subclasses of MetricsIO.
  */
-public abstract class AbstractMetricsIO implements MetricsIO {
+public abstract class AbstractMetricsRW implements MetricsRW {
 
     /**
      * The key of the metrics_preaggregated_* Column Families

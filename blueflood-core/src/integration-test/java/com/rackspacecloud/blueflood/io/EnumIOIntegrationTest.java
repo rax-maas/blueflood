@@ -87,7 +87,8 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    future.get().all();
                 }
             }
 
@@ -129,9 +130,6 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                     future.get().all();
                 }
             }
-
-            // read delay!
-            Thread.sleep(500);
 
             // read using Astyanax
             AstyanaxReader reader = AstyanaxReader.getInstance();
@@ -180,7 +178,8 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    future.get().all();
                 }
             }
 
@@ -217,12 +216,10 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), granularity);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), granularity);
+                    future.get().all();
                 }
             }
-
-            // read delay!
-            Thread.sleep(500);
 
             // read using Astyanax
             final List<Locator> locators = new ArrayList<Locator>() {{

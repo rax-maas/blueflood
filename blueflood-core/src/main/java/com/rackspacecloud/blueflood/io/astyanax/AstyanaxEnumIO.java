@@ -25,10 +25,9 @@ import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.rackspacecloud.blueflood.io.CassandraModel;
-import com.rackspacecloud.blueflood.io.EnumReader;
+import com.rackspacecloud.blueflood.io.EnumReaderIO;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ import java.util.*;
  * It's only a wrapper class because we already have a lot of the
  * logic in AstyanaxReader.
  */
-public class AstyanaxEnumIO implements EnumReader {
+public class AstyanaxEnumIO implements EnumReaderIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(AstyanaxEnumIO.class);
 

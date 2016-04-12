@@ -26,7 +26,7 @@ import java.util.Collection;
  * This is an interface defining behavior of reading/writing
  * metrics to various data stores.
  */
-public interface MetricsIO {
+public interface MetricsRW {
 
     /**
      * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} objects

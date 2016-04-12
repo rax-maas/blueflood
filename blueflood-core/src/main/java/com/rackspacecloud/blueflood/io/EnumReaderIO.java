@@ -17,15 +17,12 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An interface describing behavior for reading/writing of Enum values from the
@@ -41,7 +38,7 @@ import java.util.Set;
  * -------------|-----------------|-------------------
  * metric name  | timestamp       | serialized BluefloodEnumRollup object
  */
-public interface EnumReader {
+public interface EnumReaderIO {
 
     /**
      * Read the metrics_enum column family for the specified locators. Organize

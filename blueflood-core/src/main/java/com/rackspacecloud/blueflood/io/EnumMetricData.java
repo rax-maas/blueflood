@@ -35,7 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 /**
- * This class uses the driver specific {@link EnumReader} to
+ * This class uses the driver specific {@link EnumReaderIO} to
  * read/write enum metrics from Cassandra and convert them to
  * {@link com.rackspacecloud.blueflood.outputs.formats.MetricData}
  * objects that are used by services such as Rollup, Ingest and Query
@@ -53,7 +53,7 @@ public class EnumMetricData {
                                             .build();
     private static final MetadataCache metadataCache = MetadataCache.getInstance();
 
-    private EnumReader enumReader;
+    private EnumReaderIO enumReader;
 
     /**
      * Constructor. Takes an instance or EnumReader, which would be
@@ -61,7 +61,7 @@ public class EnumMetricData {
      *
      * @param reader
      */
-    public EnumMetricData(EnumReader reader) {
+    public EnumMetricData(EnumReaderIO reader) {
         enumReader = reader;
     }
 
@@ -90,9 +90,6 @@ public class EnumMetricData {
      */
     public Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators, final Range range, final Granularity gran) {
         String columnFamily = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, gran).getName();
-        if ( columnFamily == null ) {
-            throw new IllegalArgumentException("invalid granularity: " + gran);
-        }
         return getEnumMetricDataForRangeForLocatorList(locators, range, columnFamily);
     }
 

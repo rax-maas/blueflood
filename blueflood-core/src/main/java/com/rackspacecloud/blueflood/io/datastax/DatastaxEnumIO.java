@@ -35,7 +35,7 @@ import java.util.concurrent.ExecutionException;
  * This class holds the utility methods to read/write enum metrics
  * using Datastax driver.
  */
-public class DatastaxEnumIO implements AsyncWriter, EnumReader {
+public class DatastaxEnumIO implements AsyncWriter, EnumReaderIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxEnumIO.class);
     private static final EnumSerDes serDes = new EnumSerDes();
@@ -158,11 +158,11 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
                 try {
                     List<Row> results = future.get().all();
                     for (Row row : results) {
-                        String key = row.getString(AbstractMetricsIO.KEY);
+                        String key = row.getString(AbstractMetricsRW.KEY);
                         Locator locator = Locator.createLocatorFromDbKey(key);
 
-                        Long hash = row.getLong(AbstractMetricsIO.COLUMN1);
-                        String enumValue = row.getString(AbstractMetricsIO.VALUE);
+                        Long hash = row.getLong(AbstractMetricsRW.COLUMN1);
+                        String enumValue = row.getString(AbstractMetricsRW.VALUE);
                         locatorEnumHashValues.put(locator, hash, enumValue);
                     }
                 } catch (InterruptedException ex) {
@@ -227,10 +227,10 @@ public class DatastaxEnumIO implements AsyncWriter, EnumReader {
                 try {
                     List<Row> results = future.get().all();
                     for (Row row : results) {
-                        String key = row.getString(AbstractMetricsIO.KEY);
+                        String key = row.getString(AbstractMetricsRW.KEY);
                         Locator locator = Locator.createLocatorFromDbKey(key);
-                        locatorHashRollup.put(locator, row.getLong(AbstractMetricsIO.COLUMN1),
-                                serDes.deserialize(row.getBytes(AbstractMetricsIO.VALUE)));
+                        locatorHashRollup.put(locator, row.getLong(AbstractMetricsRW.COLUMN1),
+                                serDes.deserialize(row.getBytes(AbstractMetricsRW.VALUE)));
                     }
                 } catch (InterruptedException ex) {
                     Instrumentation.markReadError();

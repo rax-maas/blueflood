@@ -35,7 +35,7 @@ import static org.junit.Assert.*;
 /**
  * This is the tests for {@link EnumMetricData} class
  */
-public class EnumMetricDataIOIntegrationTest extends IntegrationTestBase {
+public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
 
     private Map<Locator, List<IMetric>> locatorToMetrics;
     private static DatastaxEnumIO datastaxEnumIO;

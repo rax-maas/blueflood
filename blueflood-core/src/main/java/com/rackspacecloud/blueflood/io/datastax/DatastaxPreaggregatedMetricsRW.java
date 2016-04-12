@@ -37,9 +37,9 @@ import java.util.concurrent.ExecutionException;
  * This class deals with reading/writing metrics to the metrics_preaggregated_* column families
  * using Datastax driver
  */
-public class DatastaxPreaggregatedMetrics extends AbstractMetricsIO {
+public class DatastaxPreaggregatedMetricsRW extends AbstractMetricsRW {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastaxPreaggregatedMetrics.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DatastaxPreaggregatedMetricsRW.class);
 
     private final DatastaxEnumIO enumIO = new DatastaxEnumIO();
 
