@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -13,19 +14,29 @@ import static org.junit.Assert.assertTrue;
 
 public class ScheduleContextAreKeysRunningTest {
 
-    @Test
-    public void noneScheduledOrRunningReturnsFalse() {
+    long currentTime;
+    final int shard = 0;
+    List<Integer> managedShards;
+    ScheduleContext ctx;
+    int slot;
+    SlotKey slotkey;
+
+    @Before
+    public void setUp() {
 
         // given
-        long currentTime = 1234000L;
+        currentTime = 1234000L;
 
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
+        managedShards = new ArrayList<Integer>() {{ add(shard); }};
 
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
+        ctx = new ScheduleContext(currentTime, managedShards);
 
-        int slot = Granularity.MIN_5.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+        slot = Granularity.MIN_5.slot(currentTime);
+        slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+    }
+
+    @Test
+    public void noneScheduledOrRunningReturnsFalse() {
 
         // precondition
         assertEquals(0, ctx.getScheduledCount());
@@ -42,17 +53,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void slotScheduledReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_5.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
 
         // precondition
         assertEquals(1, ctx.getScheduledCount());
@@ -69,17 +71,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void childSlotScheduledReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_20.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
 
         // precondition
         assertEquals(1, ctx.getScheduledCount());
@@ -96,24 +89,18 @@ public class ScheduleContextAreKeysRunningTest {
     public void unrelatedSlotScheduledReturnsFalse() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
 
-        int slot = Granularity.MIN_5.slot(currentTime - 5*60*1000); // check the previous slot from 5 minutes ago
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+        int otherSlot = Granularity.MIN_5.slot(currentTime - 5*60*1000); // check the previous slot from 5 minutes ago
+        SlotKey otherSlotkey = SlotKey.of(Granularity.MIN_5, otherSlot, shard);
 
         // precondition
         assertEquals(1, ctx.getScheduledCount());
         assertEquals(0, ctx.getRunningCount());
 
         // when
-        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(otherSlotkey);
 
         // then
         assertFalse(areKeysRunning);
@@ -123,17 +110,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void slotRunningReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_5.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -153,17 +131,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void childSlotRunningReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_20.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -182,17 +151,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void slotPushedBackReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_5.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -218,17 +178,8 @@ public class ScheduleContextAreKeysRunningTest {
     public void childSlotPushedBackReturnsTrue() {
 
         // given
-        long currentTime = 1234000L;
-
-        final int shard = 0;
-        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
-
-        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
         ctx.update(currentTime - 2, shard);
         ctx.scheduleEligibleSlots(1, 7200000);
-
-        int slot = Granularity.MIN_20.slot(currentTime);
-        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
