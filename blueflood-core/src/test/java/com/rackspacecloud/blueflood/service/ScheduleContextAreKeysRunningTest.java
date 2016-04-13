@@ -177,4 +177,76 @@ public class ScheduleContextAreKeysRunningTest {
         // then
         assertTrue(areKeysRunning);
     }
+
+    @Test
+    public void slotPushedBackReturnsTrue() {
+
+        // given
+        long currentTime = 1234000L;
+
+        final int shard = 0;
+        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
+
+        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
+        ctx.update(currentTime - 2, shard);
+        ctx.scheduleEligibleSlots(1, 7200000);
+
+        int slot = Granularity.MIN_5.slot(currentTime);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+
+        SlotKey runningSlot = ctx.getNextScheduled();
+
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
+
+        ctx.clearFromRunning(runningSlot);
+        ctx.pushBackToScheduled(runningSlot, false);
+
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
+
+        // when
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
+
+        // then
+        assertTrue(areKeysRunning);
+    }
+
+    @Test
+    public void childSlotPushedBackReturnsTrue() {
+
+        // given
+        long currentTime = 1234000L;
+
+        final int shard = 0;
+        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
+
+        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
+        ctx.update(currentTime - 2, shard);
+        ctx.scheduleEligibleSlots(1, 7200000);
+
+        int slot = Granularity.MIN_20.slot(currentTime);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
+
+        SlotKey runningSlot = ctx.getNextScheduled();
+
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
+
+        ctx.clearFromRunning(runningSlot);
+        ctx.pushBackToScheduled(runningSlot, false);
+
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
+
+        // when
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
+
+        // then
+        assertTrue(areKeysRunning);
+    }
 }
