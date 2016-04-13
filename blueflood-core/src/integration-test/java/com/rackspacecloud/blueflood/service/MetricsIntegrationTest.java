@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
  * when logic in Writer changes, these tests can break unless the logic is changed here too. */
 public class MetricsIntegrationTest extends IntegrationTestBase {
 
-    private static boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     // returns a collection all checks that were written at some point.
     // this was a lot cooler back when the slot changed with time.
     private Collection<Locator> writeLocatorsOnly(int hours) throws Exception {
@@ -272,145 +271,165 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
     public void testStringMetricsIfSoConfiguredAreAlwaysDropped() throws Exception {
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
+        Boolean orgAreStringDropped = (Boolean) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped");
+        try {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
+            AstyanaxWriter writer = AstyanaxWriter.getInstance();
+            AstyanaxReader reader = AstyanaxReader.getInstance();
+            final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+            long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+            final String acctId = "ac" + IntegrationTestBase.randString(8);
+            final String metricName = "fooService,barServer," + randString(8);
 
-        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+            final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
 
-        Set<Long> expectedTimestamps = new HashSet<Long>();
-        // insert something every 30s for 5 mins.
-        for (int i = 0; i < 10; i++) {
-            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            Set<Long> expectedTimestamps = new HashSet<Long>();
+            // insert something every 30s for 5 mins.
+            for (int i = 0; i < 10; i++) {
+                final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
 
-            expectedTimestamps.add(curMillis);
-            List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
-            writer.insertFull(metrics);
+                expectedTimestamps.add(curMillis);
+                List<Metric> metrics = new ArrayList<Metric>();
+                metrics.add(makeMetric(locator, curMillis, getRandomStringMetricValue()));
+                writer.insertFull(metrics);
+            }
+
+            Set<Long> actualTimestamps = new HashSet<Long>();
+            // get back the cols that were written from start to stop.
+
+            MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis), Granularity.FULL);
+            actualTimestamps = data.getData().getPoints().keySet();
+
+            Assert.assertTrue(actualTimestamps.size() == 0);
+        } finally {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", orgAreStringDropped.booleanValue());
         }
-
-        Set<Long> actualTimestamps = new HashSet<Long>();
-        // get back the cols that were written from start to stop.
-
-        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
-        actualTimestamps = data.getData().getPoints().keySet();
-
-        Assert.assertTrue(actualTimestamps.size() == 0);
     }
 
     @Test
     //In this test, string metrics are configured to be always dropped. So they are not persisted at all.
     public void testStringMetricsIfSoConfiguredAreNotDroppedForKeptTenantIds() throws Exception {
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
+        Boolean orgAreStringDropped = (Boolean) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped");
+        try {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
+            AstyanaxWriter writer = AstyanaxWriter.getInstance();
+            AstyanaxReader reader = AstyanaxReader.getInstance();
+            final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+            long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+            final String acctId = "ac" + IntegrationTestBase.randString(8);
+            final String metricName = "fooService,barServer," + randString(8);
 
-        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
-        HashSet<String> keptTenants = new HashSet<String>();
-        keptTenants.add(locator.getTenantId());
+            final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+            HashSet<String> keptTenants = new HashSet<String>();
+            keptTenants.add(locator.getTenantId());
 
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "keptTenantIdsSet",keptTenants);
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "keptTenantIdsSet", keptTenants);
 
-        Set<Long> expectedTimestamps = new HashSet<Long>();
-        // insert something every 30s for 5 mins.
-        for (int i = 0; i < 10; i++) {
-            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            Set<Long> expectedTimestamps = new HashSet<Long>();
+            // insert something every 30s for 5 mins.
+            for (int i = 0; i < 10; i++) {
+                final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
 
-            expectedTimestamps.add(curMillis);
-            List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
-            writer.insertFull(metrics);
+                expectedTimestamps.add(curMillis);
+                List<Metric> metrics = new ArrayList<Metric>();
+                metrics.add(makeMetric(locator, curMillis, getRandomStringMetricValue()));
+                writer.insertFull(metrics);
+            }
+
+            Set<Long> actualTimestamps = new HashSet<Long>();
+            // get back the cols that were written from start to stop.
+
+            MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis), Granularity.FULL);
+            actualTimestamps = data.getData().getPoints().keySet();
+
+            Assert.assertEquals(expectedTimestamps, actualTimestamps);
+        } finally {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", orgAreStringDropped.booleanValue());
         }
-
-        Set<Long> actualTimestamps = new HashSet<Long>();
-        // get back the cols that were written from start to stop.
-
-        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
-        actualTimestamps = data.getData().getPoints().keySet();
-
-        Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
     @Test
     //In this test, string metrics are not configured to be dropped so they are persisted.
     public void testStringMetricsIfSoConfiguredArePersistedAsExpected() throws Exception {
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
+        Boolean orgAreStringDropped = (Boolean) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped");
+        try {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
 
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
+            AstyanaxWriter writer = AstyanaxWriter.getInstance();
+            AstyanaxReader reader = AstyanaxReader.getInstance();
+            final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+            long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+            final String acctId = "ac" + IntegrationTestBase.randString(8);
+            final String metricName = "fooService,barServer," + randString(8);
 
-        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+            final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
 
-        Set<Long> expectedTimestamps = new HashSet<Long>();
-        // insert something every 30s for 5 mins.
-        for (int i = 0; i < 10; i++) {
-            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            Set<Long> expectedTimestamps = new HashSet<Long>();
+            // insert something every 30s for 5 mins.
+            for (int i = 0; i < 10; i++) {
+                final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
 
-            expectedTimestamps.add(curMillis);
-            List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(makeMetric(locator,curMillis,getRandomStringMetricValue()));
-            writer.insertFull(metrics);
+                expectedTimestamps.add(curMillis);
+                List<Metric> metrics = new ArrayList<Metric>();
+                metrics.add(makeMetric(locator, curMillis, getRandomStringMetricValue()));
+                writer.insertFull(metrics);
+            }
+
+            Set<Long> actualTimestamps = new HashSet<Long>();
+            // get back the cols that were written from start to stop.
+
+            MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis), Granularity.FULL);
+            actualTimestamps = data.getData().getPoints().keySet();
+
+            Assert.assertEquals(expectedTimestamps, actualTimestamps);
+        } finally {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", orgAreStringDropped.booleanValue());
         }
-
-        Set<Long> actualTimestamps = new HashSet<Long>();
-        // get back the cols that were written from start to stop.
-
-        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
-        actualTimestamps = data.getData().getPoints().keySet();
-
-        Assert.assertEquals(expectedTimestamps, actualTimestamps);
     }
 
     @Test
     //In this test, we attempt to persist the same value of String Metric every single time. Only the first one is persisted.
     public void testStringMetricsWithSameValueAreNotPersisted() throws Exception {
-        Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
+        Boolean orgAreStringDropped = (Boolean) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped");
+        try {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
 
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
-        final long baseMillis = 1333635148000L; // some point during 5 April 2012.
-        long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
-        final String acctId = "ac" + IntegrationTestBase.randString(8);
-        final String metricName = "fooService,barServer," + randString(8);
+            AstyanaxWriter writer = AstyanaxWriter.getInstance();
+            AstyanaxReader reader = AstyanaxReader.getInstance();
+            final long baseMillis = 1333635148000L; // some point during 5 April 2012.
+            long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
+            final String acctId = "ac" + IntegrationTestBase.randString(8);
+            final String metricName = "fooService,barServer," + randString(8);
 
-        final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
-        String sameValue = getRandomStringMetricValue();
-        Set<Long> expectedTimestamps = new HashSet<Long>();
-        // insert something every 30s for 5 mins.
-        //value remains the same
-        for (int i = 0; i < 10; i++) {
-            final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
+            final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+            String sameValue = getRandomStringMetricValue();
+            Set<Long> expectedTimestamps = new HashSet<Long>();
+            // insert something every 30s for 5 mins.
+            //value remains the same
+            for (int i = 0; i < 10; i++) {
+                final long curMillis = baseMillis + (i * 30000); // 30 seconds later.
 
-            expectedTimestamps.add(curMillis);
-            List<Metric> metrics = new ArrayList<Metric>();
-            metrics.add(makeMetric(locator,curMillis,sameValue));
-            writer.insertFull(metrics);
-        }
+                expectedTimestamps.add(curMillis);
+                List<Metric> metrics = new ArrayList<Metric>();
+                metrics.add(makeMetric(locator, curMillis, sameValue));
+                writer.insertFull(metrics);
+            }
 
-        Set<Long> actualTimestamps = new HashSet<Long>();
-        // get back the cols that were written from start to stop.
+            Set<Long> actualTimestamps = new HashSet<Long>();
+            // get back the cols that were written from start to stop.
 
-        MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis),Granularity.FULL);
-        actualTimestamps = data.getData().getPoints().keySet();
+            MetricData data = reader.getDatapointsForRange(locator, new Range(baseMillis, lastMillis), Granularity.FULL);
+            actualTimestamps = data.getData().getPoints().keySet();
 
-        Assert.assertTrue(actualTimestamps.size() == 1);
-        for(long ts : actualTimestamps) {
-            Assert.assertEquals(ts, baseMillis);
-            break;
+            Assert.assertTrue(actualTimestamps.size() == 1);
+            for (long ts : actualTimestamps) {
+                Assert.assertEquals(ts, baseMillis);
+                break;
+            }
+        } finally {
+            Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", orgAreStringDropped.booleanValue());
         }
     }
 

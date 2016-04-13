@@ -82,7 +82,7 @@ public class EnumValidatorTest {
     @Test
     public void testEmptyLocatorList() throws Exception {
         // mock returned empty list of enum hash values from cassandra
-        Map<Locator, ArrayList<String>> locatorEnumsMock = new HashMap<Locator, ArrayList<String>>();
+        Map<Locator, List<String>> locatorEnumsMock = new HashMap<Locator, List<String>>();
         when(readerMock.getEnumStringMappings(anyList())).thenReturn(locatorEnumsMock);
 
         // execute validator with locators
@@ -99,8 +99,8 @@ public class EnumValidatorTest {
     @Test
     public void testEnumsExceedThreshold() throws Exception {
         // mock returned list of enum hash values from cassandra
-        Map<Locator, ArrayList<String>> locatorEnumsMock = new HashMap<Locator, ArrayList<String>>();
-        ArrayList<String> enumValues = new ArrayList<String>();
+        Map<Locator, List<String>> locatorEnumsMock = new HashMap<Locator, List<String>>();
+        List<String> enumValues = new ArrayList<String>();
         enumValues.add("value1");
         enumValues.add("value2");
         enumValues.add("value3");
@@ -121,8 +121,8 @@ public class EnumValidatorTest {
     @Test
     public void testEnumsValidatedWithSameValues() throws Exception {
         // mock returned list of enum hash values from cassandra
-        Map<Locator, ArrayList<String>> locatorEnumsMock = new HashMap<Locator, ArrayList<String>>();
-        ArrayList<String> enumValues = new ArrayList<String>();
+        Map<Locator, List<String>> locatorEnumsMock = new HashMap<Locator, List<String>>();
+        List<String> enumValues = new ArrayList<String>();
         enumValues.add("value1");
         enumValues.add("value2");
         enumValues.add("value3");
@@ -148,8 +148,8 @@ public class EnumValidatorTest {
     @Test
     public void testEnumsValidatedWithNewValues() throws Exception {
         // mock returned list of enum hash values from cassandra
-        Map<Locator, ArrayList<String>> locatorEnumsMock = new HashMap<Locator, ArrayList<String>>();
-        ArrayList<String> enumValues = new ArrayList<String>();
+        Map<Locator, List<String>> locatorEnumsMock = new HashMap<Locator, List<String>>();
+        List<String> enumValues = new ArrayList<String>();
         enumValues.add("value1");
         enumValues.add("value2");
         enumValues.add("value3");

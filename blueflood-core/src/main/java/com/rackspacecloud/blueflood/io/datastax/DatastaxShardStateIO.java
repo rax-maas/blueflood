@@ -39,9 +39,45 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
  */
 public class DatastaxShardStateIO implements ShardStateIO {
 
+    public static final String KEY = "key";
+    public static final String COLUMN1 = "column1";
+    public static final String VALUE = "value";
+    public static final String WRITE_TIME = "writetime(value)";
+
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxShardStateIO.class);
 
     private final SlotStateSerDes serDes = new SlotStateSerDes();
+
+    private PreparedStatement getShardState;
+    private PreparedStatement putShardState;
+
+    public DatastaxShardStateIO() {
+
+        createPreparedStatements();
+    }
+
+    private void createPreparedStatements() {
+
+        Select.Where statement = select()
+                .column( KEY )
+                .column( COLUMN1 )
+                .column( VALUE )
+                .writeTime( VALUE )
+                .from( CassandraModel.CF_METRICS_STATE_NAME)
+                .where(eq(KEY, bindMarker() ));
+
+        getShardState = DatastaxIO.getSession().prepare( statement );
+
+        Insert insert = insertInto(CassandraModel.CF_METRICS_STATE_NAME)
+                .value( KEY, bindMarker() )
+                .value( COLUMN1, bindMarker() )
+                .value( VALUE, bindMarker() );
+
+        putShardState = DatastaxIO.getSession().prepare( insert );
+        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
+        putShardState.setConsistencyLevel( ConsistencyLevel.ONE );
+    }
 
     @Override
     public Collection<SlotState> getShardState(int shard) throws IOException {
@@ -51,26 +87,22 @@ public class DatastaxShardStateIO implements ShardStateIO {
         Session session = DatastaxIO.getSession();
 
         try {
-            Select.Where statement = QueryBuilder
-                    .select()
-                    .column("key")
-                    .column("column1")
-                    .column("value")
-                    .writeTime("value")
-                    .from(CassandraModel.CF_METRICS_STATE_NAME)
-                    .where(eq("key", (long) shard));
-            List<Row> results = session.execute(statement).all();
+
+            BoundStatement bound = getShardState.bind((long) shard);
+
+            List<Row> results = session.execute(bound).all();
+
             for (Row row : results) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("Read shard: %d: - %s %s writetime(value): %s\n",
-                            row.getLong("key"),
-                            row.getString("column1"),
-                            row.getLong("value"),
-                            row.getLong("writetime(value)")));
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(String.format("Read shard: %d: - %s %s\n",
+                            row.getLong( KEY ),
+                            row.getString( COLUMN1 ),
+                            row.getLong( VALUE ),
+                            row.getLong( WRITE_TIME )));
                 }
-                SlotState state = serDes.deserialize(row.getString("column1"));
-                state.withTimestamp(row.getLong("value"))
-                     .withLastUpdatedTimestamp(row.getLong("writetime(value)") / 1000); //write time is in micro seconds
+                SlotState state = serDes.deserialize(row.getString( COLUMN1 ));
+                state.withTimestamp(row.getLong( VALUE ))
+                     .withLastUpdatedTimestamp(row.getLong( WRITE_TIME ) / 1000); //write time is in micro seconds
                 slotStates.add(state);
             }
             return slotStates;
@@ -84,7 +116,8 @@ public class DatastaxShardStateIO implements ShardStateIO {
 
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE_NAME);
         Session session = DatastaxIO.getSession();
-        Batch batch = QueryBuilder.batch();
+
+        List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
 
         try {
             Set<Granularity> granularities = slotTimes.keySet();
@@ -92,15 +125,21 @@ public class DatastaxShardStateIO implements ShardStateIO {
 
                 Set<Map.Entry<Integer, UpdateStamp>> entries = slotTimes.get(gran).entrySet();
                 for (Map.Entry<Integer, UpdateStamp> entry : entries) {
-                    Insert insert = QueryBuilder.insertInto(CassandraModel.CF_METRICS_STATE_NAME)
-                            .value("key", shard)
-                            .value("column1", serDes.serialize(gran, entry.getKey(), entry.getValue().getState()))
-                            .value("value", entry.getValue().getTimestamp());
-                    batch.add(insert);
+
+                    BoundStatement bound = putShardState.bind( (long) shard,
+                            serDes.serialize(gran, entry.getKey(), entry.getValue().getState()),
+                            entry.getValue().getTimestamp());
+
+                    futureList.add( session.executeAsync( bound ));
                 }
             }
-            ResultSet results = session.execute(batch);
-            LOG.debug("results.size=" + results.all().size());
+
+            for( ResultSetFuture future : futureList ) {
+
+                ResultSet result = future.getUninterruptibly();
+                LOG.trace("results.size=" + result.all().size());
+            }
+
         } finally {
             ctx.stop();
         }

@@ -103,14 +103,14 @@ public class MinValue extends AbstractRollupStat {
             if (this.toDouble() > (double)other.toLong()) {
                 this.setLongValue(other.toLong());
             }
-        } else if (!this.isFloatingPoint() && other.isFloatingPoint()) {
+        } else if (this.isFloatingPoint()) {
+            this.setDoubleValue(Math.min(this.toDouble(), other.toDouble()));
+        } else if (other.isFloatingPoint()) {
             if ((double)this.toLong()> other.toDouble()) {
                 this.setDoubleValue(other.toDouble());
             }
-        } else if (!this.isFloatingPoint() && !other.isFloatingPoint()) {
-            this.setLongValue(Math.min(this.toLong(), other.toLong()));
         } else {
-            this.setDoubleValue(Math.min(this.toDouble(), other.toDouble()));
+            this.setLongValue(Math.min(this.toLong(), other.toLong()));
         }
     }
 

@@ -32,6 +32,35 @@ public class DatastaxMetadataIO implements MetadataIO {
 
     private final StringMetadataSerDes serDes = new StringMetadataSerDes();
 
+    private PreparedStatement getValue;
+    private PreparedStatement putValue;
+
+    public DatastaxMetadataIO() {
+
+        createPreparedStatements();
+    }
+
+    private void createPreparedStatements() {
+
+        Select.Where select = select()
+                .all()
+                .from( CassandraModel.CF_METRICS_METADATA_NAME )
+                .where( eq( KEY, bindMarker() ));
+
+        getValue = DatastaxIO.getSession().prepare( select );
+
+        Insert insert = insertInto( CassandraModel.CF_METRICS_METADATA_NAME )
+                .value( KEY, bindMarker() )
+                .value( COLUMN1, bindMarker() )
+                .value( VALUE, bindMarker() );
+
+        putValue = DatastaxIO.getSession().prepare( insert );
+
+        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
+        putValue.setConsistencyLevel( ConsistencyLevel.ONE );
+    }
+
     @Override
     public Map<String, String> getAllValues( Locator locator ) throws IOException {
 
@@ -41,12 +70,9 @@ public class DatastaxMetadataIO implements MetadataIO {
 
         try {
 
-            Select.Where select = select()
-                    .all()
-                    .from( CassandraModel.CF_METRICS_METADATA_NAME )
-                    .where( eq( KEY, locator.toString() ));
+            BoundStatement bound = getValue.bind( locator.toString() );
 
-            List<Row> results = session.execute( select ).all();
+            List<Row> results = session.execute( bound ).all();
 
             Map<String, String> values = new HashMap<String, String>();
 
@@ -77,30 +103,31 @@ public class DatastaxMetadataIO implements MetadataIO {
 
         try {
 
-            List<String> query = new ArrayList<String>();
+            List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
 
             for( Locator l : locators) {
-                query.add( l.toString() );
+
+                BoundStatement bound = getValue.bind( l.toString() );
+
+                futureList.add( session.executeAsync( bound ) );
             }
-
-            Select.Where select = select()
-                    .all()
-                    .from( CassandraModel.CF_METRICS_METADATA_NAME )
-                    .where( in( KEY, query ) );
-
-            List<Row> results = session.execute( select ).all();
 
             Table<Locator, String, String> metaTable = HashBasedTable.create();
 
-            for ( Row row : results ) {
-                if ( LOG.isTraceEnabled() ) {
-                    LOG.trace( "Read metrics_metadata: " +
-                            row.getString( KEY ) +
-                            row.getString( COLUMN1 ) +
-                            serDes.deserialize(  row.getBytes( VALUE ) ) );
-                }
+            for( ResultSetFuture future : futureList ) {
 
-                metaTable.put( Locator.createLocatorFromDbKey( row.getString( KEY ) ), row.getString( COLUMN1 ), serDes.deserialize(  row.getBytes( VALUE ) ) );
+                ResultSet result = future.getUninterruptibly();
+
+                for ( Row row : result ) {
+                    if ( LOG.isTraceEnabled() ) {
+                        LOG.trace( "Read metrics_metadata: " +
+                                row.getString( KEY ) +
+                                row.getString( COLUMN1 ) +
+                                serDes.deserialize( row.getBytes( VALUE ) ) );
+                    }
+
+                    metaTable.put( Locator.createLocatorFromDbKey( row.getString( KEY ) ), row.getString( COLUMN1 ), serDes.deserialize( row.getBytes( VALUE ) ) );
+                }
             }
 
             return metaTable;
@@ -118,15 +145,10 @@ public class DatastaxMetadataIO implements MetadataIO {
         Session session = DatastaxIO.getSession();
 
         try {
-            Insert insert = insertInto( CassandraModel.CF_METRICS_METADATA_NAME )
-                    .value( KEY, locator.toString() )
-                    .value( COLUMN1, key )
-                    .value( VALUE, serDes.serialize( value ) );
-            // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
-            // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
-            insert.setConsistencyLevel( ConsistencyLevel.ONE );
 
-            ResultSet result = session.execute( insert );
+            BoundStatement bound = putValue.bind( locator.toString(), key, serDes.serialize( value ) );
+
+            ResultSet result = session.execute( bound );
             LOG.trace( "result.size=" + result.all().size() );
         }
         finally {
@@ -141,19 +163,21 @@ public class DatastaxMetadataIO implements MetadataIO {
 
         Session session = DatastaxIO.getSession();
 
-        // TODO:  We need to look into doing async calls on each row.  Batch supposedly is stupid in Cassandra
-        // when your keys aren't on the same partition
-        try {
-            PreparedStatement ps = session.prepare( "INSERT INTO " + CassandraModel.CF_METRICS_METADATA_NAME + " (key, column1, value) VALUES (?, ?, ?)" );
-            BatchStatement batch = new BatchStatement();
+        List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
 
+        try {
             for( Table.Cell<Locator, String, String> cell : meta.cellSet() ) {
 
-                batch.add( ps.bind( cell.getRowKey().toString(), cell.getColumnKey(), serDes.serialize( cell.getValue() ) ) );
+                BoundStatement bound = putValue.bind( cell.getRowKey().toString(), cell.getColumnKey(), serDes.serialize( cell.getValue() ) );
+
+                futureList.add( session.executeAsync( bound ) );
             }
 
-            ResultSet result = session.execute( batch );
-            LOG.debug( "result.size=" + result.all().size() );
+            for( ResultSetFuture future : futureList ) {
+
+                ResultSet result = future.getUninterruptibly();
+                LOG.trace( "result.size=" + result.all().size() );
+            }
         }
         finally {
             ctx.stop();

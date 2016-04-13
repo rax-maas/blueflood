@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
  * object for the read/write statements to Cassandra.
  */
 public class DatastaxIO {
-    private static final DatastaxIO INSTANCE = new DatastaxIO();
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxIO.class);
     private static final IOConfig ioconfig = IOConfig.singleton();
 
@@ -55,8 +54,6 @@ public class DatastaxIO {
         connect();
         monitorConnection();
     }
-
-    public static DatastaxIO singleton() { return INSTANCE; }
 
     private DatastaxIO() {
     }
