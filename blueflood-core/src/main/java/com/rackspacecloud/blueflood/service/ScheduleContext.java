@@ -264,7 +264,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
     }
 
-    private boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
+    boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();
 
