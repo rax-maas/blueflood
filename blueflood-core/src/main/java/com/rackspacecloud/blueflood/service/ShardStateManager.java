@@ -47,7 +47,7 @@ public class ShardStateManager {
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
     private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
 
-    private static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    public static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {

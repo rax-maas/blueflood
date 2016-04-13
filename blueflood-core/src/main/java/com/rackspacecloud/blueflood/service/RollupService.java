@@ -220,7 +220,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 final SlotKey slotKey = context.getNextScheduled();
                 if (slotKey == null) { continue; }
                 try {
-                    log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
+                    UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
+                    if (log.isDebugEnabled()) {
+                        final long timeElapsedSinceLastRollup = context.getCurrentTimeMillis() - stamp.getLastRollupTimestamp();
+                        boolean isReroll = timeElapsedSinceLastRollup < ShardStateManager.DELAYED_METRICS_MAX_ALLOWED_DELAY;
+                        log.debug("Scheduling slotKey {} @ {} last ingest: {} last rollup time: {} isReroll: ",
+                                new Object[] {slotKey, context.getCurrentTimeMillis(), stamp.getTimestamp(), stamp.getLastRollupTimestamp(), isReroll});
+                    }
                     locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors, enumValidatorExecutor));
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that

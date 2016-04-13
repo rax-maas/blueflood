@@ -243,6 +243,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                             }
                             SlotKey key = SlotKey.of(g, slot, shard);
                             scheduledSlots.add(key);
+                            log.debug("scheduleEligibleSlots -> added to scheduledSlots: " + key + " size:" + scheduledSlots.size());
                             orderedScheduledSlots.add(key);
                             recentlyScheduledShards.put(shard, scheduleTime);
                         }
@@ -336,6 +337,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // no need to set dirty/clean here.
                 shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Active);
                 scheduledSlots.add(key);
+                log.debug("pushBackToScheduled -> added to scheduledSlots: " + key + " size:" + scheduledSlots.size());
                 if (rescheduleImmediately) {
                     orderedScheduledSlots.add(0, key);
                 } else {
