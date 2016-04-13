@@ -7,9 +7,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class ScheduleContextAreKeysRunningTest {
 
@@ -101,5 +101,58 @@ public class ScheduleContextAreKeysRunningTest {
 
         // then
         assertFalse(areKeysRunning);
+    }
+
+    @Test
+    public void slotRunningReturnsTrue() {
+
+        // given
+        long currentTime = 1234000L;
+
+        final int shard = 0;
+        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
+
+        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
+        ctx.update(currentTime - 2, shard);
+        ctx.scheduleEligibleSlots(1, 7200000);
+
+        int slot = Granularity.MIN_5.slot(currentTime);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+
+        SlotKey runningSlot = ctx.getNextScheduled();
+
+        // precondition
+        assertEquals(slotkey, runningSlot);
+
+        // when
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
+
+        // then
+        assertTrue(areKeysRunning);
+    }
+
+    @Test
+    public void childSlotRunningReturnsTrue() {
+
+        // given
+        long currentTime = 1234000L;
+
+        final int shard = 0;
+        List<Integer> managedShards = new ArrayList<Integer>() {{ add(shard); }};
+
+        ScheduleContext ctx = new ScheduleContext(currentTime, managedShards);
+        ctx.update(currentTime - 2, shard);
+        ctx.scheduleEligibleSlots(1, 7200000);
+
+        int slot = Granularity.MIN_20.slot(currentTime);
+        SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
+
+        SlotKey runningSlot = ctx.getNextScheduled();
+
+        // when
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
+
+        // then
+        assertTrue(areKeysRunning);
     }
 }
