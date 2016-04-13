@@ -27,6 +27,10 @@ public class ScheduleContextAreKeysRunningTest {
         int slot = Granularity.MIN_5.slot(currentTime);
         SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
 
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
+
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
 
@@ -49,6 +53,10 @@ public class ScheduleContextAreKeysRunningTest {
 
         int slot = Granularity.MIN_5.slot(currentTime);
         SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
 
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
@@ -73,6 +81,10 @@ public class ScheduleContextAreKeysRunningTest {
         int slot = Granularity.MIN_20.slot(currentTime);
         SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
 
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
+
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
 
@@ -95,6 +107,10 @@ public class ScheduleContextAreKeysRunningTest {
 
         int slot = Granularity.MIN_5.slot(currentTime - 5*60*1000); // check the previous slot from 5 minutes ago
         SlotKey slotkey = SlotKey.of(Granularity.MIN_5, slot, shard);
+
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
 
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
@@ -122,6 +138,8 @@ public class ScheduleContextAreKeysRunningTest {
         SlotKey runningSlot = ctx.getNextScheduled();
 
         // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
         assertEquals(slotkey, runningSlot);
 
         // when
@@ -148,6 +166,10 @@ public class ScheduleContextAreKeysRunningTest {
         SlotKey slotkey = SlotKey.of(Granularity.MIN_20, slot, shard);
 
         SlotKey runningSlot = ctx.getNextScheduled();
+
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
 
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(slotkey);
