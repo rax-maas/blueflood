@@ -91,7 +91,7 @@ public class Instrumentation implements InstrumentationMBean {
     // a PoolTimeoutException indicating that Astyanax has to look in another host-specific-pool
     // to find a connection from one indicating Astyanax already looked in every pool and is
     // going to bubble up the exception to our reader/writer
-    private static void markReadError() {
+    public static void markReadError() {
         readErrMeter.mark();
     }
 
@@ -102,6 +102,12 @@ public class Instrumentation implements InstrumentationMBean {
         }
     }
 
+    /**
+     * Caller should explicitly call {@link com.rackspacecloud.blueflood.io.Instrumentation#markPoolExhausted()}
+     * and {@link com.rackspacecloud.blueflood.io.Instrumentation#markReadError()}
+     * @param e
+     */
+    @Deprecated
     public static void markReadError(ConnectionException e) {
         markReadError();
         if (e instanceof PoolTimeoutException) {
@@ -109,7 +115,11 @@ public class Instrumentation implements InstrumentationMBean {
         }
     }
 
-    private static void markWriteError() {
+    public static void markPoolExhausted() {
+        allPoolsExhaustedException.mark();
+    }
+
+    public static void markWriteError() {
         writeErrMeter.mark();
     }
 

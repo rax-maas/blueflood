@@ -74,6 +74,15 @@ public class BluefloodEnumRollup implements Rollup {
         return hashedEnumValues2Count.equals(other.hashedEnumValues2Count);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder()
+                                    .append(stringEnumValues2Count.toString())
+                                    .append(", ")
+                                    .append(hashedEnumValues2Count.toString());
+        return builder.toString();
+    }
+
     public static BluefloodEnumRollup buildRollupFromEnumRollups(Points<BluefloodEnumRollup> input) throws IOException {
         BluefloodEnumRollup enumRollup = new BluefloodEnumRollup();
         Map<Long, Long> currentHashedEnums = enumRollup.getHashedEnumValuesWithCounts();

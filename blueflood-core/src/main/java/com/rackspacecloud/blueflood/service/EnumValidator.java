@@ -54,14 +54,14 @@ public class EnumValidator implements Runnable {
     public void run() {
         if (locators == null) return;
 
-        Map<Locator, ArrayList<String>> locatorEnums = getReader().getEnumStringMappings(new ArrayList(locators));
+        Map<Locator, List<String>> locatorEnums = getReader().getEnumStringMappings(new ArrayList(locators));
         for (final Locator locator : locatorEnums.keySet()) {
             // validate enum values count and write to index or bad metric
             validateThresholdAndWrite(locator, locatorEnums.get(locator));
         }
     }
 
-    private void validateThresholdAndWrite(Locator locator, ArrayList<String> currentEnumValues) {
+    private void validateThresholdAndWrite(Locator locator, List<String> currentEnumValues) {
         // check if count of current enum values for the metric exceed a configurable threshold number
         log.debug(String.format("EnumValidator validating locator %s", locator.toString()));
 
@@ -87,7 +87,7 @@ public class EnumValidator implements Runnable {
             }
 
             // get elasticsearch enum values from top search results of exact match
-            ArrayList<String> elasticsearchEnumValues = null;
+            List<String> elasticsearchEnumValues = null;
             if ((esSearchResult != null) && (esSearchResult.size() > 0)) {
                 elasticsearchEnumValues = esSearchResult.get(0).getEnumValues();
             }
@@ -112,7 +112,7 @@ public class EnumValidator implements Runnable {
         }
     }
 
-    private BluefloodEnumRollup createRollupWithEnumValues(ArrayList<String> enumValues) {
+    private BluefloodEnumRollup createRollupWithEnumValues(List<String> enumValues) {
         BluefloodEnumRollup rollup = new BluefloodEnumRollup();
         for (String val : enumValues) {
             rollup = rollup.withEnumValue(val);
