@@ -71,6 +71,7 @@ public class IOContainerTest {
     @Test
     public void testNullDriverConfig() throws Exception {
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn(null);
+        IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
@@ -79,6 +80,7 @@ public class IOContainerTest {
     @Test
     public void testEmptyStringDriverConfig() throws Exception {
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("");
+        IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
@@ -87,6 +89,7 @@ public class IOContainerTest {
     @Test
     public void testAstyanaxDriverConfig() throws Exception {
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("astyanax");
+        IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
         assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
