@@ -18,10 +18,20 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
+import java.util.List;
 
 /**
  * This is base class of all MetricsIO classes that deals with persisting/reading
@@ -51,5 +61,19 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         for (IMetric metric: metrics)
             map.put(metric.getLocator(), metric);
         return map;
+    }
+
+    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws IOException {
+    }
+
+    public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
+        return null;
+    }
+
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
+        return null;
+    }
+    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName) {
+        return null;
     }
 }
