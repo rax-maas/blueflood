@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -24,7 +23,6 @@ public class LocatorFetchRunnableRunTest {
     ExecutorService rollupReadExecutor;
     ThreadPoolExecutor rollupWriteExecutor;
     ExecutorService enumValidatorExecutor;
-    AstyanaxReader astyanaxReader;
 
     LocatorFetchRunnable lfr;
 
@@ -40,7 +38,6 @@ public class LocatorFetchRunnableRunTest {
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
-        this.astyanaxReader = mock(AstyanaxReader.class);
 
         this.lfr = mock(LocatorFetchRunnable.class);
         doCallRealMethod().when(lfr).getGranularity();
@@ -51,8 +48,7 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         doCallRealMethod().when(lfr).run();
 
         executionContext = mock(RollupExecutionContext.class);
@@ -85,8 +81,7 @@ public class LocatorFetchRunnableRunTest {
         // given
         SlotKey destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
         this.lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
-                astyanaxReader);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
 
         // when
         lfr.run();
@@ -99,14 +94,12 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).run();
         verify(lfr, times(3)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -119,8 +112,7 @@ public class LocatorFetchRunnableRunTest {
         // given
         SlotKey destSlotKey = SlotKey.of(Granularity.MIN_5, 0, 0);
         lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
-                astyanaxReader);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
         doReturn(generateLocators(0)).when(lfr).getLocators(
                 Matchers.<RollupExecutionContext>any());
 
@@ -135,14 +127,12 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -167,8 +157,7 @@ public class LocatorFetchRunnableRunTest {
         // given
         SlotKey destSlotKey = SlotKey.of(Granularity.MIN_5, 0, 0);
         lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
-                astyanaxReader);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
         doReturn(generateLocators(1)).when(lfr).getLocators(
                 Matchers.<RollupExecutionContext>any());
 
@@ -183,14 +172,12 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -215,8 +202,7 @@ public class LocatorFetchRunnableRunTest {
         // given
         SlotKey destSlotKey = SlotKey.of(Granularity.MIN_5, 0, 0);
         lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
-                astyanaxReader);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
         doReturn(generateLocators(3)).when(lfr).getLocators(
                 Matchers.<RollupExecutionContext>any());
 
@@ -231,14 +217,12 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();

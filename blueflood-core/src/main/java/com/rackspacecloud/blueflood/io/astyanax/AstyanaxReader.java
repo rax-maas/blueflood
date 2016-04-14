@@ -175,35 +175,6 @@ public class AstyanaxReader extends AstyanaxIO {
         }
     }
 
-    /**
-     * Returns the recently seen locators, i.e. those that should be rolled up, for a given shard.
-     * 'Should' means:
-     *  1) A locator is capable of rollup (it is not a string/boolean metric).
-     *  2) A locator has had new data in the past {@link com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter.LOCATOR_TTL} seconds.
-     *
-     * @param shard Number of the shard you want the recent locators for. 0-127 inclusive.
-     * @return Collection of locators
-     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
-     */
-    public Collection<Locator> getLocatorsToRollup(long shard) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR.getName());
-        try {
-            RowQuery<Long, Locator> query = keyspace
-                    .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
-                    .getKey(shard);
-            return query.execute().getResult().getColumnNames();
-        } catch (NotFoundException e) {
-            Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
-            return Collections.emptySet();
-        } catch (ConnectionException e) {
-            Instrumentation.markReadError(e);
-            log.error("Error reading locators", e);
-            throw new RuntimeException("Error reading locators", e);
-        } finally {
-            ctx.stop();
-        }
-    }
-
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
         List<Locator> locators = new LinkedList<Locator>(){{ add(locator); }};
         ColumnList<Long> columns = getColumnsFromDB(locators, srcCF, range).get(locator);
