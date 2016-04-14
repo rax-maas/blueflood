@@ -328,9 +328,10 @@ public class ShardStateManager {
                     //there are no delayed metrics, a slot should only get rolled again after 14 days since its last rollup)
                     if (timeElapsedSinceLastRollup < DELAYED_METRICS_MAX_ALLOWED_DELAY &&
                             timeElapsed <= delayedMetricsMaxAgeMillis) {
-                        log.debug(String.format("Delaying rollup for shard:[%s], slotState:(%s,%s,%s) as [%d] millis " +
-                                                "havent elapsed since last rollup:[%d]", shard, granularity, entry.getKey(),
-                                                update.getState().code(), delayedMetricsMaxAgeMillis, update.getLastRollupTimestamp()));
+                        SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
+                        log.debug(String.format("Delaying rollup of slotKey [%s] as [%d] millis " +
+                                                "haven't elapsed since last rollup:[%d]", slotKey,
+                                                delayedMetricsMaxAgeMillis, update.getLastRollupTimestamp()));
                         continue;
                     }
                 }
