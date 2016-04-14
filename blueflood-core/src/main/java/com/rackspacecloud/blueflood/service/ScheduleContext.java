@@ -268,13 +268,19 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();
 
-        if (runningSlots.keySet().contains(slotKey) || scheduledSlots.contains(slotKey)) {
+        if (runningSlots.keySet().contains(slotKey)) {
+            return true;
+        }
+        if (scheduledSlots.contains(slotKey)) {
             return true;
         }
 
         // if any ineligible keys are running or scheduled to run, do not schedule this key.
         for (SlotKey childrenKey : ineligibleKeys) {
-            if (runningSlots.keySet().contains(childrenKey) || scheduledSlots.contains(childrenKey)) {
+            if (runningSlots.keySet().contains(childrenKey)) {
+                return true;
+            }
+            if (scheduledSlots.contains(childrenKey)) {
                 return true;
             }
         }
