@@ -156,7 +156,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctxA = new ScheduleContext(time, shards);
 
         ctxA.update(time, 123);
-        ShardStateManager.SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
+        SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
 
         UpdateStamp stamp  = slotStateManager20.getSlotStamps().get(518);
         stamp.setTimestamp(time + 3600000L); // add one hour

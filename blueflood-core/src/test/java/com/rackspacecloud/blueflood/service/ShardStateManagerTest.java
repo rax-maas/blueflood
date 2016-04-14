@@ -20,7 +20,7 @@ public class ShardStateManagerTest {
 
     private List<Integer> managedShards = new ArrayList<Integer>() {{ add(TEST_SHARD); }};
 
-    private ShardStateManager.SlotStateManager slotStateManager;
+    private SlotStateManager slotStateManager;
 
 
     @Before

@@ -178,7 +178,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
             }
             boolean isManaged = shardStateManager.contains(shard);
             for (Granularity g : Granularity.rollupGranularities()) {
-                ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, g);
+                SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, g);
                 int slot = g.slot(millis);
 
                 if (isManaged) {
