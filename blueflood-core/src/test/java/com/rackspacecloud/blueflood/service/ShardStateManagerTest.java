@@ -267,4 +267,79 @@ public class ShardStateManagerTest {
         assertEquals(UpdateStamp.State.Active, stamp.getState());
         assertEquals(0, stamp.getLastRollupTimestamp());
     }
+
+    @Test
+    public void getDirtySlotsWhenEmptyReturnsEmpty() {
+
+        // precondition
+        assertTrue(slotStateManager.getSlotStamps().isEmpty());
+
+        // when
+        Map dirtySlots = slotStateManager.getDirtySlotStampsAndMarkClean();
+
+        // then
+        assertNotNull(dirtySlots);
+        assertTrue(dirtySlots.isEmpty());
+    }
+
+    @Test
+    public void getDirtySlotsWhenContainsOnlyCleanSlotsReturnsEmpty() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp _stamp = slotStateManager.getSlotStamps().get(0);
+        _stamp.setDirty(false);
+
+        // when
+        Map dirtySlots = slotStateManager.getDirtySlotStampsAndMarkClean();
+
+        // then
+        assertNotNull(dirtySlots);
+        assertTrue(dirtySlots.isEmpty());
+    }
+
+    @Test
+    public void getDirtySlotsWhenContainsOnlyDirtySlotsReturnsThoseSlotsAndMarksClean() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        slotStateManager.createOrUpdateForSlotAndMillisecond(1, 1234L);
+
+        // when
+        Map<Integer, UpdateStamp> dirtySlots = slotStateManager.getDirtySlotStampsAndMarkClean();
+
+        // then
+        assertNotNull(dirtySlots);
+        assertEquals(2, dirtySlots.size());
+
+        assertTrue(dirtySlots.containsKey(0));
+        UpdateStamp stamp = dirtySlots.get(0);
+        assertFalse(stamp.isDirty());
+
+        assertTrue(dirtySlots.containsKey(1));
+        stamp = dirtySlots.get(1);
+        assertFalse(stamp.isDirty());
+    }
+
+    @Test
+    public void getDirtySlotsWhenContainsCleanAndDirtySlotsReturnsOnlyDirtySlotsAndMarksClean() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        slotStateManager.getSlotStamps().get(0).setDirty(false);
+        slotStateManager.createOrUpdateForSlotAndMillisecond(1, 1234L);
+
+        // when
+        Map<Integer, UpdateStamp> dirtySlots = slotStateManager.getDirtySlotStampsAndMarkClean();
+
+        // then
+        assertNotNull(dirtySlots);
+        assertEquals(1, dirtySlots.size());
+
+        assertFalse(dirtySlots.containsKey(0));
+        assertFalse(slotStateManager.getSlotStamps().get(0).isDirty());
+
+        assertTrue(dirtySlots.containsKey(1));
+        assertFalse(dirtySlots.get(1).isDirty());
+    }
 }
