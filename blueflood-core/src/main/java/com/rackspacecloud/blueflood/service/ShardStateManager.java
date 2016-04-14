@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
@@ -24,12 +23,10 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ShardStateManager {
@@ -39,21 +36,7 @@ public class ShardStateManager {
     final Map<Integer, ShardToGranularityMap> shardToGranularityStates = new HashMap<Integer, ShardToGranularityMap>();
     private final Ticker serverTimeMillisecondTicker;
 
-    static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleEligibleSlots");
-    // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
-    static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
-    static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
-    static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
-
-    static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-
-    static {
-        for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
-            granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
-            granToDelayedMetricsMeter.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("Delayed metric that has a danger of TTLing", rollupGranularity.shortName())));
-        }
-    }
 
     protected ShardStateManager(Collection<Integer> shards, Ticker ticker) {
         this.shards = new HashSet<Integer>(shards);

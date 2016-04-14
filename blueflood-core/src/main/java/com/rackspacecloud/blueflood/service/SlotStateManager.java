@@ -1,7 +1,10 @@
 package com.rackspacecloud.blueflood.service;
 
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +15,21 @@ import java.util.concurrent.ConcurrentMap;
 
 public class SlotStateManager {
     private static final Logger log = LoggerFactory.getLogger(SlotStateManager.class);
+
+    static final Histogram timeSinceUpdate = Metrics.histogram(RollupService.class, "Shard Slot Time Elapsed scheduleEligibleSlots");
+    // todo: CM_SPECIFIC verify changing metric class name doesn't break things.
+    static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
+    static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
+    static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
+
+    static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+    static {
+        for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
+            granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
+            granToDelayedMetricsMeter.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("Delayed metric that has a danger of TTLing", rollupGranularity.shortName())));
+        }
+    }
 
     private final int shard;
     final Granularity granularity;
@@ -80,9 +98,9 @@ public class SlotStateManager {
             if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
                 // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
                 if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp)) {
-                    parent.granToReRollMeters.get(granularity).mark();
+                    granToReRollMeters.get(granularity).mark();
                     if (nowMillis - timestamp >= millisInADay) {
-                        parent.granToDelayedMetricsMeter.get(granularity).mark();
+                        granToDelayedMetricsMeter.get(granularity).mark();
                     }
                 }
 
@@ -114,9 +132,9 @@ public class SlotStateManager {
             // shard
             if (parent.getManagedShards().contains(shard) && Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
                 if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(millis)) {
-                    parent.granToReRollMeters.get(granularity).mark();
+                    granToReRollMeters.get(granularity).mark();
                     if (nowMillis - millis >= millisInADay) {
-                        parent.granToDelayedMetricsMeter.get(granularity).mark();
+                        granToDelayedMetricsMeter.get(granularity).mark();
                     }
                 }
             }
@@ -125,7 +143,7 @@ public class SlotStateManager {
         } else {
             slotToUpdateStampMap.put(slot, new UpdateStamp(millis, UpdateStamp.State.Active, true));
         }
-        parent.updateStampMeter.mark();
+        updateStampMeter.mark();
     }
 
     protected Map<Integer, UpdateStamp> getDirtySlotStampsAndMarkClean() {
@@ -156,7 +174,7 @@ public class SlotStateManager {
         for (Map.Entry<Integer, UpdateStamp> entry : slotToUpdateStampMap.entrySet()) {
             final UpdateStamp update = entry.getValue();
             final long timeElapsed = now - update.getTimestamp();
-            parent.timeSinceUpdate.update(timeElapsed);
+            timeSinceUpdate.update(timeElapsed);
             if (update.getState() == UpdateStamp.State.Rolled) {
                 continue;
             }
@@ -171,7 +189,7 @@ public class SlotStateManager {
                 //Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS), a slot can be
                 //identified as being re-rolled, if the last rollup is within those last 3 days. (theoretically, if
                 //there are no delayed metrics, a slot should only get rolled again after 14 days since its last rollup)
-                if (timeElapsedSinceLastRollup < parent.DELAYED_METRICS_MAX_ALLOWED_DELAY &&
+                if (timeElapsedSinceLastRollup < DELAYED_METRICS_MAX_ALLOWED_DELAY &&
                         timeElapsed <= delayedMetricsMaxAgeMillis) {
                     log.debug(String.format("Delaying rollup for shard:[%s], slotState:(%s,%s,%s) as [%d] millis " +
                                     "havent elapsed since last rollup:[%d]", shard, granularity, entry.getKey(),
