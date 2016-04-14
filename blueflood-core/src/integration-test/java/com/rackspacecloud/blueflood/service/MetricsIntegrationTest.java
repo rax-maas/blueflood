@@ -652,7 +652,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
             }
 
             for (Granularity granularity : Granularity.rollupGranularities()) {
-                ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
+                SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, granularity);
                 Assert.assertEquals(granularity.numSlots(), slotStateManager.getSlotStamps().size());
             }
         }
@@ -682,7 +682,7 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
         }
 
         ShardStateManager shardStateManager = ctx.getShardStateManager();
-        ShardStateManager.SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
+        SlotStateManager slotStateManager = shardStateManager.getSlotStateManager(shard, Granularity.MIN_5);
 
         Assert.assertNotNull(slotStateManager.getSlotStamps());
         Assert.assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(slot).getState());
