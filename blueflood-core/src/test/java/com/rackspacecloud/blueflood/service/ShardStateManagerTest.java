@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
 public class ShardStateManagerTest {
@@ -221,5 +221,50 @@ public class ShardStateManagerTest {
 
     private SlotState createSlotState(Granularity granularity, UpdateStamp.State state, long lastIngestionTimeStamp, long lastUpdatedTimestamp) {
         return new SlotState(granularity, TEST_SLOT, state).withTimestamp(lastIngestionTimeStamp).withLastUpdatedTimestamp(lastUpdatedTimestamp);
+    }
+
+    @Test
+    public void createOrUpdateCreatesWhenSlotNotPresent() {
+
+        // precondition
+        assertFalse(slotStateManager.getSlotStamps().containsKey(0));
+
+        // when
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+
+        // then
+        assertTrue(slotStateManager.getSlotStamps().containsKey(0));
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        assertTrue(stamp.isDirty());
+        assertEquals(1234L, stamp.getTimestamp());
+        assertEquals(UpdateStamp.State.Active, stamp.getState());
+        assertEquals(0, stamp.getLastRollupTimestamp());
+    }
+
+    @Test
+    public void createOrUpdateUpdatesWhenSlotAlreadyPresent() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp _stamp = slotStateManager.getSlotStamps().get(0);
+        _stamp.setDirty(false);
+        _stamp.setState(UpdateStamp.State.Rolled);
+
+        // precondition
+        assertEquals(1234L, _stamp.getTimestamp());
+        assertFalse(_stamp.isDirty());
+        assertEquals(UpdateStamp.State.Rolled, _stamp.getState());
+        assertEquals(0, _stamp.getLastRollupTimestamp());
+
+        // when
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1235L);
+
+        // then
+        assertTrue(slotStateManager.getSlotStamps().containsKey(0));
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        assertEquals(1235L, _stamp.getTimestamp());
+        assertTrue(stamp.isDirty());
+        assertEquals(UpdateStamp.State.Active, stamp.getState());
+        assertEquals(0, stamp.getLastRollupTimestamp());
     }
 }
