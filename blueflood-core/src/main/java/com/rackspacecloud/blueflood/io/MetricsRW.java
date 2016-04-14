@@ -16,11 +16,20 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This is an interface defining behavior of reading/writing
@@ -45,10 +54,43 @@ public interface MetricsRW {
      * @param granularity
      * @throws IOException
      */
-    public void insertRollups(Collection<IMetric> metrics, Granularity granularity) throws IOException;
+    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws IOException;
 
-    // TODO: to be written when we wire everything together in PreaggregatedMetricsIO
-    // public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran);
-    // public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran);
-    // public <T extends Rollup> Points<T> getDataToRoll(Class<T> type, final Locator locator, Range range, ColumnFamily<Locator, Long> cf)
+    /**
+     * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
+     * specified {@link com.rackspacecloud.blueflood.types.Locator} and
+     * {@link com.rackspacecloud.blueflood.types.Range} from the specified column family
+     *
+     * @param locator
+     * @param range
+     * @param gran
+     * @return
+     */
+    public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran);
+
+    /**
+     * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
+     * specified list of {@link com.rackspacecloud.blueflood.types.Locator} and
+     * {@link com.rackspacecloud.blueflood.types.Range} from the specified column family
+     *
+     * @param locators
+     * @param range
+     * @param gran
+     * @return
+     */
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran);
+
+    /**
+     * Fetches a {@link com.rackspacecloud.blueflood.types.Points} object for a
+     * particular locator and rollupType from the specified column family and
+     * range
+     *
+     * @param locator
+     * @param rollupType
+     * @param range
+     * @param columnFamilyName
+     * @param <T> the type of Rollup object
+     * @return
+     */
+    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName);
 }

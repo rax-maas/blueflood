@@ -53,7 +53,6 @@ public class AstyanaxPreaggregatedMetricsRW extends AbstractMetricsRW {
      * @param metrics
      * @throws IOException
      */
-    @Override
     public void insertRollups(Collection<IMetric> metrics, Granularity granularity) throws IOException {
         try {
             AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getColumnFamily(BluefloodEnumRollup.class, granularity));
