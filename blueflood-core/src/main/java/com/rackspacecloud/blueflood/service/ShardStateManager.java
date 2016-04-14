@@ -169,7 +169,7 @@ public class ShardStateManager {
         }
     }
 
-    protected class SlotStateManager {
+    static protected class SlotStateManager {
         private final int shard;
         final Granularity granularity;
         final ConcurrentMap<Integer, UpdateStamp> slotToUpdateStampMap;
@@ -269,7 +269,7 @@ public class ShardStateManager {
                 // should emit a metric here, otherwise, it will be emitted by
                 // the rollup context which is responsible for rolling up the
                 // shard
-                if (getManagedShards().contains(shard) && Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
+                if (parent.getManagedShards().contains(shard) && Configuration.getInstance().getBooleanProperty(CoreConfig.ROLLUP_MODE)) {
                     if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(millis)) {
                         granToReRollMeters.get(granularity).mark();
                         if (nowMillis - millis >= millisInADay) {
