@@ -146,6 +146,52 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
     }
 
+
+    @Test
+    public void testReRollOfDelayedSlotsBeforeRolledStateGetsPersisted() {
+        long time = 1234000L;
+        Collection<Integer> managedShards = Lists.newArrayList(0);
+        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
+        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
+        // Shard workers for rollup ctx
+        ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
+        ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
+
+        // Shard workers for ingest ctx
+        ShardStateWorker ingestPuller = new ShardStatePuller(managedShards, ingestionCtx.getShardStateManager(), this.io);
+        ShardStateWorker ingestPusher = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
+
+        ingestionCtx.update(time + 30000, 0);
+        ingestPusher.performOperation(); // Shard state is persisted on ingestion host
+
+        rollupPuller.performOperation(); // Shard state is read on rollup host
+        rollupCtx.setCurrentTimeMillis(time + 600000);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        // Simulate the hierarchical scheduling of slots
+        int count = 0;
+        while (rollupCtx.getScheduledCount() > 0) {
+            SlotKey slot = rollupCtx.getNextScheduled();
+            rollupCtx.clearFromRunning(slot);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        //We are not calling  rollupPusher.performOperation(). So rollup state wont be persisted.
+
+        // Delayed metric is received on ingestion host
+        ingestPuller.performOperation();
+        ingestionCtx.update(time, 0);
+        ingestPusher.performOperation();
+
+        rollupPuller.performOperation();
+
+        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
+    }
+
     @Test
     public void testSetAllCoarserSlotsDirtyForFinerSlot() {
         // Tests that the correct coarser slots are set dirty for a finer slot which was seen out-of-order.

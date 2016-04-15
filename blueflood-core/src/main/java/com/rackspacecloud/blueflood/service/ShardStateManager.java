@@ -249,6 +249,7 @@ public class ShardStateManager {
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
                 // 2) if current value is same but value being applied is a remove, remove wins.
                 stamp.setState(UpdateStamp.State.Rolled);
+
                 //For incoming update(from metrics_state) of "Rolled" status, we use its last updated time as the last rollup time.
                 if (lastUpdateTimestamp > stamp.getLastRollupTimestamp())
                     stamp.setLastRollupTimestamp(lastUpdateTimestamp);

@@ -219,6 +219,32 @@ public class ShardStateManagerTest {
         assertEquals("Last rollup timestamp is incorrect", newRolledSlotLastUpdatedTime, updateStamp.getLastRollupTimestamp());
     }
 
+    @Test
+    public void testUpdateSlotsOnReadIncomingOldRolledState() {
+        //updating existing in-memory map (current state: active, incoming: old rolled state;
+        //This tests -> if (state.equals(UpdateStamp.State.Rolled))
+        // a rolled up state gets marked as "active" because of incoming delayed metric before "rolled" state is saved in db.
+        // So rolled state from db will have old lastRolluptimestamp
+
+        establishCurrentState();
+        long existingLastIngestionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        long existingLastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+
+        long oldLastRolledIngestionTime = existingLastIngestionTime - 1; //making it different from the ingest time we already have in "Active"
+        long oldRolledSlotLastUpdatedTime = System.currentTimeMillis() - 14 * 24 * 60 * 60 * 1000; //minus 14 days
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, oldLastRolledIngestionTime, oldRolledSlotLastUpdatedTime);
+
+        //new incoming slot state
+        slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
+
+        Map<Integer, UpdateStamp> slotStamps = slotStateManager.getSlotStamps();
+        UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
+
+        assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
+        assertEquals("Last ingestion timestamp is incorrect", existingLastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last rollup timestamp is incorrect", existingLastRollupTime, updateStamp.getLastRollupTimestamp());
+    }
+
     private SlotState createSlotState(Granularity granularity, UpdateStamp.State state, long lastIngestionTimeStamp, long lastUpdatedTimestamp) {
         return new SlotState(granularity, TEST_SLOT, state).withTimestamp(lastIngestionTimeStamp).withLastUpdatedTimestamp(lastUpdatedTimestamp);
     }
