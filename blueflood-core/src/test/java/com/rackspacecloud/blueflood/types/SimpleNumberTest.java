@@ -73,4 +73,13 @@ public class SimpleNumberTest {
         Assert.assertEquals(testValue, simpleNumber.getValue());
     }
 
+    @Test(expected = NullPointerException.class)
+    public void constructorWithNullThrowsException() {
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(null);
+
+        // then
+        // the exception is thrown
+    }
 }
