@@ -432,7 +432,4 @@ public class LocatorTest {
         // then
         assertEquals(-1, comparison);
     }
-
-
-
 }
