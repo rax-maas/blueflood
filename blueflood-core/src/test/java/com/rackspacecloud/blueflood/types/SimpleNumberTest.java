@@ -128,4 +128,34 @@ public class SimpleNumberTest {
         // then
         // the exception is thrown
     }
+
+    @Test
+    public void toStringWithIntegerPrintsIntegerString() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123);
+
+        // expect
+        assertEquals("123 (int)", sn.toString());
+    }
+
+    @Test
+    public void toStringWithLongPrintsLongString() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123L);
+
+        // expect
+        assertEquals("123 (long)", sn.toString());
+    }
+
+    @Test
+    public void toStringWithDoublePrintsDoubleString() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123.45d);
+
+        // expect
+        assertEquals("123.45 (double)", sn.toString());
+    }
 }
