@@ -342,4 +342,56 @@ public class ShardStateManagerTest {
         assertTrue(dirtySlots.containsKey(1));
         assertFalse(dirtySlots.get(1).isDirty());
     }
+
+    @Test
+    public void getAndSetStateGetsAndSetsState() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+
+        // precondition
+        assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(0).getState());
+
+        // when
+        UpdateStamp stamp = slotStateManager.getAndSetState(0, UpdateStamp.State.Rolled);
+
+        // then
+        assertNotNull(stamp);
+        assertSame(slotStateManager.getSlotStamps().get(0), stamp);
+        assertEquals(UpdateStamp.State.Rolled, stamp.getState());
+    }
+
+    @Test
+    public void getAndSetStateDoesNotAffectUnspecifiedSlot() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        slotStateManager.createOrUpdateForSlotAndMillisecond(1, 1235L);
+
+        // precondition
+        assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(0).getState());
+        assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(1).getState());
+
+        // when
+        UpdateStamp stamp = slotStateManager.getAndSetState(0, UpdateStamp.State.Rolled);
+
+        // then
+        assertNotNull(stamp);
+        assertSame(slotStateManager.getSlotStamps().get(0), stamp);
+        assertEquals(UpdateStamp.State.Rolled, stamp.getState());
+        assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(1).getState());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void getAndSetStateUninitializedSlotThrowsException() {
+
+        // precondition
+        assertEquals(0, slotStateManager.getSlotStamps().size());
+
+        // when
+        UpdateStamp stamp = slotStateManager.getAndSetState(0, UpdateStamp.State.Rolled);
+
+        // then
+        // the exception is thrown
+    }
 }
