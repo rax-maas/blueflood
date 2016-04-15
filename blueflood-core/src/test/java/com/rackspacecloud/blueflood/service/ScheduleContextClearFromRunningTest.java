@@ -124,13 +124,11 @@ public class ScheduleContextClearFromRunningTest {
         // given
         SlotKey next = ctx.getNextScheduled();
 
-        UpdateStamp stamp = mgr.getUpdateStamp(SlotKey.of(gran, slot, shard));
-
         // when
         ctx.clearFromRunning(next);
 
         // then
-        stamp = mgr.getUpdateStamp(next);
+        UpdateStamp stamp = mgr.getUpdateStamp(next);
         Assert.assertNotNull(stamp);
         Assert.assertEquals(UpdateStamp.State.Rolled, stamp.getState());
         Assert.assertEquals(updateTime, stamp.getTimestamp());
