@@ -93,4 +93,39 @@ public class SimpleNumberTest {
         // then
         // the exception is thrown
     }
+
+    @Test
+    public void constructorWithSimpleNumberSetsValue() {
+
+        // given
+        Object testValue = new SimpleNumber(123L);
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(testValue);
+
+        // then
+        assertEquals(123L, simpleNumber.getValue());
+        assertEquals(SimpleNumber.Type.LONG, simpleNumber.getDataType());
+        assertTrue(simpleNumber.hasData());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void constructorWithFloatThrowsException() {
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(123.45f);
+
+        // then
+        // the exception is thrown
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void constructorWithOtherTypeThrowsException() {
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(new Object());
+
+        // then
+        // the exception is thrown
+    }
 }
