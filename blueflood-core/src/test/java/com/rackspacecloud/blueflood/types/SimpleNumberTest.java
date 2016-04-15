@@ -19,6 +19,9 @@ package com.rackspacecloud.blueflood.types;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class SimpleNumberTest {
 
     @Test
@@ -31,7 +34,9 @@ public class SimpleNumberTest {
         SimpleNumber simpleNumber = new SimpleNumber(testValue);
 
         // then
-        Assert.assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(SimpleNumber.Type.INTEGER, simpleNumber.getDataType());
+        assertTrue(simpleNumber.hasData());
     }
 
     @Test
@@ -44,7 +49,9 @@ public class SimpleNumberTest {
         SimpleNumber simpleNumber = new SimpleNumber(testValue);
 
         // then
-        Assert.assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(SimpleNumber.Type.DOUBLE, simpleNumber.getDataType());
+        assertTrue(simpleNumber.hasData());
     }
 
     @Test
@@ -57,7 +64,9 @@ public class SimpleNumberTest {
         SimpleNumber simpleNumber = new SimpleNumber(testValue);
 
         // then
-        Assert.assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(SimpleNumber.Type.LONG, simpleNumber.getDataType());
+        assertTrue(simpleNumber.hasData());
     }
 
     @Test
@@ -70,7 +79,9 @@ public class SimpleNumberTest {
         SimpleNumber simpleNumber = new SimpleNumber(testValue);
 
         // then
-        Assert.assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(testValue, simpleNumber.getValue());
+        assertEquals(SimpleNumber.Type.INTEGER, simpleNumber.getDataType());
+        assertTrue(simpleNumber.hasData());
     }
 
     @Test(expected = NullPointerException.class)
