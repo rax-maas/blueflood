@@ -233,12 +233,12 @@ public class ShardStateManagerTest {
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
 
         // then
-        assertTrue(slotStateManager.getSlotStamps().containsKey(0));
+        assertTrue("The slot should be present in the map", slotStateManager.getSlotStamps().containsKey(0));
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
-        assertTrue(stamp.isDirty());
-        assertEquals(1234L, stamp.getTimestamp());
-        assertEquals(UpdateStamp.State.Active, stamp.getState());
-        assertEquals(0, stamp.getLastRollupTimestamp());
+        assertTrue("The slot should be marked dirty", stamp.isDirty());
+        assertEquals("The timestamp should be set", 1234L, stamp.getTimestamp());
+        assertEquals("The state should be Active", UpdateStamp.State.Active, stamp.getState());
+        assertEquals("The last rollup timestamp should be uninitialized", 0, stamp.getLastRollupTimestamp());
     }
 
     @Test
@@ -260,12 +260,12 @@ public class ShardStateManagerTest {
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1235L);
 
         // then
-        assertTrue(slotStateManager.getSlotStamps().containsKey(0));
+        assertTrue("The slot should still be present in the map", slotStateManager.getSlotStamps().containsKey(0));
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
-        assertEquals(1235L, _stamp.getTimestamp());
-        assertTrue(stamp.isDirty());
-        assertEquals(UpdateStamp.State.Active, stamp.getState());
-        assertEquals(0, stamp.getLastRollupTimestamp());
+        assertEquals("The timestamp should have changed", 1235L, _stamp.getTimestamp());
+        assertTrue("The slot should be marked dirty", stamp.isDirty());
+        assertEquals("The state should be Active", UpdateStamp.State.Active, stamp.getState());
+        assertEquals("The last rollup timestamp should be uninitialized", 0, stamp.getLastRollupTimestamp());
     }
 
     @Test
@@ -279,7 +279,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(dirtySlots);
-        assertTrue(dirtySlots.isEmpty());
+        assertTrue("No slots should be included", dirtySlots.isEmpty());
     }
 
     @Test
@@ -295,7 +295,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(dirtySlots);
-        assertTrue(dirtySlots.isEmpty());
+        assertTrue("No slots should be included", dirtySlots.isEmpty());
     }
 
     @Test
@@ -310,15 +310,15 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(dirtySlots);
-        assertEquals(2, dirtySlots.size());
+        assertEquals("Both slots should be returned", 2, dirtySlots.size());
 
-        assertTrue(dirtySlots.containsKey(0));
+        assertTrue("The first slot should be included", dirtySlots.containsKey(0));
         UpdateStamp stamp = dirtySlots.get(0);
-        assertFalse(stamp.isDirty());
+        assertFalse("The first slot should be clean", stamp.isDirty());
 
-        assertTrue(dirtySlots.containsKey(1));
+        assertTrue("The second slot should be included", dirtySlots.containsKey(1));
         stamp = dirtySlots.get(1);
-        assertFalse(stamp.isDirty());
+        assertFalse("The second slot should be clean", stamp.isDirty());
     }
 
     @Test
@@ -334,13 +334,13 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(dirtySlots);
-        assertEquals(1, dirtySlots.size());
+        assertEquals("Only one slot should be returned", 1, dirtySlots.size());
 
-        assertFalse(dirtySlots.containsKey(0));
-        assertFalse(slotStateManager.getSlotStamps().get(0).isDirty());
+        assertFalse("Slot 0 should not be included", dirtySlots.containsKey(0));
+        assertFalse("Slot 0 should still be clean", slotStateManager.getSlotStamps().get(0).isDirty());
 
-        assertTrue(dirtySlots.containsKey(1));
-        assertFalse(dirtySlots.get(1).isDirty());
+        assertTrue("Slot 1 should be included", dirtySlots.containsKey(1));
+        assertFalse("Slot 1 should now be clean", dirtySlots.get(1).isDirty());
     }
 
     @Test
@@ -357,8 +357,8 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(stamp);
-        assertSame(slotStateManager.getSlotStamps().get(0), stamp);
-        assertEquals(UpdateStamp.State.Rolled, stamp.getState());
+        assertSame("The stamp returned should be the same one for slot 0", slotStateManager.getSlotStamps().get(0), stamp);
+        assertEquals("The state should be changed to Rolled", UpdateStamp.State.Rolled, stamp.getState());
     }
 
     @Test
@@ -378,8 +378,8 @@ public class ShardStateManagerTest {
         // then
         assertNotNull(stamp);
         assertSame(slotStateManager.getSlotStamps().get(0), stamp);
-        assertEquals(UpdateStamp.State.Rolled, stamp.getState());
-        assertEquals(UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(1).getState());
+        assertEquals("Slot 0 should now be Rolled", UpdateStamp.State.Rolled, stamp.getState());
+        assertEquals("Slot 0 should still be Active", UpdateStamp.State.Active, slotStateManager.getSlotStamps().get(1).getState());
     }
 
     @Test(expected = NullPointerException.class)
@@ -406,7 +406,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertTrue(slots.isEmpty());
+        assertTrue("No slots should be returned", slots.isEmpty());
     }
 
     @Test
@@ -421,7 +421,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertTrue(slots.isEmpty());
+        assertTrue("No slots should be returned", slots.isEmpty());
     }
 
     @Test
@@ -436,7 +436,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertTrue(slots.isEmpty());
+        assertTrue("No slots should be returned", slots.isEmpty());
     }
 
     @Test
@@ -452,7 +452,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertTrue(slots.isEmpty());
+        assertTrue("No slots should be returned", slots.isEmpty());
     }
 
     @Test
@@ -468,8 +468,8 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertEquals(1, slots.size());
-        assertEquals(0, slots.get(0).intValue());
+        assertEquals("Only one slot should be returned", 1, slots.size());
+        assertEquals("Slot zero should be included", 0, slots.get(0).intValue());
     }
 
     @Test
@@ -483,7 +483,7 @@ public class ShardStateManagerTest {
 
         // then
         assertNotNull(slots);
-        assertEquals(1, slots.size());
-        assertEquals(0, slots.get(0).intValue());
+        assertEquals("Only one slot should be returned", 1, slots.size());
+        assertEquals("Slot zero should be included", 0, slots.get(0).intValue());
     }
 }
