@@ -16,10 +16,10 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SimpleNumberTest {
@@ -157,5 +157,80 @@ public class SimpleNumberTest {
 
         // expect
         assertEquals("123.45 (double)", sn.toString());
+    }
+
+    @Test
+    public void rollupTypeIsNotTypical() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123.45d);
+
+        // expect
+        assertEquals(RollupType.NOT_A_ROLLUP, sn.getRollupType());
+    }
+
+    @Test
+    public void hashCodeIsValuesHashCode() {
+
+        // given
+        Double value = 123.45d;
+        SimpleNumber sn = new SimpleNumber(value);
+
+        // expect
+        assertEquals(value.hashCode(), sn.hashCode());
+    }
+
+    @Test
+    public void equalsWithNullReturnsFalse() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123.45d);
+
+        // expect
+        assertFalse(sn.equals(null));
+    }
+
+    @Test
+    public void equalsWithOtherTypeReturnsFalse() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123.45d);
+
+        // expect
+        assertFalse(sn.equals(Double.valueOf(123.45d)));
+    }
+
+    @Test
+    public void equalsWithSimpleNumberOfOtherTypeReturnsFalse() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123);
+        SimpleNumber other = new SimpleNumber(123L);
+
+        // expect
+        assertFalse(sn.equals(other));
+    }
+
+    @Test
+    public void equalsWithSimpleNumberOfSameTypeReturnsTrue() {
+
+        // given
+        SimpleNumber sn = new SimpleNumber(123);
+        SimpleNumber other = new SimpleNumber(123);
+
+        // expect
+        assertTrue(sn.equals(other));
+    }
+
+    @Test
+    public void equalsWithSimpleNumberOfSameBoxedValueReturnsTrue() {
+
+        // given
+        Integer value = 123;
+        SimpleNumber sn = new SimpleNumber(value);
+        SimpleNumber other = new SimpleNumber(value);
+
+        // expect
+        assertTrue(sn.equals(other));
     }
 }
