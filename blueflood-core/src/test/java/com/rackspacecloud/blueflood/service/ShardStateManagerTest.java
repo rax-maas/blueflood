@@ -394,4 +394,96 @@ public class ShardStateManagerTest {
         // then
         // the exception is thrown
     }
+
+    @Test
+    public void getSlotsEligibleUninitializedReturnsEmpty() {
+
+        // precondition
+        assertEquals(0, slotStateManager.getSlotStamps().size());
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0);
+
+        // then
+        assertNotNull(slots);
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    public void getSlotsEligibleDoesNotReturnRolledSlots() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        slotStateManager.getAndSetState(0, UpdateStamp.State.Rolled);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0);
+
+        // then
+        assertNotNull(slots);
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    public void getSlotsEligibleDoesNotReturnSlotsThatAreTooYoung() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        slotStateManager.getAndSetState(0, UpdateStamp.State.Active);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(1235L, 30000, 0);
+
+        // then
+        assertNotNull(slots);
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    public void getSlotsEligibleDoesNotReturnSlotsThatWereRolledRecently() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        stamp.setLastRollupTimestamp(2345L);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 70000);
+
+        // then
+        assertNotNull(slots);
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    public void getSlotsEligibleReturnsSlotsThatWereRolledButNotRecently() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        stamp.setLastRollupTimestamp(2345L);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 1);
+
+        // then
+        assertNotNull(slots);
+        assertEquals(1, slots.size());
+        assertEquals(0, slots.get(0).intValue());
+    }
+
+    @Test
+    public void getSlotsEligibleReturnsSlotsThatWereNotRolled() {
+
+        // given
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 1);
+
+        // then
+        assertNotNull(slots);
+        assertEquals(1, slots.size());
+        assertEquals(0, slots.get(0).intValue());
+    }
 }
