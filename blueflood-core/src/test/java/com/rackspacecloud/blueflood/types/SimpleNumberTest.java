@@ -20,23 +20,56 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SimpleNumberTest {
+
     @Test
-    public void testSimpleNumberWithVariousTypes() {
+    public void constructorWithIntegerSetsValue() {
+
+        // given
         Object testValue = new Integer(4);
+
+        // when
         SimpleNumber simpleNumber = new SimpleNumber(testValue);
-        Assert.assertEquals(testValue, simpleNumber.getValue());
 
-        testValue = new Double(5.0);
-        simpleNumber = new SimpleNumber(testValue);
+        // then
         Assert.assertEquals(testValue, simpleNumber.getValue());
+    }
 
-        testValue = new Long(5L);
-        simpleNumber = new SimpleNumber(testValue);
+    @Test
+    public void constructorWithDoubleSetsValue() {
+
+        // given
+        Object testValue = new Double(5.0);
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(testValue);
+
+        // then
         Assert.assertEquals(testValue, simpleNumber.getValue());
+    }
 
-        // make sure primitives work too
-        testValue = 4;
-        simpleNumber = new SimpleNumber(testValue);
+    @Test
+    public void constructorWithLongSetsValue() {
+
+        // given
+        Object testValue = new Long(5L);
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(testValue);
+
+        // then
+        Assert.assertEquals(testValue, simpleNumber.getValue());
+    }
+
+    @Test
+    public void constructorWithBoxedIntegerSetsValue() {
+
+        // given
+        Object testValue = 4;
+
+        // when
+        SimpleNumber simpleNumber = new SimpleNumber(testValue);
+
+        // then
         Assert.assertEquals(testValue, simpleNumber.getValue());
     }
 
