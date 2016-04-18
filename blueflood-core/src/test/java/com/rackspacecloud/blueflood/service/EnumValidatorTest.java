@@ -32,14 +32,15 @@ import static org.mockito.Mockito.*;
 
 public class EnumValidatorTest {
 
-    AstyanaxReader readerMock = mock(AstyanaxReader.class);
-    AstyanaxWriter writerMock = mock(AstyanaxWriter.class);
-    DiscoveryIO discoveryIOMock = mock(DiscoveryIO.class);
+    final String tenant_id = "tenant1";
+    final String metric_name = "metric1";
 
-    String tenant_id = "tenant1";
-    String metric_name = "metric1";
-    Locator locator1 = Locator.createLocatorFromPathComponents(tenant_id, metric_name);
+    Locator locator1;
     HashSet<Locator> locators;
+
+    AstyanaxReader readerMock;
+    AstyanaxWriter writerMock;
+    DiscoveryIO discoveryIOMock;
 
     @Before
     public void setup() {
@@ -47,8 +48,14 @@ public class EnumValidatorTest {
         System.setProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD.name(), "3");
 
         // set locators
+        locator1 = Locator.createLocatorFromPathComponents(tenant_id, metric_name);
         locators = new HashSet<Locator>();
         locators.add(locator1);
+
+        // set up mocks
+        readerMock = mock(AstyanaxReader.class);
+        writerMock = mock(AstyanaxWriter.class);
+        discoveryIOMock = mock(DiscoveryIO.class);
     }
 
     @After
