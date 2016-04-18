@@ -68,7 +68,6 @@ public class DatastaxPreaggregatedMetricsRW extends AbstractMetricsRW {
      * @param metrics
      * @throws IOException
      */
-    @Override
     public void insertRollups(Collection<IMetric> metrics, Granularity granularity) throws IOException {
         List<ResultSetFuture> futures = new ArrayList<ResultSetFuture>();
         Multimap<Locator, IMetric> map = asMultimap(metrics);

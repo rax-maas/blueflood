@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -35,20 +36,25 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RollupService implements Runnable, RollupServiceMBean {
+
     private static final Logger log = LoggerFactory.getLogger(RollupService.class);
+
+    private final Timer polltimer = Metrics.timer(RollupService.class, "Poll Timer");
+    private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
+
     private final long rollupDelayMillis;
     private final long delayedMetricRollupDelayMillis;
 
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
-    private final Timer polltimer = Metrics.timer(RollupService.class, "Poll Timer");
-    private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
     private final ThreadPoolExecutor enumValidatorExecutor;
-    private long pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
-    private final long configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
+
+    private long pollerPeriod;
+    private final long configRefreshInterval;
+
     private transient Thread thread;
 
     private long lastSlotCheckFinishedAt = 0L;
@@ -82,9 +88,111 @@ public class RollupService implements Runnable, RollupServiceMBean {
     }
 
     public RollupService(ScheduleContext context) {
+
+        pollerPeriod = Configuration.getInstance().getIntegerProperty(CoreConfig.SCHEDULE_POLL_PERIOD);
+        configRefreshInterval = Configuration.getInstance().getIntegerProperty(CoreConfig.CONFIG_REFRESH_PERIOD);
+
         this.context = context;
         this.shardStateManager = context.getShardStateManager();
 
+        // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
+        // higher.
+        Configuration config = Configuration.getInstance();
+        rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+        delayedMetricRollupDelayMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
+        ThreadPoolExecutor _locatorFetchExecutors = new ThreadPoolExecutor(
+                locatorFetchConcurrency, locatorFetchConcurrency,
+                30, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(locatorFetchConcurrency * 5),
+                Executors.defaultThreadFactory(),
+                new RejectedExecutionHandler() {
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                        // in this case, we want to throw a RejectedExecutionException so that the slot can be removed
+                        // from the running queue.
+                        throw new RejectedExecutionException("Threadpool is saturated. unable to service this slot.");
+                    }
+                }
+        ) {
+            @Override
+            protected void afterExecute(Runnable r, Throwable t) {
+                lastSlotCheckFinishedAt = RollupService.this.context.getCurrentTimeMillis();
+                super.afterExecute(r, t);
+            }
+        };
+
+        // unbounded work queue.
+        final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
+        ThreadPoolExecutor _rollupReadExecutors = new ThreadPoolExecutor(
+                // "RollupReadsThreadpool",
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
+                30, TimeUnit.SECONDS,
+                rollupReadQueue,
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
+        ThreadPoolExecutor _rollupWriteExecutors = new ThreadPoolExecutor(
+                // "RollupWritesThreadpool",
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
+                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
+                30, TimeUnit.SECONDS,
+                rollupWriteQueue,
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        // create executor threadpool for EnumValidator
+        int enumValidatorThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_VALIDATOR_THREADS);
+        ThreadPoolExecutor _enumValidatorExecutor = new ThreadPoolBuilder()
+                .withName("Validating Enum Metrics")
+                .withCorePoolSize(enumValidatorThreadCount)
+                .withMaxPoolSize(enumValidatorThreadCount)
+                .withUnboundedQueue()
+                .build();
+
+        initializeGauges();
+
+        locatorFetchExecutors = _locatorFetchExecutors;
+        InstrumentedThreadPoolExecutor.instrument(locatorFetchExecutors, "LocatorFetchThreadPool");
+
+        rollupReadExecutors = _rollupReadExecutors;
+        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
+
+        rollupWriteExecutors = _rollupWriteExecutors;
+        InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
+
+        this.enumValidatorExecutor = _enumValidatorExecutor;
+    }
+    @VisibleForTesting
+    public RollupService(ScheduleContext context,
+                         ShardStateManager shardStateManager,
+                         ThreadPoolExecutor locatorFetchExecutors,
+                         ThreadPoolExecutor rollupReadExecutors,
+                         ThreadPoolExecutor rollupWriteExecutors,
+                         ThreadPoolExecutor enumValidatorExecutor,
+                         long rollupDelayMillis,
+                         long delayedMetricRollupDelayMillis,
+                         long pollerPeriod,
+                         long configRefreshInterval) {
+
+        this.context = context;
+        this.shardStateManager = shardStateManager;
+        this.locatorFetchExecutors = locatorFetchExecutors;
+        this.rollupReadExecutors = rollupReadExecutors;
+        this.rollupWriteExecutors = rollupWriteExecutors;
+        this.enumValidatorExecutor = enumValidatorExecutor;
+        this.rollupDelayMillis = rollupDelayMillis;
+        this.delayedMetricRollupDelayMillis = delayedMetricRollupDelayMillis;
+        this.pollerPeriod = pollerPeriod;
+        this.configRefreshInterval = configRefreshInterval;
+
+        initializeGauges();
+    }
+
+    public void initializeGauges() {
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.service:type=%s", getClass().getSimpleName());
@@ -131,68 +239,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
         } catch (Exception exc) {
             log.error("Unable to register mbean for " + getClass().getSimpleName(), exc);
         }
-
-        // NOTE: higher locatorFetchConcurrency means that the queue used in rollupReadExecutors needs to be correspondingly
-        // higher.
-        Configuration config = Configuration.getInstance();
-        rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
-        delayedMetricRollupDelayMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-        final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
-        locatorFetchExecutors = new ThreadPoolExecutor(
-            locatorFetchConcurrency, locatorFetchConcurrency,
-            30, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<Runnable>(locatorFetchConcurrency * 5),
-            Executors.defaultThreadFactory(),
-            new RejectedExecutionHandler() {
-                public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                    // in this case, we want to throw a RejectedExecutionException so that the slot can be removed
-                    // from the running queue.
-                    throw new RejectedExecutionException("Threadpool is saturated. unable to service this slot.");
-                }
-            }
-        ) {
-            @Override
-            protected void afterExecute(Runnable r, Throwable t) {
-                lastSlotCheckFinishedAt = RollupService.this.context.getCurrentTimeMillis();
-                super.afterExecute(r, t);
-            }
-        };
-        InstrumentedThreadPoolExecutor.instrument(locatorFetchExecutors, "LocatorFetchThreadPool");
-
-        // unbounded work queue.
-        final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
-
-        rollupReadExecutors = new ThreadPoolExecutor(
-            // "RollupReadsThreadpool",
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
-            config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
-            30, TimeUnit.SECONDS,
-            rollupReadQueue,
-            Executors.defaultThreadFactory(),
-            new ThreadPoolExecutor.AbortPolicy()
-        );
-        InstrumentedThreadPoolExecutor.instrument(rollupReadExecutors, "RollupReadsThreadpool");
-
-        final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
-        rollupWriteExecutors = new ThreadPoolExecutor(
-                // "RollupWritesThreadpool",
-                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
-                config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
-                30, TimeUnit.SECONDS,
-                rollupWriteQueue,
-                Executors.defaultThreadFactory(),
-                new ThreadPoolExecutor.AbortPolicy()
-        );
-        InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
-
-        // create executor threadpool for EnumValidator
-        int enumValidatorThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_VALIDATOR_THREADS);
-        this.enumValidatorExecutor = new ThreadPoolBuilder()
-                .withName("Validating Enum Metrics")
-                .withCorePoolSize(enumValidatorThreadCount)
-                .withMaxPoolSize(enumValidatorThreadCount)
-                .withUnboundedQueue()
-                .build();
     }
 
     public void forcePoll() {
@@ -209,7 +255,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     public void run() {
         thread = Thread.currentThread();
 
-        while (true) {
+        while (shouldKeepRunning()) {
             long startRun = System.currentTimeMillis();
 
             poll();
@@ -247,6 +293,16 @@ public class RollupService implements Runnable, RollupServiceMBean {
                     log.debug("RollupService poller woke up");
                 }
         }
+    }
+
+    private boolean keepRunning = true;
+    @VisibleForTesting
+    boolean shouldKeepRunning() {
+        return keepRunning;
+    }
+    @VisibleForTesting
+    void setShouldKeepRunning(boolean value) {
+        keepRunning = value;
     }
 
     //
