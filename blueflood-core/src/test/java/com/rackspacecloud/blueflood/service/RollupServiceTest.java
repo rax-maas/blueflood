@@ -77,8 +77,8 @@ public class RollupServiceTest {
 
         // given
         when(context.hasScheduled()).thenReturn(true).thenReturn(false);
-
         SlotKey slotkey = SlotKey.of(Granularity.MIN_20, 2, 0);
+        when(shardStateManager.getUpdateStamp(slotkey)).thenReturn(mock(UpdateStamp.class));
         doReturn(slotkey).when(context).getNextScheduled();
 
         final Runnable[] capture = new Runnable[1];
@@ -105,8 +105,6 @@ public class RollupServiceTest {
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
         verifyNoMoreInteractions(context);
 
-        verifyZeroInteractions(shardStateManager);
-
         verify(locatorFetchExecutors).execute(Matchers.<Runnable>any());
         assertSame(LocatorFetchRunnable.class, capture[0].getClass());
         verifyNoMoreInteractions(locatorFetchExecutors);
@@ -123,6 +121,7 @@ public class RollupServiceTest {
         when(context.hasScheduled()).thenReturn(true).thenReturn(false);
 
         SlotKey slotkey = SlotKey.of(Granularity.MIN_20, 2, 0);
+        when(shardStateManager.getUpdateStamp(slotkey)).thenReturn(mock(UpdateStamp.class));
         doReturn(slotkey).when(context).getNextScheduled();
 
         final RejectedExecutionException cause = new RejectedExecutionException("exception for testing purposes");
@@ -146,8 +145,6 @@ public class RollupServiceTest {
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
         verify(context).pushBackToScheduled(Matchers.<SlotKey>any(), anyBoolean());
         verifyNoMoreInteractions(context);
-
-        verifyZeroInteractions(shardStateManager);
 
         verify(locatorFetchExecutors).execute(Matchers.<Runnable>any());
         verifyNoMoreInteractions(locatorFetchExecutors);
