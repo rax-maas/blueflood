@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -76,6 +77,7 @@ public class JSONMetricsContainer {
                 long nowMillis = new DateTime().getMillis();
                 if (nowMillis - metric.getCollectionTime() > delayedMetricsMillis) {
                     delayedMetrics.add(metric);
+                    Instrumentation.markDelayedMetricsReceived();
                 }
                 metrics.add(metric);
             }
