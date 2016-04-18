@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -25,7 +24,6 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
     ExecutorService rollupReadExecutor;
     ThreadPoolExecutor rollupWriteExecutor;
     ExecutorService enumValidatorExecutor;
-    AstyanaxReader astyanaxReader;
 
     LocatorFetchRunnable lfr;
 
@@ -44,12 +42,10 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
-        this.astyanaxReader = mock(AstyanaxReader.class);
 
         this.lfr = mock(LocatorFetchRunnable.class);
         this.lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor,
-                astyanaxReader);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
         doCallRealMethod().when(lfr).drainExecutionContext(
                 anyLong(), anyInt(), Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -103,14 +99,12 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -141,14 +135,12 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -180,14 +172,12 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -221,14 +211,12 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -259,14 +247,12 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
         verifyZeroInteractions(enumValidatorExecutor);
-        verifyZeroInteractions(astyanaxReader);
         verify(lfr).initialize(
                 Matchers.<ScheduleContext>any(),
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                Matchers.<AstyanaxReader>any());
+                Matchers.<ExecutorService>any());
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());

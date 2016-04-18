@@ -36,7 +36,6 @@ import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
-import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -54,9 +53,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final Keyspace keyspace = getKeyspace();
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
-    private static final int LOCATOR_TTL = 604800;  // in seconds (7 days)
-
-    private static final String INSERT_ROLLUP_BATCH = "Rollup Batch Insert".intern();
     private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
@@ -67,7 +63,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // todo: should be some other impl.
     private static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
-    
+
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // seen within the last 10 minutes, don't bother.
@@ -158,9 +154,9 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     // numeric only!
-    private final void insertLocator(Locator locator, MutationBatch mutationBatch) {
+    public final void insertLocator(Locator locator, MutationBatch mutationBatch) {
         mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.getShard(locator.toString()))
-                .putEmptyColumn(locator, LOCATOR_TTL);
+                .putEmptyColumn(locator, TenantTtlProvider.LOCATOR_TTL);
     }
 
     private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
