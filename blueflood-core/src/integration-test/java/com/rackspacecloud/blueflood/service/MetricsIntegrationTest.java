@@ -19,13 +19,10 @@ package com.rackspacecloud.blueflood.service;
 import com.google.common.collect.Lists;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.ShardStateIO;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
@@ -84,11 +81,11 @@ public class MetricsIntegrationTest extends IntegrationTestBase {
     @Test
     public void testLocatorsWritten() throws Exception {
         Collection<Locator> locators = writeLocatorsOnly(48);
-        AstyanaxReader r = AstyanaxReader.getInstance();
+        LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
 
         Set<String> actualLocators = new HashSet<String>();
         for (Locator locator : locators) {
-            for (Locator databaseLocator : r.getLocatorsToRollup(Util.computeShard(locator.toString()))) {
+            for (Locator databaseLocator : locatorIO.getLocators(Util.computeShard(locator.toString()))) {
                 actualLocators.add(databaseLocator.toString());
             }
         }

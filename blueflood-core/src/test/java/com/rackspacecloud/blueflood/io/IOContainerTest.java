@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
         "com.rackspacecloud.blueflood.utils.Metrics",
         "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class})
-@SuppressStaticInitializationFor( "com.rackspacecloud.blueflood.io.datastax.DatastaxIO")
+@SuppressStaticInitializationFor( "com.rackspacecloud.blueflood.io.datastax.DatastaxIO" )
 @RunWith(PowerMockRunner.class)
 public class IOContainerTest {
 

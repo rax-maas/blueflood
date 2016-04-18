@@ -18,10 +18,9 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.After;
@@ -70,10 +69,7 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
 
         // lets see how many locators this generated. We want it to be a lot.
 
-        int locatorsForTestShard = 0;
-        for (Locator locator : AstyanaxReader.getInstance().getLocatorsToRollup(shardToTest)) {
-            locatorsForTestShard++;
-        }
+        int locatorsForTestShard = IOContainer.fromConfig().getLocatorIO().getLocators(shardToTest).size();
 
         // Make sure number of locators for test shard is greater than number of rollup threads.
         // This is required so that rollups would be rejected for some locators.

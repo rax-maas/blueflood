@@ -21,6 +21,9 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 
 public interface TenantTtlProvider {
+
+    public static final int LOCATOR_TTL = 604800;   // ttl for locators in seconds, 604800s = 1 week
+
     public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception;
 
     public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception;
@@ -28,4 +31,5 @@ public interface TenantTtlProvider {
     public TimeValue getTTLForStrings(String tenantId) throws Exception;
 
     public TimeValue getConfigTTLForIngestion() throws Exception;
+
 }

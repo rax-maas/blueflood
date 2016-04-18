@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -48,7 +48,6 @@ class LocatorFetchRunnable implements Runnable {
     private ScheduleContext scheduleCtx;
     private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
-    private AstyanaxReader astyanaxReader;
 
     private Range parentRange;
 
@@ -57,19 +56,9 @@ class LocatorFetchRunnable implements Runnable {
                          ExecutorService rollupReadExecutor,
                          ThreadPoolExecutor rollupWriteExecutor,
                          ExecutorService enumValidatorExecutor) {
-        this(scheduleCtx, destSlotKey, rollupReadExecutor,
-                rollupWriteExecutor,
-                enumValidatorExecutor, AstyanaxReader.getInstance());
-    }
-    LocatorFetchRunnable(ScheduleContext scheduleCtx,
-                         SlotKey destSlotKey,
-                         ExecutorService rollupReadExecutor,
-                         ThreadPoolExecutor rollupWriteExecutor,
-                         ExecutorService enumValidatorExecutor,
-                         AstyanaxReader astyanaxReader) {
 
         initialize(scheduleCtx, destSlotKey, rollupReadExecutor,
-                rollupWriteExecutor, enumValidatorExecutor, astyanaxReader);
+                rollupWriteExecutor, enumValidatorExecutor);
     }
 
     @VisibleForTesting
@@ -77,8 +66,7 @@ class LocatorFetchRunnable implements Runnable {
                            SlotKey destSlotKey,
                            ExecutorService rollupReadExecutor,
                            ThreadPoolExecutor rollupWriteExecutor,
-                           ExecutorService enumValidatorExecutor,
-                           AstyanaxReader astyanaxReader) {
+                           ExecutorService enumValidatorExecutor) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
@@ -86,7 +74,6 @@ class LocatorFetchRunnable implements Runnable {
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
         this.enumValidatorExecutor = enumValidatorExecutor;
-        this.astyanaxReader = astyanaxReader;
         this.parentRange = getGranularity().deriveRange(getParentSlot(), serverTime);
     }
 
@@ -227,8 +214,8 @@ class LocatorFetchRunnable implements Runnable {
 
         try {
             // get a list of all locators to rollup for a shard
-            locators.addAll(astyanaxReader.getLocatorsToRollup(getShard()));
-        } catch (RuntimeException e) {
+            locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
+        } catch (Exception e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
         }

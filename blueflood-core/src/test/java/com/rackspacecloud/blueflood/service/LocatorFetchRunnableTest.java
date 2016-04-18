@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -8,9 +9,15 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,6 +31,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
+@PowerMockIgnore({"javax.management.*", "com.rackspacecloud.blueflood.utils.Metrics", "com.codahale.metrics.*"})
+@PrepareForTest({ IOContainer.class })
+@RunWith(PowerMockRunner.class)
+@SuppressStaticInitializationFor( { "com.rackspacecloud.blueflood.io.IOContainer", "com.rackspacecloud.blueflood.service.RollupRunnable" } )
 public class LocatorFetchRunnableTest {
 
 
@@ -32,7 +43,7 @@ public class LocatorFetchRunnableTest {
     ExecutorService rollupReadExecutor;
     ThreadPoolExecutor rollupWriteExecutor;
     ExecutorService enumValidatorExecutor;
-    AstyanaxReader astyanaxReader;
+    LocatorIO locatorIO;
 
     LocatorFetchRunnable lfr;
 
@@ -51,11 +62,10 @@ public class LocatorFetchRunnableTest {
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
-        this.astyanaxReader = mock(AstyanaxReader.class);
 
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
                 destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor, astyanaxReader);
+                enumValidatorExecutor);
 
         executionContext = mock(RollupExecutionContext.class);
         rollupBatchWriter = mock(RollupBatchWriter.class);
@@ -63,6 +73,13 @@ public class LocatorFetchRunnableTest {
         locators = getTypicalLocators();
 
         Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
+
+        // mock IOContainer and LocatorIO
+        locatorIO = mock(LocatorIO.class);
+        PowerMockito.mockStatic(IOContainer.class);
+        IOContainer ioContainer = mock(IOContainer.class);
+        when(IOContainer.fromConfig()).thenReturn(ioContainer);
+        when(ioContainer.getLocatorIO()).thenReturn(locatorIO);
     }
 
     @After
@@ -84,35 +101,35 @@ public class LocatorFetchRunnableTest {
     }
 
     @Test
-    public void getLocatorsReturnsLocators() {
+    public void getLocatorsReturnsLocators() throws IOException {
 
         // given
         Set<Locator> expected = new HashSet<Locator>(locators);
 
-        when(astyanaxReader.getLocatorsToRollup(0)).thenReturn(locators);
+        when(locatorIO.getLocators(0)).thenReturn(locators);
 
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(astyanaxReader, times(1)).getLocatorsToRollup(0);
-        verifyNoMoreInteractions(astyanaxReader);
+        verify(locatorIO, times(1)).getLocators(0);
+        verifyNoMoreInteractions(locatorIO);
         verifyZeroInteractions(executionContext);
         Assert.assertEquals(expected, actual);
     }
 
     @Test
-    public void getLocatorsExceptionYieldsEmptySet() {
+    public void getLocatorsExceptionYieldsEmptySet() throws IOException {
 
         // given
-        when(astyanaxReader.getLocatorsToRollup(0)).thenThrow(new RuntimeException(""));
+        when(locatorIO.getLocators(0)).thenThrow(new RuntimeException(""));
 
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(astyanaxReader, times(1)).getLocatorsToRollup(0);
-        verifyNoMoreInteractions(astyanaxReader);
+        verify(locatorIO, times(1)).getLocators(0);
+        verifyNoMoreInteractions(locatorIO);
         verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
         verifyNoMoreInteractions(executionContext);
         assertNotNull(actual);
