@@ -209,4 +209,52 @@ public class EnumValidatorTest {
         // expect
         assertNull(validator.getDiscoveryIO());
     }
+
+    @Test
+    public void setReaderSetsReader() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
+
+        // when
+        validator.setReader(readerMock);
+
+        // then
+        assertSame(readerMock, validator.getReader());
+    }
+
+    @Test
+    public void setWriterSetsWriter() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
+
+        // when
+        validator.setWriter(writerMock);
+
+        // then
+        assertSame(writerMock, validator.getWriter());
+    }
+
+    @Test
+    public void setDiscoveryIOSetsDiscoveryIO() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertNull(validator.getDiscoveryIO());
+
+        // when
+        validator.setDiscoveryIO(discoveryIOMock);
+
+        // then
+        assertSame(discoveryIOMock, validator.getDiscoveryIO());
+    }
 }
