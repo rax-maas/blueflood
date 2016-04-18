@@ -27,6 +27,8 @@ import org.junit.Before;
 import org.junit.Test;
 import java.util.*;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -176,5 +178,35 @@ public class EnumValidatorTest {
         verify(writerMock, never()).writeExcessEnumMetric(locator1);
         verify(discoveryIOMock, times(1)).search(tenant_id, metric_name);
         verify(discoveryIOMock, times(1)).insertDiscovery(any(IMetric.class));
+    }
+
+    @Test
+    public void getReaderUninitializedReturnsDefaultInstance() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
+    }
+
+    @Test
+    public void getWriterUninitializedReturnsDefaultInstance() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
+    }
+
+    @Test
+    public void getDiscoveryIOUninitializedReturnsNull() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertNull(validator.getDiscoveryIO());
     }
 }
