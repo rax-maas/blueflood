@@ -181,7 +181,7 @@ public class ScheduleContextAreKeysRunningTest {
     }
 
     @Test
-    public void childSlotPushedBackReturnsTrue() {
+    public void childSlotPushedBackAfterClearFromRunningReturnsTrue() {
 
         // given
         ctx.update(currentTime - 2, shard);
@@ -201,6 +201,9 @@ public class ScheduleContextAreKeysRunningTest {
         // before areChildKeysOrSelfKeyScheduledOrRunning gets called, we call
         // clearFromRunning here because that method DOES remove the slot from
         // the running category.
+        // Calling clearFromRunning and pushBackToScheduled in succession like
+        // this is not normal. It is done here simply to demonstrate existing
+        // behavior.
         ctx.clearFromRunning(runningSlot);
 
         // precondition
@@ -212,6 +215,35 @@ public class ScheduleContextAreKeysRunningTest {
         // precondition
         assertEquals(1, ctx.getScheduledCount());
         assertEquals(0, ctx.getRunningCount());
+
+        // when
+        boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(otherSlotkey);
+
+        // then
+        assertTrue(areKeysRunning);
+    }
+
+    @Test
+    public void childSlotPushedBackReturnsTrue() {
+
+        // given
+        ctx.update(currentTime - 2, shard);
+        ctx.scheduleEligibleSlots(1, 7200000);
+
+        SlotKey runningSlot = ctx.getNextScheduled();
+
+        int otherSlot = Granularity.MIN_20.slot(currentTime);
+        SlotKey otherSlotkey = SlotKey.of(Granularity.MIN_20, otherSlot, shard);
+
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
+
+        ctx.pushBackToScheduled(runningSlot, false);
+
+        // precondition
+        assertEquals(1, ctx.getScheduledCount());
+        assertEquals(1, ctx.getRunningCount());
 
         // when
         boolean areKeysRunning = ctx.areChildKeysOrSelfKeyScheduledOrRunning(otherSlotkey);
