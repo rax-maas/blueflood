@@ -47,7 +47,10 @@ public class ShardStateManager {
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
     private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
 
-    private static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    // If there are no delayed metrics, a slot should only get rolled up again after 14 days since its last rollup. Since we only allow
+    // delayed data that is BEFORE_CURRENT_COLLECTIONTIME_MS (typically 3 days) old, we are assuming that if rollup happens again within
+    // that time, its a re-roll because of delayed data.
+    public static final long REROLL_TIME_SPAN_ASSUMED_VALUE = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -233,14 +236,6 @@ public class ShardStateManager {
                 // This "if" is equivalent to: 
                 //  if (current is not active) || (current is older && clean)
                 if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty()))) {
-                    // If the shard state we have is ROLLED, and the snapped millis for the last rollup time and the current update is same, then its a re-roll
-                    if (stamp.getState().equals(UpdateStamp.State.Rolled) && granularity.snapMillis(stamp.getTimestamp()) == granularity.snapMillis(timestamp)) {
-                        granToReRollMeters.get(granularity).mark();
-                        if (nowMillis - timestamp >= millisInADay) {
-                            granToDelayedMetricsMeter.get(granularity).mark();
-                        }
-                    }
-
                     slotToUpdateStampMap.put(slot, new UpdateStamp(timestamp, state, false, stamp.getLastRollupTimestamp()));
                 } else {
                     // keep rewriting the newer timestamp, in case it has been overwritten:
@@ -249,12 +244,15 @@ public class ShardStateManager {
             } else if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled)) {
                 // 2) if current value is same but value being applied is a remove, remove wins.
                 stamp.setState(UpdateStamp.State.Rolled);
+
                 //For incoming update(from metrics_state) of "Rolled" status, we use its last updated time as the last rollup time.
-                stamp.setLastRollupTimestamp(lastUpdateTimestamp);
+                if (lastUpdateTimestamp > stamp.getLastRollupTimestamp())
+                    stamp.setLastRollupTimestamp(lastUpdateTimestamp);
             } else if (state.equals(UpdateStamp.State.Rolled)) {
 
                 //For incoming update(from metrics_state) of "Rolled" status, we use its last updated time as the last rollup time.
-                stamp.setLastRollupTimestamp(lastUpdateTimestamp);
+                if (lastUpdateTimestamp > stamp.getLastRollupTimestamp())
+                    stamp.setLastRollupTimestamp(lastUpdateTimestamp);
             }
         }
 
@@ -308,6 +306,7 @@ public class ShardStateManager {
 
         protected List<Integer> getSlotsEligibleForRollup(long now, long maxAgeMillis, long delayedMetricsMaxAgeMillis) {
             List<Integer> outputKeys = new ArrayList<Integer>();
+            long nowMillis = new DateTime().getMillis();
             for (Map.Entry<Integer, UpdateStamp> entry : slotToUpdateStampMap.entrySet()) {
                 final UpdateStamp update = entry.getValue();
                 final long timeElapsed = now - update.getTimestamp();
@@ -324,14 +323,23 @@ public class ShardStateManager {
 
                     //Handling re-rolls: Re-rolls would use different delay
                     //Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS), a slot can be
-                    //identified as being re-rolled, if the last rollup is within those last 3 days. (theoretically, if
-                    //there are no delayed metrics, a slot should only get rolled again after 14 days since its last rollup)
-                    if (timeElapsedSinceLastRollup < DELAYED_METRICS_MAX_ALLOWED_DELAY &&
-                            timeElapsed <= delayedMetricsMaxAgeMillis) {
-                        log.debug(String.format("Delaying rollup for shard:[%s], slotState:(%s,%s,%s) as [%d] millis " +
-                                                "havent elapsed since last rollup:[%d]", shard, granularity, entry.getKey(),
-                                                update.getState().code(), delayedMetricsMaxAgeMillis, update.getLastRollupTimestamp()));
-                        continue;
+                    //identified as being re-rolled, if the last rollup is within those last 3 days.
+                    if (timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
+
+                        if (timeElapsed <= delayedMetricsMaxAgeMillis) {
+
+                            SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
+                            log.debug(String.format("Delaying re-roll of slotKey [%s] as [%d] millis haven't elapsed " +
+                                    "since collection time:[%d] now: [%d], last rollup time: [%d]", slotKey,
+                                    delayedMetricsMaxAgeMillis, update.getTimestamp(), now, update.getLastRollupTimestamp()));
+                            continue;
+                        } else {
+
+                            granToReRollMeters.get(granularity).mark();
+                            if (nowMillis - update.getTimestamp() >= millisInADay) {
+                                granToDelayedMetricsMeter.get(granularity).mark();
+                            }
+                        }
                     }
                 }
 

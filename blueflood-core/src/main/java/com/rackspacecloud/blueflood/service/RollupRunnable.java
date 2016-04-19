@@ -83,7 +83,7 @@ public class RollupRunnable implements Runnable {
             return; // no work to be done.
         }
 
-        if (log.isDebugEnabled()) {
+        if (log.isTraceEnabled()) {
             log.trace("Executing rollup from {} for {} {}", new Object[] {
                     srcGran.shortName(),
                     singleRollupReadContext.getRange().toString(),

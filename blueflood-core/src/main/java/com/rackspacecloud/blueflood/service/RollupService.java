@@ -266,8 +266,17 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 final SlotKey slotKey = context.getNextScheduled();
                 if (slotKey == null) { continue; }
                 try {
-                    log.debug("Scheduling slotKey {} @ {}", slotKey, context.getCurrentTimeMillis());
-                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors, rollupWriteExecutors, enumValidatorExecutor));
+                    UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
+                    long currentTimeMillis = context.getCurrentTimeMillis();
+                    final long timeElapsedSinceLastRollup = currentTimeMillis - stamp.getLastRollupTimestamp();
+                    boolean isReroll = timeElapsedSinceLastRollup < ShardStateManager.REROLL_TIME_SPAN_ASSUMED_VALUE;
+                    log.info("Scheduling slotKey {} @ {} last ingest: {} last rollup time: {} isReroll: {}",
+                            new Object[]{slotKey, currentTimeMillis, stamp.getTimestamp(),
+                                    stamp.getLastRollupTimestamp(), isReroll});
+
+                    locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors,
+                            rollupWriteExecutors, enumValidatorExecutor));
+
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that
                     // there is too much rollup work to do. if the CPU cores are not tapped out, it means you don't

@@ -117,4 +117,44 @@ public class ScheduleContextClearFromRunningTest {
         Assert.assertTrue(stamp.isDirty());
         Assert.assertEquals("last rollup time", 0, stamp.getLastRollupTimestamp());
     }
+
+    @Test
+    public void testClearFromRunningSetsLastRollupTime() {
+
+        // given
+        SlotKey next = ctx.getNextScheduled();
+
+        // when
+        ctx.clearFromRunning(next);
+
+        // then
+        UpdateStamp stamp = mgr.getUpdateStamp(next);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Rolled, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", lastRollupTime, stamp.getLastRollupTimestamp());
+    }
+
+    @Test
+    public void testClearFromRunningSetsLastRollupTimeEvenWhenSlotBecomesActive() {
+        //slot became active before Rolled state can be saved to db because of delayed metric.
+
+        // given
+        SlotKey next = ctx.getNextScheduled();
+
+        UpdateStamp stamp = mgr.getUpdateStamp(SlotKey.of(gran, slot, shard));
+        stamp.setState(UpdateStamp.State.Active); //delayed metric changed state to Active
+
+        // when
+        ctx.clearFromRunning(next);
+
+        // then
+        stamp = mgr.getUpdateStamp(next);
+        Assert.assertNotNull(stamp);
+        Assert.assertEquals(UpdateStamp.State.Active, stamp.getState());
+        Assert.assertEquals(updateTime, stamp.getTimestamp());
+        Assert.assertTrue(stamp.isDirty());
+        Assert.assertEquals("last rollup time", lastRollupTime, stamp.getLastRollupTimestamp());
+    }
 }

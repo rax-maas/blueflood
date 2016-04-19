@@ -336,6 +336,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // no need to set dirty/clean here.
                 shardStateManager.getSlotStateManager(shard, gran).getAndSetState(slot, UpdateStamp.State.Active);
                 scheduledSlots.add(key);
+                log.debug("pushBackToScheduled -> added to scheduledSlots: " + key + " size:" + scheduledSlots.size());
                 if (rescheduleImmediately) {
                     orderedScheduledSlots.add(0, key);
                 } else {
@@ -357,6 +358,13 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
             UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
             shardStateManager.setAllCoarserSlotsDirtyForSlot(slotKey);
 
+            //When state gets set to "X", before it got persisted, it might get scheduled for rollup
+            //again, if we get delayed metrics. To prevent this we temporarily set last rollup time with current
+            //time. This value wont get persisted.
+            long currentTimeInMillis = clock.now().getMillis();
+            stamp.setLastRollupTimestamp(currentTimeInMillis);
+            log.debug("SlotKey {} is marked in memory with last rollup time as {}", slotKey, currentTimeInMillis);
+
             // Update the stamp to Rolled state if and only if the current state
             // is running. If the current state is active, it means we received
             // a delayed put which toggled the status to Active.
@@ -365,11 +373,6 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // Note: Rollup state will be updated to the last ACTIVE
                 // timestamp which caused rollup process to kick in.
                 stamp.setDirty(true);
-
-                //When state gets set to "X", before it got persisted, it might get scheduled for rollup
-                //again, if we get delayed metrics. To prevent this we temporarily set last rollup time with current
-                //time. This value wont get persisted.
-                stamp.setLastRollupTimestamp(clock.now().getMillis());
             }
         }
     }
