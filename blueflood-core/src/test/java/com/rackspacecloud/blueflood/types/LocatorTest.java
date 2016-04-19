@@ -147,6 +147,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void isValidDBKeyThrowsExceptionOnNullDbKey() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = new Locator();  // the method is not static, so we have to create an instance
@@ -160,6 +161,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void isValidDBKeyThrowsExceptionOnNullDelim() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = new Locator();  // the method is not static, so we have to create an instance
@@ -328,6 +330,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void equals2ThisNullStringRepThrowsException() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = new Locator();
@@ -353,6 +356,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void equals2OtherNullThrowsException() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = Locator.createLocatorFromDbKey("a.b.c");
@@ -366,6 +370,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void compareToOtherNullThrowsException() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = Locator.createLocatorFromDbKey("a.b.c");
@@ -379,6 +384,7 @@ public class LocatorTest {
 
     @Test(expected = NullPointerException.class)
     public void compareToThisNullStringRepThrowsException() {
+        // TODO: This is incorrect behavior. The test is merely documenting it. It should be fixed in the future.
 
         // given
         Locator locator = new Locator();
