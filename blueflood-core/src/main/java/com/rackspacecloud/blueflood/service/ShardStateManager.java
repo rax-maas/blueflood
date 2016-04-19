@@ -47,7 +47,10 @@ public class ShardStateManager {
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
     private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
 
-    public static final long DELAYED_METRICS_MAX_ALLOWED_DELAY = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    // If there are no delayed metrics, a slot should only get rolled up again after 14 days since its last rollup. Since we only allow
+    // delayed data that is BEFORE_CURRENT_COLLECTIONTIME_MS (typically 3 days) old, we are assuming that if rollup happens again within
+    // that time, its a re-roll because of delayed data.
+    public static final long REROLL_TIME_SPAN_ASSUMED_VALUE = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -320,9 +323,8 @@ public class ShardStateManager {
 
                     //Handling re-rolls: Re-rolls would use different delay
                     //Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS), a slot can be
-                    //identified as being re-rolled, if the last rollup is within those last 3 days. (theoretically, if
-                    //there are no delayed metrics, a slot should only get rolled again after 14 days since its last rollup)
-                    if (timeElapsedSinceLastRollup < DELAYED_METRICS_MAX_ALLOWED_DELAY) {
+                    //identified as being re-rolled, if the last rollup is within those last 3 days.
+                    if (timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
 
                         if (timeElapsed <= delayedMetricsMaxAgeMillis) {
 
