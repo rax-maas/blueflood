@@ -323,7 +323,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
-    public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
+    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws ConnectionException {
         if (writeContexts.size() == 0) {
             return;
         }

@@ -16,46 +16,71 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
+import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
+import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.Rollup;
-import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
- * This is base class of all MetricsIO classes that deals with persisting/reading
+ * This is base class of all MetricsRW classes that deals with persisting/reading
  * data from metrics_{granularity} and metrics_preaggregated_{granularity} column
  * family. This contains some utility methods used/shared amongst various
- * implementation/subclasses of MetricsIO.
+ * implementation/subclasses of MetricsRW.
  */
 public abstract class AbstractMetricsRW implements MetricsRW {
 
-    /**
-     * The key of the metrics_preaggregated_* Column Families
-     */
-    public static final String KEY = "key";
+    protected static final MetadataCache metadataCache = MetadataCache.getInstance();
+
+    protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
+
+    // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
+    // seen within the last 10 minutes, don't bother.
+    protected static final Cache<String, Boolean> insertedLocators =
+            CacheBuilder.newBuilder().expireAfterAccess(10,
+                        TimeUnit.MINUTES).concurrencyLevel(16).build();
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractMetricsRW.class);
 
     /**
-     * The name of the first column
+     * Checks if Locator is recently inserted
+     *
+     * @param loc
+     * @return
      */
-    public static final String COLUMN1 = "column1";
+    protected boolean isLocatorCurrent(Locator loc) {
+        return insertedLocators.getIfPresent(loc.toString()) != null;
+    }
 
     /**
-     * The name of the value column
+     * Marks the Locator as recently inserted
+     * @param loc
      */
-    public static final String VALUE = "value";
+    protected void setLocatorCurrent(Locator loc) {
+        insertedLocators.put(loc.toString(), Boolean.TRUE);
+    }
 
+    /**
+     * Convert a collection of {@link com.rackspacecloud.blueflood.types.IMetric}
+     * to a {@link com.google.common.collect.Multimap}
+     *
+     * @param metrics
+     * @return
+     */
     protected Multimap<Locator, IMetric> asMultimap(Collection<IMetric> metrics) {
         Multimap<Locator, IMetric> map = LinkedListMultimap.create();
         for (IMetric metric: metrics)
@@ -63,17 +88,82 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         return map;
     }
 
-    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws IOException {
+    /**
+     * For a particular {@link com.rackspacecloud.blueflood.types.Locator}, get
+     * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
+     *
+     * @param locator
+     * @param dataTypeCacheKey
+     * @return
+     * @throws CacheException
+     */
+    protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
+        String meta = metadataCache.get(locator, dataTypeCacheKey);
+        if (meta != null) {
+            return new DataType(meta);
+        }
+        return DataType.NUMERIC;
     }
 
-    public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
-        return null;
+    // TODO: can this move to MetadataCache?
+    protected String getUnitString(Locator locator) {
+        String unitString = Util.UNKNOWN;
+        // Only grab units from cassandra, if we have to
+        if (!Util.shouldUseESForUnits()) {
+            try {
+                unitString = metadataCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
+            } catch (CacheException ex) {
+                LOG.warn("Cache exception reading unitString from MetadataCache: ", ex);
+            }
+            if (unitString == null) {
+                unitString = Util.UNKNOWN;
+            }
+        }
+        return unitString;
     }
 
-    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
-        return null;
+    /**
+     * Gets the TTL for a particular locator, rollupType and granularity.
+     *
+     * @param locator
+     * @param rollupType
+     * @param granularity
+     * @return
+     */
+    protected int getTtl(Locator locator, RollupType rollupType, Granularity granularity) {
+        try {
+            return (int) TTL_PROVIDER.getTTL(locator.getTenantId(),
+                    granularity,
+                    rollupType).toSeconds();
+        } catch (Exception ex) {
+            LOG.warn(String.format("error getting TTL for locator %s, granularity %s, defaulting to safe TTL", locator, granularity), ex);
+            return (int) SafetyTtlProvider.getInstance().getSafeTTL(granularity, rollupType).toSeconds();
+        }
     }
-    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName) {
-        return null;
+
+    /**
+     * Converts the map of timestamp -> {@link Rollup} to
+     * {@link Points} object
+     *
+     * @param timestampToRollupMap  a map of timestamp to rollup
+     * @return
+     */
+    protected <T extends Rollup> Points<T> convertToPoints(final Map<Long, T> timestampToRollupMap) {
+        Points<T> rollupPoints =  new Points<T>();
+        for (Map.Entry<Long, T> rollup : timestampToRollupMap.entrySet() ) {
+            rollupPoints.add(new Points.Point<T>(rollup.getKey(), rollup.getValue()));
+        }
+        return rollupPoints;
     }
+
+    /**
+     * Inserts a collection of rolled up metrics to the metrics_preaggregated_{granularity} column family.
+     * Only our tests should call this method. Services should call either insertMetrics(Collection metrics)
+     * or insertRollups()
+     *
+     * @param metrics
+     * @throws IOException
+     */
+    @VisibleForTesting
+    public abstract void insertMetrics(Collection<IMetric> metrics, Granularity granularity) throws IOException;
 }
