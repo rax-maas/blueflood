@@ -196,7 +196,17 @@ public class ScheduleContextAreKeysRunningTest {
         assertEquals(0, ctx.getScheduledCount());
         assertEquals(1, ctx.getRunningCount());
 
+        // NOTE: pushBackToScheduled does not remove a slot from the running
+        // count. In order to get the ScheduleContext into the proper state
+        // before areChildKeysOrSelfKeyScheduledOrRunning gets called, we call
+        // clearFromRunning here because that method DOES remove the slot from
+        // the running category.
         ctx.clearFromRunning(runningSlot);
+
+        // precondition
+        assertEquals(0, ctx.getScheduledCount());
+        assertEquals(0, ctx.getRunningCount());
+
         ctx.pushBackToScheduled(runningSlot, false);
 
         // precondition
