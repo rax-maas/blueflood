@@ -338,9 +338,9 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
                 MetricData metricData = new MetricData(points, getUnitString(locator), outputType);
                 locatorMetricDataMap.put(locator, metricData);
 
-            } catch (Exception ex) {
+            } catch (CacheException ex) {
                 Instrumentation.markReadError();
-                LOG.error(String.format("error reading preaggregated metric for locator %s, granularity %s",
+                LOG.error(String.format("error getting dataType for locator %s, granularity %s",
                         locator, granularity), ex);
             }
         }

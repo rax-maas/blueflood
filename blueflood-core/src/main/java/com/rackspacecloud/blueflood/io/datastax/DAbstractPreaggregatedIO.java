@@ -58,19 +58,19 @@ public abstract class DAbstractPreaggregatedIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(DAbstractPreaggregatedIO.class);
 
-    protected PreparedStatement insertToMetricsPreaggrFullStatement;
-    protected PreparedStatement insertToMetricsPreaggr5MStatement;
-    protected PreparedStatement insertToMetricsPreaggr20MStatement;
-    protected PreparedStatement insertToMetricsPreaggr60MStatement;
-    protected PreparedStatement insertToMetricsPreaggr240MStatement;
-    protected PreparedStatement insertToMetricsPreaggr1440MStatement;
+    protected final PreparedStatement insertToMetricsPreaggrFullStatement;
+    protected final PreparedStatement insertToMetricsPreaggr5MStatement;
+    protected final PreparedStatement insertToMetricsPreaggr20MStatement;
+    protected final PreparedStatement insertToMetricsPreaggr60MStatement;
+    protected final PreparedStatement insertToMetricsPreaggr240MStatement;
+    protected final PreparedStatement insertToMetricsPreaggr1440MStatement;
 
-    private PreparedStatement selectFromMetricsPreaggrFullForRangeStatement;
-    private PreparedStatement selectFromMetricsPreaggr5MForRangeStatement;
-    private PreparedStatement selectFromMetricsPreaggr20MForRangeStatement;
-    private PreparedStatement selectFromMetricsPreaggr60MForRangeStatement;
-    private PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
-    private PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggrFullForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggr5MForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggr20MForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggr60MForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
+    private final PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
 
     protected Session session;
     protected Map<String, PreparedStatement> cfNameToSelectStatement;
@@ -191,17 +191,10 @@ public abstract class DAbstractPreaggregatedIO {
 
         for (Map.Entry<Locator, List<ResultSetFuture>> entry : resultSetFuturesMap.entrySet() ) {
             Locator locator = entry.getKey();
-            try {
-                List<ResultSetFuture> futures = entry.getValue();
+            List<ResultSetFuture> futures = entry.getValue();
 
-                Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
-                locatorTimestampRollup.putAll(result);
-            } catch (Exception ex) {
-                Instrumentation.markReadError();
-                LOG.error(String.format("error querying rollup from column family %s for locator %s, range %s",
-                                            columnFamily,
-                                            locator, range), ex);
-            }
+            Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
+            locatorTimestampRollup.putAll(result);
         }
         return locatorTimestampRollup;
     }
@@ -324,7 +317,7 @@ public abstract class DAbstractPreaggregatedIO {
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();
-                LOG.error(String.format("Execution error reading preaggregated metric for locator %s, granularity %s",
+                LOG.error(String.format("error reading preaggregated metric for locator %s, granularity %s",
                         locator, granularity), ex);
             }
         }

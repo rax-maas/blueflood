@@ -122,14 +122,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
      * @return
      */
     protected Object getGranularitiesToTest() {
-        return new Object[] {
-                Granularity.FULL,
-                Granularity.MIN_5,
-                Granularity.MIN_20,
-                Granularity.MIN_60,
-                Granularity.MIN_240,
-                Granularity.MIN_1440
-        };
+        return Granularity.granularities();
     }
 
     /**
@@ -222,7 +215,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             List<SingleRollupWriteContext> writeContexts = toWriteContext(expectedLocatorMetricMap, granularity);
             datastaxMetricsRW.insertRollups(writeContexts);
 
-            // read with datastax
             List<Locator> locators = new ArrayList<Locator>() {{
                 addAll(expectedLocatorMetricMap.keySet());
             }};
@@ -531,11 +523,12 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             // insert it
             datastaxMetricsRW.insertMetrics(Lists.newArrayList(expectedMetric));
 
-            Thread.sleep(1000);
+            //Thread.sleep(2000);
 
             LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
             long shard = Util.getShard(locator.toString());
             Collection<Locator> locators = locatorIO.getLocators(shard);
+            System.out.println("locators for shard " + shard + ": " + locators.toString());
             Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
         }
 
