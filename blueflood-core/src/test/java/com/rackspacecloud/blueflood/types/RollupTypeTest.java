@@ -163,4 +163,60 @@ public class RollupTypeTest {
         // then
         // the error is thrown
     }
+
+    @Test
+    public void fromRollupTypeClassSimpleNumberYieldsBasic() {
+        assertEquals(RollupType.BF_BASIC, RollupType.fromRollupTypeClass(SimpleNumber.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBasicRollupYieldsBasic() {
+        assertEquals(RollupType.BF_BASIC, RollupType.fromRollupTypeClass(BasicRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBluefloodCounterRollupYieldsCounter() {
+        assertEquals(RollupType.COUNTER, RollupType.fromRollupTypeClass(BluefloodCounterRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBluefloodSetRollupYieldsSet() {
+        assertEquals(RollupType.SET, RollupType.fromRollupTypeClass(BluefloodSetRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBluefloodTimerRollupYieldsSet() {
+        assertEquals(RollupType.TIMER, RollupType.fromRollupTypeClass(BluefloodTimerRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBluefloodGaugeRollupYieldsSet() {
+        assertEquals(RollupType.GAUGE, RollupType.fromRollupTypeClass(BluefloodGaugeRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassBluefloodEnumRollupYieldsSet() {
+        assertEquals(RollupType.ENUM, RollupType.fromRollupTypeClass(BluefloodEnumRollup.class));
+    }
+
+    @Test
+    public void fromRollupTypeClassHistogramRollupYieldsSet() {
+        assertEquals(RollupType.BF_HISTOGRAMS, RollupType.fromRollupTypeClass(HistogramRollup.class));
+    }
+
+    @Test(expected = Error.class)
+    public void fromRollupTypeClassCustomSubclassThrowsError() {
+        // when
+        RollupType.fromRollupTypeClass(DummyRollup.class);
+        // then
+        // the error is thrown
+    }
+
+    @Test(expected = Error.class)
+    public void fromRollupTypeClassMetricThrowsError() {
+        // when
+        RollupType.fromRollupTypeClass(MetricImplementsRollup.class);
+        // then
+        // the error is thrown
+    }
 }
