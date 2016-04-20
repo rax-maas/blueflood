@@ -27,19 +27,22 @@ import org.junit.Before;
 import org.junit.Test;
 import java.util.*;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class EnumValidatorTest {
 
-    AstyanaxReader readerMock = mock(AstyanaxReader.class);
-    AstyanaxWriter writerMock = mock(AstyanaxWriter.class);
-    DiscoveryIO discoveryIOMock = mock(DiscoveryIO.class);
+    final String tenant_id = "tenant1";
+    final String metric_name = "metric1";
 
-    String tenant_id = "tenant1";
-    String metric_name = "metric1";
-    Locator locator1 = Locator.createLocatorFromPathComponents(tenant_id, metric_name);
+    Locator locator1;
     HashSet<Locator> locators;
+
+    AstyanaxReader readerMock;
+    AstyanaxWriter writerMock;
+    DiscoveryIO discoveryIOMock;
 
     @Before
     public void setup() {
@@ -47,8 +50,14 @@ public class EnumValidatorTest {
         System.setProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD.name(), "3");
 
         // set locators
+        locator1 = Locator.createLocatorFromPathComponents(tenant_id, metric_name);
         locators = new HashSet<Locator>();
         locators.add(locator1);
+
+        // set up mocks
+        readerMock = mock(AstyanaxReader.class);
+        writerMock = mock(AstyanaxWriter.class);
+        discoveryIOMock = mock(DiscoveryIO.class);
     }
 
     @After
@@ -169,5 +178,83 @@ public class EnumValidatorTest {
         verify(writerMock, never()).writeExcessEnumMetric(locator1);
         verify(discoveryIOMock, times(1)).search(tenant_id, metric_name);
         verify(discoveryIOMock, times(1)).insertDiscovery(any(IMetric.class));
+    }
+
+    @Test
+    public void getReaderUninitializedReturnsDefaultInstance() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
+    }
+
+    @Test
+    public void getWriterUninitializedReturnsDefaultInstance() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
+    }
+
+    @Test
+    public void getDiscoveryIOUninitializedReturnsNull() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // expect
+        assertNull(validator.getDiscoveryIO());
+    }
+
+    @Test
+    public void setReaderSetsReader() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
+
+        // when
+        validator.setReader(readerMock);
+
+        // then
+        assertSame(readerMock, validator.getReader());
+    }
+
+    @Test
+    public void setWriterSetsWriter() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
+
+        // when
+        validator.setWriter(writerMock);
+
+        // then
+        assertSame(writerMock, validator.getWriter());
+    }
+
+    @Test
+    public void setDiscoveryIOSetsDiscoveryIO() {
+
+        // given
+        EnumValidator validator = new EnumValidator(null);
+
+        // precondition
+        assertNull(validator.getDiscoveryIO());
+
+        // when
+        validator.setDiscoveryIO(discoveryIOMock);
+
+        // then
+        assertSame(discoveryIOMock, validator.getDiscoveryIO());
     }
 }
