@@ -1,11 +1,14 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.io.Constants;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 public class BluefloodCounterRollupTest {
@@ -170,5 +173,85 @@ public class BluefloodCounterRollupTest {
         assertNull(rollup.getCount());
         assertEquals(0.0d, rollup.getRate(), 0.000001d);
         assertEquals(0, rollup.getSampleCount());
+    }
+
+    @Test
+    public void withCountIntegerSetsCount() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertNull(rollup.getCount());
+        // when
+        rollup.withCount(123);
+        // then
+        Number value = rollup.getCount();
+        assertThat(value, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(123L, value.longValue());
+    }
+
+    @Test
+    public void withCountLongSetsCount() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertNull(rollup.getCount());
+        // when
+        rollup.withCount(123L);
+        // then
+        Number value = rollup.getCount();
+        assertThat(value, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(123L, value.longValue());
+    }
+
+    @Test
+    public void withCountFloatSetsCount() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertNull(rollup.getCount());
+        // when
+        rollup.withCount(123.45f);
+        // then
+        Number value = rollup.getCount();
+        assertThat(value, is(CoreMatchers.<Number>instanceOf(Double.class)));
+        assertEquals(123.45d, value.doubleValue(), 0.00001d);
+    }
+
+    @Test
+    public void withCountDoubleSetsCount() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertNull(rollup.getCount());
+        // when
+        rollup.withCount(123.45d);
+        // then
+        Number value = rollup.getCount();
+        assertThat(value, is(CoreMatchers.<Number>instanceOf(Double.class)));
+        assertEquals(123.45d, value.doubleValue(), 0.00001d);
+    }
+
+    @Test
+    public void withRateSetsRate() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertEquals(0.0d, rollup.getRate(), 0.00001d);
+        // when
+        rollup.withRate(123.45d);
+        // then
+        assertEquals(123.45d, rollup.getRate(), 0.00001d);
+    }
+
+    @Test
+    public void withSampleCountSetsSampleCount() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // precondition
+        assertEquals(0, rollup.getSampleCount());
+        // when
+        rollup.withSampleCount(123);
+        // then
+        assertEquals(123, rollup.getSampleCount());
     }
 }
