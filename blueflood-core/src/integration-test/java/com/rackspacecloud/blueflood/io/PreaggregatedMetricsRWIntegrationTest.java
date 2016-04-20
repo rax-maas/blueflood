@@ -523,12 +523,9 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             // insert it
             datastaxMetricsRW.insertMetrics(Lists.newArrayList(expectedMetric));
 
-            //Thread.sleep(2000);
-
             LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
             long shard = Util.getShard(locator.toString());
             Collection<Locator> locators = locatorIO.getLocators(shard);
-            System.out.println("locators for shard " + shard + ": " + locators.toString());
             Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
         }
 

@@ -48,8 +48,8 @@ public abstract class AbstractMetricsRW implements MetricsRW {
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
 
-    // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
-    // seen within the last 10 minutes, don't bother.
+    // this collection is used to reduce the number of locators that get written.
+    // Simply, if a locator has been seen within the last 10 minutes, don't bother.
     protected static final Cache<String, Boolean> insertedLocators =
             CacheBuilder.newBuilder().expireAfterAccess(10,
                         TimeUnit.MINUTES).concurrencyLevel(16).build();
@@ -62,7 +62,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @param loc
      * @return
      */
-    protected boolean isLocatorCurrent(Locator loc) {
+    protected synchronized boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
@@ -70,7 +70,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * Marks the Locator as recently inserted
      * @param loc
      */
-    protected void setLocatorCurrent(Locator loc) {
+    protected synchronized void setLocatorCurrent(Locator loc) {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
