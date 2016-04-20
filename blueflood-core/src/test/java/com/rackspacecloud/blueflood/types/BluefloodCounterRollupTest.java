@@ -6,10 +6,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BluefloodCounterRollupTest {
     private static final Random random = new Random(72262L);
@@ -163,5 +160,15 @@ public class BluefloodCounterRollupTest {
         BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
         //when
         assertTrue(a.equals(b));
+    }
+
+    @Test
+    public void constructorSetsInitialValues() {
+        // when
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // then
+        assertNull(rollup.getCount());
+        assertEquals(0.0d, rollup.getRate(), 0.000001d);
+        assertEquals(0, rollup.getSampleCount());
     }
 }
