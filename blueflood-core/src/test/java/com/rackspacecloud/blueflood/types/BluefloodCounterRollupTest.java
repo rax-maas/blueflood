@@ -8,6 +8,8 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class BluefloodCounterRollupTest {
     private static final Random random = new Random(72262L);
@@ -91,5 +93,75 @@ public class BluefloodCounterRollupTest {
         long sum = sum(numbers);
         double rate = (double)sum / (double)(Constants.DEFAULT_SAMPLE_INTERVAL * numbers.length);
         return new BluefloodCounterRollup().withCount(count).withRate(rate).withSampleCount(numbers.length);
+    }
+
+    @Test
+    public void equalsOtherNullReturnsFalse() {
+        //given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        //when
+        assertFalse(rollup.equals(null));
+    }
+
+    @Test
+    public void equalsOtherNotRollupReturnsFalse() {
+        //given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        //when
+        assertFalse(rollup.equals(""));
+    }
+
+    @Test
+    public void equalsDifferentCountReturnsFalse() {
+        //given
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1);
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(2);
+        //when
+        assertFalse(a.equals(b));
+    }
+
+    @Test
+    public void equalsSameCountReturnsFalse() {
+        //given
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1);
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1);
+        //when
+        assertTrue(a.equals(b));
+    }
+
+    @Test
+    public void equalsDifferentRateReturnsFalse() {
+        //given
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withRate(1.0d);
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withRate(2.0d);
+        //when
+        assertFalse(a.equals(b));
+    }
+
+    @Test
+    public void equalsSameRateReturnsFalse() {
+        //given
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withRate(1.0d);
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withRate(1.0d);
+        //when
+        assertTrue(a.equals(b));
+    }
+
+    @Test
+    public void equalsDifferentSampleCountReturnsFalse() {
+        //given
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withSampleCount(2);
+        //when
+        assertFalse(a.equals(b));
+    }
+
+    @Test
+    public void equalsSameSampleCountReturnsFalse() {
+        //given
+        BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
+        BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
+        //when
+        assertTrue(a.equals(b));
     }
 }
