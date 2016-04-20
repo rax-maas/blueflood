@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.codahale.metrics.Timer;
-import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ListMultimap;
@@ -28,8 +27,6 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
 import com.netflix.astyanax.model.*;
-import com.netflix.astyanax.query.RowQuery;
-import com.netflix.astyanax.recipes.reader.AllRowsReader;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
@@ -539,42 +536,6 @@ public class AstyanaxReader extends AstyanaxIO {
         else
             // this works for EVERYTHING except SimpleNumber.
             return new Points.Point(column.getName(), column.getValue(serializer));
-    }
-
-
-
-    /**
-     * Gets all the ExcessEnum Metrics Locators
-     *
-     */
-    public Set<Locator> getExcessEnumMetrics() throws Exception{
-        final Set<Locator> excessEnumMetrics = new HashSet<Locator>();
-        Function<Row<Locator, Long>, Boolean> rowFunction = new Function<Row<Locator, Long>, Boolean>() {
-            @Override
-            public Boolean apply(Row<Locator, Long> row) {
-                excessEnumMetrics.add(row.getKey());
-                return true;
-            }
-        };
-
-        ColumnFamily CF = CassandraModel.CF_METRICS_EXCESS_ENUMS;
-        Timer.Context ctx = Instrumentation.getBatchReadTimerContext(CF.getName());
-        try {
-            // Get all the Row Keys
-            new AllRowsReader.Builder<Locator, Long>(keyspace, CassandraModel.CF_METRICS_EXCESS_ENUMS)
-                    .withColumnRange(null, null, false, 0)
-                    .forEachRow(rowFunction)
-                    .build()
-                    .call();
-        } catch (ConnectionException e) {
-            log.error("Error reading ExcessEnum Metrics Table", e);
-            Instrumentation.markReadError(e);
-            Instrumentation.markExcessEnumReadError();
-            throw new RuntimeException(e);
-        } finally {
-            ctx.stop();
-        }
-        return excessEnumMetrics;
     }
 
     private <T extends Rollup> Points<T> transformEnumValueHashesToStrings(MetricData metricData, ColumnList<Long> enumvalues) {

@@ -16,11 +16,11 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.IOContainer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Locator;
 
@@ -31,7 +31,7 @@ public class ExcessEnumsReaderIntegrationTest extends IntegrationTestBase {
 
     @Before
     public void setUp() throws Exception {
-        AstyanaxWriter.getInstance().writeExcessEnumMetric(dummyLocator);
+        IOContainer.fromConfig().getExcessEnumIO().insertExcessEnumMetric(dummyLocator);
     }
 
 

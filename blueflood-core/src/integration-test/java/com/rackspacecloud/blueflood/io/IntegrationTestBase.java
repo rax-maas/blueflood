@@ -129,6 +129,24 @@ public class IntegrationTestBase {
         // meh
     }
 
+    /**
+     * create a number of test locators of numTenants x numMetricNames combination
+     * @param numTenants
+     * @param numMetricNames
+     * @return list of locators for testing
+     */
+    protected List<Locator> generateTestLocators(String tenantIdPrefix, int numTenants, String metricNamePrefix, int numMetricNames) {
+
+        List<Locator> locators = new ArrayList<Locator>();
+        for (int i = 1; i <= numTenants; i++) {
+            for (int j = 1; j <= numMetricNames; j++) {
+                locators.add(Locator.createLocatorFromPathComponents(tenantIdPrefix + i, metricNamePrefix + j));
+            }
+        }
+
+        return locators;
+    }
+
     protected Metric writeMetric(String name, Object value) throws Exception {
         final List<Metric> metrics = new ArrayList<Metric>();
         final Locator locator = Locator.createLocatorFromPathComponents("acctId", name);
