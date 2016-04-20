@@ -526,13 +526,15 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
 
             // pick first locator from input metrics
             Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
-            long shard = Util.getShard(locator.toString());
             IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
 
             // insert it
             datastaxMetricsRW.insertMetrics(Lists.newArrayList(expectedMetric));
 
+            Thread.sleep(1000);
+
             LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+            long shard = Util.getShard(locator.toString());
             Collection<Locator> locators = locatorIO.getLocators(shard);
             Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
         }
