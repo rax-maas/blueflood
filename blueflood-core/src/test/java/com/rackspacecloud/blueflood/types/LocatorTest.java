@@ -307,6 +307,17 @@ public class LocatorTest {
     }
 
     @Test
+    public void equalsThisNullThrowsException() {
+
+        // given
+        Locator locator = new Locator();
+        Locator other = Locator.createLocatorFromDbKey("a.b.d");
+
+        // expect
+        assertFalse(locator.equals((Object)other));
+    }
+
+    @Test
     public void equalsOtherNullThrowsException() {
 
         // given
