@@ -156,6 +156,18 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         this(currentTimeMillis, managedShards, new DefaultClockImpl());
         registerMBean();
     }
+    @VisibleForTesting
+    public ScheduleContext(long currentTimeMillis,
+                           Collection<Integer> managedShards,
+                           Clock clock,
+                           ShardStateManager shardStateManager,
+                           ShardLockManager shardLockManager) {
+        this.scheduleTime = currentTimeMillis;
+        this.shardStateManager = shardStateManager;
+        this.lockManager = shardLockManager;
+        this.clock = clock;
+        registerMBean();
+    }
 
     public void setCurrentTimeMillis(long millis){ scheduleTime = millis; }
     public long getCurrentTimeMillis() { return scheduleTime; }
@@ -252,17 +264,23 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
     }
 
-    private boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
+    boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();
 
-        if (runningSlots.keySet().contains(slotKey) || scheduledSlots.contains(slotKey)) {
+        if (runningSlots.keySet().contains(slotKey)) {
+            return true;
+        }
+        if (scheduledSlots.contains(slotKey)) {
             return true;
         }
 
         // if any ineligible keys are running or scheduled to run, do not schedule this key.
         for (SlotKey childrenKey : ineligibleKeys) {
-            if (runningSlots.keySet().contains(childrenKey) || scheduledSlots.contains(childrenKey)) {
+            if (runningSlots.keySet().contains(childrenKey)) {
+                return true;
+            }
+            if (scheduledSlots.contains(childrenKey)) {
                 return true;
             }
         }
