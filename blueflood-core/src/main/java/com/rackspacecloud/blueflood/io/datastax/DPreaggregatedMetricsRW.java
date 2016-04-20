@@ -71,8 +71,6 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
     @Override
     public void insertMetrics(Collection<IMetric> metrics) throws IOException {
         insertMetrics(metrics, Granularity.FULL);
-
-        // TODO: insert locator
     }
 
     /**
@@ -87,7 +85,8 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
     @Override
     public void insertMetrics(Collection<IMetric> metrics,
                                  Granularity granularity) throws IOException {
-        Timer.Context ctx = Instrumentation.getWriteTimerContext(granularity.name());
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(
+                                CassandraModel.getPreaggregatedColumnFamilyName(granularity));
         try {
             Map<ResultSetFuture, Locator> futureLocatorMap = new HashMap<ResultSetFuture, Locator>();
             Multimap<Locator, IMetric> map = asMultimap(metrics);
@@ -202,16 +201,21 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
                                                         RollupType rollupType,
                                                         Range range,
                                                         String columnFamilyName) throws IOException {
-        // read the rollup object from the proper IO class
-        DAbstractPreaggregatedIO io = rollupTypeToIO.get(rollupType);
-        Table<Locator, Long, Rollup> locatorTimestampRollup = io.getRollupsForLocator(locator, columnFamilyName, range);
+        Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamilyName);
+        try {
+            // read the rollup object from the proper IO class
+            DAbstractPreaggregatedIO io = rollupTypeToIO.get(rollupType);
+            Table<Locator, Long, Rollup> locatorTimestampRollup = io.getRollupsForLocator(locator, columnFamilyName, range);
 
-        // transform them to Points
-        Points<T> points = new Points<T>();
-        for (Table.Cell<Locator, Long, Rollup> cell : locatorTimestampRollup.cellSet()) {
-            points.add(new Points.Point<T>(cell.getColumnKey(), (T) cell.getValue()));
+            // transform them to Points
+            Points<T> points = new Points<T>();
+            for (Table.Cell<Locator, Long, Rollup> cell : locatorTimestampRollup.cellSet()) {
+                points.add(new Points.Point<T>(cell.getColumnKey(), (T) cell.getValue()));
+            }
+            return points;
+        } finally {
+            ctx.stop();
         }
-        return points;
     }
 
     /**
@@ -246,45 +250,52 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators,
                                                           Range range,
                                                           Granularity granularity) throws IOException {
-        // in this loop, we will fire all the executeAsync() of
-        // various select statements, the collect all of the
-        // ResultSetFutures
-        Map<Locator, List<ResultSetFuture>> locatorToFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
-        Map<Locator, RollupType> locatorRollupTypeMap = new HashMap<Locator, RollupType>();
-        for (Locator locator : locators) {
-            try {
-                // find out the rollupType for this locator
-                RollupType rollupType = RollupType.fromString(
-                        metadataCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
-                // get the right PreaggregatedIO class that can process
-                // this rollupType
-                DAbstractPreaggregatedIO preaggregatedIO = rollupTypeToIO.get(rollupType);
-                if ( preaggregatedIO == null ) {
-                    throw new IllegalArgumentException(String.format("dont know how to handle locator=%s with rollupType=%s", locator, rollupType.toString()));
+        Timer.Context ctx = Instrumentation.getReadTimerContext(
+                                                CassandraModel.getPreaggregatedColumnFamilyName(granularity));
+
+        try {
+            // in this loop, we will fire all the executeAsync() of
+            // various select statements, the collect all of the
+            // ResultSetFutures
+            Map<Locator, List<ResultSetFuture>> locatorToFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
+            Map<Locator, RollupType> locatorRollupTypeMap = new HashMap<Locator, RollupType>();
+            for (Locator locator : locators) {
+                try {
+                    // find out the rollupType for this locator
+                    RollupType rollupType = RollupType.fromString(
+                            metadataCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+
+                    // get the right PreaggregatedIO class that can process
+                    // this rollupType
+                    DAbstractPreaggregatedIO preaggregatedIO = rollupTypeToIO.get(rollupType);
+                    if (preaggregatedIO == null) {
+                        throw new IllegalArgumentException(String.format("dont know how to handle locator=%s with rollupType=%s", locator, rollupType.toString()));
+                    }
+
+                    // put everything in a map of locator -> rollupType, so
+                    // we can use em up later
+                    locatorRollupTypeMap.put(locator, rollupType);
+
+                    // do the query
+                    List<ResultSetFuture> selectFutures = preaggregatedIO.selectForLocatorRangeGranularity(locator, range, granularity);
+
+                    // add all ResultSetFutures for a particular locator together
+                    List<ResultSetFuture> existing = locatorToFuturesMap.get(locator);
+                    if (existing == null) {
+                        existing = new ArrayList<ResultSetFuture>();
+                        locatorToFuturesMap.put(locator, existing);
+                    }
+                    existing.addAll(selectFutures);
+
+                } catch (CacheException ex) {
+                    LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
                 }
-
-                // put everything in a map of locator -> rollupType, so
-                // we can use em up later
-                locatorRollupTypeMap.put(locator, rollupType);
-
-                // do the query
-                List<ResultSetFuture> selectFutures = preaggregatedIO.selectForLocatorRangeGranularity(locator, range, granularity);
-
-                // add all ResultSetFutures for a particular locator together
-                List<ResultSetFuture> existing = locatorToFuturesMap.get(locator);
-                if ( existing == null ) {
-                    existing = new ArrayList<ResultSetFuture>();
-                    locatorToFuturesMap.put(locator, existing);
-                }
-                existing.addAll(selectFutures);
-
-            } catch (CacheException ex) {
-                LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
             }
+            return resultSetsToMetricData(locatorToFuturesMap, locatorRollupTypeMap, granularity);
+        } finally {
+            ctx.stop();
         }
-
-        return resultSetsToMetricData(locatorToFuturesMap, locatorRollupTypeMap, granularity);
     }
 
     /**

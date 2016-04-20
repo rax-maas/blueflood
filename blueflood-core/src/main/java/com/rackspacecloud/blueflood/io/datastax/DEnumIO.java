@@ -69,7 +69,7 @@ public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
      * @param locators
      * @return
      */
-    @Override // EnumReaderIO
+    @Override
     public Table<Locator, Long, String> getEnumHashValuesForLocators(final List<Locator> locators) {
 
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_ENUM_NAME);
@@ -115,7 +115,7 @@ public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
      * @param locators
      * @return
      */
-    @Override // EnumReaderIO
+    @Override
     public Map<Locator, List<String>> getEnumStringMappings(final List<Locator> locators) {
         final Table<Locator, Long, String> locatorEnumHashValues = getEnumHashValuesForLocators(locators);
         return new HashMap<Locator, List<String>>() {{
@@ -180,7 +180,7 @@ public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
      * @param collectionTime
      * @param granularity
      */
-    @Override // AsyncWriter interface
+    @Override
     protected void addRollupToBatch(BatchStatement batch, Locator locator,
                                     Rollup rollup,
                                     long collectionTime,
@@ -245,9 +245,11 @@ public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
      *  the corresponding data from it and return it as a
      *  Table of locator, long and rollup.
      *
-     *  For enum metrics, we need to do a join for
+     *  For enum metrics, we need to do a join for between two
+     *  ResultSetFuture, one from metrics_enum, one from
+     *  metrics_preaggregated_{gran}
      */
-    @Override // DAbstractPreaggregatedIO
+    @Override
     protected <T extends Rollup> Table<Locator, Long, T> toLocatorTimestampRollup(List<ResultSetFuture> futures, Locator locator, Granularity granularity) {
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         Map<Long, String> hashValueMap = new HashMap<Long, String>();

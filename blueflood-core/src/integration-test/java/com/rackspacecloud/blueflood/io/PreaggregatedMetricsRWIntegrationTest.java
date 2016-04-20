@@ -534,7 +534,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
 
             LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
             Collection<Locator> locators = locatorIO.getLocators(shard);
-            Assert.assertTrue("locator exists", locators.contains(locator));
+            Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
         }
 
     }

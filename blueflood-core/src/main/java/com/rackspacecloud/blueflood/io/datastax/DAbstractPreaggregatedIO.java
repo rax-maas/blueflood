@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io.datastax;
 
-import com.codahale.metrics.Timer;
 import com.datastax.driver.core.*;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -187,26 +186,22 @@ public abstract class DAbstractPreaggregatedIO {
     protected <T extends Rollup> Table<Locator, Long, T> getRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
 
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
-        Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamily);
+
         Map<Locator, List<ResultSetFuture>> resultSetFuturesMap = selectForLocatorListAndRange(columnFamily, locators, range);
 
-        try {
-            for (Map.Entry<Locator, List<ResultSetFuture>> entry : resultSetFuturesMap.entrySet() ) {
-                Locator locator = entry.getKey();
-                try {
-                    List<ResultSetFuture> futures = entry.getValue();
+        for (Map.Entry<Locator, List<ResultSetFuture>> entry : resultSetFuturesMap.entrySet() ) {
+            Locator locator = entry.getKey();
+            try {
+                List<ResultSetFuture> futures = entry.getValue();
 
-                    Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
-                    locatorTimestampRollup.putAll(result);
-                } catch (Exception ex) {
-                    Instrumentation.markReadError();
-                    LOG.error(String.format("error querying rollup from column family %s for locator %s, range %s",
+                Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
+                locatorTimestampRollup.putAll(result);
+            } catch (Exception ex) {
+                Instrumentation.markReadError();
+                LOG.error(String.format("error querying rollup from column family %s for locator %s, range %s",
                                             columnFamily,
                                             locator, range), ex);
-                }
             }
-        } finally {
-            ctx.stop();
         }
         return locatorTimestampRollup;
     }
@@ -334,35 +329,5 @@ public abstract class DAbstractPreaggregatedIO {
             }
         }
         return locatorTimestampRollup;
-    }
-
-    /**
-     * Fetch the column family name for a specific
-     * {@link com.rackspacecloud.blueflood.rollup.Granularity}
-     * for the metrics_preaggregated
-     *
-     * @param granularity
-     * @return
-     */
-    protected String getColumnFamily(Granularity granularity) {
-
-        // sub classes may override this, but this is the
-        // standard granularity -> column family for most
-        // preaggregated metrics
-        if ( granularity == Granularity.FULL ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME;
-        } else if ( granularity == Granularity.MIN_5 ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_5M_NAME;
-        } else if ( granularity == Granularity.MIN_20 ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_20M_NAME;
-        } else if ( granularity == Granularity.MIN_60 ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_60M_NAME;
-        } else if ( granularity == Granularity.MIN_240 ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_240M_NAME;
-        } else if ( granularity == Granularity.MIN_1440 ) {
-            return CassandraModel.CF_METRICS_PREAGGREGATED_1440M_NAME;
-        } else {
-            throw new IllegalArgumentException("invalid granularity " + granularity);
-        }
     }
 }
