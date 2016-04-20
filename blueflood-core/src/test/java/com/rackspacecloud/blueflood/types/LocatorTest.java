@@ -296,7 +296,7 @@ public class LocatorTest {
     }
 
     @Test
-    public void equalsBothNullReturnsTrue() {
+    public void equalsBothUninitializedReturnsTrue() {
 
         // given
         Locator locator = new Locator();
@@ -307,7 +307,7 @@ public class LocatorTest {
     }
 
     @Test
-    public void equalsThisNullThrowsException() {
+    public void equalsThisUninitializedReturnsFalse() {
 
         // given
         Locator locator = new Locator();
@@ -318,7 +318,7 @@ public class LocatorTest {
     }
 
     @Test
-    public void equalsOtherNullThrowsException() {
+    public void equalsOtherUninitializedReturnsFalse() {
 
         // given
         Locator locator = Locator.createLocatorFromDbKey("a.b.c");
