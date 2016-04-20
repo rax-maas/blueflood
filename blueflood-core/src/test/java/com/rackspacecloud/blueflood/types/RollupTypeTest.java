@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.types;
 
 import com.bigml.histogram.Bin;
 import com.bigml.histogram.SimpleTarget;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Test;
 
@@ -216,6 +217,59 @@ public class RollupTypeTest {
     public void fromRollupTypeClassMetricThrowsError() {
         // when
         RollupType.fromRollupTypeClass(MetricImplementsRollup.class);
+        // then
+        // the error is thrown
+    }
+
+    @Test
+    public void classOfCounterYieldsBluefloodCounterRollup() {
+        assertEquals(BluefloodCounterRollup.class, RollupType.classOf(RollupType.COUNTER, null));
+    }
+
+    @Test
+    public void classOfTimerYieldsBluefloodTimerRollup() {
+        assertEquals(BluefloodTimerRollup.class, RollupType.classOf(RollupType.TIMER, null));
+    }
+
+    @Test
+    public void classOfSetYieldsBluefloodSetRollup() {
+        assertEquals(BluefloodSetRollup.class, RollupType.classOf(RollupType.SET, null));
+    }
+
+    @Test
+    public void classOfGaugeYieldsBluefloodGaugeRollup() {
+        assertEquals(BluefloodGaugeRollup.class, RollupType.classOf(RollupType.GAUGE, null));
+    }
+
+    @Test
+    public void classOfHistogramsYieldsHistogramRollup() {
+        assertEquals(HistogramRollup.class, RollupType.classOf(RollupType.BF_HISTOGRAMS, null));
+    }
+
+    @Test
+    public void classOfEnumYieldsBluefloodEnumRollup() {
+        assertEquals(BluefloodEnumRollup.class, RollupType.classOf(RollupType.ENUM, null));
+    }
+
+    @Test
+    public void classOfBasicWithFullGranularityYieldsSimpleNumber() {
+        assertEquals(SimpleNumber.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.FULL));
+    }
+
+    @Test
+    public void classOfBasicWithOtherGranularityYieldsBasicRollup() {
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, null));
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.MIN_5));
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.MIN_20));
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.MIN_60));
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.MIN_240));
+        assertEquals(BasicRollup.class, RollupType.classOf(RollupType.BF_BASIC, Granularity.MIN_1440));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void classOfNotARollupThrowsException() {
+        // when
+        RollupType.classOf(RollupType.NOT_A_ROLLUP, null);
         // then
         // the error is thrown
     }
