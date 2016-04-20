@@ -1,11 +1,13 @@
 package com.rackspacecloud.blueflood.types;
 
 import com.rackspacecloud.blueflood.io.Constants;
-import junit.framework.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 
 public class BluefloodCounterRollupTest {
     private static final Random random = new Random(72262L);
@@ -17,20 +19,20 @@ public class BluefloodCounterRollupTest {
         final BluefloodCounterRollup cr0 = BluefloodCounterRollupTest.buildCounterRollupFromLongs(sample0);
         final BluefloodCounterRollup cr1 = BluefloodCounterRollupTest.buildCounterRollupFromLongs(sample1);
         
-        Assert.assertEquals(100d/300d, cr0.getRate());
-        Assert.assertEquals(300d/450d, cr1.getRate());
+        assertEquals(100d / 300d, cr0.getRate(), 0.00001d);
+        assertEquals(300d / 450d, cr1.getRate(), 0.00001d);
         
         // great, now combine them.
         BluefloodCounterRollup cr2 = BluefloodCounterRollup.buildRollupFromCounterRollups(asPoints(BluefloodCounterRollup.class, 0, 300, cr0, cr1));
         
-        Assert.assertEquals(400d/750d, cr2.getRate());
+        assertEquals(400d / 750d, cr2.getRate(), 0.00001d);
     }
     
     @Test
     public void testCounterRollupIdempotence() throws IOException {
         final BluefloodCounterRollup cr0 = BluefloodCounterRollupTest.buildCounterRollupFromLongs(makeRandomNumbers(1000));
         BluefloodCounterRollup cumulative = BluefloodCounterRollup.buildRollupFromCounterRollups(asPoints(BluefloodCounterRollup.class, 0, 10, cr0));
-        Assert.assertEquals(cr0, cumulative);
+        assertEquals(cr0, cumulative);
     }
     
     @Test
@@ -44,7 +46,7 @@ public class BluefloodCounterRollupTest {
         
         BluefloodCounterRollup cumulative = BluefloodCounterRollup.buildRollupFromCounterRollups(asPoints(BluefloodCounterRollup.class, 0, 1000, cr0, cr1));
         
-        Assert.assertEquals(expectedSum, cumulative.getCount());
+        assertEquals(expectedSum, cumulative.getCount());
     }
 
     @Test
@@ -53,7 +55,7 @@ public class BluefloodCounterRollupTest {
         final long[] no_data = new long[]{};
         final BluefloodCounterRollup crData = BluefloodCounterRollupTest.buildCounterRollupFromLongs(data);
         final BluefloodCounterRollup crNoData = BluefloodCounterRollupTest.buildCounterRollupFromLongs(no_data);
-        Assert.assertNotSame(crData, crNoData);
+        assertNotSame(crData, crNoData);
     }
 
     private static <T> Points<T> asPoints(Class<T> type, long initialTime, long timeDelta, T... values) {
