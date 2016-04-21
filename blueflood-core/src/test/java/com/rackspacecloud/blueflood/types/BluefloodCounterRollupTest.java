@@ -7,7 +7,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Random;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -282,7 +281,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(3L, count.longValue());
-        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d); //(3)/0=inf
+        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d); //(3)/(1-1)=inf
         assertEquals(1, rollup.getSampleCount());
     }
 
@@ -299,7 +298,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(7L, count.longValue());
-        assertEquals(7.0d, rollup.getRate(), 0.00001d); // (3+4)/1=7
+        assertEquals(7.0d, rollup.getRate(), 0.00001d); // (3+4)/(2-1)=7
         assertEquals(2, rollup.getSampleCount());
     }
 
@@ -371,7 +370,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(12L, count.longValue());
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5)/2=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5)/(3-1)=6
         assertEquals(3, rollup.getSampleCount());
     }
 
@@ -391,7 +390,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(18L, count.longValue());
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/3=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/(4-1)=6
         assertEquals(4, rollup.getSampleCount());
     }
 
@@ -449,7 +448,7 @@ public class BluefloodCounterRollupTest {
         Points<SimpleNumber> input = new Points<SimpleNumber>();
         input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(Double.MIN_NORMAL)));
         input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(Double.MIN_NORMAL)));
-        double expectedCount = Double.MIN_NORMAL * 2; // Long.MIN_VALUE + 2;
+        double expectedCount = Double.MIN_NORMAL * 2;
         // when
         BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
         // then
@@ -552,7 +551,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(3L, count.longValue()); // 1+2
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/2=5
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/(3-1)=5
         assertEquals(2, rollup.getSampleCount());
     }
 
@@ -582,7 +581,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(10L, count.longValue()); // 1+2+3+4
-        assertEquals(5.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/(1+1)=5
+        assertEquals(5.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/((2-1)+(2-1))=5
         assertEquals(4, rollup.getSampleCount());
     }
 
@@ -611,7 +610,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(1+0)=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (1+2+3)/((2-1)+(1-1))=6
         assertEquals(3, rollup.getSampleCount());
     }
 
@@ -636,7 +635,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(2)=3
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(3-1)=3
         assertEquals(3, rollup.getSampleCount());
     }
 
