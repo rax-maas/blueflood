@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.COUNTER.toString());
 
             // generate enum
-            pMetric = getEnumMetric(this.getClass().getSimpleName() + ".my.enum.values", tenantId, startTimestamp);
+            pMetric = getEnumMetric(this.getClass().getSimpleName() + ".my.enum.values." + RAND.nextInt(10), tenantId, startTimestamp);
             expectedLocatorMetricMap.put(pMetric.getLocator(), pMetric);
             MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
@@ -114,6 +115,18 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.TIMER.toString());
         }
+    }
+
+    /**
+     * Method to clean up state/data after each test
+     * @throws Exception
+     */
+    @After
+    public void cleanup() throws Exception {
+        // clear the locator current cache because just
+        // by chance we may randomly reuse the same metrics
+        // across tests
+        datastaxMetricsRW.clearLocatorCache();
     }
 
     /**
@@ -516,17 +529,15 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
         @Test
         public void testLocatorWritten() throws Exception {
 
-            // pick first locator from input metrics
-            Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
-            IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
-
-            // insert it
-            datastaxMetricsRW.insertMetrics(Lists.newArrayList(expectedMetric));
+            // insert metrics using datastax
+            datastaxMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
 
             LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
-            long shard = Util.getShard(locator.toString());
-            Collection<Locator> locators = locatorIO.getLocators(shard);
-            Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
+            for ( Locator locator : expectedLocatorMetricMap.keySet() ) {
+                long shard = Util.getShard(locator.toString());
+                Collection<Locator> locators = locatorIO.getLocators(shard);
+                Assert.assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
+            }
         }
 
     }

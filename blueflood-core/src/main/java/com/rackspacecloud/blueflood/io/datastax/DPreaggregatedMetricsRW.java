@@ -116,6 +116,8 @@ public class DPreaggregatedMetricsRW extends AbstractMetricsRW {
                     if ( !isLocatorCurrent(locator) ) {
                         locatorIO.insertLocator(locator);
                         setLocatorCurrent(locator);
+                    }  else {
+                        LOG.debug("insertMetrics(): not inserting locator " + locator);
                     }
                 }
             }
