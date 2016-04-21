@@ -639,4 +639,50 @@ public class BluefloodCounterRollupTest {
         assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(2)=3
         assertEquals(3, rollup.getSampleCount());
     }
+
+    @Test
+    public void counterRollupBuiderWithNoInputYieldsRateEqualToOffByOneAverage() throws IOException {
+
+        // given
+        Points<SimpleNumber> inputA = new Points<SimpleNumber>();
+        BluefloodCounterRollup rollupA = BluefloodCounterRollup.buildRollupFromRawSamples(inputA);
+
+        Points<BluefloodCounterRollup> combined = new Points<BluefloodCounterRollup>();
+        combined.add(new Points.Point<BluefloodCounterRollup>(1234L, rollupA));
+
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromCounterRollups(combined);
+
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(0L, count.longValue());
+        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (0)/(inf)=0
+        assertEquals(0, rollup.getSampleCount());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void counterRollupBuiderWithNullRollupInputThrowsException() throws IOException {
+
+        // given
+        Points<BluefloodCounterRollup> combined = new Points<BluefloodCounterRollup>();
+        combined.add(new Points.Point<BluefloodCounterRollup>(1234L, null));
+
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromCounterRollups(combined);
+
+        // then
+        // the exception is thrown
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void counterRollupBuiderWithNullCombinedInputThrowsException() throws IOException {
+
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromCounterRollups(null);
+
+        // then
+        // the exception is thrown
+    }
 }
