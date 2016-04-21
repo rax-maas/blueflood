@@ -21,12 +21,13 @@ import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxEnumIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxEnumIO;
+import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +42,7 @@ import static org.junit.Assert.*;
 public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
     protected Map<Locator, List<IMetric>> locatorToMetrics;
-    protected DatastaxEnumIO datastaxEnumIO = new DatastaxEnumIO();
+    protected DEnumIO datastaxEnumIO = new DEnumIO();
     protected AstyanaxEnumIO astyanaxEnumIO = new AstyanaxEnumIO();
 
     /**
@@ -87,7 +88,11 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator,
+                            metric.getCollectionTime(),
+                            (BluefloodEnumRollup) metric.getMetricValue(),
+                            Granularity.FULL,
+                            metric.getTtlInSeconds());
                     future.get().all();
                 }
             }
@@ -126,7 +131,11 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), granularity);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator,
+                            metric.getCollectionTime(),
+                            (BluefloodEnumRollup) metric.getMetricValue(),
+                            granularity,
+                            metric.getTtlInSeconds());
                     future.get().all();
                 }
             }
@@ -178,7 +187,11 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator,
+                            metric.getCollectionTime(),
+                            (BluefloodEnumRollup) metric.getMetricValue(),
+                            Granularity.FULL,
+                            metric.getTtlInSeconds());
                     future.get().all();
                 }
             }
@@ -216,7 +229,11 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
                 Locator locator = entry.getKey();
                 List<IMetric> metrics = entry.getValue();
                 for (IMetric metric : metrics) {
-                    ResultSetFuture future = datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), granularity);
+                    ResultSetFuture future = datastaxEnumIO.putAsync(locator,
+                            metric.getCollectionTime(),
+                            (BluefloodEnumRollup) metric.getMetricValue(),
+                            granularity,
+                            metric.getTtlInSeconds());
                     future.get().all();
                 }
             }
@@ -325,6 +342,4 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
             }
         }
     }
-
-
 }

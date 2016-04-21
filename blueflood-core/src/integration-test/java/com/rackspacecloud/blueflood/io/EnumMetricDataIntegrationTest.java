@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxEnumIO;
+import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
@@ -38,14 +38,14 @@ import static org.junit.Assert.*;
 public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
 
     private Map<Locator, List<IMetric>> locatorToMetrics;
-    private static DatastaxEnumIO datastaxEnumIO;
-    private static EnumMetricData enumMetricDataIO;
+    private static DEnumIO datastaxEnumIO;
+    private static EnumMetricData enumMetricData;
 
     @BeforeClass
     public static void setup() {
 
-        datastaxEnumIO = new DatastaxEnumIO();
-        enumMetricDataIO = new EnumMetricData(datastaxEnumIO);
+        datastaxEnumIO = new DEnumIO();
+        enumMetricData = new EnumMetricData(datastaxEnumIO);
     }
 
     @Before
@@ -62,14 +62,18 @@ public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
             Locator locator = entry.getKey();
             List<IMetric> metrics = entry.getValue();
             for (IMetric metric : metrics) {
-                datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                datastaxEnumIO.putAsync(locator,
+                        metric.getCollectionTime(),
+                        (BluefloodEnumRollup) metric.getMetricValue(),
+                        Granularity.FULL,
+                        metric.getTtlInSeconds());
             }
         }
 
         // use one of the locator
         final Locator locator = locatorToMetrics.keySet().iterator().next();
         Range range = getRangeFromMinAgoToNow(5);
-        MetricData metricData = enumMetricDataIO.getEnumMetricDataForRange(locator, range, Granularity.FULL);
+        MetricData metricData = enumMetricData.getEnumMetricDataForRange(locator, range, Granularity.FULL);
 
         // get expected using Astyanax
         List<Locator> locators = new ArrayList<Locator>() {{ add(locator); }};
@@ -86,7 +90,11 @@ public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
             Locator locator = entry.getKey();
             List<IMetric> metrics = entry.getValue();
             for (IMetric metric : metrics) {
-                datastaxEnumIO.putAsync(locator, metric.getCollectionTime(), (BluefloodEnumRollup) metric.getMetricValue(), Granularity.FULL);
+                datastaxEnumIO.putAsync(locator,
+                        metric.getCollectionTime(),
+                        (BluefloodEnumRollup) metric.getMetricValue(),
+                        Granularity.FULL,
+                        metric.getTtlInSeconds());
             }
         }
 
@@ -95,7 +103,7 @@ public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
             addAll(locatorToMetrics.keySet());
         }};
         Range range = getRangeFromMinAgoToNow(5);
-        Map<Locator, MetricData> metricDataMap = enumMetricDataIO.getEnumMetricDataForRangeForLocatorList(locators, range, Granularity.FULL);
+        Map<Locator, MetricData> metricDataMap = enumMetricData.getEnumMetricDataForRangeForLocatorList(locators, range, Granularity.FULL);
 
         // get expected using Astyanax
         Map<Locator, MetricData> expectedMetricDataMap = AstyanaxReader.getInstance().getEnumMetricDataForRangeForLocatorList(locators, range, Granularity.FULL);

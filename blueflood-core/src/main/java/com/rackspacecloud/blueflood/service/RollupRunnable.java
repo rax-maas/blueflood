@@ -21,6 +21,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
@@ -103,6 +104,19 @@ public class RollupRunnable implements Runnable {
             Locator rollupLocator = singleRollupReadContext.getLocator();
             RollupType rollupType = RollupType.fromString((String) rollupTypeCache.get(
                     rollupLocator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
+
+            // RollupType   | Class                          | Column Family
+            // -------------| ------------------------------ |--------------
+            // COUNTER      | BluefloodCounterRollup         | metrics_preaggr_{gran}
+            // TIMER        | BluefloodTimerRollup           | metrics_preaggr_{gran}
+            // SET          | BluefloodSetRollup             | metrics_preaggr_{gran}
+            // GAUGE        | BluefloodGaugeRollup           | metrics_preaggr_{gran}
+            // ENUM         | BluefloodEnumRollup            | metrics_preaggr_{gran}
+            // BF_BASIC     | BasicRollup (if gran != full)  | metrics_{gran}
+            //              | SimpleNumber (if gran == full) | metrics_full
+            // BF_HISTOGRAM | HistogramRollup                | metrics_full (if gran == full)
+            //              |                                | metrics_preaggr_{gran} otherwise
+
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             Granularity dstGran = srcGran.coarser();
@@ -118,6 +132,16 @@ public class RollupRunnable implements Runnable {
 
             try {
                 // first, get the points.
+                // TODO: replace the Astyanax call with:
+                // MetricsRW metricsRW;
+                // if ( rollupType == RollupType.BF_BASIC ) {
+                //    metricsRW = IOContainer.fromConfig().getBasicIO();
+                // } else if ( rollupType == RollupType.BF_HISTORGRAM ) {
+                //    metricsRW = histogram column family differences
+                // } else {
+                //    metricsRW = IOContainer.fromConfig().getPreaggregatedIO();
+                // }
+                // metricsRW.getDataToRollup(locator, rollupType, range, columnFamily)
                 input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
                         singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
 

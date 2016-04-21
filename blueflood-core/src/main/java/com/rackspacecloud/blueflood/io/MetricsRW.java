@@ -42,16 +42,17 @@ public interface MetricsRW {
      * to the appropriate Cassandra column family.
      *
      * @param metrics
+     *
      * @throws IOException
      */
     public void insertMetrics(Collection<IMetric> metrics) throws IOException;
 
     /**
-     * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} rolled up
+     * This method inserts a collection of metrics in the
+     * {@link com.rackspacecloud.blueflood.service.SingleRollupWriteContext}
      * objects to the appropriate Cassandra column family
      *
-     * @param metrics
-     * @param granularity
+     * @param writeContexts
      * @throws IOException
      */
     public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws IOException;
@@ -66,7 +67,7 @@ public interface MetricsRW {
      * @param gran
      * @return
      */
-    public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran);
+    public MetricData getDatapointsForRange(final Locator locator, Range range, Granularity gran) throws IOException;
 
     /**
      * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
@@ -78,7 +79,7 @@ public interface MetricsRW {
      * @param gran
      * @return
      */
-    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran);
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) throws IOException;
 
     /**
      * Fetches a {@link com.rackspacecloud.blueflood.types.Points} object for a
@@ -92,5 +93,5 @@ public interface MetricsRW {
      * @param <T> the type of Rollup object
      * @return
      */
-    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName);
+    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName) throws IOException;
 }

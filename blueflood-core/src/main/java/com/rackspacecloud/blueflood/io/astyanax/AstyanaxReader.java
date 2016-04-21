@@ -349,6 +349,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 }
             } catch (Exception e) {
                 // pass for now. need metric to figure this stuff out.
+                log.error(String.format("error getting datapoints for locator %s, range %s, granularity %s", locator, range.toString(), gran.toString()), e);
             }
         }
 

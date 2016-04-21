@@ -155,8 +155,8 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // numeric only!
     public final void insertLocator(Locator locator, MutationBatch mutationBatch) {
-        mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.getShard(locator.toString()))
-                .putEmptyColumn(locator, TenantTtlProvider.LOCATOR_TTL);
+                mutationBatch.withRow(CassandraModel.CF_METRICS_LOCATOR, (long) Util.getShard(locator.toString()))
+                        .putEmptyColumn(locator, TenantTtlProvider.LOCATOR_TTL);
     }
 
     private final void insertEnumValuesWithHashcodes(Locator locator, BluefloodEnumRollup rollup, MutationBatch mutationBatch) {
@@ -323,7 +323,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
     }
 
-    public void insertRollups(ArrayList<SingleRollupWriteContext> writeContexts) throws ConnectionException {
+    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws ConnectionException {
         if (writeContexts.size() == 0) {
             return;
         }
