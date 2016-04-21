@@ -394,4 +394,90 @@ public class BluefloodCounterRollupTest {
         assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/3=6
         assertEquals(4, rollup.getSampleCount());
     }
+
+    @Test(expected = NullPointerException.class)
+    public void rawSampleBuilderWithNullInputsThrowsException() throws IOException {
+
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(null);
+        // then
+        // the exception is thrown
+    }
+
+    @Test
+    public void rawSampleBuilderWithOverflowingLongInputsYieldsIncorrectCalculations() throws IOException {
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(Long.MAX_VALUE)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(3L)));
+        long expectedCount = -9223372036854775806L; // Long.MIN_VALUE + 2;
+        double expectedRate = -9.223372036854776E18d; // (double)(Long.MIN_VALUE + 2)
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(expectedCount, count.longValue());
+        assertEquals(expectedRate, rollup.getRate(), 0.00001d);
+        assertEquals(2, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithOverflowingDoubleInputsYieldsIncorrectCalculations() throws IOException {
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(Double.MAX_VALUE)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(Double.MAX_VALUE)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Double.class)));
+        assertEquals(Double.POSITIVE_INFINITY, count.doubleValue(), 0.00001d);
+        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d);
+        assertEquals(2, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithUnderflowingDoubleInputsYieldsIncorrectCalculations() throws IOException {
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(Double.MIN_NORMAL)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(Double.MIN_NORMAL)));
+        double expectedCount = Double.MIN_NORMAL * 2; // Long.MIN_VALUE + 2;
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Double.class)));
+        assertEquals(expectedCount, count.doubleValue(), 0.00001d);
+        assertEquals(0, rollup.getRate(), 0.00001d);
+        assertEquals(2, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithNanInputsYieldsNan() throws IOException {
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(1.0d)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(2.0d)));
+        input.add(new Points.Point<SimpleNumber>(1236L, new SimpleNumber(Double.NaN)));
+        input.add(new Points.Point<SimpleNumber>(1237L, new SimpleNumber(4.0d)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Double.class)));
+        assertTrue(Double.isNaN(count.doubleValue()));
+        assertTrue(Double.isNaN(rollup.getRate()));
+        assertEquals(4, rollup.getSampleCount());
+    }
 }
