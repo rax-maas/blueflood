@@ -483,7 +483,12 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         return results;
     }
 
-    private void registerMBean() {
+    private boolean registered = false;
+    private synchronized void registerMBean() {
+
+        if (registered) return;
+        registered = true;
+
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", ScheduleContext.class.getSimpleName());
