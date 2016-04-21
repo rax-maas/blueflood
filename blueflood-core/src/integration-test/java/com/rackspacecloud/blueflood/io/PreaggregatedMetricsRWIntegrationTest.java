@@ -68,14 +68,14 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
                     .withCount(RAND.nextInt(10))
                     .withRate(RAND.nextDouble())
                     .withSampleCount(RAND.nextInt(10));
-            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.counter." + RAND.nextInt(10));
+            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.counter." + System.currentTimeMillis());
             PreaggregatedMetric pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), counterRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.COUNTER.toString());
 
             // generate enum
-            pMetric = getEnumMetric(this.getClass().getSimpleName() + ".my.enum.values." + RAND.nextInt(10), tenantId, startTimestamp);
+            pMetric = getEnumMetric(this.getClass().getSimpleName() + ".my.enum.values." + System.currentTimeMillis(), tenantId, startTimestamp);
             expectedLocatorMetricMap.put(pMetric.getLocator(), pMetric);
             MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
@@ -84,7 +84,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             BluefloodGaugeRollup gaugeRollup = new BluefloodGaugeRollup()
                     .withLatest(System.currentTimeMillis(), RAND.nextLong());
             gaugeRollup.setVariance(RAND.nextDouble());
-            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.gauge." + RAND.nextInt(10));
+            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.gauge." + System.currentTimeMillis());
             pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), gaugeRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
@@ -93,7 +93,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             // generate set
             Set aSet = Sets.newHashSet(RAND.nextInt(), RAND.nextInt(), RAND.nextInt());
             BluefloodSetRollup setRollup = new BluefloodSetRollup().withObject(aSet);
-            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.set." + RAND.nextInt(10));
+            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.set." + System.currentTimeMillis());
             pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), setRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
@@ -109,24 +109,12 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
                     .withMinValue(RAND.nextInt())
                     .withMaxValue(RAND.nextInt())
                     .withCount(RAND.nextInt(200));
-            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.timer." + RAND.nextInt(10));
+            locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.timer." + System.currentTimeMillis());
             timerMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), timerRollup);
             expectedLocatorMetricMap.put(locator, timerMetric);
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.TIMER.toString());
         }
-    }
-
-    /**
-     * Method to clean up state/data after each test
-     * @throws Exception
-     */
-    @After
-    public void cleanup() throws Exception {
-        // clear the locator current cache because just
-        // by chance we may randomly reuse the same metrics
-        // across tests
-        datastaxMetricsRW.clearLocatorCache();
     }
 
     /**

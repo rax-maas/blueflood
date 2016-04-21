@@ -75,14 +75,6 @@ public abstract class AbstractMetricsRW implements MetricsRW {
     }
 
     /**
-     * For tests code only. Need a way to clear cache between tests
-     */
-    @VisibleForTesting
-    protected synchronized void clearLocatorCache() {
-        insertedLocators.invalidateAll();
-    }
-
-    /**
      * Convert a collection of {@link com.rackspacecloud.blueflood.types.IMetric}
      * to a {@link com.google.common.collect.Multimap}
      *
