@@ -254,4 +254,144 @@ public class BluefloodCounterRollupTest {
         // then
         assertEquals(123, rollup.getSampleCount());
     }
+
+    @Test
+    public void rawSampleBuilderWithEmptyInputYieldsAllZeroes() throws IOException {
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(0L, count.longValue());
+        assertEquals(0.0d, rollup.getRate(), 0.00001d);
+        assertEquals(0, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithSingleInputYieldsThatInputWithInfiniteRate() throws IOException {
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(3L)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(3L, count.longValue());
+        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d); //(3)/0=inf
+        assertEquals(1, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithTwoInputsYieldsRateEqualToSumOfInputs() throws IOException {
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(3L)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(4L)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(7L, count.longValue());
+        assertEquals(7.0d, rollup.getRate(), 0.00001d); // (3+4)/1=7
+        assertEquals(2, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithThreeInputsYieldsRateEqualToOffByOneAverage() throws IOException {
+
+        // TODO: Clarify what buildRollupFromRawSamples is doing exactly. The
+        // buildRollupFromRawSamples seems to have an off-by-one error in it.
+        // The below samples average out to (3+4+5)/2=6, rather than a true
+        // average rate of values, (3+4+5)/3=4. The discrepancy seems to be
+        // caused by an unclear understanding of how much of a given time unit
+        // a sample takes up. If the sample is interpreted as residing at an
+        // infinitesimal point at the beginning of the time unit, that would
+        // give rise to the current calculation. If the sample is instead
+        // interpreted as residing on an interval spanning the entire time
+        // unit, that would give rise to the second. It may be that this is the
+        // intended behavior, or it might not be; neither the code nor the
+        // documentation anywhere adequately explain the intended
+        // interpretation. Hence the need for clarification. At present, this
+        // test only documents the current behavior, and does not try to
+        // determine what SHOULD be done.
+        //
+        //
+        // Samples As Points :
+        //                                                          o 5
+        //                                  o 4                     |
+        //          o 3                     |                       |
+        //          |                       |                       |
+        //          |                       |                       |
+        //          | <-- one time unit --> |                       |
+        //    ------+-----------------------+-----------------------+-----
+        //          1                       1                       1
+        //          2                       2                       2
+        //          3                       3                       3
+        //          4                       5                       6
+        //          L                       L                       L
+        //          |                                               |
+        //          | <-------------- two time units -------------> |
+        //                             (3+4+5)/2=6
+        //
+        //
+        // Samples As Intervals:
+        //                                                           _______________________
+        //                                   _______________________|          5            |
+        //           _______________________|          4            |                       |
+        //          |          3            |                       |                       |
+        //          |                       |                       |                       |
+        //          |                       |                       |                       |
+        //    ------+-----------------------+-----------------------+-----------------------+-----
+        //          1                       1                       1                       1
+        //          2                       2                       2                       2
+        //          3                       3                       3                       3
+        //          4                       5                       6                       7
+        //          L                       L                       L                       L
+        //          |                                                                       |
+        //          | <------------------------- three time units ------------------------> |
+        //                                         (3+4+5)/3=4
+        //
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(3L)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(4L)));
+        input.add(new Points.Point<SimpleNumber>(1236L, new SimpleNumber(5L)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(12L, count.longValue());
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5)/2=6
+        assertEquals(3, rollup.getSampleCount());
+    }
+
+    @Test
+    public void rawSampleBuilderWithFourInputsYieldsRateEqualToOffByOneAverage() throws IOException {
+
+        // given
+        Points<SimpleNumber> input = new Points<SimpleNumber>();
+        input.add(new Points.Point<SimpleNumber>(1234L, new SimpleNumber(3L)));
+        input.add(new Points.Point<SimpleNumber>(1235L, new SimpleNumber(4L)));
+        input.add(new Points.Point<SimpleNumber>(1236L, new SimpleNumber(5L)));
+        input.add(new Points.Point<SimpleNumber>(1237L, new SimpleNumber(6L)));
+        // when
+        BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromRawSamples(input);
+        // then
+        Number count = rollup.getCount();
+        assertNotNull(count);
+        assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
+        assertEquals(18L, count.longValue());
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/3=6
+        assertEquals(4, rollup.getSampleCount());
+    }
 }
