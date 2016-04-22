@@ -725,4 +725,34 @@ public class BluefloodCounterRollupTest {
         assertEquals(5.25d, rollup.getRate(), 0.00001d); // (1+2+3+4+5+6)/((3-1)+(3-1))=5.25
         assertEquals(6, rollup.getSampleCount());
     }
+
+    @Test
+    public void hasDataWithZeroSampleCountReturnsFalse() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup()
+                .withCount(1)
+                .withRate(1)
+                .withSampleCount(0);
+        // expect
+        assertFalse(rollup.hasData());
+    }
+
+    @Test
+    public void hasDataWithNonZeroSampleCountReturnsTrue() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup()
+                .withCount(1)
+                .withRate(1)
+                .withSampleCount(1);
+        // expect
+        assertTrue(rollup.hasData());
+    }
+
+    @Test
+    public void getRollupTypeReturnsCounter() {
+        // given
+        BluefloodCounterRollup rollup = new BluefloodCounterRollup();
+        // expect
+        assertEquals(RollupType.COUNTER, rollup.getRollupType());
+    }
 }
