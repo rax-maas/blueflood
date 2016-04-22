@@ -197,7 +197,8 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(3L, count.longValue());
-        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d); //(3)/(1-1)=inf
+        assertTrue(Double.isInfinite(rollup.getRate())); //(3)/(1-1)=+inf
+        assertTrue(rollup.getRate() > 0);
         assertEquals(1, rollup.getSampleCount());
     }
 
@@ -352,8 +353,10 @@ public class BluefloodCounterRollupTest {
         Number count = rollup.getCount();
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Double.class)));
-        assertEquals(Double.POSITIVE_INFINITY, count.doubleValue(), 0.00001d);
-        assertEquals(Double.POSITIVE_INFINITY, rollup.getRate(), 0.00001d);
+        assertTrue(((Double)count).isInfinite());
+        assertTrue(((Double)count) > 0);
+        assertTrue(Double.isInfinite(rollup.getRate()));
+        assertTrue(rollup.getRate() > 0);
         assertEquals(2, rollup.getSampleCount());
     }
 
