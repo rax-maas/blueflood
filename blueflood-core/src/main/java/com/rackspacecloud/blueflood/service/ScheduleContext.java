@@ -154,7 +154,6 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
         this(currentTimeMillis, managedShards, new DefaultClockImpl());
-        registerMBean();
     }
     @VisibleForTesting
     public ScheduleContext(long currentTimeMillis,
