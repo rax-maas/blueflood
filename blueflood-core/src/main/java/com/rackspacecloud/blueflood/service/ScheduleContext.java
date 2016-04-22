@@ -480,11 +480,11 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         return results;
     }
 
-    private boolean registered = false;
+    private boolean isMbeanRegistered = false;
     private synchronized void registerMBean() {
 
-        if (registered) return;
-        registered = true;
+        if (isMbeanRegistered) return;
+        isMbeanRegistered = true;
 
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
