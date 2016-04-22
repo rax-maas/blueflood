@@ -201,4 +201,20 @@ public class BluefloodTimerRollupPercentileTest {
         assertTrue(123L == 123.0d);
         assertFalse(a.equals(b));
     }
+
+    @Test
+    public void toStringWithLongPrintsMean() {
+        // given
+        BluefloodTimerRollup.Percentile value = new BluefloodTimerRollup.Percentile((Number)123L);
+        // expect
+        assertEquals("{mean:123}", value.toString());
+    }
+
+    @Test
+    public void toStringWithDoublePrintsMean() {
+        // given
+        BluefloodTimerRollup.Percentile value = new BluefloodTimerRollup.Percentile((Number)123.45d);
+        // expect
+        assertEquals("{mean:123.45}", value.toString());
+    }
 }
