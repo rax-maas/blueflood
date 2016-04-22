@@ -117,4 +117,28 @@ public class BluefloodTimerRollupPercentileTest {
         assertEquals(BigDecimal.class, result.getClass());
         assertEquals(value, result);
     }
+
+    @Test
+    public void constructorSetsMeanAndGetMeanReturnsMean() {
+        // when
+        BluefloodTimerRollup.Percentile value = new BluefloodTimerRollup.Percentile((Number)123L);
+        // then
+        assertEquals(123L, value.getMean());
+    }
+
+    @Test
+    public void longConstructorSetsMean() {
+        // when
+        BluefloodTimerRollup.Percentile value = new BluefloodTimerRollup.Percentile(123L);
+        // then
+        assertEquals(123L, value.getMean());
+    }
+
+    @Test
+    public void doubleConstructorSetsMean() {
+        // when
+        BluefloodTimerRollup.Percentile value = new BluefloodTimerRollup.Percentile(123.45d);
+        // then
+        assertEquals(123.45d, (Double)value.getMean(), 0.00001d);
+    }
 }
