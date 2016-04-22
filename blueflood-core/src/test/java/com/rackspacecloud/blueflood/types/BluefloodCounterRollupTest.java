@@ -36,7 +36,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void equalsSameCountReturnsFalse() {
+    public void equalsSameCountReturnsTrue() {
         //given
         BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1);
         BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1);
@@ -54,7 +54,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void equalsSameRateReturnsFalse() {
+    public void equalsSameRateReturnsTrue() {
         //given
         BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withRate(1.0d);
         BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withRate(1.0d);
@@ -72,7 +72,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void equalsSameSampleCountReturnsFalse() {
+    public void equalsSameSampleCountReturnsTrue() {
         //given
         BluefloodCounterRollup b = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
         BluefloodCounterRollup a = new BluefloodCounterRollup().withCount(1).withSampleCount(1);
