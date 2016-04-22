@@ -151,11 +151,9 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         this.clock = clock;
         registerMBean();
     }
+
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
-        this.scheduleTime = currentTimeMillis;
-        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
-        this.lockManager = new NoOpShardLockManager();
-        this.clock = new DefaultClockImpl();
+        this(currentTimeMillis, managedShards, new DefaultClockImpl());
         registerMBean();
     }
     @VisibleForTesting
