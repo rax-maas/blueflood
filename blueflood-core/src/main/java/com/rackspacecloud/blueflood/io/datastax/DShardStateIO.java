@@ -37,21 +37,21 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
  * This class uses the Datastax driver to read/write ShardState from
  * Cassandra metrics_state Column Family.
  */
-public class DatastaxShardStateIO implements ShardStateIO {
+public class DShardStateIO implements ShardStateIO {
 
     public static final String KEY = "key";
     public static final String COLUMN1 = "column1";
     public static final String VALUE = "value";
     public static final String WRITE_TIME = "writetime(value)";
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastaxShardStateIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DShardStateIO.class);
 
     private final SlotStateSerDes serDes = new SlotStateSerDes();
 
     private PreparedStatement getShardState;
     private PreparedStatement putShardState;
 
-    public DatastaxShardStateIO() {
+    public DShardStateIO() {
 
         createPreparedStatements();
     }
@@ -117,7 +117,7 @@ public class DatastaxShardStateIO implements ShardStateIO {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_STATE_NAME);
         Session session = DatastaxIO.getSession();
 
-        List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
+        Map<String, ResultSetFuture> futures = new HashMap<String, ResultSetFuture>();
 
         try {
             Set<Granularity> granularities = slotTimes.keySet();
@@ -126,18 +126,26 @@ public class DatastaxShardStateIO implements ShardStateIO {
                 Set<Map.Entry<Integer, UpdateStamp>> entries = slotTimes.get(gran).entrySet();
                 for (Map.Entry<Integer, UpdateStamp> entry : entries) {
 
+                    String value = serDes.serialize(gran, entry.getKey(), entry.getValue().getState());
+
                     BoundStatement bound = putShardState.bind( (long) shard,
-                            serDes.serialize(gran, entry.getKey(), entry.getValue().getState()),
+                            value,
                             entry.getValue().getTimestamp());
 
-                    futureList.add( session.executeAsync( bound ));
+                    futures.put( "shard: " + shard +", " + value, session.executeAsync( bound ) );
                 }
             }
 
-            for( ResultSetFuture future : futureList ) {
+            for( Map.Entry<String, ResultSetFuture> future : futures.entrySet() ) {
 
-                ResultSet result = future.getUninterruptibly();
-                LOG.trace("results.size=" + result.all().size());
+                try {
+                    ResultSet result = future.getValue().getUninterruptibly();
+                    LOG.trace( "results.size=" + result.all().size() );
+                }
+                catch ( Exception e ) {
+
+                    LOG.error( String.format( "error writing to metrics_state: %s", future.getKey() ), e );
+                }
             }
 
         } finally {

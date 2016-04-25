@@ -206,6 +206,14 @@ public class CassandraModel {
         return PREAG_GRAN_TO_CF.get(gran).getName();
     }
 
+    public static MetricColumnFamily getBasicColumnFamily(Granularity gran) {
+        return METRICS_GRAN_TO_CF.get(gran);
+    }
+
+    public static String getBasicColumnFamilyName(Granularity gran) {
+        return METRICS_GRAN_TO_CF.get(gran).getName();
+    }
+
     public static ColumnFamily getColumnFamily(String columnFamilyName) {
         return CF_NAME_TO_CF.get(columnFamilyName);
     }

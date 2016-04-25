@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write Gauge metrics
  * using Datastax driver.
  */
-public class DGagueIO extends DAbstractPreaggregatedIO {
+public class DGagueIO extends DAbstractMetricIO {
 
     private GaugeSerDes serDes = new GaugeSerDes();
 

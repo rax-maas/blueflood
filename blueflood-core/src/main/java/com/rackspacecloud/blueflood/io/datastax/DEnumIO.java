@@ -35,7 +35,7 @@ import java.util.*;
  * This class holds the utility methods to read/write enum metrics
  * using Datastax driver.
  */
-public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
+public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(DEnumIO.class);
     private static final EnumSerDes serDes = new EnumSerDes();
@@ -250,7 +250,7 @@ public class DEnumIO extends DAbstractPreaggregatedIO implements EnumReaderIO {
      *  metrics_preaggregated_{gran}
      */
     @Override
-    protected <T extends Rollup> Table<Locator, Long, T> toLocatorTimestampRollup(List<ResultSetFuture> futures, Locator locator, Granularity granularity) {
+    public <T extends Rollup> Table<Locator, Long, T> toLocatorTimestampRollup(List<ResultSetFuture> futures, Locator locator, Granularity granularity) {
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         Map<Long, String> hashValueMap = new HashMap<Long, String>();
         for ( ResultSetFuture future : futures ) {

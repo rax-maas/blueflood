@@ -2,9 +2,8 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
+import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.types.RollupType;
@@ -26,7 +25,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
     private static final String CACHE_KEY = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
 
     private AstyanaxMetadataIO astyanaxMetadataIO = new AstyanaxMetadataIO();
-    private DatastaxMetadataIO datastaxMetadataIO = new DatastaxMetadataIO();
+    private DMetadataIO dMetadataIO = new DMetadataIO();
 
 
     @Test
@@ -36,7 +35,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         astyanaxMetadataIO.put( name, CACHE_KEY, RollupType.COUNTER.toString() );
 
-        Map<String, String> result = datastaxMetadataIO.getAllValues( name );
+        Map<String, String> result = dMetadataIO.getAllValues( name );
 
         assertEquals( 1, result.size() );
         Map.Entry<String, String> entry = result.entrySet().iterator().next();
@@ -50,7 +49,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         Locator name = Locator.createLocatorFromPathComponents( getRandomTenantId(), "single.put.datastax.single.read.astyanax" );
 
-        datastaxMetadataIO.put( name, CACHE_KEY, RollupType.TIMER.toString() );
+        dMetadataIO.put( name, CACHE_KEY, RollupType.TIMER.toString() );
 
         Map<String, String> result = astyanaxMetadataIO.getAllValues( name );
 
@@ -75,7 +74,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
         astyanaxMetadataIO.putAll( meta );
 
         Set<Locator> query = new HashSet<Locator>( Arrays.asList( l0, l1 ) );
-        Table<Locator, String, String> result = datastaxMetadataIO.getAllValues( query );
+        Table<Locator, String, String> result = dMetadataIO.getAllValues( query );
 
         assertEquals( 2, result.size() );
 
@@ -105,7 +104,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
         meta.put( l0, CACHE_KEY, RollupType.GAUGE.toString() );
         meta.put( l1, CACHE_KEY, RollupType.ENUM.toString() );
 
-        datastaxMetadataIO.putAll( meta );
+        dMetadataIO.putAll( meta );
 
         Set<Locator> query = new HashSet<Locator>( Arrays.asList( l0, l1 ) );
         Table<Locator, String, String> result = astyanaxMetadataIO.getAllValues( query );

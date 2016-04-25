@@ -28,7 +28,7 @@ import java.util.Collection;
 
 public class AstyanaxMetricsWriter implements IMetricsWriter {
     @Override
-    public void insertFullMetrics(Collection<Metric> metrics) throws IOException {
+    public void insertFullMetrics(Collection<? extends IMetric> metrics) throws IOException {
         try {
             AstyanaxWriter.getInstance().insertFull(metrics);
         } catch (ConnectionException e) {

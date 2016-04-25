@@ -6,8 +6,8 @@ import com.datastax.driver.core.Session;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
+import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.Before;
@@ -100,9 +100,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DatastaxShardStateIO);
+        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO );
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DatastaxMetadataIO);
+        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO );
     }
 
     /**

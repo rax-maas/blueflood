@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write Timer metrics
  * using Datastax driver.
  */
-public class DTimerIO extends DAbstractPreaggregatedIO {
+public class DTimerIO extends DAbstractMetricIO {
 
     private TimerRollupSerDes serDes = new TimerRollupSerDes();
 

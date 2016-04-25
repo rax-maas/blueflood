@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write set metrics
  * using Datastax driver.
  */
-public class DSetIO extends DAbstractPreaggregatedIO {
+public class DSetIO extends DAbstractMetricIO {
 
     private SetSerDes serDes = new SetSerDes();
 

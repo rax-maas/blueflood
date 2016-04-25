@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write counter metrics
  * using Datastax driver.
  */
-public class DCounterIO extends DAbstractPreaggregatedIO {
+public class DCounterIO extends DAbstractMetricIO {
 
     private CounterSerDes serDes = new CounterSerDes();
 

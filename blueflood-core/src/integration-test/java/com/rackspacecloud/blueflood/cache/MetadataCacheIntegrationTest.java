@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.cache;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraUtilsIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxCassandraUtilsIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
+import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxCassandraUtilsIO;
 import org.junit.runner.RunWith;
 
@@ -269,7 +269,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     public static Collection<Object[]> getIOs() {
         List<Object[]> ios = new ArrayList<Object[]>();
         ios.add(new Object[] { new AstyanaxMetadataIO(), new AstyanaxCassandraUtilsIO() });
-        ios.add(new Object[] { new DatastaxMetadataIO(), new DatastaxCassandraUtilsIO() });
+        ios.add(new Object[] { new DMetadataIO(), new DatastaxCassandraUtilsIO() });
 
         InMemoryMetadataIO memIO = new InMemoryMetadataIO();
         ios.add(new Object[] { memIO, memIO });

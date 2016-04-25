@@ -45,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractMetricsRW implements MetricsRW {
 
     protected static final MetadataCache metadataCache = MetadataCache.getInstance();
+    protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
+    protected static final String ROLLUP_TYPE_CACHE_KEY = MetricMetadata.ROLLUP_TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
 
