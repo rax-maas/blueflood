@@ -629,4 +629,77 @@ public class GranularityTest {
         Assert.assertEquals(-4031, Granularity.millisToSlot(-1209599999L));
         Assert.assertEquals(0, Granularity.millisToSlot(-1209600000L));
     }
+
+    @Test
+    public void slotReturnsTheSlotNumber() {
+
+        Assert.assertEquals(0, Granularity.FULL.slot(1234L));
+        Assert.assertEquals(0, Granularity.FULL.slot(1000L));
+        Assert.assertEquals(0, Granularity.FULL.slot(0L));
+        Assert.assertEquals(0, Granularity.FULL.slot(299999L));
+        Assert.assertEquals(1, Granularity.FULL.slot(300000L));
+        Assert.assertEquals(1, Granularity.FULL.slot(300001L));
+        Assert.assertEquals(4, Granularity.FULL.slot(1234567L));
+        Assert.assertEquals(4031, Granularity.FULL.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.FULL.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.FULL.slot(1209600001L));
+
+        Assert.assertEquals(0, Granularity.MIN_5.slot(1234L));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(1000L));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(0L));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(299999L));
+        Assert.assertEquals(1, Granularity.MIN_5.slot(300000L));
+        Assert.assertEquals(1, Granularity.MIN_5.slot(300001L));
+        Assert.assertEquals(4, Granularity.MIN_5.slot(1234567L));
+        Assert.assertEquals(4031, Granularity.MIN_5.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.MIN_5.slot(1209600001L));
+
+        Assert.assertEquals(0, Granularity.MIN_20.slot(1234L));
+        Assert.assertEquals(0, Granularity.MIN_20.slot(1000L));
+        Assert.assertEquals(0, Granularity.MIN_20.slot(0L));
+        Assert.assertEquals(0, Granularity.MIN_20.slot(1199999L));
+        Assert.assertEquals(1, Granularity.MIN_20.slot(1200000));
+        Assert.assertEquals(1, Granularity.MIN_20.slot(1200001L));
+        Assert.assertEquals(1, Granularity.MIN_20.slot(1234567L));
+        Assert.assertEquals(102, Granularity.MIN_20.slot(123456789L));
+        Assert.assertEquals(1007, Granularity.MIN_20.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.MIN_20.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.MIN_20.slot(1209600001L));
+
+        Assert.assertEquals(0, Granularity.MIN_60.slot(1234L));
+        Assert.assertEquals(0, Granularity.MIN_60.slot(1000L));
+        Assert.assertEquals(0, Granularity.MIN_60.slot(0L));
+        Assert.assertEquals(0, Granularity.MIN_60.slot(3599999L));
+        Assert.assertEquals(1, Granularity.MIN_60.slot(3600000L));
+        Assert.assertEquals(1, Granularity.MIN_60.slot(3600001L));
+        Assert.assertEquals(34, Granularity.MIN_60.slot(123456789L));
+        Assert.assertEquals(69, Granularity.MIN_60.slot(12345678901L));
+        Assert.assertEquals(335, Granularity.MIN_60.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.MIN_60.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.MIN_60.slot(1209600001L));
+
+        Assert.assertEquals(0, Granularity.MIN_240.slot(1234L));
+        Assert.assertEquals(0, Granularity.MIN_240.slot(1000L));
+        Assert.assertEquals(0, Granularity.MIN_240.slot(0L));
+        Assert.assertEquals(0, Granularity.MIN_240.slot(14399999L));
+        Assert.assertEquals(1, Granularity.MIN_240.slot(14400000L));
+        Assert.assertEquals(1, Granularity.MIN_240.slot(14400001L));
+        Assert.assertEquals(8, Granularity.MIN_240.slot(123456789L));
+        Assert.assertEquals(17, Granularity.MIN_240.slot(12345678901L));
+        Assert.assertEquals(83, Granularity.MIN_240.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.MIN_240.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.MIN_240.slot(1209600001L));
+
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(1234L));
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(1000L));
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(0L));
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(86399999L));
+        Assert.assertEquals(1, Granularity.MIN_1440.slot(86400000L));
+        Assert.assertEquals(1, Granularity.MIN_1440.slot(86400001L));
+        Assert.assertEquals(2, Granularity.MIN_1440.slot(12345678901L));
+        Assert.assertEquals(13, Granularity.MIN_1440.slot(1209599999L));
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(1209600000L));
+        Assert.assertEquals(0, Granularity.MIN_1440.slot(1209600001L));
+    }
 }
