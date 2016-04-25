@@ -539,4 +539,9 @@ public class GranularityTest {
         Assert.assertFalse(Granularity.MIN_240.isCoarser(Granularity.MIN_240));
         Assert.assertFalse(Granularity.MIN_1440.isCoarser(Granularity.MIN_1440));
     }
+
+    @Test(expected = NullPointerException.class)
+    public void isCoarserWithNullThrowsException() {
+        Assert.assertFalse(Granularity.FULL.isCoarser(null));
+    }
 }
