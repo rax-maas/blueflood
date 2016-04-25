@@ -210,29 +210,38 @@ public class GranularityTest {
         Assert.assertEquals(Granularity.MIN_240, Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis, fromBaseMillis+(30 * DAY), 300));
     }
 
+    @Test
+    public void coarserReturnsCoarser() throws GranularityException {
+        Assert.assertSame(Granularity.MIN_5, Granularity.FULL.coarser());
+        Assert.assertSame(Granularity.MIN_20, Granularity.MIN_5.coarser());
+        Assert.assertSame(Granularity.MIN_60, Granularity.MIN_20.coarser());
+        Assert.assertSame(Granularity.MIN_240, Granularity.MIN_60.coarser());
+        Assert.assertSame(Granularity.MIN_1440, Granularity.MIN_240.coarser());
+    }
+
     @Test(expected = GranularityException.class)
     public void testTooCoarse() throws Exception {
-        Granularity g = Granularity.FULL;
-        Granularity[] granularities = Granularity.granularities();
+        // when
+        Granularity.MIN_1440.coarser();
+        // then
+        // the exception is thrown
+    }
 
-        int count = 1;
-        while (true) {
-            g = g.coarser();
-            Assert.assertEquals(granularities[count++], g);
-        }
+    @Test
+    public void finerReturnsFiner() throws GranularityException {
+        Assert.assertSame(Granularity.FULL, Granularity.MIN_5.finer());
+        Assert.assertSame(Granularity.MIN_5, Granularity.MIN_20.finer());
+        Assert.assertSame(Granularity.MIN_20, Granularity.MIN_60.finer());
+        Assert.assertSame(Granularity.MIN_60, Granularity.MIN_240.finer());
+        Assert.assertSame(Granularity.MIN_240, Granularity.MIN_1440.finer());
     }
 
     @Test(expected = GranularityException.class)
     public void testTooFine() throws Exception {
-        Granularity g = Granularity.MIN_1440;
-        Granularity[] granularities = Granularity.granularities();
-
-        int count = granularities.length - 2;
-
-        while (true) {
-            g = g.finer();
-            Assert.assertEquals(granularities[count--], g);
-        }
+        // when
+        Granularity.FULL.finer();
+        // then
+        // the exception is thrown
     }
     
     @Test(expected = RuntimeException.class)
