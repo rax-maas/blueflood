@@ -310,17 +310,48 @@ public class GranularityTest {
     }
 
     @Test
-    public void testIsCoarser() {
-        Assert.assertTrue(!Granularity.FULL.isCoarser(Granularity.MIN_5));
-        Assert.assertTrue(!Granularity.MIN_5.isCoarser(Granularity.MIN_20));
-        Assert.assertTrue(!Granularity.MIN_20.isCoarser(Granularity.MIN_60));
-        Assert.assertTrue(!Granularity.MIN_60.isCoarser(Granularity.MIN_240));
-        Assert.assertTrue(!Granularity.MIN_240.isCoarser(Granularity.MIN_1440));
+    public void coarserGranularitiesAreCoarserThanFinerOnes() {
+        // NOTE: This would be a good candidate for
+
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_5.isCoarser(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_20.isCoarser(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_60.isCoarser(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_240.isCoarser(Granularity.MIN_1440));
+
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_5.isCoarser(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_5.isCoarser(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_5.isCoarser(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_20.isCoarser(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_20.isCoarser(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_60.isCoarser(Granularity.MIN_1440));
 
         Assert.assertTrue(Granularity.MIN_5.isCoarser(Granularity.FULL));
         Assert.assertTrue(Granularity.MIN_20.isCoarser(Granularity.MIN_5));
         Assert.assertTrue(Granularity.MIN_60.isCoarser(Granularity.MIN_20));
         Assert.assertTrue(Granularity.MIN_240.isCoarser(Granularity.MIN_60));
         Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.MIN_240));
+
+        Assert.assertTrue(Granularity.MIN_20.isCoarser(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_60.isCoarser(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_60.isCoarser(Granularity.MIN_5));
+        Assert.assertTrue(Granularity.MIN_240.isCoarser(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_240.isCoarser(Granularity.MIN_5));
+        Assert.assertTrue(Granularity.MIN_240.isCoarser(Granularity.MIN_20));
+        Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.MIN_5));
+        Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.MIN_20));
+        Assert.assertTrue(Granularity.MIN_1440.isCoarser(Granularity.MIN_60));
+
+        Assert.assertFalse(Granularity.FULL.isCoarser(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_5.isCoarser(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_20.isCoarser(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_60.isCoarser(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_240.isCoarser(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_1440.isCoarser(Granularity.MIN_1440));
     }
 }
