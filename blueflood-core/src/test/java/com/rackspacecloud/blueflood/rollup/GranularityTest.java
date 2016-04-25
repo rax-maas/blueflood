@@ -544,4 +544,55 @@ public class GranularityTest {
     public void isCoarserWithNullThrowsException() {
         Assert.assertFalse(Granularity.FULL.isCoarser(null));
     }
+
+    @Test
+    public void snapMillisOnFullReturnsSameValue() {
+        Assert.assertEquals(1234L, Granularity.FULL.snapMillis(1234L));
+        Assert.assertEquals(1000L, Granularity.FULL.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.FULL.snapMillis(0L));
+        Assert.assertEquals(1234567L, Granularity.FULL.snapMillis(1234567L));
+    }
+
+    @Test
+    public void snapMillisOnOtherReturnsSnappedValue() {
+        Assert.assertEquals(0L, Granularity.MIN_5.snapMillis(1234L));
+        Assert.assertEquals(0L, Granularity.MIN_5.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.MIN_5.snapMillis(0L));
+        Assert.assertEquals(0L, Granularity.MIN_5.snapMillis(299999L));
+        Assert.assertEquals(300000L, Granularity.MIN_5.snapMillis(300000L));
+        Assert.assertEquals(300000L, Granularity.MIN_5.snapMillis(300001L));
+        Assert.assertEquals(1200000L, Granularity.MIN_5.snapMillis(1234567L));
+
+        Assert.assertEquals(0L, Granularity.MIN_20.snapMillis(1234L));
+        Assert.assertEquals(0L, Granularity.MIN_20.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.MIN_20.snapMillis(0L));
+        Assert.assertEquals(0L, Granularity.MIN_20.snapMillis(1199999L));
+        Assert.assertEquals(1200000L, Granularity.MIN_20.snapMillis(1200000));
+        Assert.assertEquals(1200000L, Granularity.MIN_20.snapMillis(1200001L));
+        Assert.assertEquals(1200000L, Granularity.MIN_20.snapMillis(1234567L));
+
+        Assert.assertEquals(0L, Granularity.MIN_60.snapMillis(1234L));
+        Assert.assertEquals(0L, Granularity.MIN_60.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.MIN_60.snapMillis(0L));
+        Assert.assertEquals(0L, Granularity.MIN_60.snapMillis(3599999L));
+        Assert.assertEquals(3600000L, Granularity.MIN_60.snapMillis(3600000L));
+        Assert.assertEquals(3600000L, Granularity.MIN_60.snapMillis(3600001L));
+        Assert.assertEquals(122400000L, Granularity.MIN_60.snapMillis(123456789L));
+
+        Assert.assertEquals(0L, Granularity.MIN_240.snapMillis(1234L));
+        Assert.assertEquals(0L, Granularity.MIN_240.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.MIN_240.snapMillis(0L));
+        Assert.assertEquals(0L, Granularity.MIN_240.snapMillis(14399999L));
+        Assert.assertEquals(14400000L, Granularity.MIN_240.snapMillis(14400000L));
+        Assert.assertEquals(14400000L, Granularity.MIN_240.snapMillis(14400001L));
+        Assert.assertEquals(115200000L, Granularity.MIN_240.snapMillis(123456789L));
+
+        Assert.assertEquals(0L, Granularity.MIN_1440.snapMillis(1234L));
+        Assert.assertEquals(0L, Granularity.MIN_1440.snapMillis(1000L));
+        Assert.assertEquals(0L, Granularity.MIN_1440.snapMillis(0L));
+        Assert.assertEquals(0L, Granularity.MIN_1440.snapMillis(86399999L));
+        Assert.assertEquals(86400000L, Granularity.MIN_1440.snapMillis(86400000L));
+        Assert.assertEquals(86400000L, Granularity.MIN_1440.snapMillis(86400001L));
+        Assert.assertEquals(86400000L, Granularity.MIN_1440.snapMillis(123456789L));
+    }
 }
