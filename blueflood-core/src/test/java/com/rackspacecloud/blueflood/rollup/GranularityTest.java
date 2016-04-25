@@ -392,6 +392,71 @@ public class GranularityTest {
     }
 
     @Test
+    public void fromStringFullShortName() {
+        // given
+        String s = "full";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.FULL, gran);
+    }
+
+    @Test
+    public void fromString5mShortName() {
+        // given
+        String s = "5m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_5, gran);
+    }
+
+    @Test
+    public void fromString20mShortName() {
+        // given
+        String s = "20m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void fromString60mShortName() {
+        // given
+        String s = "60m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_60, gran);
+    }
+
+    @Test
+    public void fromString240mShortName() {
+        // given
+        String s = "240m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertSame(Granularity.MIN_240, gran);
+    }
+
+    @Test
+    public void fromString1440mShortName() {
+        // given
+        String s = "1440m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
+
+    @Test
     public void fromStringCaseSensitive() {
         // given
         String s = "METRICS_1440M";
