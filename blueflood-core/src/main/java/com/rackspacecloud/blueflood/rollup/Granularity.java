@@ -174,7 +174,7 @@ public final class Granularity {
      * Return granularity that maps most closely to requested number of points,
      * using the algorithm specified in the
      * {@code GET_BY_POINTS_SELECTION_ALGORITHM} config value. See
-     * {@link #granularityFromPointsInInterval(String, long, long, int, String)}.
+     * {@link #granularityFromPointsInInterval(String, long, long, int, String, long)}.
      *
      * @param from beginning of interval (millis)
      * @param to end of interval (millis)
@@ -182,7 +182,7 @@ public final class Granularity {
      * @return
      */
     public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points) {
-        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM);
+        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM, GET_BY_POINTS_ASSUME_INTERVAL);
     }
     /**
      * Return granularity that maps most closely to requested number of points based on
@@ -192,11 +192,15 @@ public final class Granularity {
      * @param to end of interval (millis)
      * @param points count of desired data points
      * @param algorithm the algorithm to use. Valid values are
-     *  {@code "GEOMETRIC"}, {@code "LINEAR"}, and {@code "LESSTHANEQUAL"}. Any
-     *  other value is treated as {@code "GEOMETRIC"}.
+     *                  {@code "GEOMETRIC"}, {@code "LINEAR"}, and
+     *                  {@code "LESSTHANEQUAL"}. Any other value is treated as
+     *                  {@code "GEOMETRIC"}.
+     * @param assumedIntervalMillis FULL resolution is tricky because we don't
+     *                              know the period of check in question.
+     *                              Assume the minimum period and go from there.
      * @return
      */
-    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm) {
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis) {
         if (from >= to) {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
@@ -204,13 +208,13 @@ public final class Granularity {
         double requestedDuration = to - from;
 
         if (algorithm.startsWith("GEOMETRIC"))
-            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
+            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
         else if (algorithm.startsWith("LINEAR"))
-            return granularityFromPointsLinear(requestedDuration, points);
+            return granularityFromPointsLinear(requestedDuration, points, assumedIntervalMillis);
         else if (algorithm.startsWith("LESSTHANEQUAL"))
-            return granularityFromPointsLessThanEqual(requestedDuration, points);
+            return granularityFromPointsLessThanEqual(requestedDuration, points, assumedIntervalMillis);
 
-        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
+        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
     }
 
     /**
@@ -221,8 +225,8 @@ public final class Granularity {
      * @param points
      * @return
      */
-    private static Granularity granularityFromPointsLessThanEqual(double requestedDuration, int points) {
-        Granularity gran = granularityFromPointsLinear(requestedDuration, points);
+    private static Granularity granularityFromPointsLessThanEqual(double requestedDuration, int points, long assumedIntervalMillis) {
+        Granularity gran = granularityFromPointsLinear(requestedDuration, points, assumedIntervalMillis);
 
         if (requestedDuration / gran.milliseconds() > points) {
             try {
@@ -241,14 +245,14 @@ public final class Granularity {
      * @param points
      * @return
      */
-    private static Granularity granularityFromPointsLinear(double requestedDuration, int points) {
+    private static Granularity granularityFromPointsLinear(double requestedDuration, int points, long assumedIntervalMillis) {
         int closest = Integer.MAX_VALUE;
         int diff = 0;
         Granularity gran = null;
 
         for (Granularity g : Granularity.granularities()) {
             if (g == Granularity.FULL)
-                diff = (int)Math.abs(points - (requestedDuration / GET_BY_POINTS_ASSUME_INTERVAL));
+                diff = (int)Math.abs(points - (requestedDuration / assumedIntervalMillis));
             else
                 diff = (int)Math.abs(points - (requestedDuration /g.milliseconds()));
             if (diff < closest) {
@@ -271,7 +275,7 @@ public final class Granularity {
      *
      * @param requestedDuration (milliseconds)
      */
-    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints) {
+    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
         if (SAFETY_TTL_PROVIDER == null) {
@@ -287,7 +291,7 @@ public final class Granularity {
 
             // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
             // period and go from there.
-            long period = (g == Granularity.FULL) ? GET_BY_POINTS_ASSUME_INTERVAL : g.milliseconds();
+            long period = (g == Granularity.FULL) ? assumedIntervalMillis : g.milliseconds();
             double providablePoints = requestedDuration / period;
             double positiveRatio;
 
