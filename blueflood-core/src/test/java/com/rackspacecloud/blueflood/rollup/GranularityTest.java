@@ -253,15 +253,67 @@ public class GranularityTest {
     }
 
     @Test
-    public void testEquals() {
-        Granularity gran1 = Granularity.MIN_5;
-        Granularity gran2 = Granularity.MIN_5;
-        Granularity gran3 = Granularity.MIN_1440;
-        Average avg = new Average(1, 2.0);
+    public void equalsWithSameValueReturnsTrue() {
+        Assert.assertTrue(Granularity.FULL.equals(Granularity.FULL));
+        Assert.assertTrue(Granularity.MIN_5.equals(Granularity.MIN_5));
+        Assert.assertTrue(Granularity.MIN_20.equals(Granularity.MIN_20));
+        Assert.assertTrue(Granularity.MIN_60.equals(Granularity.MIN_60));
+        Assert.assertTrue(Granularity.MIN_240.equals(Granularity.MIN_240));
+        Assert.assertTrue(Granularity.MIN_1440.equals(Granularity.MIN_1440));
+    }
 
-        Assert.assertEquals(gran2, gran1);
-        Assert.assertFalse(gran1.equals(gran3));
-        Assert.assertFalse(gran1.equals(avg));
+    @Test
+    public void equalsWithDifferentValueReturnsFalse() {
+        Assert.assertFalse(Granularity.FULL.equals(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.FULL.equals(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.FULL.equals(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.FULL.equals(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.FULL.equals(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_5.equals(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_5.equals(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_5.equals(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_5.equals(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_5.equals(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_20.equals(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_20.equals(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_20.equals(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_20.equals(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_20.equals(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_60.equals(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_60.equals(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_60.equals(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_60.equals(Granularity.MIN_240));
+        Assert.assertFalse(Granularity.MIN_60.equals(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_240.equals(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_240.equals(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_240.equals(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_240.equals(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_240.equals(Granularity.MIN_1440));
+        Assert.assertFalse(Granularity.MIN_1440.equals(Granularity.FULL));
+        Assert.assertFalse(Granularity.MIN_1440.equals(Granularity.MIN_5));
+        Assert.assertFalse(Granularity.MIN_1440.equals(Granularity.MIN_20));
+        Assert.assertFalse(Granularity.MIN_1440.equals(Granularity.MIN_60));
+        Assert.assertFalse(Granularity.MIN_1440.equals(Granularity.MIN_240));
+    }
+
+    @Test
+    public void equalsWithNullReturnsFalse() {
+        Assert.assertFalse(Granularity.FULL.equals(null));
+        Assert.assertFalse(Granularity.MIN_5.equals(null));
+        Assert.assertFalse(Granularity.MIN_20.equals(null));
+        Assert.assertFalse(Granularity.MIN_60.equals(null));
+        Assert.assertFalse(Granularity.MIN_240.equals(null));
+        Assert.assertFalse(Granularity.MIN_1440.equals(null));
+    }
+
+    @Test
+    public void equalsWithNonGranularityObjectReturnsFalse() {
+        Assert.assertFalse(Granularity.FULL.equals(new Object()));
+        Assert.assertFalse(Granularity.MIN_5.equals(new Object()));
+        Assert.assertFalse(Granularity.MIN_20.equals(new Object()));
+        Assert.assertFalse(Granularity.MIN_60.equals(new Object()));
+        Assert.assertFalse(Granularity.MIN_240.equals(new Object()));
+        Assert.assertFalse(Granularity.MIN_1440.equals(new Object()));
     }
 
     @Test
