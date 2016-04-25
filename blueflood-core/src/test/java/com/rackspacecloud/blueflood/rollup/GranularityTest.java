@@ -340,6 +340,24 @@ public class GranularityTest {
     }
 
     @Test
+    public void fromStringCaseSensitive() {
+        // given
+        String s = "METRICS_1440M";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNull(gran);
+    }
+
+    @Test
+    public void fromStringNullReturnsNull() {
+        // when
+        Granularity gran = Granularity.fromString(null);
+        // then
+        Assert.assertNull(gran);
+    }
+
+    @Test
     public void testBadGranularityFromPointsInterval() {
         try {
             Granularity.granularityFromPointsInInterval("TENANTID1234",fromBaseMillis+2, fromBaseMillis+1, 3);
