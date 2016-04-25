@@ -612,4 +612,21 @@ public class GranularityTest {
         Assert.assertEquals(4031, Granularity.millisToSlot(1209599999L));
         Assert.assertEquals(0, Granularity.millisToSlot(1209600000L));
     }
+
+    @Test
+    public void millisToSlotWithNegativeReturnsNegative() {
+        Assert.assertEquals(0, Granularity.millisToSlot(-0));
+        Assert.assertEquals(0, Granularity.millisToSlot(-1));
+        Assert.assertEquals(0, Granularity.millisToSlot(-299999L));
+        Assert.assertEquals(-1, Granularity.millisToSlot(-300000L));
+        Assert.assertEquals(-1, Granularity.millisToSlot(-300001L));
+        Assert.assertEquals(-1, Granularity.millisToSlot(-599999L));
+        Assert.assertEquals(-2, Granularity.millisToSlot(-600000L));
+        Assert.assertEquals(-2, Granularity.millisToSlot(-600001L));
+        Assert.assertEquals(-4030, Granularity.millisToSlot(-1209299999L));
+        Assert.assertEquals(-4031, Granularity.millisToSlot(-1209300000L));
+        Assert.assertEquals(-4031, Granularity.millisToSlot(-1209300001L));
+        Assert.assertEquals(-4031, Granularity.millisToSlot(-1209599999L));
+        Assert.assertEquals(0, Granularity.millisToSlot(-1209600000L));
+    }
 }
