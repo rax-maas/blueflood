@@ -171,8 +171,10 @@ public final class Granularity {
     }
 
     /**
-     * Return granularity that maps most closely to requested number of points based on
-     * provided selection algorithm
+     * Return granularity that maps most closely to requested number of points,
+     * using the algorithm specified in the
+     * {@code GET_BY_POINTS_SELECTION_ALGORITHM} config value. See
+     * {@link #granularityFromPointsInInterval(String, long, long, int, String)}.
      *
      * @param from beginning of interval (millis)
      * @param to end of interval (millis)
@@ -180,17 +182,32 @@ public final class Granularity {
      * @return
      */
     public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points) {
+        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM);
+    }
+    /**
+     * Return granularity that maps most closely to requested number of points based on
+     * provided selection algorithm
+     *
+     * @param from beginning of interval (millis)
+     * @param to end of interval (millis)
+     * @param points count of desired data points
+     * @param algorithm the algorithm to use. Valid values are
+     *  {@code "GEOMETRIC"}, {@code "LINEAR"}, and {@code "LESSTHANEQUAL"}. Any
+     *  other value is treated as {@code "GEOMETRIC"}.
+     * @return
+     */
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm) {
         if (from >= to) {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
 
         double requestedDuration = to - from;
 
-        if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("GEOMETRIC"))
+        if (algorithm.startsWith("GEOMETRIC"))
             return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
-        else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LINEAR"))
+        else if (algorithm.startsWith("LINEAR"))
             return granularityFromPointsLinear(requestedDuration, points);
-        else if (GET_BY_POINTS_SELECTION_ALGORITHM.startsWith("LESSTHANEQUAL"))
+        else if (algorithm.startsWith("LESSTHANEQUAL"))
             return granularityFromPointsLessThanEqual(requestedDuration, points);
 
         return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points);
