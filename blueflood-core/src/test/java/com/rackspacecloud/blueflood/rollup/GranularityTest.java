@@ -265,36 +265,77 @@ public class GranularityTest {
     }
 
     @Test
-    public void testFromString() {
-        Granularity gran;
-        String s;
+    public void fromStringFull() {
+        // given
+        String s = "metrics_full";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.FULL, gran);
+    }
 
-        s = "metrics_full";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.FULL));
+    @Test
+    public void fromString5m() {
+        // given
+        String s = "metrics_5m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_5, gran);
+    }
 
-        s = "metrics_5m";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_5));
+    @Test
+    public void fromString20m() {
+        // given
+        String s = "metrics_20m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
 
-        s = "metrics_20m";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_20));
+    @Test
+    public void fromString60m() {
+        // given
+        String s = "metrics_60m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_60, gran);
+    }
 
-        s = "metrics_60m";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_60));
+    @Test
+    public void fromString240m() {
+        // given
+        String s = "metrics_240m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertSame(Granularity.MIN_240, gran);
+    }
 
-        s = "metrics_240m";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_240));
+    @Test
+    public void fromString1440m() {
+        // given
+        String s = "metrics_1440m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
+        Assert.assertNotNull(gran);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
 
-        s = "metrics_1440m";
-        gran = Granularity.fromString(s);
-        Assert.assertTrue(gran.equals(Granularity.MIN_1440));
-
-        s = "metrics_1990m";
-        gran = Granularity.fromString(s);
+    @Test
+    public void fromStringOtherReturnsNull() {
+        // given
+        String s = "metrics_1990m";
+        // when
+        Granularity gran = Granularity.fromString(s);
+        // then
         Assert.assertNull(gran);
     }
 
