@@ -154,7 +154,6 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
         this(currentTimeMillis, managedShards, new DefaultClockImpl());
-        registerMBean();
     }
     @VisibleForTesting
     public ScheduleContext(long currentTimeMillis,
@@ -481,7 +480,12 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         return results;
     }
 
-    private void registerMBean() {
+    private boolean isMbeanRegistered = false;
+    private synchronized void registerMBean() {
+
+        if (isMbeanRegistered) return;
+        isMbeanRegistered = true;
+
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", ScheduleContext.class.getSimpleName());
