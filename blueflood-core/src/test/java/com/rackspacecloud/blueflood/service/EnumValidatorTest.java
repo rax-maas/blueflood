@@ -16,15 +16,22 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
+import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
+import org.powermock.modules.junit4.PowerMockRunner;
+
 import java.util.*;
 
 import static org.junit.Assert.assertNull;
@@ -32,20 +39,40 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
+@PowerMockIgnore({"javax.management.*", "com.rackspacecloud.blueflood.utils.Metrics", "com.codahale.metrics.*"})
+@PrepareForTest({ IOContainer.class, AstyanaxIO.class, AstyanaxReader.class, ThreadPoolBuilder.class })
+@RunWith(PowerMockRunner.class)
+@SuppressStaticInitializationFor( {
+        "com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO",
+        "com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader",
+        "com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder"
+} )
 public class EnumValidatorTest {
 
-    final String tenant_id = "tenant1";
-    final String metric_name = "metric1";
+    private AstyanaxReader readerMock;
+    private DiscoveryIO discoveryIOMock;
+    private ExcessEnumIO excessEnumIO;
 
+    private final String tenant_id = "tenant1";
+    private final String metric_name = "metric1";
+    private HashSet<Locator> locators;
     Locator locator1;
-    HashSet<Locator> locators;
-
-    AstyanaxReader readerMock;
-    AstyanaxWriter writerMock;
-    DiscoveryIO discoveryIOMock;
 
     @Before
     public void setup() {
+
+        // static mock
+        readerMock = mock(AstyanaxReader.class);
+        discoveryIOMock = mock(DiscoveryIO.class);
+        excessEnumIO = mock(ExcessEnumIO.class);
+
+        PowerMockito.mockStatic(AstyanaxReader.class);
+        when(AstyanaxReader.getInstance()).thenReturn(readerMock);
+        PowerMockito.mockStatic(IOContainer.class);
+        IOContainer ioContainer = mock(IOContainer.class);
+        when(IOContainer.fromConfig()).thenReturn(ioContainer);
+        when(ioContainer.getExcessEnumIO()).thenReturn(excessEnumIO);
+
         // set threshold
         System.setProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD.name(), "3");
 
@@ -53,11 +80,6 @@ public class EnumValidatorTest {
         locator1 = Locator.createLocatorFromPathComponents(tenant_id, metric_name);
         locators = new HashSet<Locator>();
         locators.add(locator1);
-
-        // set up mocks
-        readerMock = mock(AstyanaxReader.class);
-        writerMock = mock(AstyanaxWriter.class);
-        discoveryIOMock = mock(DiscoveryIO.class);
     }
 
     @After
@@ -68,7 +90,6 @@ public class EnumValidatorTest {
     private EnumValidator setupEnumValidatorWithMock(Set<Locator> locators) {
         EnumValidator enumValidator = new EnumValidator(locators);
         enumValidator.setReader(readerMock);
-        enumValidator.setWriter(writerMock);
         enumValidator.setDiscoveryIO(discoveryIOMock);
         return enumValidator;
     }
@@ -83,7 +104,7 @@ public class EnumValidatorTest {
 
         // verify no writes to cassandra and elasticsearch
         verify(readerMock, never()).getEnumStringMappings(anyList());
-        verify(writerMock, never()).writeExcessEnumMetric(locator1);
+        verify(excessEnumIO, never()).insertExcessEnumMetric(locator1);
         verify(discoveryIOMock, never()).search(tenant_id, metric_name);
         verify(discoveryIOMock, never()).insertDiscovery(any(IMetric.class));
     }
@@ -100,7 +121,7 @@ public class EnumValidatorTest {
 
         // verify no writes to cassandra and elasticsearch
         verify(readerMock, times(1)).getEnumStringMappings(anyList());
-        verify(writerMock, never()).writeExcessEnumMetric(locator1);
+        verify(excessEnumIO, never()).insertExcessEnumMetric(locator1);
         verify(discoveryIOMock, never()).search(tenant_id, metric_name);
         verify(discoveryIOMock, never()).insertDiscovery(any(IMetric.class));
     }
@@ -122,7 +143,7 @@ public class EnumValidatorTest {
         validator.run();
 
         // verify writes to CF_METRICS_EXCESS_ENUMS and no writes elasticsearch
-        verify(writerMock, times(1)).writeExcessEnumMetric(locator1);
+        verify(excessEnumIO, times(1)).insertExcessEnumMetric(locator1);
         verify(discoveryIOMock, never()).search(tenant_id, metric_name);
         verify(discoveryIOMock, never()).insertDiscovery(any(IMetric.class));
     }
@@ -149,7 +170,7 @@ public class EnumValidatorTest {
 
         // verify no writes to CF_METRICS_EXCESS_ENUMS and no writes elasticsearch
         // because CF and ES enum values are equals
-        verify(writerMock, never()).writeExcessEnumMetric(locator1);
+        verify(excessEnumIO, never()).insertExcessEnumMetric(locator1);
         verify(discoveryIOMock, times(1)).search(tenant_id, metric_name);
         verify(discoveryIOMock, never()).insertDiscovery(any(IMetric.class));
     }
@@ -175,7 +196,7 @@ public class EnumValidatorTest {
         validator.run();
 
         // verify no writes to CF_METRICS_EXCESS_ENUMS and writes elasticsearch with new indexes
-        verify(writerMock, never()).writeExcessEnumMetric(locator1);
+        verify(excessEnumIO, never()).insertExcessEnumMetric(locator1);
         verify(discoveryIOMock, times(1)).search(tenant_id, metric_name);
         verify(discoveryIOMock, times(1)).insertDiscovery(any(IMetric.class));
     }
@@ -188,16 +209,6 @@ public class EnumValidatorTest {
 
         // expect
         assertSame(AstyanaxReader.getInstance(), validator.getReader());
-    }
-
-    @Test
-    public void getWriterUninitializedReturnsDefaultInstance() {
-
-        // given
-        EnumValidator validator = new EnumValidator(null);
-
-        // expect
-        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
     }
 
     @Test
@@ -224,22 +235,6 @@ public class EnumValidatorTest {
 
         // then
         assertSame(readerMock, validator.getReader());
-    }
-
-    @Test
-    public void setWriterSetsWriter() {
-
-        // given
-        EnumValidator validator = new EnumValidator(null);
-
-        // precondition
-        assertSame(AstyanaxWriter.getInstance(), validator.getWriter());
-
-        // when
-        validator.setWriter(writerMock);
-
-        // then
-        assertSame(writerMock, validator.getWriter());
     }
 
     @Test

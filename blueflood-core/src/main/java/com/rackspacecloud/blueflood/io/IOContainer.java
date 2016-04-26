@@ -17,9 +17,11 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxExcessEnumIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxLocatorIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DatastaxExcessEnumIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
@@ -42,6 +44,7 @@ public class IOContainer {
     private ShardStateIO shardStateIO;
     private MetadataIO metadataIO;
     private LocatorIO locatorIO;
+    private ExcessEnumIO excessEnumIO;
 
     // more IO classes to follow
 
@@ -77,13 +80,14 @@ public class IOContainer {
             metadataIO = new DatastaxMetadataIO();
             shardStateIO = new DatastaxShardStateIO();
             locatorIO = new DatastaxLocatorIO();
+            excessEnumIO = new DatastaxExcessEnumIO();
 
         } else {
 
             metadataIO = new AstyanaxMetadataIO();
             shardStateIO = new AstyanaxShardStateIO();
             locatorIO = new AstyanaxLocatorIO();
-
+            excessEnumIO = new AstyanaxExcessEnumIO();
         }
     }
 
@@ -106,6 +110,13 @@ public class IOContainer {
      */
     public LocatorIO getLocatorIO() {
         return locatorIO;
+    }
+
+    /**
+     * @return a class for reading/writing Excess Enum Metrics
+     */
+    public ExcessEnumIO getExcessEnumIO() {
+        return excessEnumIO;
     }
 
     /**

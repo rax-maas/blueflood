@@ -20,6 +20,8 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.io.ExcessEnumIO;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -67,14 +69,14 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     public void testCanReadExcessEnumMetrics() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents("acOne", "ent", "ch", "mz", "met");
         Locator loc2 = Locator.createLocatorFromPathComponents("acTwo", "ent", "ch", "mz", "met");
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
         Set<Locator> excessEnumList = new HashSet<Locator>();
         excessEnumList.add(loc1);
         excessEnumList.add(loc2);
-        writer.writeExcessEnumMetric(loc1);
-        writer.writeExcessEnumMetric(loc2);
-        Set<Locator> newExcessEnumList = reader.getExcessEnumMetrics();
+
+        ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
+        excessEnumIO.insertExcessEnumMetric(loc1);
+        excessEnumIO.insertExcessEnumMetric(loc2);
+        Set<Locator> newExcessEnumList = excessEnumIO.getExcessEnumMetrics();
         Assert.assertEquals(excessEnumList, newExcessEnumList);
     }
 

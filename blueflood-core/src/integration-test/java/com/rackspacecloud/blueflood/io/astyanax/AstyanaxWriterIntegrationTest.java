@@ -16,9 +16,7 @@
 
 package com.rackspacecloud.blueflood.io.astyanax;
 
-import com.rackspacecloud.blueflood.io.CassandraModel;
-import com.rackspacecloud.blueflood.io.CassandraUtilsIO;
-import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Test;
 
@@ -28,6 +26,7 @@ import static org.junit.Assert.*;
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
 
     private CassandraUtilsIO cassandraUtilsIO = new AstyanaxCassandraUtilsIO();
+    ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
 
     @Test
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
@@ -78,12 +77,12 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
-        writer.writeExcessEnumMetric(loc1);
+        excessEnumIO.insertExcessEnumMetric(loc1);
         assertEquals(  "Ensure " + CassandraModel.CF_METRICS_ENUM_NAME + " 1 after",
                 1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         // new locator means new row.
-        writer.writeExcessEnumMetric(loc2);
+        excessEnumIO.insertExcessEnumMetric(loc2);
         assertEquals(  "Ensure " + CassandraModel.CF_METRICS_ENUM_NAME + " 2 after",
                 2, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
     }
@@ -100,14 +99,14 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
         // same locator means same row.
-        writer.writeExcessEnumMetric(loc1);
-        writer.writeExcessEnumMetric(loc2);
-        writer.writeExcessEnumMetric(loc3);
+        excessEnumIO.insertExcessEnumMetric(loc1);
+        excessEnumIO.insertExcessEnumMetric(loc2);
+        excessEnumIO.insertExcessEnumMetric(loc3);
         assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 1 after",
                 1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
 
         // new locator means new row.
-        writer.writeExcessEnumMetric(loc4);
+        excessEnumIO.insertExcessEnumMetric(loc4);
         assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 2 after",
                 2, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
     }

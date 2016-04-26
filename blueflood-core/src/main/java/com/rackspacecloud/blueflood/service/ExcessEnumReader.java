@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 Rackspace
  *
@@ -22,7 +21,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Meter;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
@@ -55,7 +54,7 @@ public class ExcessEnumReader implements Runnable {
         while (true)
         {
             try {
-                excessEnumMetrics = AstyanaxReader.getInstance().getExcessEnumMetrics();
+                excessEnumMetrics = IOContainer.fromConfig().getExcessEnumIO().getExcessEnumMetrics();
                 readMeter.mark();
                 Thread.sleep(sleepMillis);
             } catch (Exception e) {

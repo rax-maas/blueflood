@@ -1,48 +1,29 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.MutationBatch;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxLocatorIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxLocatorIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class LocatorIOIntegrationTest {
+public class LocatorIOIntegrationTest extends IntegrationTestBase {
 
     private final DatastaxLocatorIO datastaxLocatorIO = new DatastaxLocatorIO();
     private final AstyanaxLocatorIO astyanaxLocatorIO = new AstyanaxLocatorIO();
 
-    private final String tenantId = "100000";
-    private final String metricName = "locatorio.itest.metric";
     private List<Locator> testLocators;
 
     @Before
     public void setup() {
         // create test locators
-        testLocators = createTestLocators(4, 2);
-    }
-
-    private List<Locator> createTestLocators(int numTenants, int numMetricNames) {
-        // create a number of test locators of numTenants x numMetricNames combination
-        List<Locator> locators = new ArrayList<Locator>();
-        for (int i = 1; i <= numTenants; i++) {
-            for (int j = 1; j <= numMetricNames; j++) {
-                locators.add(Locator.createLocatorFromPathComponents(tenantId + i, metricName + j));
-            }
-        }
-        return locators;
+        testLocators = generateTestLocators("100000", 4, "locator_io.integration.test", 2);
     }
 
     @Test
@@ -52,7 +33,7 @@ public class LocatorIOIntegrationTest {
         datastaxLocatorIO.insertLocator(testLocators.get(0));
         datastaxLocatorIO.insertLocator(testLocators.get(1));
 
-        // retrieve locators using new astyanax class
+        // retrieve locators using astyanax class
         long shard1 = (long) Util.getShard(testLocators.get(0).toString());
         Collection<Locator> locatorsResult1 = astyanaxLocatorIO.getLocators(shard1);
         assertEquals("Unexpected number of locators result for shard1", 1, locatorsResult1.size());
@@ -70,7 +51,7 @@ public class LocatorIOIntegrationTest {
     @Test
     public void writeAstyanaxReadDatastax() throws Exception {
 
-        // insert locators using new astyanax class
+        // insert locators using astyanax class
         astyanaxLocatorIO.insertLocator(testLocators.get(2));
         astyanaxLocatorIO.insertLocator(testLocators.get(3));
 
