@@ -702,4 +702,73 @@ public class GranularityTest {
         Assert.assertEquals(0, Granularity.MIN_1440.slot(1209600000L));
         Assert.assertEquals(0, Granularity.MIN_1440.slot(1209600001L));
     }
+
+    @Test
+    public void granFromPointsLinear100PointsBoundaryBetween5And20() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 48000000, 100, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 48000001, 100, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void granFromPointsLinear1000PointsBoundaryBetween5And20() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 480000000L, 1000, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 480000001L, 1000, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void granFromPointsLinear10000PointsBoundaryBetween5And20() {
+
+        // TODO: Change the the granularityFromPointsLinear method to use long
+        // instead of int. The method returns nulls in this case because of
+        // overflow.
+
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 4800000000L, 10000, "LINEAR", 1);
+        Assert.assertNull(gran); // Should be Granularity.MIN_5
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 4800000001L, 10000, "LINEAR", 1);
+        Assert.assertNull(gran); // Should be Granularity.MIN_20
+    }
+
+    @Test
+    public void granFromPointsLinearBoundaryBetween20And60() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 18000000, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 18000001, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_60, gran);
+    }
+
+    @Test
+    public void granFromPointsLinearBoundaryBetween60And240() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 57600000, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_60, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 57600001, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_240, gran);
+    }
+
+    @Test
+    public void granFromPointsLinearBoundaryBetween240And1440() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 246857142, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_240, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 246857143, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_240, gran); // Should be Granularity.MIN_1440
+
+        // TODO: According to the math of what the granularityFromPointsLinear
+        // method is doing, the changeover point for 240-to-1440 should be
+        // 246857143, but the algorithm makes mistakes due to the difference in
+        // precision between ints/longs and doubles. With the error, the
+        // changeover point becomes 259200000.
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 259199999, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_240, gran); // Should be Granularity.MIN_1440
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 259200000, 10, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
 }
