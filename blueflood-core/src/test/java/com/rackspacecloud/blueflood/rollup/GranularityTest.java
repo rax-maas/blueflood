@@ -771,4 +771,82 @@ public class GranularityTest {
         gran = Granularity.granularityFromPointsInInterval("abc123", 0, 259200000, 10, "LINEAR", 1);
         Assert.assertSame(Granularity.MIN_1440, gran);
     }
+
+    @Test(expected = RuntimeException.class)
+    public void granFromPointsWithFromGreaterThanToThrowsException() {
+        // when
+        Granularity gran = Granularity.granularityFromPointsInInterval("abc123", 10, 5, 10, "LINEAR", 1);
+        // then
+        // the exception is thrown
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void granFromPointsWithFromEqualToThrowsException() {
+        // when
+        Granularity gran = Granularity.granularityFromPointsInInterval("abc123", 10, 10, 10, "LINEAR", 1);
+        // then
+        // the exception is thrown
+    }
+
+    @Test
+    public void granFromPointsLessThanEqual100PointsBoundaryBetween5And20() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 30000000, 100, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 30000001, 100, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void granFromPointsLessThanEqual1000PointsBoundaryBetween5And20() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 300000000L, 1000, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 300000001L, 1000, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void granFromPointsLessThanEqual10000PointsBoundaryBetween5And20() {
+
+        Granularity gran;
+        // when
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 3000000000L, 10000, "LESSTHANEQUAL", 1);
+        // then
+        // the exception is thrown
+
+        // TODO: The method is throwing because of overflow in
+        // granularityFromPointsLinear. Once that method is changed to use
+        // longs, the following assertions should pass:
+        //Assert.assertSame(Granularity.MIN_5, gran);
+        //gran = Granularity.granularityFromPointsInInterval("abc123", 0, 3000000001L, 10000, "LESSTHANEQUAL", 1);
+        //Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void granFromPointsLessThanEqualBoundaryBetween20And60() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 12000000, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 12000001, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_60, gran);
+    }
+
+    @Test
+    public void granFromPointsLessThanEqualBoundaryBetween60And240() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 36000000, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_60, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 36000001, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_240, gran);
+    }
+
+    @Test
+    public void granFromPointsLessThanEqualBoundaryBetween240And1440() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 144000000, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_240, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 144000001, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
 }
