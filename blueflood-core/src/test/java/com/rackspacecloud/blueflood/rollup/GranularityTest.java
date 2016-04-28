@@ -907,6 +907,15 @@ public class GranularityTest {
     }
 
     @Test
+    public void granFromPointsGeometricWithCheckTtlAndAllGranularitiesSkippedReturnsCoarsest() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 6000000, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 6000000, 10, "GEOMETRIC", 1, true);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
+
+    @Test
     public void granFromPointsInvalidAlgorithmDefaultsToGeometric() {
         Granularity gran;
         gran = Granularity.granularityFromPointsInInterval("abc123", 0, 48000000, 100, "LINEAR", 1);
