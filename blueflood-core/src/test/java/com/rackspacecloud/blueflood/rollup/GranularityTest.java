@@ -1514,4 +1514,93 @@ public class GranularityTest {
         Assert.assertEquals(86400000, range.getStart());
         Assert.assertEquals(172799999, range.getStop());
     }
+
+    @Test
+    public void slotFromFiner() throws GranularityException {
+        Assert.assertEquals(0, Granularity.MIN_5.slotFromFinerSlot(0));
+        Assert.assertEquals(1, Granularity.MIN_5.slotFromFinerSlot(1));
+        Assert.assertEquals(4031, Granularity.MIN_5.slotFromFinerSlot(4031));
+        Assert.assertEquals(4032, Granularity.MIN_5.slotFromFinerSlot(4032));
+
+        Assert.assertEquals(0, Granularity.MIN_20.slotFromFinerSlot(0));
+        Assert.assertEquals(0, Granularity.MIN_20.slotFromFinerSlot(1));
+        Assert.assertEquals(0, Granularity.MIN_20.slotFromFinerSlot(2));
+        Assert.assertEquals(0, Granularity.MIN_20.slotFromFinerSlot(3));
+        Assert.assertEquals(1, Granularity.MIN_20.slotFromFinerSlot(4));
+        Assert.assertEquals(1006, Granularity.MIN_20.slotFromFinerSlot(4027));
+        Assert.assertEquals(1007, Granularity.MIN_20.slotFromFinerSlot(4028));
+        Assert.assertEquals(1007, Granularity.MIN_20.slotFromFinerSlot(4029));
+        Assert.assertEquals(1007, Granularity.MIN_20.slotFromFinerSlot(4030));
+        Assert.assertEquals(1007, Granularity.MIN_20.slotFromFinerSlot(4031));
+        Assert.assertEquals(1008, Granularity.MIN_20.slotFromFinerSlot(4032));
+
+        Assert.assertEquals(0, Granularity.MIN_60.slotFromFinerSlot(0));
+        Assert.assertEquals(0, Granularity.MIN_60.slotFromFinerSlot(1));
+        Assert.assertEquals(0, Granularity.MIN_60.slotFromFinerSlot(2));
+        Assert.assertEquals(1, Granularity.MIN_60.slotFromFinerSlot(3));
+        Assert.assertEquals(1, Granularity.MIN_60.slotFromFinerSlot(4));
+        Assert.assertEquals(1, Granularity.MIN_60.slotFromFinerSlot(5));
+        Assert.assertEquals(2, Granularity.MIN_60.slotFromFinerSlot(6));
+        Assert.assertEquals(333, Granularity.MIN_60.slotFromFinerSlot(1001));
+        Assert.assertEquals(334, Granularity.MIN_60.slotFromFinerSlot(1002));
+        Assert.assertEquals(334, Granularity.MIN_60.slotFromFinerSlot(1003));
+        Assert.assertEquals(334, Granularity.MIN_60.slotFromFinerSlot(1004));
+        Assert.assertEquals(335, Granularity.MIN_60.slotFromFinerSlot(1005));
+        Assert.assertEquals(335, Granularity.MIN_60.slotFromFinerSlot(1006));
+        Assert.assertEquals(335, Granularity.MIN_60.slotFromFinerSlot(1007));
+        Assert.assertEquals(336, Granularity.MIN_60.slotFromFinerSlot(1008));
+
+        Assert.assertEquals(0, Granularity.MIN_240.slotFromFinerSlot(0));
+        Assert.assertEquals(0, Granularity.MIN_240.slotFromFinerSlot(1));
+        Assert.assertEquals(0, Granularity.MIN_240.slotFromFinerSlot(2));
+        Assert.assertEquals(0, Granularity.MIN_240.slotFromFinerSlot(3));
+        Assert.assertEquals(1, Granularity.MIN_240.slotFromFinerSlot(4));
+        Assert.assertEquals(1, Granularity.MIN_240.slotFromFinerSlot(5));
+        Assert.assertEquals(1, Granularity.MIN_240.slotFromFinerSlot(6));
+        Assert.assertEquals(1, Granularity.MIN_240.slotFromFinerSlot(7));
+        Assert.assertEquals(2, Granularity.MIN_240.slotFromFinerSlot(8));
+        Assert.assertEquals(81, Granularity.MIN_240.slotFromFinerSlot(327));
+        Assert.assertEquals(82, Granularity.MIN_240.slotFromFinerSlot(328));
+        Assert.assertEquals(82, Granularity.MIN_240.slotFromFinerSlot(329));
+        Assert.assertEquals(82, Granularity.MIN_240.slotFromFinerSlot(330));
+        Assert.assertEquals(82, Granularity.MIN_240.slotFromFinerSlot(331));
+        Assert.assertEquals(83, Granularity.MIN_240.slotFromFinerSlot(332));
+        Assert.assertEquals(83, Granularity.MIN_240.slotFromFinerSlot(333));
+        Assert.assertEquals(83, Granularity.MIN_240.slotFromFinerSlot(334));
+        Assert.assertEquals(83, Granularity.MIN_240.slotFromFinerSlot(335));
+        Assert.assertEquals(84, Granularity.MIN_240.slotFromFinerSlot(336));
+
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(0));
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(1));
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(2));
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(3));
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(4));
+        Assert.assertEquals(0, Granularity.MIN_1440.slotFromFinerSlot(5));
+        Assert.assertEquals(1, Granularity.MIN_1440.slotFromFinerSlot(6));
+        Assert.assertEquals(12, Granularity.MIN_1440.slotFromFinerSlot(77));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(78));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(79));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(80));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(81));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(82));
+        Assert.assertEquals(13, Granularity.MIN_1440.slotFromFinerSlot(83));
+        Assert.assertEquals(14, Granularity.MIN_1440.slotFromFinerSlot(84));
+    }
+
+    @Test(expected = GranularityException.class)
+    public void slotFromFinerWithFullThrowsException() throws GranularityException {
+        // when
+        Granularity.FULL.slotFromFinerSlot(0);
+        // then
+        // the exception is thrown
+    }
+
+    @Test
+    public void slotFromFinerDoesNotWrap() throws GranularityException {
+        Assert.assertEquals(4031, Granularity.MIN_20.slotFromFinerSlot(16124));
+        Assert.assertEquals(4031, Granularity.MIN_20.slotFromFinerSlot(16125));
+        Assert.assertEquals(4031, Granularity.MIN_20.slotFromFinerSlot(16126));
+        Assert.assertEquals(4031, Granularity.MIN_20.slotFromFinerSlot(16127));
+        Assert.assertEquals(4032, Granularity.MIN_20.slotFromFinerSlot(16128));
+    }
 }
