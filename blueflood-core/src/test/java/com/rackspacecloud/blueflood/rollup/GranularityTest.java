@@ -851,6 +851,15 @@ public class GranularityTest {
     }
 
     @Test
+    public void granFromPointsLessThanEqualWouldBeUpperBoundaryOf1440() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 864000000, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 864000001, 10, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
+
+    @Test
     public void granFromPointsGeometricBoundaryBetween5And20() {
         Granularity gran;
 
