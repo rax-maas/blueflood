@@ -849,4 +849,51 @@ public class GranularityTest {
         gran = Granularity.granularityFromPointsInInterval("abc123", 0, 144000001, 10, "LESSTHANEQUAL", 1);
         Assert.assertSame(Granularity.MIN_1440, gran);
     }
+
+    @Test
+    public void granFromPointsGeometricBoundaryBetween5And20() {
+        Granularity gran;
+
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 6000000, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 6000001, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000000, 100, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000001, 100, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 600000000, 1000, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 600000001, 1000, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
+
+    @Test
+    public void granFromPointsGeometricBoundaryBetween20And60() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 20784609, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 20784610, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_60, gran);
+    }
+
+    @Test
+    public void granFromPointsGeometricBoundaryBetween60And240() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 72000000, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_60, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 72000001, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_240, gran);
+    }
+
+    @Test
+    public void granFromPointsGeometricBoundaryBetween240And1440() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 352726522, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_240, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 352726523, 10, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_1440, gran);
+    }
 }
