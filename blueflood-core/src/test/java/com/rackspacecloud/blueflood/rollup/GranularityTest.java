@@ -905,4 +905,25 @@ public class GranularityTest {
         gran = Granularity.granularityFromPointsInInterval("abc123", 0, 352726523, 10, "GEOMETRIC", 1, false);
         Assert.assertSame(Granularity.MIN_1440, gran);
     }
+
+    @Test
+    public void granFromPointsInvalidAlgorithmDefaultsToGeometric() {
+        Granularity gran;
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 48000000, 100, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 48000001, 100, "LINEAR", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 30000000, 100, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 30000001, 100, "LESSTHANEQUAL", 1);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000000, 100, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000001, 100, "GEOMETRIC", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000000, 100, "INVALID", 1, false);
+        Assert.assertSame(Granularity.MIN_5, gran);
+        gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000001, 100, "INVALID", 1, false);
+        Assert.assertSame(Granularity.MIN_20, gran);
+    }
 }
