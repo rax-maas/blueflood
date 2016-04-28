@@ -100,7 +100,7 @@ public class MaxValue extends AbstractRollupStat {
         }
 
         if (this.isFloatingPoint() && !other.isFloatingPoint()) {
-            if (this.toDouble() < (double)other.toDouble()) {
+            if (this.toDouble() < (double)other.toLong()) {
                 this.setLongValue(other.toLong());
             }
         } else if (!this.isFloatingPoint() && other.isFloatingPoint()) {
