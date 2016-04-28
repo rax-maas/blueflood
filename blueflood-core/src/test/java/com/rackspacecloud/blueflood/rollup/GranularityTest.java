@@ -926,4 +926,592 @@ public class GranularityTest {
         gran = Granularity.granularityFromPointsInInterval("abc123", 0, 60000001, 100, "INVALID", 1, false);
         Assert.assertSame(Granularity.MIN_20, gran);
     }
+
+    @Test
+    public void deriveRangeFiveMinuteFirstSlot() {
+        // given
+        Granularity gran = Granularity.MIN_5;
+        Range range;
+
+        // when
+        range = gran.deriveRange(0, 0);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(299999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(299999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 299999);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(299999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 300000);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(299999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 300001);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(299999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeFiveMinuteSecondSlot() {
+        // given
+        Granularity gran = Granularity.MIN_5;
+        Range range;
+
+        // when
+        range = gran.deriveRange(1, 0);
+
+        // then
+        Assert.assertEquals(-1209300000, range.getStart());
+        Assert.assertEquals(-1209000001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1);
+
+        // then
+        Assert.assertEquals(-1209300000, range.getStart());
+        Assert.assertEquals(-1209000001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 299999);
+
+        // then
+        Assert.assertEquals(-1209300000, range.getStart());
+        Assert.assertEquals(-1209000001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 300000);
+
+        // then
+        Assert.assertEquals(300000, range.getStart());
+        Assert.assertEquals(599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 300001);
+
+        // then
+        Assert.assertEquals(300000, range.getStart());
+        Assert.assertEquals(599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 599999);
+
+        // then
+        Assert.assertEquals(300000, range.getStart());
+        Assert.assertEquals(599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 600000);
+
+        // then
+        Assert.assertEquals(300000, range.getStart());
+        Assert.assertEquals(599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 600001);
+
+        // then
+        Assert.assertEquals(300000, range.getStart());
+        Assert.assertEquals(599999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeFiveMinuteLastSlot() {
+        // given
+        Granularity gran = Granularity.MIN_5;
+        Range range;
+
+        // when
+        range = gran.deriveRange(3, 0);
+
+        // then
+        Assert.assertEquals(-1208700000, range.getStart());
+        Assert.assertEquals(-1208400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 1);
+
+        // then
+        Assert.assertEquals(-1208700000, range.getStart());
+        Assert.assertEquals(-1208400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 899999);
+
+        // then
+        Assert.assertEquals(-1208700000, range.getStart());
+        Assert.assertEquals(-1208400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 900000);
+
+        // then
+        Assert.assertEquals(900000, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 900001);
+
+        // then
+        Assert.assertEquals(900000, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 1199999);
+
+        // then
+        Assert.assertEquals(900000, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 1200000);
+
+        // then
+        Assert.assertEquals(900000, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(3, 1200001);
+
+        // then
+        Assert.assertEquals(900000, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeTwentyMinuteFirstSlot() {
+        // given
+        Granularity gran = Granularity.MIN_20;
+        Range range;
+
+        // when
+        range = gran.deriveRange(0, 0);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1199999);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1200000);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1200001);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(1199999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeTwentyMinuteSecondSlot() {
+        // given
+        Granularity gran = Granularity.MIN_20;
+        Range range;
+
+        // when
+        range = gran.deriveRange(1, 0);
+
+        // then
+        Assert.assertEquals(-1208400000, range.getStart());
+        Assert.assertEquals(-1207200001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1);
+
+        // then
+        Assert.assertEquals(-1208400000, range.getStart());
+        Assert.assertEquals(-1207200001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 299999);
+
+        // then
+        Assert.assertEquals(-1208400000, range.getStart());
+        Assert.assertEquals(-1207200001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1200000);
+
+        // then
+        Assert.assertEquals(1200000, range.getStart());
+        Assert.assertEquals(2399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1200001);
+
+        // then
+        Assert.assertEquals(1200000, range.getStart());
+        Assert.assertEquals(2399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 2399999);
+
+        // then
+        Assert.assertEquals(1200000, range.getStart());
+        Assert.assertEquals(2399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 2400000);
+
+        // then
+        Assert.assertEquals(1200000, range.getStart());
+        Assert.assertEquals(2399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 2400001);
+
+        // then
+        Assert.assertEquals(1200000, range.getStart());
+        Assert.assertEquals(2399999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeSixtyMinuteFirstSlot() {
+        // given
+        Granularity gran = Granularity.MIN_60;
+        Range range;
+
+        // when
+        range = gran.deriveRange(0, 0);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(3599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(3599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 3599999);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(3599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 3600000);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(3599999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 3600001);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(3599999, range.getStop());
+    }
+
+    @Test
+    public void deriveRangeSixtyMinuteSecondSlot() {
+        // given
+        Granularity gran = Granularity.MIN_60;
+        Range range;
+
+        // when
+        range = gran.deriveRange(1, 0);
+
+        // then
+        Assert.assertEquals(-1206000000, range.getStart());
+        Assert.assertEquals(-1202400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1);
+
+        // then
+        Assert.assertEquals(-1206000000, range.getStart());
+        Assert.assertEquals(-1202400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 899999);
+
+        // then
+        Assert.assertEquals(-1206000000, range.getStart());
+        Assert.assertEquals(-1202400001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 3600000);
+
+        // then
+        Assert.assertEquals(3600000, range.getStart());
+        Assert.assertEquals(7199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 3600001);
+
+        // then
+        Assert.assertEquals(3600000, range.getStart());
+        Assert.assertEquals(7199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 7199999);
+
+        // then
+        Assert.assertEquals(3600000, range.getStart());
+        Assert.assertEquals(7199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 7200000);
+
+        // then
+        Assert.assertEquals(3600000, range.getStart());
+        Assert.assertEquals(7199999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 7200001);
+
+        // then
+        Assert.assertEquals(3600000, range.getStart());
+        Assert.assertEquals(7199999, range.getStop());
+    }
+
+    @Test
+    public void deriveRange240MinuteFirstSlot() {
+        // given
+        Granularity gran = Granularity.MIN_240;
+        Range range;
+
+        // when
+        range = gran.deriveRange(0, 0);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(14399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(14399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 14399999);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(14399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 14400000);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(14399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 14400001);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(14399999, range.getStop());
+    }
+
+    @Test
+    public void deriveRange240MinuteSecondSlot() {
+        // given
+        Granularity gran = Granularity.MIN_240;
+        Range range;
+
+        // when
+        range = gran.deriveRange(1, 0);
+
+        // then
+        Assert.assertEquals(-1195200000, range.getStart());
+        Assert.assertEquals(-1180800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1);
+
+        // then
+        Assert.assertEquals(-1195200000, range.getStart());
+        Assert.assertEquals(-1180800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 14399999);
+
+        // then
+        Assert.assertEquals(-1195200000, range.getStart());
+        Assert.assertEquals(-1180800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 14400000);
+
+        // then
+        Assert.assertEquals(14400000, range.getStart());
+        Assert.assertEquals(28799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 14400001);
+
+        // then
+        Assert.assertEquals(14400000, range.getStart());
+        Assert.assertEquals(28799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 28799999);
+
+        // then
+        Assert.assertEquals(14400000, range.getStart());
+        Assert.assertEquals(28799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 28800000);
+
+        // then
+        Assert.assertEquals(14400000, range.getStart());
+        Assert.assertEquals(28799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 28800001);
+
+        // then
+        Assert.assertEquals(14400000, range.getStart());
+        Assert.assertEquals(28799999, range.getStop());
+    }
+
+    @Test
+    public void deriveRange1440MinuteFirstSlot() {
+        // given
+        Granularity gran = Granularity.MIN_1440;
+        Range range;
+
+        // when
+        range = gran.deriveRange(0, 0);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(86399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 1);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(86399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 86399999);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(86399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 86400000);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(86399999, range.getStop());
+
+        // when
+        range = gran.deriveRange(0, 86400001);
+
+        // then
+        Assert.assertEquals(0, range.getStart());
+        Assert.assertEquals(86399999, range.getStop());
+    }
+
+    @Test
+    public void deriveRange1440MinuteSecondSlot() {
+        // given
+        Granularity gran = Granularity.MIN_1440;
+        Range range;
+
+        // when
+        range = gran.deriveRange(1, 0);
+
+        // then
+        Assert.assertEquals(-1123200000, range.getStart());
+        Assert.assertEquals(-1036800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 1);
+
+        // then
+        Assert.assertEquals(-1123200000, range.getStart());
+        Assert.assertEquals(-1036800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 86399999);
+
+        // then
+        Assert.assertEquals(-1123200000, range.getStart());
+        Assert.assertEquals(-1036800001, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 86400000);
+
+        // then
+        Assert.assertEquals(86400000, range.getStart());
+        Assert.assertEquals(172799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 86400001);
+
+        // then
+        Assert.assertEquals(86400000, range.getStart());
+        Assert.assertEquals(172799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 172799999);
+
+        // then
+        Assert.assertEquals(86400000, range.getStart());
+        Assert.assertEquals(172799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 172800000);
+
+        // then
+        Assert.assertEquals(86400000, range.getStart());
+        Assert.assertEquals(172799999, range.getStop());
+
+        // when
+        range = gran.deriveRange(1, 172800001);
+
+        // then
+        Assert.assertEquals(86400000, range.getStart());
+        Assert.assertEquals(172799999, range.getStop());
+    }
 }
