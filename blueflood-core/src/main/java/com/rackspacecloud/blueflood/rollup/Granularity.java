@@ -182,7 +182,7 @@ public final class Granularity {
      * @return
      */
     public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points) {
-        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM, GET_BY_POINTS_ASSUME_INTERVAL);
+        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM, GET_BY_POINTS_ASSUME_INTERVAL, true);
     }
     /**
      * Return granularity that maps most closely to requested number of points based on
@@ -198,9 +198,11 @@ public final class Granularity {
      * @param assumedIntervalMillis FULL resolution is tricky because we don't
      *                              know the period of check in question.
      *                              Assume the minimum period and go from there.
+     * @param checkTtl check the specified time against the default ttl values,
+     *                 skipping granularities that don't fit.
      * @return
      */
-    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis) {
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis, boolean checkTtl) {
         if (from >= to) {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
@@ -208,13 +210,16 @@ public final class Granularity {
         double requestedDuration = to - from;
 
         if (algorithm.startsWith("GEOMETRIC"))
-            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
+            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis, checkTtl);
         else if (algorithm.startsWith("LINEAR"))
             return granularityFromPointsLinear(requestedDuration, points, assumedIntervalMillis);
         else if (algorithm.startsWith("LESSTHANEQUAL"))
             return granularityFromPointsLessThanEqual(requestedDuration, points, assumedIntervalMillis);
 
-        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
+        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis, checkTtl);
+    }
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis) {
+        return granularityFromPointsInInterval(tenantid, from, to, points, algorithm, assumedIntervalMillis, true);
     }
 
     /**
@@ -275,18 +280,20 @@ public final class Granularity {
      *
      * @param requestedDuration (milliseconds)
      */
-    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis) {
+    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis, boolean checkTtl) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
-        if (SAFETY_TTL_PROVIDER == null) {
+        if (checkTtl && SAFETY_TTL_PROVIDER == null) {
             SAFETY_TTL_PROVIDER = SafetyTtlProvider.getInstance();
         }
 
         for (Granularity g : Granularity.granularities()) {
-            long ttl = SAFETY_TTL_PROVIDER.getFinalTTL(tenantid, g);
+            if (checkTtl) {
+                long ttl = SAFETY_TTL_PROVIDER.getFinalTTL(tenantid, g);
 
-            if (from < Calendar.getInstance().getTimeInMillis() - ttl) {
-                continue;
+                if (from < Calendar.getInstance().getTimeInMillis() - ttl) {
+                    continue;
+                }
             }
 
             // FULL resolution is tricky because we don't know the period of check in question. Assume the minimum
