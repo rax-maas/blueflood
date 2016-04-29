@@ -26,7 +26,6 @@ import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +46,8 @@ public class ShardStateManager {
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
+    private static final Map<Granularity, Meter> delayedToReRollMeters2 = new HashMap<Granularity, Meter>();
+    private static final Map<Granularity, Meter> delayedToReRollMeters3 = new HashMap<Granularity, Meter>();
     private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
 
     // If there are no delayed metrics, a slot should only get rolled up again after 14 days since its last rollup. Since we only allow
@@ -60,6 +61,9 @@ public class ShardStateManager {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
             granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
             granToDelayedMetricsMeter.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("Delayed metric that has a danger of TTLing", rollupGranularity.shortName())));
+
+            delayedToReRollMeters2.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of 2nd rollup delay", rollupGranularity.shortName())));
+            delayedToReRollMeters3.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of 3rd rollup wait", rollupGranularity.shortName())));
         }
     }
 
@@ -353,38 +357,34 @@ public class ShardStateManager {
                 if (timeElapsed <= maxAgeMillis) {
                     continue;
                 }
-
                 if (update.getLastRollupTimestamp() > 0) {
                     final long timeElapsedSinceLastRollup = now - update.getLastRollupTimestamp();
 
-                    //Handling re-rolls: Re-rolls would use different delay
-                    //Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS), a slot can be
-                    //identified as being re-rolled, if the last rollup is within those last 3 days.
+                    //Handling re-rolls: Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS),
+                    //a slot can be identified as being re-rolled, if the last rollup is within those last 3 days.
                     if (timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
 
                         SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
                         if (timeElapsed <= delayedMetricsMaxAgeMillis) {
 
-                            //TODO: Meter here indicating delayed metrics within DELAYED_METRICS_ROLLUP_DELAY_MILLIS
-
+                            delayedToReRollMeters2.get(granularity).mark();
                             log.debug(String.format("Delaying re-roll of slotKey [%s] as [%d] millis haven't elapsed " +
-                                    "since collection time:[%d] now: [%d], last rollup time: [%d]", slotKey,
-                                    delayedMetricsMaxAgeMillis, update.getTimestamp(), now, update.getLastRollupTimestamp()));
+                                    "since collection time:[%d] now: [%d] time elapsed: [%d] last rollup time: [%d]", slotKey,
+                                    delayedMetricsMaxAgeMillis, update.getTimestamp(), now, timeElapsed, update.getLastRollupTimestamp()));
                             continue;
                         }
 
                         long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
-                        if (delayOfLastIngestedMetric > delayedMetricsMaxAgeMillis) {
+                        final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
 
-                            //TODO: Meter here indicating delay greater than DELAYED_METRICS_ROLLUP_DELAY_MILLIS
+                        if (delayOfLastIngestedMetric > delayedMetricsMaxAgeMillis &&
+                            timeElapsedSinceLastIngest <= rollupWaitPeriodMillis) {
 
-                            final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
-                            if (timeElapsedSinceLastIngest <= rollupWaitPeriodMillis) {
-                                log.debug(String.format("Delaying re-roll of slotKey [%s] as we received delayed metrics" +
-                                        " within the last [%d] millis with rollup_wait of [%d] millis. ", slotKey,
-                                        timeElapsedSinceLastIngest, rollupWaitPeriodMillis));
-                                continue;
-                            }
+                            delayedToReRollMeters3.get(granularity).mark();
+                            log.debug(String.format("Delaying re-roll of slotKey [%s] as we received delayed metrics" +
+                                    " within the last [%d] millis with rollup_wait of [%d] millis. ", slotKey,
+                                    timeElapsedSinceLastIngest, rollupWaitPeriodMillis));
+                            continue;
                         }
 
                         granToReRollMeters.get(granularity).mark();
@@ -393,9 +393,9 @@ public class ShardStateManager {
                         }
                     }
                 }
-
                 outputKeys.add(entry.getKey());
             }
+
             return outputKeys;
         }
     }
