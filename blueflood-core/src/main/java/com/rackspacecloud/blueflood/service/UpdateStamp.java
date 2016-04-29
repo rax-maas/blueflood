@@ -38,26 +38,31 @@ public class UpdateStamp {
 
     private long lastRollupTimestamp;
 
+    private long lastIngestTimestamp;
+
     public UpdateStamp(long timestamp, State state, boolean dirty) {
         setTimestamp(timestamp);
         setState(state);
         setDirty(dirty);
     }
 
-    public UpdateStamp(long timestamp, State state, boolean dirty, long lastRollupTimestamp) {
+    public UpdateStamp(long timestamp, State state, boolean dirty, long lastRollupTimestamp, long lastIngestTimestamp) {
         this(timestamp, state, dirty);
         this.lastRollupTimestamp = lastRollupTimestamp;
+        this.lastIngestTimestamp = lastIngestTimestamp;
     }
 
     public void setDirty(boolean b) { dirty = b; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
     public void setState(State state) { this.state = state; }
     public void setLastRollupTimestamp(long lastRollupTimestamp) { this.lastRollupTimestamp = lastRollupTimestamp; }
+    public void setLastIngestTimestamp(long lastIngestTimestamp) { this.lastIngestTimestamp = lastIngestTimestamp; }
 
     public boolean isDirty() { return dirty; }
     public long getTimestamp() { return timestamp; }
     public State getState() { return state; }
     public long getLastRollupTimestamp() { return lastRollupTimestamp; }
+    public long getLastIngestTimestamp() { return lastIngestTimestamp; }
 
     public int hashCode() {
         return (timestamp + state.code).hashCode();

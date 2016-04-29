@@ -30,7 +30,7 @@ public class ScheduleContextScheduleEligibleSlotsTest {
         Assert.assertEquals(0, ctx.getScheduledCount());
 
         // when
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, 7200000, 3600000);
 
         // then
         Assert.assertEquals(1, ctx.getScheduledCount());
@@ -43,7 +43,7 @@ public class ScheduleContextScheduleEligibleSlotsTest {
         Assert.assertFalse(ctx.hasScheduled());
 
         // when
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, 7200000, 3600000);
 
         // then
         Assert.assertTrue(ctx.hasScheduled());

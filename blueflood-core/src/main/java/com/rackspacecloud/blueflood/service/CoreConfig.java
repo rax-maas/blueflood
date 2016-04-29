@@ -151,6 +151,7 @@ public enum CoreConfig implements ConfigDefaults {
     // how long we typically wait to schedule a rollup.
     ROLLUP_DELAY_MILLIS("300000"),
     DELAYED_METRICS_ROLLUP_DELAY_MILLIS("300000"),
+    DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS("300000"),
     STRING_METRICS_DROPPED("false"),
     TENANTIDS_TO_KEEP(""),
 

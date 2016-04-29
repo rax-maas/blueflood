@@ -47,7 +47,7 @@ public class ScheduleContextClearFromRunningTest {
         });
         mgr = ctx.getShardStateManager();
         ctx.update(updateTime, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, 7200000, 3600000);
     }
 
     @Test

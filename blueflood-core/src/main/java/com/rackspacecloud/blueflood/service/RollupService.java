@@ -44,18 +44,18 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
     private final long rollupDelayMillis;
     private final long delayedMetricRollupDelayMillis;
+    private final long rollupWaitPeriodMillis;
 
+    private transient Thread thread;
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
-    private final ThreadPoolExecutor enumValidatorExecutor;
 
+    private final ThreadPoolExecutor enumValidatorExecutor;
     private long pollerPeriod;
     private final long configRefreshInterval;
-
-    private transient Thread thread;
 
     private long lastSlotCheckFinishedAt = 0L;
 
@@ -100,6 +100,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         Configuration config = Configuration.getInstance();
         rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
         delayedMetricRollupDelayMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupWaitPeriodMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS);
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         ThreadPoolExecutor _locatorFetchExecutors = new ThreadPoolExecutor(
                 locatorFetchConcurrency, locatorFetchConcurrency,
@@ -175,6 +176,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                          ThreadPoolExecutor enumValidatorExecutor,
                          long rollupDelayMillis,
                          long delayedMetricRollupDelayMillis,
+                         long rollupWaitPeriodMillis,
                          long pollerPeriod,
                          long configRefreshInterval) {
 
@@ -186,6 +188,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         this.enumValidatorExecutor = enumValidatorExecutor;
         this.rollupDelayMillis = rollupDelayMillis;
         this.delayedMetricRollupDelayMillis = delayedMetricRollupDelayMillis;
+        this.rollupWaitPeriodMillis = rollupWaitPeriodMillis;
         this.pollerPeriod = pollerPeriod;
         this.configRefreshInterval = configRefreshInterval;
 
@@ -248,7 +251,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     final void poll() {
         Timer.Context timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
-        context.scheduleEligibleSlots(rollupDelayMillis, delayedMetricRollupDelayMillis);
+        context.scheduleEligibleSlots(rollupDelayMillis, delayedMetricRollupDelayMillis, rollupWaitPeriodMillis);
         timer.stop();
     }
 
