@@ -120,7 +120,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         testGetRollupByPoints();
         testGetRollupByResolution(Arrays.asList(locators), locatorToPoints, httpHandler);
         testHttpRequestForPoints();
-        testHttpRequestForHistograms();
     }
 
     private void testGetRollupByPoints() throws Exception {
@@ -191,12 +190,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
-    private void testHttpRequestForHistograms() throws Exception {
-        HttpGet get = new HttpGet(getHistQueryURI());
-        HttpResponse response = client.execute(get);
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-    }
-
     public static void testBadRequest(String metricName, String tenantId, DefaultHttpClient client) throws Exception {
         HttpGet get = new HttpGet(getInvalidMetricsQueryURI(metricName, tenantId));
         HttpResponse response = client.execute(get);
@@ -224,15 +217,6 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     private static URI getMetricsQueryURI(String metricName, String tenantId) throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/" + metricName)
-                .setParameter("from", String.valueOf(baseMillis))
-                .setParameter("to", String.valueOf(baseMillis + 86400000))
-                .setParameter("resolution", "full");
-        return builder.build();
-    }
-
-    private URI getHistQueryURI() throws URISyntaxException {
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantId + "/views/histograms/" + metricName)
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("to", String.valueOf(baseMillis + 86400000))
                 .setParameter("resolution", "full");

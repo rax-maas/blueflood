@@ -72,8 +72,6 @@ public class LocatorFetchRunnableTest {
 
         locators = getTypicalLocators();
 
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "false");
-
         // mock IOContainer and LocatorIO
         locatorIO = mock(LocatorIO.class);
         PowerMockito.mockStatic(IOContainer.class);
@@ -151,20 +149,6 @@ public class LocatorFetchRunnableTest {
     }
 
     @Test
-    public void executeHistogramRollupForLocatorTriggersExecutionOfHistogramRollupRunnable() {
-
-        // when
-        lfr.executeHistogramRollupForLocator(executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        verify(rollupReadExecutor, times(1)).execute(Matchers.<HistogramRollupRunnable>any());
-        verifyNoMoreInteractions(rollupReadExecutor);
-        verify(executionContext, times(1)).incrementReadCounter();
-        verifyNoMoreInteractions(executionContext);
-        verifyZeroInteractions(rollupBatchWriter);
-    }
-
-    @Test
     public void processLocatorTriggersRunnable() {
 
         // when
@@ -202,150 +186,6 @@ public class LocatorFetchRunnableTest {
         Assert.assertEquals(0, count);
         verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
         verify(executionContext, times(1)).decrementReadCounter();
-    }
-
-    @Test
-    public void processLocatorHistogramEnabledTriggersRunnables() {
-
-        // given
-        final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                executedRunnables.add((RollupRunnable)invocation.getArguments()[0]);
-                return null;
-            }
-        }).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
-
-        // when
-        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        Assert.assertEquals(2, count);
-        verify(executionContext, times(2)).incrementReadCounter();
-        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, never()).decrementReadCounter();
-        verifyNoMoreInteractions(executionContext);
-        verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
-        Assert.assertEquals(2, executedRunnables.size());
-        assertNotNull(executedRunnables.get(0));
-        Assert.assertEquals(RollupRunnable.class, executedRunnables.get(0).getClass());
-        assertNotNull(executedRunnables.get(1));
-        Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(1).getClass());
-    }
-
-    @Test
-    public void processLocatorExceptionWithHistogramEnabledCausesOnlyFirstOfTwoRollupsToFail() {
-
-        // given
-        final List<RollupRunnable> executedRunnables = new ArrayList<RollupRunnable>();
-        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
-        doThrow(cause)
-            .doAnswer(new Answer() {
-                @Override
-                public Object answer(InvocationOnMock invocation) throws Throwable {
-                    executedRunnables.add((RollupRunnable) invocation.getArguments()[0]);
-                    return null;
-                }
-            }).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
-
-        // when
-        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        Assert.assertEquals(1, count);
-        verify(executionContext, times(2)).incrementReadCounter();
-        verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, times(1)).decrementReadCounter();
-        verifyNoMoreInteractions(executionContext);
-        verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
-        Assert.assertEquals(1, executedRunnables.size());
-        assertNotNull(executedRunnables.get(0));
-        Assert.assertEquals(HistogramRollupRunnable.class, executedRunnables.get(0).getClass());
-    }
-
-    @Test
-    public void processHistogramForLocatorTriggersRunnable() {
-
-        // when
-        int count = lfr.processHistogramForLocator(0, executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        Assert.assertEquals(1, count);
-        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, never()).decrementReadCounter();
-    }
-
-    @Test
-    public void processHistogramForLocatorIncrementsCount() {
-
-        // when
-        int count = lfr.processHistogramForLocator(1, executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        Assert.assertEquals(2, count);
-        verify(executionContext, never()).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, never()).decrementReadCounter();
-    }
-
-    @Test
-    public void processHistogramForLocatorRejectedExecutionExceptionCausesRollupToFail() {
-
-        // given
-        Throwable cause = new RejectedExecutionException("exception for testing purposes");
-        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        // when
-        int count = lfr.processHistogramForLocator(0, executionContext,
-                rollupBatchWriter, locators.get(0));    // hits the first catch block in processHistogramForLocator
-
-        // then
-        Assert.assertEquals(0, count);
-        verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, times(1)).decrementReadCounter();
-    }
-
-    @Test
-    public void processHistogramForLocatorExceptionCausesRollupToFail() {
-
-        // given
-        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
-        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        // when
-        int count = lfr.processHistogramForLocator(0, executionContext,
-                rollupBatchWriter, locators.get(0));    // hits the second catch block in processHistogramForLocator
-
-        // then
-        Assert.assertEquals(0, count);
-        verify(executionContext, times(0)).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, times(1)).decrementReadCounter();
-    }
-
-    @Test
-    public void processLocatorTwoExceptionsWithHistogramEnabledCausesBothRollupsToFail() {
-
-        // given
-        Throwable cause = new RejectedExecutionException("exception for testing purposes");
-        doThrow(cause).when(rollupReadExecutor).execute(Matchers.<Runnable>any());
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS, "true");
-
-        // when
-        int count = lfr.processLocator(0, executionContext, rollupBatchWriter, locators.get(0));
-
-        // then
-        Assert.assertEquals(0, count);
-        verify(executionContext, times(2)).incrementReadCounter();
-        verify(executionContext, times(2)).markUnsuccessful(Matchers.<Throwable>any());
-        verify(executionContext, times(2)).decrementReadCounter();
-        verifyNoMoreInteractions(executionContext);
-        verify(rollupReadExecutor, times(2)).execute(Matchers.<RollupRunnable>any());
-        verifyNoMoreInteractions(rollupReadExecutor);
     }
 
     @Test
