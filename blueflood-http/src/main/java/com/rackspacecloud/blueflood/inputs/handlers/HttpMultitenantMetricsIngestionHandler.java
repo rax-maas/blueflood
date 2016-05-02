@@ -16,8 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-
-import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
+import com.rackspacecloud.blueflood.inputs.formats.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -33,11 +32,11 @@ public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestion
 
     @Override
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+        List<JSONMetric> jsonMetrics =
                 mapper.readValue(
                         body,
                         typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.ScopedJSONMetric.class)
+                                JSONMetricScoped.class)
                 );
         return new JSONMetricsContainer(tenantId, jsonMetrics);
     }

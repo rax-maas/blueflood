@@ -6,6 +6,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -100,55 +101,69 @@ public class TestUtils {
     }
 
     /**
-     * Given a Reader object pointing to a blueflood ingestion payload, replace all TIMESTAMP & POSTFIX patterns with:
-     * <li> current timestamp
-     * <li> provided metric name postfix
-     *
-     * @param reader
-     * @param postfix
-     * @return
-     * @throws IOException
+     * get raw json payload from file at payloadPath
+     * @param payloadPath
+     * @return String of json payload
      */
-    public static String getJsonFromFile( Reader reader, String postfix ) throws IOException {
-
-        return getJsonFromFile( reader, System.currentTimeMillis(), postfix );
-    }
-
-    /**
-     * Given a Reader object pointing to a blueflood ingestion payload, replace all TIMESTAMP & POSTFIX patterns with:
-     * <li> provided timestamp
-     * <li> provided metric name postfix
-     *
-     * @param reader
-     * @param timestamp
-     * @param postfix
-     * @return
-     * @throws IOException
-     */
-    public static String getJsonFromFile( Reader reader, long timestamp, String postfix ) throws IOException {
+    public static String getJsonFromFile(String payloadPath) throws IOException {
+        Reader reader = new InputStreamReader(TestUtils.class.getClassLoader().getResourceAsStream( payloadPath ) );
         StringWriter writer = new StringWriter();
 
         IOUtils.copy( reader, writer );
         IOUtils.closeQuietly( reader );
 
-        String json = writer.toString();
+        return writer.toString();
+    }
 
-        // JSON might have several entries for the same metric.  If they have the same timestamp, they coudl overwrite
-        // each other in the case of enums.  Not using sleep() here to increment the time as to not have to deal with
-        // interruptedexception.  Rather, incrementing the time by 1 ms.
+    /**
+     * Given a payloadPath string pointing to a blueflood ingestion payload, replace all POSTFIX patterns with:
+     * <li> current timestamp
+     * <li> provided metric name postfix
+     *
+     * @param payloadPath
+     * @param postfix
+     * @return json string of payload with current TIMESTAMP & POSTFIX patterns replaced
+     * @throws IOException
+     */
+    public static String getJsonFromFile(String payloadPath, String postfix ) throws IOException {
+        return getJsonFromFile(payloadPath, System.currentTimeMillis(), postfix);
+    }
 
-        long increment = 0;
+    /**
+     * Given a payloadPath string pointing to a blueflood ingestion payload, replace all TIMESTAMP & POSTFIX patterns with:
+     * <li> provided timestamp
+     * <li> provided metric name postfix
+     *
+     * @param payloadPath
+     * @param timestamp
+     * @param postfix
+     * @return json string of payload with TIMESTAMP & POSTFIX patterns replaced
+     * @throws IOException
+     */
+    public static String getJsonFromFile(String payloadPath, long timestamp, String postfix ) throws IOException {
+        String json = getJsonFromFile(payloadPath);
 
-        while( json.contains( TIMESTAMP ) ) {
+        // update timestamp
+        json = updateTimeStampJson(json, TIMESTAMP, timestamp);
 
-            json = json.replaceFirst( TIMESTAMP, Long.toString( timestamp + increment++ ) );
-        }
-
+        // append random number to metric name
         json = json.replace( POSTFIX, postfix );
 
         return json;
     }
 
+    public static String updateTimeStampJson(String json, String timestampName, long timestampMillis) {
+        // JSON might have several entries for the same metric.  If they have the same timestamp, they could overwrite
+        // each other in the case of enums.  Not using sleep() here to increment the time as to not have to deal with
+        // interruptedexception.  Rather, incrementing the time by 1 ms.
+        long increment = 0;
+
+        while( json.contains( timestampName ) ) {
+
+            json = json.replaceFirst( timestampName, Long.toString( timestampMillis + increment++ ) );
+        }
+        return json;
+    }
 
     /**
      * Generate single metric data using:

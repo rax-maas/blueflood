@@ -25,7 +25,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -39,7 +39,6 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -79,8 +78,8 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             AggregatedPayload payload = createPayload( body );
 
             List<String> errors = payload.getValidationErrors();
-
             if ( errors.isEmpty() ) {
+                // no validation errors, process bundle
                 collection.add( PreaggregateConversions.buildMetricsCollection( payload ) );
                 ListenableFuture<List<Boolean>> futures = processor.apply( collection );
                 List<Boolean> persisteds = futures.get( timeout.getValue(), timeout.getUnit() );
@@ -93,7 +92,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
                 DefaultHandler.sendResponse( ctx, request, null, HttpResponseStatus.OK );
             }
             else {
-
+                // has validation errors for the single metric, return BAD_REQUEST
                 DefaultHandler.sendResponse( ctx,
                         request,
                         HttpMetricsIngestionHandler.getResponseBody( errors ),
