@@ -78,6 +78,7 @@ public class JSONMetricsContainer {
                 if (delay > delayedMetricsMillis) {
                     delayedMetrics.add(metric);
                     Instrumentation.markDelayedMetricsReceived();
+                    Instrumentation.markDelayOfIngestedMetrics(delay);
                 }
                 metrics.add(metric);
             }

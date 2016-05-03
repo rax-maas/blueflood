@@ -44,6 +44,7 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
     private static final Meter delayedMetricsReceived;
+    private static final Meter delayOfIngestedMetrics;
     private static final Meter enumMetricWritten;
 
     static {
@@ -58,6 +59,7 @@ public class Instrumentation implements InstrumentationMBean {
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
         enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
         delayedMetricsReceived = Metrics.meter(kls, "Delayed metrics received");
+        delayOfIngestedMetrics = Metrics.meter(kls, "Delay of ingested metrics");
 
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -174,5 +176,9 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markDelayedMetricsReceived() {
         delayedMetricsReceived.mark();
+    }
+
+    public static void markDelayOfIngestedMetrics(long delay) {
+        delayOfIngestedMetrics.mark(delay);
     }
 }
