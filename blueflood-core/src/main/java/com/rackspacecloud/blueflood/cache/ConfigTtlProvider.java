@@ -62,19 +62,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         ttlMapBuilder.put(Granularity.MIN_1440, RollupType.BF_BASIC,
                 new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN1440), TimeUnit.DAYS));
 
-        // Histogram rollups
-
-        ttlMapBuilder.put(Granularity.MIN_5, RollupType.BF_HISTOGRAMS,
-                new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_20, RollupType.BF_HISTOGRAMS,
-                new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_60, RollupType.BF_HISTOGRAMS,
-                new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_240, RollupType.BF_HISTOGRAMS,
-                new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.BF_HISTOGRAMS,
-                new TimeValue(config.getIntegerProperty(TtlConfig.HIST_ROLLUPS_MIN1440), TimeUnit.DAYS));
-
         /* Pre-aggregated rollups */
 
         // Set rollups

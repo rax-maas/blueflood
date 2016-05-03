@@ -38,7 +38,7 @@ public class ConfigTtlProviderTest {
 
         // Ask for an invalid combination of granularity and rollup type
         try {
-            Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.BF_HISTOGRAMS));
+            Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.COUNTER));
         } catch (ConfigException ex) {
             // pass
         } catch (Exception ex) {

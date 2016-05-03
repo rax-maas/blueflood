@@ -66,21 +66,6 @@ public class RollupEventSerializerTest {
     }
 
     @Test
-    public void testHistgramRollupSerialization() throws IOException {
-        Points<SimpleNumber> points = new Points<SimpleNumber>();
-        long startTime = 12345678L;
-        //Count = 3.0, Mean = 2.0
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(1.0)));
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(2.0)));
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(3.0)));
-        HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(points);
-        ObjectNode resultNode = RollupSerializationHelper.rollupToJson(histogramRollup);
-        ArrayNode node = (ArrayNode)resultNode.get("bins");
-        Assert.assertEquals(node.get(0).get("count").asDouble(), 3.0);
-        Assert.assertEquals(node.get(0).get("mean").asDouble(), 2.0);
-    }
-
-    @Test
     public void testSetRollupSerialization() {
         final BluefloodSetRollup rollup0 = new BluefloodSetRollup()
                 .withObject(10)

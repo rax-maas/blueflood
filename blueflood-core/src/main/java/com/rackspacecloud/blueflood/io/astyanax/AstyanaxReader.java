@@ -376,16 +376,6 @@ public class AstyanaxReader extends AstyanaxIO {
         return results;
     }
 
-    public MetricData getHistogramsForRange(Locator locator, Range range, Granularity granularity) throws IOException {
-        if (!granularity.isCoarser(Granularity.FULL)) {
-            throw new RuntimeException("Histograms are not available for granularity " + granularity.toString());
-        }
-
-        ColumnFamily cf = CassandraModel.getColumnFamily(HistogramRollup.class, granularity);
-        Points<HistogramRollup> histogramRollupPoints = getDataToRoll(HistogramRollup.class, locator, range, cf);
-        return new MetricData(histogramRollupPoints, getUnitString(locator), MetricData.Type.HISTOGRAM);
-    }
-
     // Used for string metrics
     private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
         Points<String> points = new Points<String>();

@@ -8,7 +8,6 @@ public enum RollupType {
     SET,
     GAUGE,
     ENUM,
-    BF_HISTOGRAMS,
     BF_BASIC,
     NOT_A_ROLLUP;
 
@@ -36,8 +35,6 @@ public enum RollupType {
             return RollupType.GAUGE;
         else if  (value instanceof Metric)
             return RollupType.BF_BASIC;
-        else if (value instanceof HistogramRollup)
-            return RollupType.BF_HISTOGRAMS;
         else if (value instanceof SimpleNumber)
             return RollupType.NOT_A_ROLLUP;
         else if (value instanceof BluefloodEnumRollup) {
@@ -75,9 +72,6 @@ public enum RollupType {
         else if (rollupTypeClass.equals(BluefloodEnumRollup.class)) {
             return RollupType.ENUM;
         }
-        else if ( rollupTypeClass.equals( HistogramRollup.class )) {
-            return RollupType.BF_HISTOGRAMS;
-        }
         else
             throw new Error(String.format("Cannot discern RollupType from %s", rollupTypeClass.getSimpleName()));
     }
@@ -96,8 +90,6 @@ public enum RollupType {
             return SimpleNumber.class;
         else if (type == RollupType.BF_BASIC && gran != Granularity.FULL)
             return BasicRollup.class;
-        else if (type == RollupType.BF_HISTOGRAMS)
-            return HistogramRollup.class;
         else if(type == RollupType.ENUM)
             return BluefloodEnumRollup.class;
         else

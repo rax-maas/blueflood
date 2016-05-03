@@ -246,8 +246,7 @@ public class RollupHandler {
     private Boolean repairMetrics (Locator locator, MetricData metricData, final long from,
                                    final long to,
                                    final Granularity g) {
-        boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString())
-                || metricData.getType().equals(MetricData.Type.HISTOGRAM.toString());
+        boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString());
         Boolean retValue = false;
 
         // if Granularity is FULL, we are missing raw data - can't generate that
@@ -446,29 +445,5 @@ public class RollupHandler {
         } else {
             throw new IOException(String.format("Unexpected rollup type: %s", rollupTypeClass.getSimpleName()));
         }
-    }
-
-    // TODO Add the multi search for historgrams
-    protected MetricData getHistogramsByGranularity(String tenantId,
-                                                   String metricName,
-                                                   long from,
-                                                   long to,
-                                                   Granularity g) throws IOException {
-        if (!g.isCoarser(Granularity.FULL)) {
-            throw new IOException("Histograms are not available for this granularity");
-        }
-
-        final Timer.Context ctx = metricsFetchTimer.time();
-        final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-
-        MetricData data;
-        try {
-            data = AstyanaxReader.getInstance().getHistogramsForRange(locator, new Range(g.snapMillis(from), to), g);
-            numHistogramPointsReturned.update(data.getData().getPoints().size());
-        } finally {
-            ctx.stop();
-        }
-
-        return data;
     }
 }

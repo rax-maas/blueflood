@@ -143,38 +143,3 @@ CREATE TABLE IF NOT EXISTS "DATA".metrics_preaggregated_1440m (
     PRIMARY KEY (key, column1)
 ) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
 
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_histogram_5m (
-    key text,
-    column1 bigint,
-    value blob,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_histogram_20m (
-    key text,
-    column1 bigint,
-    value blob,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_histogram_60m (
-    key text,
-    column1 bigint,
-    value blob,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_histogram_240m (
-    key text,
-    column1 bigint,
-    value blob,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_histogram_1440m (
-    key text,
-    column1 bigint,
-    value blob,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';

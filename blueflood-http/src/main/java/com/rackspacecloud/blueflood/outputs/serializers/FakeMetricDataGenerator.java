@@ -62,18 +62,6 @@ public class FakeMetricDataGenerator {
         return points;
     }
 
-    public static Points<HistogramRollup> generateFakeHistogramRollupPoints() {
-        Points<HistogramRollup> points = new Points<HistogramRollup>();
-        long startTime = 1234567L;
-        for (int i =0; i < 5; i++) {
-            long timeNow = startTime + i*1000;
-            Points.Point<HistogramRollup> point = new Points.Point<HistogramRollup>(timeNow,
-                    new HistogramRollup(getBins()));
-            points.add(point);
-        }
-        return points;
-    }
-
     private static Collection<Bin<SimpleTarget>> getBins() {
         Collection<Bin<SimpleTarget>> bins = new ArrayList<Bin<SimpleTarget>>();
         for (int i = 1; i < 3; i++) {

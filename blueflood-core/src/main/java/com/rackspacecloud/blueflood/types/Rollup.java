@@ -40,20 +40,6 @@ public interface Rollup {
         }
     };
     
-    public static final Type<SimpleNumber, HistogramRollup> HistogramFromRaw = new Type<SimpleNumber, HistogramRollup>() {
-        @Override
-        public HistogramRollup compute(Points<SimpleNumber> input) throws IOException {
-            return HistogramRollup.buildRollupFromRawSamples(input);
-        }
-    };
-    
-    public static final Type<HistogramRollup, HistogramRollup> HistogramFromHistogram = new Type<HistogramRollup, HistogramRollup>() {
-        @Override
-        public HistogramRollup compute(Points<HistogramRollup> input) throws IOException {
-            return HistogramRollup.buildRollupFromRollups(input);
-        }
-    };
-    
     public static final Type<BluefloodTimerRollup, BluefloodTimerRollup> TimerFromTimer = new Type<BluefloodTimerRollup, BluefloodTimerRollup>() {
         @Override
         public BluefloodTimerRollup compute(Points<BluefloodTimerRollup> input) throws IOException {

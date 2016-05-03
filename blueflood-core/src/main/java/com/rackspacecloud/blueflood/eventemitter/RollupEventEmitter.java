@@ -48,8 +48,7 @@ import java.util.concurrent.*;
  * Also, if any event doesn't have a {@link RollupEvent#rollup} of type
  * {@link BasicRollup}, that event will be silently ignored. This is the case
  * if the event's {@link RollupEvent#rollup} field is {@code null}, or if it's
- * another rollup type, such as
- * {@link com.rackspacecloud.blueflood.types.HistogramRollup}
+ * another rollup type
  *
  * @todo Merge {@code RollupEventEmitter} and {@link Emitter<>} into a single
  * class. {@link Emitter<>} doesn't appear to be used anywhere else.

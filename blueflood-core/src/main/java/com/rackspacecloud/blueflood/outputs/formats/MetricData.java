@@ -49,7 +49,6 @@ public class MetricData {
         NUMBER("number"),
         BOOLEAN("boolean"),
         STRING("string"),
-        HISTOGRAM("histogram"),
         ENUM("enum");
 
         private Type(String s) {
@@ -78,10 +77,6 @@ public class MetricData {
             } else if (dataType.equals(DataType.BOOLEAN)) {
                 return BOOLEAN;
             } else {
-                if (rollupType == RollupType.BF_HISTOGRAMS) {
-                    return HISTOGRAM;
-                }
-
                 return NUMBER;
             }
         }

@@ -47,7 +47,6 @@ public class SerializationTest {
             Long.class,
             BluefloodTimerRollup.class,
             BluefloodEnumRollup.class,
-            //HistogramRollup.class, // todo: not implemented yet.
             BluefloodCounterRollup.class,
             BluefloodSetRollup.class,
             BluefloodGaugeRollup.class
