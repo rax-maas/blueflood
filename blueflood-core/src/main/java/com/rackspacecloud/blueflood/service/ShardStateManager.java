@@ -374,9 +374,6 @@ public class ShardStateManager {
                             continue;
                         }
 
-                        log.debug(String.format("Time elapsed: [%d] is less than rollup delay[%d] of delayed metrics",
-                                timeElapsed, delayedMetricsMaxAgeMillis));
-
                         long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
                         final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
 

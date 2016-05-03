@@ -28,7 +28,7 @@ default_config = {
   'enum_num_values': 10,
   'singleplot_per_interval': 10,
   'annotations_queries_per_interval': 8,
-  'ingest_delay_millis': 0}
+  'ingest_delay_millis': ""}
 
 units_map = {0: 'minutes',
              1: 'hours',

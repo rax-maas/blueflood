@@ -101,6 +101,11 @@ public class RollupService implements Runnable, RollupServiceMBean {
         rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
         delayedMetricRollupDelayMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
         rollupWaitPeriodMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS);
+
+        log.info(String.format("Delay configs -> ROLLUP_DELAY_MILLIS: [%d] DELAYED_METRICS_ROLLUP_DELAY_MILLIS: [%d] " +
+                "DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS: [%d]", rollupDelayMillis, delayedMetricRollupDelayMillis,
+                rollupWaitPeriodMillis));
+
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         ThreadPoolExecutor _locatorFetchExecutors = new ThreadPoolExecutor(
                 locatorFetchConcurrency, locatorFetchConcurrency,
