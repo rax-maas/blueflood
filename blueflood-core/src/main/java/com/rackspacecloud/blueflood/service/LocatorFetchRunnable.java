@@ -170,36 +170,7 @@ class LocatorFetchRunnable implements Runnable {
             log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
         }
 
-        if (Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_HISTOGRAMS)) {
-            // Also, compute histograms. Histograms for > 5 MIN granularity are always computed from 5 MIN histograms.
-            rollCount = processHistogramForLocator(rollCount, executionContext, rollupBatchWriter, locator);
-        }
         return rollCount;
-    }
-
-    public int processHistogramForLocator(int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
-        try {
-            executeHistogramRollupForLocator(executionContext, rollupBatchWriter, locator);
-            rollCount += 1;
-        } catch (RejectedExecutionException ex) {
-            executionContext.markUnsuccessful(ex); // We should ideally only recompute the failed locators alone.
-            executionContext.decrementReadCounter();
-            log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
-            log.error("Exception: ", ex);
-        } catch (Exception ex) { // do not retrigger rollups when they fail. histograms are fine to be lost.
-            executionContext.decrementReadCounter();
-            log.error("Histogram rollup rejected for {} at {}", parentSlotKey, serverTime);
-            log.error("Exception: ", ex);
-        }
-        return rollCount;
-    }
-
-    public void executeHistogramRollupForLocator(RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
-        executionContext.incrementReadCounter();
-        final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator,
-                parentRange, getGranularity());
-        rollupReadExecutor.execute(new HistogramRollupRunnable(executionContext, singleRollupReadContext,
-                rollupBatchWriter));
     }
 
     public void executeRollupForLocator(RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
