@@ -46,8 +46,8 @@ public class ShardStateManager {
     private static final Meter updateStampMeter = Metrics.meter(ShardStateManager.class, "Shard Slot Update Meter");
     private final Meter parentBeforeChild = Metrics.meter(RollupService.class, "Parent slot executed before child");
     private static final Map<Granularity, Meter> granToReRollMeters = new HashMap<Granularity, Meter>();
-    private static final Map<Granularity, Meter> delayedToReRollMeters2 = new HashMap<Granularity, Meter>();
-    private static final Map<Granularity, Meter> delayedToReRollMeters3 = new HashMap<Granularity, Meter>();
+    private static final Map<Granularity, Meter> reRollForShortDelayMetricsMeters = new HashMap<Granularity, Meter>();
+    private static final Map<Granularity, Meter> reRollForLongDelayMetricsMeters = new HashMap<Granularity, Meter>();
     private static final Map<Granularity, Meter> granToDelayedMetricsMeter = new HashMap<Granularity, Meter>();
 
     // If there are no delayed metrics, a slot should only get rolled up again after 14 days since its last rollup. Since we only allow
@@ -62,8 +62,8 @@ public class ShardStateManager {
             granToReRollMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Re-rolling up because of delayed metrics", rollupGranularity.shortName())));
             granToDelayedMetricsMeter.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("Delayed metric that has a danger of TTLing", rollupGranularity.shortName())));
 
-            delayedToReRollMeters2.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of 2nd rollup delay", rollupGranularity.shortName())));
-            delayedToReRollMeters3.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of 3rd rollup wait", rollupGranularity.shortName())));
+            reRollForShortDelayMetricsMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of short delay metrics", rollupGranularity.shortName())));
+            reRollForLongDelayMetricsMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Slots waiting to be re-rolled because of long delay metrics", rollupGranularity.shortName())));
         }
     }
 
@@ -316,9 +316,9 @@ public class ShardStateManager {
          * A slot will become eligible for rollup/re-roll based on the below three configs.
          *
          * 1) 1st rollup  -> Eligible after ROLLUP_DELAY_MILLIS from collection time.
-         * 2) 1st re-roll -> This happens for metrics which are delayed within DELAYED_METRICS_ROLLUP_DELAY_MILLIS.
+         * 2) 1st re-roll -> This happens for metrics with short delay (within DELAYED_METRICS_ROLLUP_DELAY_MILLIS).
          *                   Eligible after DELAYED_METRICS_ROLLUP_DELAY_MILLIS from collection time.
-         * 3) nth re-roll -> This happens for metrics which are delayed by more than DELAYED_METRICS_ROLLUP_DELAY_MILLIS.
+         * 3) nth re-roll -> This happens for metrics with long delay(more than DELAYED_METRICS_ROLLUP_DELAY_MILLIS).
          *                   Eligible after DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS from last ingest time.
          *                   This re-roll repeats as we keep getting delayed metrics.
          *
@@ -337,14 +337,14 @@ public class ShardStateManager {
          *
          * @param now is current time
          * @param maxAgeMillis is ROLLUP_DELAY_MILLIS
-         * @param delayedMetricsMaxAgeMillis is DELAYED_METRICS_ROLLUP_DELAY_MILLIS
-         * @param rollupWaitPeriodMillis is DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS
+         * @param rollupDelayForMetricsWithShortDelay is DELAYED_METRICS_ROLLUP_DELAY_MILLIS
+         * @param rollupWaitForMetricsWithLongDelay is DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS
          * @return list of slots that are eligible for rollup
          */
         protected List<Integer> getSlotsEligibleForRollup(long now,
                                                           long maxAgeMillis,
-                                                          long delayedMetricsMaxAgeMillis,
-                                                          long rollupWaitPeriodMillis) {
+                                                          long rollupDelayForMetricsWithShortDelay,
+                                                          long rollupWaitForMetricsWithLongDelay) {
             List<Integer> outputKeys = new ArrayList<Integer>();
             long nowMillis = clock.now().getMillis();
             for (Map.Entry<Integer, UpdateStamp> entry : slotToUpdateStampMap.entrySet()) {
@@ -364,26 +364,30 @@ public class ShardStateManager {
                     //a slot can be identified as being re-rolled, if the last rollup is within those last 3 days.
                     if (timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
 
+                        //short delay
                         SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
-                        if (timeElapsed <= delayedMetricsMaxAgeMillis) {
+                        if (timeElapsed <= rollupDelayForMetricsWithShortDelay) {
 
-                            delayedToReRollMeters2.get(granularity).mark();
-                            log.debug(String.format("Delaying re-roll of slotKey [%s] as [%d] millis haven't elapsed " +
-                                    "since collection time:[%d] now: [%d] time elapsed: [%d] last rollup time: [%d]", slotKey,
-                                    delayedMetricsMaxAgeMillis, update.getTimestamp(), now, timeElapsed, update.getLastRollupTimestamp()));
+                            reRollForShortDelayMetricsMeters.get(granularity).mark();
+                            log.debug(String.format("Short delay: Delaying re-roll of slotKey [%s] as [%d] millis " +
+                                    "haven't elapsed since collection time:[%d] now: [%d] time elapsed: [%d] last " +
+                                    "rollup time: [%d]", slotKey, rollupDelayForMetricsWithShortDelay,
+                                    update.getTimestamp(), now, timeElapsed, update.getLastRollupTimestamp()));
                             continue;
                         }
 
                         long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
                         final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
 
-                        if (delayOfLastIngestedMetric > delayedMetricsMaxAgeMillis &&
-                            timeElapsedSinceLastIngest <= rollupWaitPeriodMillis) {
+                        //long delay
+                        if (delayOfLastIngestedMetric > rollupDelayForMetricsWithShortDelay &&
+                            timeElapsedSinceLastIngest <= rollupWaitForMetricsWithLongDelay) {
 
-                            delayedToReRollMeters3.get(granularity).mark();
-                            log.debug(String.format("Delaying re-roll of slotKey [%s] as we received delayed metrics" +
-                                    " within the last [%d] millis with rollup_wait of [%d] millis. last ingest time: [%d]",
-                                    slotKey, timeElapsedSinceLastIngest, rollupWaitPeriodMillis, update.getLastIngestTimestamp()));
+                            reRollForLongDelayMetricsMeters.get(granularity).mark();
+                            log.debug(String.format("Long delay: Delaying re-roll of slotKey [%s] as we received " +
+                                    "delayed metrics within the last [%d] millis with rollup_wait of [%d] millis. last " +
+                                    "ingest time: [%d]", slotKey, timeElapsedSinceLastIngest,
+                                    rollupWaitForMetricsWithLongDelay, update.getLastIngestTimestamp()));
                             continue;
                         }
 
