@@ -23,6 +23,8 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.utils.CalendarClock;
+import com.rackspacecloud.blueflood.utils.Clock;
 
 import java.util.Calendar;
 
@@ -37,6 +39,7 @@ import java.util.Calendar;
 public final class Granularity {
     private static final int GET_BY_POINTS_ASSUME_INTERVAL = Configuration.getInstance().getIntegerProperty(CoreConfig.GET_BY_POINTS_ASSUME_INTERVAL);
     private static final String GET_BY_POINTS_SELECTION_ALGORITHM = Configuration.getInstance().getStringProperty(CoreConfig.GET_BY_POINTS_GRANULARITY_SELECTION);
+    private static final Clock DEFAULT_TTL_COMPARISON_SOURCE = new CalendarClock();
     private static int INDEX_COUNTER = 0;
     private static final int BASE_SLOTS_PER_GRANULARITY = 4032; // needs to be a multiple of the GCF of 4, 12, 48, 288.
     public static final int MILLISECONDS_IN_SLOT = 300000;
@@ -182,7 +185,15 @@ public final class Granularity {
      * @return
      */
     public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points) {
-        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM, GET_BY_POINTS_ASSUME_INTERVAL);
+        return granularityFromPointsInInterval(tenantid, from, to, points, GET_BY_POINTS_SELECTION_ALGORITHM, GET_BY_POINTS_ASSUME_INTERVAL, DEFAULT_TTL_COMPARISON_SOURCE);
+    }
+    /**
+     * {@code ttlComparisonClock} defaults to {@link #DEFAULT_TTL_COMPARISON_SOURCE}.
+     *
+     * @see #granularityFromPointsInInterval(String, long, long, int, String, long, Clock)
+     */
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis) {
+        return granularityFromPointsInInterval(tenantid, from, to, points, algorithm, assumedIntervalMillis, DEFAULT_TTL_COMPARISON_SOURCE);
     }
     /**
      * Return granularity that maps most closely to requested number of points based on
@@ -198,9 +209,15 @@ public final class Granularity {
      * @param assumedIntervalMillis FULL resolution is tricky because we don't
      *                              know the period of check in question.
      *                              Assume the minimum period and go from there.
+     * @param ttlComparisonClock The GEOMETRIC algorithm checks the specified
+     *                            interval against a TTL. Normally, the TTL is
+     *                            measured relative to the current point in
+     *                            time. For testing purposes, an alternate time
+     *                            source can be provided, to measure the TTL
+     *                            relative to a different point in time.
      * @return
      */
-    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis) {
+    public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis, Clock ttlComparisonClock) {
         if (from >= to) {
             throw new RuntimeException("Invalid interval specified for fromPointsInInterval");
         }
@@ -208,13 +225,13 @@ public final class Granularity {
         double requestedDuration = to - from;
 
         if (algorithm.startsWith("GEOMETRIC"))
-            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
+            return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis, ttlComparisonClock);
         else if (algorithm.startsWith("LINEAR"))
             return granularityFromPointsLinear(requestedDuration, points, assumedIntervalMillis);
         else if (algorithm.startsWith("LESSTHANEQUAL"))
             return granularityFromPointsLessThanEqual(requestedDuration, points, assumedIntervalMillis);
 
-        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis);
+        return granularityFromPointsGeometric(tenantid, from, to, requestedDuration, points, assumedIntervalMillis, ttlComparisonClock);
     }
 
     /**
@@ -275,7 +292,7 @@ public final class Granularity {
      *
      * @param requestedDuration (milliseconds)
      */
-    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis) {
+    private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis, Clock ttlComparisonSource) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
         if (SAFETY_TTL_PROVIDER == null) {
@@ -285,7 +302,7 @@ public final class Granularity {
         for (Granularity g : Granularity.granularities()) {
             long ttl = SAFETY_TTL_PROVIDER.getFinalTTL(tenantid, g);
 
-            if (from < Calendar.getInstance().getTimeInMillis() - ttl) {
+            if (from < ttlComparisonSource.now().getMillis() - ttl) {
                 continue;
             }
 
