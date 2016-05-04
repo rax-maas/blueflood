@@ -553,9 +553,9 @@ public class ScheduleContextTest {
         //testing for one slot -> 0
 
         final long initialCollectionTime = 1209600000000L;
-        //*******************************************************************
-        //*  Testing for ROLLUP_DELAY_MILLIS                                *
-        //*******************************************************************
+        //***************************************************************************************
+        //*  Testing for on-time metrics (ROLLUP_DELAY_MILLIS)                                  *
+        //***************************************************************************************
 
         long clock = initialCollectionTime;
         final Clock mockClock = Mockito.mock(Clock.class);
@@ -587,9 +587,9 @@ public class ScheduleContextTest {
 
         scheduled.clear();
 
-        //*******************************************************************
-        //*  Testing for DELAYED_METRICS_ROLLUP_DELAY_MILLIS                *
-        //*******************************************************************
+        //****************************************************************************************
+        //*  Testing for short delay metrics(DELAYED_METRICS_ROLLUP_DELAY_MILLIS)                *
+        //****************************************************************************************
 
         //delayed metrics for slot 0 (metrics sent after ROLLUP_DELAY_MILLIS)
         long lastIngestTime1 = initialCollectionTime + ROLLUP_DELAY_MILLIS + 300000;
@@ -618,9 +618,9 @@ public class ScheduleContextTest {
 
         scheduled.clear();
 
-        //*******************************************************************
-        //*  Testing for ROLLUP_WAIT_PERIOD_MILLIS                          *
-        //*******************************************************************
+        //****************************************************************************************
+        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //****************************************************************************************
 
         //delayed metrics with longer delay for slot 0 (metrics sent after DELAYED_METRICS_ROLLUP_DELAY_MILLIS)
         long lastIngestTime2 = initialCollectionTime + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 300000;
@@ -651,9 +651,9 @@ public class ScheduleContextTest {
         //testing for one slot -> 0
 
         final long initialCollectionTime = 1209600000000L;
-        //*******************************************************************
-        //*  Testing for ROLLUP_DELAY_MILLIS                                *
-        //*******************************************************************
+        //***************************************************************************************
+        //*  Testing for on-time metrics (ROLLUP_DELAY_MILLIS)                                  *
+        //***************************************************************************************
 
         long clock = initialCollectionTime;
         final Clock mockClock = Mockito.mock(Clock.class);
@@ -685,10 +685,9 @@ public class ScheduleContextTest {
 
         scheduled.clear();
 
-
-        //*******************************************************************
-        //*  Testing for ROLLUP_WAIT_PERIOD_MILLIS                          *
-        //*******************************************************************
+        //****************************************************************************************
+        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //****************************************************************************************
 
         //delayed metrics with longer delay for slot 0 (metrics sent after DELAYED_METRICS_ROLLUP_DELAY_MILLIS)
         long lastIngestTime2 = initialCollectionTime + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 300000;

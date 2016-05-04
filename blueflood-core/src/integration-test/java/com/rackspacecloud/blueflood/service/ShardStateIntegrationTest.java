@@ -110,9 +110,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ShardStateWorker ingestPuller = new ShardStatePuller(managedShards, ingestionCtx.getShardStateManager(), this.io);
         ShardStateWorker ingestPusher = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
 
-        //*******************************************************************
-        //*  Testing for ROLLUP_DELAY_MILLIS                                *
-        //*******************************************************************
+        //***************************************************************************************
+        //*  Testing for on-time metrics (ROLLUP_DELAY_MILLIS)                                  *
+        //***************************************************************************************
 
         when(mockClock.now()).thenReturn(new Instant(time + 1));
         ingestionCtx.update(time, 0);
@@ -125,9 +125,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         simulateHierarchicalScheduling(rollupCtx);
 
-        //*******************************************************************
-        //*  Testing for DELAYED_METRICS_ROLLUP_DELAY_MILLIS                *
-        //*******************************************************************
+        //****************************************************************************************
+        //*  Testing for short delay metrics(DELAYED_METRICS_ROLLUP_DELAY_MILLIS)                *
+        //****************************************************************************************
 
         rollupPusher.performOperation();
 
@@ -155,9 +155,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         simulateHierarchicalScheduling(rollupCtx);
 
-        //*******************************************************************
-        //*  Testing for ROLLUP_WAIT_PERIOD_MILLIS                          *
-        //*******************************************************************
+        //****************************************************************************************
+        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //****************************************************************************************
 
         rollupPusher.performOperation();
 

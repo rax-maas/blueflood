@@ -376,19 +376,21 @@ public class ShardStateManager {
                             continue;
                         }
 
-                        long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
-                        final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
+                        if (update.getLastIngestTimestamp() > 0 ) {
+                            long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
+                            final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
 
-                        //long delay
-                        if (delayOfLastIngestedMetric > rollupDelayForMetricsWithShortDelay &&
-                            timeElapsedSinceLastIngest <= rollupWaitForMetricsWithLongDelay) {
+                            //long delay
+                            if (delayOfLastIngestedMetric > rollupDelayForMetricsWithShortDelay &&
+                                    timeElapsedSinceLastIngest <= rollupWaitForMetricsWithLongDelay) {
 
-                            reRollForLongDelayMetricsMeters.get(granularity).mark();
-                            log.debug(String.format("Long delay: Delaying re-roll of slotKey [%s] as we received " +
-                                    "delayed metrics within the last [%d] millis with rollup_wait of [%d] millis. last " +
-                                    "ingest time: [%d]", slotKey, timeElapsedSinceLastIngest,
-                                    rollupWaitForMetricsWithLongDelay, update.getLastIngestTimestamp()));
-                            continue;
+                                reRollForLongDelayMetricsMeters.get(granularity).mark();
+                                log.debug(String.format("Long delay: Delaying re-roll of slotKey [%s] as we received " +
+                                                "delayed metrics within the last [%d] millis with rollup_wait of [%d] millis. last " +
+                                                "ingest time: [%d]", slotKey, timeElapsedSinceLastIngest,
+                                        rollupWaitForMetricsWithLongDelay, update.getLastIngestTimestamp()));
+                                continue;
+                            }
                         }
 
                         granToReRollMeters.get(granularity).mark();
