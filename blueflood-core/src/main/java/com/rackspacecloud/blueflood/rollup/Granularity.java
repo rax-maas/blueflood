@@ -23,8 +23,8 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.types.RollupType;
-import com.rackspacecloud.blueflood.utils.CalendarClock;
 import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 
 import java.util.Calendar;
 
@@ -39,7 +39,7 @@ import java.util.Calendar;
 public final class Granularity {
     private static final int GET_BY_POINTS_ASSUME_INTERVAL = Configuration.getInstance().getIntegerProperty(CoreConfig.GET_BY_POINTS_ASSUME_INTERVAL);
     private static final String GET_BY_POINTS_SELECTION_ALGORITHM = Configuration.getInstance().getStringProperty(CoreConfig.GET_BY_POINTS_GRANULARITY_SELECTION);
-    private static final Clock DEFAULT_TTL_COMPARISON_SOURCE = new CalendarClock();
+    private static final Clock DEFAULT_TTL_COMPARISON_SOURCE = new DefaultClockImpl();
     private static int INDEX_COUNTER = 0;
     private static final int BASE_SLOTS_PER_GRANULARITY = 4032; // needs to be a multiple of the GCF of 4, 12, 48, 288.
     public static final int MILLISECONDS_IN_SLOT = 300000;
