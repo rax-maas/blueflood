@@ -15,9 +15,11 @@
  */
 package com.rackspacecloud.blueflood.io.datastax;
 
+import com.codahale.metrics.*;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
+
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IOConfig;
@@ -25,11 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class is a singleton that holds the necessary code that uses datastax
@@ -40,15 +38,10 @@ import java.util.concurrent.TimeUnit;
 public class DatastaxIO {
     private static final Logger LOG = LoggerFactory.getLogger(DatastaxIO.class);
     private static final IOConfig ioconfig = IOConfig.singleton();
+    private static final String metricsPrefix = "datastax.";
 
     private static  Cluster cluster;
     private static Session session;
-
-//    private final static Meter hostMeter = utils.Metrics.meter(DatastaxIO.class, "Hosts Connected");
-//    private final static Meter openConnectionsMeter = utils.Metrics.meter(DatastaxIO.class, "Total Open Connections");
-//    private final static Meter inFlightQueriesMeter = utils.Metrics.meter(DatastaxIO.class, "Total InFlight Queries");
-//    private final static Meter trashedConnectionsMeter = utils.Metrics.meter(DatastaxIO.class, "Total Trashed Connections");
-//    private final static Meter maxLoadMeter = utils.Metrics.meter(DatastaxIO.class, "Maximum Load");
 
     static {
         connect();
@@ -113,34 +106,58 @@ public class DatastaxIO {
     }
 
     private static void monitorConnection() {
-        ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
-        scheduled.scheduleAtFixedRate(new Runnable() {
-            public void run() {
-                Session.State state = getSession().getState();
-                Collection<Host> hosts = state.getConnectedHosts();
-                int totalHosts = hosts.size();
-                long totalOpenConnections = 0;
-                long totalInFlightQueries = 0;
-                long totalTrashedConnections = 0;
-                long totalMaxLoad =0;
-                for (Host host : hosts) {
-                    int openConnections = state.getOpenConnections(host);
-                    int inFlightQueries = state.getInFlightQueries(host);
-                    int trashedConnections = state.getTrashedConnections(host);
-                    int maxLoad = openConnections * 128;
-                    totalOpenConnections += openConnections;
-                    totalInFlightQueries += inFlightQueries;
-                    totalTrashedConnections += trashedConnections;
-                    totalMaxLoad += maxLoad;
-                }
-
-//                hostMeter.mark(totalHosts);
-//                openConnectionsMeter.mark(totalOpenConnections);
-//                inFlightQueriesMeter.mark(totalInFlightQueries);
-//                trashedConnectionsMeter.mark(totalTrashedConnections);
-//                maxLoadMeter.mark(totalMaxLoad);
+        final MetricRegistry bfMetricsRegistry = com.rackspacecloud.blueflood.utils.Metrics.getRegistry();
+        cluster.getMetrics().getRegistry().addListener(new com.codahale.metrics.MetricRegistryListener() {
+            @Override
+            public void onGaugeAdded(String name, Gauge<?> gauge) {
+                bfMetricsRegistry.register(metricsPrefix + name, gauge);
             }
-        }, 1, 1, TimeUnit.MINUTES);
+
+            @Override
+            public void onGaugeRemoved(String name) {
+                bfMetricsRegistry.remove(metricsPrefix + name);
+            }
+
+            @Override
+            public void onCounterAdded(String name, Counter counter) {
+                bfMetricsRegistry.register(metricsPrefix + name, counter);
+            }
+
+            @Override
+            public void onCounterRemoved(String name) {
+                bfMetricsRegistry.remove(metricsPrefix + name);
+            }
+
+            @Override
+            public void onHistogramAdded(String name, Histogram histogram) {
+                bfMetricsRegistry.register(metricsPrefix + name, histogram);
+            }
+
+            @Override
+            public void onHistogramRemoved(String name) {
+                bfMetricsRegistry.remove(metricsPrefix + name);
+            }
+
+            @Override
+            public void onMeterAdded(String name, Meter meter) {
+                bfMetricsRegistry.register(metricsPrefix + name, meter);
+            }
+
+            @Override
+            public void onMeterRemoved(String name) {
+                bfMetricsRegistry.remove(metricsPrefix + name);
+            }
+
+            @Override
+            public void onTimerAdded(String name, Timer timer) {
+                bfMetricsRegistry.register(metricsPrefix + name, timer);
+            }
+
+            @Override
+            public void onTimerRemoved(String name) {
+                bfMetricsRegistry.remove(metricsPrefix + name);
+            }
+        });
     }
 
     public void close() { //Not to be used with time-series data.
