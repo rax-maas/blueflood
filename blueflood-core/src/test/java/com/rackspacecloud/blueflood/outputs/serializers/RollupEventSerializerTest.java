@@ -19,12 +19,10 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
 import com.rackspacecloud.blueflood.types.*;
 import junit.framework.Assert;
-import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Test;
 
 import java.io.IOError;
-import java.io.IOException;
 
 public class RollupEventSerializerTest {
     @Test
@@ -91,6 +89,19 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
         Assert.assertEquals(resultNode.get("latestVal").asLong(), rollup.getLatestNumericValue().longValue());
+    }
+
+    @Test
+    public void testCounterRollupSerialization() {
+        final BluefloodCounterRollup rollup =
+                new BluefloodCounterRollup()
+                        .withCount(123)
+                        .withRate(987.6d)
+                        .withSampleCount(5);
+        ObjectNode resultNode = RollupSerializationHelper.rollupToJson(rollup);
+        Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount().longValue());
+        Assert.assertEquals(resultNode.get("rate").asDouble(), rollup.getRate());
+        Assert.assertEquals(resultNode.get("sampleCount").asInt(), rollup.getSampleCount());
     }
 
     //Passing an unknown rollup type will throw IOError
