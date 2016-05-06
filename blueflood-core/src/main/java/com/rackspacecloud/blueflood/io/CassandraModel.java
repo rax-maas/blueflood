@@ -182,19 +182,6 @@ public class CassandraModel {
         }
     }
 
-    public static String getColumnFamilyName(Class<? extends Rollup> type, Granularity granularity) {
-        if (type.equals(SimpleNumber.class)) {
-            return CF_METRICS_FULL_NAME;
-        } else if (type.equals(BasicRollup.class)) {
-            return METRICS_GRAN_TO_CF.get(granularity).getName();
-        } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
-                type.equals(BluefloodCounterRollup.class) || type.equals(BluefloodEnumRollup.class)) {
-            return PREAG_GRAN_TO_CF.get(granularity).getName();
-        } else {
-            throw new RuntimeException("Unsupported rollup type.");
-        }
-    }
-
     public static MetricColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
         if (dataType == null) {
             dataType = DataType.NUMERIC;
