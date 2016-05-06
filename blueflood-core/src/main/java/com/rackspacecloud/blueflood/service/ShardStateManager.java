@@ -230,6 +230,9 @@ public class ShardStateManager {
          * reached the last rollup time match with the last active times on all
          * ingestor nodes.
          *
+         * LastUpdateTime of an active slot is used as last ingest time and lastUpdateTime
+         * of a rolled slot is used as last rollup time. UpdateStamp which is in memory
+         * for each slot has the last ingest time and last rollup time of that slot. 
          */
         protected void updateSlotOnRead(SlotState slotState) {
             final int slot = slotState.getSlot();
