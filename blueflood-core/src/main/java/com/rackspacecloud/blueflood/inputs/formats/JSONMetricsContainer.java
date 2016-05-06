@@ -35,8 +35,10 @@ public class JSONMetricsContainer {
     private final List<JSONMetric> jsonMetrics;
     private List<Metric> delayedMetrics;
 
+    private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
+
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
-    private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+    private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
 
     private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
@@ -79,9 +81,11 @@ public class JSONMetricsContainer {
                         new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
                 long delay = new DateTime().getMillis() - metric.getCollectionTime();
 
-                if (delay > MAX_AGE_ALLOWED) {
+                if (delay > TRACKER_DELAYED_METRICS_MILLIS) {
                     delayedMetrics.add(metric);
+                }
 
+                if (delay > MAX_AGE_ALLOWED) {
                     if (delay <= SHORT_DELAY) {
                         Instrumentation.markMetricsWithShortDelayReceived();
                     } else {

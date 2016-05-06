@@ -49,8 +49,8 @@ public class ScheduleContextTest {
     private static final TimeValue MULTI_THREAD_SOFT_TIMEOUT = new TimeValue(60000L, TimeUnit.MILLISECONDS);;
 
     private final long ROLLUP_DELAY_MILLIS = 300000; //5 mins
-    private final long DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 1800000; //30 mins
-    private final int ROLLUP_WAIT_PERIOD_MILLIS = 1800000; //15 mins
+    private final long SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 1800000; //30 mins
+    private final long LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS = 1800000; //15 mins
 
     @Before
     public void setUp() {
@@ -65,20 +65,20 @@ public class ScheduleContextTest {
 
         ctx.setCurrentTimeMillis(clock); // +0m
         ctx.update(clock, shards.get(0));
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 300000; // +5m
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         // at +5m nothing should be scheduled.
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 300000; // +10m
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         // at this point, metrics_full,4 should be scheduled, but not metrics_5m,4 even though it is older than 300s.
         // metrics_5m,4 cannot be scheduled because one of its children is scheduled.  once the child is removed and
         // scheduling is re-ran, it should appear though.  The next few lines test those assumptions.
@@ -90,30 +90,30 @@ public class ScheduleContextTest {
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,4,0"));
 
         // now, time doesn't change, but we re-evaluate slots that can be scheduled.
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertFalse(ctx.hasScheduled());
         expected.clear();
         scheduled.clear();
 
         // technically, we're one second away from when metrics_full,5 and metrics_5m,5 can be scheduled.
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertFalse(ctx.hasScheduled());
 
         clock += 1000; // 1s
         ctx.setCurrentTimeMillis(clock);
         ctx.update(clock, shards.get(0));
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,5,0"));
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,5,0"));
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertFalse(ctx.hasScheduled());
 
 
         clock += 3600000; // 1h
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_5m,6,0"));
         Assert.assertFalse(ctx.hasScheduled());
@@ -121,32 +121,32 @@ public class ScheduleContextTest {
 
         // time doesn't change, but now that all the 5m slots have been scheduled, we should start seeing coarser slots
         // available for scheduling.
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(ctx.getNextScheduled(), SlotKey.parse("metrics_20m,1,0"));
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_20m,1,0"));
 
         // let's finish this off...
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_60m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_60m,0,0"));
 
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_240m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_240m,0,0"));
 
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertTrue(ctx.hasScheduled());
         Assert.assertEquals(SlotKey.parse("metrics_1440m,0,0"), ctx.getNextScheduled());
         Assert.assertFalse(ctx.hasScheduled());
         ctx.clearFromRunning(SlotKey.parse("metrics_1440m,0,0"));
 
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertFalse(ctx.hasScheduled());
     }
 
@@ -162,7 +162,7 @@ public class ScheduleContextTest {
             ctx.setCurrentTimeMillis(clock);
             ctx.update(clock, shards.get(0));
         }
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // 5m should include slots 4 through 578.
         String prefix = "metrics_5m,";
@@ -173,7 +173,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_5, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // 20m 1:143
         prefix = "metrics_20m,";
@@ -184,7 +184,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_20, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // 60m 0:47
         prefix = "metrics_60m,";
@@ -195,7 +195,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_60, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // 240m 0:11
         prefix = "metrics_240m,";
@@ -206,7 +206,7 @@ public class ScheduleContextTest {
             Assert.assertEquals(Granularity.MIN_240, key.getGranularity());
             ctx.clearFromRunning(key);
         }
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // 1440m 0:1
         prefix = "metrics_1440m,";
@@ -239,7 +239,7 @@ public class ScheduleContextTest {
             ctx.update(clock, shards.get(0));
             clock += 30000;
             ctx.setCurrentTimeMillis(clock);
-            ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+            ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
             while (ctx.hasScheduled()) {
                 count++;
                 SlotKey key = ctx.getNextScheduled();
@@ -283,7 +283,7 @@ public class ScheduleContextTest {
         final Thread schedule = new Thread("Scheduler") { public void run() {
             int count = 0;
             while (update.isAlive()) {
-                ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+                ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
                 count++;
                 // we sleep here because scheduling needs to happen periodically, not continually.  If there were no
                 // sleep here the update thread gets starved and has a hard time completing.
@@ -352,8 +352,8 @@ public class ScheduleContextTest {
         time += 500000;
         ctxA.setCurrentTimeMillis(time);
         ctxB.setCurrentTimeMillis(time);
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
-        ctxB.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+        ctxB.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         Assert.assertTrue(ctxA.hasScheduled());
         while (ctxA.hasScheduled()) {
@@ -384,7 +384,7 @@ public class ScheduleContextTest {
         ctx.update(now, otherShard);
         now += 300001;
         ctx.setCurrentTimeMillis(now);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         
         // otherShard should be recently scheduled.
         Assert.assertTrue(ctx.getRecentlyScheduledShards().contains(otherShard));
@@ -570,7 +570,7 @@ public class ScheduleContextTest {
 
         clock = initialCollectionTime + ROLLUP_DELAY_MILLIS + 1; // a little bit over +5m
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         expected.add(SlotKey.parse("metrics_5m,0,0"));
         while (ctx.hasScheduled())
@@ -588,7 +588,7 @@ public class ScheduleContextTest {
         scheduled.clear();
 
         //****************************************************************************************
-        //*  Testing for short delay metrics(DELAYED_METRICS_ROLLUP_DELAY_MILLIS)                *
+        //*  Testing for short delay metrics(SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS)            *
         //****************************************************************************************
 
         //delayed metrics for slot 0 (metrics sent after ROLLUP_DELAY_MILLIS)
@@ -597,14 +597,14 @@ public class ScheduleContextTest {
         long collectionTime1 = initialCollectionTime + 1;
         ctx.update(collectionTime1, shards.get(0)); //metric ingestion
         ctx.setCurrentTimeMillis(lastIngestTime1);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         Assert.assertFalse("Rollup should not be scheduled for re-roll", ctx.hasScheduled());
 
-        //Trying for rollup again after DELAYED_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
-        clock = collectionTime1 + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 1; //a little bit over 30 mins
+        //Trying for rollup again after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
+        clock = collectionTime1 + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 1; //a little bit over 30 mins
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         while (ctx.hasScheduled())
             scheduled.add(ctx.getNextScheduled());
@@ -619,23 +619,23 @@ public class ScheduleContextTest {
         scheduled.clear();
 
         //****************************************************************************************
-        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //*  Testing for long delay metrics(LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS)               *
         //****************************************************************************************
 
-        //delayed metrics with longer delay for slot 0 (metrics sent after DELAYED_METRICS_ROLLUP_DELAY_MILLIS)
-        long lastIngestTime2 = initialCollectionTime + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 300000;
+        //delayed metrics with longer delay for slot 0 (metrics sent after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS)
+        long lastIngestTime2 = initialCollectionTime + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 300000;
         when(mockClock.now()).thenReturn(new Instant(lastIngestTime2));
         long collectionTime2 = initialCollectionTime + 2;
         ctx.update(collectionTime2, shards.get(0)); //metric ingestion
         ctx.setCurrentTimeMillis(lastIngestTime2 + 1);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         Assert.assertFalse("Rollup should not be scheduled for re-roll cos of rollup_wait", ctx.hasScheduled());
 
-        //Trying for rollup again after DELAYED_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
-        clock = lastIngestTime2 + ROLLUP_WAIT_PERIOD_MILLIS + 1;
+        //Trying for rollup again after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
+        clock = lastIngestTime2 + LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS + 1;
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         while (ctx.hasScheduled())
             scheduled.add(ctx.getNextScheduled());
@@ -668,7 +668,7 @@ public class ScheduleContextTest {
 
         clock = initialCollectionTime + ROLLUP_DELAY_MILLIS + 1; // a little bit over +5m
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         expected.add(SlotKey.parse("metrics_5m,0,0"));
         while (ctx.hasScheduled())
@@ -686,23 +686,23 @@ public class ScheduleContextTest {
         scheduled.clear();
 
         //****************************************************************************************
-        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //*  Testing for long delay metrics(LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS)                           *
         //****************************************************************************************
 
-        //delayed metrics with longer delay for slot 0 (metrics sent after DELAYED_METRICS_ROLLUP_DELAY_MILLIS)
-        long lastIngestTime2 = initialCollectionTime + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 300000;
+        //delayed metrics with longer delay for slot 0 (metrics sent after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS)
+        long lastIngestTime2 = initialCollectionTime + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 300000;
         when(mockClock.now()).thenReturn(new Instant(lastIngestTime2));
         long collectionTime2 = initialCollectionTime + 2;
         ctx.update(collectionTime2, shards.get(0)); //metric ingestion
         ctx.setCurrentTimeMillis(lastIngestTime2 + 1);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         Assert.assertFalse("Rollup should not be scheduled for re-roll cos of rollup_wait", ctx.hasScheduled());
 
-        //Trying for rollup again after DELAYED_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
-        clock = lastIngestTime2 + ROLLUP_WAIT_PERIOD_MILLIS + 1;
+        //Trying for rollup again after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS past since last collection time
+        clock = lastIngestTime2 + LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS + 1;
         ctx.setCurrentTimeMillis(clock);
-        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         while (ctx.hasScheduled())
             scheduled.add(ctx.getNextScheduled());

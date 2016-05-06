@@ -49,9 +49,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     private ShardStateIO io;
     private List<Integer> shards;
 
-    private final int DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 600000;
-    private final int ROLLUP_DELAY_MILLIS = 300000;
-    private final int ROLLUP_WAIT_PERIOD_MILLIS = 500000;
+    private final long ROLLUP_DELAY_MILLIS = 300000;
+    private final long SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 600000;
+    private final long LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS = 500000;
     
     public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
         this.io = io;
@@ -120,13 +120,13 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + ROLLUP_DELAY_MILLIS + 1);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         simulateHierarchicalScheduling(rollupCtx);
 
         //****************************************************************************************
-        //*  Testing for short delay metrics(DELAYED_METRICS_ROLLUP_DELAY_MILLIS)                *
+        //*  Testing for short delay metrics(SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS)            *
         //****************************************************************************************
 
         rollupPusher.performOperation();
@@ -146,23 +146,23 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         rollupCtx.setCurrentTimeMillis(lastIngestTime1);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
 
-        rollupCtx.setCurrentTimeMillis(time + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 2);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.setCurrentTimeMillis(time + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 2);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         simulateHierarchicalScheduling(rollupCtx);
 
         //****************************************************************************************
-        //*  Testing for long delay metrics(ROLLUP_WAIT_PERIOD_MILLIS)                           *
+        //*  Testing for long delay metrics(LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS)               *
         //****************************************************************************************
 
         rollupPusher.performOperation();
 
         // Delayed metric is received on ingestion host
-        final long lastIngestTime2 = time + 2 + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + 1;
+        final long lastIngestTime2 = time + 2 + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 1;
         ingestPuller.performOperation();
         when(mockClock.now()).thenReturn(new Instant(lastIngestTime2));
         ingestionCtx.update(time + 2, 0);
@@ -176,11 +176,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         rollupCtx.setCurrentTimeMillis(lastIngestTime2);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
 
-        rollupCtx.setCurrentTimeMillis(time + 2 + DELAYED_METRICS_ROLLUP_DELAY_MILLIS + ROLLUP_WAIT_PERIOD_MILLIS + 2);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.setCurrentTimeMillis(time + 2 + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS + 2);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         simulateHierarchicalScheduling(rollupCtx);
@@ -193,7 +193,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -219,7 +219,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + 600000);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
@@ -233,8 +233,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation();
 
-        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000, ROLLUP_WAIT_PERIOD_MILLIS);
+        //SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
     }
 
@@ -374,18 +374,18 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxA.setCurrentTimeMillis(time);
         
         // should be ready to schedule.
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxA.getScheduledCount());
         
         // simulate slots getting run.
         simulateAndVerifyHierarchicalScheduling(ctxA);
         // verify that scheduling doesn't find anything else.
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
         
         // reloading under these circumstances (no updates) should not affect the schedule.
         pullA.performOperation();
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
     }
 
@@ -539,7 +539,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
 
         ctxRollup.setCurrentTimeMillis(time + 800000L);
-        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         simulateAndVerifyHierarchicalScheduling(ctxRollup);
@@ -592,7 +592,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
-        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
         simulateAndVerifyHierarchicalScheduling(ctxRollup);
@@ -619,7 +619,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         while (ctxRollup.getScheduledCount() > 0) {
             SlotKey slot = ctxRollup.getNextScheduled();
             ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS, ROLLUP_WAIT_PERIOD_MILLIS);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now

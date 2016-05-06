@@ -99,11 +99,11 @@ public class RollupService implements Runnable, RollupServiceMBean {
         // higher.
         Configuration config = Configuration.getInstance();
         rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
-        rollupDelayForMetricsWithShortDelay = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-        rollupWaitForMetricsWithLongDelay = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS);
+        rollupDelayForMetricsWithShortDelay = config.getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupWaitForMetricsWithLongDelay = config.getLongProperty(CoreConfig.LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
-        log.info(String.format("Delay configs -> ROLLUP_DELAY_MILLIS: [%d] DELAYED_METRICS_ROLLUP_DELAY_MILLIS: [%d] " +
-                "DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS: [%d]", rollupDelayMillis, rollupDelayForMetricsWithShortDelay,
+        log.info(String.format("Delay configs -> ROLLUP_DELAY_MILLIS: [%d] SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS: [%d] " +
+                "LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS: [%d]", rollupDelayMillis, rollupDelayForMetricsWithShortDelay,
                 rollupWaitForMetricsWithLongDelay));
 
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);

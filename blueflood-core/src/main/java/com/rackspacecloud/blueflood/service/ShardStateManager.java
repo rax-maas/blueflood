@@ -316,14 +316,14 @@ public class ShardStateManager {
          * A slot will become eligible for rollup/re-roll based on the below three configs.
          *
          * 1) 1st rollup  -> Eligible after ROLLUP_DELAY_MILLIS from collection time.
-         * 2) 1st re-roll -> This happens for metrics with short delay (within DELAYED_METRICS_ROLLUP_DELAY_MILLIS).
-         *                   Eligible after DELAYED_METRICS_ROLLUP_DELAY_MILLIS from collection time.
-         * 3) nth re-roll -> This happens for metrics with long delay(more than DELAYED_METRICS_ROLLUP_DELAY_MILLIS).
-         *                   Eligible after DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS from last ingest time.
+         * 2) 1st re-roll -> This happens for metrics with short delay (within SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS).
+         *                   Eligible after SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS from collection time.
+         * 3) nth re-roll -> This happens for metrics with long delay(more than SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS).
+         *                   Eligible after LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS from last ingest time.
          *                   This re-roll repeats as we keep getting delayed metrics.
          *
          *
-         *     |<---- DELAYED_METRICS_ROLLUP_DELAY----->|
+         *     |<-- SHORT_DELAY_METRICS_ROLLUP_DELAY--->|
          *     |                                        |
          *     |<-- ROLLUP_DELAY--->|                   |     |<--ROLLUP_WAIT-->|                |<--ROLLUP_WAIT-->|
          *     |                    |                   |     |                 |                |                 |
@@ -337,8 +337,8 @@ public class ShardStateManager {
          *
          * @param now is current time
          * @param maxAgeMillis is ROLLUP_DELAY_MILLIS
-         * @param rollupDelayForMetricsWithShortDelay is DELAYED_METRICS_ROLLUP_DELAY_MILLIS
-         * @param rollupWaitForMetricsWithLongDelay is DELAYED_METRICS_ROLLUP_WAIT_PERIOD_MILLIS
+         * @param rollupDelayForMetricsWithShortDelay is SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS
+         * @param rollupWaitForMetricsWithLongDelay is LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS
          * @return list of slots that are eligible for rollup
          */
         protected List<Integer> getSlotsEligibleForRollup(long now,

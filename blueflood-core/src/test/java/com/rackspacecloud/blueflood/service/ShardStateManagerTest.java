@@ -542,7 +542,7 @@ public class ShardStateManagerTest {
     public void getSlotsEligibleReturnsSlotsThatWereRolledRecentlyButReadyForReroll() {
 
         // given
-        when(mockClock.now()).thenReturn(new Instant(2234L)); //ingesting delayed metric after 1000ms (DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        when(mockClock.now()).thenReturn(new Instant(2234L)); //ingesting delayed metric after 1000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
         stamp.setLastRollupTimestamp(2345L);
@@ -560,7 +560,7 @@ public class ShardStateManagerTest {
     public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithLongerDelay() {
 
         // given
-        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
         stamp.setLastRollupTimestamp(2345L);
@@ -578,7 +578,7 @@ public class ShardStateManagerTest {
     public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithLongerDelayButReadyToReroll() {
 
         // given
-        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
         stamp.setLastRollupTimestamp(2345L);
@@ -597,7 +597,7 @@ public class ShardStateManagerTest {
     public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithRepeatedLongerDelayButReadyToReroll() {
 
         // given
-        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
         stamp.setLastRollupTimestamp(2345L);
