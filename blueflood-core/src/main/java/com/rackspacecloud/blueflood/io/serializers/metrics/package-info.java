@@ -20,6 +20,6 @@
  *
  * The classes here mainly deal with the wire format of the objects to
  * be serialized. The objects to be serialized are mainly Metrics related
- * objects, such as Set, Gauge, Histogram, Timer, Counter, Enum, etc.
+ * objects, such as Set, Gauge, Timer, Counter, Enum, etc.
  */
 package com.rackspacecloud.blueflood.io.serializers.metrics;

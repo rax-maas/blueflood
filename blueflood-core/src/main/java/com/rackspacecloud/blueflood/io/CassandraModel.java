@@ -44,12 +44,6 @@ public class CassandraModel {
     public static final String CF_METRICS_PREAGGREGATED_240M_NAME = "metrics_preaggregated_240m";
     public static final String CF_METRICS_PREAGGREGATED_1440M_NAME = "metrics_preaggregated_1440m";
 
-    public static final String CF_METRICS_HISTOGRAM_5M_NAME = "metrics_histogram_5m";
-    public static final String CF_METRICS_HISTOGRAM_20M_NAME = "metrics_histogram_20m";
-    public static final String CF_METRICS_HISTOGRAM_60M_NAME = "metrics_histogram_60m";
-    public static final String CF_METRICS_HISTOGRAM_240M_NAME = "metrics_histogram_240m";
-    public static final String CF_METRICS_HISTOGRAM_1440M_NAME = "metrics_histogram_1440m";
-
     /**
     * It is worth pointing out that the actual TTL value is calculated by taking the TimeValues below
     * and multiplying by 5.  Why?  Becuase SafetyTtlProvider.java multiplies the TimeValues below by 5.
@@ -75,13 +69,6 @@ public class CassandraModel {
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
 
-    public static final MetricColumnFamily CF_METRICS_HIST_FULL = CF_METRICS_FULL;
-    public static final MetricColumnFamily CF_METRICS_HIST_5M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_20M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_60M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_240M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_HIST_1440M = new MetricColumnFamily(CF_METRICS_HISTOGRAM_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
-
     public static final ColumnFamily<Locator, String> CF_METRICS_METADATA = new ColumnFamily<Locator, String>(CF_METRICS_METADATA_NAME,
             LocatorSerializer.get(),
             StringSerializer.get());
@@ -106,8 +93,6 @@ public class CassandraModel {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
             CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
             CF_METRICS_PREAGGREGATED_60M, CF_METRICS_PREAGGREGATED_240M, CF_METRICS_PREAGGREGATED_1440M,
-            CF_METRICS_HIST_FULL, CF_METRICS_HIST_5M, CF_METRICS_HIST_20M, CF_METRICS_HIST_60M,
-            CF_METRICS_HIST_240M, CF_METRICS_HIST_1440M,
             CF_METRICS_STRING
     };
 
@@ -119,7 +104,6 @@ public class CassandraModel {
 
     private static final ColumnFamilyMapper METRICS_GRAN_TO_CF;
     private static final ColumnFamilyMapper PREAG_GRAN_TO_CF;
-    private static final ColumnFamilyMapper HIST_GRAN_TO_CF;
 
     private static final Map<String, ColumnFamily<Locator, Long>> CF_NAME_TO_CF = new HashMap<String, ColumnFamily<Locator, Long>>();
     private static final Map<ColumnFamily<Locator, Long>, Granularity> CF_TO_GRAN;
@@ -140,14 +124,6 @@ public class CassandraModel {
         preagCFMap.put(Granularity.MIN_60, CF_METRICS_PREAGGREGATED_60M);
         preagCFMap.put(Granularity.MIN_240, CF_METRICS_PREAGGREGATED_240M);
         preagCFMap.put(Granularity.MIN_1440, CF_METRICS_PREAGGREGATED_1440M);
-
-        final Map<Granularity, MetricColumnFamily> histCFMap = new HashMap<Granularity, MetricColumnFamily>();
-        histCFMap.put(Granularity.FULL, CF_METRICS_HIST_FULL);
-        histCFMap.put(Granularity.MIN_5, CF_METRICS_HIST_5M);
-        histCFMap.put(Granularity.MIN_20, CF_METRICS_HIST_20M);
-        histCFMap.put(Granularity.MIN_60, CF_METRICS_HIST_60M);
-        histCFMap.put(Granularity.MIN_240, CF_METRICS_HIST_240M);
-        histCFMap.put(Granularity.MIN_1440, CF_METRICS_HIST_1440M);
 
         Map<ColumnFamily<Locator, Long>, Granularity> cfToGranMap = new HashMap<ColumnFamily<Locator, Long>, Granularity>();
         cfToGranMap.put(CF_METRICS_FULL, Granularity.FULL);
@@ -176,12 +152,6 @@ public class CassandraModel {
                 return preagCFMap.get(gran);
             }
         };
-        HIST_GRAN_TO_CF = new ColumnFamilyMapper() {
-            @Override
-            public MetricColumnFamily get(Granularity gran) {
-                return histCFMap.get(gran);
-            }
-        };
         CF_TO_GRAN = Collections.unmodifiableMap(cfToGranMap);
         List<ColumnFamily> cfs = new ArrayList<ColumnFamily>();
 
@@ -204,26 +174,9 @@ public class CassandraModel {
             return CF_METRICS_FULL;
         } else if (type.equals(BasicRollup.class)) {
             return METRICS_GRAN_TO_CF.get(granularity);
-        } else if (type.equals(HistogramRollup.class)) {
-            return HIST_GRAN_TO_CF.get(granularity);
         } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
                 type.equals(BluefloodCounterRollup.class) || type.equals(BluefloodEnumRollup.class)) {
             return PREAG_GRAN_TO_CF.get(granularity);
-        } else {
-            throw new RuntimeException("Unsupported rollup type.");
-        }
-    }
-
-    public static String getColumnFamilyName(Class<? extends Rollup> type, Granularity granularity) {
-        if (type.equals(SimpleNumber.class)) {
-            return CF_METRICS_FULL_NAME;
-        } else if (type.equals(BasicRollup.class)) {
-            return METRICS_GRAN_TO_CF.get(granularity).getName();
-        } else if (type.equals(HistogramRollup.class)) {
-            return HIST_GRAN_TO_CF.get(granularity).getName();
-        } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
-                type.equals(BluefloodCounterRollup.class) || type.equals(BluefloodEnumRollup.class)) {
-            return PREAG_GRAN_TO_CF.get(granularity).getName();
         } else {
             throw new RuntimeException("Unsupported rollup type.");
         }

@@ -69,11 +69,6 @@ public class RollupTypeTest {
     }
 
     @Test
-    public void fromStringHistgramsYieldsHistgrams() {
-        assertEquals(RollupType.BF_HISTOGRAMS, RollupType.fromString("BF_HISTOGRAMS"));
-    }
-
-    @Test
     public void fromStringNotARollupYieldsNotARollup() {
         assertEquals(RollupType.NOT_A_ROLLUP, RollupType.fromString("NOT_A_ROLLUP"));
     }
@@ -120,13 +115,6 @@ public class RollupTypeTest {
 
         Rollup rollup = new MetricImplementsRollup(null, 123L, 0, new TimeValue(456L, TimeUnit.SECONDS), null);
         assertEquals(RollupType.BF_BASIC, RollupType.fromRollup(rollup));
-    }
-
-    @Test
-    public void fromRollupHistogramRollupYieldsHistograms() {
-        ArrayList<Bin<SimpleTarget>> bins = new ArrayList<Bin<SimpleTarget>>();
-        Rollup rollup = new HistogramRollup(bins);
-        assertEquals(RollupType.BF_HISTOGRAMS, RollupType.fromRollup(rollup));
     }
 
     @Test
@@ -200,11 +188,6 @@ public class RollupTypeTest {
         assertEquals(RollupType.ENUM, RollupType.fromRollupTypeClass(BluefloodEnumRollup.class));
     }
 
-    @Test
-    public void fromRollupTypeClassHistogramRollupYieldsSet() {
-        assertEquals(RollupType.BF_HISTOGRAMS, RollupType.fromRollupTypeClass(HistogramRollup.class));
-    }
-
     @Test(expected = Error.class)
     public void fromRollupTypeClassCustomSubclassThrowsError() {
         // when
@@ -239,11 +222,6 @@ public class RollupTypeTest {
     @Test
     public void classOfGaugeYieldsBluefloodGaugeRollup() {
         assertEquals(BluefloodGaugeRollup.class, RollupType.classOf(RollupType.GAUGE, null));
-    }
-
-    @Test
-    public void classOfHistogramsYieldsHistogramRollup() {
-        assertEquals(HistogramRollup.class, RollupType.classOf(RollupType.BF_HISTOGRAMS, null));
     }
 
     @Test

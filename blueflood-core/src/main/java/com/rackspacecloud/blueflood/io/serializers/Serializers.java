@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.io.serializers;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.io.serializers.astyanax.HistogramSerializer;
 import com.rackspacecloud.blueflood.io.serializers.metrics.*;
 import com.rackspacecloud.blueflood.types.*;
 
@@ -61,8 +60,6 @@ public class Serializers {
             return (AbstractSerializer<T>) basicRollupInstance;
         else if (type.equals(BluefloodTimerRollup.class))
             return (AbstractSerializer<T>)timerRollupInstance;
-        else if (type.equals(HistogramRollup.class))
-            return (AbstractSerializer<T>) HistogramSerializer.get();
         else if (type.equals(BluefloodCounterRollup.class))
             return (AbstractSerializer<T>) counterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))

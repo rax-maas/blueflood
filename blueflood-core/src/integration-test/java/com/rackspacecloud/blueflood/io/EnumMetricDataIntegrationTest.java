@@ -97,6 +97,8 @@ public class EnumMetricDataIntegrationTest extends IntegrationTestBase {
                         metric.getTtlInSeconds());
             }
         }
+        // to apease Travis
+        Thread.sleep(500);
 
         // use one of the locator
         List<Locator> locators = new ArrayList<Locator>() {{

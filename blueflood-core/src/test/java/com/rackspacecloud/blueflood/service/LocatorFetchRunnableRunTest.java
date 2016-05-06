@@ -57,9 +57,6 @@ public class LocatorFetchRunnableRunTest {
         doReturn(executionContext).when(lfr).createRollupExecutionContext();
         doReturn(rollupBatchWriter).when(lfr).createRollupBatchWriter(
                 Matchers.<RollupExecutionContext>any());
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS,
-                "false");
     }
 
     @After

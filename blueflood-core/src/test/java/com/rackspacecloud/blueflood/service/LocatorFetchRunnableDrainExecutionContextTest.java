@@ -54,9 +54,6 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
         rollupBatchWriter = mock(RollupBatchWriter.class);
 
         locators = getTypicalLocators();
-
-        Configuration.getInstance().setProperty(CoreConfig.ENABLE_HISTOGRAMS,
-                "false");
     }
 
     @After

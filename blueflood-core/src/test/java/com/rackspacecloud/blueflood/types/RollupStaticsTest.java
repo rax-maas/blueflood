@@ -29,26 +29,6 @@ public class RollupStaticsTest {
     }
 
     @Test
-    public void testHistogramFromRaw() throws IOException {
-        Rollup.Type<SimpleNumber, HistogramRollup> factory = Rollup.HistogramFromRaw;
-        Points<SimpleNumber> points = new Points<SimpleNumber>();
-        HistogramRollup rollup = factory.compute(points);
-
-        assertNotNull(rollup);
-        assertSame(HistogramRollup.class, rollup.getClass());
-    }
-
-    @Test
-    public void testHistogramFromHistogram() throws IOException {
-        Rollup.Type<HistogramRollup, HistogramRollup> factory = Rollup.HistogramFromHistogram;
-        Points<HistogramRollup> points = new Points<HistogramRollup>();
-        HistogramRollup rollup = factory.compute(points);
-
-        assertNotNull(rollup);
-        assertSame(HistogramRollup.class, rollup.getClass());
-    }
-
-    @Test
     public void testTimerFromTimer() throws IOException {
         Rollup.Type<BluefloodTimerRollup, BluefloodTimerRollup> factory = Rollup.TimerFromTimer;
         Points<BluefloodTimerRollup> points = new Points<BluefloodTimerRollup>();

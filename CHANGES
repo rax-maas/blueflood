@@ -9,7 +9,6 @@
  * Add support for fetching multiple metrics in single HTTP call
  * Update to codahale-metrics v3.0 from v2.0
    * It is recommended that you change your "GRAPHITE_PREFIX" when going from Blueflood 1.0 to 2.x
- * Add support for computing histograms from metrics
  * Add HTTP API endpoint for fetching histograms
  * Add support for exporting basic rollups to Kafka
  * Add limited support for statsD-styled aggregates:

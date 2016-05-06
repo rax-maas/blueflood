@@ -114,8 +114,6 @@ public class RollupRunnable implements Runnable {
             // ENUM         | BluefloodEnumRollup            | metrics_preaggr_{gran}
             // BF_BASIC     | BasicRollup (if gran != full)  | metrics_{gran}
             //              | SimpleNumber (if gran == full) | metrics_full
-            // BF_HISTOGRAM | HistogramRollup                | metrics_full (if gran == full)
-            //              |                                | metrics_preaggr_{gran} otherwise
 
             Class<? extends Rollup> rollupClass = RollupType.classOf(rollupType, srcGran.coarser());
             MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
@@ -186,8 +184,6 @@ public class RollupRunnable implements Runnable {
                 return Rollup.TimerFromTimer;
             case GAUGE:
                 return Rollup.GaugeFromGauge;
-            case BF_HISTOGRAMS:
-                return srcGran == Granularity.FULL ? Rollup.HistogramFromRaw : Rollup.HistogramFromHistogram;
             case BF_BASIC:
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:

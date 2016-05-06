@@ -19,12 +19,10 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
 import com.rackspacecloud.blueflood.types.*;
 import junit.framework.Assert;
-import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Test;
 
 import java.io.IOError;
-import java.io.IOException;
 
 public class RollupEventSerializerTest {
     @Test
@@ -66,21 +64,6 @@ public class RollupEventSerializerTest {
     }
 
     @Test
-    public void testHistgramRollupSerialization() throws IOException {
-        Points<SimpleNumber> points = new Points<SimpleNumber>();
-        long startTime = 12345678L;
-        //Count = 3.0, Mean = 2.0
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(1.0)));
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(2.0)));
-        points.add(new Points.Point<SimpleNumber>(startTime++, new SimpleNumber(3.0)));
-        HistogramRollup histogramRollup = HistogramRollup.buildRollupFromRawSamples(points);
-        ObjectNode resultNode = RollupSerializationHelper.rollupToJson(histogramRollup);
-        ArrayNode node = (ArrayNode)resultNode.get("bins");
-        Assert.assertEquals(node.get(0).get("count").asDouble(), 3.0);
-        Assert.assertEquals(node.get(0).get("mean").asDouble(), 2.0);
-    }
-
-    @Test
     public void testSetRollupSerialization() {
         final BluefloodSetRollup rollup0 = new BluefloodSetRollup()
                 .withObject(10)
@@ -106,6 +89,19 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
         Assert.assertEquals(resultNode.get("latestVal").asLong(), rollup.getLatestNumericValue().longValue());
+    }
+
+    @Test
+    public void testCounterRollupSerialization() {
+        final BluefloodCounterRollup rollup =
+                new BluefloodCounterRollup()
+                        .withCount(123)
+                        .withRate(987.6d)
+                        .withSampleCount(5);
+        ObjectNode resultNode = RollupSerializationHelper.rollupToJson(rollup);
+        Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount().longValue());
+        Assert.assertEquals(resultNode.get("rate").asDouble(), rollup.getRate());
+        Assert.assertEquals(resultNode.get("sampleCount").asInt(), rollup.getSampleCount());
     }
 
     //Passing an unknown rollup type will throw IOError
