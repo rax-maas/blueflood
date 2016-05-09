@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -46,7 +46,7 @@ public class HttpAggregatedIngestionTest {
     @Before
     public void buildPayload() throws IOException {
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ), postfix );
+        String json = getJsonFromFile("sample_payload.json", postfix);
         payload = HttpAggregatedIngestionHandler.createPayload(json);
     }
     
@@ -106,14 +106,11 @@ public class HttpAggregatedIngestionTest {
         long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ),
-                timestamp, postfix );
+        String json = getJsonFromFile("sample_payload.json", timestamp, postfix );
         payload = HttpAggregatedIngestionHandler.createPayload(json );
 
         List<String> errors = payload.getValidationErrors();
-
-        assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+        assertTrue( "'" + errors.get(0) + "' does not match pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors.get(0) ) );
     }
 
     @Test
@@ -122,14 +119,11 @@ public class HttpAggregatedIngestionTest {
         long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_payload.json" ) ),
-                timestamp, postfix );
+        String json = getJsonFromFile( "sample_payload.json", timestamp, postfix );
         payload = HttpAggregatedIngestionHandler.createPayload(json );
 
         List<String> errors = payload.getValidationErrors();
-
-        assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
+        assertTrue( "'" + errors.get(0) + "' does not match pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get(0) ) );
     }
 
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics

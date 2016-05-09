@@ -23,7 +23,7 @@ import com.google.gson.*;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -69,21 +69,36 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
             requestCount.inc();
             List<AggregatedPayload> bundleList = createBundleList(body);
 
-            List<String> errors = new ArrayList<String>();
-
-            for( AggregatedPayload payload : bundleList ) {
-
-                errors.addAll( payload.getValidationErrors() );
-            }
-
-            if( errors.isEmpty() ) {
-
+            if (bundleList.size() > 0) {
+                // has aggregated metric bundle in body
+                // convert and add metric bundle to MetricsCollection if valid
                 MetricsCollection collection = new MetricsCollection();
+                List<String> errors = new ArrayList<String>();
 
+                // for each metric bundle
                 for (AggregatedPayload bundle : bundleList) {
-                    collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+                    // validate, convert, and add to collection
+                    List<String> bundleValidationErrors = bundle.getValidationErrors();
+                    if (bundleValidationErrors.isEmpty()) {
+                        // no validation error, add to collection
+                        collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+                    }
+                    else {
+                        // failed validation, add to error
+                        errors.addAll( bundleValidationErrors );
+                    }
                 }
 
+                // if has validation errors and no valid metrics
+                if (!errors.isEmpty() && collection.size() == 0) {
+                    // return BAD_REQUEST and error
+                    DefaultHandler.sendResponse( ctx, request,
+                            HttpMetricsIngestionHandler.getResponseBody(errors),
+                            HttpResponseStatus.BAD_REQUEST );
+                    return;
+                }
+
+                // process valid metrics in collection
                 ListenableFuture<List<Boolean>> futures = processor.apply(collection);
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
@@ -93,15 +108,20 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                     }
                 }
 
-                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                // return OK or MULTI_STATUS response depending if there were validation errors
+                if (errors.isEmpty()) {
+                    // no validation error, response OK
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                }
+                else {
+                    // has some validation errors, response MULTI_STATUS
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                }
+
             }
             else {
-
-                DefaultHandler.sendResponse( ctx,
-                        request,
-                        HttpMetricsIngestionHandler.getResponseBody( errors ),
-                        HttpResponseStatus.BAD_REQUEST );
-
+                // no aggregated metric bundles in body
+                DefaultHandler.sendResponse( ctx, request, null, HttpResponseStatus.BAD_REQUEST );
             }
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));

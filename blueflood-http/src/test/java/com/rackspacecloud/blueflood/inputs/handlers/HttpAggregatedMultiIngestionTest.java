@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import junit.framework.Assert;
@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -41,9 +40,7 @@ public class HttpAggregatedMultiIngestionTest {
 
     @Before
     public void buildBundle() throws IOException {
-
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( "sample_multi_aggregated_payload.json" ) ),
-                postfix );
+        String json = getJsonFromFile("sample_multi_aggregated_payload.json", postfix);
         bundleList = HttpAggregatedMultiIngestionHandler.createBundleList(json);
     }
 

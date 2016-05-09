@@ -84,9 +84,9 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String[] output = getBodyArray( response );
 
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 1 ] ) );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 2 ] ) );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 3 ] ) );
+        assertTrue(output[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 1 ] ) );
+        assertTrue(output[ 2 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 2 ] ) );
+        assertTrue(output[ 3 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 3 ] ) );
     }
 
     @Test
@@ -102,9 +102,34 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         String[] output = getBodyArray( response );
 
         assertEquals( 4, output.length );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 1 ] ) );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 2 ] ) );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 3 ] ) );
+        assertTrue( output[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 1 ] ) );
+        assertTrue( output[ 2 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 2 ] ) );
+        assertTrue( output[ 3 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 3 ] ) );
+    }
+
+    @Test
+    public void testHttpIngestionPartialInvalidCollectionTime() throws Exception {
+        String postfix = getPostfix();
+        long validTime = System.currentTimeMillis();
+        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        String jsonBody = getJsonFromFile("sample_multi_payload_with_different_time.json", postfix);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", pastTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
+
+        HttpResponse response = httpPost( TID, postMultiPath, jsonBody );
+        String[] output = getBodyArray( response );
+
+        try {
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
+            assertEquals("", output[0]);
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
     }
 
     @Test
@@ -120,7 +145,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals( 400, response.getStatusLine().getStatusCode() );
         assertEquals( 2, errors.length );
         assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ));
+        assertTrue( errors[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ));
     }
 
     @Test
@@ -136,9 +161,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals( 400, response.getStatusLine().getStatusCode() );
         assertEquals( 2, errors.length );
         assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertTrue( errors[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
     }
-
 
     @Test
     public void testHttpAggregatedIngestionHappyCase() throws Exception {
@@ -182,9 +206,9 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         assertEquals( 4, errors.length );
         assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
+        assertTrue( errors[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertTrue( errors[ 2 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
+        assertTrue( errors[ 3 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
     }
 
 
@@ -206,9 +230,9 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         assertEquals( 4, errors.length );
         assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
+        assertTrue( errors[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertTrue( errors[ 2 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
+        assertTrue( errors[ 3 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
     }
 
     @Test
@@ -246,6 +270,31 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     }
 
     @Test
+    public void testHttpAggregatedMultiPartialInvalidCollectionTime() throws Exception {
+        String postfix = getPostfix();
+        long validTime = System.currentTimeMillis();
+        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        String jsonBody = getJsonFromFile("sample_multi_aggregated_payload_with_different_time.json", postfix);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", pastTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
+
+        HttpResponse response = httpPost( TID, postAggregatedMultiPath, jsonBody );
+        String[] output = getBodyArray( response );
+
+        try {
+            assertEquals("Should get status 207 from " + String.format(postAggregatedMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
+            assertEquals("", output[0]);
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
     public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
 
         long start = System.currentTimeMillis() - TIME_DIFF_MS;
@@ -276,7 +325,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         HttpResponse response = httpPost( TID, postPath, "" );
 
         try {
-            assertEquals( response.getStatusLine().getStatusCode(), 400 );
+            assertEquals( 400, response.getStatusLine().getStatusCode() );
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -285,7 +334,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         response = httpPost( TID, postPath, "Some incompatible json body" );
 
         try {
-            assertEquals( response.getStatusLine().getStatusCode(), 400 );
+            assertEquals( 400, response.getStatusLine().getStatusCode() );
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -368,9 +417,35 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         try {
             assertEquals( 400, response.getStatusLine().getStatusCode() );
-            assertTrue( Pattern.matches( NO_TENANT_ID_REGEX, output[ 1 ] ) );
-            assertTrue( Pattern.matches( NO_TENANT_ID_REGEX, output[ 2 ] ) );
-            assertTrue( Pattern.matches( NO_TENANT_ID_REGEX, output[ 3 ] ) );
+            assertTrue( output[ 1 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 1 ] ) );
+            assertTrue( output[ 2 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 2 ] ) );
+            assertTrue( output[ 3 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 3 ] ) );
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
+    public void testMultiTenantPartialFailureWithoutTenant() throws Exception {
+
+        String postfix = getPostfix();
+        long validTime = System.currentTimeMillis();
+
+        String jsonBody = getJsonFromFile("sample_multi_payload_with_different_time.json", postfix);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", validTime);
+        jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", validTime);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_1%", TID);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_2%", "");
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_3%", TID);
+
+        HttpResponse response = httpPost( TID, postMultiPath, jsonBody );
+        String[] output = getBodyArray( response );
+
+        try {
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
+            assertEquals("", output[0]);
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently

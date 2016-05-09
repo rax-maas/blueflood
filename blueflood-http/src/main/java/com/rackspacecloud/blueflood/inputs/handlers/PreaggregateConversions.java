@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.codahale.metrics.Meter;
 
 import com.google.gson.internal.LazilyParsedNumber;
-import com.rackspacecloud.blueflood.inputs.handlers.wrappers.AggregatedPayload;
+import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.service.ExcessEnumReader;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Metrics;

@@ -14,25 +14,24 @@
  *    limitations under the License.
  */
 
-package com.rackspacecloud.blueflood.inputs.handlers.wrappers;
+package com.rackspacecloud.blueflood.inputs.formats;
 
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
-import java.util.AbstractList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // Using nested classes for now. Expect this to be cleaned up.
 public class AggregatedPayload {
-    private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-    private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+    private final long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    private final long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
     private String tenantId;
     private long timestamp; // millis since epoch.
-    
+
     // this field is optional
     private long flushInterval = 0;
     
@@ -61,16 +60,17 @@ public class AggregatedPayload {
     public Collection<BluefloodSet> getSets() { return safeAsList(sets); }
     public Collection<BluefloodEnum> getEnums() { return safeAsList(enums); }
 
-
     public List<String> getValidationErrors() {
-
         List<String> errors = new java.util.ArrayList<String>();
-        long current = System.currentTimeMillis();
 
-        if( timestamp > current + futureDiff )
-            errors.add( "'timestamp' '" + timestamp + "' is more than '" + futureDiff + "' milliseconds into the future." );
-        else if( timestamp < current - pastDiff )
-            errors.add( "'timestamp' '" + timestamp + "' is more than '" + pastDiff + "' milliseconds into the past." );
+        long currentTime = System.currentTimeMillis();
+        if ( timestamp > currentTime + AFTER_CURRENT_COLLECTIONTIME_MS ) {
+            // timestamp is too far in the future
+            errors.add( "'timestamp' '" + timestamp + "' is more than '" + AFTER_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the future." );
+        } else if ( timestamp < currentTime - BEFORE_CURRENT_COLLECTIONTIME_MS ) {
+            // timestamp is too far in the past
+            errors.add( "'timestamp' '" + timestamp + "' is more than '" + BEFORE_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the past." );
+        }
 
         return errors;
     }

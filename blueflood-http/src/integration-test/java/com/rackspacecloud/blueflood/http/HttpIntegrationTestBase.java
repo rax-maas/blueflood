@@ -157,8 +157,7 @@ public class HttpIntegrationTestBase {
         // urlPath is path for url ingestion after the hostname
         // payloadFilepath is location of the payload for the POST content entity
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
-                postfix );
+        String json = getJsonFromFile( payloadFilePath, postfix );
         return httpPost( tenantId, urlPath, json );
     }
 
@@ -167,20 +166,16 @@ public class HttpIntegrationTestBase {
         // urlPath is path for url ingestion after the hostname
         // payloadFilepath is location of the payload for the POST content entity
 
-        String json = getJsonFromFile( new InputStreamReader( getClass().getClassLoader().getResourceAsStream( payloadFilePath ) ),
-                timestamp, postfix );
+        String json = getJsonFromFile( payloadFilePath, timestamp, postfix );
         return httpPost( tenantId, urlPath, json );
     }
 
 
     public HttpResponse postEvent( String tenantId, String requestBody ) throws Exception {
 
-
         HttpPost post = getHttpPost( tenantId, postEventsPath, requestBody );
-
         post.setHeader( Event.FieldLabels.tenantId.name(), tenantId);
-        HttpResponse response = client.execute(post);
-        return response;
+        return client.execute(post);
     }
 
     public HttpResponse httpPost( String tenantId, String urlPath, String json ) throws URISyntaxException, IOException {

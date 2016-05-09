@@ -23,7 +23,7 @@ import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
@@ -36,7 +36,6 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.*;
 import org.slf4j.Logger;
@@ -84,11 +83,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+        List<JSONMetric> jsonMetrics =
                 mapper.readValue(
                         body,
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.JSONMetric.class)
+                        typeFactory.constructCollectionType(List.class, JSONMetric.class)
                 );
         return new JSONMetricsContainer(tenantId, jsonMetrics);
     }
@@ -114,13 +112,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                     return;
                 }
 
-                List<String> errors = jsonMetricsContainer.getValidationErrors();
-
-                if( !errors.isEmpty() ) {
-
-                    DefaultHandler.sendResponse( ctx, request, getResponseBody( errors ), HttpResponseStatus.BAD_REQUEST );
-                    return;
-                }
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
                 DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
@@ -139,10 +130,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 return;
             }
 
-            List<Metric> containerMetrics;
+            List<Metric> metrics;
             try {
-                containerMetrics = jsonMetricsContainer.toMetrics();
-                forceTTLsIfConfigured(containerMetrics);
+                metrics = jsonMetricsContainer.getValidMetrics();
+                forceTTLsIfConfigured(metrics);
 
                 if (jsonMetricsContainer.areDelayedMetricsPresent()) {
                     Tracker.getInstance().trackDelayedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetrics());
@@ -166,13 +157,17 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 jsonTimerContext.stop();
             }
 
-            if (containerMetrics == null || containerMetrics.isEmpty()) {
+            // verify metrics after parsing json and converting to metrics
+            List<String> errors = jsonMetricsContainer.getValidationErrors();
+            if (metrics == null || metrics.isEmpty()) {
+                // empty container
                 log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
-                DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
+                DefaultHandler.sendResponse(ctx, request, getResponseBody( errors ), HttpResponseStatus.BAD_REQUEST );
+                return;
             }
 
             final MetricsCollection collection = new MetricsCollection();
-            collection.add(new ArrayList<IMetric>(containerMetrics));
+            collection.add(new ArrayList<IMetric>(metrics));
             final Timer.Context persistingTimerContext = persistingTimer.time();
             try {
                 ListenableFuture<List<Boolean>> futures = processor.apply(collection);
@@ -183,7 +178,17 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                         return;
                     }
                 }
-                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+
+                // after processing metrics, return either OK or MULTI_STATUS depending on number of valid metrics
+                if( !errors.isEmpty() ) {
+                    // has some validation errors, return MULTI_STATUS
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                }
+                else {
+                    // no validation error, return OK
+                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                }
+
             } catch (TimeoutException e) {
                 DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {

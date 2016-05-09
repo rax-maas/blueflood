@@ -42,7 +42,7 @@ public class JSONMetricsContainerTest {
          // Construct the JSONMetricsContainter from JSON metric objects
         JSONMetricsContainer jsonMetricsContainer = getContainer( "ac1", generateJSONMetricsData() );
 
-        List<Metric> metricsCollection = jsonMetricsContainer.toMetrics();
+        List<Metric> metricsCollection = jsonMetricsContainer.getValidMetrics();
 
         assertTrue( jsonMetricsContainer.getValidationErrors().isEmpty() );
         assertTrue( metricsCollection.size() == 2 );
@@ -65,7 +65,7 @@ public class JSONMetricsContainerTest {
 
         JSONMetricsContainer container = getContainer( "786659", jsonBody );
 
-        List<Metric> metrics = container.toMetrics();
+        List<Metric> metrics = container.getValidMetrics();
         assertTrue( container.getValidationErrors().isEmpty() );
     }
 
@@ -77,7 +77,7 @@ public class JSONMetricsContainerTest {
         JSONMetricsContainer container = getContainer("786659", jsonBody );
 
         // has a side-effect required by areDelayedMetricsPresent()
-        List<Metric> metrics = container.toMetrics();
+        List<Metric> metrics = container.getValidMetrics();
 
         assertTrue( container.getValidationErrors().isEmpty() );
         assertTrue( container.areDelayedMetricsPresent() );
@@ -90,7 +90,7 @@ public class JSONMetricsContainerTest {
         JSONMetricsContainer container = getContainer( "786659", jsonBody );
 
         // has a side-effect required by areDelayedMetricsPresent()
-        List<Metric> metrics = container.toMetrics();
+        List<Metric> metrics = container.getValidMetrics();
 
         assertTrue( container.getValidationErrors().isEmpty() );
         assertFalse( container.areDelayedMetricsPresent() );
@@ -153,21 +153,19 @@ public class JSONMetricsContainerTest {
 
     private JSONMetricsContainer getScopedContainer( String name, String jsonBody ) throws java.io.IOException {
 
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+        List<JSONMetric> jsonMetrics =
                 mapper.readValue(
                         jsonBody,
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.ScopedJSONMetric.class)
+                        typeFactory.constructCollectionType(List.class, JSONMetricScoped.class)
                 );
         return new JSONMetricsContainer( name, jsonMetrics);
     }
     private JSONMetricsContainer getContainer( String name, String jsonBody ) throws java.io.IOException {
 
-        List<JSONMetricsContainer.JSONMetric> jsonMetrics =
+        List<JSONMetric> jsonMetrics =
                 mapper.readValue(
                         jsonBody,
-                        typeFactory.constructCollectionType(List.class,
-                                JSONMetricsContainer.JSONMetric.class)
+                        typeFactory.constructCollectionType(List.class, JSONMetric.class)
                 );
         return new JSONMetricsContainer( name, jsonMetrics);
     }

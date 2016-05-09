@@ -1,0 +1,44 @@
+[
+    {
+        "tenantId": "%TENANT_ID_1%",
+        "collectionTime": "%TIMESTAMP_1%",
+        "ttlInSeconds": 172800,
+        "metricValue": 1,
+        "metricName": "multi.valid_metric_one%POSTFIX%"
+    },
+    {
+        "tenantId": "%TENANT_ID_2%",
+        "collectionTime": "%TIMESTAMP_1%",
+        "ttlInSeconds": 172800,
+        "metricValue": 2,
+        "metricName": "multi.valid_metric_two%POSTFIX%"
+    },
+    {
+        "tenantId": "%TENANT_ID_1%",
+        "collectionTime": "%TIMESTAMP_2%",
+        "ttlInSeconds": 172800,
+        "metricValue": 1,
+        "metricName": "multi.invalid_metric_one%POSTFIX%"
+    },
+    {
+        "tenantId": "%TENANT_ID_2%",
+        "collectionTime": "%TIMESTAMP_2%",
+        "ttlInSeconds": 172800,
+        "metricValue": 2,
+        "metricName": "multi.invalid_metric_two%POSTFIX%"
+    },
+    {
+        "tenantId": "%TENANT_ID_3%",
+        "collectionTime": "%TIMESTAMP_3%",
+        "ttlInSeconds": 172800,
+        "metricValue": 3,
+        "metricName": "multi.valid_metric_three%POSTFIX%"
+    },
+    {
+        "tenantId": "%TENANT_ID_3%",
+        "collectionTime": "%TIMESTAMP_3%",
+        "ttlInSeconds": 172800,
+        "metricValue": 3,
+        "metricName": "multi.invalid_metric_three%POSTFIX%"
+    }
+]
