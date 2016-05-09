@@ -29,6 +29,7 @@ public class RollupServiceTest {
     ThreadPoolExecutor enumValidatorExecutor;
     long rollupDelayMillis;
     long delayedMetricRollupDelayMillis;
+    long rollupWaitPeriodMillis;
     long pollerPeriod;
     long configRefreshInterval;
 
@@ -45,13 +46,14 @@ public class RollupServiceTest {
         enumValidatorExecutor = mock(ThreadPoolExecutor.class);
         rollupDelayMillis = 300000;
         delayedMetricRollupDelayMillis = 300000;
+        rollupWaitPeriodMillis = 300000;
         pollerPeriod = 0;
         configRefreshInterval = 10000;
 
         service = new RollupService(context, shardStateManager,
                 locatorFetchExecutors, rollupReadExecutors,
                 rollupWriteExecutors, enumValidatorExecutor, rollupDelayMillis,
-                delayedMetricRollupDelayMillis, pollerPeriod,
+                delayedMetricRollupDelayMillis, rollupWaitPeriodMillis, pollerPeriod,
                 configRefreshInterval);
     }
 
@@ -62,7 +64,7 @@ public class RollupServiceTest {
         service.poll();
 
         // then
-        verify(context).scheduleEligibleSlots(anyLong(), anyLong());
+        verify(context).scheduleEligibleSlots(anyLong(), anyLong(), anyLong());
         verifyNoMoreInteractions(context);
 
         verifyZeroInteractions(shardStateManager);
@@ -99,7 +101,7 @@ public class RollupServiceTest {
         service.run();
 
         // then
-        verify(context).scheduleEligibleSlots(anyLong(), anyLong());  // from poll
+        verify(context).scheduleEligibleSlots(anyLong(), anyLong(), anyLong());  // from poll
         verify(context, times(2)).hasScheduled();
         verify(context).getNextScheduled();
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
@@ -139,7 +141,7 @@ public class RollupServiceTest {
         service.run();
 
         // then
-        verify(context).scheduleEligibleSlots(anyLong(), anyLong());  // from poll
+        verify(context).scheduleEligibleSlots(anyLong(), anyLong(), anyLong());  // from poll
         verify(context, times(2)).hasScheduled();
         verify(context).getNextScheduled();
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run

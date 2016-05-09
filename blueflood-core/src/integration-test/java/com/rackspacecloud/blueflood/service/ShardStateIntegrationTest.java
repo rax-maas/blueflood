@@ -22,14 +22,17 @@ import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Util;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.joda.time.Instant;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.*;
@@ -38,14 +41,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.mockito.Mockito.when;
+
 @RunWith(Parameterized.class)
 public class ShardStateIntegrationTest extends IntegrationTestBase {
     
     private ShardStateIO io;
     private List<Integer> shards;
 
-    private final int DELAYED_METRICS_ROLLUP_DELAY_MILLIS = 300000;
-    private final int ROLLUP_DELAY_MILLIS = 300000;
+    private final long ROLLUP_DELAY_MILLIS = 300000;
+    private final long SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 600000;
+    private final long LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS = 500000;
     
     public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
         this.io = io;
@@ -91,9 +97,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Test
     public void testRollupFailureForDelayedMetrics() {
         long time = 1234000L;
+        final Clock mockClock = Mockito.mock(Clock.class);
+
         Collection<Integer> managedShards = Lists.newArrayList(0);
-        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
-        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards);
+        ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards, mockClock);
+        ScheduleContext rollupCtx = new ScheduleContext(time, managedShards, mockClock);
         // Shard workers for rollup ctx
         ShardStateWorker rollupPuller = new ShardStatePuller(managedShards, rollupCtx.getShardStateManager(), this.io);
         ShardStateWorker rollupPusher = new ShardStatePusher(managedShards, rollupCtx.getShardStateManager(), this.io);
@@ -102,45 +110,90 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ShardStateWorker ingestPuller = new ShardStatePuller(managedShards, ingestionCtx.getShardStateManager(), this.io);
         ShardStateWorker ingestPusher = new ShardStatePusher(managedShards, ingestionCtx.getShardStateManager(), this.io);
 
-        ingestionCtx.update(time + 30000, 0);
+        //***************************************************************************************
+        //*  Testing for on-time metrics (ROLLUP_DELAY_MILLIS)                                  *
+        //***************************************************************************************
+
+        when(mockClock.now()).thenReturn(new Instant(time + 1));
+        ingestionCtx.update(time, 0);
         ingestPusher.performOperation(); // Shard state is persisted on ingestion host
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
-        rollupCtx.setCurrentTimeMillis(time + 600000);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupCtx.setCurrentTimeMillis(time + ROLLUP_DELAY_MILLIS + 1);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
+        simulateHierarchicalScheduling(rollupCtx);
+
+        //****************************************************************************************
+        //*  Testing for short delay metrics(SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS)            *
+        //****************************************************************************************
+
+        rollupPusher.performOperation();
+
+        // Delayed metric is received on ingestion host
+        final long lastIngestTime1 = time + ROLLUP_DELAY_MILLIS + 2;
+        ingestPuller.performOperation();
+        when(mockClock.now()).thenReturn(new Instant(lastIngestTime1));
+        ingestionCtx.update(time + 1, 0);
+        ingestPusher.performOperation();
+
+        rollupPuller.performOperation();
+        //last ingest time will be the actual system time as it is the last update time. We adjust it to suit this test
+        for (Granularity g: Granularity.rollupGranularities()) {
+            UpdateStamp stamp = rollupCtx.getShardStateManager().getSlotStateManager(0, g).getSlotStamps().get(g.slot(time));
+            stamp.setLastIngestTimestamp(lastIngestTime1);
+        }
+
+        rollupCtx.setCurrentTimeMillis(lastIngestTime1);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
+
+        rollupCtx.setCurrentTimeMillis(time + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 2);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        simulateHierarchicalScheduling(rollupCtx);
+
+        //****************************************************************************************
+        //*  Testing for long delay metrics(LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS)               *
+        //****************************************************************************************
+
+        rollupPusher.performOperation();
+
+        // Delayed metric is received on ingestion host
+        final long lastIngestTime2 = time + 2 + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + 1;
+        ingestPuller.performOperation();
+        when(mockClock.now()).thenReturn(new Instant(lastIngestTime2));
+        ingestionCtx.update(time + 2, 0);
+        ingestPusher.performOperation();
+
+        rollupPuller.performOperation();
+        //last ingest time will be the actual system time as it is the last update time. We adjust it to suit this test
+        for (Granularity g: Granularity.rollupGranularities()) {
+            UpdateStamp stamp = rollupCtx.getShardStateManager().getSlotStateManager(0, g).getSlotStamps().get(g.slot(time));
+            stamp.setLastIngestTimestamp(lastIngestTime2);
+        }
+
+        rollupCtx.setCurrentTimeMillis(lastIngestTime2);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
+
+        rollupCtx.setCurrentTimeMillis(time + 2 + SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS + LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS + 2);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+        Assert.assertEquals(1, rollupCtx.getScheduledCount());
+
+        simulateHierarchicalScheduling(rollupCtx);
+
+    }
+
+    private void simulateHierarchicalScheduling(ScheduleContext rollupCtx) {
         // Simulate the hierarchical scheduling of slots
         int count = 0;
         while (rollupCtx.getScheduledCount() > 0) {
             SlotKey slot = rollupCtx.getNextScheduled();
             rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-            count += 1;
-        }
-        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
-        rollupPusher.performOperation();
-
-        // Delayed metric is received on ingestion host
-        ingestPuller.performOperation();
-        ingestionCtx.update(time, 0);
-        ingestPusher.performOperation();
-
-        rollupPuller.performOperation();
-
-        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
-        Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
-
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-        Assert.assertEquals(1, rollupCtx.getScheduledCount());
-
-        // Simulate the hierarchical scheduling of slots
-        count = 0;
-        while (rollupCtx.getScheduledCount() > 0) {
-            SlotKey slot = rollupCtx.getNextScheduled();
-            rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
             count += 1;
         }
         Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
@@ -166,18 +219,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation(); // Shard state is read on rollup host
         rollupCtx.setCurrentTimeMillis(time + 600000);
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, rollupCtx.getScheduledCount());
 
         // Simulate the hierarchical scheduling of slots
-        int count = 0;
-        while (rollupCtx.getScheduledCount() > 0) {
-            SlotKey slot = rollupCtx.getNextScheduled();
-            rollupCtx.clearFromRunning(slot);
-            rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-            count += 1;
-        }
-        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        simulateAndVerifyHierarchicalScheduling(rollupCtx);
         //We are not calling  rollupPusher.performOperation(). So rollup state wont be persisted.
 
         // Delayed metric is received on ingestion host
@@ -187,8 +233,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         rollupPuller.performOperation();
 
-        //DELAYED_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
-        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000);
+        //SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS is set to a higher value than ROLLUP_DELAY_MILLIS
+        rollupCtx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, 720000, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals("Re-roll's should not be scheduled yet", 0, rollupCtx.getScheduledCount());
     }
 
@@ -202,7 +248,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ScheduleContext ctxA = new ScheduleContext(time, shards);
 
         ctxA.update(time, 123);
-        ShardStateManager.SlotStateManager slotStateManager20 = ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
+        ShardStateManager.SlotStateManager slotStateManager20 =
+                ctxA.getShardStateManager().getSlotStateManager(123, Granularity.MIN_20);
 
         UpdateStamp stamp  = slotStateManager20.getSlotStamps().get(518);
         stamp.setTimestamp(time + 3600000L); // add one hour
@@ -327,25 +374,18 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         ctxA.setCurrentTimeMillis(time);
         
         // should be ready to schedule.
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxA.getScheduledCount());
         
         // simulate slots getting run.
-        int count = 0;
-        while (ctxA.getScheduledCount() > 0) {
-            SlotKey slot = ctxA.getNextScheduled();
-            ctxA.clearFromRunning(slot);
-            ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-            count += 1;
-        }
-        Assert.assertEquals(5, count);
+        simulateAndVerifyHierarchicalScheduling(ctxA);
         // verify that scheduling doesn't find anything else.
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
         
         // reloading under these circumstances (no updates) should not affect the schedule.
         pullA.performOperation();
-        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        ctxA.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(0, ctxA.getScheduledCount());
     }
 
@@ -498,19 +538,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         for (Granularity gran : Granularity.rollupGranularities())
             Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
 
-        ctxRollup.setCurrentTimeMillis(time + 600000L);
-        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        ctxRollup.setCurrentTimeMillis(time + 800000L);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
-        // Simulate the hierarchical scheduling of slots
-        int count = 0;
-        while (ctxRollup.getScheduledCount() > 0) {
-            SlotKey slot = ctxRollup.getNextScheduled();
-            ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-            count += 1;
-        }
-        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        simulateAndVerifyHierarchicalScheduling(ctxRollup);
 
         makeWorkersSyncState(allWorkers);
 
@@ -537,6 +569,13 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
         makeWorkersSyncState(allWorkers);
 
+        //last ingest time will be the actual system time as it is the last update time. We adjust it to suit this test
+        for (Granularity g: Granularity.rollupGranularities()) {
+            UpdateStamp stamp = ctxRollup.getShardStateManager().getSlotStateManager(0, g).getSlotStamps().get(g.slot(delayedMetricTimestamp));
+            stamp.setLastIngestTimestamp(delayedMetricTimestamp + 1);
+        }
+
+
         // Shard state will be the same throughout and will be marked as ACTIVE
         for (Granularity gran : Granularity.rollupGranularities()) {
             Assert.assertEquals(ctxIngestor1.getSlotStamps(gran, shard), ctxIngestor2.getSlotStamps(gran, shard));
@@ -553,18 +592,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         }
 
         // Scheduling the slot for rollup will and following the same process as we did before will mark the state as ROLLED again, but notice that it will have the timestamp of delayed metric
-        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
         Assert.assertEquals(1, ctxRollup.getScheduledCount());
 
-        // Simulate the hierarchical scheduling of slots
-        count = 0;
-        while (ctxRollup.getScheduledCount() > 0) {
-            SlotKey slot = ctxRollup.getNextScheduled();
-            ctxRollup.clearFromRunning(slot);
-            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
-            count += 1;
-        }
-        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
+        simulateAndVerifyHierarchicalScheduling(ctxRollup);
 
         makeWorkersSyncState(allWorkers);
 
@@ -581,6 +612,17 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(slotStamps.get(slot).getState(), UpdateStamp.State.Rolled);
             Assert.assertEquals(slotStamps.get(slot).getTimestamp(), delayedMetricTimestamp);
         }
+    }
+
+    private void simulateAndVerifyHierarchicalScheduling(ScheduleContext ctxRollup) {
+        int count = 0;
+        while (ctxRollup.getScheduledCount() > 0) {
+            SlotKey slot = ctxRollup.getNextScheduled();
+            ctxRollup.clearFromRunning(slot);
+            ctxRollup.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+            count += 1;
+        }
+        Assert.assertEquals(5, count); // 5 rollup grans should have been scheduled by now
     }
 
     @After

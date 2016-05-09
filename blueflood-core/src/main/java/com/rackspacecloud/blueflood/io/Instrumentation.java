@@ -43,7 +43,8 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
-    private static final Meter delayedMetricsReceived;
+    private static final Meter metricsWithShortDelayReceived;
+    private static final Meter metricsWithLongDelayReceived;
     private static final Meter enumMetricWritten;
 
     static {
@@ -57,7 +58,8 @@ public class Instrumentation implements InstrumentationMBean {
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
         enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
-        delayedMetricsReceived = Metrics.meter(kls, "Delayed metrics received");
+        metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
+        metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
 
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -172,7 +174,11 @@ public class Instrumentation implements InstrumentationMBean {
         enumMetricWritten.mark();
     }
 
-    public static void markDelayedMetricsReceived() {
-        delayedMetricsReceived.mark();
+    public static void markMetricsWithShortDelayReceived() {
+        metricsWithShortDelayReceived.mark();
+    }
+
+    public static void markMetricsWithLongDelayReceived() {
+        metricsWithLongDelayReceived.mark();
     }
 }

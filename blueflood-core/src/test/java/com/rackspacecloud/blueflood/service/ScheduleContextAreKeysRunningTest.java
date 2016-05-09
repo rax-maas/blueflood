@@ -21,6 +21,9 @@ public class ScheduleContextAreKeysRunningTest {
     int slot;
     SlotKey slotkey;
 
+    private final int SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 7200000;
+    private final int LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS = 3600000;
+
     @Before
     public void setUp() {
 
@@ -54,7 +57,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         // precondition
         assertEquals(1, ctx.getScheduledCount());
@@ -72,7 +75,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         int otherSlot = Granularity.MIN_20.slot(currentTime);
         SlotKey otherSlotkey = SlotKey.of(Granularity.MIN_20, otherSlot, shard);
@@ -93,7 +96,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         int otherSlot = Granularity.MIN_5.slot(currentTime - 5*60*1000); // check the previous slot from 5 minutes ago
         SlotKey otherSlotkey = SlotKey.of(Granularity.MIN_5, otherSlot, shard);
@@ -114,7 +117,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -135,7 +138,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         int otherSlot = Granularity.MIN_20.slot(currentTime);
         SlotKey otherSlotkey = SlotKey.of(Granularity.MIN_20, otherSlot, shard);
@@ -158,7 +161,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -185,7 +188,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 
@@ -228,7 +231,7 @@ public class ScheduleContextAreKeysRunningTest {
 
         // given
         ctx.update(currentTime - 2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         SlotKey runningSlot = ctx.getNextScheduled();
 

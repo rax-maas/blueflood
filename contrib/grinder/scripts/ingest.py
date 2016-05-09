@@ -58,17 +58,11 @@ class IngestThread(AbstractThread):
 
   def generate_metric(self, time, tenant_id, metric_id):
     ingest_delay_millis = default_config['ingest_delay_millis']
-    min_5_millis = 300000
 
     collection_time = time
     # all even tenants have possible delayed metrics
-    if ingest_delay_millis > 0 and tenant_id % 2 == 0:
-        collection_times = [time,
-                            time - ingest_delay_millis - min_5_millis,
-                            time - ingest_delay_millis - min_5_millis * 2,
-                            time - ingest_delay_millis - min_5_millis * 3,
-                            time - ingest_delay_millis - min_5_millis * 4,
-                            time - ingest_delay_millis - min_5_millis * 12]
+    if len(ingest_delay_millis) > 0 and tenant_id % 2 == 0:
+        collection_times = [time - long(delay) for delay in ingest_delay_millis.split(",")]
         collection_time = random.choice(collection_times)
 
     return {'tenantId': str(tenant_id),

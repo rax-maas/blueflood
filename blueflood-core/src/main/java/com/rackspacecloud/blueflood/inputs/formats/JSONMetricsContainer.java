@@ -34,7 +34,12 @@ public class JSONMetricsContainer {
     private final String tenantId;
     private final List<JSONMetric> jsonMetrics;
     private List<Metric> delayedMetrics;
-    private static final long delayedMetricsMillis = Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_MILLIS);
+
+    private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
+
+    private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+    private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
+
     private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
@@ -74,11 +79,20 @@ public class JSONMetricsContainer {
             if (jsonMetric.getMetricValue() != null) {
                 final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                         new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
-                long nowMillis = new DateTime().getMillis();
-                if (nowMillis - metric.getCollectionTime() > delayedMetricsMillis) {
+                long delay = new DateTime().getMillis() - metric.getCollectionTime();
+
+                if (delay > TRACKER_DELAYED_METRICS_MILLIS) {
                     delayedMetrics.add(metric);
-                    Instrumentation.markDelayedMetricsReceived();
                 }
+
+                if (delay > MAX_AGE_ALLOWED) {
+                    if (delay <= SHORT_DELAY) {
+                        Instrumentation.markMetricsWithShortDelayReceived();
+                    } else {
+                        Instrumentation.markMetricsWithLongDelayReceived();
+                    }
+                }
+
                 metrics.add(metric);
             }
         }

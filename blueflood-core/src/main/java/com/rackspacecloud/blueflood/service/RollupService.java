@@ -43,19 +43,19 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private final Meter rejectedSlotChecks = Metrics.meter(RollupService.class, "Rejected Slot Checks");
 
     private final long rollupDelayMillis;
-    private final long delayedMetricRollupDelayMillis;
+    private final long rollupDelayForMetricsWithShortDelay;
+    private final long rollupWaitForMetricsWithLongDelay;
 
+    private transient Thread thread;
     private final ScheduleContext context;
     private final ShardStateManager shardStateManager;
     private final ThreadPoolExecutor locatorFetchExecutors;
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
-    private final ThreadPoolExecutor enumValidatorExecutor;
 
+    private final ThreadPoolExecutor enumValidatorExecutor;
     private long pollerPeriod;
     private final long configRefreshInterval;
-
-    private transient Thread thread;
 
     private long lastSlotCheckFinishedAt = 0L;
 
@@ -99,7 +99,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
         // higher.
         Configuration config = Configuration.getInstance();
         rollupDelayMillis = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
-        delayedMetricRollupDelayMillis = config.getLongProperty(CoreConfig.DELAYED_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupDelayForMetricsWithShortDelay = config.getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
+        rollupWaitForMetricsWithLongDelay = config.getLongProperty(CoreConfig.LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
+
+        log.info(String.format("Delay configs -> ROLLUP_DELAY_MILLIS: [%d] SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS: [%d] " +
+                "LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS: [%d]", rollupDelayMillis, rollupDelayForMetricsWithShortDelay,
+                rollupWaitForMetricsWithLongDelay));
+
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         ThreadPoolExecutor _locatorFetchExecutors = new ThreadPoolExecutor(
                 locatorFetchConcurrency, locatorFetchConcurrency,
@@ -174,7 +180,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
                          ThreadPoolExecutor rollupWriteExecutors,
                          ThreadPoolExecutor enumValidatorExecutor,
                          long rollupDelayMillis,
-                         long delayedMetricRollupDelayMillis,
+                         long rollupDelayForMetricsWithShortDelay,
+                         long rollupWaitForMetricsWithLongDelay,
                          long pollerPeriod,
                          long configRefreshInterval) {
 
@@ -185,7 +192,8 @@ public class RollupService implements Runnable, RollupServiceMBean {
         this.rollupWriteExecutors = rollupWriteExecutors;
         this.enumValidatorExecutor = enumValidatorExecutor;
         this.rollupDelayMillis = rollupDelayMillis;
-        this.delayedMetricRollupDelayMillis = delayedMetricRollupDelayMillis;
+        this.rollupDelayForMetricsWithShortDelay = rollupDelayForMetricsWithShortDelay;
+        this.rollupWaitForMetricsWithLongDelay = rollupWaitForMetricsWithLongDelay;
         this.pollerPeriod = pollerPeriod;
         this.configRefreshInterval = configRefreshInterval;
 
@@ -248,7 +256,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
     final void poll() {
         Timer.Context timer = polltimer.time();
         // schedule for rollup anything that has not been updated in ROLLUP_DELAY_SECS
-        context.scheduleEligibleSlots(rollupDelayMillis, delayedMetricRollupDelayMillis);
+        context.scheduleEligibleSlots(rollupDelayMillis, rollupDelayForMetricsWithShortDelay, rollupWaitForMetricsWithLongDelay);
         timer.stop();
     }
 
@@ -270,7 +278,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                     long currentTimeMillis = context.getCurrentTimeMillis();
                     final long timeElapsedSinceLastRollup = currentTimeMillis - stamp.getLastRollupTimestamp();
                     boolean isReroll = timeElapsedSinceLastRollup < ShardStateManager.REROLL_TIME_SPAN_ASSUMED_VALUE;
-                    log.info("Scheduling slotKey {} @ {} last ingest: {} last rollup time: {} isReroll: {}",
+                    log.info("Scheduling slotKey {} @ {} last collection time: {} last rollup time: {} isReroll: {}",
                             new Object[]{slotKey, currentTimeMillis, stamp.getTimestamp(),
                                     stamp.getLastRollupTimestamp(), isReroll});
 

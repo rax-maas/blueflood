@@ -71,7 +71,7 @@ public class JSONMetricsContainerTest {
 
     @Test
     public void testDelayedMetric() throws Exception {
-        long time = current - 1000 - Configuration.getInstance().getLongProperty(CoreConfig.DELAYED_METRICS_MILLIS);
+        long time = current - 1000 - Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
         String jsonBody = "[{\"collectionTime\": " + time  + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
 
         JSONMetricsContainer container = getContainer("786659", jsonBody );

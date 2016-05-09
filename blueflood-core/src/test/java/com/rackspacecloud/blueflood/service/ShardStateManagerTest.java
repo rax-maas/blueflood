@@ -2,14 +2,18 @@ package com.rackspacecloud.blueflood.service;
 
 import com.google.common.base.Ticker;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.utils.Clock;
+import org.joda.time.Instant;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 
 
 public class ShardStateManagerTest {
@@ -22,11 +26,15 @@ public class ShardStateManagerTest {
 
     private ShardStateManager.SlotStateManager slotStateManager;
 
+    private final Clock mockClock = Mockito.mock(Clock.class);
+    private final long lastIngestTime = 1235L;
 
     @Before
     public void setup() {
-        ShardStateManager shardStateManager = new ShardStateManager(managedShards, Ticker.systemTicker());
+        ShardStateManager shardStateManager = new ShardStateManager(managedShards, Ticker.systemTicker(), mockClock);
         slotStateManager = shardStateManager.getSlotStateManager(TEST_SHARD, TEST_GRANULARITY);
+
+        when(mockClock.now()).thenReturn(new Instant(lastIngestTime));
     }
 
     @Test
@@ -34,10 +42,11 @@ public class ShardStateManagerTest {
         //during startup
         //This tests -> if (stamp == null)
 
-        final long lastIngestionTime = System.currentTimeMillis();
+        final long lastCollectionTime = System.currentTimeMillis();
+        final long activeSlotLastUpdatedTime = lastCollectionTime + 10; //to make it different from lastCollectionTime
 
         List<SlotState> slotStates = new ArrayList<SlotState>() {{
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, lastIngestionTime, lastIngestionTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, lastCollectionTime, activeSlotLastUpdatedTime));
         }};
 
         for (SlotState slotState: slotStates) {
@@ -48,8 +57,9 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Invalid last ingestion timestamp", lastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Invalid last collection timestamp", lastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup time should not be set", 0, updateStamp.getLastRollupTimestamp());
+        assertEquals("Invalid last ingest timestamp", activeSlotLastUpdatedTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
@@ -57,13 +67,14 @@ public class ShardStateManagerTest {
         //during startup
         //This tests -> if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled))
 
-        final long lastIngestionTime = System.currentTimeMillis() - 10 * 60 * 1000; //minus 10 mins
+        final long lastCollectionTime = System.currentTimeMillis() - 10 * 60 * 1000; //minus 10 mins
         final long rolledSlotLastUpdatedTime = System.currentTimeMillis() - 5 * 60 * 1000;    //minus 5 mins
+        final long activeSlotLastUpdatedTime = lastCollectionTime + 10; //to make it different from lastCollectionTime
 
-        //Both active and rolled states have same last ingested timestamp
+        //Both active and rolled states have same last collection timestamp
         List<SlotState> slotStates = new ArrayList<SlotState>() {{
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, lastIngestionTime, lastIngestionTime));
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastIngestionTime, rolledSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, lastCollectionTime, activeSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastCollectionTime, rolledSlotLastUpdatedTime));
         }};
 
         for (SlotState slotState: slotStates) {
@@ -74,8 +85,9 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Rolled, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", lastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", lastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", rolledSlotLastUpdatedTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", activeSlotLastUpdatedTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
@@ -83,17 +95,17 @@ public class ShardStateManagerTest {
         //during startup
         //This tests -> if (state.equals(UpdateStamp.State.Rolled))
 
-        final long lastIngestionTime = System.currentTimeMillis() - 10 * 60 * 1000;  //minus 10 mins
+        final long lastCollectionTime = System.currentTimeMillis() - 10 * 60 * 1000;  //minus 10 mins
         final long rolledSlotLastUpdatedTime =  System.currentTimeMillis() - 5 * 60 * 1000;    //minus 5 mins
 
-        final long delayedMetricIngestionTime = lastIngestionTime - 1; //it just has to be different than lastIngestionTime
+        final long delayedMetricCollectionTime = lastCollectionTime - 1; //it just has to be different than lastCollectionTime
         final long activeSlotLastUpdatedTime = System.currentTimeMillis(); //means we ingested delayed metric recently
 
-        //Both active and rolled states have different last ingested timestamp.
+        //Both active and rolled states have different last collection timestamp.
         //The slot last update time is also different as we got a delayed metric later and "Active" got updated cos of that.
         List<SlotState> slotStates = new ArrayList<SlotState>() {{
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, delayedMetricIngestionTime, activeSlotLastUpdatedTime));
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastIngestionTime, rolledSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, delayedMetricCollectionTime, activeSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastCollectionTime, rolledSlotLastUpdatedTime));
         }};
 
         for (SlotState slotState: slotStates) {
@@ -104,18 +116,20 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", delayedMetricIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", delayedMetricCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", rolledSlotLastUpdatedTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", activeSlotLastUpdatedTime, updateStamp.getLastIngestTimestamp());
     }
 
     private void establishCurrentState() {
-        final long existingIngestionTime = System.currentTimeMillis() - 60 * 1000;                  //minus 1 min
-        final long lastRolledIngestionTime = existingIngestionTime - 14 * 24 * 60 * 60 * 1000;      //minus 14 days
-        final long rolledSlotLastUpdatedTime =  lastRolledIngestionTime + 5 * 60 * 1000;
+        final long existingCollectionTime = System.currentTimeMillis() - 60 * 1000;                  //minus 1 min
+        final long lastRolledCollectionTime = existingCollectionTime - 14 * 24 * 60 * 60 * 1000;      //minus 14 days
+        final long rolledSlotLastUpdatedTime =  lastRolledCollectionTime + 5 * 60 * 1000;
+        final long activeSlotLastUpdatedTime = existingCollectionTime + 10; //to make it different from lastCollectionTime
 
         List<SlotState> slotStates = new ArrayList<SlotState>() {{
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, existingIngestionTime, existingIngestionTime));
-            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastRolledIngestionTime, rolledSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Active, existingCollectionTime, activeSlotLastUpdatedTime));
+            add(createSlotState(TEST_GRANULARITY, UpdateStamp.State.Rolled, lastRolledCollectionTime, rolledSlotLastUpdatedTime));
         }};
 
         //establishing state as active (with in-memory current state as Active)
@@ -131,11 +145,11 @@ public class ShardStateManagerTest {
         //This tests -> if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty())))
 
         establishCurrentState();
-        long lastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+        final long lastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
 
-        long lastIngestionTime = System.currentTimeMillis();
-        long lastUpdatedTime = System.currentTimeMillis();
-        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Active, lastIngestionTime, lastUpdatedTime);
+        final long lastCollectionTime = System.currentTimeMillis();
+        final long lastUpdatedTime = System.currentTimeMillis();
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Active, lastCollectionTime, lastUpdatedTime);
 
         //new incoming slot state
         slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
@@ -144,23 +158,25 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", lastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", lastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", lastRollupTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", lastUpdatedTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
     public void testUpdateSlotsOnReadWithIncomingActiveStateButOlderData() {
-        //updating existing in-memory map (current state: active, incoming: active state but with old ingest timestamp)
+        //updating existing in-memory map (current state: active, incoming: active state but with old collection timestamp)
         //This tests -> if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active))
         //This tests -> else part of if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty())))
 
         establishCurrentState();
-        long lastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
-        long existingLastIngestionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long lastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+        final long existingLastCollectionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastIngestTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastIngestTimestamp();
 
-        long lastIngestionTime = existingLastIngestionTime - 60 * 1000;    //minus 1 min
+        long lastCollectionTime = existingLastCollectionTime - 60 * 1000;    //minus 1 min
         long lastUpdatedTime = System.currentTimeMillis();
-        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Active, lastIngestionTime, lastUpdatedTime);
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Active, lastCollectionTime, lastUpdatedTime);
 
         //new incoming slot state
         slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
@@ -169,21 +185,52 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", existingLastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", existingLastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", lastRollupTime, updateStamp.getLastRollupTimestamp());
         assertEquals("Dirty flag is incorrect", true, updateStamp.isDirty());
+        assertEquals("Last ingest timestamp is incorrect", existingLastIngestTime, updateStamp.getLastIngestTimestamp());
+    }
+
+    @Test
+    public void testUpdateSlotsOnReadWithIncomingActiveStateButInMemoryDirtyData() {
+        //updating existing in-memory map (current state: active with dirty data, incoming: active state)
+        //This tests -> if (stamp.getTimestamp() != timestamp && state.equals(UpdateStamp.State.Active))
+        //This tests -> else part of if (!(stamp.getState().equals(UpdateStamp.State.Active) && (stamp.getTimestamp() > timestamp || stamp.isDirty())))
+
+        establishCurrentState();
+        final long lastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+        final long existingLastCollectionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastIngestTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastIngestTimestamp();
+        slotStateManager.getSlotStamps().get(TEST_SLOT).setDirty(true);
+
+        long lastCollectionTime = existingLastCollectionTime + 60 * 1000;    //not older data
+        long lastUpdatedTime = System.currentTimeMillis();
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Active, lastCollectionTime, lastUpdatedTime);
+
+        //new incoming slot state
+        slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
+
+        Map<Integer, UpdateStamp> slotStamps = slotStateManager.getSlotStamps();
+        UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
+
+        assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
+        assertEquals("Last collection timestamp is incorrect", existingLastCollectionTime, updateStamp.getTimestamp());
+        assertEquals("Last rollup timestamp is incorrect", lastRollupTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Dirty flag is incorrect", true, updateStamp.isDirty());
+        assertEquals("Last ingest timestamp is incorrect", existingLastIngestTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
     public void testUpdateSlotsOnReadIncomingRolledStateSameTimestamp() {
-        //updating existing in-memory map (current state:active, incoming: rolled state with same ingest timestamp)
+        //updating existing in-memory map (current state:active, incoming: rolled state with same collection timestamp)
         //This tests -> if (stamp.getTimestamp() == timestamp && state.equals(UpdateStamp.State.Rolled))
 
         establishCurrentState();
-        long existingLastIngestionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastCollectionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastIngestTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastIngestTimestamp();
 
-        long newRolledSlotLastUpdatedTime = System.currentTimeMillis();
-        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, existingLastIngestionTime, newRolledSlotLastUpdatedTime);
+        final long newRolledSlotLastUpdatedTime = System.currentTimeMillis();
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, existingLastCollectionTime, newRolledSlotLastUpdatedTime);
 
         //new incoming slot state
         slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
@@ -192,21 +239,23 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Rolled, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", existingLastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", existingLastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", newRolledSlotLastUpdatedTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", existingLastIngestTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
     public void testUpdateSlotsOnReadIncomingRolledStateDifferentTimestamp() {
-        //updating existing in-memory map (current state: active, incoming: rolled state with different ingest timestamp)
+        //updating existing in-memory map (current state: active, incoming: rolled state with different collection timestamp)
         //This tests -> if (state.equals(UpdateStamp.State.Rolled))
 
         establishCurrentState();
-        long existingLastIngestionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastCollectionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastIngestTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastIngestTimestamp();
 
-        long newLastRolledIngestionTime = existingLastIngestionTime - 1; //making it different from the ingest time we already have in "Active"
-        long newRolledSlotLastUpdatedTime = System.currentTimeMillis();
-        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, newLastRolledIngestionTime, newRolledSlotLastUpdatedTime);
+        final long newLastRolledCollectionTime = existingLastCollectionTime - 1; //making it different from the collection time we already have in "Active"
+        final long newRolledSlotLastUpdatedTime = System.currentTimeMillis();
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, newLastRolledCollectionTime, newRolledSlotLastUpdatedTime);
 
         //new incoming slot state
         slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
@@ -215,8 +264,9 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", existingLastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", existingLastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", newRolledSlotLastUpdatedTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", existingLastIngestTime, updateStamp.getLastIngestTimestamp());
     }
 
     @Test
@@ -227,12 +277,13 @@ public class ShardStateManagerTest {
         // So rolled state from db will have old lastRolluptimestamp
 
         establishCurrentState();
-        long existingLastIngestionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
-        long existingLastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+        final long existingLastCollectionTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getTimestamp();
+        final long existingLastRollupTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastRollupTimestamp();
+        final long existingLastIngestTime = slotStateManager.getSlotStamps().get(TEST_SLOT).getLastIngestTimestamp();
 
-        long oldLastRolledIngestionTime = existingLastIngestionTime - 1; //making it different from the ingest time we already have in "Active"
-        long oldRolledSlotLastUpdatedTime = System.currentTimeMillis() - 14 * 24 * 60 * 60 * 1000; //minus 14 days
-        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, oldLastRolledIngestionTime, oldRolledSlotLastUpdatedTime);
+        final long oldLastRolledCollectionTime = existingLastCollectionTime - 1; //making it different from the collection time we already have in "Active"
+        final long oldRolledSlotLastUpdatedTime = System.currentTimeMillis() - 14 * 24 * 60 * 60 * 1000; //minus 14 days
+        SlotState newUpdateForActiveSlot = createSlotState(Granularity.MIN_5, UpdateStamp.State.Rolled, oldLastRolledCollectionTime, oldRolledSlotLastUpdatedTime);
 
         //new incoming slot state
         slotStateManager.updateSlotOnRead(newUpdateForActiveSlot);
@@ -241,12 +292,13 @@ public class ShardStateManagerTest {
         UpdateStamp updateStamp = slotStamps.get(TEST_SLOT);
 
         assertEquals("Unexpected state",  UpdateStamp.State.Active, updateStamp.getState());
-        assertEquals("Last ingestion timestamp is incorrect", existingLastIngestionTime, updateStamp.getTimestamp());
+        assertEquals("Last collection timestamp is incorrect", existingLastCollectionTime, updateStamp.getTimestamp());
         assertEquals("Last rollup timestamp is incorrect", existingLastRollupTime, updateStamp.getLastRollupTimestamp());
+        assertEquals("Last ingest timestamp is incorrect", existingLastIngestTime, updateStamp.getLastIngestTimestamp());
     }
 
-    private SlotState createSlotState(Granularity granularity, UpdateStamp.State state, long lastIngestionTimeStamp, long lastUpdatedTimestamp) {
-        return new SlotState(granularity, TEST_SLOT, state).withTimestamp(lastIngestionTimeStamp).withLastUpdatedTimestamp(lastUpdatedTimestamp);
+    private SlotState createSlotState(Granularity granularity, UpdateStamp.State state, long lastCollectionTimeStamp, long lastUpdatedTimestamp) {
+        return new SlotState(granularity, TEST_SLOT, state).withTimestamp(lastCollectionTimeStamp).withLastUpdatedTimestamp(lastUpdatedTimestamp);
     }
 
     @Test
@@ -265,6 +317,7 @@ public class ShardStateManagerTest {
         assertEquals("The timestamp should be set", 1234L, stamp.getTimestamp());
         assertEquals("The state should be Active", UpdateStamp.State.Active, stamp.getState());
         assertEquals("The last rollup timestamp should be uninitialized", 0, stamp.getLastRollupTimestamp());
+        assertEquals("Last ingest time should be set", lastIngestTime, stamp.getLastIngestTimestamp());
     }
 
     @Test
@@ -281,17 +334,21 @@ public class ShardStateManagerTest {
         assertFalse(_stamp.isDirty());
         assertEquals(UpdateStamp.State.Rolled, _stamp.getState());
         assertEquals(0, _stamp.getLastRollupTimestamp());
+        assertEquals(lastIngestTime, _stamp.getLastIngestTimestamp());
 
         // when
-        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1235L);
+        final long lastIngestTime2 = 1237L;
+        when(mockClock.now()).thenReturn(new Instant(lastIngestTime2));
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1236L);
 
         // then
         assertTrue("The slot should still be present in the map", slotStateManager.getSlotStamps().containsKey(0));
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
-        assertEquals("The timestamp should have changed", 1235L, _stamp.getTimestamp());
+        assertEquals("The timestamp should have changed", 1236L, _stamp.getTimestamp());
         assertTrue("The slot should be marked dirty", stamp.isDirty());
         assertEquals("The state should be Active", UpdateStamp.State.Active, stamp.getState());
         assertEquals("The last rollup timestamp should be uninitialized", 0, stamp.getLastRollupTimestamp());
+        assertEquals("Last ingest time should be set", lastIngestTime2, stamp.getLastIngestTimestamp());
     }
 
     @Test
@@ -428,7 +485,7 @@ public class ShardStateManagerTest {
         assertEquals(0, slotStateManager.getSlotStamps().size());
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0, 3600000);
 
         // then
         assertNotNull(slots);
@@ -443,7 +500,7 @@ public class ShardStateManagerTest {
         slotStateManager.getAndSetState(0, UpdateStamp.State.Rolled);
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(0, 0, 0, 3600000);
 
         // then
         assertNotNull(slots);
@@ -458,7 +515,7 @@ public class ShardStateManagerTest {
         slotStateManager.getAndSetState(0, UpdateStamp.State.Active);
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(1235L, 30000, 0);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(1235L, 30000, 0, 3600000);
 
         // then
         assertNotNull(slots);
@@ -474,7 +531,7 @@ public class ShardStateManagerTest {
         stamp.setLastRollupTimestamp(2345L);
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 70000);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 70000, 3600000);
 
         // then
         assertNotNull(slots);
@@ -482,20 +539,86 @@ public class ShardStateManagerTest {
     }
 
     @Test
-    public void getSlotsEligibleReturnsSlotsThatWereRolledButNotRecently() {
+    public void getSlotsEligibleReturnsSlotsThatWereRolledRecentlyButReadyForReroll() {
 
         // given
+        when(mockClock.now()).thenReturn(new Instant(2234L)); //ingesting delayed metric after 1000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
         stamp.setLastRollupTimestamp(2345L);
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 1);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(3235L, 0, 2000, 3600000);
 
         // then
         assertNotNull(slots);
         assertEquals("Only one slot should be returned", 1, slots.size());
         assertEquals("Slot zero should be included", 0, slots.get(0).intValue());
+    }
+
+    @Test
+    public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithLongerDelay() {
+
+        // given
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        stamp.setLastRollupTimestamp(2345L);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(4235L, 0, 2000, 1000);
+
+        // then
+        // then
+        assertNotNull(slots);
+        assertTrue("No slots should be returned", slots.isEmpty());
+    }
+
+    @Test
+    public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithLongerDelayButReadyToReroll() {
+
+        // given
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        stamp.setLastRollupTimestamp(2345L);
+
+        // when
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(5235L, 0, 2000, 1000);
+
+
+        // then
+        assertNotNull(slots);
+        assertEquals("Only one slot should be returned", 1, slots.size());
+        assertEquals("Slot zero should be included", 0, slots.get(0).intValue());
+    }
+
+    @Test
+    public void getSlotsEligibleReturnsSlotsThatWereRolledAndGotMetricsWithRepeatedLongerDelayButReadyToReroll() {
+
+        // given
+        when(mockClock.now()).thenReturn(new Instant(4234L)); //ingesting delayed metric after 3000ms (SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS = 2000ms)
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        UpdateStamp stamp = slotStateManager.getSlotStamps().get(0);
+        stamp.setLastRollupTimestamp(2345L);
+
+        //pre condition - 1
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(4235L, 0, 2000, 1000);
+        assertTrue("No slots should be returned", slots.isEmpty());
+
+        //pre condition - 2
+        when(mockClock.now()).thenReturn(new Instant(5234L)); //ingesting delayed metric after 4000ms, right before ROLLUP_WAIT(1000ms) elapses
+        slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
+        List<Integer> slots1 = slotStateManager.getSlotsEligibleForRollup(5235L, 0, 2000, 1000);
+        assertTrue("No slots should be returned", slots1.isEmpty());
+
+        //when
+        List<Integer> slots2 = slotStateManager.getSlotsEligibleForRollup(6235L, 0, 2000, 1000);
+
+        // then
+        assertNotNull(slots);
+        assertEquals("Only one slot should be returned", 1, slots2.size());
+        assertEquals("Slot zero should be included", 0, slots2.get(0).intValue());
     }
 
     @Test
@@ -505,7 +628,7 @@ public class ShardStateManagerTest {
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
 
         // when
-        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 1);
+        List<Integer> slots = slotStateManager.getSlotsEligibleForRollup(2346L, 0, 1, 3600000);
 
         // then
         assertNotNull(slots);

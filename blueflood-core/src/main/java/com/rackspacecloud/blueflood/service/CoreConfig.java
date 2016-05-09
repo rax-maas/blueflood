@@ -148,9 +148,11 @@ public enum CoreConfig implements ConfigDefaults {
     
     // how long we typically wait to schedule a rollup.
     ROLLUP_DELAY_MILLIS("300000"),
-    DELAYED_METRICS_ROLLUP_DELAY_MILLIS("300000"),
+    SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS("300000"),
+    LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS("300000"),
     STRING_METRICS_DROPPED("false"),
     TENANTIDS_TO_KEEP(""),
+    TRACKER_DELAYED_METRICS_MILLIS("300000"),
 
     USE_ES_FOR_UNITS("false"),
     // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
@@ -162,7 +164,6 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_ON_READ_REPAIR_SIZE_PER_THREAD( "5" ),
     ROLLUP_ON_READ_TIMEOUT_IN_SECONDS("10"),
 
-    DELAYED_METRICS_MILLIS("300000"),
     ENUM_VALIDATOR_THREADS("20"),
     ENUM_UNIQUE_VALUES_THRESHOLD("100"),
     ENUM_VALIDATOR_ENABLED("true"),

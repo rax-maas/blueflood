@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit;
  * {@link ShardStatePuller} will read the state info into memory by calling
  * {@link com.rackspacecloud.blueflood.service.ShardStateManager.SlotStateManager#updateSlotOnRead(SlotState)}.
  * The rollup service will then identity slots that need to be re-rolled (by
- * calling {@link #scheduleEligibleSlots(long, long)}), pick a slot to rollup and
+ * calling {@link #scheduleEligibleSlots(long, long, long)}), pick a slot to rollup and
  * mark it as
  * {@link com.rackspacecloud.blueflood.service.UpdateStamp.State#Running Running}
  * (via {@link #getNextScheduled()} ), do the rollup, and then mark the slot as
@@ -146,7 +146,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
 
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, Clock clock) {
         this.scheduleTime = currentTimeMillis;
-        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
+        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker(), clock);
         this.lockManager = new NoOpShardLockManager();
         this.clock = clock;
         registerMBean();
@@ -214,22 +214,12 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * already running or scheduled, then add them to the queue of scheduled
      * slots.
      *
-     * Eligibility:
-     * 1) slots should be older than {@code maxAgeMillis}
-     * 2) If slot is identified as being picked for re-roll, slots should be
-     *    older than {@code delayedMetricsMaxAgeMillis}
+     * Note that {@code maxAgeMillis}, {@code rollupDelayForMetricsWithShortDelay}
+     * {@code rollupWaitForMetricsWithLongDelay} are age values, not a timestamp.
      *
-     * Note that both {@code maxAgeMillis} and {@code delayedMetricsMaxAgeMillis}
-     * are age values, not a timestamp.
-     * If the difference between {@link #scheduleTime} and a given slot's
-     * {@link UpdateStamp} in milliseconds is greater than
-     * {@code maxAgeMillis}, then that slot will scheduled.
-     *
-     * @param maxAgeMillis
-     * @param delayedMetricsMaxAgeMillis
      */
     // only one thread should be calling in this puppy.
-    void scheduleEligibleSlots(long maxAgeMillis, long delayedMetricsMaxAgeMillis) {
+    void scheduleEligibleSlots(long maxAgeMillis, long rollupDelayForMetricsWithShortDelay, long rollupWaitForMetricsWithLongDelay) {
         long now = scheduleTime;
         ArrayList<Integer> shardKeys = new ArrayList<Integer>(shardStateManager.getManagedShards());
         Collections.shuffle(shardKeys);
@@ -239,7 +229,10 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
                 // sync on map since we do not want anything added to or taken from it while we iterate.
                 synchronized (scheduledSlots) { // read
                     synchronized (runningSlots) { // read
-                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g).getSlotsEligibleForRollup(now, maxAgeMillis, delayedMetricsMaxAgeMillis);
+
+                        List<Integer> slotsToWorkOn = shardStateManager.getSlotStateManager(shard, g)
+                                .getSlotsEligibleForRollup(now, maxAgeMillis, rollupDelayForMetricsWithShortDelay, rollupWaitForMetricsWithLongDelay);
+
                         if (slotsToWorkOn.size() == 0) {
                             continue;
                         }
@@ -339,7 +332,7 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
      * be the next slot returned by a call to {@link #getNextScheduled()}. If
      * {@code rescheduleImmediately} is false, then the given slot will go to
      * the end of the line, as when it was first scheduled by
-     * {@link #scheduleEligibleSlots(long, long)}.
+     * {@link #scheduleEligibleSlots(long, long, long)}.
      *
      * @param key
      * @param rescheduleImmediately

@@ -42,7 +42,7 @@ public class ScheduleContextPushBackToScheduledRescheduleImmediatelyTest {
         ctx = new ScheduleContext(now, shards);
         ctx.update(updateTime1, shard);
         ctx.update(updateTime2, shard);
-        ctx.scheduleEligibleSlots(1, 7200000);
+        ctx.scheduleEligibleSlots(1, 7200000, 3600000);
 
         // precondition
         Assert.assertEquals(2, ctx.getScheduledCount());
