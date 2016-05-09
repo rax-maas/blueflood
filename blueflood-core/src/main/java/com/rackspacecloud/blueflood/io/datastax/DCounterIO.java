@@ -37,7 +37,7 @@ public class DCounterIO extends DAbstractMetricIO {
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
+    protected ByteBuffer toByteBuffer(Object rollup) {
         if ( ! (rollup instanceof BluefloodCounterRollup) ) {
             throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodCounterRollup class but got " + rollup.getClass().getSimpleName());
         }

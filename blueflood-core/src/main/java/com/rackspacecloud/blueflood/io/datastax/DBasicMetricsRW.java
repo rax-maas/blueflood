@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * This class deals with reading/writing metrics to the metrics_* column families
+ * This class deals with reading/writing metrics to the basic metrics_* and metrics_string column families
  * using Datastax driver
  */
 public class DBasicMetricsRW extends DAbstractMetricsRW {
@@ -36,12 +36,21 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
 
-    // TODO:  get from IOContainer? No alternate version for Astyanax
     private DRawIO rawIO = new DRawIO();
     private LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
 
+    /**
+     * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} objects
+     * to the appropriate Cassandra column family.
+     *
+     * @param metrics
+     *
+     * @throws IOException
+     */
     @Override
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {
+        // if there are strings & booleans in this request, they will be tracked as numeric metrics.
+        // not sure how we want to get around that.
         Timer.Context ctx = Instrumentation.getWriteTimerContext( CassandraModel.CF_METRICS_FULL_NAME );
 
         Map<Locator, ResultSetFuture> futures = new HashMap<Locator, ResultSetFuture>();
@@ -61,8 +70,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                     setLocatorCurrent( locator );
 
-                    if( !DataType.isStringMetric( metric ) &&
-                            !DataType.isBooleanMetric( metric ) )
+                    if( !DataType.isStringOrBoolean( metric.getMetricValue() ) )
                         locatorIO.insertLocator( locator );
                 }
 
@@ -89,29 +97,16 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         }
     }
 
-    @VisibleForTesting
-    @Override
-    public void insertMetrics( Collection<IMetric> metrics, Granularity granularity ) throws IOException {
-
-        Collection<IMetric> filtered = new ArrayList<IMetric>();
-
-        for( IMetric imetric : metrics ) {
-
-            if( !DataType.isStringOrBoolean( imetric.getMetricValue() ) ) {
-
-                filtered.add( imetric );
-            }
-            else {
-
-                LOG.error( String.format( "DBasicMetricsRW.insertMetrics: %s Attempting to write String/Boolean metric for a method which should not get them.",
-                        imetric.getLocator() ) );
-            }
-        }
-
-        super.insertMetrics( filtered, granularity  );
-    }
-
-
+    /**
+     * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
+     * specified {@link com.rackspacecloud.blueflood.types.Locator} and
+     * {@link com.rackspacecloud.blueflood.types.Range} from the specified column family
+     *
+     * @param locator
+     * @param range
+     * @param gran
+     * @return
+     */
     @Override
     public MetricData getDatapointsForRange( final Locator locator, Range range, Granularity gran ) throws IOException {
 
@@ -119,6 +114,16 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         return result.get( locator );
     }
 
+    /**
+     * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
+     * specified list of {@link com.rackspacecloud.blueflood.types.Locator} and
+     * {@link com.rackspacecloud.blueflood.types.Range} from the specified column family
+     *
+     * @param locators
+     * @param range
+     * @param gran
+     * @return
+     */
     @Override
     public Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators, Range range, Granularity gran ) throws IOException {
 
@@ -148,7 +153,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 DataType metricType = new DataType( (String) type );
 
-                if ( type == null || DataType.isKnownMetricType( metricType ) ) {
+                if ( type == null || !DataType.isKnownMetricType( metricType ) ) {
 
                     unknowns.add( locator );
                     continue;
@@ -168,10 +173,12 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
             Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
 
-            metrics.putAll( super.getDatapointsForRange( numerics, range, gran ) );
+            String columnFamily = CassandraModel.getBasicColumnFamilyName( gran );
+
+            metrics.putAll( super.getDatapointsForRange( numerics, range, columnFamily, gran ) );
             metrics.putAll( getBooleanDataForRange( booleans, range ) );
             metrics.putAll( getStringDataForRange( strings, range ) );
-            metrics.putAll( getNumericOrStringDataForRange( unknowns, range, gran ) );
+            metrics.putAll( getNumericOrStringDataForRange( unknowns, range, columnFamily, gran ) );
 
             return metrics;
         }
@@ -190,26 +197,35 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * @param rollupType
      * @param range
      * @param columnFamilyName
-     * @param <T> the type of Rollup object
      * @return
      */
     @Override
-    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator,
-                                                        RollupType rollupType,
-                                                        Range range,
-                                                        String columnFamilyName) throws IOException {
+    public Points getDataToRollup(final Locator locator,
+                                  RollupType rollupType,
+                                  Range range,
+                                  String columnFamilyName) throws IOException, CacheException {
 
         if( columnFamilyName.equals ( CassandraModel.CF_METRICS_STRING_NAME ) ) {
 
-            LOG.error( String.format( String.format( "DBasicMetricsRW.getDataToRollup: %s Attempting to write String/Boolean metric for a method which should not get them.",
-                    columnFamilyName ) ) );
+            String msg = String.format( String.format( "DBasicMetricsRW.getDataToRollup: %s Attempting to write String/Boolean metric for a method which should not get them.",
+                    columnFamilyName ) );
 
-            return new Points<T>();
+            LOG.error( msg );
+
+            throw new IOException( msg );
         }
 
         return super.getDataToRollup( locator, rollupType, range, columnFamilyName );
     }
 
+    /**
+     * Returns true if the metric should be persisted.
+     *
+     * Blueflood can be configured not to save strings, and to only keep strings for specific tenants.  Fun!
+     *
+     * @param metric
+     * @return
+     */
     private boolean shouldPersist( IMetric metric ) {
 
         String tenantId = metric.getLocator().getTenantId();
@@ -229,11 +245,26 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         return true;
     }
 
+    /**
+     *  Return map of MetricDatas for string values in the given range.
+     *
+     * @param locators
+     * @param range
+     * @return
+     */
     private Map<Locator, MetricData> getStringDataForRange( List<Locator> locators, Range range ) {
 
         return getStringBooleanDataForRange( locators, range, false );
     }
 
+    /**
+     * Return map of MetricDatas for strings or booleans in the given range, depending on the isBoolean param.
+     *
+     * @param locators
+     * @param range
+     * @param isBoolean if true, return MetricDatas as type Boolean
+     * @return
+     */
     private Map<Locator, MetricData> getStringBooleanDataForRange( List<Locator> locators, Range range, boolean isBoolean ) {
 
         Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
@@ -244,12 +275,14 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         }
 
         for( Map.Entry<Locator, ResultSetFuture> future : futures.entrySet() ) {
-            Points<String> points = new Points<String>();
+
+            Points points = new Points<String>();
 
             try {
                 for ( Row row : future.getValue().getUninterruptibly().all() ) {
 
-                    points.add( new Points.Point<String>( row.getLong( COLUMN1 ), row.getString( VALUE ) ) );
+                    Object value = isBoolean ? Boolean.valueOf( row.getString( VALUE ) ) : row.getString( VALUE );
+                    points.add( new Points.Point( row.getLong( COLUMN1 ), value ) );
                 }
 
                 MetricData.Type type = isBoolean ? MetricData.Type.BOOLEAN : MetricData.Type.BOOLEAN;
@@ -266,20 +299,43 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     }
 
 
+    /**
+     * Return map of MetricDatas for boolean values in the given range.
+     *
+     *
+     * @param locators
+     * @param range
+     * @return
+     */
     private Map<Locator, MetricData> getBooleanDataForRange( List<Locator> locators, Range range ) {
 
         return getStringBooleanDataForRange( locators, range, true );
     }
 
-    private Map<Locator, MetricData> getNumericOrStringDataForRange( List<Locator> locators, Range range, Granularity gran ) {
+    /**
+     * When the type is not known for a list of locators, do the following:
+     * 1) first try to get them as numerics.
+     * 2) If that call is empty, see if they are in metrics_string (ignore granularity & columnFamily)
+     *
+     * @param locators
+     * @param range
+     * @param columnFamily
+     * @param gran
+     * @return
+     * @throws IOException
+     */
+    private Map<Locator, MetricData> getNumericOrStringDataForRange( List<Locator> locators,
+                                                                     Range range,
+                                                                     String columnFamily,
+                                                                     Granularity gran ) throws IOException {
 
         Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
 
         for ( final Locator locator : locators ) {
 
-            MetricData data = getNumericOrStringDataForRange( new ArrayList<Locator>() {{
-                add( locator );
-            }}, range, gran ).get( locator );
+            // I'm not calling getDatapointsForRange( Locator, ... ) as it calls getDatapointsForRange( List<Locator> ...)
+            // which is overridden by this class
+            MetricData data = super.getDatapointsForRange( new ArrayList<Locator>() {{ add( locator ); }}, range, columnFamily, gran ).get( locator );
 
             if ( !data.getData().getPoints().isEmpty() ) {
 

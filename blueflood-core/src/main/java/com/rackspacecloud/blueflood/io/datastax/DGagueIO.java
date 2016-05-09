@@ -38,7 +38,7 @@ public class DGagueIO extends DAbstractMetricIO {
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
+    protected ByteBuffer toByteBuffer(Object rollup) {
         if ( ! (rollup instanceof BluefloodGaugeRollup) ) {
             throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodGaugeRollup class but got " + rollup.getClass().getSimpleName());
         }

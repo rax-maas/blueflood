@@ -8,15 +8,15 @@ import java.nio.ByteBuffer;
 
 
 /**
- * This class holds the utility methods to read/write basic metrics
+ * This class holds the utility methods to read/write basic numeric metrics
  * using Datastax driver.
  */
-public class BasicNumericIO extends DAbstractMetricIO {
+public class DBasicNumericIO extends DAbstractMetricIO {
 
     private BasicRollupSerDes serDes = new BasicRollupSerDes();
 
     @Override
-    protected ByteBuffer toByteBuffer( Rollup rollup ) {
+    protected ByteBuffer toByteBuffer( Object rollup ) {
 
         if ( ! (rollup instanceof BasicRollup ) ) {
             throw new IllegalArgumentException("toByteBuffer(): expecting BasicRollup class but got " + rollup.getClass().getSimpleName());
@@ -26,7 +26,7 @@ public class BasicNumericIO extends DAbstractMetricIO {
     }
 
     @Override
-    protected BasicRollup fromByteBuffer( ByteBuffer byteBuffer ) {
+    protected Object fromByteBuffer( ByteBuffer byteBuffer ) {
 
         return serDes.deserialize( byteBuffer );
     }

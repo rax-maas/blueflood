@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -93,8 +94,5 @@ public interface MetricsRW {
      * @param <T> the type of Rollup object
      * @return
      */
-    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator,
-                                                        RollupType rollupType,
-                                                        Range range,
-                                                        String columnFamilyName) throws IOException;
+    public <T extends Rollup> Points<T> getDataToRollup(final Locator locator, RollupType rollupType, Range range, String columnFamilyName) throws IOException, CacheException;
 }

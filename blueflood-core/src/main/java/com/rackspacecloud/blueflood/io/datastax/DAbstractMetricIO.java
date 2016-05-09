@@ -72,12 +72,14 @@ public abstract class DAbstractMetricIO {
     private final PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
     private final PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
 
+    protected final PreparedStatement insertToMetricsBasicFullStatement;
     protected final PreparedStatement insertToMetricsBasic5MStatement;
     protected final PreparedStatement insertToMetricsBasic20MStatement;
     protected final PreparedStatement insertToMetricsBasic60MStatement;
     protected final PreparedStatement insertToMetricsBasic240MStatement;
     protected final PreparedStatement insertToMetricsBasic1440MStatement;
 
+    private final PreparedStatement selectFromMetricsBasicFullForRangeStatement;
     private final PreparedStatement selectFromMetricsBasic5MForRangeStatement;
     private final PreparedStatement selectFromMetricsBasic20MForRangeStatement;
     private final PreparedStatement selectFromMetricsBasic60MForRangeStatement;
@@ -157,6 +159,9 @@ public abstract class DAbstractMetricIO {
         //
         // Basic insert statements
         //
+        insertToMetricsBasicFullStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_FULL_NAME));
         insertToMetricsBasic5MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
                         CassandraModel.CF_METRICS_5M_NAME));
@@ -176,6 +181,9 @@ public abstract class DAbstractMetricIO {
         //
         // Basic select statements
         //
+        selectFromMetricsBasicFullForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_FULL_NAME));
         selectFromMetricsBasic5MForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_5M_NAME));
@@ -192,6 +200,7 @@ public abstract class DAbstractMetricIO {
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_1440M_NAME));
 
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_FULL_NAME, selectFromMetricsBasicFullForRangeStatement );
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_5M_NAME, selectFromMetricsBasic5MForRangeStatement );
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_20M_NAME, selectFromMetricsBasic20MForRangeStatement );
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_60M_NAME, selectFromMetricsBasic60MForRangeStatement );
@@ -199,6 +208,8 @@ public abstract class DAbstractMetricIO {
         cfNameToSelectStatement.put(CassandraModel.CF_METRICS_1440M_NAME, selectFromMetricsBasic1440MForRangeStatement);
 
         basicGranToInsertStatement = new HashMap<Granularity, PreparedStatement>() {{
+            // NOTE:  this shoudn't be called.  explain why later
+            put(Granularity.FULL, insertToMetricsBasicFullStatement );
             put(Granularity.MIN_5, insertToMetricsBasic5MStatement);
             put(Granularity.MIN_20, insertToMetricsBasic20MStatement);
             put(Granularity.MIN_60, insertToMetricsBasic60MStatement);
@@ -238,7 +249,7 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return
      */
-    protected <T extends Rollup> Table<Locator, Long, T> getRollupsForLocator(final Locator locator, String columnFamily, Range range) {
+    protected Table<Locator, Long, Object> getRollupsForLocator(final Locator locator, String columnFamily, Range range) {
         return getRollupsForLocators(new ArrayList<Locator>() {{ add(locator); }}, columnFamily, range);
     }
 
@@ -254,9 +265,9 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return
      */
-    protected <T extends Rollup> Table<Locator, Long, T> getRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
+    protected Table<Locator, Long, Object> getRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
 
-        Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
+        Table<Locator, Long, Object> locatorTimestampRollup = HashBasedTable.create();
 
         Map<Locator, List<ResultSetFuture>> resultSetFuturesMap = selectForLocatorListAndRange(columnFamily, locators, range);
 
@@ -264,7 +275,7 @@ public abstract class DAbstractMetricIO {
             Locator locator = entry.getKey();
             List<ResultSetFuture> futures = entry.getValue();
 
-            Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
+            Table<Locator, Long, Object> result = toLocatorTimestampValue( futures, locator, CassandraModel.getGranularity( columnFamily ) );
             locatorTimestampRollup.putAll(result);
         }
         return locatorTimestampRollup;
@@ -277,7 +288,7 @@ public abstract class DAbstractMetricIO {
      * @param rollup
      * @return
      */
-    protected abstract <T extends Rollup> ByteBuffer toByteBuffer(T rollup);
+    protected abstract ByteBuffer toByteBuffer(Object rollup);
 
     /**
      * Provides a way for the sub class to construct the right Rollup
@@ -286,7 +297,7 @@ public abstract class DAbstractMetricIO {
      * @param byteBuffer
      * @return
      */
-    protected abstract <T extends Rollup> T fromByteBuffer(ByteBuffer byteBuffer);
+    protected abstract Object fromByteBuffer(ByteBuffer byteBuffer);
 
     /**
      * Add a {@link com.datastax.driver.core.PreparedStatement} statement to the
@@ -367,27 +378,12 @@ public abstract class DAbstractMetricIO {
     }
 
     /**
-     * Execute a select statement against the specified column family for a specific
-     * {@link com.rackspacecloud.blueflood.types.Locator} and
-     * {@link com.rackspacecloud.blueflood.types.Range}
-     *
-     * @param locator
-     * @param range
-     * @param granularity
-     * @return
-     */
-    public List<ResultSetFuture> selectForLocatorRangeGranularity(Locator locator, Range range, Granularity granularity) {
-        String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
-        return selectForLocatorAndRange(columnFamily, locator, range);
-    }
-
-    /**
      *  Give a {@link com.datastax.driver.core.ResultSetFuture}, get
      *  the corresponding data from it and return it as a
      *  Table of locator, long and rollup.
      */
-    public <T extends Rollup> Table<Locator, Long, T> toLocatorTimestampRollup(List<ResultSetFuture> futures, Locator locator, Granularity granularity) {
-        Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
+    public Table<Locator, Long, Object> toLocatorTimestampValue( List<ResultSetFuture> futures, Locator locator, Granularity granularity ) {
+        Table<Locator, Long, Object> locatorTimestampRollup = HashBasedTable.create();
         for ( ResultSetFuture future : futures ) {
             try {
                 List<Row> rows = future.getUninterruptibly().all();
@@ -395,7 +391,7 @@ public abstract class DAbstractMetricIO {
                     String key = row.getString(KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
                     Long hash = row.getLong(COLUMN1);
-                    locatorTimestampRollup.put(loc, hash, (T) fromByteBuffer(row.getBytes(VALUE)));
+                    locatorTimestampRollup.put(loc, hash, fromByteBuffer(row.getBytes(VALUE)));
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();

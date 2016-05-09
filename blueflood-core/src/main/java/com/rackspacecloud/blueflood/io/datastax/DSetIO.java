@@ -38,7 +38,7 @@ public class DSetIO extends DAbstractMetricIO {
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
+    protected ByteBuffer toByteBuffer(Object rollup) {
         if ( ! (rollup instanceof BluefloodSetRollup) ) {
             throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodSetRollup class but got " + rollup.getClass().getSimpleName());
         }

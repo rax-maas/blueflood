@@ -171,7 +171,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
 
         if (isString || isBoolean) {
-            // they were already casting long to in in Metrics.setTtl()
+            // they were already casting long to int in Metrics.setTtl()
             metric.setTtlInSeconds( (int) STRING_TTL.toSeconds() );
             String persist;
             if (isString) {

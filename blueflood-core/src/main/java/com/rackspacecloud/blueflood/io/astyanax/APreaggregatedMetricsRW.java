@@ -20,6 +20,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.PreaggregatedRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -34,7 +35,7 @@ import java.util.Map;
  * This class deals with reading/writing metrics to the metrics_preaggregated_* column families
  * using Astyanax driver
  */
-public class APreaggregatedMetricsRW extends AbstractMetricsRW {
+public class APreaggregatedMetricsRW extends AbstractMetricsRW implements PreaggregatedRW{
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family

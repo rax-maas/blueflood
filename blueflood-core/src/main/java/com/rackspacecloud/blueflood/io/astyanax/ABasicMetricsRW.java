@@ -14,10 +14,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class deals with reading/writing metrics to the metrics_* column families
+ * This class deals with reading/writing metrics to the metrics_{granularity} & metrics_string column families
  * using Astyanax driver
  */
 public class ABasicMetricsRW extends AbstractMetricsRW {
+
     @Override
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {
 
@@ -98,15 +99,5 @@ public class ABasicMetricsRW extends AbstractMetricsRW {
                 locator,
                 range,
                 CassandraModel.getColumnFamily( columnFamilyName ) );
-    }
-
-    @Override
-    public void insertMetrics( Collection<IMetric> metrics, Granularity granularity ) throws IOException {
-
-        try {
-            AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getBasicColumnFamily(granularity));
-        } catch (ConnectionException ex) {
-            throw new IOException(ex);
-        }
     }
 }

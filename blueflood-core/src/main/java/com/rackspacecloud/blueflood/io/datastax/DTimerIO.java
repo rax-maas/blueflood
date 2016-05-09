@@ -38,7 +38,7 @@ public class DTimerIO extends DAbstractMetricIO {
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
+    protected ByteBuffer toByteBuffer(Object rollup) {
         if ( ! (rollup instanceof BluefloodTimerRollup) ) {
             throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodTimerRollup class but got " + rollup.getClass().getSimpleName());
         }

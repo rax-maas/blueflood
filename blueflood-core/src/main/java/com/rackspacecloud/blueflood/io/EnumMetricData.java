@@ -117,9 +117,9 @@ public class EnumMetricData {
 
         });
 
-        Future<Table<Locator, Long, BluefloodEnumRollup>> enumHashRollupFuture = taskExecutor.submit(new Callable() {
+        Future<Table<Locator, Long, Object>> enumHashRollupFuture = taskExecutor.submit(new Callable() {
             @Override
-            public Table<Locator, Long, BluefloodEnumRollup> call() throws Exception {
+            public Table<Locator, Long, Object> call() throws Exception {
                 return enumReader.getEnumRollupsForLocators(locators, columnFamily, range);
             }
         });
@@ -127,7 +127,7 @@ public class EnumMetricData {
         Map<Locator, MetricData> resultMap = new HashMap<Locator, MetricData>();
         try {
             Table<Locator, Long, String> enumHashValues =  enumHashValuesFuture.get();
-            Table<Locator, Long, BluefloodEnumRollup> enumHashRollup = enumHashRollupFuture.get();
+            Table<Locator, Long, Object> enumHashRollup = enumHashRollupFuture.get();
 
             for (Locator locator : locators) {
                 populateEnumValueToCountMap(enumHashRollup.row(locator), enumHashValues.row(locator));
@@ -152,8 +152,9 @@ public class EnumMetricData {
      * @param enumRollupMap      a map of timestamp -> {@link com.rackspacecloud.blueflood.types.BluefloodEnumRollup}
      * @param enumHashValuesMap  a map of enum hash code -> enum string value
      */
-    private void populateEnumValueToCountMap(Map<Long, BluefloodEnumRollup> enumRollupMap, Map<Long, String> enumHashValuesMap) {
-        for (BluefloodEnumRollup enumRollup : enumRollupMap.values() ) {
+    private void populateEnumValueToCountMap(Map<Long, Object> enumRollupMap, Map<Long, String> enumHashValuesMap) {
+        for ( Object o : enumRollupMap.values() ) {
+            BluefloodEnumRollup enumRollup = (BluefloodEnumRollup) o;
             for ( Map.Entry<Long, Long> hashCount: enumRollup.getHashedEnumValuesWithCounts().entrySet()){
                 Long hash = hashCount.getKey();
                 enumRollup.getStringEnumValuesWithCounts().put(enumHashValuesMap.get(hash), hashCount.getValue());
@@ -168,10 +169,10 @@ public class EnumMetricData {
      * @param enumHashToRollupMap
      * @return
      */
-    private Points<BluefloodEnumRollup> convertToPoints(final Map<Long, BluefloodEnumRollup> enumHashToRollupMap) {
-        Points<BluefloodEnumRollup> enumRollupPoints =  new Points<BluefloodEnumRollup>();
-        for (Map.Entry<Long, BluefloodEnumRollup> enumRollup : enumHashToRollupMap.entrySet() ) {
-            enumRollupPoints.add(new Points.Point<BluefloodEnumRollup>(enumRollup.getKey(), enumRollup.getValue()));
+    private Points convertToPoints(final Map<Long, Object> enumHashToRollupMap) {
+        Points enumRollupPoints =  new Points();
+        for (Map.Entry<Long, Object> enumRollup : enumHashToRollupMap.entrySet() ) {
+            enumRollupPoints.add(new Points.Point(enumRollup.getKey(), enumRollup.getValue()));
         }
         return enumRollupPoints;
     }

@@ -71,6 +71,6 @@ public interface EnumReaderIO {
      * @param columnFamily
      * @return
      */
-    public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(final List<Locator> locators, String columnFamily, Range range);
+    public Table<Locator, Long, Object> getEnumRollupsForLocators(final List<Locator> locators, String columnFamily, Range range);
 
 }

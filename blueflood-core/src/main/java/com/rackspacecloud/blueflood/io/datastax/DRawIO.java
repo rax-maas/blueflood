@@ -14,6 +14,8 @@ import com.rackspacecloud.blueflood.types.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 
@@ -48,6 +50,9 @@ public class DRawIO {
 
         putString = session.prepare( insertString );
 
+        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
+        putString.setConsistencyLevel( ConsistencyLevel.ONE );
 
         Insert.Options insertNumeric = insertInto( CassandraModel.CF_METRICS_FULL_NAME )
                 .value( KEY , bindMarker() )
@@ -56,6 +61,10 @@ public class DRawIO {
                 .using( ttl( bindMarker() ) );
 
         putNumeric = session.prepare( insertNumeric );
+
+        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
+        putNumeric.setConsistencyLevel( ConsistencyLevel.ONE );
 
 
         Select.Where whereString = select()
@@ -80,7 +89,7 @@ public class DRawIO {
 
     public ResultSetFuture getStringAsync( Locator locator, Range range ) {
 
-        BoundStatement bound = getString.bind( locator, range.getStart(), range.getStop() );
+        BoundStatement bound = getString.bind( locator.toString(), range.getStart(), range.getStop() );
 
         return DatastaxIO.getSession().executeAsync( bound );
     }
@@ -91,7 +100,7 @@ public class DRawIO {
 
         if (stringOrBool ) {
 
-            BoundStatement bound = putString.bind( metric.getLocator(),
+            BoundStatement bound = putString.bind( metric.getLocator().toString(),
                     metric.getCollectionTime(),
                     String.valueOf( metric.getMetricValue() ),
                     metric.getTtlInSeconds() );
@@ -100,7 +109,7 @@ public class DRawIO {
         }
         else {
 
-            BoundStatement bound = putNumeric.bind( metric.getLocator(),
+            BoundStatement bound = putNumeric.bind( metric.getLocator().toString(),
                     metric.getCollectionTime(),
                     serDes.serialize( metric.getMetricValue() ),
                     metric.getTtlInSeconds() );
@@ -115,11 +124,11 @@ public class DRawIO {
 
         try {
 
-            BoundStatement bound = getLastString.bind( locator );
+            BoundStatement bound = getLastString.bind( locator.toString() );
 
-            ResultSet result = DatastaxIO.getSession().execute(  bound );
+            List<Row> result = DatastaxIO.getSession().execute(  bound ).all();
 
-            return result.all().get( 0 ).getString( VALUE );
+            return result.isEmpty() ? null : result.get( 0 ).getString( VALUE );
         }
         catch (Exception e ) {
 

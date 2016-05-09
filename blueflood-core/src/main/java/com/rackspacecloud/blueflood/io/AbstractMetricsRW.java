@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This is base class of all MetricsRW classes that deals with persisting/reading
- * data from metrics_{granularity} and metrics_preaggregated_{granularity} column
+ * data from metrics_string, metrics_{granularity} and metrics_preaggregated_{granularity} column
  * family. This contains some utility methods used/shared amongst various
  * implementation/subclasses of MetricsRW.
  */
@@ -46,7 +46,6 @@ public abstract class AbstractMetricsRW implements MetricsRW {
 
     protected static final MetadataCache metadataCache = MetadataCache.getInstance();
     protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
-    protected static final String ROLLUP_TYPE_CACHE_KEY = MetricMetadata.ROLLUP_TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
 
@@ -150,22 +149,19 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @param timestampToRollupMap  a map of timestamp to rollup
      * @return
      */
-    protected <T extends Rollup> Points<T> convertToPoints(final Map<Long, T> timestampToRollupMap) {
-        Points<T> rollupPoints =  new Points<T>();
-        for (Map.Entry<Long, T> rollup : timestampToRollupMap.entrySet() ) {
-            rollupPoints.add(new Points.Point<T>(rollup.getKey(), rollup.getValue()));
+    protected Points convertToPoints(final Map<Long, Object> timestampToRollupMap) {
+        Points points =  new Points();
+        for (Map.Entry<Long, Object> value : timestampToRollupMap.entrySet() ) {
+
+            points.add( createPoint( value.getKey(), value.getValue() ) );
         }
-        return rollupPoints;
+        return points;
     }
 
-    /**
-     * Inserts a collection of rolled up metrics to the metrics_preaggregated_{granularity} column family.
-     * Only our tests should call this method. Services should call either insertMetrics(Collection metrics)
-     * or insertRollups()
-     *
-     * @param metrics
-     * @throws IOException
-     */
-    @VisibleForTesting
-    public abstract void insertMetrics(Collection<IMetric> metrics, Granularity granularity) throws IOException;
+    protected Points.Point createPoint( Long timestamp, Object value ) {
+        if( value instanceof Rollup || value instanceof String)
+            return new Points.Point( timestamp, value);
+        else
+            return new Points.Point( timestamp, new SimpleNumber( value ) );
+    }
 }
