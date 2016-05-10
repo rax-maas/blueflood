@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.inputs.formats;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 import java.util.*;
 

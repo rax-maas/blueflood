@@ -112,16 +112,19 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                 if (errors.isEmpty()) {
                     // no validation error, response OK
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                    return;
                 }
                 else {
                     // has some validation errors, response MULTI_STATUS
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                    return;
                 }
 
             }
             else {
-                // no aggregated metric bundles in body
-                DefaultHandler.sendResponse( ctx, request, null, HttpResponseStatus.BAD_REQUEST );
+                // no aggregated metric bundles in body, response OK
+                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                return;
             }
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));
