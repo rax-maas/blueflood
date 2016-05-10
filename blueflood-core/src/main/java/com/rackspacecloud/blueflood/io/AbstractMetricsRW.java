@@ -137,7 +137,8 @@ public abstract class AbstractMetricsRW implements MetricsRW {
                     granularity,
                     rollupType).toSeconds();
         } catch (Exception ex) {
-            LOG.warn(String.format("error getting TTL for locator %s, granularity %s, defaulting to safe TTL", locator, granularity), ex);
+            LOG.warn(String.format("error getting TTL for locator %s, granularity %s, defaulting to safe TTL",
+                    locator, granularity), ex);
             return (int) SafetyTtlProvider.getInstance().getSafeTTL(granularity, rollupType).toSeconds();
         }
     }
@@ -149,9 +150,9 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @param timestampToRollupMap  a map of timestamp to rollup
      * @return
      */
-    protected Points convertToPoints(final Map<Long, Object> timestampToRollupMap) {
+    protected <T extends Object> Points<T> convertToPoints(final Map<Long, T> timestampToRollupMap) {
         Points points =  new Points();
-        for (Map.Entry<Long, Object> value : timestampToRollupMap.entrySet() ) {
+        for (Map.Entry<Long, T> value : timestampToRollupMap.entrySet() ) {
 
             points.add( createPoint( value.getKey(), value.getValue() ) );
         }

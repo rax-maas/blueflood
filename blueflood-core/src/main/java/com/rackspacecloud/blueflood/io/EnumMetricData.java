@@ -88,7 +88,9 @@ public class EnumMetricData {
      * @param gran
      * @return
      */
-    public Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators, final Range range, final Granularity gran) {
+    public Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators,
+                                                                            final Range range,
+                                                                            final Granularity gran) {
         String columnFamily = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, gran).getName();
         return getEnumMetricDataForRangeForLocatorList(locators, range, columnFamily);
     }
@@ -103,7 +105,9 @@ public class EnumMetricData {
      * @param columnFamily
      * @return
      */
-    private  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators, final Range range, final String columnFamily) {
+    private  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators,
+                                                                              final Range range,
+                                                                              final String columnFamily) {
 
         if (range.getStart() > range.getStop()) {
             throw new IllegalArgumentException(String.format("invalid range: ", range.toString()));
@@ -117,9 +121,9 @@ public class EnumMetricData {
 
         });
 
-        Future<Table<Locator, Long, Object>> enumHashRollupFuture = taskExecutor.submit(new Callable() {
+        Future<Table<Locator, Long, BluefloodEnumRollup>> enumHashRollupFuture = taskExecutor.submit(new Callable() {
             @Override
-            public Table<Locator, Long, Object> call() throws Exception {
+            public Table<Locator, Long, BluefloodEnumRollup> call() throws Exception {
                 return enumReader.getEnumRollupsForLocators(locators, columnFamily, range);
             }
         });
@@ -127,7 +131,7 @@ public class EnumMetricData {
         Map<Locator, MetricData> resultMap = new HashMap<Locator, MetricData>();
         try {
             Table<Locator, Long, String> enumHashValues =  enumHashValuesFuture.get();
-            Table<Locator, Long, Object> enumHashRollup = enumHashRollupFuture.get();
+            Table<Locator, Long, BluefloodEnumRollup> enumHashRollup = enumHashRollupFuture.get();
 
             for (Locator locator : locators) {
                 populateEnumValueToCountMap(enumHashRollup.row(locator), enumHashValues.row(locator));
@@ -152,9 +156,8 @@ public class EnumMetricData {
      * @param enumRollupMap      a map of timestamp -> {@link com.rackspacecloud.blueflood.types.BluefloodEnumRollup}
      * @param enumHashValuesMap  a map of enum hash code -> enum string value
      */
-    private void populateEnumValueToCountMap(Map<Long, Object> enumRollupMap, Map<Long, String> enumHashValuesMap) {
-        for ( Object o : enumRollupMap.values() ) {
-            BluefloodEnumRollup enumRollup = (BluefloodEnumRollup) o;
+    private void populateEnumValueToCountMap(Map<Long, BluefloodEnumRollup> enumRollupMap, Map<Long, String> enumHashValuesMap) {
+        for (BluefloodEnumRollup enumRollup : enumRollupMap.values() ) {
             for ( Map.Entry<Long, Long> hashCount: enumRollup.getHashedEnumValuesWithCounts().entrySet()){
                 Long hash = hashCount.getKey();
                 enumRollup.getStringEnumValuesWithCounts().put(enumHashValuesMap.get(hash), hashCount.getValue());
@@ -169,10 +172,10 @@ public class EnumMetricData {
      * @param enumHashToRollupMap
      * @return
      */
-    private Points convertToPoints(final Map<Long, Object> enumHashToRollupMap) {
-        Points enumRollupPoints =  new Points();
-        for (Map.Entry<Long, Object> enumRollup : enumHashToRollupMap.entrySet() ) {
-            enumRollupPoints.add(new Points.Point(enumRollup.getKey(), enumRollup.getValue()));
+    private Points<BluefloodEnumRollup> convertToPoints(final Map<Long, BluefloodEnumRollup> enumHashToRollupMap) {
+        Points<BluefloodEnumRollup> enumRollupPoints =  new Points<BluefloodEnumRollup>();
+        for (Map.Entry<Long, BluefloodEnumRollup> enumRollup : enumHashToRollupMap.entrySet() ) {
+            enumRollupPoints.add(new Points.Point<BluefloodEnumRollup>(enumRollup.getKey(), enumRollup.getValue()));
         }
         return enumRollupPoints;
     }

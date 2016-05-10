@@ -245,19 +245,19 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
             // read the enums from metrics_enum CF, via getEnumStringMappings()
             // ask for 5 minutes back
-            Table<Locator, Long, Object> table = astyanaxEnumIO.getEnumRollupsForLocators(locators,
+            Table<Locator, Long, BluefloodEnumRollup> table = astyanaxEnumIO.getEnumRollupsForLocators(locators,
                                                                     CassandraModel.getColumnFamily(BluefloodEnumRollup.class, granularity).getName(),
                                                                     getRangeFromMinAgoToNow(5));
             Set<Locator> locatorSet = table.rowKeySet();
             assertEquals("Table(locator, timestamp, rollup): # of locators", locatorToMetrics.size(), locatorSet.size());
-            for (Map.Entry<Locator, Map<Long, Object>> entry : table.rowMap().entrySet()) {
+            for (Map.Entry<Locator, Map<Long, BluefloodEnumRollup>> entry : table.rowMap().entrySet()) {
                 Locator locator = entry.getKey();
-                Map<Long, Object> enumRollupMap = entry.getValue();
+                Map<Long, BluefloodEnumRollup> enumRollupMap = entry.getValue();
 
                 // check and make sure all timestamp in our test data is there
                 List<IMetric> expectedMetrics = locatorToMetrics.get(locator);
                 for (IMetric expected : expectedMetrics) {
-                    BluefloodEnumRollup enumRollup = (BluefloodEnumRollup)enumRollupMap.get(expected.getCollectionTime());
+                    BluefloodEnumRollup enumRollup = enumRollupMap.get(expected.getCollectionTime());
                     assertNotNull(String.format("enumRollup exists at timestamp %s", expected.getCollectionTime()), enumRollup);
                 }
                 assertTrue(String.format("metrics size for locator %s is not bigger than possible enum values defined for these tests", locator),
@@ -321,20 +321,20 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
             final List<Locator> locators = new ArrayList<Locator>() {{
                 addAll(locatorToMetrics.keySet());
             }};
-            Table<Locator, Long, Object> results = datastaxEnumIO.getEnumRollupsForLocators(locators,
+            Table<Locator, Long, BluefloodEnumRollup> results = datastaxEnumIO.getEnumRollupsForLocators(locators,
                     CassandraModel.getColumnFamily(BluefloodEnumRollup.class, granularity).getName(),
                     getRangeFromMinAgoToNow(5));
             assertEquals("Table(locator, timestamp, rollup) size", locatorToMetrics.size(), results.size());
 
             for (Locator locator : locators) {
-                Map<Long, Object> enumRollupMap = results.row(locator);
+                Map<Long, BluefloodEnumRollup> enumRollupMap = results.row(locator);
                 // This test will be run multiple times so it's possible previous
                 // runs of this test will have inserted different enum values.
                 // Enum values for these tests are randomly generated, see
                 // getEnumMetric()
                 List<IMetric> expectedMetrics = locatorToMetrics.get(locator);
                 for (IMetric expected : expectedMetrics) {
-                    BluefloodEnumRollup enumRollup = (BluefloodEnumRollup)enumRollupMap.get(expected.getCollectionTime());
+                    BluefloodEnumRollup enumRollup = enumRollupMap.get(expected.getCollectionTime());
                     assertNotNull(String.format("enumRollup exists at timestamp %s", expected.getCollectionTime()), enumRollup);
                 }
                 assertTrue(String.format("metrics size for locator %s is not bigger than possible enum values defined for these tests", locator),

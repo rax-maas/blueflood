@@ -249,7 +249,9 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return
      */
-    protected Table<Locator, Long, Object> getRollupsForLocator(final Locator locator, String columnFamily, Range range) {
+    protected <T extends Object> Table<Locator, Long, T> getRollupsForLocator(final Locator locator,
+                                                                              String columnFamily,
+                                                                              Range range) {
         return getRollupsForLocators(new ArrayList<Locator>() {{ add(locator); }}, columnFamily, range);
     }
 
@@ -265,9 +267,11 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return
      */
-    protected Table<Locator, Long, Object> getRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
+    protected <T extends Object> Table<Locator, Long, T> getRollupsForLocators(final List<Locator> locators,
+                                                                               String columnFamily,
+                                                                               Range range) {
 
-        Table<Locator, Long, Object> locatorTimestampRollup = HashBasedTable.create();
+        Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
 
         Map<Locator, List<ResultSetFuture>> resultSetFuturesMap = selectForLocatorListAndRange(columnFamily, locators, range);
 
@@ -275,7 +279,7 @@ public abstract class DAbstractMetricIO {
             Locator locator = entry.getKey();
             List<ResultSetFuture> futures = entry.getValue();
 
-            Table<Locator, Long, Object> result = toLocatorTimestampValue( futures, locator, CassandraModel.getGranularity( columnFamily ) );
+            Table<Locator, Long, T> result = toLocatorTimestampValue( futures, locator, CassandraModel.getGranularity( columnFamily ) );
             locatorTimestampRollup.putAll(result);
         }
         return locatorTimestampRollup;
@@ -288,7 +292,7 @@ public abstract class DAbstractMetricIO {
      * @param rollup
      * @return
      */
-    protected abstract ByteBuffer toByteBuffer(Object rollup);
+    protected abstract <T extends Object> ByteBuffer toByteBuffer(T rollup);
 
     /**
      * Provides a way for the sub class to construct the right Rollup
@@ -297,7 +301,7 @@ public abstract class DAbstractMetricIO {
      * @param byteBuffer
      * @return
      */
-    protected abstract Object fromByteBuffer(ByteBuffer byteBuffer);
+    protected abstract <T extends Object> T fromByteBuffer(ByteBuffer byteBuffer);
 
     /**
      * Add a {@link com.datastax.driver.core.PreparedStatement} statement to the
@@ -345,7 +349,9 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return a map of Locator -> a list of ResultSetFuture
      */
-    protected Map<Locator, List<ResultSetFuture>> selectForLocatorListAndRange(String columnFamilyName, List<Locator> locators, Range range) {
+    protected Map<Locator, List<ResultSetFuture>> selectForLocatorListAndRange(String columnFamilyName,
+                                                                               List<Locator> locators,
+                                                                               Range range) {
         Map<Locator, List<ResultSetFuture>> locatorFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
         for (Locator locator : locators) {
             List<ResultSetFuture> existing = locatorFuturesMap.get(locator);
@@ -382,8 +388,10 @@ public abstract class DAbstractMetricIO {
      *  the corresponding data from it and return it as a
      *  Table of locator, long and rollup.
      */
-    public Table<Locator, Long, Object> toLocatorTimestampValue( List<ResultSetFuture> futures, Locator locator, Granularity granularity ) {
-        Table<Locator, Long, Object> locatorTimestampRollup = HashBasedTable.create();
+    public <T extends Object> Table<Locator, Long, T> toLocatorTimestampValue( List<ResultSetFuture> futures,
+                                                                               Locator locator,
+                                                                               Granularity granularity ) {
+        Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         for ( ResultSetFuture future : futures ) {
             try {
                 List<Row> rows = future.getUninterruptibly().all();
@@ -391,7 +399,7 @@ public abstract class DAbstractMetricIO {
                     String key = row.getString(KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
                     Long hash = row.getLong(COLUMN1);
-                    locatorTimestampRollup.put(loc, hash, fromByteBuffer(row.getBytes(VALUE)));
+                    locatorTimestampRollup.put(loc, hash, (T)fromByteBuffer(row.getBytes(VALUE)));
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();

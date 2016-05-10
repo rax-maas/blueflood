@@ -135,7 +135,9 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      * @return
      */
     @Override
-    public Table<Locator, Long, Object> getEnumRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
+    public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(final List<Locator> locators,
+                                                                               String columnFamily,
+                                                                               Range range) {
         return getRollupsForLocators(locators, columnFamily, range);
     }
 
@@ -151,7 +153,8 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
     protected ByteBuffer toByteBuffer(Object rollup) {
         if ( ! (rollup instanceof BluefloodEnumRollup) ) {
             // or throw new ShouldNotHappenException()
-            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodEnumRollup class but got " + rollup.getClass().getSimpleName());
+            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodEnumRollup class but got "
+                    + rollup.getClass().getSimpleName());
         }
         BluefloodEnumRollup enumRollup = (BluefloodEnumRollup) rollup;
         return serDes.serialize(enumRollup);
@@ -165,7 +168,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      * @return
      */
     @Override
-    protected BluefloodEnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
+    protected Object fromByteBuffer(ByteBuffer byteBuffer) {
         return serDes.deserialize(byteBuffer);
     }
 
@@ -250,8 +253,10 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      *  metrics_preaggregated_{gran}
      */
     @Override
-    public Table<Locator, Long, Object> toLocatorTimestampValue( List<ResultSetFuture> futures, Locator locator, Granularity granularity ) {
-        Table<Locator, Long, Object> locatorTimestampRollup = HashBasedTable.create();
+    public <T extends Object> Table<Locator, Long, T> toLocatorTimestampValue( List<ResultSetFuture> futures,
+                                                                               Locator locator,
+                                                                               Granularity granularity ) {
+        Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         Map<Long, String> hashValueMap = new HashMap<Long, String>();
         for ( ResultSetFuture future : futures ) {
             try {
@@ -266,7 +271,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
                         // store a mapping of enum hash to its enum string value
                         hashValueMap.put(column1, row.getString(VALUE));
                     } else {
-                        locatorTimestampRollup.put(loc, column1, fromByteBuffer(row.getBytes(VALUE)));
+                        locatorTimestampRollup.put(loc, column1, (T)fromByteBuffer(row.getBytes(VALUE)));
                     }
                 }
             } catch (Exception ex) {
@@ -275,7 +280,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
                         locator, granularity), ex);
             }
         }
-        populateEnumValueToCountMap((Map<Long, Object>)locatorTimestampRollup.row(locator), hashValueMap);
+        populateEnumValueToCountMap((Map<Long, BluefloodEnumRollup>)locatorTimestampRollup.row(locator), hashValueMap);
         return locatorTimestampRollup;
     }
 
@@ -288,11 +293,8 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      * @param enumRollupMap      a map of timestamp -> {@link com.rackspacecloud.blueflood.types.BluefloodEnumRollup}
      * @param enumHashValuesMap  a map of enum hash code -> enum string value
      */
-    private void populateEnumValueToCountMap(Map<Long, Object> enumRollupMap, Map<Long, String> enumHashValuesMap) {
-        for (Object o: enumRollupMap.values() ) {
-
-            BluefloodEnumRollup enumRollup = (BluefloodEnumRollup)o;
-
+    private void populateEnumValueToCountMap(Map<Long, BluefloodEnumRollup> enumRollupMap, Map<Long, String> enumHashValuesMap) {
+        for (BluefloodEnumRollup enumRollup : enumRollupMap.values() ) {
             for ( Map.Entry<Long, Long> hashCount: enumRollup.getHashedEnumValuesWithCounts().entrySet()){
                 Long hash = hashCount.getKey();
                 enumRollup.getStringEnumValuesWithCounts().put(enumHashValuesMap.get(hash), hashCount.getValue());
