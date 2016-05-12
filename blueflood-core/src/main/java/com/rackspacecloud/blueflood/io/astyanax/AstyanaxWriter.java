@@ -80,7 +80,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                 });
     }
 
-    private boolean shouldPersistStringMetric(Metric metric) {
+    private boolean shouldPersistStringMetric(IMetric metric) {
         String tenantId = metric.getLocator().getTenantId();
 
         if(areStringMetricsDropped && !keptTenantIdsSet.contains(tenantId) ) {
@@ -94,10 +94,10 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    private boolean shouldPersist(Metric metric) {
+    private boolean shouldPersist(IMetric metric) {
         boolean shouldPersistMetric = true;
         try {
-            final DataType metricType = metric.getDataType();
+            final DataType metricType = DataType.getMetricType( metric.getMetricValue() );
             if (metricType.equals(DataType.STRING) || metricType.equals(DataType.BOOLEAN)) {
                 shouldPersistMetric = shouldPersistStringMetric(metric);
             }
@@ -111,16 +111,16 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
-    public void insertFull(Collection<Metric> metrics) throws ConnectionException {
+    public void insertFull(Collection<? extends IMetric> metrics) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL_NAME);
 
         try {
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
-            for (Metric metric: metrics) {
+            for (IMetric metric: metrics) {
                 final Locator locator = metric.getLocator();
 
-                final boolean isString = metric.isString();
-                final boolean isBoolean = metric.isBoolean();
+                final boolean isString = DataType.isStringMetric( metric.getMetricValue() );
+                final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
 
                 if (!shouldPersist(metric)) {
                     log.trace("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
@@ -166,12 +166,13 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    private void insertMetric(Metric metric, MutationBatch mutationBatch) {
-        final boolean isString = metric.isString();
-        final boolean isBoolean = metric.isBoolean();
+    private void insertMetric(IMetric metric, MutationBatch mutationBatch) {
+        final boolean isString = DataType.isStringMetric( metric.getMetricValue() );
+        final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
 
         if (isString || isBoolean) {
-            metric.setTtl(STRING_TTL);
+            // they were already casting long to int in Metrics.setTtl()
+            metric.setTtlInSeconds( (int) STRING_TTL.toSeconds() );
             String persist;
             if (isString) {
                 persist = (String) metric.getMetricValue();

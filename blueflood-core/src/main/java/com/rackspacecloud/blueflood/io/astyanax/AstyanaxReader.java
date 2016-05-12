@@ -441,7 +441,7 @@ public class AstyanaxReader extends AstyanaxIO {
 
         for (Column<Long> column : results) {
             try {
-                points.add(new Points.Point<Boolean>(column.getName(), column.getValue(BooleanSerializer.get())));
+                points.add(new Points.Point<Boolean>(column.getName(), Boolean.valueOf( column.getValue(StringSerializer.get() ))));
             } catch (RuntimeException ex) {
                 log.error("Problem deserializing Boolean data for " + locator + " (" + range + ") from " +
                         CassandraModel.CF_METRICS_STRING.getName(), ex);

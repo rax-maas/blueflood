@@ -88,7 +88,9 @@ public class EnumMetricData {
      * @param gran
      * @return
      */
-    public Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators, final Range range, final Granularity gran) {
+    public Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators,
+                                                                            final Range range,
+                                                                            final Granularity gran) {
         String columnFamily = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, gran).getName();
         return getEnumMetricDataForRangeForLocatorList(locators, range, columnFamily);
     }
@@ -103,7 +105,9 @@ public class EnumMetricData {
      * @param columnFamily
      * @return
      */
-    private  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators, final Range range, final String columnFamily) {
+    private  Map<Locator, MetricData> getEnumMetricDataForRangeForLocatorList(final List<Locator> locators,
+                                                                              final Range range,
+                                                                              final String columnFamily) {
 
         if (range.getStart() > range.getStop()) {
             throw new IllegalArgumentException(String.format("invalid range: ", range.toString()));

@@ -89,7 +89,9 @@ public class AstyanaxEnumIO implements EnumReaderIO {
      * @return
      */
     @Override
-    public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(List<Locator> locators, String columnFamily, Range range) {
+    public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(List<Locator> locators,
+                                                                               String columnFamily,
+                                                                               Range range) {
         AstyanaxReader reader = AstyanaxReader.getInstance();
         Map<Locator, ColumnList<Long>> locatorToColumnList = reader.getColumnsFromDB(locators, CassandraModel.getColumnFamily(columnFamily), range);
         Table<Locator, Long, BluefloodEnumRollup> locatorHashRollup = HashBasedTable.create();

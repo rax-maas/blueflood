@@ -23,8 +23,8 @@ import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxExcessEnumIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxLocatorIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxMetadataIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
+import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 
@@ -77,8 +77,8 @@ public class IOContainer {
 
         if ( driver == DriverType.DATASTAX ) {
 
-            metadataIO = new DatastaxMetadataIO();
-            shardStateIO = new DatastaxShardStateIO();
+            metadataIO = new DMetadataIO();
+            shardStateIO = new DShardStateIO();
             locatorIO = new DatastaxLocatorIO();
             excessEnumIO = new DatastaxExcessEnumIO();
 

@@ -22,20 +22,20 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 /**
  * Read/write to metrics_metadata using Datastax driver.
  */
-public class DatastaxMetadataIO implements MetadataIO {
+public class DMetadataIO implements MetadataIO {
 
     public static final String KEY = "key";
     public static final String COLUMN1 = "column1";
     public static final String VALUE = "value";
 
-    private static final Logger LOG = LoggerFactory.getLogger( DatastaxMetadataIO.class );
+    private static final Logger LOG = LoggerFactory.getLogger( DMetadataIO.class );
 
     private final StringMetadataSerDes serDes = new StringMetadataSerDes();
 
     private PreparedStatement getValue;
     private PreparedStatement putValue;
 
-    public DatastaxMetadataIO() {
+    public DMetadataIO() {
 
         createPreparedStatements();
     }
@@ -103,30 +103,38 @@ public class DatastaxMetadataIO implements MetadataIO {
 
         try {
 
-            List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
+            Map<Locator, ResultSetFuture> futures = new HashMap<Locator, ResultSetFuture>();
 
             for( Locator l : locators) {
 
                 BoundStatement bound = getValue.bind( l.toString() );
 
-                futureList.add( session.executeAsync( bound ) );
+                futures.put( l, session.executeAsync( bound ) );
             }
 
             Table<Locator, String, String> metaTable = HashBasedTable.create();
 
-            for( ResultSetFuture future : futureList ) {
+            for( Map.Entry<Locator, ResultSetFuture> future : futures.entrySet() ) {
 
-                ResultSet result = future.getUninterruptibly();
+                try {
+                    ResultSet result = future.getValue().getUninterruptibly();
 
-                for ( Row row : result ) {
-                    if ( LOG.isTraceEnabled() ) {
-                        LOG.trace( "Read metrics_metadata: " +
-                                row.getString( KEY ) +
-                                row.getString( COLUMN1 ) +
-                                serDes.deserialize( row.getBytes( VALUE ) ) );
+
+                    for ( Row row : result ) {
+                        if ( LOG.isTraceEnabled() ) {
+                            LOG.trace( "Read metrics_metadata: " +
+                                    row.getString( KEY ) +
+                                    row.getString( COLUMN1 ) +
+                                    serDes.deserialize( row.getBytes( VALUE ) ) );
+                        }
+
+                        metaTable.put( Locator.createLocatorFromDbKey( row.getString( KEY ) ), row.getString( COLUMN1 ), serDes.deserialize( row.getBytes( VALUE ) ) );
                     }
+                }
+                catch (Exception e ) {
 
-                    metaTable.put( Locator.createLocatorFromDbKey( row.getString( KEY ) ), row.getString( COLUMN1 ), serDes.deserialize( row.getBytes( VALUE ) ) );
+                    Instrumentation.markReadError();
+                    LOG.error( String.format( "error accessing metadatat for %s", future.getKey() ), e );
                 }
             }
 
@@ -163,20 +171,27 @@ public class DatastaxMetadataIO implements MetadataIO {
 
         Session session = DatastaxIO.getSession();
 
-        List<ResultSetFuture> futureList = new ArrayList<ResultSetFuture>();
+        Map<Locator, ResultSetFuture> futures = new HashMap<Locator, ResultSetFuture>();
 
         try {
             for( Table.Cell<Locator, String, String> cell : meta.cellSet() ) {
 
                 BoundStatement bound = putValue.bind( cell.getRowKey().toString(), cell.getColumnKey(), serDes.serialize( cell.getValue() ) );
 
-                futureList.add( session.executeAsync( bound ) );
+                futures.put( cell.getRowKey(), session.executeAsync( bound ) );
             }
 
-            for( ResultSetFuture future : futureList ) {
+            for( Map.Entry<Locator, ResultSetFuture> future : futures.entrySet() ) {
 
-                ResultSet result = future.getUninterruptibly();
-                LOG.trace( "result.size=" + result.all().size() );
+                try {
+                    ResultSet result = future.getValue().getUninterruptibly();
+                    LOG.trace( "result.size=" + result.all().size() );
+                }
+                catch (Exception e ){
+
+                    Instrumentation.markWriteError();
+                    LOG.error( String.format( "error writing to metrics_metadata for %s", future.getKey()), e );
+                }
             }
         }
         finally {

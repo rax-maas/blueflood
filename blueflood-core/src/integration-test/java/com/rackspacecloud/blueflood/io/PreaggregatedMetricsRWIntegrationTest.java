@@ -48,8 +48,8 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final String TENANT3 = "123789";
     private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
-    protected AbstractMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW();
-    protected AbstractMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW();
+    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW();
+    protected APreaggregatedMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW();
 
     protected Map<Locator, IMetric>  expectedLocatorMetricMap = new HashMap<Locator, IMetric>();
     protected IMetric timerMetric;

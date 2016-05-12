@@ -32,9 +32,9 @@ import java.util.*;
 
 /**
  * This is an abstract class that collects the common behavior of
- * reading/writing preaggregated metrics objects.
+ * reading/writing preaggregated & basic numeric metrics objects.
  */
-public abstract class DAbstractPreaggregatedIO {
+public abstract class DAbstractMetricIO {
 
     /**
      * The key of the metrics_preaggregated_* Column Families
@@ -56,7 +56,7 @@ public abstract class DAbstractPreaggregatedIO {
     protected static final String SELECT_FOR_KEY = "SELECT * FROM %s WHERE key = :locator";
     protected static final String SELECT_FOR_KEY_RANGE_FORMAT = "SELECT * FROM %s WHERE key = :locator AND column1 >= :tsStart AND column1 <= :tsEnd";
 
-    private static final Logger LOG = LoggerFactory.getLogger(DAbstractPreaggregatedIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DAbstractMetricIO.class);
 
     protected final PreparedStatement insertToMetricsPreaggrFullStatement;
     protected final PreparedStatement insertToMetricsPreaggr5MStatement;
@@ -72,13 +72,33 @@ public abstract class DAbstractPreaggregatedIO {
     private final PreparedStatement selectFromMetricsPreaggr240MForRangeStatement;
     private final PreparedStatement selectFromMetricsPreaggr1440MForRangeStatement;
 
+    protected final PreparedStatement insertToMetricsBasicFullStatement;
+    protected final PreparedStatement insertToMetricsBasic5MStatement;
+    protected final PreparedStatement insertToMetricsBasic20MStatement;
+    protected final PreparedStatement insertToMetricsBasic60MStatement;
+    protected final PreparedStatement insertToMetricsBasic240MStatement;
+    protected final PreparedStatement insertToMetricsBasic1440MStatement;
+
+    private final PreparedStatement selectFromMetricsStringForRangeStatement;
+
+    private final PreparedStatement selectFromMetricsBasicFullForRangeStatement;
+    private final PreparedStatement selectFromMetricsBasic5MForRangeStatement;
+    private final PreparedStatement selectFromMetricsBasic20MForRangeStatement;
+    private final PreparedStatement selectFromMetricsBasic60MForRangeStatement;
+    private final PreparedStatement selectFromMetricsBasic240MForRangeStatement;
+    private final PreparedStatement selectFromMetricsBasic1440MForRangeStatement;
+
     protected Session session;
     protected Map<String, PreparedStatement> cfNameToSelectStatement;
-    protected Map<Granularity, PreparedStatement> granToInsertStatement;
+    protected Map<Granularity, PreparedStatement> preaggrGranToInsertStatement;
+    protected Map<Granularity, PreparedStatement> basicGranToInsertStatement;
 
-    protected DAbstractPreaggregatedIO() {
+    protected DAbstractMetricIO() {
         session = DatastaxIO.getSession();
 
+        //
+        // Preaggr insert statements
+        //
         insertToMetricsPreaggrFullStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
                         CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME));
@@ -98,6 +118,9 @@ public abstract class DAbstractPreaggregatedIO {
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
                         CassandraModel.CF_METRICS_PREAGGREGATED_1440M_NAME));
 
+        //
+        // Preaggr select statements
+        //
         selectFromMetricsPreaggrFullForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME));
@@ -126,13 +149,79 @@ public abstract class DAbstractPreaggregatedIO {
             put(CassandraModel.CF_METRICS_PREAGGREGATED_1440M_NAME, selectFromMetricsPreaggr1440MForRangeStatement);
         }};
 
-        granToInsertStatement = new HashMap<Granularity, PreparedStatement>() {{
+        preaggrGranToInsertStatement = new HashMap<Granularity, PreparedStatement>() {{
             put(Granularity.FULL, insertToMetricsPreaggrFullStatement);
             put(Granularity.MIN_5, insertToMetricsPreaggr5MStatement);
             put(Granularity.MIN_20, insertToMetricsPreaggr20MStatement);
             put(Granularity.MIN_60, insertToMetricsPreaggr60MStatement);
             put(Granularity.MIN_240, insertToMetricsPreaggr240MStatement);
             put(Granularity.MIN_1440, insertToMetricsPreaggr1440MStatement);
+        }};
+
+        //
+        // Basic insert statements
+        //
+        insertToMetricsBasicFullStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_FULL_NAME));
+        insertToMetricsBasic5MStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_5M_NAME));
+        insertToMetricsBasic20MStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_20M_NAME));
+        insertToMetricsBasic60MStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_60M_NAME));
+        insertToMetricsBasic240MStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_240M_NAME));
+        insertToMetricsBasic1440MStatement = session.prepare(
+                String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
+                        CassandraModel.CF_METRICS_1440M_NAME));
+
+        //
+        // Basic select statements
+        //
+        selectFromMetricsStringForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_STRING_NAME));
+        selectFromMetricsBasicFullForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_FULL_NAME));
+        selectFromMetricsBasic5MForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_5M_NAME));
+        selectFromMetricsBasic20MForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_20M_NAME));
+        selectFromMetricsBasic60MForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_60M_NAME));
+        selectFromMetricsBasic240MForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_240M_NAME));
+        selectFromMetricsBasic1440MForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_1440M_NAME));
+
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_STRING_NAME, selectFromMetricsStringForRangeStatement );
+
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_FULL_NAME, selectFromMetricsBasicFullForRangeStatement );
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_5M_NAME, selectFromMetricsBasic5MForRangeStatement );
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_20M_NAME, selectFromMetricsBasic20MForRangeStatement );
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_60M_NAME, selectFromMetricsBasic60MForRangeStatement );
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_240M_NAME, selectFromMetricsBasic240MForRangeStatement );
+        cfNameToSelectStatement.put(CassandraModel.CF_METRICS_1440M_NAME, selectFromMetricsBasic1440MForRangeStatement);
+
+        basicGranToInsertStatement = new HashMap<Granularity, PreparedStatement>() {{
+            // NOTE:  this shoudn't be called.  explain why later
+            put(Granularity.FULL, insertToMetricsBasicFullStatement );
+            put(Granularity.MIN_5, insertToMetricsBasic5MStatement);
+            put(Granularity.MIN_20, insertToMetricsBasic20MStatement);
+            put(Granularity.MIN_60, insertToMetricsBasic60MStatement);
+            put(Granularity.MIN_240, insertToMetricsBasic240MStatement);
+            put(Granularity.MIN_1440, insertToMetricsBasic1440MStatement);
         }};
     }
 
@@ -167,12 +256,16 @@ public abstract class DAbstractPreaggregatedIO {
      * @param range
      * @return
      */
-    protected <T extends Rollup> Table<Locator, Long, T> getRollupsForLocator(final Locator locator, String columnFamily, Range range) {
-        return getRollupsForLocators(new ArrayList<Locator>() {{ add(locator); }}, columnFamily, range);
+    protected <T extends Object> Table<Locator, Long, T> getRollupsForLocator(final Locator locator,
+                                                                              String columnFamily,
+                                                                              Range range) {
+        return getValuesForLocators( new ArrayList<Locator>() {{
+            add( locator );
+        }}, columnFamily, range );
     }
 
     /**
-     * Fetch rollup objects for a list of {@link com.rackspacecloud.blueflood.types.Locator}
+     * Fetch values for a list of {@link com.rackspacecloud.blueflood.types.Locator}
      * from the specified column family and range.
      *
      * This is a base behavior for most rollup types. IO subclasses can override
@@ -183,7 +276,9 @@ public abstract class DAbstractPreaggregatedIO {
      * @param range
      * @return
      */
-    protected <T extends Rollup> Table<Locator, Long, T> getRollupsForLocators(final List<Locator> locators, String columnFamily, Range range) {
+    protected <T extends Object> Table<Locator, Long, T> getValuesForLocators( final List<Locator> locators,
+                                                                               String columnFamily,
+                                                                               Range range ) {
 
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
 
@@ -193,7 +288,7 @@ public abstract class DAbstractPreaggregatedIO {
             Locator locator = entry.getKey();
             List<ResultSetFuture> futures = entry.getValue();
 
-            Table<Locator, Long, T> result = toLocatorTimestampRollup(futures, locator, CassandraModel.getGranularity(columnFamily));
+            Table<Locator, Long, T> result = toLocatorTimestampValue( futures, locator, CassandraModel.getGranularity( columnFamily ) );
             locatorTimestampRollup.putAll(result);
         }
         return locatorTimestampRollup;
@@ -201,12 +296,12 @@ public abstract class DAbstractPreaggregatedIO {
 
     /**
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
-     * representation of a certain Rollup object.
+     * representation of a certain value.
      *
-     * @param rollup
+     * @param value
      * @return
      */
-    protected abstract <T extends Rollup> ByteBuffer toByteBuffer(T rollup);
+    protected abstract <T extends Object> ByteBuffer toByteBuffer(T value);
 
     /**
      * Provides a way for the sub class to construct the right Rollup
@@ -215,7 +310,7 @@ public abstract class DAbstractPreaggregatedIO {
      * @param byteBuffer
      * @return
      */
-    protected abstract <T extends Rollup> T fromByteBuffer(ByteBuffer byteBuffer);
+    protected abstract <T extends Object> T fromByteBuffer(ByteBuffer byteBuffer);
 
     /**
      * Add a {@link com.datastax.driver.core.PreparedStatement} statement to the
@@ -233,7 +328,18 @@ public abstract class DAbstractPreaggregatedIO {
                                     long collectionTime,
                                     Granularity granularity,
                                     int ttl) {
-        PreparedStatement statement = granToInsertStatement.get(granularity);
+        PreparedStatement statement;
+
+        if( rollup.getRollupType() == RollupType.BF_BASIC ) {
+
+            // Strings and Booleans don't get rolled up.  I'd like to verify
+            // that none are passed in, but that would require a db access
+
+            statement = basicGranToInsertStatement.get( granularity );
+        }
+        else {
+            statement = preaggrGranToInsertStatement.get(granularity);
+        }
 
         BoundStatement bound = statement.bind(locator.toString(),
                                     collectionTime,
@@ -252,7 +358,9 @@ public abstract class DAbstractPreaggregatedIO {
      * @param range
      * @return a map of Locator -> a list of ResultSetFuture
      */
-    protected Map<Locator, List<ResultSetFuture>> selectForLocatorListAndRange(String columnFamilyName, List<Locator> locators, Range range) {
+    protected Map<Locator, List<ResultSetFuture>> selectForLocatorListAndRange(String columnFamilyName,
+                                                                               List<Locator> locators,
+                                                                               Range range) {
         Map<Locator, List<ResultSetFuture>> locatorFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
         for (Locator locator : locators) {
             List<ResultSetFuture> existing = locatorFuturesMap.get(locator);
@@ -285,26 +393,13 @@ public abstract class DAbstractPreaggregatedIO {
     }
 
     /**
-     * Execute a select statement against the specified column family for a specific
-     * {@link com.rackspacecloud.blueflood.types.Locator} and
-     * {@link com.rackspacecloud.blueflood.types.Range}
-     *
-     * @param locator
-     * @param range
-     * @param granularity
-     * @return
-     */
-    protected List<ResultSetFuture> selectForLocatorRangeGranularity(Locator locator, Range range, Granularity granularity) {
-        String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
-        return selectForLocatorAndRange(columnFamily, locator, range);
-    }
-
-    /**
      *  Give a {@link com.datastax.driver.core.ResultSetFuture}, get
      *  the corresponding data from it and return it as a
      *  Table of locator, long and rollup.
      */
-    protected <T extends Rollup> Table<Locator, Long, T> toLocatorTimestampRollup(List<ResultSetFuture> futures, Locator locator, Granularity granularity) {
+    public <T extends Object> Table<Locator, Long, T> toLocatorTimestampValue( List<ResultSetFuture> futures,
+                                                                               Locator locator,
+                                                                               Granularity granularity ) {
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         for ( ResultSetFuture future : futures ) {
             try {
@@ -313,11 +408,11 @@ public abstract class DAbstractPreaggregatedIO {
                     String key = row.getString(KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
                     Long hash = row.getLong(COLUMN1);
-                    locatorTimestampRollup.put(loc, hash, (T) fromByteBuffer(row.getBytes(VALUE)));
+                    locatorTimestampRollup.put(loc, hash, (T)fromByteBuffer(row.getBytes(VALUE)));
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();
-                LOG.error(String.format("error reading preaggregated metric for locator %s, granularity %s",
+                LOG.error(String.format("error reading metric for locator %s, granularity %s",
                         locator, granularity), ex);
             }
         }

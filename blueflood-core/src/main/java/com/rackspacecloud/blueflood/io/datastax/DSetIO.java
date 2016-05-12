@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write set metrics
  * using Datastax driver.
  */
-public class DSetIO extends DAbstractPreaggregatedIO {
+public class DSetIO extends DAbstractMetricIO {
 
     private SetSerDes serDes = new SetSerDes();
 
@@ -34,15 +34,15 @@ public class DSetIO extends DAbstractPreaggregatedIO {
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
      * representation of a certain Rollup object.
      *
-     * @param rollup
+     * @param value
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
-        if ( ! (rollup instanceof BluefloodSetRollup) ) {
-            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodSetRollup class but got " + rollup.getClass().getSimpleName());
+    protected ByteBuffer toByteBuffer(Object value) {
+        if ( ! (value instanceof BluefloodSetRollup) ) {
+            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodSetRollup class but got " + value.getClass().getSimpleName());
         }
-        BluefloodSetRollup setRollup = (BluefloodSetRollup) rollup;
+        BluefloodSetRollup setRollup = (BluefloodSetRollup) value;
         return serDes.serialize(setRollup);
     }
 

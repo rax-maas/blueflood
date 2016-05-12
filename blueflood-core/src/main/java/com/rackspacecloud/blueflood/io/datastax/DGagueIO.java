@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * This class holds the utility methods to read/write Gauge metrics
  * using Datastax driver.
  */
-public class DGagueIO extends DAbstractPreaggregatedIO {
+public class DGagueIO extends DAbstractMetricIO {
 
     private GaugeSerDes serDes = new GaugeSerDes();
 
@@ -34,15 +34,15 @@ public class DGagueIO extends DAbstractPreaggregatedIO {
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
      * representation of a certain Rollup object.
      *
-     * @param rollup
+     * @param value
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Rollup rollup) {
-        if ( ! (rollup instanceof BluefloodGaugeRollup) ) {
-            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodGaugeRollup class but got " + rollup.getClass().getSimpleName());
+    protected ByteBuffer toByteBuffer(Object value) {
+        if ( ! (value instanceof BluefloodGaugeRollup) ) {
+            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodGaugeRollup class but got " + value.getClass().getSimpleName());
         }
-        BluefloodGaugeRollup gaugeRollup = (BluefloodGaugeRollup) rollup;
+        BluefloodGaugeRollup gaugeRollup = (BluefloodGaugeRollup) value;
         return serDes.serialize(gaugeRollup);
     }
 
