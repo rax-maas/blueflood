@@ -215,11 +215,11 @@ public final class Granularity {
      *                              clarify. The exact purpose of this
      *                              parameter is not yet fully understood.
      * @param ttlComparisonClock The GEOMETRIC algorithm checks the specified
-     *                            interval against a TTL. Normally, the TTL is
-     *                            measured relative to the current point in
-     *                            time. For testing purposes, an alternate time
-     *                            source can be provided, to measure the TTL
-     *                            relative to a different point in time.
+     *                           interval against a TTL. Normally, the TTL is
+     *                           measured relative to the current point in
+     *                           time. For testing purposes, an alternate time
+     *                           source can be provided, to measure the TTL
+     *                           relative to a different point in time.
      * @return
      */
     public static Granularity granularityFromPointsInInterval(String tenantid, long from, long to, int points, String algorithm, long assumedIntervalMillis, Clock ttlComparisonClock) {
