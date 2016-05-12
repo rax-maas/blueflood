@@ -34,15 +34,15 @@ public class DTimerIO extends DAbstractMetricIO {
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
      * representation of a certain Rollup object.
      *
-     * @param rollup
+     * @param value
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Object rollup) {
-        if ( ! (rollup instanceof BluefloodTimerRollup) ) {
-            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodTimerRollup class but got " + rollup.getClass().getSimpleName());
+    protected ByteBuffer toByteBuffer(Object value) {
+        if ( ! (value instanceof BluefloodTimerRollup) ) {
+            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodTimerRollup class but got " + value.getClass().getSimpleName());
         }
-        BluefloodTimerRollup TimerRollup = (BluefloodTimerRollup) rollup;
+        BluefloodTimerRollup TimerRollup = (BluefloodTimerRollup) value;
         return serDes.serialize(TimerRollup);
     }
 

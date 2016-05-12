@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
@@ -31,7 +30,6 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -160,7 +158,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
     }
 
     protected Points.Point createPoint( Long timestamp, Object value ) {
-        if( value instanceof Rollup || value instanceof String)
+        if( value instanceof Rollup )
             return new Points.Point( timestamp, value);
         else
             return new Points.Point( timestamp, new SimpleNumber( value ) );

@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -475,7 +474,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
     }
 
     @Test
-    public void testSingleNumericMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleNumericMetricDataToRollup() throws IOException {
 
         astyanaxMetricsRW.insertMetrics( numericMap.values() );
 
@@ -505,7 +504,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
      * getDataToRollup() should never be called on the String table.
      */
     @Test( expected = IOException.class )
-    public void testSingleStringMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleStringMetricDataToRollup() throws IOException {
 
         astyanaxMetricsRW.insertMetrics( stringMap.values() );
 
@@ -523,7 +522,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
      * getDataToRollup() should never be called on the String table.
      */
     @Test( expected = IOException.class )
-    public void testSingleBooleanMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleBooleanMetricDataToRollup() throws IOException {
 
         astyanaxMetricsRW.insertMetrics( boolMap.values() );
 

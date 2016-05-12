@@ -33,15 +33,15 @@ public class DCounterIO extends DAbstractMetricIO {
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
      * representation of a certain Rollup object.
      *
-     * @param rollup
+     * @param value
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Object rollup) {
-        if ( ! (rollup instanceof BluefloodCounterRollup) ) {
-            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodCounterRollup class but got " + rollup.getClass().getSimpleName());
+    protected ByteBuffer toByteBuffer(Object value) {
+        if ( ! (value instanceof BluefloodCounterRollup) ) {
+            throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodCounterRollup class but got " + value.getClass().getSimpleName());
         }
-        BluefloodCounterRollup counterRollup = (BluefloodCounterRollup) rollup;
+        BluefloodCounterRollup counterRollup = (BluefloodCounterRollup) value;
         return serDes.serialize(counterRollup);
     }
 

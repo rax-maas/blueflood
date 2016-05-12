@@ -2,7 +2,6 @@ package com.rackspacecloud.blueflood.io;
 
 import java.util.Map;
 
-import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -474,7 +473,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     }
 
     @Test
-    public void testSingleNumericMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleNumericMetricDataToRollup() throws IOException {
 
         datastaxMetricsRW.insertMetrics( numericMap.values() );
 
@@ -501,7 +500,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     }
 
     @Test( expected = IOException.class )
-    public void testSingleStringMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleStringMetricDataToRollup() throws IOException {
 
         datastaxMetricsRW.insertMetrics( stringMap.values() );
 
@@ -516,7 +515,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     }
 
     @Test( expected = IOException.class )
-    public void testSingleBooleanMetricDataToRollup() throws IOException, CacheException {
+    public void testSingleBooleanMetricDataToRollup() throws IOException {
 
         datastaxMetricsRW.insertMetrics( boolMap.values() );
 
@@ -574,33 +573,6 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
                     expectedMetric.getMetricValue(),
                     rollup.getMinValue().toLong() );
         }
-    }
-
-    // This is maintaining broken functionality from astyanax.  You can't put a rollup into metrics_full,
-    // but astyanax allows you to.  However, when you attempt to read it, you get 0 points.
-    @Test
-    public void testInsertNumericRollupFull() throws IOException {
-
-        Map.Entry<Locator, IMetric> entry = numericMap.entrySet().iterator().next();
-        Locator locator = entry.getKey();
-
-        List<SingleRollupWriteContext> cxts = new ArrayList<SingleRollupWriteContext>();
-
-        cxts.add( createSingleRollupWriteContext( Granularity.FULL, entry.getValue() ) );
-
-        datastaxMetricsRW.insertRollups( cxts );
-
-        // read with astyanax
-        MetricData metricData = astyanaxMetricsRW.getDatapointsForRange(
-                locator,
-                getRangeFromMinAgoToNow(5),
-                Granularity.FULL );
-
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), metricData );
-
-        Points points = metricData.getData();
-        Map<Long, Points.Point> pointMap = points.getPoints();
-        assertEquals( String.format( "no points for locator %s", locator ), 0, pointMap.values().size() );
     }
 
     // no insertRollups for strings & booleans

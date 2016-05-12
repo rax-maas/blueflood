@@ -69,14 +69,14 @@ public class DEnumIOIntegrationTest extends IntegrationTestBase {
             List<ResultSetFuture> results = dEnumIO.selectForLocatorAndRange(CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME, locator, range);
             Assert.assertEquals("ResultSetFuture list size", 2, results.size());
 
-            Table<Locator, Long, Object> locatorRollup = dEnumIO.toLocatorTimestampValue( results, locator, Granularity.FULL );
-            Map<Long, Object> resultMap = locatorRollup.row(locator);
+            Table<Locator, Long, Rollup> locatorRollup = dEnumIO.toLocatorTimestampValue( results, locator, Granularity.FULL );
+            Map<Long, Rollup> resultMap = locatorRollup.row(locator);
 
             List<IMetric> expectedMetrics = locatorToMetrics.get(locator);
             Assert.assertEquals("rollup size", expectedMetrics.size(), resultMap.size());
 
             IMetric expectedMetric = expectedMetrics.get(0);
-            Rollup resultRollup = (Rollup)resultMap.get(expectedMetric.getCollectionTime());
+            Rollup resultRollup = resultMap.get(expectedMetric.getCollectionTime());
             Assert.assertEquals("rollup object for locator " + locator, expectedMetric.getMetricValue(), resultRollup);
         }
     }

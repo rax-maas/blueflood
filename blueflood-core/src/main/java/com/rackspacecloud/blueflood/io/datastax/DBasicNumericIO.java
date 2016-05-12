@@ -8,21 +8,21 @@ import java.nio.ByteBuffer;
 
 
 /**
- * This class holds the utility methods to read/write basic numeric metrics
- * using Datastax driver.
+ * This class holds the utility methods to read/write rolled up basic numeric values using
+ * {@link com.rackspacecloud.blueflood.types.BasicRollup}.
  */
 public class DBasicNumericIO extends DAbstractMetricIO {
 
     private BasicRollupSerDes serDes = new BasicRollupSerDes();
 
     @Override
-    protected ByteBuffer toByteBuffer( Object rollup ) {
+    protected ByteBuffer toByteBuffer( Object value ) {
 
-        if ( ! (rollup instanceof BasicRollup ) ) {
-            throw new IllegalArgumentException("toByteBuffer(): expecting BasicRollup class but got " + rollup.getClass().getSimpleName());
+        if ( ! (value instanceof BasicRollup ) ) {
+            throw new IllegalArgumentException("toByteBuffer(): expecting BasicRollup class but got " + value.getClass().getSimpleName());
         }
 
-        return serDes.serialize( (BasicRollup)rollup );
+        return serDes.serialize( (BasicRollup)value );
     }
 
     @Override

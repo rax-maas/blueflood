@@ -138,7 +138,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
     public Table<Locator, Long, BluefloodEnumRollup> getEnumRollupsForLocators(final List<Locator> locators,
                                                                                String columnFamily,
                                                                                Range range) {
-        return getRollupsForLocators(locators, columnFamily, range);
+        return getValuesForLocators( locators, columnFamily, range );
     }
 
     /**
@@ -146,17 +146,17 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      * of the specified {@link com.rackspacecloud.blueflood.types.Rollup}
      * object
      *
-     * @param rollup
+     * @param value
      * @return
      */
     @Override
-    protected ByteBuffer toByteBuffer(Object rollup) {
-        if ( ! (rollup instanceof BluefloodEnumRollup) ) {
+    protected ByteBuffer toByteBuffer(Object value) {
+        if ( ! (value instanceof BluefloodEnumRollup) ) {
             // or throw new ShouldNotHappenException()
             throw new IllegalArgumentException("toByteBuffer(): expecting BluefloodEnumRollup class but got "
-                    + rollup.getClass().getSimpleName());
+                    + value.getClass().getSimpleName());
         }
-        BluefloodEnumRollup enumRollup = (BluefloodEnumRollup) rollup;
+        BluefloodEnumRollup enumRollup = (BluefloodEnumRollup) value;
         return serDes.serialize(enumRollup);
     }
 
@@ -168,7 +168,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
      * @return
      */
     @Override
-    protected Object fromByteBuffer(ByteBuffer byteBuffer) {
+    protected BluefloodEnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
         return serDes.deserialize(byteBuffer);
     }
 

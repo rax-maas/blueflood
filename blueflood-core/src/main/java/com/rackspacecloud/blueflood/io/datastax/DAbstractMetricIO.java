@@ -79,6 +79,8 @@ public abstract class DAbstractMetricIO {
     protected final PreparedStatement insertToMetricsBasic240MStatement;
     protected final PreparedStatement insertToMetricsBasic1440MStatement;
 
+    private final PreparedStatement selectFromMetricsStringForRangeStatement;
+
     private final PreparedStatement selectFromMetricsBasicFullForRangeStatement;
     private final PreparedStatement selectFromMetricsBasic5MForRangeStatement;
     private final PreparedStatement selectFromMetricsBasic20MForRangeStatement;
@@ -181,6 +183,9 @@ public abstract class DAbstractMetricIO {
         //
         // Basic select statements
         //
+        selectFromMetricsStringForRangeStatement = session.prepare(
+                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
+                        CassandraModel.CF_METRICS_STRING_NAME));
         selectFromMetricsBasicFullForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_FULL_NAME));
@@ -199,6 +204,8 @@ public abstract class DAbstractMetricIO {
         selectFromMetricsBasic1440MForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_1440M_NAME));
+
+        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_STRING_NAME, selectFromMetricsStringForRangeStatement );
 
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_FULL_NAME, selectFromMetricsBasicFullForRangeStatement );
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_5M_NAME, selectFromMetricsBasic5MForRangeStatement );
@@ -252,11 +259,13 @@ public abstract class DAbstractMetricIO {
     protected <T extends Object> Table<Locator, Long, T> getRollupsForLocator(final Locator locator,
                                                                               String columnFamily,
                                                                               Range range) {
-        return getRollupsForLocators(new ArrayList<Locator>() {{ add(locator); }}, columnFamily, range);
+        return getValuesForLocators( new ArrayList<Locator>() {{
+            add( locator );
+        }}, columnFamily, range );
     }
 
     /**
-     * Fetch rollup objects for a list of {@link com.rackspacecloud.blueflood.types.Locator}
+     * Fetch values for a list of {@link com.rackspacecloud.blueflood.types.Locator}
      * from the specified column family and range.
      *
      * This is a base behavior for most rollup types. IO subclasses can override
@@ -267,9 +276,9 @@ public abstract class DAbstractMetricIO {
      * @param range
      * @return
      */
-    protected <T extends Object> Table<Locator, Long, T> getRollupsForLocators(final List<Locator> locators,
+    protected <T extends Object> Table<Locator, Long, T> getValuesForLocators( final List<Locator> locators,
                                                                                String columnFamily,
-                                                                               Range range) {
+                                                                               Range range ) {
 
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
 
@@ -287,12 +296,12 @@ public abstract class DAbstractMetricIO {
 
     /**
      * Provides a way for the sub class to get a {@link java.nio.ByteBuffer}
-     * representation of a certain Rollup object.
+     * representation of a certain value.
      *
-     * @param rollup
+     * @param value
      * @return
      */
-    protected abstract <T extends Object> ByteBuffer toByteBuffer(T rollup);
+    protected abstract <T extends Object> ByteBuffer toByteBuffer(T value);
 
     /**
      * Provides a way for the sub class to construct the right Rollup

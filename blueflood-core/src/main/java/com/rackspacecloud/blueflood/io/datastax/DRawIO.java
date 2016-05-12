@@ -7,14 +7,16 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.metrics.RawSerDes;
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
+import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.types.DataType;
-import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Range;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
@@ -22,19 +24,24 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 /**
  * This class deals with writing boolean, numeric and string values to the metrics_full & metrics_string column
  * families using the Datastax driver.
+ *
+ * This class does not subclass the {@link com.rackspacecloud.blueflood.io.datastax.DAbstractMetricIO} as serializes
+ * its values as a String and not ByteBuffer like the rest of the IO objects.
+ *
  */
 public class DRawIO {
 
     private static final Logger LOG = LoggerFactory.getLogger( DRawIO.class );
 
+    private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     public static final String KEY = "key";
     public static final String COLUMN1 = "column1";
     public static final String VALUE = "value";
 
-    private PreparedStatement putString;
-    private PreparedStatement putNumeric;
-    private PreparedStatement getString;
-    private PreparedStatement getLastString;
+    private final PreparedStatement putString;
+    private final PreparedStatement putNumeric;
+    private final PreparedStatement getString;
+    private final PreparedStatement getLastString;
 
     private RawSerDes serDes = new RawSerDes();
 
@@ -103,7 +110,7 @@ public class DRawIO {
             BoundStatement bound = putString.bind( metric.getLocator().toString(),
                     metric.getCollectionTime(),
                     String.valueOf( metric.getMetricValue() ),
-                    metric.getTtlInSeconds() );
+                    (int) STRING_TTL.toSeconds() );
 
             return DatastaxIO.getSession().executeAsync( bound );
         }
@@ -142,4 +149,19 @@ public class DRawIO {
             ctx.stop();
         }
     }
+
+    public MetricData createMetricDataStringBoolean( ResultSetFuture future, boolean isBoolean, String unit ) {
+        Points points = new Points<String>();
+
+        for ( Row row : future.getUninterruptibly().all() ) {
+
+            Object value = isBoolean ? Boolean.valueOf( row.getString( VALUE ) ) : row.getString( VALUE );
+            points.add( new Points.Point( row.getLong( COLUMN1 ), value ) );
+        }
+
+        MetricData.Type type = isBoolean ? MetricData.Type.BOOLEAN : MetricData.Type.BOOLEAN;
+
+        return new MetricData( points, unit, type );
+    }
+
 }

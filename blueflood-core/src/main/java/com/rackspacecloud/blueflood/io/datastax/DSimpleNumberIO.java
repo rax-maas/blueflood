@@ -14,9 +14,9 @@ public class DSimpleNumberIO extends DAbstractMetricIO {
     private RawSerDes serDes = new RawSerDes();
 
     @Override
-    protected ByteBuffer toByteBuffer( Object rollup ) {
+    protected ByteBuffer toByteBuffer( Object value ) {
 
-        return serDes.serialize( rollup );
+        return serDes.serialize( value );
     }
 
     @Override

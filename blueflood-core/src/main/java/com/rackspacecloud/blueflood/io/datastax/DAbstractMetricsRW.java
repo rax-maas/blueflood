@@ -24,28 +24,19 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
 
-    protected final DCounterIO counterIO = new DCounterIO();
-    protected final DEnumIO enumIO = new DEnumIO();
-    protected final DGagueIO gaugeIO = new DGagueIO();
-    protected final DSetIO setIO = new DSetIO();
-    protected final DTimerIO timerIO = new DTimerIO();
-    protected final LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
-    protected final DBasicNumericIO basicIO = new DBasicNumericIO();
-    protected final DSimpleNumberIO simpleIO = new DSimpleNumberIO();
 
-    // a map of RollupType to its IO class that knows
-    // how to read/write that particular type of rollup
-    protected final Map<RollupType, DAbstractMetricIO> rollupTypeToIO =
-            new HashMap<RollupType, DAbstractMetricIO>() {{
-                put(RollupType.BF_BASIC, basicIO );
-                put(RollupType.COUNTER, counterIO);
-                put(RollupType.ENUM, enumIO);
-                put(RollupType.GAUGE, gaugeIO);
-                put(RollupType.SET, setIO);
-                put(RollupType.TIMER, timerIO);
-            }};
-
-
+    /**
+     * Return the appropriate IO object which interacts with the Cassandra database.
+     *
+     * For Preaggregated Metrics, only rollup type is required.
+     * For Basic Numeric Metrics, the granularity is required as metrics_full is handled differently
+     * than the other granularities.
+     *
+     * @param rollupType
+     * @param gran
+     * @return
+     */
+    protected abstract DAbstractMetricIO getIO( String rollupType, Granularity gran );
 
     /**
      * This method inserts a collection of metrics in the
@@ -53,10 +44,9 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      * objects to the appropriate Cassandra column family
      *
      * @param writeContexts
-     * @throws IOException
      */
     @Override
-    public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws IOException {
+    public void insertRollups(List<SingleRollupWriteContext> writeContexts) {
 
         if (writeContexts.size() == 0) {
             return;
@@ -73,12 +63,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
                 // lookup the right writer
                 RollupType rollupType = writeContext.getRollup().getRollupType();
-                DAbstractMetricIO io = rollupTypeToIO.get(rollupType);
-                if ( io == null ) {
-                    throw new InvalidDataException(
-                            String.format("insertRollups(locator=%s, granularity=%s): unsupported rollupType=%s",
-                                    locator, granularity, rollupType.name()));
-                }
+                DAbstractMetricIO io = getIO( rollupType.name().toLowerCase(), granularity );
 
                 ResultSetFuture future = io.putAsync(locator, writeContext.getTimestamp(), rollup, writeContext.getGranularity(), ttl);
                 futureLocatorMap.put(future, writeContext);
@@ -88,6 +73,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                 try {
                     future.getUninterruptibly().all();
                 } catch (Exception ex) {
+                    Instrumentation.markWriteError();
                     SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
                     LOG.error(String.format("error writing to locator %s, granularity %s", writeContext.getLocator(), writeContext.getGranularity()), ex);
                 }
@@ -129,88 +115,55 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      * @param granularity
      * @return
      */
-    protected Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators,
+    public Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators,
                                                               Range range,
                                                               String columnFamily,
-                                                              Granularity granularity ) {
-        // in this loop, we will fire all the executeAsync() of
-        // various select statements, the collect all of the
-        // ResultSetFutures
-        Map<Locator, List<ResultSetFuture>> locatorToFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
-        Map<Locator, DAbstractMetricIO> locatorIOMap = new HashMap<Locator, DAbstractMetricIO>();
+                                                              Granularity granularity ) throws IOException {
 
-        for (Locator locator : locators) {
-            try {
+        Timer.Context ctx = Instrumentation.getReadTimerContext( columnFamily );
 
+        try {
 
-                String type = metadataCache.get( locator, MetricMetadata.TYPE.name().toLowerCase() );
-                String rType = metadataCache.get( locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase() );
+            // in this loop, we will fire all the executeAsync() of
+            // various select statements, the collect all of the
+            // ResultSetFutures
+            Map<Locator, List<ResultSetFuture>> locatorToFuturesMap = new HashMap<Locator, List<ResultSetFuture>>();
+            Map<Locator, DAbstractMetricIO> locatorIOMap = new HashMap<Locator, DAbstractMetricIO>();
 
-                DAbstractMetricIO io = getIO( locatorIOMap, locator, type, rType, granularity );
+            for (Locator locator : locators) {
+                try {
 
-                // do the query
-                List<ResultSetFuture> selectFutures = io.selectForLocatorAndRange( columnFamily, locator, range );
+                    String rType = metadataCache.get( locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase() );
 
-                // add all ResultSetFutures for a particular locator together
-                List<ResultSetFuture> existing = locatorToFuturesMap.get(locator);
-                if (existing == null) {
-                    existing = new ArrayList<ResultSetFuture>();
-                    locatorToFuturesMap.put(locator, existing);
-                }
-                existing.addAll(selectFutures);
+                    DAbstractMetricIO io = getIO( rType, granularity );
 
-            } catch (CacheException ex) {
+                    // put everything in a map of locator -> io so
+                    // we can use em up later
+                    locatorIOMap.put( locator, io );
+
+                    // do the query
+                    List<ResultSetFuture> selectFutures = io.selectForLocatorAndRange( columnFamily, locator, range );
+
+                    // add all ResultSetFutures for a particular locator together
+                    List<ResultSetFuture> existing = locatorToFuturesMap.get(locator);
+                    if (existing == null) {
+                        existing = new ArrayList<ResultSetFuture>();
+                        locatorToFuturesMap.put(locator, existing);
+                    }
+                    existing.addAll(selectFutures);
+
+                } catch (CacheException ex) {
+                    Instrumentation.markReadError();
                 LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
+                }
             }
+            return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity);
         }
-        return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity);
+        finally {
+
+            ctx.stop();
+        }
     }
-
-    /**
-     * Given a locator, a data type, a rollup type and granularity, return the correct
-     * {@link com.rackspacecloud.blueflood.io.datastax.DAbstractMetricIO} object
-     *
-     * @param locatorIOMap the Locator -> DabstractMetricIO map to add the new returned object to as a side-effect
-     * @param locator
-     * @param dataType
-     * @param rollupType
-     * @param gran
-     * @return
-     */
-    private DAbstractMetricIO getIO( Map<Locator, DAbstractMetricIO> locatorIOMap,
-                                     Locator locator,
-                                     String dataType,
-                                     String rollupType,
-                                     Granularity gran ) {
-
-        DAbstractMetricIO io;
-
-        if( rollupType == null && gran == Granularity.FULL ) {
-
-            io = simpleIO;
-        }
-        else {
-
-            // find out the rollupType for this locator
-            RollupType rType = RollupType.fromString( rollupType );
-
-            // get the right PreaggregatedIO class that can process
-            // this rollupType
-            io = rollupTypeToIO.get(rType);
-        }
-
-
-        if (io == null) {
-            throw new IllegalArgumentException(String.format("dont know how to handle locator=%s with rollupType=%s and type=%s", locator, rollupType, dataType));
-        }
-
-        // put everything in a map of locator -> io so
-        // we can use em up later
-        locatorIOMap.put( locator, io );
-
-        return io;
-    }
-
 
     /**
      * Fetches a {@link com.rackspacecloud.blueflood.types.Points} object for a
@@ -227,28 +180,28 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     public Points getDataToRollup(final Locator locator,
                                   RollupType rollupType,
                                   Range range,
-                                  String columnFamilyName) throws IOException, CacheException {
+                                  String columnFamilyName) throws IOException {
         Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamilyName);
         try {
             // read the rollup object from the proper IO class
-            DAbstractMetricIO io;
+            DAbstractMetricIO io = getIO( rollupType.name().toLowerCase(), CassandraModel.getGranularity( columnFamilyName ) );
 
-            if( columnFamilyName.equals( CassandraModel.CF_METRICS_FULL_NAME) ) {
+            Table<Locator, Long, Object> locatorTimestampRollup = io.getRollupsForLocator( locator, columnFamilyName, range );
 
-                io = simpleIO;
-            }
-            else
-                io = rollupTypeToIO.get(rollupType);
-
-            Table<Locator, Long, Object> locatorTimestampRollup = io.getRollupsForLocator(locator, columnFamilyName, range);
-
-            // transform them to Points
             Points points = new Points();
             for (Table.Cell<Locator, Long, Object> cell : locatorTimestampRollup.cellSet()) {
                 points.add( createPoint( cell.getColumnKey(), cell.getValue()));
             }
             return points;
-        } finally {
+        } catch( Exception e ) {
+
+            Instrumentation.markReadError();
+            LOG.error( String.format( "Unable to read locator=%s rolluptype=%s columnFamilyName=%s for rollup",
+                    locator, rollupType.name(), columnFamilyName ), e );
+
+            throw new IOException( e );
+        }
+        finally {
             ctx.stop();
         }
     }
@@ -276,7 +229,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             try {
 
                 DAbstractMetricIO io = locatorIO.get(locator);
-
 
                 // get ResultSets to a Table of locator, timestamp, rollup
                 Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue( futures, locator, granularity );

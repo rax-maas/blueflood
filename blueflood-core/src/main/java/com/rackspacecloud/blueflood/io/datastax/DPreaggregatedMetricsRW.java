@@ -39,6 +39,25 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
 
     private static final Logger LOG = LoggerFactory.getLogger(DPreaggregatedMetricsRW.class);
 
+    private final DCounterIO counterIO = new DCounterIO();
+    private final DEnumIO enumIO = new DEnumIO();
+    private final DGagueIO gaugeIO = new DGagueIO();
+    private final DSetIO setIO = new DSetIO();
+    private final DTimerIO timerIO = new DTimerIO();
+    private final LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+
+    // a map of RollupType to its IO class that knows
+    // how to read/write that particular type of rollup
+    private final Map<RollupType, DAbstractMetricIO> rollupTypeToIO =
+            new HashMap<RollupType, DAbstractMetricIO>() {{
+                put(RollupType.COUNTER, counterIO);
+                put(RollupType.ENUM, enumIO);
+                put(RollupType.GAUGE, gaugeIO);
+                put(RollupType.SET, setIO);
+                put(RollupType.TIMER, timerIO);
+            }};
+
+
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family
      *
@@ -128,17 +147,37 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                                                           Range range,
                                                           Granularity granularity) throws IOException {
 
-        Timer.Context ctx = Instrumentation.getReadTimerContext(
-                granularity.name() );
-
-        try {
-
             String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
 
             return getDatapointsForRange( locators, range, columnFamily, granularity );
+    }
 
-        } finally {
-            ctx.stop();
+    /**
+     * Return the appropriate IO object which interacts with the Cassandra database.
+     *
+     * For Preaggregated Metrics, only rollup type is required.
+     * For Basic Numeric Metrics, the granularity is required as metrics_full is handled differently
+     * than the other granularities.
+     *
+     * @param rollupType
+     * @param granularity
+     * @return
+     */
+    @Override
+    public DAbstractMetricIO getIO( String rollupType, Granularity granularity ) {
+
+        // find out the rollupType for this locator
+        RollupType rType = RollupType.fromString( rollupType );
+
+        // get the right PreaggregatedIO class that can process
+        // this rollupType
+        DAbstractMetricIO io = rollupTypeToIO.get( rType );
+
+        if (io == null) {
+            throw new InvalidDataException( String.format("getIO: unsupported rollupType=%s", rollupType));
         }
+
+        return io;
     }
 }
+
