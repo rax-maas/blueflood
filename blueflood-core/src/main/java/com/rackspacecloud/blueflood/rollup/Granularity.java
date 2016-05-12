@@ -209,6 +209,11 @@ public final class Granularity {
      * @param assumedIntervalMillis FULL resolution is tricky because we don't
      *                              know the period of check in question.
      *                              Assume the minimum period and go from there.
+     *                              NOTE: This value and description was from a
+     *                              previous version of the software, and the
+     *                              original author is no longer available to
+     *                              clarify. The exact purpose of this
+     *                              parameter is not yet fully understood.
      * @param ttlComparisonClock The GEOMETRIC algorithm checks the specified
      *                            interval against a TTL. Normally, the TTL is
      *                            measured relative to the current point in
