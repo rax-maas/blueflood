@@ -99,7 +99,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
             requestCount.inc();
             final String tenantId = request.getHeader("tenantId");
-            JSONMetricsContainer jsonMetricsContainer = null;
+            JSONMetricsContainer jsonMetricsContainer;
+            List<Metric> metrics;
+
             final Timer.Context jsonTimerContext = jsonTimer.time();
 
             final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
@@ -107,10 +109,21 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 jsonMetricsContainer = createContainer(body, tenantId);
 
                 if (jsonMetricsContainer == null) {
-                    log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+                    log.warn(ctx.getChannel().getRemoteAddress() + " Failed to create jsonMetricsContainer.");
                     DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
                     return;
+                } else if (jsonMetricsContainer.getJsonMetrics().isEmpty()) {
+                    log.warn(ctx.getChannel().getRemoteAddress() + " Json metrics is empty, no valid json metrics to parse.");
+                    DefaultHandler.sendResponse(ctx, request, "Error converting JSON payload to metric objects", HttpResponseStatus.BAD_REQUEST);
+                    return;
                 }
+
+                if (jsonMetricsContainer.areDelayedMetricsPresent()) {
+                    Tracker.getInstance().trackDelayedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetrics());
+                }
+
+                metrics = jsonMetricsContainer.getValidMetrics();
+                forceTTLsIfConfigured(metrics);
 
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
@@ -120,6 +133,12 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 log.warn("Exception parsing content", e);
                 DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
                 return;
+            } catch (InvalidDataException ex) {
+                // todo: we should measure these. if they spike, we track down the bad client.
+                // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
+                log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
+                DefaultHandler.sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+                return;
             } catch (IOException e) {
                 log.warn("IO Exception parsing content", e);
                 DefaultHandler.sendResponse(ctx, request, "Cannot parse content", HttpResponseStatus.BAD_REQUEST);
@@ -127,31 +146,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             } catch (Exception e) {
                 log.warn("Other exception while trying to parse content", e);
                 DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                return;
-            }
-
-            List<Metric> metrics;
-            try {
-                metrics = jsonMetricsContainer.getValidMetrics();
-                forceTTLsIfConfigured(metrics);
-
-                if (jsonMetricsContainer.areDelayedMetricsPresent()) {
-                    Tracker.getInstance().trackDelayedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetrics());
-                }
-            } catch (InvalidDataException ex) {
-                // todo: we should measure these. if they spike, we track down the bad client.
-                // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
-                log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
-                DefaultHandler.sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
-                return;
-            } catch (Exception e) {
-                // todo: when you see these in logs, go and fix them (throw InvalidDataExceptions) so they can be reduced
-                // to single-line log statements.
-                log.warn("Exception converting JSON container to metric objects", e);
-                // This could happen if clients send BigIntegers as metric values. BF doesn't handle them. So let's send a
-                // BAD REQUEST message until we start handling BigIntegers.
-                DefaultHandler.sendResponse(ctx, request, "Error converting JSON payload to metric objects",
-                        HttpResponseStatus.BAD_REQUEST);
                 return;
             } finally {
                 jsonTimerContext.stop();
@@ -183,10 +177,12 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 if( !errors.isEmpty() ) {
                     // has some validation errors, return MULTI_STATUS
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                    return;
                 }
                 else {
                     // no validation error, return OK
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                    return;
                 }
 
             } catch (TimeoutException e) {

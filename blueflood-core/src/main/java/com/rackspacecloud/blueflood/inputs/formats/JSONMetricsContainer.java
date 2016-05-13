@@ -29,16 +29,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class JSONMetricsContainer {
-    private final String tenantId;
-    private final List<JSONMetric> jsonMetrics;
 
     private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
     private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
 
-    private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-    private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
-
+    private final String tenantId;
+    private final List<JSONMetric> jsonMetrics;
     private final List<Metric> metrics = new ArrayList<Metric>();
     private final List<Metric> delayedMetrics = new ArrayList<Metric>();
     private final List<String> errors = new ArrayList<String>();
@@ -55,6 +52,10 @@ public class JSONMetricsContainer {
 
     public List<Metric> getValidMetrics() {
         return metrics;
+    }
+
+    public List<JSONMetric> getJsonMetrics() {
+        return jsonMetrics;
     }
 
     private List<Metric> processJson() {
