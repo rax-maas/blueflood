@@ -128,13 +128,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
         }
 
-        /* TODO:  Fix with CMD-1001
         // test value
         double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
         double rollMean = meanOfPointCollectionRoll( points.values() );
 
         Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-        */
     }
 
     @Test
@@ -153,13 +151,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
         }
 
-        /* TODO:  Fix with CMD-1001
         // test value
         double fullMean = fullPointsMean( metric, locator, startRollupMS, endMS );
         double rollMean = meanOfPointCollectionRoll( points.values() );
 
         Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-        */
     }
 
     @Test
@@ -181,13 +177,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
             Assert.assertEquals(repairedRanges.next().getStart(), timestamp.longValue() );
         }
 
-        /* TODO:  Fix with CMD-1001
         // test value
         double fullMean = fullPointsMean( metric, locator, start, endMS );
         double rollMean = meanOfPointCollectionRoll( points.values() );
 
         Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-        */
     }
 
     @Test
@@ -208,13 +202,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
             }
 
-            /* TODO:  Fix with CMD-1001
             // test value
             double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
             double rollMean = meanOfPointCollectionRoll( points.values() );
 
             Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-            */
         }
     }
 
@@ -236,13 +228,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
             }
 
-            /* TODO:  Fix with CMD-1001
             // test value
             double fullMean = fullPointsMean( metric, locator, startMS, endRollupMS );
             double rollMean = meanOfPointCollectionRoll( points.values() );
 
             Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-            */
         }
     }
 
@@ -267,13 +257,11 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                 Assert.assertEquals( repairedRanges.next().getStart(), timestamp.longValue() );
             }
 
-            /* TODO:  Fix with CMD-1001
             // test value
             double fullMean = fullPointsMean( metric, locator, start, endMS );
             double rollMean = meanOfPointCollectionRoll( points.values() );
 
             Assert.assertEquals( rollMean, fullMean, getEpsilon( fullMean, rollMean ) );
-            */
         }
     }
 
