@@ -426,8 +426,11 @@ class BluefloodClient(object):
       #  if there are more than one/step.  However that will only happen when we have full res metrics
       #  with frequencies less than 60 seconds.  And since Graphite/Whisper doesn't seem to do that
       #  this approach seems to better emulate the results produced by Graphite
+      logger.debug("TimeStamp ts --> " + str(ts))
       while self.current_datapoint_passed(v_iter, ts):
+        logger.debug("v_iter before --> "+ json.dumps(v_iter))
         v_iter = v_iter[1:]
+        logger.debug("v_iter after --> " + json.dumps(v_iter))
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(data_key.get_datapoints(v_iter[0]))
         if current_fixup != None:
@@ -610,6 +613,8 @@ class NonNestedDataKey(object):
     if not self.exists(value):
       return None
     else:
+      logger.debug("self.key1 --> " + json.dumps(self.key1))
+      logger.debug("value[self.key1] --> "+json.dumps(value[self.key1]))
       return value[self.key1]
 
 class NestedDataKey(object):
