@@ -14,11 +14,13 @@ import Queue
 import threading
 
 import logging
-import logging.handlers
 
 logger = logging.getLogger('blueflood_finder')
-handler = logging.handlers.SysLogHandler(address = '/var/log/blueflood_finder')
+handler = logging.FileHandler('/var/log/blueflood_finder.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
 logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
