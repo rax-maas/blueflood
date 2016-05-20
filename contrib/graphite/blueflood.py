@@ -14,8 +14,11 @@ import Queue
 import threading
 
 import logging
+import logging.handlers
 
 logger = logging.getLogger('blueflood_finder')
+handler = logging.handlers.SysLogHandler(address = '/var/log/blueflood_finder')
+logger.addHandler(handler)
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -498,7 +501,9 @@ class BluefloodClient(object):
     for n in nodes:
       metrics_key, data_key = self.gen_keys(n, metrics)
       if metrics_key:
+        logger.debug("Values --> " + json.dumps(metrics[metrics_key]))
         dictionary[n.path] = self.process_path(metrics[metrics_key], start_time, real_end_time, step, data_key)
+        logger.debug("Dictionary --> " + json.dumps(dictionary))
     return dictionary
 
   def group_has_room(self, cur_metric, cur_path, tot_len, remaining_paths):
@@ -578,6 +583,9 @@ class BluefloodClient(object):
       real_end_time = end_time + step
       dictionary = self.gen_dict(nodes, responses, start_time, real_end_time, step)
       time_info = (start_time, real_end_time, step)
+      logger.debug("start_time --> " + str(start_time))
+      logger.debug("real_end_time --> " + str(real_end_time))
+      logger.debug("step --> " + str(step))
       return (time_info, dictionary)
 
     except Exception as e:
