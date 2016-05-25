@@ -31,4 +31,4 @@ elasticsearch:
 graphite-api:
   image: goru97/graphite-api
   links:
-    -blueflood:BLUEFLOOD
+    - blueflood:BLUEFLOOD
