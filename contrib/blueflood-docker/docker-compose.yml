@@ -30,5 +30,10 @@ elasticsearch:
 
 graphite-api:
   image: goru97/graphite-api
+  ports:
+        - "8888:8888"
   links:
     - blueflood:BLUEFLOOD
+  environment:
+    - TENANT_ID=123 # Give your Tenant Id Here
+    - GRAFANA_URLS=http://127.0.0.1:3000 #Comma seperated list of Grafana servers using graphite api
