@@ -37,6 +37,8 @@ blueflood:
   apikey: $RAX_APIKEY                     
   authentication_module: rax_auth
   authentication_class: BluefloodAuth
+  enable_submetrics: true
+  submetric_aliases: { "_sum": 'sum' }
   urls:
     - $BLUEFLOOD_QUERY_URL
 EOL
