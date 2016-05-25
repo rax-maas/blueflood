@@ -16,11 +16,6 @@ import threading
 import logging
 
 logger = logging.getLogger('blueflood_finder')
-handler = logging.FileHandler('/var/log/blueflood_finder.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
 
 try:
     from graphite_api.intervals import Interval, IntervalSet
@@ -426,11 +421,8 @@ class BluefloodClient(object):
       #  if there are more than one/step.  However that will only happen when we have full res metrics
       #  with frequencies less than 60 seconds.  And since Graphite/Whisper doesn't seem to do that
       #  this approach seems to better emulate the results produced by Graphite
-      logger.debug("TimeStamp ts --> " + str(ts))
       while self.current_datapoint_passed(v_iter, ts):
-        logger.debug("v_iter before --> "+ json.dumps(v_iter))
         v_iter = v_iter[1:]
-        logger.debug("v_iter after --> " + json.dumps(v_iter))
       if self.current_datapoint_valid(v_iter, data_key, ts, step):
         ret_arr.append(data_key.get_datapoints(v_iter[0]))
         if current_fixup != None:
@@ -506,9 +498,7 @@ class BluefloodClient(object):
     for n in nodes:
       metrics_key, data_key = self.gen_keys(n, metrics)
       if metrics_key:
-        logger.debug("Values --> " + json.dumps(metrics[metrics_key]))
         dictionary[n.path] = self.process_path(metrics[metrics_key], start_time, real_end_time, step, data_key)
-        logger.debug("Dictionary --> " + json.dumps(dictionary))
     return dictionary
 
   def group_has_room(self, cur_metric, cur_path, tot_len, remaining_paths):
@@ -588,9 +578,6 @@ class BluefloodClient(object):
       real_end_time = end_time + step
       dictionary = self.gen_dict(nodes, responses, start_time, real_end_time, step)
       time_info = (start_time, real_end_time, step)
-      logger.debug("start_time --> " + str(start_time))
-      logger.debug("real_end_time --> " + str(real_end_time))
-      logger.debug("step --> " + str(step))
       return (time_info, dictionary)
 
     except Exception as e:
@@ -613,8 +600,6 @@ class NonNestedDataKey(object):
     if not self.exists(value):
       return None
     else:
-      logger.debug("self.key1 --> " + json.dumps(self.key1))
-      logger.debug("value[self.key1] --> "+json.dumps(value[self.key1]))
       return value[self.key1]
 
 class NestedDataKey(object):
