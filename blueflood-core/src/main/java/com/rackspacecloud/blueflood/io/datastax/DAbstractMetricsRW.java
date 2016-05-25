@@ -24,6 +24,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
 
+    protected final LocatorIO locatorIO = new DLocatorIO();
 
     /**
      * Return the appropriate IO object which interacts with the Cassandra database.
@@ -96,7 +97,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     @Override
     public MetricData getDatapointsForRange(final Locator locator,
                                             Range range,
-                                            Granularity granularity) throws IOException {
+                                            Granularity granularity) {
         Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{ add(locator); }}, range, granularity);
         return result.get(locator);
     }
@@ -118,7 +119,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     public Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators,
                                                               Range range,
                                                               String columnFamily,
-                                                              Granularity granularity ) throws IOException {
+                                                              Granularity granularity ) {
 
         Timer.Context ctx = Instrumentation.getReadTimerContext( columnFamily );
 

@@ -16,8 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.astyanax.serializers.StringSerializer;
-import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotStateSerializer;
+import com.rackspacecloud.blueflood.io.serializers.metrics.SlotStateSerDes;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import org.junit.Assert;
 import org.junit.Test;
@@ -64,8 +63,7 @@ public class SlotStateTest {
     }
 
     private SlotState fromString(String string) {
-        SlotStateSerializer slotSer = SlotStateSerializer.get();
-        StringSerializer stringSer = StringSerializer.get();
-        return slotSer.fromByteBuffer(stringSer.toByteBuffer(string));
+        SlotStateSerDes serDes = new SlotStateSerDes();
+        return serDes.deserialize (string);
     }
 }

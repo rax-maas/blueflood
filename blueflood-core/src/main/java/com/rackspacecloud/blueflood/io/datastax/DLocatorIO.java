@@ -43,9 +43,9 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.ttl;
  * This class uses the Datastax driver to read/write locators from
  * Cassandra metrics_locator Column Family.
  */
-public class DatastaxLocatorIO implements LocatorIO {
+public class DLocatorIO implements LocatorIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastaxLocatorIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DLocatorIO.class);
 
     private static final String KEY = "key";
     private static final String COLUMN1 = "column1";
@@ -54,7 +54,7 @@ public class DatastaxLocatorIO implements LocatorIO {
     private PreparedStatement getValue;
     private PreparedStatement putValue;
 
-    public DatastaxLocatorIO() {
+    public DLocatorIO() {
         createPreparedStatements();
     }
 

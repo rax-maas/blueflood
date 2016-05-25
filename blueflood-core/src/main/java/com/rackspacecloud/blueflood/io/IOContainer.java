@@ -17,16 +17,12 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxExcessEnumIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxLocatorIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxExcessEnumIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxLocatorIO;
-import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
-import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.*;
+import com.rackspacecloud.blueflood.io.datastax.*;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+
+import java.util.List;
 
 /**
  * This class holds the necessary IO classes for a particular driver type.
@@ -45,6 +41,9 @@ public class IOContainer {
     private MetadataIO metadataIO;
     private LocatorIO locatorIO;
     private ExcessEnumIO excessEnumIO;
+    private EnumReaderIO enumReaderIO;
+    private AbstractMetricsRW preAggregatedMetricsRW;
+    private AbstractMetricsRW basicMetricsRW;
 
     // more IO classes to follow
 
@@ -77,10 +76,16 @@ public class IOContainer {
 
         if ( driver == DriverType.DATASTAX ) {
 
+            boolean stringMetricsDropped = configuration.getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
+            List<String> tenantIdsKept = configuration.getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
+
             metadataIO = new DMetadataIO();
             shardStateIO = new DShardStateIO();
-            locatorIO = new DatastaxLocatorIO();
-            excessEnumIO = new DatastaxExcessEnumIO();
+            locatorIO = new DLocatorIO();
+            excessEnumIO = new DExcessEnumIO();
+            enumReaderIO = new DEnumIO();
+            basicMetricsRW = new DBasicMetricsRW(stringMetricsDropped, tenantIdsKept);
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW();
 
         } else {
 
@@ -88,6 +93,9 @@ public class IOContainer {
             shardStateIO = new AstyanaxShardStateIO();
             locatorIO = new AstyanaxLocatorIO();
             excessEnumIO = new AstyanaxExcessEnumIO();
+            enumReaderIO = new AstyanaxEnumIO();
+            basicMetricsRW = new ABasicMetricsRW();
+            preAggregatedMetricsRW = new APreaggregatedMetricsRW();
         }
     }
 
@@ -117,6 +125,52 @@ public class IOContainer {
      */
     public ExcessEnumIO getExcessEnumIO() {
         return excessEnumIO;
+    }
+
+    /**
+     * @return a class for reading Enum
+     */
+    public EnumReaderIO getEnumReaderIO() {
+        return enumReaderIO;
+    }
+
+    /**
+     *
+     * @param enumReaderIO
+     */
+    public void setEnumReaderIO(EnumReaderIO enumReaderIO) {
+        this.enumReaderIO = enumReaderIO;
+    }
+
+    /**
+     * @return a class for reading/writing pre-aggregated metrics
+     */
+    public AbstractMetricsRW getPreAggregatedMetricsRW() {
+        return preAggregatedMetricsRW;
+    }
+
+    /**
+     * Sets the {@link com.rackspacecloud.blueflood.io.MetricsRW}
+     *
+     * @param preAggregatedMetricsRW
+     */
+    public void setPreAggregatedMetricsRW(AbstractMetricsRW preAggregatedMetricsRW) {
+        this.preAggregatedMetricsRW = preAggregatedMetricsRW;
+    }
+
+    /**
+     * @return a class for reading/writing basic metrics
+     */
+    public AbstractMetricsRW getBasicMetricsRW() {
+        return basicMetricsRW;
+    }
+
+    /**
+     *
+     * @param basicMetricsRW
+     */
+    public void setBasicMetricsRW(AbstractMetricsRW basicMetricsRW) {
+        this.basicMetricsRW = basicMetricsRW;
     }
 
     /**

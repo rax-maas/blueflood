@@ -192,7 +192,6 @@ public class HttpMetricsIngestionServer {
                             .withMaxPoolSize(WRITE_THREADS)
                             .withSynchronousQueue()
                             .build(),
-                    writer,
                     timeout,
                     bufferedMetrics,
                     context

@@ -21,12 +21,12 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.LocatorsUtils;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
@@ -36,7 +36,6 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -128,20 +127,17 @@ public class RollupRunnable implements Runnable {
                 }
             }
 
+            // first, get the points.
+            AbstractMetricsRW metricsRW;
             try {
-                // first, get the points.
-                // TODO: replace the Astyanax call with:
-                // MetricsRW metricsRW;
-                // if ( rollupType == RollupType.BF_BASIC ) {
-                //    metricsRW = IOContainer.fromConfig().getBasicIO();
-                // } else if ( rollupType == RollupType.BF_HISTORGRAM ) {
-                //    metricsRW = histogram column family differences
-                // } else {
-                //    metricsRW = IOContainer.fromConfig().getPreaggregatedIO();
-                // }
+                metricsRW = LocatorsUtils.getMetricsRWForLocator(rollupLocator);
+
                 // metricsRW.getDataToRollup(locator, rollupType, range, columnFamily)
-                input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
-                        singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
+                input = metricsRW.getDataToRollup(
+                        singleRollupReadContext.getLocator(),
+                        rollupType,
+                        singleRollupReadContext.getRange(),
+                        srcCF.getName());
 
                 if (input.isEmpty()) {
                     noPointsToCalculateRollup.mark();
@@ -157,10 +153,10 @@ public class RollupRunnable implements Runnable {
             rollupBatchWriter.enqueueRollupForWrite(new SingleRollupWriteContext(rollup, singleRollupReadContext, dstCF));
 
             RollupService.lastRollupTime.set(System.currentTimeMillis());
-            //Emit a rollup event to eventemitter
+            //Emit a rollup event to event emitter
             RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
                     new RollupEvent(singleRollupReadContext.getLocator(), rollup,
-                            AstyanaxReader.getUnitString(singleRollupReadContext.getLocator()),
+                            metricsRW.getUnitString(singleRollupReadContext.getLocator()),
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Exception e) {
@@ -175,7 +171,7 @@ public class RollupRunnable implements Runnable {
         }
     }
 
-    // dertmine which DataType to use for serialization.
+    // determine which DataType to use for serialization.
     public static Rollup.Type getRollupComputer(RollupType srcType, Granularity srcGran) {
         switch (srcType) {
             case COUNTER:

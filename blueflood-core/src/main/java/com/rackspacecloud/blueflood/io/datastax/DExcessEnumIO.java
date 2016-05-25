@@ -40,9 +40,9 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
  * This class uses the Datastax driver to read/write excess enum metrics from
  * Cassandra metrics_excess_enums Column Family.
  */
-public class DatastaxExcessEnumIO implements ExcessEnumIO {
+public class DExcessEnumIO implements ExcessEnumIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastaxExcessEnumIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DExcessEnumIO.class);
 
     private static final String KEY = "key";
     private static final String COLUMN1 = "column1";
@@ -51,7 +51,7 @@ public class DatastaxExcessEnumIO implements ExcessEnumIO {
     private PreparedStatement getValue;
     private PreparedStatement putValue;
 
-    public DatastaxExcessEnumIO() {
+    public DExcessEnumIO() {
         createPreparedStatements();
     }
 

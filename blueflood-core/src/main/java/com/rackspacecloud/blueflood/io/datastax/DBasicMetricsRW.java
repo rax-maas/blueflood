@@ -7,8 +7,6 @@ import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,19 +20,35 @@ import java.util.*;
  */
 public class DBasicMetricsRW extends DAbstractMetricsRW {
 
-    public static final String COLUMN1 = "column1";
-    public static final String VALUE = "value";
-
     private static final Logger LOG = LoggerFactory.getLogger( DBasicMetricsRW.class );
 
-    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty( CoreConfig.STRING_METRICS_DROPPED);
-    private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
-    private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
+    private boolean areStringMetricsDropped;
+    private Set<String> keptTenantIdsSet;
 
     private DRawIO rawIO = new DRawIO();
-    private LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
     private DSimpleNumberIO simpleIO = new DSimpleNumberIO();
     private final DBasicNumericIO basicIO = new DBasicNumericIO();
+
+    /**
+     * Constructor
+     * By default constructing DBasicMetricsRW this way will allow
+     * ingestion of String metrics for all tenants.
+     * See #DBasicMetricsRW(boolean, List) to change the behavior.
+     */
+    public DBasicMetricsRW() {
+        this(false, new ArrayList<String>());
+    }
+
+    /**
+     * Constructor
+     *
+     * @param ignoreStringMetrics
+     * @param tenantIdsKept
+     */
+    public DBasicMetricsRW(boolean ignoreStringMetrics, List<String> tenantIdsKept) {
+        this.areStringMetricsDropped = ignoreStringMetrics;
+        this.keptTenantIdsSet  = new HashSet<String>(tenantIdsKept);
+    }
 
     /**
      * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} objects
@@ -108,7 +122,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * @return
      */
     @Override
-    public Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators, Range range, Granularity gran ) throws IOException {
+    public Map<Locator, MetricData> getDatapointsForRange( List<Locator> locators, Range range, Granularity gran ) {
 
         List<Locator> unknowns = new ArrayList<Locator>();
         List<Locator> strings = new ArrayList<Locator>();
@@ -120,6 +134,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
             Object type;
             try {
 
+                System.out.println("metadata=" + metadataCache);
                 type = metadataCache.get( locator, DATA_TYPE_CACHE_KEY );
 
             } catch ( CacheException e ) {
@@ -303,7 +318,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     private Map<Locator, MetricData> getNumericOrStringDataForRange( List<Locator> locators,
                                                                      Range range,
                                                                      String columnFamily,
-                                                                     Granularity gran ) throws IOException {
+                                                                     Granularity gran ) {
 
         Instrumentation.markScanAllColumnFamilies();
 

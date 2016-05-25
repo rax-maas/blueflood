@@ -19,11 +19,13 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
+import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,12 +90,22 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
             }
 
             for (IMetric m : list) {
-                if (!AstyanaxWriter.isLocatorCurrent(m.getLocator())) {
+                if (!isLocatorCurrent(m)) {
                     willIndex.add(m);
                 }
             }
         }
         return willIndex;
+    }
+
+    private static boolean isLocatorCurrent(IMetric m) {
+        Locator locator = m.getLocator();
+        RollupType rollupType = m.getRollupType();
+        if ( rollupType == null || rollupType == RollupType.BF_BASIC ) {
+            return IOContainer.fromConfig().getBasicMetricsRW().isLocatorCurrent(locator);
+        } else {
+            return IOContainer.fromConfig().getPreAggregatedMetricsRW().isLocatorCurrent(locator);
+        }
     }
     
     

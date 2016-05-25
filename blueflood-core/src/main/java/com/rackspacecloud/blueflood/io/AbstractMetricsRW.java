@@ -61,7 +61,9 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @param loc
      * @return
      */
-    protected synchronized boolean isLocatorCurrent(Locator loc) {
+    // I don't like making this public, but currently DiscoveryWriter
+    // calls this
+    public synchronized boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
@@ -105,7 +107,9 @@ public abstract class AbstractMetricsRW implements MetricsRW {
     }
 
     // TODO: can this move to MetadataCache?
-    protected String getUnitString(Locator locator) {
+    // I don't like making this public, but currently RollupRunnable
+    // calls this
+    public String getUnitString(Locator locator) {
         String unitString = Util.UNKNOWN;
         // Only grab units from cassandra, if we have to
         if (!Util.shouldUseESForUnits()) {

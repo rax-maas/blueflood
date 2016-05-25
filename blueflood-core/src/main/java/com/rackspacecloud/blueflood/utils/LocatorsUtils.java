@@ -16,7 +16,18 @@
 
 package com.rackspacecloud.blueflood.utils;
 
+import com.rackspacecloud.blueflood.cache.MetadataCache;
+import com.rackspacecloud.blueflood.exceptions.CacheException;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.MetricMetadata;
+import com.rackspacecloud.blueflood.types.RollupType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +37,11 @@ import java.util.List;
  */
 public class LocatorsUtils {
 
+    private static final Logger LOG = LoggerFactory.getLogger(LocatorsUtils.class);
+    private static final MetadataCache metadataCache = MetadataCache.getInstance();
+
+    private static final String rollupTypeCacheKey = MetricMetadata.ROLLUP_TYPE.toString().toLowerCase();
+
     public static List<String> toStringList(final List<Locator> locators) {
         List<String> locatorStrs = new ArrayList<String>() {{
             for (Locator locator : locators) {
@@ -33,5 +49,23 @@ public class LocatorsUtils {
             }
         }};
         return locatorStrs;
+    }
+
+    /**
+     * For a particular locator, determine what is the proper class to do
+     * read/write with and return that
+     *
+     * @param locator
+     * @return
+     */
+    public static AbstractMetricsRW getMetricsRWForLocator(Locator locator) throws CacheException {
+
+        RollupType rollupType = RollupType.fromString(metadataCache.get(locator, rollupTypeCacheKey));
+
+        if (rollupType == null || rollupType == RollupType.BF_BASIC ) {
+            return IOContainer.fromConfig().getBasicMetricsRW();
+        } else {
+            return IOContainer.fromConfig().getPreAggregatedMetricsRW();
+        }
     }
 }

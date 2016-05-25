@@ -24,7 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -61,7 +62,6 @@ public class RollupHandler {
     protected static final Timer rollupsCalcOnReadTimerMPlot = Metrics.timer(RollupHandler.class, "Rollups calculation on read - mplot");
     protected final Histogram numFullPointsReturned = Metrics.histogram(RollupHandler.class, "Full res points returned");
     protected final Histogram numRollupPointsReturned = Metrics.histogram(RollupHandler.class, "Rollup points returned");
-    protected final Histogram numHistogramPointsReturned = Metrics.histogram(RollupHandler.class, "Histogram points returned");
     private static final Meter exceededQueryTimeout = Metrics.meter(RollupHandler.class, "Batched Metrics Query Duration Exceeded Timeout");
     private static final Histogram queriesSizeHist = Metrics.histogram(RollupHandler.class, "Total queries");
 
@@ -76,7 +76,7 @@ public class RollupHandler {
     private ListeningExecutorService createRepairPointsExecutor = null;
     /*
       Timeout for rollups on read applicable only when operations are done async. for sync rollups on read
-      it will be the astyanax operation timeout.
+      it will be the driver operation timeout.
      */
     private TimeValue rollupOnReadTimeout = new TimeValue(
                                                 Configuration.getInstance().getIntegerProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS),
@@ -166,7 +166,8 @@ public class RollupHandler {
                  }
              });
         }
-        final Map<Locator,MetricData> metricDataMap = AstyanaxReader.getInstance().getDatapointsForRange(
+        AbstractMetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+        final Map<Locator,MetricData> metricDataMap = metricsRW.getDatapointsForRange(
                 locators,
                 new Range(g.snapMillis(from), to),
                 g);
@@ -391,7 +392,8 @@ public class RollupHandler {
         for ( Range r : ranges ) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
-                MetricData data = AstyanaxReader.getInstance().getDatapointsForRange( locator, r, Granularity.FULL );
+                AbstractMetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+                MetricData data = metricsRW.getDatapointsForRange(locator, r, Granularity.FULL);
                 cRead.stop();
 
                 Points dataToRoll = data.getData();

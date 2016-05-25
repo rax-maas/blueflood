@@ -44,7 +44,6 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     private final DGagueIO gaugeIO = new DGagueIO();
     private final DSetIO setIO = new DSetIO();
     private final DTimerIO timerIO = new DTimerIO();
-    private final LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
 
     // a map of RollupType to its IO class that knows
     // how to read/write that particular type of rollup
@@ -145,7 +144,7 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     @Override
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators,
                                                           Range range,
-                                                          Granularity granularity) throws IOException {
+                                                          Granularity granularity) /*throws IOException*/ {
 
             String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
 

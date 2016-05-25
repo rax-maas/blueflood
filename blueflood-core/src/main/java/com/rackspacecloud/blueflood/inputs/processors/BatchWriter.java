@@ -19,11 +19,14 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.IMetricsWriter;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -36,9 +39,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, ListenableFuture<List<Boolean>>> {
         
@@ -51,15 +52,30 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
     private final TimeValue timeout;
     private final Counter bufferedMetrics;
     private final IngestionContext context;
+
+    private final AbstractMetricsRW basicMetricsRW;
+    private final AbstractMetricsRW preAggregeatedMetricsRW;
     
-    private final IMetricsWriter writer;
-    
-    public BatchWriter(ThreadPoolExecutor threadPool, IMetricsWriter writer, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
+    public BatchWriter(ThreadPoolExecutor threadPool, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
+        this(threadPool, timeout, bufferedMetrics,
+                context, IOContainer.fromConfig().getBasicMetricsRW(),
+                IOContainer.fromConfig().getPreAggregatedMetricsRW());
+    }
+
+    @VisibleForTesting
+    public BatchWriter(ThreadPoolExecutor threadPool,
+                       TimeValue timeout, Counter bufferedMetrics,
+                       IngestionContext context,
+                       AbstractMetricsRW basicMetricsRW,
+                       AbstractMetricsRW preAggregeatedMetricsRW) {
+
         super(threadPool);
-        this.writer = writer;
+
         this.timeout = timeout;
         this.bufferedMetrics = bufferedMetrics;
         this.context = context;
+        this.basicMetricsRW = basicMetricsRW;
+        this.preAggregeatedMetricsRW = preAggregeatedMetricsRW;
     }
     
     @Override
@@ -81,19 +97,19 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
                         // susses out the string and boolean metrics for a different path, then segregates the Metric
                         // and Preaggregated metrics and writes them to the appropriate column families.
-                        Collection<Metric> simpleMetrics = new ArrayList<Metric>();
+                        Collection<IMetric> simpleMetrics = new ArrayList<IMetric>();
                         Collection<IMetric> preagMetrics = new ArrayList<IMetric>();
 
                         for (IMetric m : batch) {
                             if (m instanceof Metric)
-                                simpleMetrics.add((Metric) m);
+                                simpleMetrics.add(m);
                             else if (m instanceof PreaggregatedMetric)
                                 preagMetrics.add(m);
                         }
                         if (simpleMetrics.size() > 0)
-                            writer.insertFullMetrics(simpleMetrics);
+                            basicMetricsRW.insertMetrics(simpleMetrics);
                         if (preagMetrics.size() > 0)
-                            writer.insertPreaggreatedMetrics(preagMetrics);
+                            preAggregeatedMetricsRW.insertMetrics(preagMetrics);
 
                         final Timer.Context dirtyTimerCtx = slotUpdateTimer.time();
                         try {

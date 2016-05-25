@@ -16,10 +16,8 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.SearchResult;
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -31,11 +29,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-/** This class handles collecting enum values for specific metrics, via their locators, and checking whether
-    a uniqueness count of the enum values have reached a certain threshold.  If it has, the class mark the metric
-    as bad by inserting its locator into the proper cassandra column family.  If it hasn't reached the threshold, then it
-    will create or update the elasticsearch "enums" index for the metric.
-**/
+/**
+ * This class handles collecting enum values for specific metrics, via their locators, and checking whether
+ * a uniqueness count of the enum values have reached a certain threshold.  If it has, the class mark the metric
+ * as bad by inserting its locator into the proper cassandra column family.  If it hasn't reached the threshold,
+ * then it will create or update the elasticsearch "enums" index for the metric.
+ */
 public class EnumValidator implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(EnumValidator.class);
@@ -43,18 +42,33 @@ public class EnumValidator implements Runnable {
     private static final int ENUM_UNIQUE_VALUES_THRESHOLD = config.getIntegerProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD);
     private Set<Locator> locators;
 
-    private AstyanaxReader reader = null;
     private DiscoveryIO discoveryIO = null;
+    private EnumReaderIO enumIO = null;
 
+    /**
+     * Construct an EnumValidator object with EnumReader as listed in
+     * configuration file
+     * @param locators
+     */
     public EnumValidator(Set<Locator> locators) {
+        this(locators, IOContainer.fromConfig().getEnumReaderIO());
+    }
+
+    /**
+     * Construct an EnumValidator object with the specified EnumReader
+     * @param locators
+     * @param enumReaderIO
+     */
+    public EnumValidator(Set<Locator> locators, EnumReaderIO enumReaderIO) {
         this.locators = locators;
+        this.enumIO = enumReaderIO;
     }
 
     @Override
     public void run() {
         if (locators == null) return;
 
-        Map<Locator, List<String>> locatorEnums = getReader().getEnumStringMappings(new ArrayList(locators));
+        Map<Locator, List<String>> locatorEnums = enumIO.getEnumStringMappings(new ArrayList(locators));
         for (final Locator locator : locatorEnums.keySet()) {
             // validate enum values count and write to index or bad metric
             validateThresholdAndWrite(locator, locatorEnums.get(locator));
@@ -120,17 +134,6 @@ public class EnumValidator implements Runnable {
         return rollup;
     }
 
-    public AstyanaxReader getReader() {
-        if (this.reader == null) {
-            this.reader = AstyanaxReader.getInstance();
-        }
-        return this.reader;
-    }
-
-    public void setReader(AstyanaxReader reader) {
-        this.reader = reader;
-    }
-
     public DiscoveryIO getDiscoveryIO() {
         if (this.discoveryIO == null) {
             this.discoveryIO = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
@@ -141,4 +144,7 @@ public class EnumValidator implements Runnable {
     public void setDiscoveryIO(DiscoveryIO discoveryIO) {
         this.discoveryIO = discoveryIO;
     }
+
+    @VisibleForTesting
+    protected EnumReaderIO getEnumIO() { return enumIO; }
 }

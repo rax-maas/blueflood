@@ -87,7 +87,7 @@ public class APreaggregatedMetricsRW extends AbstractMetricsRW implements Preagg
     @Override
     public MetricData getDatapointsForRange(final Locator locator,
                                             Range range,
-                                            Granularity gran) throws IOException {
+                                            Granularity gran) {
         return AstyanaxReader.getInstance().getDatapointsForRange(locator, range, gran);
     }
 
@@ -104,7 +104,7 @@ public class APreaggregatedMetricsRW extends AbstractMetricsRW implements Preagg
     @Override
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators,
                                                           Range range,
-                                                          Granularity gran) throws IOException {
+                                                          Granularity gran) {
         return AstyanaxReader.getInstance().getDatapointsForRange(locators, range, gran);
     }
 
