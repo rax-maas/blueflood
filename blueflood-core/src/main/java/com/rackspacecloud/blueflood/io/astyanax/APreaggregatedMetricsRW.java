@@ -25,6 +25,8 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -36,6 +38,14 @@ import java.util.Map;
  * using Astyanax driver
  */
 public class APreaggregatedMetricsRW extends AbstractMetricsRW implements PreaggregatedRW{
+
+    public APreaggregatedMetricsRW() {
+        this(new DefaultClockImpl());
+    }
+
+    public APreaggregatedMetricsRW(Clock clock) {
+        super(clock);
+    }
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family

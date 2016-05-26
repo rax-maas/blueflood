@@ -50,6 +50,7 @@ public class DatastaxLocatorIO implements LocatorIO {
     private static final String KEY = "key";
     private static final String COLUMN1 = "column1";
     private static final String VALUE = "value";
+    public static final String WRITE_TIME = "writetime(value)";
 
     private PreparedStatement getValue;
     private PreparedStatement putValue;
@@ -66,7 +67,10 @@ public class DatastaxLocatorIO implements LocatorIO {
         // create a generic select statement for retrieving from metrics_locator
         Select.Where select = QueryBuilder
                 .select()
-                .all()
+                .column( KEY )
+                .column( COLUMN1 )
+                .column(VALUE)
+                .writeTime(VALUE)
                 .from( CassandraModel.CF_METRICS_LOCATOR_NAME )
                 .where( eq ( KEY, bindMarker() ));
         getValue = DatastaxIO.getSession().prepare( select );
@@ -129,7 +133,8 @@ public class DatastaxLocatorIO implements LocatorIO {
                             row.getString( KEY ) +
                             row.getString( COLUMN1 ));
                 }
-                locators.add(Locator.createLocatorFromDbKey(row.getString(COLUMN1)));
+                locators.add(Locator.createLocatorFromDbKey(row.getString(COLUMN1))
+                                    .withLastUpdatedTimestamp(row.getLong( WRITE_TIME ) / 1000));
             }
 
             // return results

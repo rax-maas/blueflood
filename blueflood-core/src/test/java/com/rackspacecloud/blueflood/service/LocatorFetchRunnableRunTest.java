@@ -120,6 +120,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(Matchers.<SlotKey>any());
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -140,7 +141,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, never()).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any(),
-                Matchers.<Locator>any());
+                Matchers.<Locator>any(),
+                Matchers.anyBoolean());
 
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
@@ -165,6 +167,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(Matchers.<SlotKey>any());
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -185,7 +188,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, times(1)).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any(),
-                Matchers.<Locator>any());
+                Matchers.<Locator>any(),
+                Matchers.anyBoolean());
 
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
@@ -210,6 +214,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(Matchers.<SlotKey>any());
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -230,7 +235,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, times(3)).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any(),
-                Matchers.<Locator>any());
+                Matchers.<Locator>any(),
+                Matchers.anyBoolean());
 
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),

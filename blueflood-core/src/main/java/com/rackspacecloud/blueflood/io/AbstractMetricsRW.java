@@ -25,7 +25,10 @@ import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,25 @@ public abstract class AbstractMetricsRW implements MetricsRW {
                         TimeUnit.MINUTES).concurrencyLevel(16).build();
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractMetricsRW.class);
+
+    private static final long ROLLUP_DELAY_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
+    private final Clock clock;
+
+    public AbstractMetricsRW(Clock clock) {
+        this.clock = clock;
+    }
+
+    /**
+     * Returns true if the metric is delayed with respect to current time and ROLLUP_DELAY_MILLIS configuration.
+     *
+     * @param metric
+     * @return
+     */
+    public boolean isDelayedMetric(IMetric metric) {
+        long timeElapsed = clock.now().getMillis() - metric.getCollectionTime();
+        return timeElapsed > ROLLUP_DELAY_MILLIS;
+    }
 
     /**
      * Checks if Locator is recently inserted

@@ -19,6 +19,8 @@ import com.codahale.metrics.Timer;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
+import com.netflix.astyanax.model.Column;
+import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.query.RowQuery;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -68,11 +71,21 @@ public class AstyanaxLocatorIO implements LocatorIO {
     @Override
     public Collection<Locator> getLocators(long shard) throws IOException {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
+        final Collection<Locator> locators = new ArrayList<Locator>();
         try {
             RowQuery<Long, Locator> query = AstyanaxIO.getKeyspace()
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
-            return query.execute().getResult().getColumnNames();
+
+            ColumnList<Locator> columns = query.execute().getResult();
+            for (Column<Locator> column: columns) {
+                locators.add(column.getName().withLastUpdatedTimestamp(column.getTimestamp() / 1000));
+            }
+
+            if (locators.size() == 0) {
+                Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
+                return Collections.emptySet();
+            }
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
             return Collections.emptySet();
@@ -83,6 +96,8 @@ public class AstyanaxLocatorIO implements LocatorIO {
         } finally {
             ctx.stop();
         }
+
+        return locators;
     }
 
 }

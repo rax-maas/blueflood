@@ -573,8 +573,11 @@ public class ScheduleContextTest {
         ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         expected.add(SlotKey.parse("metrics_5m,0,0"));
-        while (ctx.hasScheduled())
-            scheduled.add(ctx.getNextScheduled());
+        while (ctx.hasScheduled()) {
+            SlotKey scheduledSlot = ctx.getNextScheduled();
+            scheduled.add(scheduledSlot);
+            Assert.assertEquals(false, ctx.isReroll(scheduledSlot));
+        }
         Assert.assertEquals(expected, scheduled);
 
         long lastRollupTime = clock;
@@ -606,8 +609,11 @@ public class ScheduleContextTest {
         ctx.setCurrentTimeMillis(clock);
         ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
-        while (ctx.hasScheduled())
-            scheduled.add(ctx.getNextScheduled());
+        while (ctx.hasScheduled()) {
+            SlotKey scheduledSlot = ctx.getNextScheduled();
+            scheduled.add(scheduledSlot);
+            Assert.assertEquals(true, ctx.isReroll(scheduledSlot));
+        }
 
         Assert.assertEquals(expected, scheduled);
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,0,0")); //metrics_5m,0 is now rolled up.
@@ -637,8 +643,11 @@ public class ScheduleContextTest {
         ctx.setCurrentTimeMillis(clock);
         ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
-        while (ctx.hasScheduled())
-            scheduled.add(ctx.getNextScheduled());
+        while (ctx.hasScheduled()) {
+            SlotKey scheduledSlot = ctx.getNextScheduled();
+            scheduled.add(scheduledSlot);
+            Assert.assertEquals(true, ctx.isReroll(scheduledSlot));
+        }
 
         Assert.assertEquals(expected, scheduled);
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,0,0")); //metrics_5m,0 is now rolled up.
@@ -671,8 +680,11 @@ public class ScheduleContextTest {
         ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
         expected.add(SlotKey.parse("metrics_5m,0,0"));
-        while (ctx.hasScheduled())
-            scheduled.add(ctx.getNextScheduled());
+        while (ctx.hasScheduled()) {
+            SlotKey scheduledSlot = ctx.getNextScheduled();
+            scheduled.add(scheduledSlot);
+            Assert.assertEquals(false, ctx.isReroll(scheduledSlot));
+        }
         Assert.assertEquals(expected, scheduled);
 
         long lastRollupTime = clock;
@@ -704,8 +716,11 @@ public class ScheduleContextTest {
         ctx.setCurrentTimeMillis(clock);
         ctx.scheduleEligibleSlots(ROLLUP_DELAY_MILLIS, SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS, LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS);
 
-        while (ctx.hasScheduled())
-            scheduled.add(ctx.getNextScheduled());
+        while (ctx.hasScheduled()) {
+            SlotKey scheduledSlot = ctx.getNextScheduled();
+            scheduled.add(scheduledSlot);
+            Assert.assertEquals(true, ctx.isReroll(scheduledSlot));
+        }
 
         Assert.assertEquals(expected, scheduled);
         ctx.clearFromRunning(SlotKey.parse("metrics_5m,0,0")); //metrics_5m,0 is now rolled up.

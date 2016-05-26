@@ -30,6 +30,8 @@ public class Locator implements Comparable<Locator> {
     private String tenantId = null;
     private String metricName = null;
 
+    private long lastUpdatedTimestamp;
+
     static {
         metricTokenSeparator = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : ".");
         // ugh.
@@ -45,6 +47,11 @@ public class Locator implements Comparable<Locator> {
 
     private Locator(String fullyQualifiedMetricName) throws IllegalArgumentException {
         setStringRep(fullyQualifiedMetricName);
+    }
+
+    public Locator withLastUpdatedTimestamp(long lastUpdatedTimestamp) {
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
+        return this;
     }
 
     protected void setStringRep(String rep) throws IllegalArgumentException {
@@ -78,6 +85,10 @@ public class Locator implements Comparable<Locator> {
 
     public String getMetricName() {
         return this.metricName;
+    }
+
+    public long getLastUpdatedTimestamp() {
+        return lastUpdatedTimestamp;
     }
 
     public boolean equals(Locator other) {

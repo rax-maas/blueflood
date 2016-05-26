@@ -3,10 +3,13 @@ package com.rackspacecloud.blueflood.io.astyanax;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -18,6 +21,14 @@ import java.util.Map;
  * using Astyanax driver
  */
 public class ABasicMetricsRW extends AbstractMetricsRW {
+
+    public ABasicMetricsRW() {
+        this(new DefaultClockImpl());
+    }
+
+    public ABasicMetricsRW(Clock clock) {
+        super(clock);
+    }
 
     @Override
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {

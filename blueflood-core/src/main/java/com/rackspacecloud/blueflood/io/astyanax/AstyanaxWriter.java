@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io.astyanax;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
@@ -38,9 +39,7 @@ import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Metrics;
-import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,16 +48,30 @@ import java.util.concurrent.TimeUnit;
 
 public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
-    private static final AstyanaxWriter instance = new AstyanaxWriter();
+    private static final AstyanaxWriter instance = new AstyanaxWriter(new DefaultClockImpl());
     private static final Keyspace keyspace = getKeyspace();
+    private static final long ROLLUP_DELAY_MILLIS = config.getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
 
     private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
 
+    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
+
+    private AstyanaxWriter(Clock clock) {
+        this.clock = clock;
+    }
+
+    private final Clock clock;
+
     public static AstyanaxWriter getInstance() {
         return instance;
+    }
+
+    @VisibleForTesting
+    public static AstyanaxWriter getInstance(Clock clock) {
+        return new AstyanaxWriter(clock);
     }
 
     // todo: should be some other impl.
@@ -119,7 +132,7 @@ public class AstyanaxWriter extends AstyanaxIO {
             for (IMetric metric: metrics) {
                 final Locator locator = metric.getLocator();
 
-                final boolean isString = DataType.isStringMetric( metric.getMetricValue() );
+                final boolean isString = DataType.isStringMetric(metric.getMetricValue());
                 final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
 
                 if (!shouldPersist(metric)) {
@@ -131,9 +144,17 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // col = locator (acct + entity + check + dimension.metric)
                 // value = <nothing>
                 // do not do it for string or boolean metrics though.
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+                // always insert delayed metrics
+                if (IS_REROLL_ONLY_DELAYED_METRICS && isDelayedMetric(metric)) {
+
                     if (!isString && !isBoolean && mutationBatch != null)
                         insertLocator(locator, mutationBatch);
+
+                } else if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+
+                    if (!isString && !isBoolean && mutationBatch != null)
+                        insertLocator(locator, mutationBatch);
+
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
@@ -167,7 +188,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     private void insertMetric(IMetric metric, MutationBatch mutationBatch) {
-        final boolean isString = DataType.isStringMetric( metric.getMetricValue() );
+        final boolean isString = DataType.isStringMetric(metric.getMetricValue());
         final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
 
         if (isString || isBoolean) {
@@ -282,8 +303,12 @@ public class AstyanaxWriter extends AstyanaxIO {
                                 metric.getTtlInSeconds());
                     }
                 }
-                
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+
+                // always insert delayed metrics
+                if (IS_REROLL_ONLY_DELAYED_METRICS && isDelayedMetric(map.get(locator))) {
+                    if (locatorInsertOk)
+                        insertLocator(locator, batch);
+                } else if (!AstyanaxWriter.isLocatorCurrent(locator)) {
                     if (locatorInsertOk)
                         insertLocator(locator, batch);
                     AstyanaxWriter.setLocatorCurrent(locator);
@@ -299,6 +324,21 @@ public class AstyanaxWriter extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
+    }
+
+    public boolean isDelayedMetric(IMetric metric) {
+        long timeElapsed = clock.now().getMillis() - metric.getCollectionTime();
+        return timeElapsed > ROLLUP_DELAY_MILLIS;
+    }
+
+    public boolean isDelayedMetric(Collection<IMetric> metrics) {
+        for (IMetric metric: metrics) {
+            if (isDelayedMetric(metric)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static boolean isLocatorCurrent(Locator loc) {
