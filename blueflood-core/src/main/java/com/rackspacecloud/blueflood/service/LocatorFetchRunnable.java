@@ -121,6 +121,7 @@ class LocatorFetchRunnable implements Runnable {
                 Instrumentation.markLocatorRolled();
             }
         }
+        log.debug("For slotKey {}, number of locator's that were rolled up are {}", parentSlotKey, rollCount);
 
         // now wait until ctx is drained. someone needs to be notified.
         drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
