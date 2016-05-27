@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     private final DTimerIO timerIO = new DTimerIO();
     private final LocatorIO locatorIO;
 
-    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = com.rackspacecloud.blueflood.service.Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
+    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
 
     // a map of RollupType to its IO class that knows
     // how to read/write that particular type of rollup
