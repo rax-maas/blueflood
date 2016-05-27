@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
@@ -134,7 +135,7 @@ public class DatastaxLocatorIO implements LocatorIO {
                             row.getString( COLUMN1 ));
                 }
                 locators.add(Locator.createLocatorFromDbKey(row.getString(COLUMN1))
-                                    .withLastUpdatedTimestamp(row.getLong( WRITE_TIME ) / 1000));
+                                    .withLastUpdatedTimestamp(TimeUnit.MILLISECONDS.convert(row.getLong(WRITE_TIME), TimeUnit.MICROSECONDS)));
             }
 
             // return results

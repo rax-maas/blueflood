@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class uses the Astyanax driver to read/write locators from
@@ -79,7 +80,8 @@ public class AstyanaxLocatorIO implements LocatorIO {
 
             ColumnList<Locator> columns = query.execute().getResult();
             for (Column<Locator> column: columns) {
-                locators.add(column.getName().withLastUpdatedTimestamp(column.getTimestamp() / 1000));
+                locators.add(column.getName()
+                        .withLastUpdatedTimestamp(TimeUnit.MILLISECONDS.convert(column.getTimestamp(), TimeUnit.MICROSECONDS)));
             }
 
             if (locators.size() == 0) {
