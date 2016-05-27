@@ -118,7 +118,6 @@ class LocatorFetchRunnable implements Runnable {
 
             } else {
                 rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator, isSlotBeingRerolled);
-                Instrumentation.markLocatorRolled();
             }
         }
         log.debug("For slotKey {}, number of locator's that were rolled up are {}", parentSlotKey, rollCount);
@@ -185,7 +184,7 @@ class LocatorFetchRunnable implements Runnable {
         return processLocator(rollCount, executionContext, rollupBatchWriter, locator);
     }
 
-    public int processLocator(int rollCount, RollupExecutionContext executionContext,
+    protected int processLocator(int rollCount, RollupExecutionContext executionContext,
                               RollupBatchWriter rollupBatchWriter, Locator locator) {
 
         if (log.isTraceEnabled())

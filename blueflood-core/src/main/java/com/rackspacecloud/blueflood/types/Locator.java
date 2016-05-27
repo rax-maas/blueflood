@@ -30,6 +30,7 @@ public class Locator implements Comparable<Locator> {
     private String tenantId = null;
     private String metricName = null;
 
+    //Last update timestamp in millis.
     private long lastUpdatedTimestamp;
 
     static {

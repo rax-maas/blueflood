@@ -62,7 +62,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
 
     private final Clock clock;
 
-    public AbstractMetricsRW(Clock clock) {
+    protected AbstractMetricsRW(Clock clock) {
         this.clock = clock;
     }
 
