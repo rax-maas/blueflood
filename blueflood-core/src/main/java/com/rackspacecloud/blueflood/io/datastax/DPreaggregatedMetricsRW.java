@@ -24,7 +24,10 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +47,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     private final DGagueIO gaugeIO = new DGagueIO();
     private final DSetIO setIO = new DSetIO();
     private final DTimerIO timerIO = new DTimerIO();
-    private final LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+    private final LocatorIO locatorIO;
+
+    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
 
     // a map of RollupType to its IO class that knows
     // how to read/write that particular type of rollup
@@ -56,6 +61,15 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                 put(RollupType.SET, setIO);
                 put(RollupType.TIMER, timerIO);
             }};
+
+    public DPreaggregatedMetricsRW() {
+        this(new DefaultClockImpl());
+    }
+
+    public DPreaggregatedMetricsRW(Clock clock) {
+        super(clock);
+        this.locatorIO = IOContainer.fromConfig().getLocatorIO();
+    }
 
 
     /**
@@ -109,7 +123,11 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                             granularity, metric.getTtlInSeconds());
                     futureLocatorMap.put(future, locator);
 
-                    if ( !isLocatorCurrent(locator) ) {
+                    // always insert delayed metrics
+                    if (IS_REROLL_ONLY_DELAYED_METRICS && isDelayedMetric(metric)) {
+                        locatorIO.insertLocator(locator);
+                        setLocatorCurrent(locator);
+                    } else if ( !isLocatorCurrent(locator) ) {
                         locatorIO.insertLocator(locator);
                         setLocatorCurrent(locator);
                     }  else {

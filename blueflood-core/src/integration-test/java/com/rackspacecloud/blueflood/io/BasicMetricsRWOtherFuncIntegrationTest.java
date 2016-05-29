@@ -2,15 +2,16 @@ package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Util;
-
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-
-import java.util.*;
-
+import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -18,9 +19,18 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 
-import static org.junit.Assert.*;
-import static org.powermock.api.mockito.PowerMockito.*;
-import static org.mockito.Matchers.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.doReturn;
+import static org.powermock.api.mockito.PowerMockito.spy;
 
 /**
  * Test non-read/write functionality of the datstax driver.
@@ -57,7 +67,7 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
                         expectedMetric.getRollupType(),
                         getRangeFromMinAgoToNow(5),
                         CassandraModel.getBasicColumnFamilyName(granularity));
-        assertEquals( "number of points read before TTL", 1, points.getPoints().size() );
+        assertEquals("number of points read before TTL", 1, points.getPoints().size());
 
         // let it time out.
         Thread.sleep(2000);
@@ -84,7 +94,7 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
         cxts.add( createSingleRollupWriteContext( granularity, expectedMetric ));
 
         // insert metric
-        datastaxMetricsRW.insertRollups( cxts );
+        datastaxMetricsRW.insertRollups(cxts);
 
         // read the raw data.
         Points points =
@@ -92,10 +102,10 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
                         expectedMetric.getRollupType(),
                         getRangeFromMinAgoToNow( 5 ),
                         CassandraModel.getBasicColumnFamilyName( granularity ) );
-        assertEquals( "number of points read", 1, points.getPoints().size() );
+        assertEquals("number of points read", 1, points.getPoints().size());
 
         // create the rollup
-        final BasicRollup rollup = BasicRollup.buildRollupFromRollups( points );
+        final BasicRollup rollup = BasicRollup.buildRollupFromRollups(points);
         // should be the same as simpletimerRollup   Assert.assertEquals(timerRollup, rollup);
 
         // assemble it into points, but give it a new timestamp.
@@ -103,9 +113,9 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
             add(new Point(expectedMetric.getCollectionTime(), rollup));
         }};
 
-        List<SingleRollupWriteContext> coaserCxts = toWriteContext(expectedMetric.getLocator(), points, granularity.coarser() );
+        List<SingleRollupWriteContext> coaserCxts = toWriteContext(expectedMetric.getLocator(), points, granularity.coarser());
 
-        datastaxMetricsRW.insertRollups( coaserCxts );
+        datastaxMetricsRW.insertRollups(coaserCxts);
 
         // we should be able to read that now.
         Points<BasicRollup> pointsCoarser =
@@ -115,7 +125,7 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
                         getRangeFromMinAgoToNow( 5 ),
                         CassandraModel.getBasicColumnFamilyName( granularity.coarser() ) );
 
-        assertEquals( "number of points read in coarser gran", 1, pointsCoarser.getPoints().size() );
+        assertEquals("number of points read in coarser gran", 1, pointsCoarser.getPoints().size());
 
         BasicRollup rollupCoarser = pointsCoarser.getPoints().values().iterator().next().getData();
         // rollups should be identical since one is just a coarse rollup of the other.
@@ -134,6 +144,80 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
             long shard = Util.getShard( locator.toString() );
             Collection<Locator> locators = locatorIO.getLocators(shard);
             assertTrue(String.format("locator %s should exist", locator), locators.contains(locator));
+
+            for (Locator locatorFromDB: locators) {
+                assertTrue("Locator should have last update time information", locatorFromDB.getLastUpdatedTimestamp() > 0);
+            }
         }
     }
+
+    @Test
+    public void testLocatorWrittenOnlyOnce() throws Exception {
+
+        Clock mockClock = mock(Clock.class);
+        MetricsRW dsMetricsRW = new DBasicMetricsRW(mockClock);
+        when(mockClock.now()).thenReturn(new DefaultClockImpl().now());
+
+        // insert metrics using datastax
+        dsMetricsRW.insertMetrics(numericMap.values());
+
+        Locator locator = new ArrayList<Locator>(numericMap.keySet()).get(0);
+        long shard = Util.getShard(locator.toString());
+        LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+
+        long locatorLastUpdateTime = getLocatorLastUpdateTime(locator, shard, locatorIO);
+        assertTrue("Locator should have last update time information", locatorLastUpdateTime > 0);
+
+        Thread.sleep(100);
+        dsMetricsRW.insertMetrics(numericMap.values());
+
+        long locatorLastUpdateTime1 = getLocatorLastUpdateTime(locator, shard, locatorIO);
+        assertTrue("Locator should have last update time information", locatorLastUpdateTime1 > 0);
+        assertTrue("Locator should should not be updated again", locatorLastUpdateTime1 == locatorLastUpdateTime);
+    }
+
+    @Test
+    public void testLocatorWrittenForDelayedMetrics() throws Exception {
+
+        final Instant currentTime = new DefaultClockImpl().now();
+        Clock mockClock = mock(Clock.class);
+        MetricsRW dsMetricsRW = new DBasicMetricsRW(mockClock);
+        when(mockClock.now()).thenReturn(currentTime);
+
+        // insert metrics using datastax
+        dsMetricsRW.insertMetrics(numericMap.values());
+
+        Locator locator = new ArrayList<Locator>(numericMap.keySet()).get(0);
+        long shard = Util.getShard(locator.toString());
+        LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+
+        long locatorLastUpdateTime = getLocatorLastUpdateTime(locator, shard, locatorIO);
+        assertTrue("Locator should have last update time information", locatorLastUpdateTime > 0);
+
+        //inserting delayed metric
+        Thread.sleep(100);
+        //setting current time in future
+        final Instant futureTime = new Instant(currentTime.getMillis() +
+                Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS) + 1);
+        when(mockClock.now()).thenReturn(futureTime);
+        dsMetricsRW.insertMetrics(numericMap.values());
+
+        long locatorLastUpdateTime1 = getLocatorLastUpdateTime(locator, shard, locatorIO);
+        assertTrue("Locator should have last update time information", locatorLastUpdateTime1 > 0);
+        assertTrue("Locator should should be updated again", locatorLastUpdateTime1 > locatorLastUpdateTime);
+    }
+
+    private long getLocatorLastUpdateTime(Locator locator, long shard, LocatorIO locatorIO) throws IOException {
+        Collection<Locator> locators = locatorIO.getLocators(shard);
+        long locatorLastUpdateTime = 0;
+        for (Locator locatorFromDB: locators) {
+            if (locatorFromDB.equals(locator)) {
+                locatorLastUpdateTime = locatorFromDB.getLastUpdatedTimestamp();
+                break;
+            }
+        }
+        return locatorLastUpdateTime;
+    }
+
+
 }

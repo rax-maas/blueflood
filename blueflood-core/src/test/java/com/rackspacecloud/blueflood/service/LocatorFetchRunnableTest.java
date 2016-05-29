@@ -58,7 +58,7 @@ public class LocatorFetchRunnableTest {
         Configuration.getInstance().init();
 
         this.scheduleCtx = mock(ScheduleContext.class);
-        this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
+        this.destSlotKey = SlotKey.of(Granularity.MIN_5, 0, 0);
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
@@ -241,5 +241,56 @@ public class LocatorFetchRunnableTest {
 
         //then
         assertNotNull(batchWriter);
+    }
+
+    @Test
+    public void processLocatorInvocationCount() throws IOException {
+
+        //given
+        when(locatorIO.getLocators(0)).thenReturn(locators);
+        LocatorFetchRunnable spyLfr = spy(lfr);
+        doReturn(1).when(spyLfr).processLocator(anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any(),
+                Matchers.<Locator>any());
+
+        //when
+        spyLfr.run();
+
+        //then
+        verify(spyLfr, times(locators.size())).processLocator(anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any(),
+                Matchers.<Locator>any());
+    }
+
+    @Test
+    public void processLocatorInvocationCountDuringReroll() throws IOException {
+
+        //given
+        UpdateStamp mockUpdateStamp = mock(UpdateStamp.class);
+        when(scheduleCtx.getShardStateManager()).thenReturn(mock(ShardStateManager.class));
+        when(scheduleCtx.getShardStateManager().getUpdateStamp(any(SlotKey.class))).thenReturn(mockUpdateStamp);
+        long lastRollupTimestamp = 5L;
+        when(mockUpdateStamp.getLastRollupTimestamp()).thenReturn(lastRollupTimestamp);
+
+        locators.set(0, locators.get(0).withLastUpdatedTimestamp(lastRollupTimestamp + 1)); //got delayed metric for one locator
+        when(locatorIO.getLocators(0)).thenReturn(locators);
+        when(scheduleCtx.isReroll(any(SlotKey.class))).thenReturn(true); //slot is being re-rolled cos of 1 delayed metric
+
+        LocatorFetchRunnable spyLfr = spy(lfr);
+        doReturn(1).when(spyLfr).processLocator(anyInt(),
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any(),
+                Matchers.<Locator>any());
+
+        //when
+        spyLfr.run();
+
+        //then
+        verify(spyLfr, times(1)).processLocator(anyInt(),   // only one metric should be rolled up
+                Matchers.<RollupExecutionContext>any(),
+                Matchers.<RollupBatchWriter>any(),
+                Matchers.<Locator>any());
     }
 }

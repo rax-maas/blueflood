@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.io.datastax;
 import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -10,6 +11,8 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +28,9 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     public static final String COLUMN1 = "column1";
     public static final String VALUE = "value";
 
-    private static final Logger LOG = LoggerFactory.getLogger( DBasicMetricsRW.class );
+    private static final Logger LOG = LoggerFactory.getLogger(DBasicMetricsRW.class);
 
-    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty( CoreConfig.STRING_METRICS_DROPPED);
+    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
 
@@ -35,6 +38,22 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     private LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
     private DSimpleNumberIO simpleIO = new DSimpleNumberIO();
     private final DBasicNumericIO basicIO = new DBasicNumericIO();
+
+    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
+
+    public DBasicMetricsRW() {
+        this(new DefaultClockImpl());
+    }
+
+    public DBasicMetricsRW(Clock clock) {
+        super(clock);
+    }
+
+    @VisibleForTesting
+    public DBasicMetricsRW(Clock clock, LocatorIO locatorIO) {
+        this(clock);
+        this.locatorIO = locatorIO;
+    }
 
     /**
      * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} objects
@@ -63,7 +82,15 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 Locator locator = metric.getLocator();
 
-                if( !isLocatorCurrent( locator ) ) {
+                // always insert delayed metrics
+                if (IS_REROLL_ONLY_DELAYED_METRICS && isDelayedMetric(metric)) {
+
+                    setLocatorCurrent( locator );
+
+                    if( !DataType.isStringOrBoolean( metric.getMetricValue() ) )
+                        locatorIO.insertLocator( locator );
+
+                } else if( !isLocatorCurrent( locator ) ) {
 
                     setLocatorCurrent( locator );
 

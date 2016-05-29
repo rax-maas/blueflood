@@ -46,6 +46,9 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter metricsWithShortDelayReceived;
     private static final Meter metricsWithLongDelayReceived;
     private static final Meter enumMetricWritten;
+    private static final Meter locatorRolled;
+    private static final Meter locatorReRolled;
+
 
     static {
         Class kls = Instrumentation.class;
@@ -60,6 +63,8 @@ public class Instrumentation implements InstrumentationMBean {
         enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
         metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
         metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
+        locatorRolled = Metrics.meter(kls, "Locators rolled during initial rollup of a slot");
+        locatorReRolled = Metrics.meter(kls, "Locators rolled during re-roll of a slot");
 
             try {
                 final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -180,5 +185,13 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markMetricsWithLongDelayReceived() {
         metricsWithLongDelayReceived.mark();
+    }
+
+    public static void markLocatorRolled() {
+        locatorRolled.mark();
+    }
+
+    public static void markLocatorReRolled() {
+        locatorReRolled.mark();
     }
 }

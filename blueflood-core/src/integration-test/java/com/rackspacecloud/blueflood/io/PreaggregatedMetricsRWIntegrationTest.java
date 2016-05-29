@@ -20,23 +20,34 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.APreaggregatedMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.joda.time.Instant;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * A class to test the various implementation of PreaggregatedMetricsRW.
@@ -528,5 +539,72 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             }
         }
 
+        @Test
+        public void testLocatorWrittenOnlyOnce() throws Exception {
+
+            Clock mockClock = mock(Clock.class);
+            MetricsRW dsMetricsRW = new DPreaggregatedMetricsRW(mockClock);
+            when(mockClock.now()).thenReturn(new DefaultClockImpl().now());
+
+            // insert metrics using datastax
+            dsMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
+
+            Locator locator = new ArrayList<Locator>(expectedLocatorMetricMap.keySet()).get(0);
+            long shard = Util.getShard(locator.toString());
+            LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+
+            long locatorLastUpdateTime = getLocatorLastUpdateTime(locator, shard, locatorIO);
+            assertTrue("Locator should have last update time information", locatorLastUpdateTime > 0);
+
+            Thread.sleep(100);
+            dsMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
+
+            long locatorLastUpdateTime1 = getLocatorLastUpdateTime(locator, shard, locatorIO);
+            assertTrue("Locator should have last update time information", locatorLastUpdateTime1 > 0);
+            assertTrue("Locator should should not be updated again", locatorLastUpdateTime1 == locatorLastUpdateTime);
+        }
+
+        @Test
+        public void testLocatorWrittenForDelayedMetrics() throws Exception {
+
+            final Instant currentTime = new DefaultClockImpl().now();
+            Clock mockClock = mock(Clock.class);
+            MetricsRW dsMetricsRW = new DPreaggregatedMetricsRW(mockClock);
+            when(mockClock.now()).thenReturn(currentTime);
+
+            // insert metrics using datastax
+            dsMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
+
+            Locator locator = new ArrayList<Locator>(expectedLocatorMetricMap.keySet()).get(0);
+            long shard = Util.getShard(locator.toString());
+            LocatorIO locatorIO = IOContainer.fromConfig().getLocatorIO();
+
+            long locatorLastUpdateTime = getLocatorLastUpdateTime(locator, shard, locatorIO);
+            assertTrue("Locator should have last update time information", locatorLastUpdateTime > 0);
+
+            //inserting delayed metric
+            Thread.sleep(100);
+            //setting current time in future
+            final Instant futureTime = new Instant(currentTime.getMillis() +
+                    Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS) + 1);
+            when(mockClock.now()).thenReturn(futureTime);
+            dsMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
+
+            long locatorLastUpdateTime1 = getLocatorLastUpdateTime(locator, shard, locatorIO);
+            assertTrue("Locator should have last update time information", locatorLastUpdateTime1 > 0);
+            assertTrue("Locator should should be updated again", locatorLastUpdateTime1 > locatorLastUpdateTime);
+        }
+
+        private long getLocatorLastUpdateTime(Locator locator, long shard, LocatorIO locatorIO) throws IOException {
+            Collection<Locator> locators = locatorIO.getLocators(shard);
+            long locatorLastUpdateTime = 0;
+            for (Locator locatorFromDB: locators) {
+                if (locatorFromDB.equals(locator)) {
+                    locatorLastUpdateTime = locatorFromDB.getLastUpdatedTimestamp();
+                    break;
+                }
+            }
+            return locatorLastUpdateTime;
+        }
     }
 }

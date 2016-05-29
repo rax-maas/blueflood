@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class uses the Astyanax driver to read/write ShardState from
@@ -55,7 +56,7 @@ public class AstyanaxShardStateIO implements ShardStateIO {
             for (Column<SlotState> column : columns) {
                 slotStates.add(column.getName()
                                  .withTimestamp(column.getLongValue())
-                                 .withLastUpdatedTimestamp(column.getTimestamp() / 1000)); //write time is in micro seconds
+                                 .withLastUpdatedTimestamp(TimeUnit.MILLISECONDS.convert(column.getTimestamp(), TimeUnit.MICROSECONDS)));
             }
         } catch (ConnectionException e) {
             Instrumentation.markReadError(e);

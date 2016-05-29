@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
@@ -102,7 +103,7 @@ public class DShardStateIO implements ShardStateIO {
                 }
                 SlotState state = serDes.deserialize(row.getString( COLUMN1 ));
                 state.withTimestamp(row.getLong( VALUE ))
-                     .withLastUpdatedTimestamp(row.getLong( WRITE_TIME ) / 1000); //write time is in micro seconds
+                     .withLastUpdatedTimestamp(TimeUnit.MILLISECONDS.convert(row.getLong(WRITE_TIME), TimeUnit.MICROSECONDS));
                 slotStates.add(state);
             }
             return slotStates;

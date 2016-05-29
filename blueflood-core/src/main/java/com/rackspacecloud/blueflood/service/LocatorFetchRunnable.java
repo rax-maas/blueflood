@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -50,6 +50,8 @@ class LocatorFetchRunnable implements Runnable {
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
 
     private Range parentRange;
+
+    private final boolean IS_REROLL_ONLY_DELAYED_METRICS = Configuration.getInstance().getBooleanProperty(CoreConfig.REROLL_ONLY_DELAYED_METRICS);
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
@@ -102,10 +104,24 @@ class LocatorFetchRunnable implements Runnable {
 
         Set<Locator> locators = getLocators(executionContext);
 
+        boolean isSlotBeingRerolled = scheduleCtx.isReroll(parentSlotKey);
         for (Locator locator : locators) {
-            rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator);
+
+            //if slot is being re-rolled, only process locator if locator's lastUpdateTimestamp is after last rollup time
+            if (IS_REROLL_ONLY_DELAYED_METRICS &&
+                    isSlotBeingRerolled) {
+
+                UpdateStamp updateStamp = scheduleCtx.getShardStateManager().getUpdateStamp(parentSlotKey);
+                if (locator.getLastUpdatedTimestamp() > updateStamp.getLastRollupTimestamp()) {
+                    rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator, true);
+                }
+
+            } else {
+                rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator, isSlotBeingRerolled);
+            }
         }
-        
+        log.debug("For slotKey {} [isReroll={}], number of locator's that were rolled up are {} out of {}", new Object[]{parentSlotKey, isSlotBeingRerolled, rollCount, locators.size()});
+
         // now wait until ctx is drained. someone needs to be notified.
         drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
 
@@ -156,7 +172,21 @@ class LocatorFetchRunnable implements Runnable {
         }
     }
 
-    public int processLocator(int rollCount, RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
+    public int processLocator(int rollCount, RollupExecutionContext executionContext,
+                              RollupBatchWriter rollupBatchWriter, Locator locator, boolean isSlotBeingRerolled) {
+
+        if (isSlotBeingRerolled) {
+            Instrumentation.markLocatorReRolled();
+        } else {
+            Instrumentation.markLocatorRolled();
+        }
+
+        return processLocator(rollCount, executionContext, rollupBatchWriter, locator);
+    }
+
+    protected int processLocator(int rollCount, RollupExecutionContext executionContext,
+                              RollupBatchWriter rollupBatchWriter, Locator locator) {
+
         if (log.isTraceEnabled())
             log.trace("Rolling up (check,metric,dimension) {} for (gran,slot,shard) {}", locator, parentSlotKey);
         try {

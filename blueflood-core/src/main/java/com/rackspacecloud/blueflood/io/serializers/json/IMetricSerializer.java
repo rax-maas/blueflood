@@ -113,7 +113,7 @@ public class IMetricSerializer {
     @JsonIgnoreProperties({ "ttl", "value", "type", "rollupType" })
     abstract class PreaggMetricMixin { }
 
-    @JsonIgnoreProperties({ "stringRep" })
+    @JsonIgnoreProperties({ "stringRep", "lastUpdatedTimestamp" })
     abstract class LocatorMixin { }
 
     @JsonPropertyOrder(alphabetic=true)

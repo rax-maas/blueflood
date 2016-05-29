@@ -611,6 +611,7 @@ public class ShardStateManagerTest {
         slotStateManager.createOrUpdateForSlotAndMillisecond(0, 1234L);
         List<Integer> slots1 = slotStateManager.getSlotsEligibleForRollup(5235L, 0, 2000, 1000);
         assertTrue("No slots should be returned", slots1.isEmpty());
+        assertEquals("Slot 0 should be identified as re-roll", true, slotStateManager.isReroll(0, 5235L));
 
         //when
         List<Integer> slots2 = slotStateManager.getSlotsEligibleForRollup(6235L, 0, 2000, 1000);

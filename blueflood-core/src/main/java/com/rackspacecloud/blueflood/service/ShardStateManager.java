@@ -108,7 +108,6 @@ public class ShardStateManager {
         SlotStateManager slotStateManager = this.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity());
         UpdateStamp stamp = slotStateManager.slotToUpdateStampMap.get(slotKey.getSlot());
         return stamp;
-
     }
 
     // Side effect: mark dirty slots as clean
@@ -303,6 +302,28 @@ public class ShardStateManager {
             return dirtySlots;
         }
 
+        /**
+         * Determines if a slot is being re-rolled or not.
+         *
+         * Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS), a slot can be
+         * identified as being re-rolled, if the last rollup is within those last 3 days.
+         *
+         * @param slot
+         * @param now
+         * @return
+         */
+        protected boolean isReroll(int slot, long now) {
+            final UpdateStamp updateStamp = slotToUpdateStampMap.get(slot);
+            final long timeElapsedSinceLastRollup = now - updateStamp.getLastRollupTimestamp();
+
+            if (updateStamp.getLastRollupTimestamp() > 0 &&
+                    timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
+                return true;
+            }
+
+            return false;
+        }
+
         protected UpdateStamp getAndSetState(int slot, UpdateStamp.State state) {
             UpdateStamp stamp = slotToUpdateStampMap.get(slot);
             stamp.setState(state);
@@ -351,6 +372,7 @@ public class ShardStateManager {
             List<Integer> outputKeys = new ArrayList<Integer>();
             long nowMillis = clock.now().getMillis();
             for (Map.Entry<Integer, UpdateStamp> entry : slotToUpdateStampMap.entrySet()) {
+                final int slot = entry.getKey();
                 final UpdateStamp update = entry.getValue();
                 final long timeElapsed = now - update.getTimestamp();
                 timeSinceUpdate.update(timeElapsed);
@@ -360,46 +382,42 @@ public class ShardStateManager {
                 if (timeElapsed <= maxAgeMillis) {
                     continue;
                 }
-                if (update.getLastRollupTimestamp() > 0) {
-                    final long timeElapsedSinceLastRollup = now - update.getLastRollupTimestamp();
 
-                    //Handling re-rolls: Since we only allow delayed metrics upto 3 days(BEFORE_CURRENT_COLLECTIONTIME_MS),
-                    //a slot can be identified as being re-rolled, if the last rollup is within those last 3 days.
-                    if (timeElapsedSinceLastRollup < REROLL_TIME_SPAN_ASSUMED_VALUE) {
+                //Handling re-rolls
+                if (isReroll(slot, now)) {
+                    SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
 
-                        //short delay
-                        SlotKey slotKey = SlotKey.of(granularity, entry.getKey(), shard);
-                        if (timeElapsed <= rollupDelayForMetricsWithShortDelay) {
+                    //short delay
+                    if (timeElapsed <= rollupDelayForMetricsWithShortDelay) {
 
-                            reRollForShortDelayMetricsMeters.get(granularity).mark();
-                            log.debug(String.format("Short delay: Delaying re-roll of slotKey [%s] as [%d] millis " +
-                                    "haven't elapsed since collection time:[%d] now: [%d] time elapsed: [%d] last " +
-                                    "rollup time: [%d]", slotKey, rollupDelayForMetricsWithShortDelay,
-                                    update.getTimestamp(), now, timeElapsed, update.getLastRollupTimestamp()));
+                        reRollForShortDelayMetricsMeters.get(granularity).mark();
+                        log.debug(String.format("Short delay: Delaying re-roll of slotKey [%s] as [%d] millis " +
+                                        "haven't elapsed since collection time:[%d] now: [%d] time elapsed: [%d] last " +
+                                        "rollup time: [%d]", slotKey, rollupDelayForMetricsWithShortDelay,
+                                update.getTimestamp(), now, timeElapsed, update.getLastRollupTimestamp()));
+                        continue;
+                    }
+
+                    if (update.getLastIngestTimestamp() > 0 ) {
+                        long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
+                        final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
+
+                        //long delay
+                        if (delayOfLastIngestedMetric > rollupDelayForMetricsWithShortDelay &&
+                                timeElapsedSinceLastIngest <= rollupWaitForMetricsWithLongDelay) {
+
+                            reRollForLongDelayMetricsMeters.get(granularity).mark();
+                            log.debug(String.format("Long delay: Delaying re-roll of slotKey [%s] as we received " +
+                                            "delayed metrics within the last [%d] millis with rollup_wait of [%d] millis. last " +
+                                            "ingest time: [%d]", slotKey, timeElapsedSinceLastIngest,
+                                    rollupWaitForMetricsWithLongDelay, update.getLastIngestTimestamp()));
                             continue;
                         }
+                    }
 
-                        if (update.getLastIngestTimestamp() > 0 ) {
-                            long delayOfLastIngestedMetric = update.getLastIngestTimestamp() - update.getTimestamp();
-                            final long timeElapsedSinceLastIngest = now - update.getLastIngestTimestamp();
-
-                            //long delay
-                            if (delayOfLastIngestedMetric > rollupDelayForMetricsWithShortDelay &&
-                                    timeElapsedSinceLastIngest <= rollupWaitForMetricsWithLongDelay) {
-
-                                reRollForLongDelayMetricsMeters.get(granularity).mark();
-                                log.debug(String.format("Long delay: Delaying re-roll of slotKey [%s] as we received " +
-                                                "delayed metrics within the last [%d] millis with rollup_wait of [%d] millis. last " +
-                                                "ingest time: [%d]", slotKey, timeElapsedSinceLastIngest,
-                                        rollupWaitForMetricsWithLongDelay, update.getLastIngestTimestamp()));
-                                continue;
-                            }
-                        }
-
-                        granToReRollMeters.get(granularity).mark();
-                        if (nowMillis - update.getTimestamp() >= millisInADay) {
-                            granToDelayedMetricsMeter.get(granularity).mark();
-                        }
+                    granToReRollMeters.get(granularity).mark();
+                    if (nowMillis - update.getTimestamp() >= millisInADay) {
+                        granToDelayedMetricsMeter.get(granularity).mark();
                     }
                 }
                 outputKeys.add(entry.getKey());

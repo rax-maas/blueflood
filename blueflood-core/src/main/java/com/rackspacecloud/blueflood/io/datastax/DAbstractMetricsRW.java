@@ -4,17 +4,25 @@ import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
-import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class deals with aspects of reading/writing metrics which are common accross all column families
@@ -22,8 +30,11 @@ import java.util.*;
  */
 public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
-    private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
+    private static final Logger LOG = LoggerFactory.getLogger(DAbstractMetricsRW.class);
 
+    public DAbstractMetricsRW(Clock clock) {
+        super(clock);
+    }
 
     /**
      * Return the appropriate IO object which interacts with the Cassandra database.
@@ -53,7 +64,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
         }
 
         Map<ResultSetFuture, SingleRollupWriteContext> futureLocatorMap = new HashMap<ResultSetFuture, SingleRollupWriteContext>();
-        Timer.Context ctx = Instrumentation.getWriteTimerContext( writeContexts.get( 0 ).getDestinationCF().getName() );
+        Timer.Context ctx = Instrumentation.getWriteTimerContext(writeContexts.get(0).getDestinationCF().getName());
         try {
             for (SingleRollupWriteContext writeContext : writeContexts) {
                 Rollup rollup = writeContext.getRollup();
@@ -97,7 +108,9 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     public MetricData getDatapointsForRange(final Locator locator,
                                             Range range,
                                             Granularity granularity) throws IOException {
-        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{ add(locator); }}, range, granularity);
+        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{
+            add(locator);
+        }}, range, granularity);
         return result.get(locator);
     }
 
@@ -120,7 +133,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                                                               String columnFamily,
                                                               Granularity granularity ) throws IOException {
 
-        Timer.Context ctx = Instrumentation.getReadTimerContext( columnFamily );
+        Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamily);
 
         try {
 

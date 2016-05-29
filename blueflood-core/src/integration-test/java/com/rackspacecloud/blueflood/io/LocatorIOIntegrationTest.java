@@ -7,11 +7,13 @@ import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LocatorIOIntegrationTest extends IntegrationTestBase {
 
@@ -38,11 +40,13 @@ public class LocatorIOIntegrationTest extends IntegrationTestBase {
         Collection<Locator> locatorsResult1 = astyanaxLocatorIO.getLocators(shard1);
         assertEquals("Unexpected number of locators result for shard1", 1, locatorsResult1.size());
         assertEquals("test locator(0) not equal", testLocators.get(0).toString(), locatorsResult1.toArray()[0].toString());
+        assertTrue("last update stamp should have value", new ArrayList<Locator>(locatorsResult1).get(0).getLastUpdatedTimestamp() > 0);
 
         long shard2 = (long) Util.getShard(testLocators.get(1).toString());
         Collection<Locator> locatorsResult2 = astyanaxLocatorIO.getLocators(shard2);
         assertEquals("Unexpected number of locators result for shard2", 1, locatorsResult2.size());
         assertEquals("test locator(1) not equal", testLocators.get(1).toString(), locatorsResult2.toArray()[0].toString());
+        assertTrue("last update stamp should have value", new ArrayList<Locator>(locatorsResult2).get(0).getLastUpdatedTimestamp() > 0);
 
         // assert invalid shard should return empty collection using datastax
         assertEquals("locators should be empty", astyanaxLocatorIO.getLocators(-1), Collections.emptySet());
@@ -60,11 +64,13 @@ public class LocatorIOIntegrationTest extends IntegrationTestBase {
         Collection<Locator> locatorsResult1 = datastaxLocatorIO.getLocators(shard1);
         assertEquals("Unexpected number of locators result for shard1", 1, locatorsResult1.size());
         assertEquals("test locator(2) not equal", testLocators.get(2).toString(), locatorsResult1.toArray()[0].toString());
+        assertTrue("last update stamp should have value", new ArrayList<Locator>(locatorsResult1).get(0).getLastUpdatedTimestamp() > 0);
 
         long shard2 = (long) Util.getShard(testLocators.get(3).toString());
         Collection<Locator> locatorsResult2 = datastaxLocatorIO.getLocators(shard2);
         assertEquals("Unexpected number of locators result for shard2", 1, locatorsResult2.size());
         assertEquals("test locator(3) not equal", testLocators.get(3).toString(), locatorsResult2.toArray()[0].toString());
+        assertTrue("last update stamp should have value", new ArrayList<Locator>(locatorsResult2).get(0).getLastUpdatedTimestamp() > 0);
 
         // assert invalid shard should return empty collection using datastax
         assertEquals("locators should be empty", datastaxLocatorIO.getLocators(-1), Collections.emptySet());
