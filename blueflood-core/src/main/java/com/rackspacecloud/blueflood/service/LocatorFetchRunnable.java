@@ -120,7 +120,7 @@ class LocatorFetchRunnable implements Runnable {
                 rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator, isSlotBeingRerolled);
             }
         }
-        log.debug("For slotKey {}, number of locator's that were rolled up are {} out of {}", new Object[]{parentSlotKey, rollCount, locators.size()});
+        log.debug("For slotKey {} [isReroll={}], number of locator's that were rolled up are {} out of {}", new Object[]{parentSlotKey, isSlotBeingRerolled, rollCount, locators.size()});
 
         // now wait until ctx is drained. someone needs to be notified.
         drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
