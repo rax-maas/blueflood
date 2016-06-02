@@ -15,17 +15,18 @@
  */
 package com.rackspacecloud.blueflood.outputs;
 
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.astyanax.ABasicMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.handlers.RollupHandler;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,21 +73,23 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
             locatorList.add( Locator.createLocatorFromPathComponents( acctId, metric ) );
         }
 
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-        AstyanaxReader reader = AstyanaxReader.getInstance();
+        AbstractMetricsRW basicMetricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
-        writeFullData( writer );
-        writeRollups( reader, writer );
+        writeFullData( basicMetricsRW );
+        writeRollups( basicMetricsRW );
     }
 
-    private void writeRollups( AstyanaxReader reader, AstyanaxWriter writer ) throws GranularityException, java.io.IOException, ConnectionException {
+    private void writeRollups( AbstractMetricsRW metricsRW ) throws Exception {
 
 
         for( Locator locator : locatorList ) {
             ArrayList<SingleRollupWriteContext> writes = new ArrayList<SingleRollupWriteContext>();
             for ( Range range : Range.getRangesToRollup( Granularity.FULL, startRollupMS, endRollupMS ) ) {
                 // each range should produce one average
-                Points<SimpleNumber> input = reader.getDataToRoll( SimpleNumber.class, locator, range, CassandraModel.CF_METRICS_FULL );
+                Points<SimpleNumber> input = metricsRW.getDataToRollup(
+                                                    locator,
+                                                    RollupType.BF_BASIC,
+                                                    range, CassandraModel.CF_METRICS_FULL_NAME );
                 BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples( input );
 
                 writes.add( new SingleRollupWriteContext( basicRollup,
@@ -95,19 +98,19 @@ public class RollupHandlerIntegrationTest extends IntegrationTestBase {
                         CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL.coarser() ),
                         range.start ) );
             }
-            writer.insertRollups( writes );
+            metricsRW.insertRollups( writes );
         }
     }
 
-    private void writeFullData( AstyanaxWriter writer ) throws Exception {
+    private void writeFullData( AbstractMetricsRW writer ) throws Exception {
 
         // insert something every minute for 48h
         for ( Locator locator : locatorList ) {
             for ( int i = 0; i < 60 * hours; i++ ) {
                 final long curMillis = startMS + i * 60000;
-                List<Metric> metrics = new ArrayList<Metric>();
+                List<IMetric> metrics = new ArrayList<IMetric>();
                 metrics.add( getRandomIntMetricMaxValue( locator, curMillis, 100 ) );
-                writer.insertFull( metrics );
+                writer.insertMetrics(metrics);
             }
         }
     }
