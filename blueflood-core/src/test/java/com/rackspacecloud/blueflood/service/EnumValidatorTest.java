@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxEnumIO;
+import com.rackspacecloud.blueflood.io.astyanax.AEnumIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -63,7 +63,7 @@ public class EnumValidatorTest {
     public void setup() {
 
         // static mock
-        readerMock = mock(AstyanaxEnumIO.class);
+        readerMock = mock(AEnumIO.class);
         discoveryIOMock = mock(DiscoveryIO.class);
         excessEnumIO = mock(ExcessEnumIO.class);
 

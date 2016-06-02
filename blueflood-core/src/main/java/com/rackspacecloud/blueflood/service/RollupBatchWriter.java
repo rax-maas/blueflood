@@ -30,7 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 // Batches rollup writes
 public class RollupBatchWriter {
-    private final Logger log = LoggerFactory.getLogger(RollupBatchWriter.class);
+    private final Logger LOG = LoggerFactory.getLogger(RollupBatchWriter.class);
     private final AbstractMetricsRW basicMetricsRW;
     private final AbstractMetricsRW preAggregatedRW;
     private final ThreadPoolExecutor executor;
@@ -76,9 +76,15 @@ public class RollupBatchWriter {
             // pass
         }
         if (writeBasicContexts.size() > 0) {
+            LOG.debug(
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                            writeBasicContexts.size()));
             executor.execute(new RollupBatchWriteRunnable(writeBasicContexts, context, basicMetricsRW));
         }
         if (writePreAggrContexts.size() > 0) {
+            LOG.debug(
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                            writePreAggrContexts.size()));
             executor.execute(new RollupBatchWriteRunnable(writePreAggrContexts, context, preAggregatedRW));
         }
     }

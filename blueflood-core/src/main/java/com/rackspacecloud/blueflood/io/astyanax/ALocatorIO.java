@@ -35,9 +35,9 @@ import java.util.Collections;
  * This class uses the Astyanax driver to read/write locators from
  * Cassandra metrics_locator Column Family.
  */
-public class AstyanaxLocatorIO implements LocatorIO {
+public class ALocatorIO implements LocatorIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AstyanaxLocatorIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ALocatorIO.class);
 
     /**
      * Insert a locator with key = shard long value calculated using Util.getShard()
@@ -68,10 +68,15 @@ public class AstyanaxLocatorIO implements LocatorIO {
     @Override
     public Collection<Locator> getLocators(long shard) throws IOException {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
+//        final Collection<Locator> locators = new ArrayList<Locator>();
         try {
             RowQuery<Long, Locator> query = AstyanaxIO.getKeyspace()
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
+//            ColumnList<Locator> columns = query.execute().getResult();
+//            for (Column<Locator> column: columns) {
+//                locators.add(column.getName().withLastUpdatedTimestamp(column.getTimestamp() / 1000));
+//            }
             return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);

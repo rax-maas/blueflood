@@ -108,7 +108,6 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
     };
 
     private MetadataCache(TimeValue expiration, int concurrency) {
-        System.out.println("MetadataCache(" + expiration + "," + concurrency + ")");
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
             final String name = String.format(MetadataCache.class.getPackage().getName() + ":type=%s,name=Stats", MetadataCache.class.getSimpleName());

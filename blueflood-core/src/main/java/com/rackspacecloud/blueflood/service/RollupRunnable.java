@@ -26,8 +26,8 @@ import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.LocatorsUtils;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.RollupUtils;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
 public class RollupRunnable implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(RollupRunnable.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RollupRunnable.class);
 
-    private static final Timer writeTimer = Metrics.timer(RollupRunnable.class, "Write Rollup");
     protected final SingleRollupReadContext singleRollupReadContext;
     protected static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
             new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
@@ -83,8 +82,8 @@ public class RollupRunnable implements Runnable {
             return; // no work to be done.
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("Executing rollup from {} for {} {}", new Object[] {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Executing rollup from {} for {} {}", new Object[]{
                     srcGran.shortName(),
                     singleRollupReadContext.getRange().toString(),
                     singleRollupReadContext.getLocator()});
@@ -130,9 +129,8 @@ public class RollupRunnable implements Runnable {
             // first, get the points.
             AbstractMetricsRW metricsRW;
             try {
-                metricsRW = LocatorsUtils.getMetricsRWForLocator(rollupLocator);
+                metricsRW = RollupUtils.getMetricsRWForRollupType(rollupType);
 
-                // metricsRW.getDataToRollup(locator, rollupType, range, columnFamily)
                 input = metricsRW.getDataToRollup(
                         singleRollupReadContext.getLocator(),
                         rollupType,
@@ -140,6 +138,7 @@ public class RollupRunnable implements Runnable {
                         srcCF.getName());
 
                 if (input.isEmpty()) {
+                    LOG.debug(String.format("No points rollup for locator %s", singleRollupReadContext.getLocator()));
                     noPointsToCalculateRollup.mark();
                     return;
                 }
@@ -160,7 +159,7 @@ public class RollupRunnable implements Runnable {
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Exception e) {
-            log.error("Rollup failed; Locator: {}, Source Granularity: {}, For period: {}", new Object[] {
+            LOG.error("Rollup failed; Locator: {}, Source Granularity: {}, For period: {}", new Object[]{
                     singleRollupReadContext.getLocator(),
                     singleRollupReadContext.getRange().toString(),
                     srcGran.name(),

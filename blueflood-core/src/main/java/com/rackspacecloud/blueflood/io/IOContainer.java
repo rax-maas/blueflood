@@ -21,6 +21,8 @@ import com.rackspacecloud.blueflood.io.astyanax.*;
 import com.rackspacecloud.blueflood.io.datastax.*;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -35,6 +37,7 @@ public class IOContainer {
     // of them
 
     private static final Configuration configuration = Configuration.getInstance();
+    private static final Logger LOG = LoggerFactory.getLogger(IOContainer.class);
     private static IOContainer FROM_CONFIG_INSTANCE = null;
 
     private ShardStateIO shardStateIO;
@@ -55,8 +58,9 @@ public class IOContainer {
      */
     public static synchronized IOContainer fromConfig() {
         if ( FROM_CONFIG_INSTANCE == null ) {
-                String driver = configuration.getStringProperty(CoreConfig.CASSANDRA_DRIVER);
-                FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver));
+            String driver = configuration.getStringProperty(CoreConfig.CASSANDRA_DRIVER);
+            LOG.info(String.format("Using driver %s", driver));
+            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver));
         }
         return FROM_CONFIG_INSTANCE;
     }
@@ -89,11 +93,11 @@ public class IOContainer {
 
         } else {
 
-            metadataIO = new AstyanaxMetadataIO();
-            shardStateIO = new AstyanaxShardStateIO();
-            locatorIO = new AstyanaxLocatorIO();
-            excessEnumIO = new AstyanaxExcessEnumIO();
-            enumReaderIO = new AstyanaxEnumIO();
+            metadataIO = new AMetadataIO();
+            shardStateIO = new AShardStateIO();
+            locatorIO = new ALocatorIO();
+            excessEnumIO = new AExcessEnumIO();
+            enumReaderIO = new AEnumIO();
             basicMetricsRW = new ABasicMetricsRW();
             preAggregatedMetricsRW = new APreaggregatedMetricsRW();
         }

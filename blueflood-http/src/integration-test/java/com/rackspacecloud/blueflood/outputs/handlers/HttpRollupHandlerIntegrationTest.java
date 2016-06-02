@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -69,21 +68,21 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
         httpHandler = new HttpRollupsQueryHandler();
 
         // insert something every 1m for 24h
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + (i * 60000);
-            final List<Metric> metrics = new ArrayList<Metric>();
+            final List<IMetric> metrics = new ArrayList<IMetric>();
             final Metric metric = getRandomIntMetric(locators[0], curMillis);
             final Metric stringMetric = getRandomStringmetric(locators[1], curMillis);
             metrics.add(metric);
             metrics.add(stringMetric);
 
             analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
-            writer.insertFull(metrics);
+            metricsRW.insertMetrics(metrics);
         }
 
         // generate every level of rollup for the raw data

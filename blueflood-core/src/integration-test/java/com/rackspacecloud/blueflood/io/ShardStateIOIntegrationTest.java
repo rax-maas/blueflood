@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SlotState;
@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class ShardStateIOIntegrationTest extends IntegrationTestBase {
 
-    private static AstyanaxShardStateIO astyanaxShardStateIO = new AstyanaxShardStateIO();
+    private static AShardStateIO astyanaxShardStateIO = new AShardStateIO();
     private static DShardStateIO datastaxMetricsStateIO = new DShardStateIO();
 
     private static final int NUM_SLOTS = 5;

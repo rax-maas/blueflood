@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxLocatorIO;
+import com.rackspacecloud.blueflood.io.astyanax.ALocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals;
 public class LocatorIOIntegrationTest extends IntegrationTestBase {
 
     private final DLocatorIO datastaxLocatorIO = new DLocatorIO();
-    private final AstyanaxLocatorIO astyanaxLocatorIO = new AstyanaxLocatorIO();
+    private final ALocatorIO astyanaxLocatorIO = new ALocatorIO();
 
     private List<Locator> testLocators;
 

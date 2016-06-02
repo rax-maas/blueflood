@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -58,7 +57,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
 
         dt = new DateTime();
         System.out.println(String.format("Starting generation of metrics %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
@@ -75,7 +74,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
 
             MetadataCache.getInstance().put(enumMetric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(enumMetric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
-            writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+            metricsRW.insertMetrics(metrics);
         }
 
         dt= new DateTime();

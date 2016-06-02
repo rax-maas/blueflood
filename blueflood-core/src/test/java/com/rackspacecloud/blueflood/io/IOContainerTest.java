@@ -3,10 +3,8 @@ package com.rackspacecloud.blueflood.io;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
-import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
-import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
+import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -71,9 +69,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test
@@ -82,9 +80,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test
@@ -93,9 +91,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test

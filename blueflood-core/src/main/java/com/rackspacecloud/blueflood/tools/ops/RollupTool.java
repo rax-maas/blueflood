@@ -16,17 +16,16 @@
 
 package com.rackspacecloud.blueflood.tools.ops;
 
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.RollupUtils;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.commons.cli.*;
 
@@ -139,6 +138,9 @@ public class RollupTool {
             System.out.println("Calculating rollups for " + gran.name() + ". Reading from: " + srcCF.getName() + ". Writing to: " + dstCF.getName());
             //Get Rollup Computer
             Rollup.Type rollupComputer = RollupRunnable.getRollupComputer(rollupType, gran.finer());
+
+            AbstractMetricsRW metricsRW = RollupUtils.getMetricsRWForRollupType(rollupType);
+
             //This needs some explanation: Here we take slots in the gran to which we are rolling up i.e dstgran
             //Then for each slot we grab the data from the srcCF, thus automatically grabbing the sub-slots in the finer gran
             //Also, we always use the supplied time range to find snapped times, because a rollup gran is always a multiple
@@ -150,8 +152,9 @@ public class RollupTool {
                 Points input;
                 Rollup rollup = null;
                 try {
-                    input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
-                            loc, r, srcCF);
+
+                    input = metricsRW.getDataToRollup(
+                            loc, rollupType, r, srcCF.getName());
                     rollup = rollupComputer.compute(input);
                 } catch (IOException ex) {
                     System.err.println("IOException while getting points to roll " + ex.getMessage());
@@ -162,8 +165,8 @@ public class RollupTool {
             }
             //Insert calculated Rollups back into destination CF
             try {
-                AstyanaxWriter.getInstance().insertRollups(writeContexts);
-            } catch (ConnectionException ex) {
+                metricsRW.insertRollups(writeContexts);
+            } catch (Exception ex) {
                 System.err.println("Connection exception while inserting rollups" + ex.getMessage());
                 System.exit(-1);
             }

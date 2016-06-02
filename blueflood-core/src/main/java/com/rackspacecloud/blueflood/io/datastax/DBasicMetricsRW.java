@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.io.datastax;
 import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -134,8 +135,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
             Object type;
             try {
 
-                System.out.println("metadata=" + metadataCache);
-                type = metadataCache.get( locator, DATA_TYPE_CACHE_KEY );
+                type = MetadataCache.getInstance().get(locator, DATA_TYPE_CACHE_KEY);
 
             } catch ( CacheException e ) {
                 LOG.error(String.format("Error looking up locator %s in cache", locator), e);

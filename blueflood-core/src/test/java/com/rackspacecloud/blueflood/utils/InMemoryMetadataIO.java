@@ -57,5 +57,10 @@ public class InMemoryMetadataIO implements MetadataIO, CassandraUtilsIO {
     public long getKeyCount( String cf ) throws Exception {
         return backingTable.rowKeySet().size();
     }
+
+    @Override
+    public void truncateColumnFamily ( String cf ) throws Exception {
+        backingTable.clear();
+    }
 }
 

@@ -73,7 +73,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         excessEnumList.add(loc1);
         excessEnumList.add(loc2);
 
-        ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
+        ExcessEnumIO excessEnumIO = new AExcessEnumIO();
         excessEnumIO.insertExcessEnumMetric(loc1);
         excessEnumIO.insertExcessEnumMetric(loc2);
         Set<Locator> newExcessEnumList = excessEnumIO.getExcessEnumMetrics();

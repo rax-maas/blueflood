@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;

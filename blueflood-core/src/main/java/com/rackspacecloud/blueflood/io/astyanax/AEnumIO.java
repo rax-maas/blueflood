@@ -39,9 +39,9 @@ import java.util.*;
  * It's only a wrapper class because we already have a lot of the
  * logic in AstyanaxReader.
  */
-public class AstyanaxEnumIO implements EnumReaderIO {
+public class AEnumIO implements EnumReaderIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AstyanaxEnumIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AEnumIO.class);
 
     /**
      * Read the metrics_enum column family for the specified locators. Organize

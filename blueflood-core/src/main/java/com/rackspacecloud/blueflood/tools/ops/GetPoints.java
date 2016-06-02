@@ -16,7 +16,8 @@
 
 package com.rackspacecloud.blueflood.tools.ops;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -72,7 +73,7 @@ public class GetPoints {
                 (String) options.get(TENANT_ID),
                 (String) options.get(METRIC));
 
-        AstyanaxReader reader = AstyanaxReader.getInstance();
+        AbstractMetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
         Long from = (Long) options.get(FROM);
         Long to = (Long) options.get(TO);
@@ -105,7 +106,7 @@ public class GetPoints {
         System.out.println("Locator: " + locator + ", from: " + from + ", to: "
                 + to + ", resolution: " + gran.shortName());
 
-        MetricData data = reader.getDatapointsForRange(locator, new Range(from, to), gran);
+        MetricData data = metricsRW.getDatapointsForRange(locator, new Range(from, to), gran);
         Map<Long, Points.Point> points = data.getData().getPoints();
         for (Map.Entry<Long, Points.Point> item : points.entrySet()) {
             String output = String.format("Timestamp: %d, Data: %s, Unit: %s", item.getKey(), item.getValue().getData().toString(), data.getUnit());

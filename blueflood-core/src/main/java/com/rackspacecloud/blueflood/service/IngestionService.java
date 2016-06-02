@@ -16,10 +16,8 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
-
 public interface IngestionService {
-    public void startService(ScheduleContext context, IMetricsWriter writer);
+    public void startService(ScheduleContext context);
     public void shutdownService();
 }
 

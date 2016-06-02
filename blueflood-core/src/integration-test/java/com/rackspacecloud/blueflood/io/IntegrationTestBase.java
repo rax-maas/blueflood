@@ -17,16 +17,9 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.cache.Cache;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.recipes.reader.AllRowsReader;
-import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxRowCounterFunction;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
@@ -45,48 +38,6 @@ import java.util.concurrent.TimeUnit;
 
 public class IntegrationTestBase {
 
-    public static class AstyanaxTester extends AstyanaxIO {
-        // This is kind of gross and has serious room for improvement.
-        protected void truncate(String cf) {
-            int tries = 3;
-            while (tries-- > 0) {
-                try {
-                    getKeyspace().truncateColumnFamily(cf);
-                } catch (ConnectionException ex) {
-                    System.err.println("Connection problem, yo. remaining tries: " + tries + " " + ex.getMessage());
-                    try { Thread.sleep(1000L); } catch (Exception ewww) {}
-                }
-            }
-        }
-
-        protected final void assertNumberOfRows(String cf, long rows) throws Exception {
-            ColumnFamily<String, String> columnFamily = ColumnFamily.newColumnFamily(cf, StringSerializer.get(), StringSerializer.get());
-            AstyanaxRowCounterFunction<String, String> rowCounter = new AstyanaxRowCounterFunction<String, String>();
-            boolean result = new AllRowsReader.Builder<String, String>(getKeyspace(), columnFamily)
-                    .withColumnRange(null, null, false, 0)
-                    .forEachRow(rowCounter)
-                    .build()
-                    .call();
-            Assert.assertEquals(rows, rowCounter.getCount());
-        }
-
-        public ColumnFamily<Locator, Long> getStringCF() {
-            return CassandraModel.CF_METRICS_STRING;
-        }
-
-        public ColumnFamily<Locator, Long> getFullCF() {
-            return CassandraModel.CF_METRICS_FULL;
-        }
-
-        public ColumnFamily<Long, Locator> getLocatorCF() {
-            return CassandraModel.CF_METRICS_LOCATOR;
-        }
-
-        public MutationBatch createMutationBatch() {
-            return getKeyspace().prepareMutationBatch();
-        }
-    }
-
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     protected static final Random RAND = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
@@ -95,9 +46,9 @@ public class IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         // really short lived connections for tests!
-        AstyanaxTester truncator = new AstyanaxTester();
-        for (ColumnFamily cf : CassandraModel.getAllColumnFamilies())
-            truncator.truncate(cf.getName());
+        CassandraUtilsIO cassandraUtilsIO = new DCassandraUtilsIO();
+        for (String cf : CassandraModel.getAllColumnFamiliesNames())
+            cassandraUtilsIO.truncateColumnFamily(cf);
     }
     
     @After
@@ -183,9 +134,9 @@ public class IntegrationTestBase {
         return new PreaggregatedMetric(timestamp, locator, new TimeValue(1, TimeUnit.DAYS), rollup);
     }
 
-    protected List<Metric> makeRandomIntMetrics(int count) {
+    protected List<IMetric> makeRandomIntMetrics(int count) {
         final String tenantId = "ac" + randString(8);
-        List<Metric> metrics = new ArrayList<Metric>();
+        List<IMetric> metrics = new ArrayList<IMetric>();
         final long now = System.currentTimeMillis();
 
         for (int i = 0; i < count; i++) {
@@ -258,17 +209,18 @@ public class IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         MetricColumnFamily destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             destCF = CassandraModel.getColumnFamily(BasicRollup.class, destGranularity);
-            Points<SimpleNumber> input = AstyanaxReader.getInstance().getDataToRoll(SimpleNumber.class, locator, range,
-                    CassandraModel.CF_METRICS_FULL);
+            Points<SimpleNumber> input = metricsRW.getDataToRollup(locator, RollupType.BF_BASIC, range,
+                    CassandraModel.CF_METRICS_FULL_NAME);
             BasicRollup basicRollup = BasicRollup.buildRollupFromRawSamples(input);
             writeContexts.add(new SingleRollupWriteContext(basicRollup, locator, destGranularity, destCF, range.start));
         }
 
-        AstyanaxWriter.getInstance().insertRollups(writeContexts);
+        metricsRW.insertRollups(writeContexts);
     }
 
     protected void generateEnumRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
@@ -276,17 +228,18 @@ public class IntegrationTestBase {
             throw new Exception("Can't roll up to FULL");
         }
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
         MetricColumnFamily destCF;
         ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
         for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
             destCF = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, destGranularity);
-            Points<BluefloodEnumRollup> input = AstyanaxReader.getInstance().getDataToRoll(BluefloodEnumRollup.class, locator, range,
-                    CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+            Points<BluefloodEnumRollup> input = metricsRW.getDataToRollup(locator, RollupType.ENUM, range,
+                    CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME);
             BluefloodEnumRollup enumRollup = BluefloodEnumRollup.buildRollupFromEnumRollups(input);
             writeContexts.add(new SingleRollupWriteContext(enumRollup, locator, destGranularity, destCF, range.start));
         }
 
-        AstyanaxWriter.getInstance().insertRollups(writeContexts);
+        metricsRW.insertRollups(writeContexts);
     }
 
     private static final String TENANT1 = "11111";

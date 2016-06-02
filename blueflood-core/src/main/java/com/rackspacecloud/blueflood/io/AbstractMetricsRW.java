@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractMetricsRW implements MetricsRW {
 
-    protected static final MetadataCache metadataCache = MetadataCache.getInstance();
+    //protected static final MetadataCache metadataCache = MetadataCache.getInstance();
     protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
@@ -99,7 +99,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @throws CacheException
      */
     protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
-        String meta = metadataCache.get(locator, dataTypeCacheKey);
+        String meta = MetadataCache.getInstance().get(locator, dataTypeCacheKey);
         if (meta != null) {
             return new DataType(meta);
         }
@@ -114,7 +114,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         // Only grab units from cassandra, if we have to
         if (!Util.shouldUseESForUnits()) {
             try {
-                unitString = metadataCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
+                unitString = MetadataCache.getInstance().get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
             } catch (CacheException ex) {
                 LOG.warn("Cache exception reading unitString from MetadataCache: ", ex);
             }

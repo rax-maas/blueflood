@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxEnumIO;
+import com.rackspacecloud.blueflood.io.astyanax.AEnumIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
@@ -27,7 +27,6 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +42,7 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
     protected Map<Locator, List<IMetric>> locatorToMetrics;
     protected DEnumIO datastaxEnumIO = new DEnumIO();
-    protected AstyanaxEnumIO astyanaxEnumIO = new AstyanaxEnumIO();
+    protected AEnumIO astyanaxEnumIO = new AEnumIO();
 
     /**
      * This method is to supply the granularity parameter to some test methods below

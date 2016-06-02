@@ -3,6 +3,7 @@ package com.rackspacecloud.blueflood.io.datastax;
 import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Table;
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
@@ -134,7 +135,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             for (Locator locator : locators) {
                 try {
 
-                    String rType = metadataCache.get( locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase() );
+                    String rType = MetadataCache.getInstance().get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase());
 
                     DAbstractMetricIO io = getIO( rType, granularity );
 

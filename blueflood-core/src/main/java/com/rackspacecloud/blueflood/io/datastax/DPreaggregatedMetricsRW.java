@@ -146,9 +146,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                                                           Range range,
                                                           Granularity granularity) /*throws IOException*/ {
 
-            String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
+        String columnFamily = CassandraModel.getPreaggregatedColumnFamilyName(granularity);
 
-            return getDatapointsForRange( locators, range, columnFamily, granularity );
+        return getDatapointsForRange( locators, range, columnFamily, granularity );
     }
 
     /**

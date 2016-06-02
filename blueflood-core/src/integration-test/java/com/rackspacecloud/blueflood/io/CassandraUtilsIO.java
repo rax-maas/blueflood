@@ -21,4 +21,11 @@ public interface CassandraUtilsIO {
      * @throws Exception
      */
     public long getKeyCount( String cf ) throws Exception;
+
+    /**
+     * Truncates the specified column family
+     * @param cf
+     * @throws Exception
+     */
+    public void truncateColumnFamily ( String cf ) throws Exception;
 }

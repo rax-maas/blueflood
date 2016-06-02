@@ -18,12 +18,12 @@ package com.rackspacecloud.blueflood.cache;
 
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraUtilsIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxCassandraUtilsIO;
+import com.rackspacecloud.blueflood.io.astyanax.ACassandraUtilsIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
-import com.rackspacecloud.blueflood.io.datastax.DatastaxCassandraUtilsIO;
+import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
 import org.junit.runner.RunWith;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
@@ -203,7 +203,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         
         // create the replacement IO.
         final MetadataIO mapIO = new InMemoryMetadataIO();
-        final MetadataIO astIO = new AstyanaxMetadataIO();
+        final MetadataIO astIO = new AMetadataIO();
         
         final MetadataCache cache = MetadataCache.createLoadingCacheInstance();
         cache.setIO(astIO);
@@ -268,8 +268,8 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
     @Parameterized.Parameters
     public static Collection<Object[]> getIOs() {
         List<Object[]> ios = new ArrayList<Object[]>();
-        ios.add(new Object[] { new AstyanaxMetadataIO(), new AstyanaxCassandraUtilsIO() });
-        ios.add(new Object[] { new DMetadataIO(), new DatastaxCassandraUtilsIO() });
+        ios.add(new Object[] { new AMetadataIO(), new ACassandraUtilsIO() });
+        ios.add(new Object[] { new DMetadataIO(), new DCassandraUtilsIO() });
 
         InMemoryMetadataIO memIO = new InMemoryMetadataIO();
         ios.add(new Object[] { memIO, memIO });

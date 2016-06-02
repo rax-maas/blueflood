@@ -16,7 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -644,7 +644,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Parameterized.Parameters
     public static Collection<Object[]> getDifferentShardStateIOInstances() {
         List<Object[]> instances = new ArrayList<Object[]>();
-        instances.add(new Object[] { new AstyanaxShardStateIO(), Lists.newArrayList(1, 2, 3, 4) });
+        instances.add(new Object[] { new AShardStateIO(), Lists.newArrayList(1, 2, 3, 4) });
         instances.add(new Object[] { new InMemoryShardStateIO(), Lists.newArrayList(5, 6, 7, 8) });
         instances.add(new Object[] { new DShardStateIO(), Lists.newArrayList(1, 2, 3, 4) });
         return instances;

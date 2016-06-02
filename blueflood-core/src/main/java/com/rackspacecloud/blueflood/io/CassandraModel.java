@@ -256,17 +256,27 @@ public class CassandraModel {
         return ALL_COLUMN_FAMILIES;
     }
 
+    public static Collection<String> getAllColumnFamiliesNames() {
+
+        List<String> names = new ArrayList<String>() {{
+                for (ColumnFamily cf : ALL_COLUMN_FAMILIES) {
+                    add(cf.getName());
+                }
+        }};
+        return names;
+    }
+
     public static class MetricColumnFamily extends ColumnFamily<Locator, Long>  {
         private final TimeValue ttl;
 
         public MetricColumnFamily(String name, TimeValue ttl) {
-            super(name, LocatorSerializer.get(), LongSerializer.get());
-            this.ttl = ttl;
+                    super(name, LocatorSerializer.get(), LongSerializer.get());
+                    this.ttl = ttl;
         }
 
         public TimeValue getDefaultTTL() {
-            return ttl;
-        }
+                    return ttl;
+                }
     }
 
     // future versions will have get(Granularity, RollupType).
@@ -274,3 +284,4 @@ public class CassandraModel {
         public MetricColumnFamily get(Granularity gran);
     }
 }
+

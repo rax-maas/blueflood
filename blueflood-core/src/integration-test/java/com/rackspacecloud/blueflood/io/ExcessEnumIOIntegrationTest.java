@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxExcessEnumIO;
+import com.rackspacecloud.blueflood.io.astyanax.AExcessEnumIO;
 import com.rackspacecloud.blueflood.io.datastax.DExcessEnumIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Before;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 public class ExcessEnumIOIntegrationTest extends IntegrationTestBase {
 
     private final DExcessEnumIO datastaxExcessEnumIO = new DExcessEnumIO();
-    private final AstyanaxExcessEnumIO astyanaxExcessEnumIO = new AstyanaxExcessEnumIO();
+    private final AExcessEnumIO astyanaxExcessEnumIO = new AExcessEnumIO();
 
     private List<Locator> testLocators;
 

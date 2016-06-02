@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -55,6 +54,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
         HttpResponse response = postGenMetric( TID, postfix, postPath );
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
@@ -62,8 +62,9 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
             // assert that the update method on the ScheduleContext object was called and completed successfully
             // Now read the metrics back from cass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
             final Locator locator = Locator.createLocatorFromPathComponents( "acTEST", "mzord.duration" + postfix );
-            Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
-                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            Points<SimpleNumber> points = metricsRW.getDataToRollup(
+                    locator, RollupType.BF_BASIC, new Range(start, end),
+                    CassandraModel.getBasicColumnFamilyName(Granularity.FULL));
             assertEquals( 1, points.getPoints().size() );
         }
         finally {
@@ -174,14 +175,16 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", postfix );
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
             final Locator locator = Locator.
                     createLocatorFromPathComponents( "333333", "internal", "packets_received" + postfix );
-            Points<BluefloodCounterRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
-                    locator, new Range( start, end ),
-                    CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
+            Points<BluefloodCounterRollup> points =metricsRW.getDataToRollup(
+                    locator, RollupType.COUNTER, new Range( start, end ),
+                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL) );
             assertEquals( 1, points.getPoints().size() );
         } finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -245,23 +248,28 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json", postfix );
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
             final Locator locator = Locator.createLocatorFromPathComponents( "5405532", "G200ms" + postfix );
-            Points<BluefloodGaugeRollup> points = AstyanaxReader.getInstance().getDataToRoll( BluefloodGaugeRollup.class,
-                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodGaugeRollup.class, Granularity.FULL ) );
+            Points<BluefloodGaugeRollup> points = metricsRW.getDataToRollup(
+                    locator, RollupType.GAUGE, new Range(start, end),
+                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
             assertEquals( 1, points.getPoints().size() );
 
             final Locator locator1 = Locator.createLocatorFromPathComponents( "5405577", "internal.bad_lines_seen" + postfix );
-            Points<BluefloodCounterRollup> points1 = AstyanaxReader.getInstance().getDataToRoll( BluefloodCounterRollup.class,
-                    locator1, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodCounterRollup.class, Granularity.FULL ) );
+            Points<BluefloodCounterRollup> points1 = metricsRW.getDataToRollup(
+                    locator1, RollupType.COUNTER, new Range(start, end),
+                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
             assertEquals( 1, points1.getPoints().size() );
 
             final Locator locator2 = Locator.createLocatorFromPathComponents( "5405577", "call_xyz_api" + postfix );
-            Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
-                    locator2, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+            Points<BluefloodEnumRollup> points2 = metricsRW.getDataToRollup(
+                    locator2, RollupType.ENUM, new Range(start, end),
+                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
             assertEquals( 1, points2.getPoints().size() );
         }
         finally {
@@ -304,13 +312,16 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix );
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
 
             final Locator locator2 = Locator.createLocatorFromPathComponents( "99988877", "call_xyz_api" + postfix );
-            Points<BluefloodEnumRollup> points2 = AstyanaxReader.getInstance().getDataToRoll( BluefloodEnumRollup.class,
-                    locator2, new Range( start, end ), CassandraModel.getColumnFamily( BluefloodEnumRollup.class, Granularity.FULL ) );
+            Points<BluefloodEnumRollup> points2 = metricsRW.getDataToRollup(
+                    locator2, RollupType.ENUM, new Range(start, end),
+                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
             assertEquals( 2, points2.getPoints().size() );
         }
         finally {
@@ -376,19 +387,23 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         HttpResponse response = httpPost( TID, postMultiPath, generateMultitenantJSONMetricsData() );
 
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
+
         try {
             assertEquals( 200, response.getStatusLine().getStatusCode() );
             verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
             // assert that the update method on the ScheduleContext object was called and completed successfully
             // Now read the metrics back from cass and check (relies on generareJSONMetricsData from JSONMetricsContainerTest)
             final Locator locator = Locator.createLocatorFromPathComponents( "tenantOne", "mzord.duration" );
-            Points<SimpleNumber> points = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
-                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            Points<SimpleNumber> points = metricsRW.getDataToRollup(
+                    locator, RollupType.BF_BASIC, new Range( start, end ),
+                    CassandraModel.getBasicColumnFamilyName( Granularity.FULL ) );
             assertEquals( 1, points.getPoints().size() );
 
             final Locator locatorTwo = Locator.createLocatorFromPathComponents( "tenantTwo", "mzord.duration" );
-            Points<SimpleNumber> pointsTwo = AstyanaxReader.getInstance().getDataToRoll( SimpleNumber.class,
-                    locator, new Range( start, end ), CassandraModel.getColumnFamily( BasicRollup.class, Granularity.FULL ) );
+            Points<SimpleNumber> pointsTwo = metricsRW.getDataToRollup(
+                    locator, RollupType.BF_BASIC, new Range( start, end ),
+                    CassandraModel.getBasicColumnFamilyName( Granularity.FULL ) );
             assertEquals( 1, pointsTwo.getPoints().size() );
         }
         finally {
