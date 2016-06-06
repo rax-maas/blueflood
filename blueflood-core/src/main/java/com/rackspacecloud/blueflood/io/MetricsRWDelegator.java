@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -42,26 +41,49 @@ public class MetricsRWDelegator {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetricsRWDelegator.class);
 
+    /**
+     *
+     * @param locator
+     * @param range
+     * @param gran
+     * @return
+     */
+    public MetricData getDatapointsForRange(final Locator locator, Range range, Granularity gran) {
+        return getDatapointsForRange(new ArrayList<Locator>() {{ add(locator); }}, range, gran).get(locator);
+    }
+
+    /**
+     *
+     * @param locators
+     * @param range
+     * @param gran
+     * @return
+     */
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
 
         MetadataCache metadataCache = MetadataCache.getInstance();
         AbstractMetricsRW basicMetricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         AbstractMetricsRW preAggrMetricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+        EnumMetricData enumMetricData = new EnumMetricData(IOContainer.fromConfig().getEnumReaderIO());
 
         List<Locator> basicLocators = new ArrayList<Locator>();
         List<Locator> preAggrLocators = new ArrayList<Locator>();
+        List<Locator> enumLocators = new ArrayList<Locator>();
         for ( Locator locator : locators ) {
             try {
                 RollupType rollupType = RollupType.fromString(
                         metadataCache.get(locator,
                                 MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
 
-                if ( rollupType == RollupType.COUNTER ||
-                        rollupType == RollupType.ENUM ||
+                if (rollupType == RollupType.COUNTER ||
                         rollupType == RollupType.GAUGE ||
                         rollupType == RollupType.SET ||
-                        rollupType == RollupType.TIMER ) {
+                        rollupType == RollupType.TIMER) {
                     preAggrLocators.add(locator);
+                } else if ( rollupType == RollupType.ENUM ) {
+                    // enum has to be handled specially, because of
+                    // the join of 2 CFs
+                    enumLocators.add(locator);
                 } else {
                     basicLocators.add(locator);
                 }
@@ -76,6 +98,10 @@ public class MetricsRWDelegator {
         Map<Locator, MetricData> result = new HashMap<Locator, MetricData>();
         if ( ! basicLocators.isEmpty() ) {
             result.putAll(basicMetricsRW.getDatapointsForRange(basicLocators, range, gran));
+        }
+
+        if ( ! enumLocators.isEmpty() ) {
+            result.putAll(enumMetricData.getEnumMetricDataForRangeForLocatorList(enumLocators, range, gran));
         }
 
         if ( ! preAggrLocators.isEmpty() ) {

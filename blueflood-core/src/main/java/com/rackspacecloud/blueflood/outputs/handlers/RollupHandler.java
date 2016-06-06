@@ -390,8 +390,8 @@ public class RollupHandler {
         for ( Range r : ranges ) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
-                AbstractMetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
-                MetricData data = metricsRW.getDatapointsForRange(locator, r, Granularity.FULL);
+                MetricsRWDelegator delegator = new MetricsRWDelegator();
+                MetricData data = delegator.getDatapointsForRange(locator, r, Granularity.FULL);
                 cRead.stop();
 
                 Points dataToRoll = data.getData();

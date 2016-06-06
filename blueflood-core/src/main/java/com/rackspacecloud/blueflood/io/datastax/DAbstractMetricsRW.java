@@ -241,7 +241,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                 Points points = convertToPoints( tsRollupMap );
 
                 // get the dataType for this locator
-                DataType dataType = getDataType( locator, MetricMetadata.TYPE.name().toLowerCase() );
+                DataType dataType = getDataType( locator );
 
                 RollupType rollupType = getRollupType( tsRollupMap );
 

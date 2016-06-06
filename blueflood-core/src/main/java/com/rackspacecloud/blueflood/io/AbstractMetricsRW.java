@@ -94,12 +94,11 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
      *
      * @param locator
-     * @param dataTypeCacheKey
      * @return
      * @throws CacheException
      */
-    protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
-        String meta = MetadataCache.getInstance().get(locator, dataTypeCacheKey);
+    protected DataType getDataType(Locator locator) throws CacheException {
+        String meta = MetadataCache.getInstance().get(locator, DATA_TYPE_CACHE_KEY);
         if (meta != null) {
             return new DataType(meta);
         }

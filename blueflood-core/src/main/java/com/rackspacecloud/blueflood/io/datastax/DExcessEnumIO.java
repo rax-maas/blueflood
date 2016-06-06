@@ -61,11 +61,10 @@ public class DExcessEnumIO implements ExcessEnumIO {
     private void createPreparedStatements()  {
 
         // create a generic select statement for retrieving from metrics_locator
-        Select.Where select = QueryBuilder
+        Select select = QueryBuilder
                 .select()
                 .all()
-                .from(CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME)
-                .where();
+                .from(CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME);
         getValue = DatastaxIO.getSession().prepare( select );
 
         // create a generic insert statement for inserting into metrics_locator
@@ -116,10 +115,11 @@ public class DExcessEnumIO implements ExcessEnumIO {
 
         try {
             // bound values and execute
-            BoundStatement bound = putValue.bind(locator.toString(), 0L, null);
+            // inserting null value doesn't work :-(, the driver just silently
+            // drop the whole data and nothing got inserted
+            BoundStatement bound = putValue.bind(locator.toString(), 0L, 0L);
             session.execute(bound);
-        }
-        finally {
+        } finally {
             ctx.stop();
         }
 

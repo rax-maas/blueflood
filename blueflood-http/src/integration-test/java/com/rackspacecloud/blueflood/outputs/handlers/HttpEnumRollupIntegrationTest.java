@@ -28,6 +28,7 @@ import org.junit.*;
 
 import java.util.*;
 
+@Ignore
 public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
     // A timestamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;

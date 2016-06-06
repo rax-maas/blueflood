@@ -29,19 +29,23 @@ public class ExcessEnumsReaderIntegrationTest extends IntegrationTestBase {
     Locator dummyLocator = Locator.createLocatorFromPathComponents("abc","def");
     final Thread eerThread = new Thread(ExcessEnumReader.getInstance(), "Excess Enum Table Reader");
 
-    @Before
-    public void setUp() throws Exception {
-        IOContainer.fromConfig().getExcessEnumIO().insertExcessEnumMetric(dummyLocator);
-    }
-
-
     @Test
     public void testReader() throws Exception {
+
+        // precondition
         Assert.assertFalse("Before the table is read from Cassandra the locator should not be found", 
-            ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
-        // Start the thread to read the table from Cassandra
+                            ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
+
+        // when:
+        // we insert the locator
+        IOContainer.fromConfig().getExcessEnumIO().insertExcessEnumMetric(dummyLocator);
+        Configuration.getInstance().setProperty(CoreConfig.EXCESS_ENUM_READER_SLEEP, "1000");
+
+        // and start the thread to read the table from Cassandra
         eerThread.start();
         Thread.sleep(2000);
+
+        // then:
         Assert.assertTrue("After the table is read from Cassandra the locator should be found", 
             ExcessEnumReader.getInstance().isInExcessEnumMetrics(dummyLocator));
 

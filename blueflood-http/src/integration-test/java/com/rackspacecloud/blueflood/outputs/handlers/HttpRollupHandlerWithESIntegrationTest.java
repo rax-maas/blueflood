@@ -101,8 +101,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-
-        metric = writeEnumMetric("enum_metric2", "333333");
+        metric = datastaxWriteEnumMetric("enum_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
 
@@ -112,6 +111,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         granToPoints.put(Granularity.MIN_60, 25);
         granToPoints.put(Granularity.MIN_240, 7);
         granToPoints.put(Granularity.MIN_1440, 2);
+
+        Thread.sleep(1000);
     }
 
     @Test

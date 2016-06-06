@@ -20,6 +20,7 @@ import com.google.common.cache.Cache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
+import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
@@ -99,7 +100,7 @@ public class IntegrationTestBase {
     }
 
     protected Metric writeMetric(String name, Object value) throws Exception {
-        final List<Metric> metrics = new ArrayList<Metric>();
+        final List<IMetric> metrics = new ArrayList<IMetric>();
         final Locator locator = Locator.createLocatorFromPathComponents("acctId", name);
         Metric metric = new Metric(locator, value, System.currentTimeMillis(),
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
@@ -111,7 +112,7 @@ public class IntegrationTestBase {
         return metric;
     }
 
-    protected IMetric writeEnumMetric(String name, String tenantid) throws Exception {
+    protected IMetric astyanaxWriteEnumMetric(String name, String tenantid) throws Exception {
         final List<IMetric> metrics = new ArrayList<IMetric>();
         PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
         metrics.add(metric);
@@ -120,6 +121,17 @@ public class IntegrationTestBase {
 
         Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
         insertedLocators.invalidateAll();
+
+        return metric;
+    }
+
+    protected IMetric datastaxWriteEnumMetric(String name, String tenantid) throws Exception {
+        final List<IMetric> metrics = new ArrayList<IMetric>();
+        PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
+        metrics.add(metric);
+
+        DPreaggregatedMetricsRW metricsRW = new DPreaggregatedMetricsRW();
+        metricsRW.insertMetrics(metrics, Granularity.FULL);
 
         return metric;
     }

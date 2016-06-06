@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io.datastax;
 
+import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -46,6 +47,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
         DBasicMetricsRW metricsRW = new DBasicMetricsRW(true, new ArrayList<String>());
 
@@ -58,6 +60,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
             List<IMetric> metrics = new ArrayList<IMetric>();
             metrics.add(makeMetric(locator, curMillis, getRandomStringMetricValue()));
             metricsRW.insertMetrics(metrics);
+
         }
 
         // get back the cols that were written from start to stop.
@@ -77,6 +80,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String acctId = "ac" + IntegrationTestBase.randString(8);
         final String metricName = "fooService,barServer," + randString(8);
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
         List<String> keptTenants = new ArrayList<String>();
         keptTenants.add(locator.getTenantId());
@@ -110,6 +114,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
         DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
 
@@ -140,6 +145,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
         DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
 
@@ -176,6 +182,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
         String firstValue = getRandomStringMetricValue();
         String secondValue = getRandomStringMetricValue();
 
@@ -249,6 +256,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.BOOLEAN.toString());
 
         DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
 
@@ -285,6 +293,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final String metricName = "fooService,barServer," + randString(8);
 
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
+        MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.BOOLEAN.toString());
 
         DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
 
