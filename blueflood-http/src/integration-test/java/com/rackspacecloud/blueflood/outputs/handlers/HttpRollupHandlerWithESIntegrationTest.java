@@ -111,8 +111,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         granToPoints.put(Granularity.MIN_60, 25);
         granToPoints.put(Granularity.MIN_240, 7);
         granToPoints.put(Granularity.MIN_1440, 2);
-
-        Thread.sleep(1000);
     }
 
     @Test
