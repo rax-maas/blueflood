@@ -160,7 +160,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
         String columnFamily = CassandraModel.getBasicColumnFamilyName( gran );
 
-        metrics.putAll( super.getDatapointsForRange( locators, range, columnFamily, gran ) );
+        metrics.putAll( super.getDatapointsForRange( numerics, range, columnFamily, gran ) );
         metrics.putAll( getBooleanDataForRange( booleans, range ) );
         metrics.putAll( getStringDataForRange( strings, range ) );
         metrics.putAll( getNumericOrStringDataForRange( unknowns, range, columnFamily, gran ) );
