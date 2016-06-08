@@ -165,7 +165,8 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         int currentPoints = getNumberOfPointsViaHTTPHandler(handler, locator,
                 from, to, resolution);
         //Sometimes the rolled up points in the tests are 1 or 2 shy of the actual value
-        Assert.assertTrue(String.format("expectedPoints=%d and currentPoints=%d should be within 5 points diff", expectedPoints, currentPoints),
+        Assert.assertTrue(String.format("locator=%s, resolution=%s, expectedPoints=%d and currentPoints=%d should be within 5 points diff",
+                        locator, resolution.toString(), expectedPoints, currentPoints),
                 Math.abs(expectedPoints - currentPoints) <=5);
     }
 

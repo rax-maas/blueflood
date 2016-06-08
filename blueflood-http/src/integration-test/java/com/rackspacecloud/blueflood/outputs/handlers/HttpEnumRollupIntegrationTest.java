@@ -78,7 +78,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         }
 
         dt= new DateTime();
-        System.out.println(String.format("Starting generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+        System.out.println(String.format("Starting generation of rollups hour=%s min=%s sec=%s msec=%s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
 
         httpHandler = new HttpRollupsQueryHandler();
 
@@ -92,7 +92,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         }
 
         dt = new DateTime();
-        System.out.println(String.format("Finished generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+        System.out.println(String.format("Finished generation of rollups hour=%s min=%s sec=%s msec=%s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
 
 
         final Map<Granularity, Integer> answerForEnumMetric = new HashMap<Granularity, Integer>();
