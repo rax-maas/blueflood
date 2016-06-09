@@ -68,15 +68,10 @@ public class ALocatorIO implements LocatorIO {
     @Override
     public Collection<Locator> getLocators(long shard) throws IOException {
         Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
-//        final Collection<Locator> locators = new ArrayList<Locator>();
         try {
             RowQuery<Long, Locator> query = AstyanaxIO.getKeyspace()
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
-//            ColumnList<Locator> columns = query.execute().getResult();
-//            for (Column<Locator> column: columns) {
-//                locators.add(column.getName().withLastUpdatedTimestamp(column.getTimestamp() / 1000));
-//            }
             return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
