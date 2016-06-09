@@ -16,21 +16,17 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.MetricMetadata;
-import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * The purpose of this class is to encapsulate the difference
@@ -40,6 +36,27 @@ import java.util.Map;
 public class MetricsRWDelegator {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetricsRWDelegator.class);
+    private AbstractMetricsRW basicMetricsRW;
+    private AbstractMetricsRW preAggrMetricsRW;
+
+    /**
+     * Constructor
+     */
+    public MetricsRWDelegator() {
+        this(IOContainer.fromConfig().getBasicMetricsRW(),
+                IOContainer.fromConfig().getPreAggregatedMetricsRW());
+    }
+
+    /**
+     * Constructor
+     * @param basicMetricsRW
+     * @param preAggrMetricsRW
+     */
+    @VisibleForTesting
+    public MetricsRWDelegator(AbstractMetricsRW basicMetricsRW, AbstractMetricsRW preAggrMetricsRW) {
+        this.basicMetricsRW = basicMetricsRW;
+        this.preAggrMetricsRW = preAggrMetricsRW;
+    }
 
     /**
      *
@@ -62,8 +79,6 @@ public class MetricsRWDelegator {
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
 
         MetadataCache metadataCache = MetadataCache.getInstance();
-        AbstractMetricsRW basicMetricsRW = IOContainer.fromConfig().getBasicMetricsRW();
-        AbstractMetricsRW preAggrMetricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
         EnumMetricData enumMetricData = new EnumMetricData(IOContainer.fromConfig().getEnumReaderIO());
 
         List<Locator> basicLocators = new ArrayList<Locator>();
@@ -108,5 +123,32 @@ public class MetricsRWDelegator {
             result.putAll(preAggrMetricsRW.getDatapointsForRange(preAggrLocators, range, gran));
         }
         return result;
+    }
+
+    /**
+     *
+     * @param metrics
+     */
+    public void insertMetrics(List<IMetric> metrics) throws IOException {
+
+        Collection<IMetric> simpleMetrics = new ArrayList<IMetric>();
+        Collection<IMetric> preagMetrics = new ArrayList<IMetric>();
+        for (IMetric metric : metrics) {
+            if (metric instanceof Metric)
+                simpleMetrics.add(metric);
+            else if (metric instanceof PreaggregatedMetric)
+                preagMetrics.add(metric);
+            else {
+                LOG.warn(String.format("Dont know how to insert metric of class=%s for locator=%s rollupType=%s collectionTime=%d",
+                        metric.getClass().getSimpleName(), metric.getLocator(), metric.getRollupType(), metric.getCollectionTime()));
+            }
+        }
+
+        if (simpleMetrics.size() > 0)
+            basicMetricsRW.insertMetrics(simpleMetrics);
+
+        if (preagMetrics.size() > 0)
+            preAggrMetricsRW.insertMetrics(preagMetrics);
+
     }
 }

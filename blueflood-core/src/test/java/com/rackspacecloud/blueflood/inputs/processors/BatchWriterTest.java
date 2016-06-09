@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.MetricsRWDelegator;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -70,6 +71,7 @@ public class BatchWriterTest {
         IngestionContext context = mock(IngestionContext.class);
         AbstractMetricsRW basicRW = mock(AbstractMetricsRW.class);
         AbstractMetricsRW preAggrRW = mock(AbstractMetricsRW.class);
+        MetricsRWDelegator metricsRWDelegator = new MetricsRWDelegator(basicRW, preAggrRW);
         List<List<IMetric>> testdata = createTestData(Metric.class);
         List<List<IMetric>> pTestdata = createTestData(PreaggregatedMetric.class);
         List<List<IMetric>> allTestdata = new ArrayList<List<IMetric>>();
@@ -79,8 +81,7 @@ public class BatchWriterTest {
                         new ThreadPoolBuilder().build(),
                         timeout, bufferedMetrics,
                         context,
-                        basicRW,
-                        preAggrRW
+                        metricsRWDelegator
                         );
         
         ListenableFuture<List<Boolean>> futures = batchWriter.apply(allTestdata);

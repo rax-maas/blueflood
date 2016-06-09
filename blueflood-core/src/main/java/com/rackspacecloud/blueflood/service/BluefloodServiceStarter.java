@@ -99,8 +99,6 @@ public class BluefloodServiceStarter {
             for (String module : modules) {
                 log.info("Loading ingestion service module " + module);
                 try {
-                    AbstractMetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
-
                     Class serviceClass = classLoader.loadClass(module);
                     IngestionService service = (IngestionService) serviceClass.newInstance();
                     log.info("Starting ingestion service module " + module);

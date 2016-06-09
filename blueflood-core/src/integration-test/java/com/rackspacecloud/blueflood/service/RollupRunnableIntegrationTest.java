@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,7 +37,8 @@ import static org.mockito.Mockito.*;
 
 public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
-    // gentle reader: remember, all column families are truncated between tests.
+    // gentle reader: remember, all column families are truncated between tests
+    // in super.setUp()
 
     private AbstractMetricsRW basicRW = IOContainer.fromConfig().getBasicMetricsRW();
     private AbstractMetricsRW preAggrRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
@@ -49,14 +51,13 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     private final Locator enumLocator = Locator.createLocatorFromPathComponents("runnabletest", "enum");
     private final Locator normalLocator = Locator.createLocatorFromPathComponents("runnabletest", "just_some_data");
     
-    private final Range range = new Range(0, 5 * 60 * 1000);
+    private final Range range = new Range(0, 6 * 60 * 1000);
     
     private MetadataCache cache;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp(); // clears the schema.
-        
+    @Before
+    public void generateData() throws Exception {
+
         final TimeValue ttl = new TimeValue(24, TimeUnit.HOURS);
         
         // cache needs to be populated so rollups knows which serializer to use.

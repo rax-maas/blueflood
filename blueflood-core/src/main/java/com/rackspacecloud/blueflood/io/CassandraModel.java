@@ -270,13 +270,13 @@ public class CassandraModel {
         private final TimeValue ttl;
 
         public MetricColumnFamily(String name, TimeValue ttl) {
-                    super(name, LocatorSerializer.get(), LongSerializer.get());
-                    this.ttl = ttl;
+            super(name, LocatorSerializer.get(), LongSerializer.get());
+            this.ttl = ttl;
         }
 
         public TimeValue getDefaultTTL() {
-                    return ttl;
-                }
+            return ttl;
+        }
     }
 
     // future versions will have get(Granularity, RollupType).
