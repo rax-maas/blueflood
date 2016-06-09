@@ -98,9 +98,9 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
         } catch (TimeoutException ex) {
             DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
-            log.debug(String.format("BAD JSON: %s", body));
-            log.error("Other exception while trying to parse content", ex);
-            DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            log.debug(String.format("JSON request payload: %s", body));
+            log.error("Error saving data", ex);
+            DefaultHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             requestCount.dec();
             timerContext.stop();
