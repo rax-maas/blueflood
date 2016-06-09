@@ -76,7 +76,7 @@ public class IOContainer {
      *
      * @param driver
      */
-    public IOContainer(DriverType driver) {
+    private IOContainer(DriverType driver) {
 
         if ( driver == DriverType.DATASTAX ) {
 
