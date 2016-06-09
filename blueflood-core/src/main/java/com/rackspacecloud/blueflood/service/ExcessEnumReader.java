@@ -58,9 +58,7 @@ public class ExcessEnumReader implements Runnable {
         {
             try {
                 Set<Locator> excess = IOContainer.fromConfig().getExcessEnumIO().getExcessEnumMetrics();
-                //synchronized (this) {
-                    excessEnumMetrics = excess;
-                //}
+                excessEnumMetrics = excess;
                 readMeter.mark();
                 Thread.sleep(sleepMillis);
             } catch (Exception e) {
