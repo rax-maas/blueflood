@@ -120,7 +120,14 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     @Test
     public void testNormalMetrics() throws IOException {
         // full res has 5 samples.
-        Assert.assertEquals("Full res points", 5,
+        Range customRange = new Range(0, 10 * 60 * 1000);
+        Points points = basicRW.getDataToRollup(
+                normalLocator,
+                RollupType.NOT_A_ROLLUP,
+                customRange,
+                CassandraModel.CF_METRICS_FULL_NAME);
+        System.out.println(String.format("points=%s", points.getPoints().toString()));
+        Assert.assertEquals(String.format("Full res points for locator=%s range=%s", normalLocator, range), 5,
                 basicRW.getDataToRollup(
                         normalLocator,
                         RollupType.NOT_A_ROLLUP,
