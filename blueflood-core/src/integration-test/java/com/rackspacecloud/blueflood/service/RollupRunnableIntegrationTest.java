@@ -74,7 +74,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         Collection<IMetric> preaggregatedMetrics = new ArrayList<IMetric>();
         Collection<IMetric> normalMetrics = new ArrayList<IMetric>();
         
-        for (int i = 0; i < 5; i++) {
+        for (int i = 1; i <= 5; i++) {
             long time = i * 30000;
             IMetric metric;
             
@@ -120,7 +120,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     @Test
     public void testNormalMetrics() throws IOException {
         // full res has 5 samples.
-        Assert.assertEquals(5,
+        Assert.assertEquals("Full res points", 5,
                 basicRW.getDataToRollup(
                         normalLocator,
                         RollupType.NOT_A_ROLLUP,
@@ -128,7 +128,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
                         CassandraModel.CF_METRICS_FULL_NAME).getPoints().size());
         
         // assert nothing in 5m for this locator.
-        Assert.assertEquals(0,
+        Assert.assertEquals("5m res points", 0,
                 basicRW.getDataToRollup(
                         normalLocator,
                         RollupType.BF_BASIC,
