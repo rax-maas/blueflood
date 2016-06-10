@@ -72,8 +72,9 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     @Test
     public void testSingleplotQueryWithEnum() throws Exception {
 
-        long start = System.currentTimeMillis() - TIME_DIFF_MS;
-        long end = System.currentTimeMillis() + TIME_DIFF_MS;
+        long now = System.currentTimeMillis();
+        long start = now - TIME_DIFF_MS;
+        long end = now + TIME_DIFF_MS;
 
         String postfix = getPostfix();
 
@@ -82,25 +83,26 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         final String metric_name = "enum_metric_test" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", postfix );
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", now, postfix );
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
         JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "" );
 
-        assertNotNull( "No values for " + metric_name + " found", responseObject );
+        assertNotNull( String.format("GET metric %s, JSON response should not be null", metric_name), responseObject );
 
-        assertEquals( "unknown", responseObject.get( "unit" ).getAsString() );
+        assertEquals( String.format("metric %s: unit", metric_name), "unknown", responseObject.get( "unit" ).getAsString() );
 
         JsonArray values = responseObject.getAsJsonArray( "values" );
-        assertEquals( 1, values.size() );
+        assertEquals( String.format("metric %s: values array member count", metric_name), 1, values.size() );
 
         JsonObject value = values.get( 0 ).getAsJsonObject();
 
-        assertEquals( 1, value.get( "numPoints" ).getAsInt() );
-        assertTrue( value.has( "timestamp" ) );
-        assertEquals( 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
-        assertEquals( "enum", value.get( "type").getAsString() );
+        assertEquals( String.format("metric %s: numPoints", metric_name), 1, value.get( "numPoints" ).getAsInt() );
+        assertTrue( String.format("metric %s: timestamp should not be null", metric_name), value.has( "timestamp" ) );
+        assertNotNull(String.format("metric %s: enum_values should not be null", metric_name), value.getAsJsonObject("enum_values"));
+        assertEquals( String.format("metric %s: enum_values v3 int value", metric_name), 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
+        assertEquals( String.format("metric %s: type", metric_name), "enum", value.get( "type").getAsString() );
 
         JsonObject meta = responseObject.getAsJsonObject( "metadata" );
         assertTrue( meta.get( "limit" ).isJsonNull() );
