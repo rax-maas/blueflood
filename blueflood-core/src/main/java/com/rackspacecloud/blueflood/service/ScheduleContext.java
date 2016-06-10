@@ -28,6 +28,7 @@ import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,9 +153,20 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         registerMBean();
     }
 
+    public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards, String zookeeperCluster) {
+        this.scheduleTime = currentTimeMillis;
+        this.shardStateManager = new ShardStateManager(managedShards, asMillisecondsSinceEpochTicker());
+        ZKShardLockManager lockManager = new ZKShardLockManager(zookeeperCluster, new HashSet<Integer>(shardStateManager.getManagedShards()));
+        lockManager.init(new TimeValue(5, TimeUnit.SECONDS));
+        this.lockManager = lockManager;
+        this.clock = new DefaultClockImpl();
+        registerMBean();
+    }
+
     public ScheduleContext(long currentTimeMillis, Collection<Integer> managedShards) {
         this(currentTimeMillis, managedShards, new DefaultClockImpl());
     }
+
     @VisibleForTesting
     public ScheduleContext(long currentTimeMillis,
                            Collection<Integer> managedShards,
