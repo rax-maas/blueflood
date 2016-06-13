@@ -136,7 +136,7 @@ public class EnumMetricData {
             for (Locator locator : locators) {
                 populateEnumValueToCountMap(enumHashRollup.row(locator), enumHashValues.row(locator));
                 Points points = convertToPoints(enumHashRollup.row(locator));
-                MetricData metricData = new MetricData(points, getUnitString(locator), MetricData.Type.ENUM);
+                MetricData metricData = new MetricData(points, metadataCache.getUnitString(locator), MetricData.Type.ENUM);
                 resultMap.put(locator, metricData);
             }
         } catch (InterruptedException e) {
@@ -178,23 +178,6 @@ public class EnumMetricData {
             enumRollupPoints.add(new Points.Point<BluefloodEnumRollup>(enumRollup.getKey(), enumRollup.getValue()));
         }
         return enumRollupPoints;
-    }
-
-    // TODO: can this move to MetadataCache
-    private String getUnitString(Locator locator) {
-        String unitString = Util.UNKNOWN;
-        // Only grab units from cassandra, if we have to
-        if (!Util.shouldUseESForUnits()) {
-            try {
-                unitString = metadataCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-            } catch (CacheException ex) {
-                LOG.warn("Cache exception reading unitString from MetadataCache: ", ex);
-            }
-            if (unitString == null) {
-                unitString = Util.UNKNOWN;
-            }
-        }
-        return unitString;
     }
 
 }

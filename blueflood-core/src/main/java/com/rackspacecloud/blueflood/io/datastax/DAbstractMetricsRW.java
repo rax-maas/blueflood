@@ -245,7 +245,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
                 // create MetricData
                 MetricData.Type outputType = MetricData.Type.from( rollupType, dataType );
-                MetricData metricData = new MetricData( points, getUnitString( locator ), outputType );
+                MetricData metricData = new MetricData( points, metadataCache.getUnitString( locator ), outputType );
                 locatorMetricDataMap.put( locator, metricData );
 
             } catch (CacheException ex) {
