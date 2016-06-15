@@ -19,7 +19,7 @@ fi
 
 ######## Connecting to Cassandra and loading Blueflood's schema #######
 CASSCOUNTER=0
-while [[ $CASSCOUNTER -lt 20 ]];  #Wait for 20 seconds for cassandra to get ready.
+while [[ $CASSCOUNTER -lt 180 ]];  #Wait for 180 seconds for cassandra to get ready.
 do
         let CASSCOUNTER=CASSCOUNTER+2
 	nc -z $CASSANDRA_HOST 9160 > /dev/null
@@ -27,7 +27,7 @@ do
 		then
                 echo "Connected to Cassandra at $CASSANDRA_HOST"
 		break
-	elif [[ $CASSCOUNTER == 20 ]]
+	elif [[ $CASSCOUNTER == 180 ]]
                 then
                 echo "Error connecting to Cassandra"
                 exit 1
@@ -43,7 +43,7 @@ cqlsh $CASSANDRA_HOST -f blueflood.cdl
 
 ######## Connecting to Elasticsearch #######
 ESCOUNTER=0
-while [[ $ESCOUNTER -lt 20 ]];  #Wait for 20 seconds for elasticsearch to get ready.
+while [[ $ESCOUNTER -lt 120 ]];  #Wait for 120 seconds for elasticsearch to get ready.
 do
         let ESCOUNTER=ESCOUNTER+2
         nc -z $ELASTICSEARCH_HOST 9300 > /dev/null
@@ -51,7 +51,7 @@ do
                 then
                 echo "Connected to Elasticsearch at $ELASTICSEARCH_HOST"
                 break
-        elif [[ $ESCOUNTER == 20 ]]
+        elif [[ $ESCOUNTER == 120 ]]
                 then
                 echo "Error connecting to Elasticsearch"
                 exit 2
