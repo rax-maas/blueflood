@@ -1,5 +1,5 @@
 blueflood:
-  image: goru97/blueflood
+  build: .
   links:
     - cassandra
     - elasticsearch
