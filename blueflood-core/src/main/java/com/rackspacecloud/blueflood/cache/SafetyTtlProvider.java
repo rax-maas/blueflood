@@ -56,7 +56,7 @@ public class SafetyTtlProvider implements TenantTtlProvider {
                     continue;
                 }
                 MetricColumnFamily metricCF = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
-                TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
+                TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue(), metricCF.getDefaultTTL().getUnit());
                 ttlMapBuilder.put(granularity, type, ttl);
             }
         }

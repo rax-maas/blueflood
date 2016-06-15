@@ -44,30 +44,20 @@ public class CassandraModel {
     public static final String CF_METRICS_PREAGGREGATED_240M_NAME = "metrics_preaggregated_240m";
     public static final String CF_METRICS_PREAGGREGATED_1440M_NAME = "metrics_preaggregated_1440m";
 
-    /**
-    * It is worth pointing out that the actual TTL value is calculated by taking the TimeValues below
-    * and multiplying by 5.  Why?  Becuase SafetyTtlProvider.java multiplies the TimeValues below by 5.
-    * 
-    * Look for a line like this (currently line 48):
-    * TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-    *
-    * For example, TimeValue of 1 will equate to a 5 day TTL.
-    */
+    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily(CF_METRICS_FULL_NAME, new TimeValue(1 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily(CF_METRICS_5M_NAME, new TimeValue(2 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily(CF_METRICS_20M_NAME, new TimeValue(4 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily(CF_METRICS_60M_NAME, new TimeValue(31 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily(CF_METRICS_240M_NAME, new TimeValue(60 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily(CF_METRICS_1440M_NAME, new TimeValue(365 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily(CF_METRICS_STRING_NAME, new TimeValue(365 * 3 * 5, TimeUnit.DAYS));
 
-    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily(CF_METRICS_FULL_NAME, new TimeValue(1, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily(CF_METRICS_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily(CF_METRICS_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily(CF_METRICS_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily(CF_METRICS_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily(CF_METRICS_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily(CF_METRICS_STRING_NAME, new TimeValue(365 * 3, TimeUnit.DAYS));
-
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(1, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(2, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_20M_NAME, new TimeValue(4, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_60M_NAME, new TimeValue(31, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_240M_NAME, new TimeValue(60, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_1440M_NAME, new TimeValue(365, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(1 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(2 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_20M_NAME, new TimeValue(4 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_60M_NAME, new TimeValue(31 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_240M_NAME, new TimeValue(60 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_1440M_NAME, new TimeValue(365 * 5, TimeUnit.DAYS));
 
     public static final ColumnFamily<Locator, String> CF_METRICS_METADATA = new ColumnFamily<Locator, String>(CF_METRICS_METADATA_NAME,
             LocatorSerializer.get(),
