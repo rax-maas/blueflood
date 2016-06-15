@@ -256,7 +256,8 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 try {
 
-                    metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(), isBoolean, getUnitString( future.getKey() ) ) );
+                    metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(),
+                            isBoolean, metadataCache.getUnitString( future.getKey() ) ) );
                 }
                 catch (Exception e ) {
 
