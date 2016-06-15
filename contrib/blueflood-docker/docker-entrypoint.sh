@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ -z $GRAPHITE_PREFIX ]] #default graphite prefix 
+then        
+export GRAPHITE_PREFIX=$HOSTNAME 
+fi
+
 ######## If using BF with docker-compose / linking with C* and ES containers #######
 if [[ -n "$CASSANDRA_PORT_9160_TCP_ADDR" ]]
 then
@@ -63,8 +68,6 @@ cd ES-Setup
 cd ..
 
 printenv > blueflood.conf
-
-cat blueflood.conf
 
 cat > blueflood-log4j.properties << EOL
 log4j.appender.console=org.apache.log4j.ConsoleAppender
