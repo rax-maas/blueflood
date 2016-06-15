@@ -16,13 +16,11 @@
 
 package com.rackspacecloud.blueflood.rollup;
 
-import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
-import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
+import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Range;
-import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 
@@ -60,7 +58,7 @@ public final class Granularity {
     
     public static final int MAX_NUM_SLOTS = FULL.numSlots() + MIN_5.numSlots() + MIN_20.numSlots() + MIN_60.numSlots() + MIN_240.numSlots() + MIN_1440.numSlots();
 
-    private static SafetyTtlProvider SAFETY_TTL_PROVIDER;
+    private static CombinedTtlProvider TTL_PROVIDER;
 
     // simple counter for all instances, since there will be very few.
     private final int index;
@@ -300,12 +298,12 @@ public final class Granularity {
     private static Granularity granularityFromPointsGeometric(String tenantid, long from, long to, double requestedDuration, int requestedPoints, long assumedIntervalMillis, Clock ttlComparisonSource) {
         double minimumPositivePointRatio = Double.MAX_VALUE;
         Granularity gran = null;
-        if (SAFETY_TTL_PROVIDER == null) {
-            SAFETY_TTL_PROVIDER = SafetyTtlProvider.getInstance();
+        if (TTL_PROVIDER == null) {
+            TTL_PROVIDER = CombinedTtlProvider.getInstance();
         }
 
         for (Granularity g : Granularity.granularities()) {
-            long ttl = SAFETY_TTL_PROVIDER.getFinalTTL(tenantid, g);
+            long ttl = TTL_PROVIDER.getFinalTTL(tenantid, g);
 
             if (from < ttlComparisonSource.now().getMillis() - ttl) {
                 continue;

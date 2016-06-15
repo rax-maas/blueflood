@@ -30,7 +30,7 @@ import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
+import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
@@ -61,9 +61,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         return instance;
     }
 
-    // todo: should be some other impl.
-    private static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
-
+    private static TenantTtlProvider TTL_PROVIDER = CombinedTtlProvider.getInstance();
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // seen within the last 10 minutes, don't bother.
@@ -317,18 +315,10 @@ public class AstyanaxWriter extends AstyanaxIO {
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();
-            int ttl;
-            try {
-                ttl = (int)TTL_PROVIDER.getTTL(
+            int ttl = (int)TTL_PROVIDER.getTTL(
                     writeContext.getLocator().getTenantId(),
                     writeContext.getGranularity(),
-                    writeContext.getRollup().getRollupType()).toSeconds();
-            } catch (Exception ex) {
-                log.warn(ex.getMessage(), ex);
-                ttl = (int)SafetyTtlProvider.getInstance().getSafeTTL(
-                        writeContext.getGranularity(),
-                        writeContext.getRollup().getRollupType()).toSeconds();
-            }
+                    writeContext.getRollup().getRollupType()).get().toSeconds();
             AbstractSerializer serializer = Serializers.serializerFor(rollup.getClass());
             try {
                 mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())

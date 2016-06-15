@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
-import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
@@ -127,7 +126,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return Optional.of(stringTTL);
     }
 
-    @Override
     public Optional<TimeValue> getConfigTTLForIngestion() {
         return Optional.of(TTL_CONFIG_FOR_INGESTION);
     }

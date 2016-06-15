@@ -203,7 +203,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
         if(configTtlProvider.areTTLsForced()) {
             for(Metric m : containerMetrics) {
-                m.setTtl(configTtlProvider.getConfigTTLForIngestion());
+                m.setTtl(configTtlProvider.getConfigTTLForIngestion().get());
             }
         }
     }

@@ -32,18 +32,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implementation that provides the safe lower bound for the metric TTLs.
  *
- * Even though the methods of this class return {@link Optional}, they always returns a present value.
+ * Even though the methods of this class return {@link Optional}, they always return a present value.
  */
 public class SafetyTtlProvider implements TenantTtlProvider {
     private static final TimeValue DAY = new TimeValue(1, TimeUnit.DAYS);
     private final ImmutableTable<Granularity, RollupType, TimeValue> SAFETY_TTLS;
     private final TimeValue STRING_TTL = Constants.STRING_SAFETY_TTL;
     private final TimeValue CONFIG_TTL = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
-    private final boolean ARE_TTLS_FORCED = Configuration.getInstance().getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
 
     private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
 
-    public static SafetyTtlProvider getInstance() {
+    static SafetyTtlProvider getInstance() {
         return INSTANCE;
     }
 
@@ -82,21 +81,5 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     @Override
     public Optional<TimeValue> getConfigTTLForIngestion() {
        return Optional.of(CONFIG_TTL);
-    }
-
-    public long getFinalTTL(String tenantid, Granularity g) {
-        long ttl;
-        if (g == Granularity.FULL) {
-            if (ARE_TTLS_FORCED) {
-                ttl = getConfigTTLForIngestion().get().toMillis();
-            }
-            else {
-                ttl = getTTL(tenantid, g, RollupType.BF_BASIC).get().toMillis();
-            }
-        }
-        else {
-            ttl = getTTL(tenantid, g, RollupType.BF_BASIC).get().toMillis();
-        }
-        return ttl;
     }
 }
