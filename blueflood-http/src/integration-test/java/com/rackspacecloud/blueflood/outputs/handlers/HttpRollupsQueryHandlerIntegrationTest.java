@@ -99,8 +99,9 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         JsonObject value = values.get( 0 ).getAsJsonObject();
 
         assertEquals( String.format("metric %s: numPoints", metric_name), 1, value.get( "numPoints" ).getAsInt() );
-        assertTrue( String.format("metric %s: timestamp should not be null", metric_name), value.has( "timestamp" ) );
+        assertTrue(String.format("metric %s: timestamp should not be null", metric_name), value.has("timestamp"));
         assertNotNull(String.format("metric %s: enum_values should not be null", metric_name), value.getAsJsonObject("enum_values"));
+        assertNotNull(String.format("metric %s: enum_values v3 should not be null", metric_name), value.getAsJsonObject("enum_values").get("v3"));
         assertEquals( String.format("metric %s: enum_values v3 int value", metric_name), 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
         assertEquals( String.format("metric %s: type", metric_name), "enum", value.get( "type").getAsString() );
 
