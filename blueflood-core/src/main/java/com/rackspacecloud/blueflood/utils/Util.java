@@ -86,7 +86,8 @@ public class Util {
     public static String UNKNOWN = "unknown".intern();
 
     public static boolean shouldUseESForUnits() {
-        return Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) &&
+        return Configuration.getInstance().getBooleanProperty(CoreConfig.SHOULD_STORE_UNITS) &&
+                Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS) &&
                 Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(ElasticIOPath);
     }
 }

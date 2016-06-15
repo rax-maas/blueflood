@@ -104,25 +104,6 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         return DataType.NUMERIC;
     }
 
-    // TODO: can this move to MetadataCache?
-    // I don't like making this public, but currently RollupRunnable
-    // calls this
-    public String getUnitString(Locator locator) {
-        String unitString = Util.UNKNOWN;
-        // Only grab units from cassandra, if we have to
-        if (!Util.shouldUseESForUnits()) {
-            try {
-                unitString = MetadataCache.getInstance().get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-            } catch (CacheException ex) {
-                LOG.warn("Cache exception reading unitString from MetadataCache: ", ex);
-            }
-            if (unitString == null) {
-                unitString = Util.UNKNOWN;
-            }
-        }
-        return unitString;
-    }
-
     /**
      * Gets the TTL for a particular locator, rollupType and granularity.
      *

@@ -43,6 +43,7 @@ public class RollupRunnable implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(RollupRunnable.class);
 
     protected final SingleRollupReadContext singleRollupReadContext;
+    protected static final MetadataCache metadataCache = MetadataCache.getInstance();
     protected static final MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
             new TimeValue(48, TimeUnit.HOURS), // todo: need a good default expiration here.
             Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS));
@@ -155,7 +156,7 @@ public class RollupRunnable implements Runnable {
             //Emit a rollup event to event emitter
             RollupEventEmitter.getInstance().emit(RollupEventEmitter.ROLLUP_EVENT_NAME,
                     new RollupEvent(singleRollupReadContext.getLocator(), rollup,
-                            metricsRW.getUnitString(singleRollupReadContext.getLocator()),
+                            metadataCache.getUnitString(singleRollupReadContext.getLocator()),
                             singleRollupReadContext.getRollupGranularity().name(),
                             singleRollupReadContext.getRange().getStart()));
         } catch (Exception e) {

@@ -250,6 +250,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
         Timer.Context ctx = Instrumentation.getReadTimerContext( CassandraModel.CF_METRICS_STRING_NAME );
 
+        MetadataCache metadataCache = MetadataCache.getInstance();
         try {
 
             Map<Locator, MetricData> metrics = new HashMap<Locator, MetricData>();
@@ -263,7 +264,8 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 try {
 
-                    metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(), isBoolean, getUnitString( future.getKey() ) ) );
+                    metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(),
+                            isBoolean, metadataCache.getUnitString( future.getKey() ) ) );
                 }
                 catch (Exception e ) {
 
