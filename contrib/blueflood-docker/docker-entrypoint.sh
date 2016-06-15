@@ -8,12 +8,12 @@ fi
 ######## If using BF with docker-compose / linking with C* and ES containers #######
 if [[ -n "$CASSANDRA_PORT_9160_TCP_ADDR" ]]
 then
-export CASSANDRA_HOST="CASSANDRA_PORT_9160_TCP_ADDR"
+export CASSANDRA_HOST="$CASSANDRA_PORT_9160_TCP_ADDR"
 fi
 
 if [[ -n "$ELASTICSEARCH_PORT_9300_TCP_ADDR" ]]
 then
-export ELASTICSEARCH_HOST="ELASTICSEARCH_PORT_9300_TCP_ADDR"
+export ELASTICSEARCH_HOST="$ELASTICSEARCH_PORT_9300_TCP_ADDR"
 fi
 
 
