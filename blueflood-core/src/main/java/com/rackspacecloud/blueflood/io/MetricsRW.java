@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -68,7 +67,7 @@ public interface MetricsRW {
      * @param gran
      * @return
      */
-    public MetricData getDatapointsForRange(final Locator locator, Range range, Granularity gran) throws IOException;
+    public MetricData getDatapointsForRange(final Locator locator, Range range, Granularity gran);
 
     /**
      * Fetches {@link com.rackspacecloud.blueflood.outputs.formats.MetricData} objects for the
@@ -80,7 +79,7 @@ public interface MetricsRW {
      * @param gran
      * @return
      */
-    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) throws IOException;
+    public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran);
 
     /**
      * Fetches a {@link com.rackspacecloud.blueflood.types.Points} object for a

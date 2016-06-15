@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.cache;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -51,7 +51,7 @@ public class MetadataCacheBatchedModeIntegrationTest extends IntegrationTestBase
         Thread.sleep(2000);
 
         // By pass cache and read meta from disk to make sure things got written.
-        AstyanaxMetadataIO metadataIO = new AstyanaxMetadataIO();
+        AMetadataIO metadataIO = new AMetadataIO();
         Map<String, String> metaForL0 = metadataIO.getAllValues(l0);
         Assert.assertTrue(metaForL0.get("foo").equals("l0_foo"));
         Assert.assertTrue(metaForL0.get("bar").equals("l0_bar"));
@@ -71,7 +71,7 @@ public class MetadataCacheBatchedModeIntegrationTest extends IntegrationTestBase
         Locator l0 = Locator.createLocatorFromPathComponents("1", "a", "b");
         Locator l1 = Locator.createLocatorFromPathComponents("1", "c", "d");
 
-        AstyanaxMetadataIO metadataIO = new AstyanaxMetadataIO();
+        AMetadataIO metadataIO = new AMetadataIO();
         Table<Locator, String, String> metaToWrite = HashBasedTable.create();
 
         // By the pass the cache and write to disk directly.

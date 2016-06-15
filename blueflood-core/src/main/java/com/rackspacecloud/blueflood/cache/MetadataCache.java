@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.common.cache.CacheBuilder;
@@ -27,7 +26,6 @@ import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;

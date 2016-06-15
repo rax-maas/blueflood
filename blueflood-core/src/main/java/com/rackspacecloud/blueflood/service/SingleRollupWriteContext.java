@@ -61,6 +61,7 @@ public class SingleRollupWriteContext {
         return timestamp;
     }
 
+    // TODO: remove when we gut out Astyanax
     public ColumnFamily<Locator, Long> getDestinationCF() {
         return destinationCF;
     }

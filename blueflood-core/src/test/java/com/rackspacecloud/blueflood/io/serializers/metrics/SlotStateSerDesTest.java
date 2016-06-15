@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.io.serializers.metrics;
 
-import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.UpdateStamp;
 import org.junit.Assert;

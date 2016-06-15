@@ -3,8 +3,8 @@ package com.rackspacecloud.blueflood.io;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxShardStateIO;
+import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -20,6 +20,8 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.util.ArrayList;
+
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
@@ -33,7 +35,8 @@ import static org.junit.Assert.*;
         "com.rackspacecloud.blueflood.utils.Metrics",
         "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class})
-@SuppressStaticInitializationFor( "com.rackspacecloud.blueflood.io.datastax.DatastaxIO" )
+@SuppressStaticInitializationFor( {"com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
+        "com.rackspacecloud.blueflood.cache.MetadataCache"} )
 @RunWith(PowerMockRunner.class)
 public class IOContainerTest {
 
@@ -66,9 +69,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test
@@ -77,9 +80,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test
@@ -88,15 +91,18 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AstyanaxShardStateIO);
+        assertTrue("ShardStateIO instance is Astyanax", shardStateIO instanceof AShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AstyanaxMetadataIO );
+        assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
     @Test
     public void testDatastaxDriverConfig() {
 
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
+        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
+        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
+
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();

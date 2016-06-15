@@ -37,9 +37,9 @@ import java.util.Map;
  * This class uses the Astyanax driver to read/write ShardState from
  * Cassandra metrics_state Column Family.
  */
-public class AstyanaxShardStateIO implements ShardStateIO {
+public class AShardStateIO implements ShardStateIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AstyanaxShardStateIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AShardStateIO.class);
 
     @Override
     public Collection<SlotState> getShardState(int shard) throws IOException {

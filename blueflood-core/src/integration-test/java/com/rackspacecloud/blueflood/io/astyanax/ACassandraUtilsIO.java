@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.google.common.base.Function;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.recipes.reader.AllRowsReader;
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Utility class to provide some test methods existing tests use.
  */
-public class AstyanaxCassandraUtilsIO implements CassandraUtilsIO {
+public class ACassandraUtilsIO implements CassandraUtilsIO {
 
     /**
      * Count the number of keys in the table.
@@ -41,6 +42,19 @@ public class AstyanaxCassandraUtilsIO implements CassandraUtilsIO {
                 .call();
 
         return rowCounter.getCount();
+    }
+
+    @Override
+    public void truncateColumnFamily( String cf ) throws Exception {
+        int tries = 3;
+        while (tries-- > 0) {
+            try {
+                AstyanaxIO.getKeyspace().truncateColumnFamily(cf);
+            } catch (ConnectionException ex) {
+                System.err.println(String.format("Error truncating %s. Remaining tries: %d. %s", cf, tries, ex.getMessage()));
+                try { Thread.sleep(1000L); } catch (Exception ewww) {}
+            }
+        }
     }
 
     /**

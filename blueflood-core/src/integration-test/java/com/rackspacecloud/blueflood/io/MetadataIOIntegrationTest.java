@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
+import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.MetricMetadata;
@@ -24,7 +24,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
     private static final String CACHE_KEY = MetricMetadata.ROLLUP_TYPE.name().toLowerCase();
 
-    private AstyanaxMetadataIO astyanaxMetadataIO = new AstyanaxMetadataIO();
+    private AMetadataIO astyanaxMetadataIO = new AMetadataIO();
     private DMetadataIO dMetadataIO = new DMetadataIO();
 
 

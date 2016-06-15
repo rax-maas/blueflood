@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
 
 /**
  * HTTP Ingestion Service.
@@ -26,11 +25,9 @@ import com.rackspacecloud.blueflood.io.IMetricsWriter;
 public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
     private ScheduleContext context;
-    private IMetricsWriter writer;
 
-    public void startService(ScheduleContext context, IMetricsWriter writer) {
+    public void startService(ScheduleContext context) {
         this.context = context;
-        this.writer = writer;
 
         getHttpMetricsIngestionServer().startServer();
     }
@@ -42,7 +39,7 @@ public class HttpIngestionService implements IngestionService {
 
     private HttpMetricsIngestionServer getHttpMetricsIngestionServer() {
         if (this.server == null) {
-            this.server = new HttpMetricsIngestionServer(this.context, this.writer);
+            this.server = new HttpMetricsIngestionServer(this.context);
         }
 
         return this.server;

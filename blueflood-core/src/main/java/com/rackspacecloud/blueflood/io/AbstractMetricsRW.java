@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractMetricsRW implements MetricsRW {
 
-    protected static final MetadataCache metadataCache = MetadataCache.getInstance();
     protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
@@ -61,7 +60,9 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @param loc
      * @return
      */
-    protected synchronized boolean isLocatorCurrent(Locator loc) {
+    // I don't like making this public, but currently DiscoveryWriter
+    // calls this
+    public synchronized boolean isLocatorCurrent(Locator loc) {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
@@ -92,12 +93,11 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
      *
      * @param locator
-     * @param dataTypeCacheKey
      * @return
      * @throws CacheException
      */
-    protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
-        String meta = metadataCache.get(locator, dataTypeCacheKey);
+    protected DataType getDataType(Locator locator) throws CacheException {
+        String meta = MetadataCache.getInstance().get(locator, DATA_TYPE_CACHE_KEY);
         if (meta != null) {
             return new DataType(meta);
         }

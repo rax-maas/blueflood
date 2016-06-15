@@ -18,8 +18,8 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -57,13 +57,13 @@ public class RollupThreadpoolIntegrationTest extends IntegrationTestBase {
         long time = 1234;
 
         // now we need to put data that will generate an enormous amount of locators.
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        AbstractMetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
         final int NUM_LOCATORS = 5000;
         int locatorCount = 0;
         while (locatorCount < NUM_LOCATORS) {
             // generate 100 random metrics.
-            writer.insertFull(makeRandomIntMetrics(100));
+            metricsRW.insertMetrics(makeRandomIntMetrics(100));
             locatorCount += 100;
         }
 

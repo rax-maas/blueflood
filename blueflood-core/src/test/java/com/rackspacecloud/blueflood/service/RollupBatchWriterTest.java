@@ -1,9 +1,14 @@
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.Rollup;
+import com.rackspacecloud.blueflood.types.RollupType;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import java.io.IOException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.mockito.Mockito.*;
@@ -108,7 +113,7 @@ public class RollupBatchWriterTest {
     }
 
     @Test
-    public void enqueuingMinSizeAndThreadPoolNotSaturatedTriggersBatching() {
+    public void enqueuingMinSizeAndThreadPoolNotSaturatedTriggersBatching() throws Exception {
 
         // given
         // if active count < pool size, the RollupBatchWriter will think the
@@ -123,6 +128,14 @@ public class RollupBatchWriterTest {
         SingleRollupWriteContext srwc5 = mock(SingleRollupWriteContext.class);
         // ROLLUP_BATCH_MIN_SIZE default value is 5
 
+        Points<SimpleNumber> points = new Points<SimpleNumber>();
+        Rollup rollup = Rollup.BasicFromRaw.compute(points);
+        doReturn(rollup).when(srwc1).getRollup();
+        doReturn(rollup).when(srwc2).getRollup();
+        doReturn(rollup).when(srwc3).getRollup();
+        doReturn(rollup).when(srwc4).getRollup();
+        doReturn(rollup).when(srwc5).getRollup();
+
         // when
         rbw.enqueueRollupForWrite(srwc1);
         rbw.enqueueRollupForWrite(srwc2);
@@ -134,12 +147,6 @@ public class RollupBatchWriterTest {
         verify(ctx, times(5)).incrementWriteCounter();
         verifyNoMoreInteractions(ctx);
 
-        verifyZeroInteractions(srwc1);
-        verifyZeroInteractions(srwc2);
-        verifyZeroInteractions(srwc3);
-        verifyZeroInteractions(srwc4);
-        verifyZeroInteractions(srwc5);
-
         // if the queue size >= min size, then the executor will be queried
         verify(executor).getActiveCount();
         verify(executor).getPoolSize();
@@ -148,7 +155,7 @@ public class RollupBatchWriterTest {
     }
 
     @Test
-    public void enqueuingMaxSizeTriggersBatching() {
+    public void enqueuingMaxSizeTriggersBatching() throws Exception {
 
         // given
         // if active count == pool size, the RollupBatchWriter will think the
@@ -160,6 +167,9 @@ public class RollupBatchWriterTest {
         int i;
         for (i = 0; i < 100; i++) {
             srwcs[i] = mock(SingleRollupWriteContext.class);
+            Points<SimpleNumber> points = new Points<SimpleNumber>();
+            Rollup rollup = Rollup.BasicFromRaw.compute(points);
+            doReturn(rollup).when(srwcs[i]).getRollup();
         }
         // ROLLUP_BATCH_MAX_SIZE default value is 100
 
@@ -171,10 +181,6 @@ public class RollupBatchWriterTest {
         // then
         verify(ctx, times(100)).incrementWriteCounter();
         verifyNoMoreInteractions(ctx);
-
-        for (i = 0; i < 100; i++) {
-            verifyZeroInteractions(srwcs[i]);
-        }
 
         // if the queue size >= min size, then the executor will be queried
         verify(executor, times(96)).getActiveCount();   // ROLLUP_BATCH_MAX_SIZE - ROLLUP_BATCH_MIN_SIZE + 1
@@ -196,10 +202,13 @@ public class RollupBatchWriterTest {
     }
 
     @Test
-    public void drainBatchWithSingleItemTriggersBatching() {
+    public void drainBatchWithSingleItemTriggersBatching() throws Exception {
 
         // given
         SingleRollupWriteContext srwc = mock(SingleRollupWriteContext.class);
+        Points<SimpleNumber> points = new Points<SimpleNumber>();
+        Rollup rollup = Rollup.BasicFromRaw.compute(points);
+        doReturn(rollup).when(srwc).getRollup();
         rbw.enqueueRollupForWrite(srwc);
 
         // when

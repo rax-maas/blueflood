@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
+import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
@@ -11,6 +12,7 @@ import junitparams.Parameters;
 
 import java.util.*;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -121,7 +123,6 @@ public class BasicMetricsRWOtherFuncIntegrationTest extends BasicMetricsRWIntegr
         // rollups should be identical since one is just a coarse rollup of the other.
         assertEquals( "rollup read in coarser gran is the same", rollup, rollupCoarser );
     }
-
 
     @Test
     public void testLocatorWritten() throws Exception {

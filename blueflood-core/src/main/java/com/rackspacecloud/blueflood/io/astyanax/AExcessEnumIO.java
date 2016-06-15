@@ -36,9 +36,9 @@ import java.util.Set;
  * This class uses the Astyanax driver to read/write excess enum metrics from
  * Cassandra metrics_excess_enums Column Family.
  */
-public class AstyanaxExcessEnumIO implements ExcessEnumIO {
+public class AExcessEnumIO implements ExcessEnumIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AstyanaxExcessEnumIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AExcessEnumIO.class);
 
     @Override
     public Set<Locator> getExcessEnumMetrics() throws IOException {

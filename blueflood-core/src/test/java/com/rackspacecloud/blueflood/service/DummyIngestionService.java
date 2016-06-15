@@ -1,7 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,19 +25,14 @@ public class DummyIngestionService implements IngestionService {
     public ScheduleContext getContext() {
         return context;
     }
-    IMetricsWriter writer;
-    public IMetricsWriter getWriter() {
-        return writer;
-    }
 
     @Override
-    public void startService(ScheduleContext context, IMetricsWriter writer) {
+    public void startService(ScheduleContext context) {
         if (startServiceCalled) {
             throw new UnsupportedOperationException("startService was called more than once");
         }
         startServiceCalled = true;
         this.context = context;
-        this.writer = writer;
     }
 
     boolean shutdownServiceCalled = false;
