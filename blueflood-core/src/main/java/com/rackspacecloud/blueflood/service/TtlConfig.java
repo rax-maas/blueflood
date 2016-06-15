@@ -27,12 +27,6 @@ public enum TtlConfig implements ConfigDefaults {
     BASIC_ROLLUPS_MIN240("180"), // 6 months
     BASIC_ROLLUPS_MIN1440("365"), // 1 year
 
-    HIST_ROLLUPS_MIN5("30"), // 1 month
-    HIST_ROLLUPS_MIN20("60"), // 2 months
-    HIST_ROLLUPS_MIN60("90"), // 3 months
-    HIST_ROLLUPS_MIN240("180"), // 6 months
-    HIST_ROLLUPS_MIN1440("365"), // 1 year
-
     SET_ROLLUPS_FULL("7"), // 7 days
     SET_ROLLUPS_MIN5("30"), // 1 month
     SET_ROLLUPS_MIN20("60"), // 2 months
