@@ -17,25 +17,41 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.collect.Lists;
+import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
 public class Configuration {
-    private static final Properties defaultProps = new Properties();
-    private static Properties props;
-    private static final Configuration INSTANCE = new Configuration();
+    private final Properties defaultProps;
+    private final Properties props;
+    private static final Configuration INSTANCE = new Configuration(true);
 
     public static Configuration getInstance() {
         return INSTANCE;
     }
 
-    private Configuration() {
-        try {
-            init();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+    /**
+     * Create a new instance of {@link Configuration} for testing.
+     */
+    public static Configuration getTestInstance(Properties defaultProps) {
+        Configuration config = new Configuration(false);
+        for (Map.Entry<Object, Object> entry : defaultProps.entrySet()) {
+            config.defaultProps.put(entry.getKey(), entry.getValue());
+        }
+        return config;
+    }
+
+    private Configuration(boolean shouldInitialize) {
+        defaultProps = new Properties();
+        props = new Properties(defaultProps);
+        if (shouldInitialize) {
+            try {
+                init();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -46,7 +62,7 @@ public class Configuration {
     }
 
     public void init() throws IOException {
-        props = new Properties(defaultProps);
+        props.clear();
         // load the configuration.
         String configStr = System.getProperty("blueflood.config");
         if (configStr != null) {

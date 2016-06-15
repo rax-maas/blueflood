@@ -46,7 +46,7 @@ public class SafetyTtlProvider implements TenantTtlProvider {
         return INSTANCE;
     }
 
-    private SafetyTtlProvider() {
+    SafetyTtlProvider() {
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
                 new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
 

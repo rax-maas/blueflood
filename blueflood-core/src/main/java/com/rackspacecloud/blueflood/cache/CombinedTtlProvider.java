@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.RollupType;
@@ -25,13 +26,22 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
  * TTL Provider which obtains the TTL from the primary or secondary provider.
  */
 public class CombinedTtlProvider implements TenantTtlProvider {
-    private final ConfigTtlProvider primary = ConfigTtlProvider.getInstance();
-    private final SafetyTtlProvider safety = SafetyTtlProvider.getInstance();
+    private final ConfigTtlProvider primary;
+    private final SafetyTtlProvider safety;
 
-    private static final CombinedTtlProvider INSTANCE = new CombinedTtlProvider();
+    private static final CombinedTtlProvider INSTANCE = new CombinedTtlProvider(
+            ConfigTtlProvider.getInstance(),
+            SafetyTtlProvider.getInstance()
+    );
 
     public static CombinedTtlProvider getInstance() {
         return INSTANCE;
+    }
+
+    @VisibleForTesting
+    CombinedTtlProvider(ConfigTtlProvider primary, SafetyTtlProvider safety) {
+        this.primary = primary;
+        this.safety = safety;
     }
 
     @Override

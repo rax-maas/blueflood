@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -25,6 +26,7 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProvider implements TenantTtlProvider {
@@ -41,10 +43,22 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     }
 
     private ConfigTtlProvider() {
-        final Configuration config = Configuration.getInstance();
+        this(Configuration.getInstance());
+    }
 
+    @VisibleForTesting
+    ConfigTtlProvider(Configuration config) {
         // String rollups
-        stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
+        TimeValue stringTTL = null;
+        try {
+            int value = config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL);
+            if (value > 0) {
+                stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        this.stringTTL = stringTTL;
+
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
                 new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
 
