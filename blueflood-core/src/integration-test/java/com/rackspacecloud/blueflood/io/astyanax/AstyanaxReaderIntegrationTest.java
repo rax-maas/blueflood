@@ -21,7 +21,6 @@ import com.netflix.astyanax.serializers.BooleanSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.ExcessEnumIO;
-import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -73,7 +72,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
         excessEnumList.add(loc1);
         excessEnumList.add(loc2);
 
-        ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
+        ExcessEnumIO excessEnumIO = new AExcessEnumIO();
         excessEnumIO.insertExcessEnumMetric(loc1);
         excessEnumIO.insertExcessEnumMetric(loc2);
         Set<Locator> newExcessEnumList = excessEnumIO.getExcessEnumMetrics();
@@ -83,7 +82,7 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     @Test
     public void testCanReadEnumValuesByOneLocator() throws Exception {
         List<Locator> locatorList = new ArrayList<Locator>();
-        IMetric metric = writeEnumMetric("enum_metric1","333333");
+        IMetric metric = astyanaxWriteEnumMetric("enum_metric1", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric.getLocator());
@@ -102,12 +101,12 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     @Test
     public void testCanReadEnumValuesByMultipleLocators() throws Exception {
         List<Locator> locatorList = new ArrayList<Locator>();
-        IMetric metric = writeEnumMetric("enum_metric2","333333");
+        IMetric metric = astyanaxWriteEnumMetric("enum_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric.getLocator());
 
-        IMetric metric1 = writeEnumMetric("enum_metric3","333333");
+        IMetric metric1 = astyanaxWriteEnumMetric("enum_metric3", "333333");
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric1.getLocator());
@@ -129,12 +128,12 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     @Test
     public void test_ReadEnumValues_MultipleLocators_OneLocatorFaulty() throws Exception {
         List<Locator> locatorList = new ArrayList<Locator>();
-        IMetric metric = writeEnumMetric("enum_metric2","333333");
+        IMetric metric = astyanaxWriteEnumMetric("enum_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric.getLocator());
 
-        IMetric metric1 = writeEnumMetric("enum_metric3","333333");
+        IMetric metric1 = astyanaxWriteEnumMetric("enum_metric3", "333333");
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric1.getLocator());
@@ -165,13 +164,13 @@ public class AstyanaxReaderIntegrationTest extends IntegrationTestBase {
     public void testCanReadMixedEnumAndRegularMetrics() throws Exception {
         Set<Locator> enumLocatorsSet = new HashSet<Locator>();
         List<Locator> locatorList = new ArrayList<Locator>();
-        IMetric metric = writeEnumMetric("enum_metric3","333333");
+        IMetric metric = astyanaxWriteEnumMetric("enum_metric3", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric.getLocator());
         enumLocatorsSet.add(metric.getLocator());
 
-        IMetric metric1 = writeEnumMetric("enum_metric4","333333");
+        IMetric metric1 = astyanaxWriteEnumMetric("enum_metric4", "333333");
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric1.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
         locatorList.add(metric1.getLocator());

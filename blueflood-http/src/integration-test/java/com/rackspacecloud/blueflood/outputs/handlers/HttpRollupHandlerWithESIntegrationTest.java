@@ -20,7 +20,6 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -76,10 +75,10 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     @Before
     public void setup() throws Exception {
         super.setUp();
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
 
-        final List<Metric> metrics = new ArrayList<Metric>();
+        final List<IMetric> metrics = new ArrayList<IMetric>();
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + i * 60000;
             final Metric metric = getRandomIntMetric(locator, curMillis);
@@ -90,7 +89,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
 
         analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
-        writer.insertFull(metrics);
+        metricsRW.insertMetrics(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
         ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
@@ -102,8 +101,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-
-        metric = writeEnumMetric("enum_metric2", "333333");
+        metric = datastaxWriteEnumMetric("enum_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
 

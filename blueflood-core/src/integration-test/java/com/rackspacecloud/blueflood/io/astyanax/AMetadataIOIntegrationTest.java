@@ -20,8 +20,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,11 +28,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class AstyanaxMetadataIOIntegrationTest extends IntegrationTestBase {
+public class AMetadataIOIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testBatchedMetaWritesAndReads() throws Exception {
-        final AstyanaxMetadataIO metadataIO = new AstyanaxMetadataIO();
+        final AMetadataIO metadataIO = new AMetadataIO();
         Table<Locator, String, String> metaTable = HashBasedTable.create();
         final Set<Locator> locators = new HashSet<Locator>();
         MetadataCache cache = MetadataCache.getInstance();

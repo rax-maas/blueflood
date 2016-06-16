@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
 
-    private CassandraUtilsIO cassandraUtilsIO = new AstyanaxCassandraUtilsIO();
+    private CassandraUtilsIO cassandraUtilsIO = new ACassandraUtilsIO();
     ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
 
     @Test

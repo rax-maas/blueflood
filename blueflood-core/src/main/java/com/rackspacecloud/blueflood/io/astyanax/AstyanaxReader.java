@@ -257,23 +257,6 @@ public class AstyanaxReader extends AstyanaxIO {
         return points;
     }
 
-    public static String getUnitString(Locator locator) {
-        String unitString = Util.UNKNOWN;
-        // Only grab units from cassandra, if we have to
-        if (!Util.shouldUseESForUnits()) {
-            try {
-                unitString = metaCache.get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
-            } catch (CacheException ex) {
-                log.warn("Cache exception reading unitString from MetadataCache: ", ex);
-            }
-            if (unitString == null) {
-                unitString = Util.UNKNOWN;
-            }
-        }
-
-        return unitString;
-    }
-
     public static String getType(Locator locator) {
         String type = null;
         try {
@@ -390,7 +373,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.STRING);
+        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.STRING);
     }
 
     protected MetricData getEnumMetricDataForRange(final Locator locator, final Range range, Granularity gran) {
@@ -423,7 +406,7 @@ public class AstyanaxReader extends AstyanaxIO {
             metricDataMap = pointsFuture.get();
             for (Locator l : metricDataMap.keySet()) {
                 Points p = transformEnumValueHashesToStrings(metricDataMap.get(l), enumValues.get(l));
-                MetricData m = new MetricData(p, getUnitString(l), MetricData.Type.ENUM);
+                MetricData m = new MetricData(p, metaCache.getUnitString(l), MetricData.Type.ENUM);
                 resultMap.put(l,m);
             }
         } catch (InterruptedException e) {
@@ -448,7 +431,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.BOOLEAN);
+        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.BOOLEAN);
     }
 
     // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
@@ -469,7 +452,7 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, getUnitString(locator), MetricData.Type.NUMBER);
+        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.NUMBER);
     }
 
     // gets called when we DO NOT know what the data type is (numeric, string, etc.)
@@ -490,7 +473,7 @@ public class AstyanaxReader extends AstyanaxIO {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
             DataType dataType = getDataType(locator, dataTypeCacheKey);
-            String unit = getUnitString(locator);
+            String unit = metaCache.getUnitString(locator);
             MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
             Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
             MetricData data = new MetricData(points, unit, outputType);

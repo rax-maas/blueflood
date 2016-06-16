@@ -131,8 +131,34 @@ public class IncomingMetricMetadataAnalyzerTest {
         Assert.assertEquals("somethings", unit);
     }
 
+    @Test
+    public void test_ScanMetrics_DoesNotStoreUnits_IfStoreUnitsConfigSetFalse() throws Exception {
+        MetadataCache cache = MetadataCache.createLoadingCacheInstance(new TimeValue(5, TimeUnit.MINUTES), 1);
+        cache.setIO(this.metadataIO);
+
+        IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(cache);
+        IncomingMetricMetadataAnalyzer.setShouldStoreUnits(false);
+        IncomingMetricMetadataAnalyzer.setEsForUnits(true);
+        IncomingMetricMetadataAnalyzer.setEsModuleFoundForUnits(true);
+
+        ArrayList<IMetric> metricsList = new ArrayList<IMetric>();
+
+        Locator locator = Locator.createLocatorFromDbKey("integer_metric");
+
+        metricsList.add(new Metric(locator, 123, 14200000, new TimeValue(1, TimeUnit.DAYS), "somethings"));
+        analyzer.scanMetrics(metricsList);
+
+        //type should never be stored for numeric metrics
+        String type = cache.get(locator, MetricMetadata.TYPE.name().toLowerCase());
+        Assert.assertEquals(null, type);
+
+        String unit = cache.get(locator, MetricMetadata.UNIT.name().toLowerCase());
+        Assert.assertEquals(null, unit);
+    }
+
     @After
     public void tearDown() {
+        IncomingMetricMetadataAnalyzer.setShouldStoreUnits(Configuration.getInstance().getBooleanProperty(CoreConfig.SHOULD_STORE_UNITS));
         IncomingMetricMetadataAnalyzer.setEsForUnits(Configuration.getInstance().getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS));
         IncomingMetricMetadataAnalyzer.setEsModuleFoundForUnits(Configuration.getInstance().getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath));
     }

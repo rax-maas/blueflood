@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.common.cache.CacheBuilder;
@@ -27,13 +26,14 @@ import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetadataIO;
 import com.rackspacecloud.blueflood.io.MetadataIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.MetricMetadata;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +61,8 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
             CoreConfig.META_CACHE_MAX_CONCURRENCY);
     private final Boolean batchedReads;
     private final Boolean batchedWrites;
+    private static final boolean SHOULD_STORE_UNITS = Configuration.getInstance().getBooleanProperty(
+            CoreConfig.SHOULD_STORE_UNITS);
 
     // Specific to batched meta reads
 
@@ -284,6 +286,22 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         } catch (ClassCastException ex) {
             throw new CacheException(ex);
         }
+    }
+
+    public String getUnitString(Locator locator) {
+        String unitString = Util.UNKNOWN;
+        // Only grab units from cassandra, if we have to
+        if (SHOULD_STORE_UNITS && !Util.shouldUseESForUnits()) {
+            try {
+                unitString = get(locator, MetricMetadata.UNIT.name().toLowerCase(), String.class);
+            } catch (CacheException ex) {
+                log.warn("Cache exception reading unitString from MetadataCache: ", ex);
+            }
+            if (unitString == null) {
+                unitString = Util.UNKNOWN;
+            }
+        }
+        return unitString;
     }
 
     // todo: synchronization?

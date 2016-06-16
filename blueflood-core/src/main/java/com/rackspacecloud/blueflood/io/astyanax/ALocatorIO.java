@@ -35,9 +35,9 @@ import java.util.Collections;
  * This class uses the Astyanax driver to read/write locators from
  * Cassandra metrics_locator Column Family.
  */
-public class AstyanaxLocatorIO implements LocatorIO {
+public class ALocatorIO implements LocatorIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AstyanaxLocatorIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ALocatorIO.class);
 
     /**
      * Insert a locator with key = shard long value calculated using Util.getShard()

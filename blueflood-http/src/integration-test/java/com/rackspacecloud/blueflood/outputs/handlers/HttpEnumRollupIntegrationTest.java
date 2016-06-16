@@ -19,46 +19,39 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.elasticsearch.common.joda.time.DateTime;
 import org.junit.*;
 
 import java.util.*;
 
-public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
+public class HttpEnumRollupIntegrationTest extends HttpIntegrationTestBase {
     // A timestamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String enumMetricName = "enumMet_"+IntegrationTestBase.randString(8);
 
     List<Locator> enumLocators;
-    private static int queryPort = 20000;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
-    private static DefaultHttpClient client;
     private static DateTime dt;
 
     private HttpRollupsQueryHandler httpHandler;
     private final Map<Locator, Map<Granularity, Integer>> enumlocatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
 
-
     @BeforeClass
     public static void setUpHttp() {
-        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         httpQueryService = new HttpQueryService();
         httpQueryService.startService();
         vendor = new HttpClientVendor();
-        client = vendor.getClient();
     }
 
     @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+    public void generateEnumData() throws Exception {
+
+        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
 
         dt = new DateTime();
         System.out.println(String.format("Starting generation of metrics %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
@@ -75,11 +68,11 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
 
             MetadataCache.getInstance().put(enumMetric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(enumMetric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
-            writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+            metricsRW.insertMetrics(metrics);
         }
 
         dt= new DateTime();
-        System.out.println(String.format("Starting generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+        System.out.println(String.format("Starting generation of rollups hour=%s min=%s sec=%s msec=%s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
 
         httpHandler = new HttpRollupsQueryHandler();
 
@@ -93,7 +86,7 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         }
 
         dt = new DateTime();
-        System.out.println(String.format("Finished generation of rollups %s %s %s %s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
+        System.out.println(String.format("Finished generation of rollups hour=%s min=%s sec=%s msec=%s", dt.getHourOfDay(), dt.getMinuteOfHour(), dt.getSecondOfMinute(), dt.getMillisOfSecond()));
 
 
         final Map<Granularity, Integer> answerForEnumMetric = new HashMap<Granularity, Integer>();
@@ -109,6 +102,9 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testEnumRollups() throws Exception {
+        // This is because generateEnumData() takes a long
+        // time to run, we only want and need to do it once
+        // for all tests.
         testGetRollupByPointsEnums();
         testGetRollupByResolution();
     }
@@ -122,11 +118,11 @@ public class HttpEnumRollupIntegrationTest extends IntegrationTestBase {
         points.put(Granularity.MIN_240, 5);
         points.put(Granularity.MIN_1440, 1);
 
-        HttpRollupHandlerIntegrationTest.testHTTPRollupHandlerGetByPoints(enumlocatorToPoints, points, baseMillis, baseMillis + 86400000, enumLocators, httpHandler);
+        checkHttpRollupHandlerGetByPoints(enumlocatorToPoints, points, baseMillis, baseMillis + 86400000, enumLocators, httpHandler);
     }
 
     private void testGetRollupByResolution() throws Exception {
-        HttpRollupHandlerIntegrationTest.testGetRollupByResolution(enumLocators, enumlocatorToPoints, httpHandler);
+        checkGetRollupByResolution(enumLocators, enumlocatorToPoints, baseMillis, httpHandler);
     }
 
     @AfterClass

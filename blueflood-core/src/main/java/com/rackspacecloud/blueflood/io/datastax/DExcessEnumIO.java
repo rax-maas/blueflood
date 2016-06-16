@@ -40,9 +40,9 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
  * This class uses the Datastax driver to read/write excess enum metrics from
  * Cassandra metrics_excess_enums Column Family.
  */
-public class DatastaxExcessEnumIO implements ExcessEnumIO {
+public class DExcessEnumIO implements ExcessEnumIO {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatastaxExcessEnumIO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DExcessEnumIO.class);
 
     private static final String KEY = "key";
     private static final String COLUMN1 = "column1";
@@ -51,7 +51,7 @@ public class DatastaxExcessEnumIO implements ExcessEnumIO {
     private PreparedStatement getValue;
     private PreparedStatement putValue;
 
-    public DatastaxExcessEnumIO() {
+    public DExcessEnumIO() {
         createPreparedStatements();
     }
 
@@ -61,11 +61,10 @@ public class DatastaxExcessEnumIO implements ExcessEnumIO {
     private void createPreparedStatements()  {
 
         // create a generic select statement for retrieving from metrics_locator
-        Select.Where select = QueryBuilder
+        Select select = QueryBuilder
                 .select()
                 .all()
-                .from(CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME)
-                .where();
+                .from(CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME);
         getValue = DatastaxIO.getSession().prepare( select );
 
         // create a generic insert statement for inserting into metrics_locator
@@ -116,10 +115,11 @@ public class DatastaxExcessEnumIO implements ExcessEnumIO {
 
         try {
             // bound values and execute
-            BoundStatement bound = putValue.bind(locator.toString(), 0L, null);
+            // inserting null value doesn't work :-(, the driver just silently
+            // drop the whole data and nothing got inserted
+            BoundStatement bound = putValue.bind(locator.toString(), 0L, 0L);
             session.execute(bound);
-        }
-        finally {
+        } finally {
             ctx.stop();
         }
 

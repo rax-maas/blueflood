@@ -17,7 +17,6 @@ package com.rackspacecloud.blueflood.io.serializers;
 
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.io.serializers.astyanax.LocatorSerializer;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;

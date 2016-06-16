@@ -19,8 +19,6 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -39,7 +37,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
+public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
     // A timestamp 2 days ago
     private static final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
@@ -69,21 +67,21 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
+        MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
         httpHandler = new HttpRollupsQueryHandler();
 
         // insert something every 1m for 24h
         for (int i = 0; i < 1440; i++) {
             final long curMillis = baseMillis + (i * 60000);
-            final List<Metric> metrics = new ArrayList<Metric>();
+            final List<IMetric> metrics = new ArrayList<IMetric>();
             final Metric metric = getRandomIntMetric(locators[0], curMillis);
             final Metric stringMetric = getRandomStringmetric(locators[1], curMillis);
             metrics.add(metric);
             metrics.add(stringMetric);
 
             analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
-            writer.insertFull(metrics);
+            metricsRW.insertMetrics(metrics);
         }
 
         // generate every level of rollup for the raw data
@@ -118,7 +116,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
     @Test
     public void testGetPoints() throws Exception {
         testGetRollupByPoints();
-        testGetRollupByResolution(Arrays.asList(locators), locatorToPoints, httpHandler);
+        checkGetRollupByResolution(Arrays.asList(locators), locatorToPoints, baseMillis, httpHandler);
         testHttpRequestForPoints();
     }
 
@@ -131,50 +129,7 @@ public class HttpRollupHandlerIntegrationTest extends IntegrationTestBase {
         points.put(Granularity.MIN_240, 5);
         points.put(Granularity.MIN_1440, 1);
 
-        testHTTPRollupHandlerGetByPoints(locatorToPoints, points, baseMillis, baseMillis + 86400000, Arrays.asList(locators), httpHandler);
-    }
-
-    public static void testGetRollupByResolution(List<Locator> locators, Map<Locator, Map<Granularity, Integer>> answers, HttpRollupsQueryHandler httpHandler) throws Exception {
-        for (Locator locator : locators) {
-            for (Resolution resolution : Resolution.values()) {
-                Granularity g = Granularity.granularities()[resolution.getValue()];
-                testHTTPHandlersGetByResolution(locator, resolution, baseMillis, baseMillis + 86400000,
-                        answers.get(locator).get(g), httpHandler);
-            }
-        }
-    }
-
-    public static void testHTTPRollupHandlerGetByPoints(Map<Locator, Map<Granularity, Integer>> answers, Map<Granularity, Integer> points,
-                                                   long from, long to, List<Locator> locators, HttpRollupsQueryHandler httphandler) throws Exception {
-        for (Locator locator : locators) {
-            for (Granularity g2 : Granularity.granularities()) {
-                MetricData data = httphandler.GetDataByPoints(
-                        locator.getTenantId(),
-                        locator.getMetricName(),
-                        from,
-                        to,
-                        points.get(g2));
-                Assert.assertTrue(Math.abs((int) answers.get(locator).get(g2)-data.getData().getPoints().size()) <= 5);
-		// Disabling test that fail on ES
-                // Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
-            }
-        }
-    }
-
-    private static void testHTTPHandlersGetByResolution(Locator locator, Resolution resolution, long from, long to,
-                                                 int expectedPoints, HttpRollupsQueryHandler handler) throws Exception {
-        int currentPoints = getNumberOfPointsViaHTTPHandler(handler, locator,
-                from, to, resolution);
-        //Sometimes the rolled up points in the tests are 1 or 2 shy of the actual value
-        Assert.assertTrue(Math.abs(expectedPoints - currentPoints) <=5);
-    }
-
-    private static int getNumberOfPointsViaHTTPHandler(HttpRollupsQueryHandler handler,
-                                               Locator locator, long from, long to, Resolution resolution)
-            throws Exception {
-        final MetricData values = handler.GetDataByResolution(locator.getTenantId(),
-                locator.getMetricName(), from, to, resolution);
-        return values.getData().getPoints().size();
+        checkHttpRollupHandlerGetByPoints(locatorToPoints, points, baseMillis, baseMillis + 86400000, Arrays.asList(locators), httpHandler);
     }
 
     private void testHttpRequestForPoints() throws Exception {

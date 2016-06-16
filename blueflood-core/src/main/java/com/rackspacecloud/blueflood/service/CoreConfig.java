@@ -139,8 +139,6 @@ public enum CoreConfig implements ConfigDefaults {
     // valid options are: GEOMETRIC, LINEAR, and LESSTHANEQUAL
     GET_BY_POINTS_GRANULARITY_SELECTION("GEOMETRIC"),
 
-    IMETRICS_WRITER("com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter"),
-
     METADATA_CACHE_PERSISTENCE_ENABLED("false"),
     METADATA_CACHE_PERSISTENCE_PATH("/dev/null"),
     METADATA_CACHE_PERSISTENCE_PERIOD_MINS("10"),
@@ -154,6 +152,7 @@ public enum CoreConfig implements ConfigDefaults {
     TENANTIDS_TO_KEEP(""),
     TRACKER_DELAYED_METRICS_MILLIS("300000"),
 
+    SHOULD_STORE_UNITS("true"),
     USE_ES_FOR_UNITS("false"),
     // Should at least be equal to the number of the netty worker threads, if http module is getting loaded
     ES_UNIT_THREADS("50"),

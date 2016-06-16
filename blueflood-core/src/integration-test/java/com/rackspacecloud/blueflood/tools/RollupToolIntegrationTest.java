@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.tools;
 
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.tools.ops.RollupTool;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -37,10 +36,9 @@ import java.util.concurrent.TimeUnit;
 public class RollupToolIntegrationTest extends IntegrationTestBase {
     private final Locator testLocator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
     private final Range range = new Range(0, Granularity.MIN_1440.milliseconds() - 1);
-    AstyanaxReader reader = AstyanaxReader.getInstance();
-    AstyanaxWriter writer = AstyanaxWriter.getInstance();
 
-    @Before
+    AbstractMetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
+
     public void setUp() throws Exception{
         super.setUp();
         final TimeValue ttl = new TimeValue(48, TimeUnit.HOURS);
@@ -57,7 +55,7 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
             normalMetrics.add(metric);
             time = time + Granularity.MIN_5.milliseconds();
         }
-        writer.insertMetrics(normalMetrics, CassandraModel.CF_METRICS_FULL);
+        metricsRW.insertMetrics(normalMetrics);
     }
 
     @Test
@@ -71,10 +69,11 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     }
 
     private void assert5mRollups() throws IOException {
-        Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
+        Points<BasicRollup> points =  metricsRW.getDataToRollup(
                 testLocator,
+                RollupType.BF_BASIC,
                 range,
-                CassandraModel.CF_METRICS_5M);
+                CassandraModel.CF_METRICS_5M_NAME);
         Assert.assertEquals(288, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
@@ -85,10 +84,11 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     }
 
     private void assert20mRollups() throws IOException {
-        Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
+        Points<BasicRollup> points =  metricsRW.getDataToRollup(
                 testLocator,
+                RollupType.BF_BASIC,
                 range,
-                CassandraModel.CF_METRICS_20M);
+                CassandraModel.CF_METRICS_20M_NAME);
         Assert.assertEquals(72, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
@@ -99,10 +99,11 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     }
 
     private void assert60mRollups() throws IOException {
-        Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
+        Points<BasicRollup> points =  metricsRW.getDataToRollup(
                 testLocator,
+                RollupType.BF_BASIC,
                 range,
-                CassandraModel.CF_METRICS_60M);
+                CassandraModel.CF_METRICS_60M_NAME);
         Assert.assertEquals(24, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
@@ -113,10 +114,11 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     }
 
     private void assert240mRollups() throws IOException {
-        Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
+        Points<BasicRollup> points =  metricsRW.getDataToRollup(
                 testLocator,
+                RollupType.BF_BASIC,
                 range,
-                CassandraModel.CF_METRICS_240M);
+                CassandraModel.CF_METRICS_240M_NAME);
         Assert.assertEquals(6, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {
@@ -127,10 +129,11 @@ public class RollupToolIntegrationTest extends IntegrationTestBase {
     }
 
     private void assert1440mRollups() throws IOException {
-        Points<BasicRollup> points =  reader.getDataToRoll(BasicRollup.class,
+        Points<BasicRollup> points =  metricsRW.getDataToRollup(
                 testLocator,
+                RollupType.BF_BASIC,
                 range,
-                CassandraModel.CF_METRICS_1440M);
+                CassandraModel.CF_METRICS_1440M_NAME);
         Assert.assertEquals(1, points.getPoints().size());
         int i=1;
         for (Map.Entry<Long, Points.Point<BasicRollup>> pointsEntry : points.getPoints().entrySet()) {

@@ -38,6 +38,7 @@ public class IncomingMetricMetadataAnalyzer {
     private static Timer scanMetricsTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Scan meta for metrics");
     private static Timer checkMetaTimer = Metrics.timer(IncomingMetricMetadataAnalyzer.class, "Check meta");
     private static Configuration config = Configuration.getInstance();
+    private static boolean SHOULD_STORE_UNITS = true;
     private static boolean USE_ES_FOR_UNITS = false;
     private static boolean ES_MODULE_FOUND = false;
 
@@ -45,6 +46,7 @@ public class IncomingMetricMetadataAnalyzer {
     
     public IncomingMetricMetadataAnalyzer(MetadataCache cache) {
         this.cache = cache;
+        SHOULD_STORE_UNITS = config.getBooleanProperty(CoreConfig.SHOULD_STORE_UNITS);
         USE_ES_FOR_UNITS = config.getBooleanProperty(CoreConfig.USE_ES_FOR_UNITS);
         ES_MODULE_FOUND = config.getListProperty(CoreConfig.DISCOVERY_MODULES).contains(Util.ElasticIOPath);
     }
@@ -110,7 +112,7 @@ public class IncomingMetricMetadataAnalyzer {
             problems.add(typeProblem);
         }
 
-        if (!USE_ES_FOR_UNITS || !ES_MODULE_FOUND) {
+        if (SHOULD_STORE_UNITS && (!USE_ES_FOR_UNITS || !ES_MODULE_FOUND)) {
             if (USE_ES_FOR_UNITS && !ES_MODULE_FOUND) {
                 log.warn("USE_ES_FOR_UNITS config found but ES discovery module not found in the config, will use the metadata cache for units");
             }
@@ -119,9 +121,14 @@ public class IncomingMetricMetadataAnalyzer {
             if (unitProblem != null) {
                 problems.add(unitProblem);
             }
+        } else if (!SHOULD_STORE_UNITS && (USE_ES_FOR_UNITS || ES_MODULE_FOUND)) {
+            log.warn("ES config found but SHOULD_STORE_UNITS set to false in the config, will not store units");
         }
         return problems;
     }
+
+    @VisibleForTesting
+    public static void setShouldStoreUnits(boolean shouldStoreUnits) { SHOULD_STORE_UNITS = shouldStoreUnits; }
 
     @VisibleForTesting
     public static void setEsForUnits(boolean setEsForUnits) {

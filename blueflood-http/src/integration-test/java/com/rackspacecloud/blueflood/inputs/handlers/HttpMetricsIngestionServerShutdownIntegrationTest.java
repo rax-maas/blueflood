@@ -20,7 +20,6 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
@@ -72,7 +71,7 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
+        server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 
         server.startServer();

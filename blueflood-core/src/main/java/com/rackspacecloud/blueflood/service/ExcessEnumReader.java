@@ -17,14 +17,17 @@
 package com.rackspacecloud.blueflood.service;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.codahale.metrics.Meter;
 
 import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.astyanax.AExcessEnumIO;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.utils.Metrics;
 
+import io.netty.util.internal.ConcurrentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +57,8 @@ public class ExcessEnumReader implements Runnable {
         while (true)
         {
             try {
-                excessEnumMetrics = IOContainer.fromConfig().getExcessEnumIO().getExcessEnumMetrics();
+                Set<Locator> excess = IOContainer.fromConfig().getExcessEnumIO().getExcessEnumMetrics();
+                excessEnumMetrics = excess;
                 readMeter.mark();
                 Thread.sleep(sleepMillis);
             } catch (Exception e) {

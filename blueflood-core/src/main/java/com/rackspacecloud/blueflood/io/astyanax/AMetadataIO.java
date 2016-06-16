@@ -11,9 +11,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-public class AstyanaxMetadataIO implements MetadataIO {
+public class AMetadataIO implements MetadataIO {
     
-    public AstyanaxMetadataIO() { }
+    public AMetadataIO() { }
     
     @Override
     public void put(Locator locator, String key, String value) throws IOException {
