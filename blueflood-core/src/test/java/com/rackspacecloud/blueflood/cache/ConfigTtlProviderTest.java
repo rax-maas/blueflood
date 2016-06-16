@@ -52,7 +52,6 @@ public class ConfigTtlProviderTest {
 
     @Test
     public void testConfigTtlForStrings() throws Exception {
-        Assert.assertTrue(new TimeValue(364, TimeUnit.DAYS).equals(
-                ttlProvider.getTTLForStrings("acFoo").get()));
+        Assert.assertTrue(new TimeValue(364, TimeUnit.DAYS).equals(ttlProvider.getTTLForStrings("acFoo").get()));
     }
 }

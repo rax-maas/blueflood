@@ -70,13 +70,15 @@ public class CombinedTtlProvider implements TenantTtlProvider {
         if (gran == Granularity.FULL && primary.areTTLsForced()) {
             ttl = primary.getConfigTTLForIngestion().get().toMillis();
         } else {
-            ttl = getTTL(tenantid, gran, RollupType.BF_BASIC).get().toMillis();
+            ttl = safety.getTTL(tenantid, gran, RollupType.BF_BASIC).get().toMillis();
         }
         return ttl;
     }
 
     private static Optional<TimeValue> getMaximum(Optional<TimeValue> primaryValue, Optional<TimeValue> safetyValue) {
-        if (!primaryValue.isPresent()) { return safetyValue; }
+        if (!primaryValue.isPresent()) {
+            return safetyValue;
+        }
         return primaryValue;
     }
 }
