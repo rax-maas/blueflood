@@ -125,7 +125,7 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         long now = System.currentTimeMillis();
                         if ( now - writeStartTime > timeout.toMillis()) {
                             exceededScribeProcessingTime.mark();
-                            getLogger().info(
+                            getLogger().debug(
                                     String.format("Batch write time %d (ms) exceeded timeout %s before persisting " +
                                             "all metrics for batch %d",
                                             now - writeStartTime, timeout.toString(), batchId));
