@@ -38,7 +38,6 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     private static final TimeValue DAY = new TimeValue(1, TimeUnit.DAYS);
     private final ImmutableTable<Granularity, RollupType, TimeValue> SAFETY_TTLS;
     private final TimeValue STRING_TTL = Constants.STRING_SAFETY_TTL;
-    private final TimeValue CONFIG_TTL = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
 
     private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
 
@@ -76,10 +75,5 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     @Override
     public Optional<TimeValue> getTTLForStrings(String tenantId) {
         return Optional.of(STRING_TTL);
-    }
-
-    @Override
-    public Optional<TimeValue> getConfigTTLForIngestion() {
-       return Optional.of(CONFIG_TTL);
     }
 }

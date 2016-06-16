@@ -28,7 +28,4 @@ public interface TenantTtlProvider {
     public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType);
 
     public Optional<TimeValue> getTTLForStrings(String tenantId);
-
-    public Optional<TimeValue> getConfigTTLForIngestion();
-
 }

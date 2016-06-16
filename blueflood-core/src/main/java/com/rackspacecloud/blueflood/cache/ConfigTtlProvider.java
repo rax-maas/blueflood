@@ -140,8 +140,8 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return Optional.of(stringTTL);
     }
 
-    public Optional<TimeValue> getConfigTTLForIngestion() {
-        return Optional.of(TTL_CONFIG_FOR_INGESTION);
+    public TimeValue getConfigTTLForIngestion() {
+        return TTL_CONFIG_FOR_INGESTION;
     }
 
     public boolean areTTLsForced() {

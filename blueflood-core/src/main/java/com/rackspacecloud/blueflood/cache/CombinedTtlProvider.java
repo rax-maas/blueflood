@@ -58,17 +58,10 @@ public class CombinedTtlProvider implements TenantTtlProvider {
         return getMaximum(primaryValue, safetyValue);
     }
 
-    @Override
-    public Optional<TimeValue> getConfigTTLForIngestion() {
-        Optional<TimeValue> primaryValue = primary.getConfigTTLForIngestion();
-        Optional<TimeValue> safetyValue = safety.getConfigTTLForIngestion();
-        return getMaximum(primaryValue, safetyValue);
-    }
-
     public long getFinalTTL(String tenantid, Granularity gran) {
         long ttl;
         if (gran == Granularity.FULL && primary.areTTLsForced()) {
-            ttl = primary.getConfigTTLForIngestion().get().toMillis();
+            ttl = primary.getConfigTTLForIngestion().toMillis();
         } else {
             ttl = safety.getTTL(tenantid, gran, RollupType.BF_BASIC).get().toMillis();
         }
