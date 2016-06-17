@@ -55,7 +55,8 @@ public class ConfigTtlProvider implements TenantTtlProvider {
             if (value > 0) {
                 stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
             }
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException ex) {
+            log.warn("No valid String TTL in config.");
         }
         this.stringTTL = stringTTL;
 
@@ -100,7 +101,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
      * Helper function to build the ttl mapping. Only insert to the mapping if the value is a valid date.
      * @param ttlMapBuilder
      * @param config
-     * @param granularity
+     * @param gran
      * @param rollupType
      * @param configKey
      * @return true if the insertion is successful, false otherwise.
@@ -108,7 +109,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
     static boolean put(
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder,
         Configuration config,
-        Granularity granularity,
+        Granularity gran,
         RollupType rollupType,
         TtlConfig configKey) {
         int value;
@@ -116,9 +117,10 @@ public class ConfigTtlProvider implements TenantTtlProvider {
             value = config.getIntegerProperty(configKey);
             if (value < 0) return false;
         } catch (NumberFormatException e) {
+            log.info("No valid TTL config set for granularity: {}, rollup type: {}", gran.name(), rollupType.name());
             return false;
         }
-        ttlMapBuilder.put(granularity, rollupType, new TimeValue(value, TimeUnit.DAYS));
+        ttlMapBuilder.put(gran, rollupType, new TimeValue(value, TimeUnit.DAYS));
         return true;
     }
 

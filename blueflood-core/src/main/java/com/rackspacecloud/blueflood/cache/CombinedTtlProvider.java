@@ -48,14 +48,14 @@ public class CombinedTtlProvider implements TenantTtlProvider {
     public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType) {
         Optional<TimeValue> primaryValue = primary.getTTL(tenantId, gran, rollupType);
         Optional<TimeValue> safetyValue = safety.getTTL(tenantId, gran, rollupType);
-        return getMaximum(primaryValue, safetyValue);
+        return getTimeValue(primaryValue, safetyValue);
     }
 
     @Override
     public Optional<TimeValue> getTTLForStrings(String tenantId) {
         Optional<TimeValue> primaryValue = primary.getTTLForStrings(tenantId);
         Optional<TimeValue> safetyValue = safety.getTTLForStrings(tenantId);
-        return getMaximum(primaryValue, safetyValue);
+        return getTimeValue(primaryValue, safetyValue);
     }
 
     public long getFinalTTL(String tenantid, Granularity gran) {
@@ -68,7 +68,7 @@ public class CombinedTtlProvider implements TenantTtlProvider {
         return ttl;
     }
 
-    private static Optional<TimeValue> getMaximum(Optional<TimeValue> primaryValue, Optional<TimeValue> safetyValue) {
+    private static Optional<TimeValue> getTimeValue(Optional<TimeValue> primaryValue, Optional<TimeValue> safetyValue) {
         if (!primaryValue.isPresent()) {
             return safetyValue;
         }
