@@ -122,10 +122,13 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         singleBatchWriteCtx.stop();
                         bufferedMetrics.dec(batch.size());
 
-                        if (System.currentTimeMillis() - writeStartTime > timeout.toMillis()) {
+                        long now = System.currentTimeMillis();
+                        if ( now - writeStartTime > timeout.toMillis()) {
                             exceededScribeProcessingTime.mark();
-                            getLogger().error("Exceeded timeout " + timeout.toString() + " before persisting " +
-                                    "all metrics for batch " + batchId);
+                            getLogger().debug(
+                                    String.format("Batch write time %d (ms) exceeded timeout %s before persisting " +
+                                            "all metrics for batch %d",
+                                            now - writeStartTime, timeout.toString(), batchId));
                         }
                     }
                 }

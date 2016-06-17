@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.common.base.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -48,7 +49,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
-        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "" );
+        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "", null );
 
         assertNotNull( "No values for " + metric_name + " found", responseObject );
 
@@ -87,7 +88,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
-        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "" );
+        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "", "v3" );
 
         assertNotNull( String.format("GET metric %s, JSON response should not be null", metric_name), responseObject );
 
@@ -101,7 +102,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( String.format("metric %s: numPoints", metric_name), 1, value.get( "numPoints" ).getAsInt() );
         assertTrue(String.format("metric %s: timestamp should not be null", metric_name), value.has("timestamp"));
         assertNotNull(String.format("metric %s: enum_values should not be null", metric_name), value.getAsJsonObject("enum_values"));
-        assertNotNull(String.format("metric %s: enum_values v3 should not be null", metric_name), value.getAsJsonObject("enum_values").get("v3"));
+        assertNotNull(String.format("metric %s: enum_values v3 should not be null, payload: %s", metric_name, responseObject.toString()), value.getAsJsonObject("enum_values").get("v3"));
         assertEquals( String.format("metric %s: enum_values v3 int value", metric_name), 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
         assertEquals( String.format("metric %s: type", metric_name), "enum", value.get( "type").getAsString() );
 
@@ -137,7 +138,8 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
                                             long end,
                                             String points,
                                             String resolution,
-                                            String select ) throws URISyntaxException, IOException, InterruptedException {
+                                            String select,
+                                            String enumValue) throws URISyntaxException, IOException, InterruptedException {
 
         for( int i = 0; i < 10 ; i++ ) {
             // query for multiplot metric and assert results
@@ -150,9 +152,27 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
             JsonParser jsonParser = new JsonParser();
             JsonObject responseObject = jsonParser.parse( responseContent ).getAsJsonObject();
 
-            if ( responseObject.getAsJsonArray( "values" ).size() == 1 )
-                return responseObject;
+            JsonArray arrayValues  = responseObject.getAsJsonArray( "values" );
+            if ( arrayValues.size() == 1 ) {
+                // if enumValues is null or empty, then
+                // we care about the values here
+                if ( Strings.isNullOrEmpty(enumValue) ) {
+                    return responseObject;
+                }
 
+                // enumValues have something, let's check the data
+                JsonObject value = arrayValues.get( 0 ).getAsJsonObject();
+                if ( value != null ) {
+                    JsonObject jsonEnumValues = value.getAsJsonObject("enum_values");
+                    if ( jsonEnumValues != null ) {
+                        if ( jsonEnumValues.get(enumValue) != null ) {
+                            return responseObject;
+                        }
+                    }
+                }
+            }
+
+            System.out.println(String.format("Data for metric %s is not found, sleeping and retrying, payload: %s", metric_name, responseContent));
             Thread.currentThread().sleep( 5000 );
 
         }

@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -168,7 +169,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        log.warn("Trouble persisting metrics:");
+                        log.warn(String.format("%s"), Arrays.toString(metrics.toArray()));
+                        DefaultHandler.sendResponse(ctx, request, "Persisted failed for metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
                 }

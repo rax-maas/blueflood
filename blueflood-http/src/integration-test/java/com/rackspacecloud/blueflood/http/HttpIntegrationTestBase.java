@@ -46,7 +46,7 @@ import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpIntegrationTestBase {
 
-    public static final long TIME_DIFF_MS = 20000;
+    public static final long TIME_DIFF_MS = 40000;
 
     protected static HttpClient client;
     protected static ScheduleContext context;
