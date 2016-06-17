@@ -52,7 +52,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
 
-    private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
@@ -170,7 +169,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
         if (isString || isBoolean) {
             // they were already casting long to int in Metrics.setTtl()
-            metric.setTtlInSeconds( (int) STRING_TTL.toSeconds() );
+            metric.setTtlInSeconds((int)TTL_PROVIDER.getTTLForStrings(metric.getLocator().getTenantId()).get().toSeconds());
             String persist;
             if (isString) {
                 persist = (String) metric.getMetricValue();

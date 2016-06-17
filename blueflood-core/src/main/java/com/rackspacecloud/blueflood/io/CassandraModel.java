@@ -44,17 +44,17 @@ public class CassandraModel {
     public static final String CF_METRICS_PREAGGREGATED_240M_NAME = "metrics_preaggregated_240m";
     public static final String CF_METRICS_PREAGGREGATED_1440M_NAME = "metrics_preaggregated_1440m";
 
-    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily(CF_METRICS_FULL_NAME, new TimeValue(1 * 5, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily(CF_METRICS_5M_NAME, new TimeValue(2 * 5, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily(CF_METRICS_20M_NAME, new TimeValue(4 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_FULL = new MetricColumnFamily(CF_METRICS_FULL_NAME, new TimeValue(5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_5M = new MetricColumnFamily(CF_METRICS_5M_NAME, new TimeValue(10, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_20M = new MetricColumnFamily(CF_METRICS_20M_NAME, new TimeValue(20, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily(CF_METRICS_60M_NAME, new TimeValue(31 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily(CF_METRICS_240M_NAME, new TimeValue(60 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily(CF_METRICS_1440M_NAME, new TimeValue(365 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily(CF_METRICS_STRING_NAME, new TimeValue(365 * 3 * 5, TimeUnit.DAYS));
 
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(1 * 5, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(2 * 5, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_20M_NAME, new TimeValue(4 * 5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(5, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(10, TimeUnit.DAYS));
+    public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_20M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_20M_NAME, new TimeValue(20, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_60M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_60M_NAME, new TimeValue(31 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_240M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_240M_NAME, new TimeValue(60 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_1440M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_1440M_NAME, new TimeValue(365 * 5, TimeUnit.DAYS));
