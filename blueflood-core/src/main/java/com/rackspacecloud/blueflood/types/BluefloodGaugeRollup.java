@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.types;
 import java.io.IOException;
 import java.util.Map;
 
-public class BluefloodGaugeRollup extends BasicRollup {
+public class BluefloodGaugeRollup extends BaseRollup implements IBaseRollup {
     
     Points.Point<SimpleNumber> latestValue;
 
@@ -51,6 +51,11 @@ public class BluefloodGaugeRollup extends BasicRollup {
         return latestValue.getData();
     }
 
+    public void setLatestValue( Points.Point<SimpleNumber> points ) {
+
+        latestValue = points;
+    }
+
     @Override
     public RollupType getRollupType() {
         return RollupType.GAUGE;
@@ -76,7 +81,7 @@ public class BluefloodGaugeRollup extends BasicRollup {
     public static BluefloodGaugeRollup buildFromGaugeRollups(Points<BluefloodGaugeRollup> input) throws IOException {
         BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
         
-        rollup.computeFromRollups(BasicRollup.recast(input, IBasicRollup.class));
+        rollup.computeFromRollupsHelper( input );
         
         Points.Point<SimpleNumber> latest = rollup.latestValue;
         
@@ -86,20 +91,6 @@ public class BluefloodGaugeRollup extends BasicRollup {
         }
         
         rollup.latestValue = latest;
-        
-        return rollup;
-    }
-    
-    public static BluefloodGaugeRollup fromBasicRollup(IBasicRollup basic, long timestamp, Number latestValue) {
-        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
-        
-        rollup.setCount(basic.getCount());
-        rollup.setAverage((Average)basic.getAverage());
-        rollup.setMin((MinValue)basic.getMinValue());
-        rollup.setMax((MaxValue)basic.getMaxValue());
-        rollup.setVariance((Variance)basic.getVariance());
-        
-        rollup.latestValue = new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(latestValue));
         
         return rollup;
     }

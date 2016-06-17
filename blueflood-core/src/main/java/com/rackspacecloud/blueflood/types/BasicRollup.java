@@ -23,22 +23,14 @@ import java.io.IOException;
 import java.util.Map;
 
 
-public class BasicRollup implements Rollup, IBasicRollup {
+public class BasicRollup extends BaseRollup implements IBaseRollup {
     private static final Logger log = LoggerFactory.getLogger(BasicRollup.class);
-    public static final int NUM_STATS = 4;
-    
-    private Average average;
-    private Variance variance;
-    private MinValue minValue;
-    private MaxValue maxValue;
-    private long count;
+
+    private double sum;
 
     public BasicRollup() {
-        this.average = new Average();
-        this.variance = new Variance();
-        this.minValue = new MinValue();
-        this.maxValue = new MaxValue();
-        this.count = 0;
+        super();
+        this.sum = 0;
     }
 
     @Override
@@ -49,81 +41,28 @@ public class BasicRollup implements Rollup, IBasicRollup {
 
         BasicRollup otherBasicRollup = (BasicRollup)other;
 
-        return (this.count == otherBasicRollup.getCount())
-                && average.equals(otherBasicRollup.getAverage())
-                && variance.equals(otherBasicRollup.getVariance())
-                && minValue.equals(otherBasicRollup.getMinValue())
-                && maxValue.equals(otherBasicRollup.getMaxValue());
+        return super.equals( otherBasicRollup )
+                && sum == otherBasicRollup.getSum();
     }
 
-    public Average getAverage() {
-        return this.average;
-    }
-
-    public Variance getVariance() {
-        return this.variance;
-    }
-
-    public MinValue getMinValue() {
-        return this.minValue;
-    }
-
-    public MaxValue getMaxValue() {
-        return this.maxValue;
-    }
-
-    public long getCount() {
-        return this.count;
+    public double getSum() {
+        return sum;
     }
 
     public String toString() {
-        return String.format("cnt:%d, avg:%s, var:%s, min:%s, max:%s", count, average, variance, minValue, maxValue);
-    }
-    
-    // setters
-    // should I have made these chainable like TimerRollup?
-    
-    public void setCount(long count) {
-        this.count = count;
-    }
-    
-    public void setMin(MinValue min) {
-        this.minValue = min;
-    }
-    
-    public void setMin(Number min) {
-        AbstractRollupStat.set(this.minValue, min);
-    }
-    
-    public void setMax(MaxValue max) {
-        this.maxValue = max;
-    }
-    
-    public void setMax(Number max) {
-        AbstractRollupStat.set(this.maxValue, max);
-    }
-    
-    public void setVariance(Variance var) {
-        this.variance = var;
-    }
-    
-    public void setVariance(Number var) {
-        AbstractRollupStat.set(this.variance, var);
+        return String.format("cnt:%d, avg:%s, var:%s, min:%s, max:%s, sum: %s", getCount(), getAverage(), getVariance(),
+                getMinValue(), getMaxValue(), sum);
     }
 
-    public void setAverage(Average avg) {
-        this.average = avg;
+    public void setSum(double s) {
+
+        sum = s;
     }
-    
-    public void setAverage(Number avg) {
-        AbstractRollupStat.set(this.average, avg);
-    }
-    
+
     // merge simple numbers with this rollup.
     protected void computeFromSimpleMetrics(Points<SimpleNumber> input) throws IOException {
-        if (input == null) {
-            throw new IOException("Null input to create rollup from");
-        }
+
+        super.computeFromSimpleMetrics( input );
 
         if (input.isEmpty()) {
             return;
@@ -131,25 +70,15 @@ public class BasicRollup implements Rollup, IBasicRollup {
 
         Map<Long, Points.Point<SimpleNumber>> points = input.getPoints();
         for (Map.Entry<Long, Points.Point<SimpleNumber>> item : points.entrySet()) {
-            this.count += 1;
             SimpleNumber numericMetric = item.getValue().getData();
-            average.handleFullResMetric(numericMetric.getValue());
-            variance.handleFullResMetric(numericMetric.getValue());
-            minValue.handleFullResMetric(numericMetric.getValue());
-            maxValue.handleFullResMetric(numericMetric.getValue());
+            sum += numericMetric.getValue().doubleValue();
         }
-    }
-    
-    // allows incrementally updating this rollup. This isn't part of the public API, so is declared unsafe.
-    public void computeFromSimpleMetricsUnsafe(Points<SimpleNumber> input) throws IOException {
-        computeFromSimpleMetrics(input);
     }
 
     // merge rollups into this rollup.
-    protected void computeFromRollups(Points<IBasicRollup> input) throws IOException {
-        if (input == null) {
-            throw new IOException("Null input to create rollup from");
-        }
+    protected void computeFromRollups(Points<BasicRollup> input) throws IOException {
+
+        computeFromRollupsHelper( input );
 
         if (input.isEmpty()) {
             return;
@@ -157,26 +86,16 @@ public class BasicRollup implements Rollup, IBasicRollup {
 
         // See this and get mind blown:
         // http://stackoverflow.com/questions/18907262/bounded-wildcard-related-compiler-error
-        Map<Long, ? extends Points.Point<? extends IBasicRollup>> points = input.getPoints();
+        Map<Long, ? extends Points.Point<? extends BasicRollup>> points = input.getPoints();
 
-        for (Map.Entry<Long, ? extends Points.Point<? extends IBasicRollup>> item : points.entrySet()) {
-            IBasicRollup rollup = item.getValue().getData();
+        for (Map.Entry<Long, ? extends Points.Point<? extends BasicRollup>> item : points.entrySet()) {
+            BasicRollup rollup = item.getValue().getData();
             if (!(rollup instanceof BasicRollup)) {
                 throw new IOException("Cannot create BasicRollup from type " + rollup.getClass().getName());
             }
             BasicRollup basicRollup = (BasicRollup) rollup;
-            this.count += basicRollup.getCount();
-            average.handleRollupMetric(basicRollup);
-            variance.handleRollupMetric(basicRollup);
-            minValue.handleRollupMetric(basicRollup);
-            maxValue.handleRollupMetric(basicRollup);
+            sum += basicRollup.getSum();
         }
-    }
-    
-    // allows merging with this rollup with another rollup. This is declared unsafe because it isn't part of the 
-    // rollup API.
-    public void computeFromRollupsUnsafe(Points<IBasicRollup> input) throws IOException {
-        computeFromRollups(input);
     }
 
     public static BasicRollup buildRollupFromRawSamples(Points<SimpleNumber> input) throws IOException {
@@ -188,21 +107,8 @@ public class BasicRollup implements Rollup, IBasicRollup {
 
     public static BasicRollup buildRollupFromRollups(Points<BasicRollup> input) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
-        basicRollup.computeFromRollups(recast(input, IBasicRollup.class));
+        basicRollup.computeFromRollups(input);
         return basicRollup;
-    }
-    
-    // yay generics?
-    public static <T extends IBasicRollup> Points<T> recast(Points<? extends BasicRollup> points, Class<T> type) {
-        Points<T> newPoints = new Points<T>();
-        for (Map.Entry<Long, ? extends Points.Point<? extends BasicRollup>> entry : points.getPoints().entrySet())
-            newPoints.add(new Points.Point<T>(entry.getKey(), (T)entry.getValue().getData()));
-        return newPoints;
-    }
-
-    @Override
-    public Boolean hasData() {
-        return getCount() > 0;
     }
 
     @Override

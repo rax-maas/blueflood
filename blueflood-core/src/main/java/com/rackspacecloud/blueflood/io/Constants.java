@@ -29,6 +29,7 @@ public class Constants {
 
     public static final byte VERSION_1_FULL_RES = 0;
     public static final byte VERSION_1_ROLLUP = 0;
+    public static final byte VERSION_2_ROLLUP = 1;
     public static final byte VERSION_1_TIMER = 0;
     public static final byte VERSION_2_TIMER = 1;
 

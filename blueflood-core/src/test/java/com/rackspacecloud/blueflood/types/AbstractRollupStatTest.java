@@ -23,7 +23,7 @@ public class AbstractRollupStatTest {
         }
 
         @Override
-        void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException {
+        void handleRollupMetric(IBaseRollup baseRollup) throws RuntimeException {
 
         }
 

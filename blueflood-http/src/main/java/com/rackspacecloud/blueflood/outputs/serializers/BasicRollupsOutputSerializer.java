@@ -101,8 +101,8 @@ public interface BasicRollupsOutputSerializer<T> {
         NUM_POINTS("numPoints") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BasicRollup)
-                    return ((BasicRollup) rollup).getCount();
+                if (rollup instanceof BaseRollup)
+                    return ((BaseRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodCounterRollup)
@@ -156,7 +156,9 @@ public interface BasicRollupsOutputSerializer<T> {
         SUM("sum") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws Exception {
-                if (rollup instanceof BluefloodTimerRollup)
+                if( rollup instanceof  BasicRollup )
+                    return ((BasicRollup) rollup).getSum();
+                else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getSum();
                 else if (rollup instanceof BluefloodCounterRollup)
                     return ((BluefloodCounterRollup) rollup).getCount();

@@ -200,7 +200,7 @@ public class MaxValueTest {
 
         // given
         double value = 123.45d;
-        IBasicRollup rollup = mock(IBasicRollup.class);
+        IBaseRollup rollup = mock(IBaseRollup.class);
         MaxValue other = new MaxValue(value);
         doReturn(other).when(rollup).getMaxValue();
 
@@ -217,7 +217,7 @@ public class MaxValueTest {
 
         // given
         long value = 123L;
-        IBasicRollup rollup = mock(IBasicRollup.class);
+        IBaseRollup rollup = mock(IBaseRollup.class);
         MaxValue other = new MaxValue(value);
         doReturn(other).when(rollup).getMaxValue();
 
@@ -233,13 +233,13 @@ public class MaxValueTest {
 
         // given
         double value1 = 123.45d;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         double value2 = 122.45d;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -255,13 +255,13 @@ public class MaxValueTest {
 
         // given
         double value1 = 123.45d;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         double value2 = 124.45d;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -277,13 +277,13 @@ public class MaxValueTest {
 
         // given
         double value1 = 123.45d;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         long value2 = 122L;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -299,13 +299,13 @@ public class MaxValueTest {
 
         // given
         double value1 = 123.45d;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         long value2 = 124L;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -321,13 +321,13 @@ public class MaxValueTest {
 
         // given
         long value1 = 123L;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         double value2 = 122.45d;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -343,13 +343,13 @@ public class MaxValueTest {
 
         // given
         long value1 = 123L;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         double value2 = 124.45d;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -365,13 +365,13 @@ public class MaxValueTest {
 
         // given
         long value1 = 123L;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         long value2 = 122L;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when
@@ -387,13 +387,13 @@ public class MaxValueTest {
 
         // given
         long value1 = 123L;
-        IBasicRollup rollup1 = mock(IBasicRollup.class);
+        IBaseRollup rollup1 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value1)).when(rollup1).getMaxValue();
 
         max.handleRollupMetric(rollup1);
 
         long value2 = 124L;
-        IBasicRollup rollup2 = mock(IBasicRollup.class);
+        IBaseRollup rollup2 = mock(IBaseRollup.class);
         doReturn(new MaxValue(value2)).when(rollup2).getMaxValue();
 
         // when

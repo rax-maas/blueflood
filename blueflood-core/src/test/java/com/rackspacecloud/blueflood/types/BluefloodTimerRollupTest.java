@@ -25,7 +25,7 @@ public class BluefloodTimerRollupTest {
         }};
     } 
     
-    private static void assertRollupsAreClose(IBasicRollup expected, IBasicRollup actual) {
+    private static void assertRollupsAreClose(IBaseRollup expected, IBaseRollup actual) {
         Assert.assertEquals("average", expected.getAverage(), actual.getAverage());
         Assert.assertEquals("count", expected.getCount(), actual.getCount());
         Assert.assertEquals("min", expected.getMinValue(), actual.getMinValue());

@@ -45,7 +45,19 @@ public class RollupSerializationHelper {
         }
     }
 
-    private static ObjectNode handleBasicRollup(IBasicRollup rollup, ObjectNode rollupNode) {
+    private static ObjectNode handleBasicRollup(BasicRollup rollup, ObjectNode rollupNode) {
+
+        ObjectNode resultNode = handleBaseRollup( rollup, rollupNode );
+
+        if (rollup.getCount() == 0) {
+            rollupNode.putNull("sum");
+        } else {
+            rollupNode.put("sum", rollup.getSum());
+        }
+        return resultNode;
+    }
+
+    private static ObjectNode handleBaseRollup(IBaseRollup rollup, ObjectNode rollupNode) {
         long count = rollup.getCount();
         rollupNode.put("count", count);
         if (count == 0) {
@@ -66,7 +78,7 @@ public class RollupSerializationHelper {
         ObjectNode rollupNode = JsonNodeFactory.instance.objectNode();
         SimpleNumber rollupValue = rollup.getLatestValue();
         rollupNode.put("latestVal", rollupValue.getDataType() == (SimpleNumber.Type.DOUBLE) ? rollupValue.getValue().doubleValue() : rollupValue.getValue().longValue());
-        return handleBasicRollup(rollup, rollupNode);
+        return handleBaseRollup(rollup, rollupNode);
     }
 
     private static ObjectNode handleSetRollup(BluefloodSetRollup rollup) {
@@ -80,7 +92,7 @@ public class RollupSerializationHelper {
         rollupNode.put("sum", rollup.getSum());
         rollupNode.put("rate", rollup.getRate());
         rollupNode.put("sampleCount", rollup.getSampleCount());
-        return handleBasicRollup(rollup, rollupNode);
+        return handleBaseRollup(rollup, rollupNode);
     }
 
     private static ObjectNode handleCounterRollup(BluefloodCounterRollup rollup) {

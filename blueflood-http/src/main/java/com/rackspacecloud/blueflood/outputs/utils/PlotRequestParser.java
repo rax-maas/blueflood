@@ -42,6 +42,7 @@ public class PlotRequestParser {
         
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.AVERAGE);
         DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
+        DEFAULT_BASIC.add(BasicRollupsOutputSerializer.MetricStat.SUM);
         
         DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.NUM_POINTS);
         DEFAULT_COUNTER.add(BasicRollupsOutputSerializer.MetricStat.SUM);

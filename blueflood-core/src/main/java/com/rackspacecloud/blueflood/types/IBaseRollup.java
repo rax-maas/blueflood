@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package com.rackspacecloud.blueflood.types;
 
-public interface IBasicRollup {
+/**
+ * Interface for sub-metrics provided by BaseRollup.
+ */
+public interface IBaseRollup {
     public AbstractRollupStat getAverage();
     public AbstractRollupStat getVariance();
     public AbstractRollupStat getMinValue();

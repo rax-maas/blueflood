@@ -34,6 +34,9 @@ import java.util.Set;
 import java.util.Map;
 
 public class JSONBasicRollupOutputSerializerTest {
+
+    private static final double EPSILON = .5;
+
     private final Set<MetricStat> filterStats;
 
     public JSONBasicRollupOutputSerializerTest() {
@@ -69,6 +72,9 @@ public class JSONBasicRollupOutputSerializerTest {
 
             // Assert numPoints isn't present
             Assert.assertNull(dataJSON.get("numPoints"));
+
+            // Assert sum isn't present
+            Assert.assertNull(dataJSON.get("sum"));
         }
     }
 
@@ -79,6 +85,7 @@ public class JSONBasicRollupOutputSerializerTest {
         final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
                 MetricData.Type.NUMBER);
         Set<MetricStat> filters = new HashSet<MetricStat>();
+        filters.add(MetricStat.SUM);
         filters.add(MetricStat.AVERAGE);
         filters.add(MetricStat.MIN);
         filters.add(MetricStat.MAX);
@@ -101,10 +108,12 @@ public class JSONBasicRollupOutputSerializerTest {
                 Assert.assertNull(dataJSON.get("average"));
                 Assert.assertNull(dataJSON.get("min"));
                 Assert.assertNull(dataJSON.get("max"));
+                Assert.assertNull(dataJSON.get("sum"));
             } else {
                 Assert.assertEquals(((BasicRollup) point.getData()).getAverage(), dataJSON.get("average"));
                 Assert.assertEquals(((BasicRollup) point.getData()).getMaxValue(), dataJSON.get("max"));
                 Assert.assertEquals(((BasicRollup) point.getData()).getMinValue(), dataJSON.get("min"));
+                Assert.assertEquals(((BasicRollup) point.getData()).getSum(), dataJSON.get("sum"));
             }
 
             // Assert that variance isn't present
@@ -135,6 +144,7 @@ public class JSONBasicRollupOutputSerializerTest {
             Assert.assertNull(dataJSON.get("min"));
             Assert.assertNull(dataJSON.get("max"));
             Assert.assertNull(dataJSON.get("variance"));
+            Assert.assertNull(dataJSON.get("sum"));
         }
     }
     

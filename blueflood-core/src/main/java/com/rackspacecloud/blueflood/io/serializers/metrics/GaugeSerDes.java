@@ -18,8 +18,9 @@ package com.rackspacecloud.blueflood.io.serializers.metrics;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.types.BasicRollup;
 import com.rackspacecloud.blueflood.types.BluefloodGaugeRollup;
+import com.rackspacecloud.blueflood.types.Points;
+import com.rackspacecloud.blueflood.types.SimpleNumber;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +30,7 @@ import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
 /**
  * This class knows how to serialize/deserialize Gauge metrics.
  */
-public class GaugeSerDes extends BasicRollupSerDes {
+public class GaugeSerDes extends BaseRollupSerDes {
 
     public ByteBuffer serialize(BluefloodGaugeRollup gaugeRollup) {
         try {
@@ -47,7 +48,7 @@ public class GaugeSerDes extends BasicRollupSerDes {
             byte version = in.readRawByte();
             if (version != VERSION_1_ROLLUP)
                 throw new SerializationException(String.format("Unexpected gauge deserialization version: %d", (int)version));
-            return deserializeV1Gauge(in);
+            return deserializeGauge( in, version );
         } catch (Exception e) {
             throw new RuntimeException("Gauge deserialization Failure", e);
         }
@@ -55,7 +56,7 @@ public class GaugeSerDes extends BasicRollupSerDes {
 
     private int sizeOf(BluefloodGaugeRollup gaugeRollup) {
         // just like rollup up until a point.
-        int sz = super.sizeOf(gaugeRollup);
+        int sz = sizeOfBaseRollup( gaugeRollup );
 
         // here's where it gets different.
         sz += CodedOutputStream.computeRawVarint64Size(gaugeRollup.getTimestamp());
@@ -70,16 +71,20 @@ public class GaugeSerDes extends BasicRollupSerDes {
     private void serializeGauge(BluefloodGaugeRollup rollup, byte[] buf) throws IOException {
         rollupSize.update(buf.length);
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
-        serializeRollup(rollup, protobufOut);
+        serializeRollupV1(rollup, protobufOut);
         protobufOut.writeRawVarint64(rollup.getTimestamp());
         putUnversionedDoubleOrLong(rollup.getLatestNumericValue(), protobufOut);
     }
 
-    private BluefloodGaugeRollup deserializeV1Gauge(CodedInputStream in) throws IOException {
-        BasicRollup basic = deserializeV1Rollup(in);
+    private BluefloodGaugeRollup deserializeGauge( CodedInputStream in, byte version ) throws IOException {
+        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup();
+
+        deserializeBaseRollup( rollup, in, version );
         long timestamp = in.readRawVarint64();
         Number lastValue = getUnversionedDoubleOrLong(in);
-        return BluefloodGaugeRollup.fromBasicRollup(basic, timestamp, lastValue);
+        rollup.setLatestValue( new Points.Point<SimpleNumber>(timestamp, new SimpleNumber(lastValue)) );
+
+        return rollup;
     }
 
 }
