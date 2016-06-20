@@ -70,6 +70,7 @@ public class HttpMetricDataQueryServer {
         router.get("/v2.0/:tenantId/metric_name/search", new HttpMetricTokensHandler());
         router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
         router.options("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
+        router.get("/v2.0/:tenantId/metrics/shard/:shard", new HttpShardedMetricsHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(
