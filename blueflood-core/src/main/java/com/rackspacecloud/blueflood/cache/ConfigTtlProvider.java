@@ -56,7 +56,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
                 stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
             }
         } catch (NumberFormatException ex) {
-            log.warn("No valid String TTL in config.");
+            log.warn("No valid String TTL in config.", ex);
         }
         this.stringTTL = stringTTL;
 
@@ -116,8 +116,9 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         try {
             value = config.getIntegerProperty(configKey);
             if (value < 0) return false;
-        } catch (NumberFormatException e) {
-            log.info("No valid TTL config set for granularity: {}, rollup type: {}", gran.name(), rollupType.name());
+        } catch (NumberFormatException ex) {
+            log.info(String.format("No valid TTL config set for granularity: %s, rollup type: %s",
+                    gran.name(), rollupType.name()), ex);
             return false;
         }
         ttlMapBuilder.put(gran, rollupType, new TimeValue(value, TimeUnit.DAYS));
