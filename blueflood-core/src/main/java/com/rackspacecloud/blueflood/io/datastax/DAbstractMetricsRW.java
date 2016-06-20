@@ -135,7 +135,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             for (Locator locator : locators) {
                 try {
 
-                    String rType = MetadataCache.getInstance().get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase());
+                    String rType = metadataCache.get( locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase() );
 
                     DAbstractMetricIO io = getIO( rType, granularity );
 
@@ -243,7 +243,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                 Points points = convertToPoints( tsRollupMap );
 
                 // get the dataType for this locator
-                DataType dataType = getDataType( locator );
+                DataType dataType = getDataType( locator, MetricMetadata.TYPE.name().toLowerCase() );
 
                 RollupType rollupType = getRollupType( tsRollupMap );
 

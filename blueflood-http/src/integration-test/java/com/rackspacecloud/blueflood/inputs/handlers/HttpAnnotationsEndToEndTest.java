@@ -17,6 +17,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxMetricsWriter;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
@@ -74,12 +75,12 @@ public class HttpAnnotationsEndToEndTest {
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context);
+        HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context, new AstyanaxMetricsWriter());
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 
         httpIngestionService = new HttpIngestionService();
         httpIngestionService.setMetricsIngestionServer(server);
-        httpIngestionService.startService(context);
+        httpIngestionService.startService(context, new AstyanaxMetricsWriter());
 
         httpQueryService = new HttpQueryService();
         HttpMetricDataQueryServer queryServer = new HttpMetricDataQueryServer();
