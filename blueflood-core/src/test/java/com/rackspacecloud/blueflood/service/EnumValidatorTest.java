@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.astyanax.AEnumIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxIO;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -50,7 +49,7 @@ import static org.mockito.Mockito.*;
 } )
 public class EnumValidatorTest {
 
-    private EnumReaderIO readerMock;
+    private AstyanaxReader readerMock;
     private DiscoveryIO discoveryIOMock;
     private ExcessEnumIO excessEnumIO;
 
@@ -63,12 +62,12 @@ public class EnumValidatorTest {
     public void setup() {
 
         // static mock
-        readerMock = mock(AEnumIO.class);
+        readerMock = mock(AstyanaxReader.class);
         discoveryIOMock = mock(DiscoveryIO.class);
         excessEnumIO = mock(ExcessEnumIO.class);
 
-        //PowerMockito.mockStatic(AstyanaxReader.class);
-        //when(AstyanaxReader.getInstance()).thenReturn(readerMock);
+        PowerMockito.mockStatic(AstyanaxReader.class);
+        when(AstyanaxReader.getInstance()).thenReturn(readerMock);
         PowerMockito.mockStatic(IOContainer.class);
         IOContainer ioContainer = mock(IOContainer.class);
         when(IOContainer.fromConfig()).thenReturn(ioContainer);
@@ -89,7 +88,8 @@ public class EnumValidatorTest {
     }
 
     private EnumValidator setupEnumValidatorWithMock(Set<Locator> locators) {
-        EnumValidator enumValidator = new EnumValidator(locators, readerMock);
+        EnumValidator enumValidator = new EnumValidator(locators);
+        enumValidator.setReader(readerMock);
         enumValidator.setDiscoveryIO(discoveryIOMock);
         return enumValidator;
     }
@@ -208,7 +208,7 @@ public class EnumValidatorTest {
         EnumValidator validator = new EnumValidator(null);
 
         // expect
-        assertSame(IOContainer.fromConfig().getEnumReaderIO(), validator.getEnumIO());
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
     }
 
     @Test
@@ -225,10 +225,16 @@ public class EnumValidatorTest {
     public void setReaderSetsReader() {
 
         // given
-        EnumValidator validator = new EnumValidator(null, readerMock);
+        EnumValidator validator = new EnumValidator(null);
 
-        // expect
-        assertSame(readerMock, validator.getEnumIO());
+        // precondition
+        assertSame(AstyanaxReader.getInstance(), validator.getReader());
+
+        // when
+        validator.setReader(readerMock);
+
+        // then
+        assertSame(readerMock, validator.getReader());
     }
 
     @Test

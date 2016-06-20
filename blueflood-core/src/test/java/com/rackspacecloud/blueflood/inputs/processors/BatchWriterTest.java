@@ -20,8 +20,7 @@ import com.codahale.metrics.Counter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
-import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
-import com.rackspacecloud.blueflood.io.MetricsRWDelegator;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -67,22 +66,17 @@ public class BatchWriterTest {
 
     @Test
     public void testWriter() throws Exception {
+        IMetricsWriter writer = mock(IMetricsWriter.class);
         Counter bufferedMetrics = mock(Counter.class);
         IngestionContext context = mock(IngestionContext.class);
-        AbstractMetricsRW basicRW = mock(AbstractMetricsRW.class);
-        AbstractMetricsRW preAggrRW = mock(AbstractMetricsRW.class);
-        MetricsRWDelegator metricsRWDelegator = new MetricsRWDelegator(basicRW, preAggrRW);
         List<List<IMetric>> testdata = createTestData(Metric.class);
         List<List<IMetric>> pTestdata = createTestData(PreaggregatedMetric.class);
         List<List<IMetric>> allTestdata = new ArrayList<List<IMetric>>();
         allTestdata.addAll(testdata);
         allTestdata.addAll(pTestdata);
         BatchWriter batchWriter = new BatchWriter(
-                        new ThreadPoolBuilder().build(),
-                        timeout, bufferedMetrics,
-                        context,
-                        metricsRWDelegator
-                        );
+            new ThreadPoolBuilder().build(), writer, timeout, bufferedMetrics,
+                context);
         
         ListenableFuture<List<Boolean>> futures = batchWriter.apply(allTestdata);
         List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
@@ -98,12 +92,12 @@ public class BatchWriterTest {
 
         //Confirm that each regular batch was inserted
         for (List<IMetric> l : testdata) {
-            verify(basicRW).insertMetrics((List<IMetric>)(List<?>)l);
+            verify(writer).insertFullMetrics((List<Metric>)(List<?>)l);
         }
 
         //Confirm that each preagg batch was inserted
         for (List<IMetric> l : pTestdata) {
-            verify(preAggrRW).insertMetrics(l);
+            verify(writer).insertPreaggreatedMetrics(l);
         }
 
         //Confirm scheduleContext was updated

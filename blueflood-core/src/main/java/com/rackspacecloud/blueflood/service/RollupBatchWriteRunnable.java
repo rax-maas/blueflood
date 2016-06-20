@@ -18,38 +18,44 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.google.common.annotations.VisibleForTesting;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class RollupBatchWriteRunnable implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RollupBatchWriteRunnable.class);
-    private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Per Batch");
-    private static final Timer batchWriteTimer = Metrics.timer(RollupService.class, "Rollup Batch Write");
-
     private final RollupExecutionContext executionContext;
-    private final List<SingleRollupWriteContext> writeContexts;
-    private final AbstractMetricsRW metricsRW;
+    private final ArrayList<SingleRollupWriteContext> writeContexts;
+    private final AstyanaxWriter astyanaxWriter;
+    private static final Histogram rollupsPerBatch =
+            Metrics.histogram(RollupService.class, "Rollups Per Batch");
+    private static final Timer batchWriteTimer =
+            Metrics.timer(RollupService.class, "Rollup Batch Write");
 
-    public RollupBatchWriteRunnable(List<SingleRollupWriteContext> writeContexts,
+    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts,
+                                    RollupExecutionContext executionContext) {
+        this(writeContexts, executionContext, AstyanaxWriter.getInstance());
+    }
+    @VisibleForTesting
+    public RollupBatchWriteRunnable(ArrayList<SingleRollupWriteContext> writeContexts,
                                     RollupExecutionContext executionContext,
-                                    AbstractMetricsRW metricsRW) {
+                                    AstyanaxWriter astyanaxWriter) {
         this.writeContexts = writeContexts;
         this.executionContext = executionContext;
-        this.metricsRW = metricsRW;
+        this.astyanaxWriter = astyanaxWriter;
     }
 
     @Override
     public void run() {
         Timer.Context ctx = batchWriteTimer.time();
         try {
-            metricsRW.insertRollups(writeContexts);
-        } catch (Exception e) {
-            LOG.warn("not able to insert rollups", e);
+            astyanaxWriter.insertRollups(writeContexts);
+        } catch (ConnectionException e) {
             executionContext.markUnsuccessful(e);
 
         }

@@ -19,22 +19,22 @@ package com.rackspacecloud.blueflood.inputs.processors;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.MetricsRWDelegator;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.IngestionContext;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.PreaggregatedMetric;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -50,27 +50,15 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
     private final TimeValue timeout;
     private final Counter bufferedMetrics;
     private final IngestionContext context;
-
-    private final MetricsRWDelegator metricsRWDelegator;
     
-    public BatchWriter(ThreadPoolExecutor threadPool, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
-        this(threadPool, timeout, bufferedMetrics,
-                context, new MetricsRWDelegator(IOContainer.fromConfig().getBasicMetricsRW(),
-                IOContainer.fromConfig().getPreAggregatedMetricsRW()));
-    }
-
-    @VisibleForTesting
-    public BatchWriter(ThreadPoolExecutor threadPool,
-                       TimeValue timeout, Counter bufferedMetrics,
-                       IngestionContext context,
-                       MetricsRWDelegator metricsRWDelegator) {
-
+    private final IMetricsWriter writer;
+    
+    public BatchWriter(ThreadPoolExecutor threadPool, IMetricsWriter writer, TimeValue timeout, Counter bufferedMetrics, IngestionContext context) {
         super(threadPool);
-
+        this.writer = writer;
         this.timeout = timeout;
         this.bufferedMetrics = bufferedMetrics;
         this.context = context;
-        this.metricsRWDelegator = metricsRWDelegator;
     }
     
     @Override
@@ -92,8 +80,19 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                         // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
                         // susses out the string and boolean metrics for a different path, then segregates the Metric
                         // and Preaggregated metrics and writes them to the appropriate column families.
+                        Collection<IMetric> simpleMetrics = new ArrayList<IMetric>();
+                        Collection<IMetric> preagMetrics = new ArrayList<IMetric>();
 
-                        metricsRWDelegator.insertMetrics(batch);
+                        for (IMetric m : batch) {
+                            if (m instanceof Metric)
+                                simpleMetrics.add((Metric) m);
+                            else if (m instanceof PreaggregatedMetric)
+                                preagMetrics.add(m);
+                        }
+                        if (simpleMetrics.size() > 0)
+                            writer.insertFullMetrics(simpleMetrics);
+                        if (preagMetrics.size() > 0)
+                            writer.insertPreaggreatedMetrics(preagMetrics);
 
                         final Timer.Context dirtyTimerCtx = slotUpdateTimer.time();
                         try {
@@ -127,7 +126,7 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                             exceededScribeProcessingTime.mark();
                             getLogger().debug(
                                     String.format("Batch write time %d (ms) exceeded timeout %s before persisting " +
-                                            "all metrics for batch %d",
+                                                    "all metrics for batch %d",
                                             now - writeStartTime, timeout.toString(), batchId));
                         }
                     }

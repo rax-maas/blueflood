@@ -21,11 +21,16 @@ import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
+import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
+import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -34,7 +39,11 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
 public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
@@ -95,6 +104,9 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             log.debug(String.format("BAD JSON: %s", body));
             log.error(ex.getMessage(), ex);
             DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+        } catch (ConnectionException ex) {
+            log.error(ex.getMessage(), ex);
+            DefaultHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (TimeoutException ex) {
             DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
@@ -111,4 +123,5 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
         return payload;
     }
+
 }

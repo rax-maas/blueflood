@@ -30,6 +30,7 @@ import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -73,11 +74,11 @@ public class HttpMetricsIngestionServer {
 
     private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
 
-    public HttpMetricsIngestionServer(ScheduleContext context) {
+    public HttpMetricsIngestionServer(ScheduleContext context, IMetricsWriter writer) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
-        this.processor = new Processor(context, timeout);
+        this.processor = new Processor(context, writer, timeout);
     }
 
     public void startServer() {
@@ -173,7 +174,7 @@ public class HttpMetricsIngestionServer {
         private final Counter bufferedMetrics = Metrics.counter(HttpMetricsIngestionHandler.class, "Buffered Metrics");
         private final TimeValue timeout;
 
-        Processor(ScheduleContext context, TimeValue timeout) {
+        Processor(ScheduleContext context, IMetricsWriter writer, TimeValue timeout) {
             this.timeout = timeout;
 
             typeAndUnitProcessor = new TypeAndUnitProcessor(
@@ -192,6 +193,7 @@ public class HttpMetricsIngestionServer {
                             .withMaxPoolSize(WRITE_THREADS)
                             .withSynchronousQueue()
                             .build(),
+                    writer,
                     timeout,
                     bufferedMetrics,
                     context
