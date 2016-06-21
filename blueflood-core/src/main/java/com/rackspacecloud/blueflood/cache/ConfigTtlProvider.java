@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -42,12 +41,9 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return INSTANCE;
     }
 
-    private ConfigTtlProvider() {
-        this(Configuration.getInstance());
-    }
+    ConfigTtlProvider() {
+        final Configuration config = Configuration.getInstance();
 
-    @VisibleForTesting
-    ConfigTtlProvider(Configuration config) {
         // String rollups
         TimeValue stringTTL = null;
         try {
@@ -106,7 +102,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
      * @param configKey
      * @return true if the insertion is successful, false otherwise.
      */
-    static boolean put(
+    private boolean put(
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder,
         Configuration config,
         Granularity gran,

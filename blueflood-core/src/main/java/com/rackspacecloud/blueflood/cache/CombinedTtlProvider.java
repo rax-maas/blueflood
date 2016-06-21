@@ -68,7 +68,7 @@ public class CombinedTtlProvider implements TenantTtlProvider {
         return ttl;
     }
 
-    private static Optional<TimeValue> getTimeValue(Optional<TimeValue> primaryValue, Optional<TimeValue> safetyValue) {
+    private Optional<TimeValue> getTimeValue(Optional<TimeValue> primaryValue, Optional<TimeValue> safetyValue) {
         if (!primaryValue.isPresent()) {
             return safetyValue;
         }

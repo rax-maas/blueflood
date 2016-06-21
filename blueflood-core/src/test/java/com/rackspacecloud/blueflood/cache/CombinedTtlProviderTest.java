@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
 import com.rackspacecloud.blueflood.types.RollupType;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,10 +37,10 @@ public class CombinedTtlProviderTest {
 
     @Before
     public void setUp() {
-        Properties props = new Properties();
-        props.setProperty(TtlConfig.RAW_METRICS_TTL.toString(), "5");
-        props.setProperty(TtlConfig.STRING_METRICS_TTL.toString(), "364");
-        this.configProvider = new ConfigTtlProvider(Configuration.getTestInstance(props));
+        System.setProperty(TtlConfig.RAW_METRICS_TTL.toString(), "5");
+        System.setProperty(TtlConfig.STRING_METRICS_TTL.toString(), "364");
+
+        this.configProvider = ConfigTtlProvider.getInstance();
         this.combinedProvider = new CombinedTtlProvider(configProvider, SafetyTtlProvider.getInstance());
     }
     @Test
@@ -49,5 +50,11 @@ public class CombinedTtlProviderTest {
         assertFalse(configProvider.getTTL("foo", Granularity.MIN_5, RollupType.BF_BASIC).isPresent());
         assertEquals(combinedProvider.getTTL("foo", Granularity.MIN_5, RollupType.BF_BASIC).get(),
                 SafetyTtlProvider.getInstance().getTTL("foo", Granularity.MIN_5, RollupType.BF_BASIC).get());
+    }
+
+    @After
+    public void tearDown() {
+        System.clearProperty(TtlConfig.RAW_METRICS_TTL.toString());
+        System.clearProperty(TtlConfig.STRING_METRICS_TTL.toString());
     }
 }
