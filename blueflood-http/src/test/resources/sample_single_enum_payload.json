@@ -1,0 +1,10 @@
+{
+    "tenantId":"333333",
+    "timestamp":"%TIMESTAMP%",
+    "enums": [
+        {
+            "name": "enum_metric_test%POSTFIX%",
+            "value": "v3"
+        }
+    ]
+}
