@@ -15,6 +15,7 @@
  */
 package com.rackspacecloud.blueflood.io.serializers.metrics;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
@@ -33,6 +34,20 @@ import static com.rackspacecloud.blueflood.io.Constants.VERSION_2_ROLLUP;
  * wire format.
  */
 public class BasicRollupSerDes extends BaseRollupSerDes {
+
+    @VisibleForTesting
+    public ByteBuffer serializeV1( BasicRollup basicRollup ) {
+
+        try {
+            byte[] buf = new byte[sizeOf( basicRollup, VERSION_1_ROLLUP)];
+            CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
+            serializeRollupV1( basicRollup, protobufOut );
+            return ByteBuffer.wrap(buf);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
     public ByteBuffer serialize(BasicRollup basicRollup) {
         try {

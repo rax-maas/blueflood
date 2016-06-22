@@ -23,7 +23,15 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * The sub-metrics used by BasicMetricRollup and GaugeMetricRollup.
+ * The sub-metrics used by {@link com.rackspacecloud.blueflood.types.BasicRollup} and
+ * {@link com.rackspacecloud.blueflood.types.BluefloodGaugeRollup}.
+ * Common sub-metrics are:
+ * <ul>
+ *     <li>average</li>
+ *     <li>max</li>
+ *     <li>min</li>
+ *     <li>sum</li>
+ * </ul>
  */
 public abstract class BaseRollup implements Rollup {
     private static final Logger log = LoggerFactory.getLogger( BaseRollup.class );

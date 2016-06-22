@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io.serializers.metrics;
 
 import com.codahale.metrics.Histogram;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
@@ -27,8 +28,9 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import java.io.IOException;
 
 /**
- * The serialization and deserialization methods for sub-metrics used by BasicMetricRollup and GaugeMetricRollup.
- * Comment sub-metrics are:
+ * The serialization and deserialization methods for sub-metrics used by
+ * {@link com.rackspacecloud.blueflood.types.BasicRollup} and {@link com.rackspacecloud.blueflood.types.BluefloodGaugeRollup}.
+ * Common sub-metrics are:
  * <ul>
  *     <li>average</li>
  *     <li>max</li>
