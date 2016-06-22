@@ -28,6 +28,13 @@ import java.io.IOException;
 
 /**
  * The serialization and deserialization methods for sub-metrics used by BasicMetricRollup and GaugeMetricRollup.
+ * Comment sub-metrics are:
+ * <ul>
+ *     <li>average</li>
+ *     <li>max</li>
+ *     <li>min</li>
+ *     <li>sum</li>
+ * </ul>
  */
 public class BaseRollupSerDes extends AbstractSerDes {
 
