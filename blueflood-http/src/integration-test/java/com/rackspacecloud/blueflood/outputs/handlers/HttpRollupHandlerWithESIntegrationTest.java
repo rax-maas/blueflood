@@ -20,6 +20,7 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -101,7 +102,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             generateRollups(locator, baseMillis, baseMillis + 86400000, g);
         }
 
-        metric = datastaxWriteEnumMetric("enum_metric2", "333333");
+        AbstractMetricsRW preaggregatedRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
+        metric = writeEnumMetric(preaggregatedRW, "enum_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
 
@@ -215,6 +217,16 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
                 .setParameter("to", String.valueOf(fromTimestamp + 86400000))
                 .setParameter("resolution", "full");
         return builder.build();
+    }
+
+    protected IMetric writeEnumMetric(MetricsRW metricsRW, String name, String tenantid) throws Exception {
+        final List<IMetric> metrics = new ArrayList<IMetric>();
+        PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
+        metrics.add(metric);
+
+        metricsRW.insertMetrics(metrics);
+
+        return metric;
     }
 
     @AfterClass

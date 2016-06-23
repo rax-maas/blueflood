@@ -40,7 +40,6 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     private static final Logger LOG = LoggerFactory.getLogger(DPreaggregatedMetricsRW.class);
 
     private final DCounterIO counterIO = new DCounterIO();
-    private final DEnumIO enumIO = new DEnumIO();
     private final DGagueIO gaugeIO = new DGagueIO();
     private final DSetIO setIO = new DSetIO();
     private final DTimerIO timerIO = new DTimerIO();
@@ -48,14 +47,20 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     // a map of RollupType to its IO class that knows
     // how to read/write that particular type of rollup
     private final Map<RollupType, DAbstractMetricIO> rollupTypeToIO =
-            new HashMap<RollupType, DAbstractMetricIO>() {{
-                put(RollupType.COUNTER, counterIO);
-                put(RollupType.ENUM, enumIO);
-                put(RollupType.GAUGE, gaugeIO);
-                put(RollupType.SET, setIO);
-                put(RollupType.TIMER, timerIO);
-            }};
+            new HashMap<RollupType, DAbstractMetricIO>();
 
+    /**
+     * Constructor
+     * @param locatorIO
+     */
+    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO) {
+        super(locatorIO);
+        rollupTypeToIO.put(RollupType.COUNTER, counterIO);
+        rollupTypeToIO.put(RollupType.ENUM, enumIO);
+        rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
+        rollupTypeToIO.put(RollupType.SET, setIO);
+        rollupTypeToIO.put(RollupType.TIMER, timerIO);
+    }
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family
@@ -80,6 +85,7 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     @Override
     public void insertMetrics(Collection<IMetric> metrics,
                               Granularity granularity) throws IOException {
+
         Timer.Context ctx = Instrumentation.getWriteTimerContext(
                 CassandraModel.getPreaggregatedColumnFamilyName(granularity));
         try {

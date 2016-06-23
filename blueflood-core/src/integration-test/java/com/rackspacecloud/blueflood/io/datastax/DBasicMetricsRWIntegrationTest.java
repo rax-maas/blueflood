@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io.datastax;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
@@ -35,6 +36,8 @@ import java.util.Set;
  */
 public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
 
+    protected LocatorIO locatorIO = new DLocatorIO();
+
     @Test
     public void testStringMetricsIfSoConfiguredAreAlwaysDroppedForAllTenants() throws Exception {
 
@@ -49,7 +52,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
         MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(true, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, true, new ArrayList<String>());
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -85,7 +88,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         List<String> keptTenants = new ArrayList<String>();
         keptTenants.add(locator.getTenantId());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(true, keptTenants);
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, true, keptTenants);
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -116,7 +119,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
         MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -147,7 +150,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final Locator locator = Locator.createLocatorFromPathComponents(acctId, metricName);
         MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         String sameValue = getRandomStringMetricValue();
         Set<Long> expectedTimestamps = new HashSet<Long>();
@@ -186,7 +189,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         String firstValue = getRandomStringMetricValue();
         String secondValue = getRandomStringMetricValue();
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.
@@ -224,7 +227,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
 
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         int sameValue = getRandomIntMetricValue();
         Set<Long> expectedTimestamps = new HashSet<Long>();
@@ -258,7 +261,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
         MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.BOOLEAN.toString());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         boolean sameValue = true;
         Set<Long> expectedTimestamps = new HashSet<Long>();
@@ -295,7 +298,7 @@ public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
         final Locator locator  = Locator.createLocatorFromPathComponents(acctId, metricName);
         MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.BOOLEAN.toString());
 
-        DBasicMetricsRW metricsRW = new DBasicMetricsRW(false, new ArrayList<String>());
+        DBasicMetricsRW metricsRW = new DBasicMetricsRW(locatorIO, false, new ArrayList<String>());
 
         Set<Long> expectedTimestamps = new HashSet<Long>();
         // insert something every 30s for 5 mins.

@@ -37,12 +37,14 @@ import java.util.*;
  */
 public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
 
+    protected static final String INSERT_KEY_COLUMN_VALUE_FORMAT = "INSERT INTO %s (key, column1, value) VALUES (?, ?, ?)";
+    protected static final String SELECT_FOR_KEY = "SELECT * FROM %s WHERE key = :locator";
+
     private static final Logger LOG = LoggerFactory.getLogger(DEnumIO.class);
     private static final EnumSerDes serDes = new EnumSerDes();
 
-    private PreparedStatement insertToMetricsEnumStatement;
-
-    private PreparedStatement selectFromMetricsEnumStatement;
+    private final PreparedStatement insertToMetricsEnumStatement;
+    private final PreparedStatement selectFromMetricsEnumStatement;
 
     /**
      * Constructor
@@ -58,7 +60,7 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
                 String.format(SELECT_FOR_KEY,
                         CassandraModel.CF_METRICS_ENUM_NAME));
 
-        cfNameToSelectStatement.put(CassandraModel.CF_METRICS_ENUM_NAME, selectFromMetricsEnumStatement);
+        metricsCFPreparedStatements.cfNameToSelectStatement.put(CassandraModel.CF_METRICS_ENUM_NAME, selectFromMetricsEnumStatement);
     }
 
     /**
@@ -87,11 +89,11 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
                 try {
                     List<Row> results = future.getUninterruptibly().all();
                     for (Row row : results) {
-                        String key = row.getString(KEY);
+                        String key = row.getString(metricsCFPreparedStatements.KEY);
                         Locator locator = Locator.createLocatorFromDbKey(key);
 
-                        Long hash = row.getLong(COLUMN1);
-                        String enumValue = row.getString(VALUE);
+                        Long hash = row.getLong(metricsCFPreparedStatements.COLUMN1);
+                        String enumValue = row.getString(metricsCFPreparedStatements.VALUE);
                         locatorEnumHashValues.put(locator, hash, enumValue);
                     }
                 } catch (Exception ex) {
@@ -262,16 +264,16 @@ public class DEnumIO extends DAbstractMetricIO implements EnumReaderIO {
             try {
                 ResultSet rs = future.getUninterruptibly();
                 // get the table that the 'key' column resides
-                String table = rs.getColumnDefinitions().getTable(KEY);
+                String table = rs.getColumnDefinitions().getTable(metricsCFPreparedStatements.KEY);
                 for ( Row row : rs.all() ) {
-                    String key = row.getString(KEY);
+                    String key = row.getString(metricsCFPreparedStatements.KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
-                    Long column1 = row.getLong(COLUMN1);
+                    Long column1 = row.getLong(metricsCFPreparedStatements.COLUMN1);
                     if ( CassandraModel.CF_METRICS_ENUM_NAME.equals(table) ) {
                         // store a mapping of enum hash to its enum string value
-                        hashValueMap.put(column1, row.getString(VALUE));
+                        hashValueMap.put(column1, row.getString(metricsCFPreparedStatements.VALUE));
                     } else {
-                        locatorTimestampRollup.put(loc, column1, (T)fromByteBuffer(row.getBytes(VALUE)));
+                        locatorTimestampRollup.put(loc, column1, (T)fromByteBuffer(row.getBytes(metricsCFPreparedStatements.VALUE)));
                     }
                 }
             } catch (Exception ex) {

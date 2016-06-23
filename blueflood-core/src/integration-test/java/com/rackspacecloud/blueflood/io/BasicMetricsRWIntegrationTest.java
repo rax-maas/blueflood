@@ -4,6 +4,7 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.astyanax.ABasicMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
@@ -32,7 +33,8 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final String TENANT3 = "123789";
     private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
-    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW();
+    protected LocatorIO locatorIO = new DLocatorIO();
+    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO);
     protected MetricsRW astyanaxMetricsRW = new ABasicMetricsRW();
 
     protected Map<Locator, IMetric> numericMap = new HashMap<Locator, IMetric>();

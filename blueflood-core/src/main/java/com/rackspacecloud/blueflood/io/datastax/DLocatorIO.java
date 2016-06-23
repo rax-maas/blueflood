@@ -54,6 +54,9 @@ public class DLocatorIO implements LocatorIO {
     private PreparedStatement getValue;
     private PreparedStatement putValue;
 
+    /**
+     * Constructor
+     */
     public DLocatorIO() {
         createPreparedStatements();
     }
