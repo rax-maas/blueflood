@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractMetricsRW implements MetricsRW {
 
-    protected final MetadataCache metadataCache = MetadataCache.getInstance();
     protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
@@ -85,23 +84,6 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         for (IMetric metric: metrics)
             map.put(metric.getLocator(), metric);
         return map;
-    }
-
-    /**
-     * For a particular {@link com.rackspacecloud.blueflood.types.Locator}, get
-     * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
-     *
-     * @param locator
-     * @param dataTypeCacheKey
-     * @return
-     * @throws CacheException
-     */
-    protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
-        String meta = metadataCache.get(locator, dataTypeCacheKey);
-        if (meta != null) {
-            return new DataType(meta);
-        }
-        return DataType.NUMERIC;
     }
 
     /**

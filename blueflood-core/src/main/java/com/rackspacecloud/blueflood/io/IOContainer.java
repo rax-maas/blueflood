@@ -87,9 +87,10 @@ public class IOContainer {
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
             excessEnumIO = new DExcessEnumIO();
-            enumReaderIO = new DEnumIO();
-            basicMetricsRW = new DBasicMetricsRW(stringMetricsDropped, tenantIdsKept);
-            preAggregatedMetricsRW = new DPreaggregatedMetricsRW();
+            DEnumIO enumIO = new DEnumIO();
+            enumReaderIO = enumIO;
+            basicMetricsRW = new DBasicMetricsRW(locatorIO, stringMetricsDropped, tenantIdsKept);
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO);
 
         } else {
 

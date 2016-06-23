@@ -20,6 +20,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.APreaggregatedMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
+import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -48,7 +50,9 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final String TENANT3 = "123789";
     private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
-    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW();
+    protected LocatorIO locatorIO = new DLocatorIO();
+    protected DEnumIO enumIO = new DEnumIO();
+    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO);
     protected APreaggregatedMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW();
 
     protected Map<Locator, IMetric>  expectedLocatorMetricMap = new HashMap<Locator, IMetric>();

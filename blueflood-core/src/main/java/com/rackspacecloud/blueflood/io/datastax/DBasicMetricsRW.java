@@ -36,8 +36,8 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * ingestion of String metrics for all tenants.
      * See #DBasicMetricsRW(boolean, List) to change the behavior.
      */
-    public DBasicMetricsRW() {
-        this(false, new ArrayList<String>());
+    public DBasicMetricsRW(LocatorIO locatorIO) {
+        this(locatorIO, false, new ArrayList<String>());
     }
 
     /**
@@ -46,7 +46,8 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * @param ignoreStringMetrics
      * @param tenantIdsKept
      */
-    public DBasicMetricsRW(boolean ignoreStringMetrics, List<String> tenantIdsKept) {
+    public DBasicMetricsRW(LocatorIO locatorIO, boolean ignoreStringMetrics, List<String> tenantIdsKept) {
+        super(locatorIO);
         this.areStringMetricsDropped = ignoreStringMetrics;
         this.keptTenantIdsSet  = new HashSet<String>(tenantIdsKept);
     }
