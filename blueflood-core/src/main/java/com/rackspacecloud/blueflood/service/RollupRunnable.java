@@ -21,8 +21,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -37,7 +36,6 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -129,20 +127,16 @@ public class RollupRunnable implements Runnable {
                 }
             }
 
+            // first, get the points.
+            AbstractMetricsRW metricsRW;
             try {
-                // first, get the points.
-                // TODO: replace the Astyanax call with:
-                // MetricsRW metricsRW;
-                // if ( rollupType == RollupType.BF_BASIC ) {
-                //    metricsRW = IOContainer.fromConfig().getBasicIO();
-                // } else if ( rollupType == RollupType.BF_HISTORGRAM ) {
-                //    metricsRW = histogram column family differences
-                // } else {
-                //    metricsRW = IOContainer.fromConfig().getPreaggregatedIO();
-                // }
-                // metricsRW.getDataToRollup(locator, rollupType, range, columnFamily)
-                input = AstyanaxReader.getInstance().getDataToRoll(rollupClass,
-                        singleRollupReadContext.getLocator(), singleRollupReadContext.getRange(), srcCF);
+                metricsRW = RollupUtils.getMetricsRWForRollupType(rollupType);
+
+                input = metricsRW.getDataToRollup(
+                        singleRollupReadContext.getLocator(),
+                        rollupType,
+                        singleRollupReadContext.getRange(),
+                        srcCF.getName());
 
                 if (input.isEmpty()) {
                     LOG.debug(String.format("No points rollup for locator %s", singleRollupReadContext.getLocator()));
