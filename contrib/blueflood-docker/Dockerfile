@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install -y netcat
 RUN apt-get install -y python python-dev python-pip python-virtualenv && \
     rm -rf /var/lib/apt/lists/*
-RUN pip install cqlsh
+RUN pip install cqlsh==4.1.1
 
 ADD ./configs/ .
 
