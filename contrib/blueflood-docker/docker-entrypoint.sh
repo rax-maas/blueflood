@@ -16,9 +16,9 @@ then
 export ELASTICSEARCH_HOST="$ELASTICSEARCH_PORT_9300_TCP_ADDR"
 fi
 
-
 ######## Connecting to Cassandra and loading Blueflood's schema #######
 CASSCOUNTER=0
+trap "exit" INT
 while [[ $CASSCOUNTER -lt 180 ]];  #Wait for 180 seconds for cassandra to get ready.
 do
         let CASSCOUNTER=CASSCOUNTER+2
@@ -43,6 +43,7 @@ cqlsh $CASSANDRA_HOST -f blueflood.cdl
 
 ######## Connecting to Elasticsearch #######
 ESCOUNTER=0
+trap "exit" INT
 while [[ $ESCOUNTER -lt 120 ]];  #Wait for 120 seconds for elasticsearch to get ready.
 do
         let ESCOUNTER=ESCOUNTER+2
@@ -86,8 +87,8 @@ EOL
 /usr/bin/java \
         -Dblueflood.config=file:./blueflood.conf \
         -Dlog4j.configuration=file:./blueflood-log4j.properties \
-        -Xms1G \
-        -Xmx1G \
+        -Xms$MIN_HEAP_SIZE \
+        -Xmx$MAX_HEAP_SIZE \
         -Dcom.sun.management.jmxremote.authenticate=false \
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=localhost \
