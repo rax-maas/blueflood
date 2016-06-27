@@ -86,8 +86,8 @@ EOL
 /usr/bin/java \
         -Dblueflood.config=file:./blueflood.conf \
         -Dlog4j.configuration=file:./blueflood-log4j.properties \
-        -Xms1G \
-        -Xmx1G \
+        -Xms$INITIAL_HEAP_SIZE \
+        -Xmx$MAX_HEAP_SIZE \
         -Dcom.sun.management.jmxremote.authenticate=false \
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=localhost \
