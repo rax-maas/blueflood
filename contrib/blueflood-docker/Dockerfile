@@ -51,7 +51,7 @@ ENV ENUMS_DISCOVERY_MODULES=com.rackspacecloud.blueflood.io.EnumElasticIO
 ENV ZOOKEEPER_CLUSTER=NONE
 
 ENV LOG_LEVEL=INFO
-ENV INITIAL_HEAP_SIZE=1G
+ENV MIN_HEAP_SIZE=1G
 ENV MAX_HEAP_SIZE=1G
 
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
