@@ -130,26 +130,18 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         List<Locator> booleans = new ArrayList<Locator>();
         List<Locator> numerics = new ArrayList<Locator>();
 
-        MetadataCache metadataCache = MetadataCache.getInstance();
-
         for ( Locator locator : locators ) {
 
-            Object type;
+            DataType metricType;
             try {
-
-                type = metadataCache.get( locator, DATA_TYPE_CACHE_KEY );
-
+                metricType = getDataType(locator);
             } catch ( CacheException e ) {
                 LOG.error(String.format("Error looking up locator %s in cache", locator), e);
                 unknowns.add( locator );
                 continue;
             }
 
-
-            DataType metricType = new DataType( (String) type );
-
-            if ( type == null || !DataType.isKnownMetricType( metricType ) ) {
-
+            if ( !DataType.isKnownMetricType( metricType ) ) {
                 unknowns.add( locator );
                 continue;
             } else if ( metricType.equals( DataType.STRING ) ) {

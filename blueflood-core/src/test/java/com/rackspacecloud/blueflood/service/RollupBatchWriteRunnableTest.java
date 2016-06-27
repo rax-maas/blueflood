@@ -1,7 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -22,19 +21,19 @@ public class RollupBatchWriteRunnableTest {
 
     ArrayList<SingleRollupWriteContext> wcs;
     RollupExecutionContext ctx;
-    AstyanaxWriter writer;
+    AbstractMetricsRW writer;
     RollupBatchWriteRunnable rbwr;
 
     @Before
     public void setUp() {
         wcs = new ArrayList<SingleRollupWriteContext>();
         ctx = mock(RollupExecutionContext.class);
-        writer = mock(AstyanaxWriter.class);
+        writer = mock(AbstractMetricsRW.class);
         rbwr = new RollupBatchWriteRunnable(wcs, ctx, writer);
     }
 
     @Test
-    public void runSendsRollupsToWriterAndDecrementsCount() throws ConnectionException {
+    public void runSendsRollupsToWriterAndDecrementsCount() throws Exception {
 
         // given
         final AtomicLong decrementCount = new AtomicLong(0);
@@ -72,10 +71,10 @@ public class RollupBatchWriteRunnableTest {
     }
 
     @Test
-    public void connectionExceptionMarksUnsuccessful() throws ConnectionException {
+    public void connectionExceptionMarksUnsuccessful() throws Exception {
 
         // given
-        Throwable cause = new ConnectionException("exception for testing purposes") { };
+        Throwable cause = new IOException("exception for testing purposes") { };
         doThrow(cause).when(writer).insertRollups(
                 Matchers.<ArrayList<SingleRollupWriteContext>>any());
 
@@ -88,29 +87,5 @@ public class RollupBatchWriteRunnableTest {
         verify(ctx).markUnsuccessful(Matchers.<Throwable>any());
         verify(ctx).decrementWriteCounter(anyLong());
         verifyNoMoreInteractions(ctx);
-    }
-
-    @Test
-    public void otherExceptionBreaksEverything() throws ConnectionException {
-
-        // given
-        Throwable cause = new UnsupportedOperationException("exception for testing purposes");
-        doThrow(cause).when(writer).insertRollups(
-                Matchers.<ArrayList<SingleRollupWriteContext>>any());
-
-        // when
-        Throwable caught = null;
-        try {
-            rbwr.run();
-        } catch (Throwable t) {
-            caught = t;
-        }
-
-        // then
-        assertNotNull(caught);
-        assertSame(cause, caught);
-        verify(writer).insertRollups(Matchers.<ArrayList<SingleRollupWriteContext>>any());
-        verifyNoMoreInteractions(writer);
-        verifyZeroInteractions(ctx);
     }
 }

@@ -24,9 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.SearchResult;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -165,7 +163,9 @@ public class RollupHandler {
                  }
              });
         }
-        final Map<Locator,MetricData> metricDataMap = AstyanaxReader.getInstance().getDatapointsForRange(
+
+        MetricsRWDelegator delegator = new MetricsRWDelegator();
+        final Map<Locator,MetricData> metricDataMap = delegator.getDatapointsForRange(
                 locators,
                 new Range(g.snapMillis(from), to),
                 g);
@@ -390,7 +390,8 @@ public class RollupHandler {
         for ( Range r : ranges ) {
             try {
                 Timer.Context cRead = timerCassandraReadRollupOnRead.time();
-                MetricData data = AstyanaxReader.getInstance().getDatapointsForRange( locator, r, Granularity.FULL );
+                MetricsRWDelegator delegator = new MetricsRWDelegator();
+                MetricData data = delegator.getDatapointsForRange(locator, r, Granularity.FULL);
                 cRead.stop();
 
                 Points dataToRoll = data.getData();

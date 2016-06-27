@@ -21,7 +21,6 @@ import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.io.IMetricsWriter;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.RestartGauge;
 import com.rackspacecloud.blueflood.utils.Util;
@@ -100,16 +99,12 @@ public class BluefloodServiceStarter {
             for (String module : modules) {
                 log.info("Loading ingestion service module " + module);
                 try {
-                    ClassLoader loader = IMetricsWriter.class.getClassLoader();
-                    Class writerImpl = loader.loadClass(config.getStringProperty(CoreConfig.IMETRICS_WRITER));
-                    IMetricsWriter writer = (IMetricsWriter) writerImpl.newInstance();
-
                     Class serviceClass = classLoader.loadClass(module);
                     IngestionService service = (IngestionService) serviceClass.newInstance();
-                    log.info("Starting ingestion service module " + module + " with writer: " + writerImpl.getSimpleName());
+                    log.info("Starting ingestion service module " + module);
                     ingestionServices.add(service);
-                    service.startService(context, writer);
-                    log.info("Successfully started ingestion service module " + module + " with writer: " + writerImpl.getSimpleName());
+                    service.startService(context);
+                    log.info("Successfully started ingestion service module " + module);
                     services_started++;
                 } catch (InstantiationException e) {
                     log.error("Unable to create instance of ingestion service class for: " + module, e);

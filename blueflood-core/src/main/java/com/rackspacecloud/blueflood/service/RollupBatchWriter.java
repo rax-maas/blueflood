@@ -31,6 +31,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 // Batches rollup writes
 public class RollupBatchWriter {
     private final Logger LOG = LoggerFactory.getLogger(RollupBatchWriter.class);
+    private final AbstractMetricsRW basicMetricsRW;
+    private final AbstractMetricsRW preAggregatedRW;
     private final ThreadPoolExecutor executor;
     private final RollupExecutionContext context;
     private final ConcurrentLinkedQueue<SingleRollupWriteContext> rollupQueue = new ConcurrentLinkedQueue<SingleRollupWriteContext>();
@@ -40,6 +42,8 @@ public class RollupBatchWriter {
     public RollupBatchWriter(ThreadPoolExecutor executor, RollupExecutionContext context) {
         this.executor = executor;
         this.context = context;
+        this.basicMetricsRW = IOContainer.fromConfig().getBasicMetricsRW();
+        this.preAggregatedRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
     }
 
 
@@ -57,16 +61,31 @@ public class RollupBatchWriter {
     }
 
     public synchronized void drainBatch() {
-        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
+        List<SingleRollupWriteContext> writeBasicContexts = new ArrayList<SingleRollupWriteContext>();
+        List<SingleRollupWriteContext> writePreAggrContexts = new ArrayList<SingleRollupWriteContext>();
         try {
             for (int i=0; i<=ROLLUP_BATCH_MAX_SIZE; i++) {
-                writeContexts.add(rollupQueue.remove());
+                SingleRollupWriteContext context = rollupQueue.remove();
+                if ( context.getRollup().getRollupType() == RollupType.BF_BASIC ) {
+                    writeBasicContexts.add(context);
+                } else {
+                    writePreAggrContexts.add(context);
+                }
             }
         } catch (NoSuchElementException e) {
             // pass
         }
-        if (writeContexts.size() > 0) {
-            executor.execute(new RollupBatchWriteRunnable(writeContexts, context));
+        if (writeBasicContexts.size() > 0) {
+            LOG.debug(
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                            writeBasicContexts.size()));
+            executor.execute(new RollupBatchWriteRunnable(writeBasicContexts, context, basicMetricsRW));
+        }
+        if (writePreAggrContexts.size() > 0) {
+            LOG.debug(
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                            writePreAggrContexts.size()));
+            executor.execute(new RollupBatchWriteRunnable(writePreAggrContexts, context, preAggregatedRW));
         }
     }
 }

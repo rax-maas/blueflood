@@ -17,11 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.rackspacecloud.blueflood.io.EnumReaderIO;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.astyanax.AstyanaxReader;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.SearchResult;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.types.BluefloodEnumRollup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -46,7 +42,6 @@ public class EnumValidator implements Runnable {
     private static final int ENUM_UNIQUE_VALUES_THRESHOLD = config.getIntegerProperty(CoreConfig.ENUM_UNIQUE_VALUES_THRESHOLD);
     private Set<Locator> locators;
 
-    private AstyanaxReader reader = null;
     private DiscoveryIO discoveryIO = null;
     private EnumReaderIO enumIO = null;
 
@@ -73,7 +68,7 @@ public class EnumValidator implements Runnable {
     public void run() {
         if (locators == null) return;
 
-        Map<Locator, List<String>> locatorEnums = getReader().getEnumStringMappings(new ArrayList(locators));
+        Map<Locator, List<String>> locatorEnums = enumIO.getEnumStringMappings(new ArrayList(locators));
         for (final Locator locator : locatorEnums.keySet()) {
             // validate enum values count and write to index or bad metric
             validateThresholdAndWrite(locator, locatorEnums.get(locator));
@@ -137,17 +132,6 @@ public class EnumValidator implements Runnable {
             rollup = rollup.withEnumValue(val);
         }
         return rollup;
-    }
-
-    public AstyanaxReader getReader() {
-        if (this.reader == null) {
-            this.reader = AstyanaxReader.getInstance();
-        }
-        return this.reader;
-    }
-
-    public void setReader(AstyanaxReader reader) {
-        this.reader = reader;
     }
 
     public DiscoveryIO getDiscoveryIO() {
