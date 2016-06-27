@@ -295,13 +295,12 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
      *
      * @param locator
-     * @param dataTypeCacheKey
      * @return
      * @throws CacheException
      */
-    protected DataType getDataType(Locator locator, String dataTypeCacheKey) throws CacheException {
+    protected DataType getDataType(Locator locator) throws CacheException {
         MetadataCache metadataCache = MetadataCache.getInstance();
-        String meta = metadataCache.get(locator, dataTypeCacheKey);
+        String meta = metadataCache.get(locator, DATA_TYPE_CACHE_KEY);
         if (meta != null) {
             return new DataType(meta);
         }
