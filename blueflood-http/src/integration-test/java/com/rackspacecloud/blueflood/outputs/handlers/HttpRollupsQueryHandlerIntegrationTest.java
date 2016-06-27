@@ -84,7 +84,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         final String metric_name = "enum_metric_test" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", now, postfix );
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_single_enum_payload.json", now, postfix );
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 

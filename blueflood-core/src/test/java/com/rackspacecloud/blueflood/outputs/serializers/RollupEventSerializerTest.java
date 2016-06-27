@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.io.IOError;
 
 public class RollupEventSerializerTest {
+    private static final double EPSILON = .01;
+
     @Test
     public void testBasicRollupSerialization() {
         BasicRollup rollup = new BasicRollup();
@@ -33,6 +35,7 @@ public class RollupEventSerializerTest {
         rollup.setMax(20);
         rollup.setMin(5);
         rollup.setVariance(12);
+        rollup.setSum( 100 );
         //Get the JSON object node from Rollup
         ObjectNode resultNode = RollupSerializationHelper.rollupToJson(rollup);
         Assert.assertEquals(resultNode.get("max").asLong(), rollup.getMaxValue().toLong());
@@ -40,6 +43,7 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("mean").asLong(), rollup.getAverage().toLong());
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
+        Assert.assertEquals(resultNode.get("sum").asDouble(), rollup.getSum(), EPSILON);
     }
 
     @Test
@@ -59,7 +63,7 @@ public class RollupEventSerializerTest {
         Assert.assertEquals(resultNode.get("mean").asLong(), rollup.getAverage().toLong());
         Assert.assertEquals(resultNode.get("var").asDouble(), rollup.getVariance().toDouble());
         Assert.assertEquals(resultNode.get("count").asLong(), rollup.getCount());
-        Assert.assertEquals(resultNode.get("sum").asDouble(), rollup.getSum());
+        Assert.assertEquals(resultNode.get("sum").asDouble(), rollup.getSum(), EPSILON );
         Assert.assertEquals(resultNode.get("rate").asDouble(), rollup.getRate());
     }
 
@@ -132,5 +136,6 @@ public class RollupEventSerializerTest {
         Assert.assertTrue(resultNode.get("mean").isNull());
         Assert.assertTrue(resultNode.get("var").isNull());
         Assert.assertEquals(resultNode.get("count").asLong(), 0);
+        Assert.assertEquals(resultNode.get("sum").asDouble(), 0, EPSILON);
     }
 }

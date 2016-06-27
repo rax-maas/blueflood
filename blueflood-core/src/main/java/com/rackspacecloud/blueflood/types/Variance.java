@@ -30,7 +30,7 @@ public class Variance extends AbstractRollupStat {
     private double populationVariance; // variance we are actually interested in
 
     // These are requied for rollup variance calculation
-    private List<IBasicRollup> basicRollupList;
+    private List<IBaseRollup> basicRollupList;
 
     private boolean isRollup;
     
@@ -42,7 +42,7 @@ public class Variance extends AbstractRollupStat {
         this.mean = 0;
         this.M2 = 0;
         this.populationVariance = 0;
-        this.basicRollupList = new ArrayList<IBasicRollup>();
+        this.basicRollupList = new ArrayList<IBaseRollup>();
         this.isRollup = false;
     }
 
@@ -76,10 +76,10 @@ public class Variance extends AbstractRollupStat {
     }
 
     @Override
-    void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException {
+    void handleRollupMetric(IBaseRollup baseRollup) throws RuntimeException {
         this.needsCompute = true;
         this.isRollup = true;
-        basicRollupList.add(basicRollup); // we need all the rollup metrics before computing the final variance.
+        basicRollupList.add(baseRollup); // we need all the rollup metrics before computing the final variance.
     }
     
     public String toString() {
@@ -99,7 +99,7 @@ public class Variance extends AbstractRollupStat {
             double sum2 = 0;
 
             // first pass to compute grand mean over all windows
-            for (IBasicRollup basicRollup : basicRollupList) {
+            for (IBaseRollup basicRollup : basicRollupList) {
                 AbstractRollupStat avg = basicRollup.getAverage();
                 totalSampleSize += basicRollup.getCount();
 
@@ -125,7 +125,7 @@ public class Variance extends AbstractRollupStat {
             // The formula is exact and its precision depends on variance over a single window
             // which is computed using Welford. Except for numerical instability problems, Welford
             // is almost exact.
-            for (IBasicRollup basicRollup : basicRollupList) {
+            for (IBaseRollup basicRollup : basicRollupList) {
                 AbstractRollupStat var = basicRollup.getVariance();
                 AbstractRollupStat avg = basicRollup.getAverage();
                 sum1 += basicRollup.getCount() * var.toDouble();

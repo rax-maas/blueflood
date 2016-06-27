@@ -15,8 +15,10 @@
  */
 package com.rackspacecloud.blueflood.io.serializers;
 
+import com.google.protobuf.CodedOutputStream;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
+import com.rackspacecloud.blueflood.io.serializers.metrics.BasicRollupSerDes;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.google.common.collect.Sets;
@@ -31,7 +33,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SerializationTest {
-    
+
+    protected static final double EPSILON = .5;
+
     private final static Object[] TO_SERIALIZE_FULL = new Object[] {
         32342341,
         3423523122452312341L,
@@ -135,7 +139,35 @@ public class SerializationTest {
     }
 
     @Test
-    public void testRollupSerializationAndDeserializationV1() throws IOException {
+    public void testBasicRollupSerializationAndDeserializationV1() throws IOException {
+
+        BasicRollupSerDes serDes = new BasicRollupSerDes();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (BasicRollup basicRollup : TO_SERIALIZE_BASIC_ROLLUP) {
+            ByteBuffer bb = serDes.serializeV1( basicRollup );
+            baos.write(Base64.encodeBase64(bb.array()));
+            baos.write("\n".getBytes());
+        }
+        baos.close();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
+        for (int i = 0; i < TO_SERIALIZE_BASIC_ROLLUP.length; i++) {
+            ByteBuffer bb = ByteBuffer.wrap(Base64.decodeBase64(reader.readLine().getBytes()));
+            BasicRollup basicRollup = Serializers.serializerFor(BasicRollup.class).fromByteBuffer(bb);
+
+            // assert all sub-metrics are equal but sum, which is 0 for V1 rollups
+            Assert.assertEquals( "average is same after serialization for V1", TO_SERIALIZE_BASIC_ROLLUP[i].getAverage(), basicRollup.getAverage() );
+            Assert.assertEquals( "count is same after serialization for V1", TO_SERIALIZE_BASIC_ROLLUP[i].getCount(), basicRollup.getCount() );
+            Assert.assertEquals( "max is same after serialization for V1", TO_SERIALIZE_BASIC_ROLLUP[i].getMaxValue(), basicRollup.getMaxValue() );
+            Assert.assertEquals( "min is same after serialization for V1", TO_SERIALIZE_BASIC_ROLLUP[i].getMinValue(), basicRollup.getMinValue() );
+            Assert.assertEquals( "var is same after serialization for V1", TO_SERIALIZE_BASIC_ROLLUP[i].getVariance(), basicRollup.getVariance() );
+            Assert.assertEquals( "sum is 0 after serialization for V1", 0, basicRollup.getSum(), EPSILON );
+        }
+    }
+
+    @Test
+    public void testBasicRollupSerializationAndDeserialization() throws IOException {
         // works the same way as testFullResSerializationAndDeserialization
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

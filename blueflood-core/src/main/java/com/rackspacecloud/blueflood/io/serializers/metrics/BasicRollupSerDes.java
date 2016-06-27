@@ -15,35 +15,44 @@
  */
 package com.rackspacecloud.blueflood.io.serializers.metrics;
 
-import com.codahale.metrics.Histogram;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.BasicRollup;
-import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_FULL_RES;
 import static com.rackspacecloud.blueflood.io.Constants.VERSION_1_ROLLUP;
+import static com.rackspacecloud.blueflood.io.Constants.VERSION_2_ROLLUP;
 
 /**
  * This class knows how to serialize/deserialize a BasicRollup to its byte
  * wire format.
  */
-public class BasicRollupSerDes extends AbstractSerDes {
+public class BasicRollupSerDes extends BaseRollupSerDes {
 
-    /**
-     * Our internal metric to count the number of rollups
-     */
-    protected static Histogram rollupSize = Metrics.histogram(BasicRollupSerDes.class, "Rollup Metric Size");
+    @VisibleForTesting
+    public ByteBuffer serializeV1( BasicRollup basicRollup ) {
+
+        try {
+            byte[] buf = new byte[sizeOf( basicRollup, VERSION_1_ROLLUP)];
+            CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
+            serializeRollupV1( basicRollup, protobufOut );
+            return ByteBuffer.wrap(buf);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
     public ByteBuffer serialize(BasicRollup basicRollup) {
         try {
-            byte[] buf = new byte[sizeOf(basicRollup)];
-            serializeRollup(basicRollup, buf);
+            byte[] buf = new byte[sizeOf(basicRollup, VERSION_2_ROLLUP)];
+            serializeRollup( basicRollup, buf);
             return ByteBuffer.wrap(buf);
         } catch(IOException e) {
             throw new RuntimeException(e);
@@ -54,74 +63,48 @@ public class BasicRollupSerDes extends AbstractSerDes {
         CodedInputStream in = CodedInputStream.newInstance(byteBuffer.array());
         try {
             byte version = in.readRawByte();
-            if (version != VERSION_1_FULL_RES && version != VERSION_1_ROLLUP) {
+            if (version != VERSION_1_FULL_RES && version != VERSION_1_ROLLUP && version != VERSION_2_ROLLUP) {
                 throw new SerializationException(String.format("Unexpected serialization version: %d",
                         (int)version));
             }
-            return deserializeV1Rollup(in);
+
+            return deserializeRollup( in, version );
+
         } catch (Exception e) {
             throw new RuntimeException("Deserialization Failure", e);
         }
     }
 
-    protected BasicRollup deserializeV1Rollup(CodedInputStream in) throws IOException {
+    protected BasicRollup deserializeRollup(CodedInputStream in, byte version) throws IOException {
         final BasicRollup basicRollup = new BasicRollup();
-        final long count = in.readRawVarint64();
-        basicRollup.setCount(count);
 
-        if (count <= 0) {
-            return basicRollup;
+        deserializeBaseRollup( basicRollup, in, version );
+
+        if( version == VERSION_2_ROLLUP ) {
+            basicRollup.setSum( in.readDouble() );
         }
 
-        for (int i = 0; i < BasicRollup.NUM_STATS; i++) {
-            byte statType = in.readRawByte();
-            switch (statType) {
-                case Constants.AVERAGE:
-                    averageStatDeSer.deserialize(basicRollup.getAverage(), in);
-                    break;
-                case Constants.VARIANCE:
-                    varianceStatDeSer.deserialize(basicRollup.getVariance(), in);
-                    break;
-                case Constants.MIN:
-                    minStatDeSer.deserialize(basicRollup.getMinValue(), in);
-                    break;
-                case Constants.MAX:
-                    maxStatDeSer.deserialize(basicRollup.getMaxValue(), in);
-                    break;
-                default:
-                    throw new SerializationException("invalid stat v1 type: " + (int) statType);
-            }
-        }
         return basicRollup;
     }
 
-    protected int sizeOf(BasicRollup basicRollup) {
-        int sz = sizeOfSize();
-        sz += CodedOutputStream.computeRawVarint64Size(basicRollup.getCount());
-        if (basicRollup.getCount() > 0) {
-            sz += averageStatDeSer.sizeOf(basicRollup.getAverage());
-            sz += varianceStatDeSer.sizeOf(basicRollup.getVariance());
-            sz += minStatDeSer.sizeOf(basicRollup.getMinValue());
-            sz += maxStatDeSer.sizeOf(basicRollup.getMaxValue());
-        }
+    protected int sizeOf(BasicRollup basicRollup, byte version) {
+
+        int sz = sizeOfBaseRollup( basicRollup );
+        if( version == VERSION_2_ROLLUP )
+            sz += CodedOutputStream.computeDoubleSizeNoTag(basicRollup.getSum());
+
         return sz;
     }
 
     protected void serializeRollup(BasicRollup basicRollup, byte[] buf) throws IOException {
         rollupSize.update(buf.length);
         CodedOutputStream protobufOut = CodedOutputStream.newInstance(buf);
-        serializeRollup(basicRollup, protobufOut);
-    }
+        protobufOut.writeRawByte(Constants.VERSION_2_ROLLUP);
 
-    protected void serializeRollup(BasicRollup basicRollup, CodedOutputStream protobufOut) throws IOException {
-        protobufOut.writeRawByte(Constants.VERSION_1_ROLLUP);
-        protobufOut.writeRawVarint64(basicRollup.getCount());          // stat count
+        serializeBaseRollupHelper( basicRollup, protobufOut );
 
         if (basicRollup.getCount() > 0) {
-            putRollupStat(basicRollup.getAverage(), protobufOut);
-            putRollupStat(basicRollup.getVariance(), protobufOut);
-            putRollupStat(basicRollup.getMinValue(), protobufOut);
-            putRollupStat(basicRollup.getMaxValue(), protobufOut);
+            protobufOut.writeDoubleNoTag( basicRollup.getSum() );
         }
     }
 }

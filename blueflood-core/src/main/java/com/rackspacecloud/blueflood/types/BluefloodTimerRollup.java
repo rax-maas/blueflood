@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class BluefloodTimerRollup implements Rollup, IBasicRollup {
+public class BluefloodTimerRollup implements Rollup, IBaseRollup {
     private double sum = 0;
     private long count = 0;
     private double rate = 0;

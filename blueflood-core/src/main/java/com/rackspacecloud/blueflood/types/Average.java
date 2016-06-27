@@ -111,7 +111,7 @@ public class Average extends AbstractRollupStat {
     }
 
     @Override
-    void handleRollupMetric(IBasicRollup basicRollup) throws RuntimeException {
+    void handleRollupMetric(IBaseRollup basicRollup) throws RuntimeException {
         AbstractRollupStat other = basicRollup.getAverage();
         if (isFloatingPoint() || other.isFloatingPoint())
             addBatch(other.toDouble(), basicRollup.getCount());

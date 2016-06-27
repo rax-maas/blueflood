@@ -31,6 +31,7 @@ public class PlotRequestParserTest {
         stats.add("average");
         stats.add("min");
         stats.add("max");
+        stats.add("sum");
         Set<BasicRollupsOutputSerializer.MetricStat> filters = PlotRequestParser.getStatsToFilter(stats);
 
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.AVERAGE));
@@ -39,11 +40,12 @@ public class PlotRequestParserTest {
 
         // Alternate comma delimited notation
         stats = new ArrayList<String>();
-        stats.add("average,min,max");
+        stats.add("average,min,max,sum");
         filters = PlotRequestParser.getStatsToFilter(stats);
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.AVERAGE));
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.MIN));
         Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.MAX));
+        Assert.assertTrue(filters.contains(BasicRollupsOutputSerializer.MetricStat.SUM));
     }
     
     @Test

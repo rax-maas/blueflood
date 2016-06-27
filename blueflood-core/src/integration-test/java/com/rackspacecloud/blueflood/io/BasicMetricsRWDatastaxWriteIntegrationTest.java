@@ -105,6 +105,9 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
             assertEquals( String.format( "locator %s min value is the same", locator ),
                     expectedMetric.getMetricValue(),
                     rollup.getMinValue().toLong() );
+            assertEquals( String.format( "locator %s sum is the same", locator ),
+                    (Long)expectedMetric.getMetricValue(),
+                    rollup.getSum(), EPSILON );
         }
     }
 
@@ -345,6 +348,10 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
         assertEquals( String.format( "locator %s min value is the same", locator ),
                 expectedMetric.getMetricValue(),
                 rollup.getMinValue().toLong() );
+        assertEquals( String.format( "locator %s sum is the same", locator ),
+                (Long)expectedMetric.getMetricValue(),
+                rollup.getSum(), EPSILON );
+
     }
 
     @Test
@@ -572,6 +579,9 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
             assertEquals( String.format( "locator %s min value is the same", locator ),
                     expectedMetric.getMetricValue(),
                     rollup.getMinValue().toLong() );
+            assertEquals( String.format( "locator %s sum is the same", locator ),
+                    (Long)expectedMetric.getMetricValue(),
+                    rollup.getSum(), EPSILON );
         }
     }
 

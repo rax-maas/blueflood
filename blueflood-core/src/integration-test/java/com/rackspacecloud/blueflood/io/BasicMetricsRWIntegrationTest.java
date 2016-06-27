@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
 
+    protected static final double EPSILON = .5;
+
     private static final String TENANT1 = "123456";
     private static final String TENANT2 = "987654";
     private static final String TENANT3 = "123789";
