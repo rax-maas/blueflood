@@ -16,9 +16,9 @@ then
 export ELASTICSEARCH_HOST="$ELASTICSEARCH_PORT_9300_TCP_ADDR"
 fi
 
-
 ######## Connecting to Cassandra and loading Blueflood's schema #######
 CASSCOUNTER=0
+trap "exit" INT
 while [[ $CASSCOUNTER -lt 180 ]];  #Wait for 180 seconds for cassandra to get ready.
 do
         let CASSCOUNTER=CASSCOUNTER+2
@@ -43,6 +43,7 @@ cqlsh $CASSANDRA_HOST -f blueflood.cdl
 
 ######## Connecting to Elasticsearch #######
 ESCOUNTER=0
+trap "exit" INT
 while [[ $ESCOUNTER -lt 120 ]];  #Wait for 120 seconds for elasticsearch to get ready.
 do
         let ESCOUNTER=ESCOUNTER+2
