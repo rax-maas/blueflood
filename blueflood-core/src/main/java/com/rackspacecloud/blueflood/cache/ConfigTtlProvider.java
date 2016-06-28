@@ -52,7 +52,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
                 stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
             }
         } catch (NumberFormatException ex) {
-            log.warn("No valid String TTL in config.");
+            log.debug("No valid String TTL in config.");
         }
         this.stringTTL = stringTTL;
 
