@@ -1,5 +1,5 @@
 blueflood:
-  image: goru97/blueflood
+  image: rackerlabs/blueflood
   links:
     - cassandra
     - elasticsearch
@@ -29,7 +29,7 @@ elasticsearch:
 #Graphite-API Integration
 
 graphite-api:
-  image: goru97/graphite-api
+  image: rackerlabs/graphite-api
   ports:
         - "8888:8888"
   links:
