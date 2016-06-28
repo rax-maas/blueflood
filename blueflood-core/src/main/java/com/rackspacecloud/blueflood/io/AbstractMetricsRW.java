@@ -20,8 +20,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -44,7 +44,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
 
     protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
 
-    protected static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
+    protected static TenantTtlProvider TTL_PROVIDER = CombinedTtlProvider.getInstance();
 
     // this collection is used to reduce the number of locators that get written.
     // Simply, if a locator has been seen within the last 10 minutes, don't bother.
@@ -113,15 +113,9 @@ public abstract class AbstractMetricsRW implements MetricsRW {
      * @return
      */
     protected int getTtl(Locator locator, RollupType rollupType, Granularity granularity) {
-        try {
-            return (int) TTL_PROVIDER.getTTL(locator.getTenantId(),
+        return (int) TTL_PROVIDER.getTTL(locator.getTenantId(),
                     granularity,
-                    rollupType).toSeconds();
-        } catch (Exception ex) {
-            LOG.warn(String.format("error getting TTL for locator %s, granularity %s, defaulting to safe TTL",
-                    locator, granularity), ex);
-            return (int) SafetyTtlProvider.getInstance().getSafeTTL(granularity, rollupType).toSeconds();
-        }
+                    rollupType).get().toSeconds();
     }
 
     /**

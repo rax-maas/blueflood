@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
-import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProvider implements TenantTtlProvider {
@@ -40,99 +41,104 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         return INSTANCE;
     }
 
-    private ConfigTtlProvider() {
+    ConfigTtlProvider() {
         final Configuration config = Configuration.getInstance();
 
         // String rollups
-        stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
+        TimeValue stringTTL = null;
+        try {
+            int value = config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL);
+            if (value > 0) {
+                stringTTL = new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS);
+            }
+        } catch (NumberFormatException ex) {
+            log.warn("No valid String TTL in config.", ex);
+        }
+        this.stringTTL = stringTTL;
+
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
                 new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
 
         // Basic rollups
-        ttlMapBuilder.put(Granularity.FULL, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.RAW_METRICS_TTL), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_5, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_20, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_60, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_240, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.BF_BASIC,
-                new TimeValue(config.getIntegerProperty(TtlConfig.BASIC_ROLLUPS_MIN1440), TimeUnit.DAYS));
+        put(ttlMapBuilder, config, Granularity.FULL, RollupType.BF_BASIC, TtlConfig.RAW_METRICS_TTL);
+        put(ttlMapBuilder, config, Granularity.MIN_5, RollupType.BF_BASIC, TtlConfig.BASIC_ROLLUPS_MIN5);
+        put(ttlMapBuilder, config, Granularity.MIN_20, RollupType.BF_BASIC, TtlConfig.BASIC_ROLLUPS_MIN20);
+        put(ttlMapBuilder, config, Granularity.MIN_60, RollupType.BF_BASIC, TtlConfig.BASIC_ROLLUPS_MIN60);
+        put(ttlMapBuilder, config, Granularity.MIN_240, RollupType.BF_BASIC, TtlConfig.BASIC_ROLLUPS_MIN240);
+        put(ttlMapBuilder, config, Granularity.MIN_1440, RollupType.BF_BASIC, TtlConfig.BASIC_ROLLUPS_MIN1440);
 
         /* Pre-aggregated rollups */
 
         // Set rollups
-        ttlMapBuilder.put(Granularity.FULL, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_5, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_20, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_60, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_240, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.SET,
-                new TimeValue(config.getIntegerProperty(TtlConfig.SET_ROLLUPS_MIN1440), TimeUnit.DAYS));
-
+        put(ttlMapBuilder, config, Granularity.FULL, RollupType.SET, TtlConfig.SET_ROLLUPS_FULL);
+        put(ttlMapBuilder, config, Granularity.MIN_5, RollupType.SET, TtlConfig.SET_ROLLUPS_MIN5);
+        put(ttlMapBuilder, config, Granularity.MIN_20, RollupType.SET, TtlConfig.SET_ROLLUPS_MIN20);
+        put(ttlMapBuilder, config, Granularity.MIN_60, RollupType.SET, TtlConfig.SET_ROLLUPS_MIN60);
+        put(ttlMapBuilder, config, Granularity.MIN_240, RollupType.SET, TtlConfig.SET_ROLLUPS_MIN240);
+        put(ttlMapBuilder, config, Granularity.MIN_1440, RollupType.SET, TtlConfig.SET_ROLLUPS_MIN1440);
         // Timer rollups
-        ttlMapBuilder.put(Granularity.FULL, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_5, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_20, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_60, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_240, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.TIMER,
-                new TimeValue(config.getIntegerProperty(TtlConfig.TIMER_ROLLUPS_MIN1440), TimeUnit.DAYS));
-
+        put(ttlMapBuilder, config, Granularity.FULL, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_FULL);
+        put(ttlMapBuilder, config, Granularity.MIN_5, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_MIN5);
+        put(ttlMapBuilder, config, Granularity.MIN_20, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_MIN20);
+        put(ttlMapBuilder, config, Granularity.MIN_60, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_MIN60);
+        put(ttlMapBuilder, config, Granularity.MIN_240, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_MIN240);
+        put(ttlMapBuilder, config, Granularity.MIN_1440, RollupType.TIMER, TtlConfig.TIMER_ROLLUPS_MIN1440);
         // Gauge rollups
-        ttlMapBuilder.put(Granularity.FULL, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_FULL), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_5, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN5), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_20, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN20), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_60, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN60), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_240, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN240), TimeUnit.DAYS));
-        ttlMapBuilder.put(Granularity.MIN_1440, RollupType.GAUGE,
-                new TimeValue(config.getIntegerProperty(TtlConfig.GAUGE_ROLLUPS_MIN1440), TimeUnit.DAYS));
+        put(ttlMapBuilder, config, Granularity.FULL, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_FULL);
+        put(ttlMapBuilder, config, Granularity.MIN_5, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_MIN5);
+        put(ttlMapBuilder, config, Granularity.MIN_20, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_MIN20);
+        put(ttlMapBuilder, config, Granularity.MIN_60, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_MIN60);
+        put(ttlMapBuilder, config, Granularity.MIN_240, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_MIN240);
+        put(ttlMapBuilder, config, Granularity.MIN_1440, RollupType.GAUGE, TtlConfig.GAUGE_ROLLUPS_MIN1440);
         this.ttlMapper = ttlMapBuilder.build();
     }
 
+    /**
+     * Helper function to build the ttl mapping. Only insert to the mapping if the value is a valid date.
+     * @param ttlMapBuilder
+     * @param config
+     * @param gran
+     * @param rollupType
+     * @param configKey
+     * @return true if the insertion is successful, false otherwise.
+     */
+    private boolean put(
+        ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder,
+        Configuration config,
+        Granularity gran,
+        RollupType rollupType,
+        TtlConfig configKey) {
+        int value;
+        try {
+            value = config.getIntegerProperty(configKey);
+            if (value < 0) return false;
+        } catch (NumberFormatException ex) {
+            log.info(String.format("No valid TTL config set for granularity: %s, rollup type: %s",
+                    gran.name(), rollupType.name()), ex);
+            return false;
+        }
+        ttlMapBuilder.put(gran, rollupType, new TimeValue(value, TimeUnit.DAYS));
+        return true;
+    }
+
     @Override
-    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
+    public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType) {
         final TimeValue ttl = ttlMapper.get(gran, rollupType);
 
         if (ttl == null) {
-            log.warn("No valid TTL entry for granularity: " + gran + ", rollup type: " + rollupType.name()
-                    + " in config. Resorting to safe TTL values.");
-            throw new ConfigException("No TTL config found for granularity: " + gran
-                    + ", rollup type: " + rollupType.name());
+            log.warn("No valid TTL entry for granularity: {}, rollup type: {}"
+                + " in config. Resorting to safe TTL values.", gran.name(), rollupType.name());
+            return Optional.absent();
         }
 
-        return ttl;
+        return Optional.of(ttl);
     }
 
     @Override
-    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception {
-        throw new RuntimeException("Not allowed to override TTL values specified in configs.");
+    public Optional<TimeValue> getTTLForStrings(String tenantId) {
+        return Optional.of(stringTTL);
     }
 
-    @Override
-    public TimeValue getTTLForStrings(String tenantId) throws Exception {
-        return stringTTL;
-    }
-
-    @Override
     public TimeValue getConfigTTLForIngestion() {
         return TTL_CONFIG_FOR_INGESTION;
     }

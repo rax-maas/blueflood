@@ -30,7 +30,7 @@ import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.cache.SafetyTtlProvider;
+import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
@@ -52,7 +52,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
 
-    private static final TimeValue STRING_TTL = new TimeValue(730, TimeUnit.DAYS); // 2 years
     private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
     private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
     private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
@@ -61,9 +60,7 @@ public class AstyanaxWriter extends AstyanaxIO {
         return instance;
     }
 
-    // todo: should be some other impl.
-    private static TenantTtlProvider TTL_PROVIDER = SafetyTtlProvider.getInstance();
-
+    private static TenantTtlProvider TTL_PROVIDER = CombinedTtlProvider.getInstance();
 
     // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
     // seen within the last 10 minutes, don't bother.
@@ -172,7 +169,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
         if (isString || isBoolean) {
             // they were already casting long to int in Metrics.setTtl()
-            metric.setTtlInSeconds( (int) STRING_TTL.toSeconds() );
+            metric.setTtlInSeconds((int)TTL_PROVIDER.getTTLForStrings(metric.getLocator().getTenantId()).get().toSeconds());
             String persist;
             if (isString) {
                 persist = (String) metric.getMetricValue();
@@ -317,18 +314,10 @@ public class AstyanaxWriter extends AstyanaxIO {
         MutationBatch mb = keyspace.prepareMutationBatch();
         for (SingleRollupWriteContext writeContext : writeContexts) {
             Rollup rollup = writeContext.getRollup();
-            int ttl;
-            try {
-                ttl = (int)TTL_PROVIDER.getTTL(
+            int ttl = (int)TTL_PROVIDER.getTTL(
                     writeContext.getLocator().getTenantId(),
                     writeContext.getGranularity(),
-                    writeContext.getRollup().getRollupType()).toSeconds();
-            } catch (Exception ex) {
-                log.warn(ex.getMessage(), ex);
-                ttl = (int)SafetyTtlProvider.getInstance().getSafeTTL(
-                        writeContext.getGranularity(),
-                        writeContext.getRollup().getRollupType()).toSeconds();
-            }
+                    writeContext.getRollup().getRollupType()).get().toSeconds();
             AbstractSerializer serializer = Serializers.serializerFor(rollup.getClass());
             try {
                 mb.withRow(writeContext.getDestinationCF(), writeContext.getLocator())

@@ -16,42 +16,61 @@
 
 package com.rackspacecloud.blueflood.cache;
 
-import com.rackspacecloud.blueflood.exceptions.ConfigException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
 import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 public class ConfigTtlProviderTest {
+    private ConfigTtlProvider ttlProvider;
+    private static final String RAW_METRICS_TTL = TtlConfig.RAW_METRICS_TTL.toString();
+    private static final String STRING_METRICS_TTL = TtlConfig.STRING_METRICS_TTL.toString();
+    private static final String TTL_CONFIG_CONST = TtlConfig.TTL_CONFIG_CONST.toString();
+
+    @Before
+    public void setUp() {
+        System.setProperty(RAW_METRICS_TTL, "5");
+        System.setProperty(STRING_METRICS_TTL, "364");
+        System.setProperty(TTL_CONFIG_CONST, "5");
+
+        this.ttlProvider = ConfigTtlProvider.getInstance();
+    }
+
     @Test
-    public void testConfigTtl() throws Exception {
-        final ConfigTtlProvider ttlProvider = ConfigTtlProvider.getInstance();
-        final Configuration config = Configuration.getInstance();
+    public void testConfigTtl_valid() throws Exception {
+        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(RAW_METRICS_TTL), 5);
+        Assert.assertTrue(new TimeValue(5, TimeUnit.DAYS).equals(
+                ttlProvider.getTTL("acFoo", Granularity.FULL, RollupType.BF_BASIC).get()));
+    }
 
-        Assert.assertTrue(new TimeValue(config.getIntegerProperty(TtlConfig.RAW_METRICS_TTL), TimeUnit.DAYS).equals(
-                ttlProvider.getTTL("acFoo", Granularity.FULL, RollupType.BF_BASIC)));
-
-        // Ask for an invalid combination of granularity and rollup type
-        try {
-            Assert.assertNull(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.COUNTER));
-        } catch (ConfigException ex) {
-            // pass
-        } catch (Exception ex) {
-            Assert.fail("Should have thrown a ConfigException.");
-        }
+    @Test
+    public void testConfigTtl_invalid() {
+        Assert.assertFalse(ttlProvider.getTTL("acBar", Granularity.FULL, RollupType.SET).isPresent());
     }
 
     @Test
     public void testConfigTtlForStrings() throws Exception {
-        final ConfigTtlProvider ttlProvider = ConfigTtlProvider.getInstance();
-        final Configuration config = Configuration.getInstance();
+        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(STRING_METRICS_TTL), 364);
+        Assert.assertTrue(new TimeValue(364, TimeUnit.DAYS).equals(ttlProvider.getTTLForStrings("acFoo").get()));
+    }
 
-        Assert.assertTrue(new TimeValue(config.getIntegerProperty(TtlConfig.STRING_METRICS_TTL), TimeUnit.DAYS).equals(
-                ttlProvider.getTTLForStrings("acFoo")));
+    @Test
+    public void testConfigTtlForIngestion() throws Exception {
+        Assert.assertEquals(Configuration.getInstance().getIntegerProperty(TTL_CONFIG_CONST), 5);
+        Assert.assertTrue(new TimeValue(5, TimeUnit.DAYS).equals(ttlProvider.getConfigTTLForIngestion()));
+    }
+
+    @After
+    public void tearDown() {
+        System.clearProperty(RAW_METRICS_TTL);
+        System.clearProperty(STRING_METRICS_TTL);
+        System.clearProperty(TTL_CONFIG_CONST);
     }
 }

@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.cache;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableTable;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
@@ -27,31 +29,34 @@ import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Implementation that provides the safe lower bound for the metric TTLs.
+ *
+ * Even though the methods of this class return {@link Optional}, they always return a present value.
+ */
 public class SafetyTtlProvider implements TenantTtlProvider {
+    private static final TimeValue DAY = new TimeValue(1, TimeUnit.DAYS);
     private final ImmutableTable<Granularity, RollupType, TimeValue> SAFETY_TTLS;
-    private final TimeValue STRING_TTLS = Constants.STRING_SAFETY_TTL;
-    private final TimeValue CONFIG_TTL = new TimeValue(Configuration.getInstance().getIntegerProperty(TtlConfig.TTL_CONFIG_CONST), TimeUnit.DAYS);
-    private final boolean ARE_TTLS_FORCED = Configuration.getInstance().getBooleanProperty(TtlConfig.ARE_TTLS_FORCED);
+    private final TimeValue STRING_TTL = Constants.STRING_SAFETY_TTL;
 
     private static final SafetyTtlProvider INSTANCE = new SafetyTtlProvider();
 
-    public static SafetyTtlProvider getInstance() {
+    static SafetyTtlProvider getInstance() {
         return INSTANCE;
     }
 
-    private SafetyTtlProvider() {
+    SafetyTtlProvider() {
         ImmutableTable.Builder<Granularity, RollupType, TimeValue> ttlMapBuilder =
                 new ImmutableTable.Builder<Granularity, RollupType, TimeValue>();
 
         for (Granularity granularity : Granularity.granularities()) {
             for (RollupType type : RollupType.values()) {
-                try {
-                    MetricColumnFamily metricCF = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
-                    TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue() * 5, metricCF.getDefaultTTL().getUnit());
-                    ttlMapBuilder.put(granularity, type, ttl);
-                } catch (IllegalArgumentException ex) {
-
+                if (type == RollupType.NOT_A_ROLLUP) {
+                    continue;
                 }
+                MetricColumnFamily metricCF = CassandraModel.getColumnFamily(RollupType.classOf(type, granularity), granularity);
+                TimeValue ttl = new TimeValue(metricCF.getDefaultTTL().getValue(), metricCF.getDefaultTTL().getUnit());
+                ttlMapBuilder.put(granularity, type, ttl);
             }
         }
 
@@ -59,47 +64,16 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     }
 
     @Override
-    public TimeValue getTTL(String tenantId, Granularity gran, RollupType rollupType) throws Exception {
+    public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType) {
         return getSafeTTL(gran, rollupType);
     }
     
-    public TimeValue getSafeTTL(Granularity gran, RollupType rollupType) {
-        return SAFETY_TTLS.get(gran, rollupType);
+    public Optional<TimeValue> getSafeTTL(Granularity gran, RollupType rollupType) {
+        return Optional.of(MoreObjects.firstNonNull(SAFETY_TTLS.get(gran, rollupType), DAY));
     }
 
     @Override
-    public void setTTL(String tenantId, Granularity gran, RollupType rollupType, TimeValue ttlValue) throws Exception {
-        throw new RuntimeException("Not allowed to override safety ttls. They are auto-derived based on granularity.");
-    }
-
-    @Override
-    public TimeValue getTTLForStrings(String tenantId) throws Exception {
-        return STRING_TTLS;
-    }
-
-    @Override
-    public TimeValue getConfigTTLForIngestion() throws Exception {
-       return CONFIG_TTL;
-    }
-
-    public long getFinalTTL(String tenantid, Granularity g) {
-        long ttl;
-        try {
-            if (g == Granularity.FULL) {
-                if (ARE_TTLS_FORCED) {
-                    ttl = getConfigTTLForIngestion().toMillis();
-                }
-                else {
-                    ttl = getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
-                }
-            }
-            else {
-                ttl = getTTL(tenantid, g, RollupType.BF_BASIC).toMillis();
-            }
-        } catch (Exception ex) {
-            ttl = getSafeTTL(
-                    g, RollupType.BF_BASIC).toMillis();
-        }
-        return ttl;
+    public Optional<TimeValue> getTTLForStrings(String tenantId) {
+        return Optional.of(STRING_TTL);
     }
 }
