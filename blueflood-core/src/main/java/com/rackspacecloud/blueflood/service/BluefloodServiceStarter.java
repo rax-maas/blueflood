@@ -305,8 +305,10 @@ public class BluefloodServiceStarter {
 
         final Collection<Integer> shards = Collections.unmodifiableCollection(
                 Util.parseShards(config.getStringProperty(CoreConfig.SHARDS)));
-        final ScheduleContext rollupContext =
-                new ScheduleContext(System.currentTimeMillis(), shards);
+        final String zkCluster = config.getStringProperty(CoreConfig.ZOOKEEPER_CLUSTER);
+        final ScheduleContext rollupContext = "NONE".equals(zkCluster) ?
+                new ScheduleContext(System.currentTimeMillis(), shards) :
+                new ScheduleContext(System.currentTimeMillis(), shards, zkCluster);
 
         log.info("Starting blueflood services");
         startShardStateServices(rollupContext);
