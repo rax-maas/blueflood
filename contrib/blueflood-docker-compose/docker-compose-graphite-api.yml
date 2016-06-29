@@ -1,0 +1,38 @@
+blueflood:
+  image: rackerlabs/blueflood
+  links:
+    - cassandra
+    - elasticsearch
+  ports:
+        - "19000:19000"
+        - "20000:20000"
+        - "9180:9180"
+
+cassandra:
+  image: cassandra:2.1
+  ports:
+        - "9042:9042"
+        - "9160:9160"
+        - "7199:7199"
+
+cassandran:
+  image: cassandra:2.1
+  links:
+    - cassandra:seed
+  environment:
+    - CASSANDRA_SEEDS=seed
+
+elasticsearch:
+  image: elasticsearch:1.7
+  command: elasticsearch -Des.cluster.name="blueflood"
+
+#Graphite-API Integration
+graphite-api:
+  image: rackerlabs/graphite-api
+  ports:
+        - "8888:8888"
+  links:
+    - blueflood:BLUEFLOOD
+  environment:
+    - TENANT_ID=123 # Give your Tenant Id Here
+    - GRAFANA_URLS=http://127.0.0.1:3000 #Comma seperated list of Grafana servers using graphite api
