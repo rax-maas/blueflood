@@ -220,60 +220,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void rawSampleBuilderWithThreeInputsYieldsRateEqualToOffByOneAverage() throws IOException {
-
-        // TODO: Clarify what buildRollupFromRawSamples is doing exactly. The
-        // buildRollupFromRawSamples seems to have an off-by-one error in it.
-        // The below samples average out to (3+4+5)/2=6, rather than a true
-        // average rate of values, (3+4+5)/3=4. The discrepancy seems to be
-        // caused by an unclear understanding of how much of a given time unit
-        // a sample takes up. If the sample is interpreted as residing at an
-        // infinitesimal point at the beginning of the time unit, that would
-        // give rise to the current calculation. If the sample is instead
-        // interpreted as residing on an interval spanning the entire time
-        // unit, that would give rise to the second. It may be that this is the
-        // intended behavior, or it might not be; neither the code nor the
-        // documentation anywhere adequately explain the intended
-        // interpretation. Hence the need for clarification. At present, this
-        // test only documents the current behavior, and does not try to
-        // determine what SHOULD be done.
-        //
-        //
-        // Samples As Points :
-        //                                                          o 5
-        //                                  o 4                     |
-        //          o 3                     |                       |
-        //          |                       |                       |
-        //          |                       |                       |
-        //          | <-- one time unit --> |                       |
-        //    ------+-----------------------+-----------------------+-----
-        //          1                       1                       1
-        //          2                       2                       2
-        //          3                       3                       3
-        //          4                       5                       6
-        //          L                       L                       L
-        //          |                                               |
-        //          | <-------------- two time units -------------> |
-        //                             (3+4+5)/2=6
-        //
-        //
-        // Samples As Intervals:
-        //                                                           _______________________
-        //                                   _______________________|          5            |
-        //           _______________________|          4            |                       |
-        //          |          3            |                       |                       |
-        //          |                       |                       |                       |
-        //          |                       |                       |                       |
-        //    ------+-----------------------+-----------------------+-----------------------+-----
-        //          1                       1                       1                       1
-        //          2                       2                       2                       2
-        //          3                       3                       3                       3
-        //          4                       5                       6                       7
-        //          L                       L                       L                       L
-        //          |                                                                       |
-        //          | <------------------------- three time units ------------------------> |
-        //                                         (3+4+5)/3=4
-        //
+    public void rawSampleBuilderWithThreeInputsYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> input = new Points<SimpleNumber>();
@@ -287,12 +234,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(12L, count.longValue());
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5)/(3-1)=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5)/( 1236-1234 ) = 6
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void rawSampleBuilderWithFourInputsYieldsRateEqualToOffByOneAverage() throws IOException {
+    public void rawSampleBuilderWithFourInputsYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> input = new Points<SimpleNumber>();
@@ -307,7 +254,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(18L, count.longValue());
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/(4-1)=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (3+4+5+6)/( 1237-1234 ) = 6
         assertEquals(4, rollup.getSampleCount());
     }
 
@@ -400,7 +347,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void counterRollupBuiderWithSingleSingleInputYieldsZeroRate() throws IOException {
+    public void counterRollupBuilderWithSingleInputYieldsZeroRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -423,7 +370,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void counterRollupBuiderWithTwoSingleInputYieldsZeroRate() throws IOException {
+    public void counterRollupBuilderWithTwoSingleInputYieldsZeroRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -446,12 +393,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(3L, count.longValue()); // 1+2
-        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/2=5
+        assertEquals(0.0d, rollup.getRate(), 0.00001d);
         assertEquals(2, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithSingleTwoInputYieldsRateEqualToOffByOneAverage() throws IOException {
+    public void counterRollupBuilderWithSingleTwoInputYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -470,12 +417,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(3L, count.longValue()); // 1+2
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/(3-1)=5
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2)/( 1235-1234 ) = 3
         assertEquals(2, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithTwoTwoInputYieldsRateEqualToOffByTwoAverage() throws IOException {
+    public void counterRollupBuilderWithTwoTwoInputYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -489,8 +436,8 @@ public class BluefloodCounterRollupTest {
         BluefloodCounterRollup rollupB = BluefloodCounterRollup.buildRollupFromRawSamples(inputB);
 
         Points<BluefloodCounterRollup> combined = new Points<BluefloodCounterRollup>();
-        combined.add(new Points.Point<BluefloodCounterRollup>(1234L, rollupA));
-        combined.add(new Points.Point<BluefloodCounterRollup>(1236L, rollupB));
+        combined.add(new Points.Point<BluefloodCounterRollup>(1234L, rollupA)); //rollupA has rate of 3 = 1+2/(1235-1234)
+        combined.add(new Points.Point<BluefloodCounterRollup>(1236L, rollupB)); //rollupB has rate of 7 = 3+4/(1236-1235)
 
         // when
         BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromCounterRollups(combined);
@@ -500,12 +447,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(10L, count.longValue()); // 1+2+3+4
-        assertEquals(5.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/((2-1)+(2-1))=5
+        assertEquals(5.0d, rollup.getRate(), 0.00001d); // (1+2+3+4)/( (1235-1234) + (1236-1235) ) = 5
         assertEquals(4, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithMixedSizeInputYieldsRateEqualToOffByTwoAverage() throws IOException {
+    public void counterRollupBuilderWithMixedSizeInputYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -529,12 +476,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (1+2+3)/((2-1)+(1-1))=6
+        assertEquals(6.0d, rollup.getRate(), 0.00001d); // (1+2+3)/( (1235-1234) + 0 ) = 6
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithSingleThreeInputYieldsRateEqualToOffByOneAverage() throws IOException {
+    public void counterRollupBuilderWithSingleThreeInputYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -554,12 +501,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(3-1)=3
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/( (1236-1234) + 0 ) = 3
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithNoInputYieldsRateEqualToOffByOneAverage() throws IOException {
+    public void counterRollupBuilderWithNoInputYieldsRate() throws IOException {
 
         // given
         Points<SimpleNumber> inputA = new Points<SimpleNumber>();
@@ -581,7 +528,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void counterRollupBuiderWithNullRollupInputThrowsException() throws IOException {
+    public void counterRollupBuilderWithNullRollupInputThrowsException() throws IOException {
 
         // given
         Points<BluefloodCounterRollup> combined = new Points<BluefloodCounterRollup>();
@@ -595,7 +542,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void counterRollupBuiderWithNullCombinedInputThrowsException() throws IOException {
+    public void counterRollupBuilderWithNullCombinedInputThrowsException() throws IOException {
 
         // when
         BluefloodCounterRollup rollup = BluefloodCounterRollup.buildRollupFromCounterRollups(null);
@@ -605,7 +552,7 @@ public class BluefloodCounterRollupTest {
     }
 
     @Test
-    public void counterRollupBuiderWithsSingleExplicitInputYieldsSameValues() throws IOException {
+    public void counterRollupBuilderWithSingleExplicitInputYieldsSameValues() throws IOException {
 
         // given
         BluefloodCounterRollup rollupA = new BluefloodCounterRollup()
@@ -624,12 +571,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(3-1)=3
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/( 6/3 ) = 3
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithsSingleExplicitZeroCountInputYieldsZeroRate() throws IOException {
+    public void counterRollupBuilderWithSingleExplicitZeroCountInputYieldsZeroRate() throws IOException {
 
         // given
         BluefloodCounterRollup rollupA = new BluefloodCounterRollup()
@@ -648,12 +595,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(0, count.longValue());
-        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (0)/(3-1)=0
+        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (0)/0 = 0 (Util.safeDiv returns zero when denominator is 0)
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithsSingleExplicitZeroRateInputYieldsSameValues() throws IOException {
+    public void counterRollupBuilderWithSingleExplicitZeroRateInputYieldsSameValues() throws IOException {
 
         // given
         BluefloodCounterRollup rollupA = new BluefloodCounterRollup()
@@ -672,12 +619,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(3-1)=3
+        assertEquals(0.0d, rollup.getRate(), 0.00001d); // (1+2+3)/( 6/0 ) = 0  Util.safeDiv(6,0) = 0, Util.safeDiv(1+2+3,0) = 0
         assertEquals(3, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithsSingleExplicitZeroSampleCountInputYieldsSameValues() throws IOException {
+    public void counterRollupBuilderWithSingleExplicitZeroSampleCountInputYieldsSameValues() throws IOException {
 
         // given
         BluefloodCounterRollup rollupA = new BluefloodCounterRollup()
@@ -696,12 +643,12 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(6L, count.longValue()); // 1+2+3
-        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/(3-1)=3
+        assertEquals(3.0d, rollup.getRate(), 0.00001d); // (1+2+3)/( 6/3 ) = 3
         assertEquals(0, rollup.getSampleCount());
     }
 
     @Test
-    public void counterRollupBuiderWithsTwoExplicitInputYieldsSameValues() throws IOException {
+    public void counterRollupBuilderWithsTwoExplicitInputYieldsSameValues() throws IOException {
 
         // given
         BluefloodCounterRollup rollupA = new BluefloodCounterRollup()
@@ -725,7 +672,7 @@ public class BluefloodCounterRollupTest {
         assertNotNull(count);
         assertThat(count, is(CoreMatchers.<Number>instanceOf(Long.class)));
         assertEquals(21L, count.longValue()); // 1+2+3+4+5+6
-        assertEquals(5.25d, rollup.getRate(), 0.00001d); // (1+2+3+4+5+6)/((3-1)+(3-1))=5.25
+        assertEquals(5.25d, rollup.getRate(), 0.00001d); // (1+2+3+4+5+6)/( 6/3 + 15/7.5 ) = 5.25
         assertEquals(6, rollup.getSampleCount());
     }
 
