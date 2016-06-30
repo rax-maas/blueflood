@@ -149,7 +149,7 @@ class LocatorFetchRunnable implements Runnable {
     public void finishExecution(long waitStart, RollupExecutionContext executionContext) {
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
-            log.info("Successful completion of rollups for (gran,slot,shard) {} in {}", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
+            log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);

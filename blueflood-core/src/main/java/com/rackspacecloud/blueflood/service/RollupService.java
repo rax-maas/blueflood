@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.service;
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.rackspacecloud.blueflood.concurrent.InstrumentedThreadPoolExecutor;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -106,12 +107,13 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 "LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS: [%d]", rollupDelayMillis, rollupDelayForMetricsWithShortDelay,
                 rollupWaitForMetricsWithLongDelay));
 
+        ThreadFactory locatorFetchThreadFactory = new ThreadFactoryBuilder().setNameFormat("locator-fetcher-%d").build();
         final int locatorFetchConcurrency = config.getIntegerProperty(CoreConfig.MAX_LOCATOR_FETCH_THREADS);
         ThreadPoolExecutor _locatorFetchExecutors = new ThreadPoolExecutor(
                 locatorFetchConcurrency, locatorFetchConcurrency,
                 30, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<Runnable>(locatorFetchConcurrency * 5),
-                Executors.defaultThreadFactory(),
+                locatorFetchThreadFactory,
                 new RejectedExecutionHandler() {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         // in this case, we want to throw a RejectedExecutionException so that the slot can be removed
@@ -128,6 +130,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
         };
 
         // unbounded work queue.
+        ThreadFactory rollupReaderThreadFactory = new ThreadFactoryBuilder().setNameFormat("rollup-reader-%d").build();
         final BlockingQueue<Runnable> rollupReadQueue = new LinkedBlockingQueue<Runnable>();
         ThreadPoolExecutor _rollupReadExecutors = new ThreadPoolExecutor(
                 // "RollupReadsThreadpool",
@@ -135,10 +138,11 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 config.getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS),
                 30, TimeUnit.SECONDS,
                 rollupReadQueue,
-                Executors.defaultThreadFactory(),
+                rollupReaderThreadFactory,
                 new ThreadPoolExecutor.AbortPolicy()
         );
 
+        ThreadFactory rollupWriterThreadFactory = new ThreadFactoryBuilder().setNameFormat("rollup-writer-%d").build();
         final BlockingQueue<Runnable> rollupWriteQueue = new LinkedBlockingQueue<Runnable>();
         ThreadPoolExecutor _rollupWriteExecutors = new ThreadPoolExecutor(
                 // "RollupWritesThreadpool",
@@ -146,17 +150,16 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 config.getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS),
                 30, TimeUnit.SECONDS,
                 rollupWriteQueue,
-                Executors.defaultThreadFactory(),
+                rollupWriterThreadFactory,
                 new ThreadPoolExecutor.AbortPolicy()
         );
 
         // create executor threadpool for EnumValidator
         int enumValidatorThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_VALIDATOR_THREADS);
         ThreadPoolExecutor _enumValidatorExecutor = new ThreadPoolBuilder()
-                .withName("Validating Enum Metrics")
+                .withName("enum-validator")
                 .withCorePoolSize(enumValidatorThreadCount)
                 .withMaxPoolSize(enumValidatorThreadCount)
-                .withUnboundedQueue()
                 .build();
 
         initializeGauges();
