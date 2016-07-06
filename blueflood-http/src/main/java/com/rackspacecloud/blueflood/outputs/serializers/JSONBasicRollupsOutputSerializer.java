@@ -170,7 +170,7 @@ public class JSONBasicRollupsOutputSerializer implements BasicRollupsOutputSeria
                     filteredObject.put(stat.toString(), filteredValue);
                 }
             } catch (UnsupportedOperationException ex) {
-                log.warn(ex.getMessage());
+                log.debug(ex.toString());
             }
         }
         return filteredObject;
