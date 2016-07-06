@@ -28,7 +28,6 @@ import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
-import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
@@ -129,9 +128,22 @@ public class HttpMetricsIngestionServer {
                 // if something bad happens during the decode, assume the client send bad data. return a 400.
                 @Override
                 public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-                    ctx.getChannel().write(
-                            new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.BAD_REQUEST))
-                            .addListener(ChannelFutureListener.CLOSE);
+                    try {
+                        if (ctx.getChannel().isWritable()) {
+                            log.debug("request decoder error " + e.getCause().toString() + " on channel " + ctx.getChannel().toString());
+                            ctx.getChannel().write(
+                                    new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST))
+                                    .addListener(ChannelFutureListener.CLOSE);
+                        } else {
+                            log.debug("channel " + ctx.getChannel().toString() + " is no longer writeable, not sending 400 response back to client");
+                        }
+                    } catch (Exception ex) {
+                        // If we are getting exception trying to write,
+                        // don't propagate to caller. It may cause this
+                        // method to be called again and will produce
+                        // stack overflow. So just log it here.
+                        log.debug("Can't write to channel " + ctx.getChannel().toString(), ex);
+                    }
                 }
             });
             pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
