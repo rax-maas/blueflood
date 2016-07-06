@@ -32,14 +32,15 @@ public interface BasicRollupsOutputSerializer<T> {
     public static enum MetricStat {
         AVERAGE("average") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getAverage();
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getAverage();
                 else
                     // counters, sets
-                    throw new Exception(String.format("average not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("average not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -49,14 +50,15 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         VARIANCE("variance") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getVariance();
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getVariance();
                 else
                     // counters, sets.
-                    throw new Exception(String.format("variance not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("variance not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -66,14 +68,15 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         MIN("min") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMinValue();
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getMinValue();
                 else
                     // counters, sets.
-                    throw new Exception(String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -83,14 +86,15 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         MAX("max") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BasicRollup)
                     return ((BasicRollup) rollup).getMaxValue();
                 else if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getMaxValue();
                 else
                     // counters, sets.
-                    throw new Exception(String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("min not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -100,7 +104,7 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         NUM_POINTS("numPoints") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BaseRollup)
                     return ((BaseRollup) rollup).getCount();
                 else if (rollup instanceof BluefloodTimerRollup)
@@ -113,7 +117,8 @@ public interface BasicRollupsOutputSerializer<T> {
                     return ((BluefloodEnumRollup) rollup).getNumPoints();
                 else
                     // gauge.
-                    throw new Exception(String.format("numPoints not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("numPoints not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -123,12 +128,13 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         LATEST("latest") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BluefloodGaugeRollup)
                     return ((BluefloodGaugeRollup) rollup).getLatestValue().getValue();
                 else
                     // every other type.
-                    throw new Exception(String.format("latest value not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("latest value not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -138,14 +144,15 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         RATE("rate") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getRate();
                 else if (rollup instanceof BluefloodCounterRollup)
                     return ((BluefloodCounterRollup) rollup).getRate();
                 else
                     // gauge, set, basic
-                    throw new Exception(String.format("rate not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("rate not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -155,7 +162,7 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         SUM("sum") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if( rollup instanceof  BasicRollup )
                     return ((BasicRollup) rollup).getSum();
                 else if (rollup instanceof BluefloodTimerRollup)
@@ -164,7 +171,8 @@ public interface BasicRollupsOutputSerializer<T> {
                     return ((BluefloodCounterRollup) rollup).getCount();
                 else
                     // every other type.
-                    throw new Exception(String.format("sum not supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("sum not supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -174,12 +182,13 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         PERCENTILE("percentiles") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BluefloodTimerRollup)
                     return ((BluefloodTimerRollup) rollup).getPercentiles();
                 else
                     // every other type.
-                    throw new Exception(String.format("percentiles supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("percentiles supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -189,12 +198,13 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         ENUM_VALUES("enum_values") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BluefloodEnumRollup)
                     return ((BluefloodEnumRollup) rollup).getStringEnumValuesWithCounts();
                 else
                     // every other type.
-                    throw new Exception(String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -204,12 +214,13 @@ public interface BasicRollupsOutputSerializer<T> {
         },
         TYPE("type") {
             @Override
-            Object convertRollupToObject(Rollup rollup) throws Exception {
+            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
                 if (rollup instanceof BluefloodEnumRollup)
                     return MetricData.Type.ENUM;
                 else
                     // every other type.
-                    throw new Exception(String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
+                    throw new UnsupportedOperationException(
+                            String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override
@@ -246,7 +257,7 @@ public interface BasicRollupsOutputSerializer<T> {
         public String toString() {
             return this.stringRep;
         }
-        abstract Object convertRollupToObject(Rollup rollup) throws Exception;
+        abstract Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException;
         abstract Object convertRawSampleToObject(Object rawSample);
     }
 }
