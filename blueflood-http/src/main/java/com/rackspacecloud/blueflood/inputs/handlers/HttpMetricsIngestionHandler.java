@@ -170,7 +170,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {
                         log.warn("Trouble persisting metrics:");
-                        log.warn(String.format("%s"), Arrays.toString(metrics.toArray()));
+                        log.warn(String.format("%s", Arrays.toString(metrics.toArray())));
                         DefaultHandler.sendResponse(ctx, request, "Persisted failed for metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }

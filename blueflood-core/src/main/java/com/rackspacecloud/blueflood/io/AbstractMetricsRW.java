@@ -89,22 +89,6 @@ public abstract class AbstractMetricsRW implements MetricsRW {
     }
 
     /**
-     * For a particular {@link com.rackspacecloud.blueflood.types.Locator}, get
-     * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
-     *
-     * @param locator
-     * @return
-     * @throws CacheException
-     */
-    protected DataType getDataType(Locator locator) throws CacheException {
-        String meta = MetadataCache.getInstance().get(locator, DATA_TYPE_CACHE_KEY);
-        if (meta != null) {
-            return new DataType(meta);
-        }
-        return DataType.NUMERIC;
-    }
-
-    /**
      * Gets the TTL for a particular locator, rollupType and granularity.
      *
      * @param locator

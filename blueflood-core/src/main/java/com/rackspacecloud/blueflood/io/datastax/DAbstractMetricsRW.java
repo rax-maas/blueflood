@@ -25,7 +25,16 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
 
-    protected final LocatorIO locatorIO = new DLocatorIO();
+    protected final LocatorIO locatorIO;
+
+
+    /**
+     * Constructor
+     * @param locatorIO
+     */
+    protected DAbstractMetricsRW(LocatorIO locatorIO) {
+        this.locatorIO = locatorIO;
+    }
 
     /**
      * Return the appropriate IO object which interacts with the Cassandra database.
@@ -126,6 +135,8 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
         try {
 
+            MetadataCache metadataCache = MetadataCache.getInstance();
+
             // in this loop, we will fire all the executeAsync() of
             // various select statements, the collect all of the
             // ResultSetFutures
@@ -135,7 +146,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             for (Locator locator : locators) {
                 try {
 
-                    String rType = MetadataCache.getInstance().get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase());
+                    String rType = metadataCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase());
 
                     DAbstractMetricIO io = getIO( rType, granularity );
 
@@ -156,7 +167,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
                 } catch (CacheException ex) {
                     Instrumentation.markReadError();
-                LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
+                    LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
                 }
             }
             return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity);
@@ -276,5 +287,23 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             Object value = tsRollupMap.values().iterator().next();
             return value instanceof Rollup ? ( (Rollup) value ).getRollupType() : null;
         }
+    }
+
+
+    /**
+     * For a particular {@link com.rackspacecloud.blueflood.types.Locator}, get
+     * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
+     *
+     * @param locator
+     * @return
+     * @throws CacheException
+     */
+    protected DataType getDataType(Locator locator) throws CacheException {
+        MetadataCache metadataCache = MetadataCache.getInstance();
+        String meta = metadataCache.get(locator, DATA_TYPE_CACHE_KEY);
+        if (meta != null) {
+            return new DataType(meta);
+        }
+        return DataType.NUMERIC;
     }
 }
