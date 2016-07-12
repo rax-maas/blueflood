@@ -1,5 +1,5 @@
 blueflood:
-  build: .
+  image: rackerlabs/blueflood
   links:
     - cassandra
     - elasticsearch
