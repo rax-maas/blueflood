@@ -41,8 +41,6 @@ cd blueflood/contrib/blueflood-docker-compose/
 docker-compose up -d
 ```
 
-* note: this will be in the master branch as soon as [PR 558](https://github.com/rackerlabs/blueflood/pull/558) gets merged
-
 ### Method 2: Vagrant
 Assuming **[Vagrant] [vagrant-install]** and **[VirtualBox] [virtualbox-install]** installed:
 
