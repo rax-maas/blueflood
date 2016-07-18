@@ -33,7 +33,7 @@ Blueflood is an open source under the [Apache 2.0 license] [license].
 There are a couple different ways that you can get started with Blueflood:
 
 ### Method 1: Docker
-Assuming git and docker installed:
+Assuming git and docker-compose installed:
 
 ```
 git clone https://github.com/rackerlabs/blueflood.git
