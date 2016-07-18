@@ -36,9 +36,9 @@ There are a couple different ways that you can get started with Blueflood:
 Assuming git and docker installed:
 
 ```
-git clone -b goru97/docker --single-branch https://github.com/rackerlabs/blueflood.git
-cd blueflood/contrib/blueflood-docker/
-docker-compose up &
+git clone https://github.com/rackerlabs/blueflood.git
+cd blueflood/contrib/blueflood-docker-compose/
+docker-compose up -d
 ```
 
 * note: this will be in the master branch as soon as [PR 558](https://github.com/rackerlabs/blueflood/pull/558) gets merged
