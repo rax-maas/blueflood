@@ -61,15 +61,21 @@ public class HttpMetricDataQueryServer {
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.get("/v1.0/:tenantId/experimental/views/metric_data/:metricName", new HttpRollupsQueryHandler());
+
         router.post("/v1.0/:tenantId/experimental/views/metric_data", new HttpMultiRollupsQueryHandler());
+        router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
 
         router.get("/v2.0", new DefaultHandler());
         router.get("/v2.0/:tenantId/views/:metricName", new HttpRollupsQueryHandler());
-        router.post("/v2.0/:tenantId/views", new HttpMultiRollupsQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
         router.get("/v2.0/:tenantId/metric_name/search", new HttpMetricTokensHandler());
         router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
-        router.options("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
+
+        router.options("/v2.0/:tenantId/views/:metricName", new HttpOptionsHandler());
+        router.options("/v2.0/:tenantId/views", new HttpOptionsHandler());
+        router.options("/v2.0/:tenantId/metrics/search", new HttpOptionsHandler());
+        router.options("/v2.0/:tenantId/metric_name/search", new HttpOptionsHandler());
+        router.options("/v2.0/:tenantId/events/getEvents", new HttpOptionsHandler());
 
         log.info("Starting metric data query server (HTTP) on port {}", this.httpQueryPort);
         ServerBootstrap server = new ServerBootstrap(

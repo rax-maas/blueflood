@@ -7,6 +7,7 @@ import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -29,47 +30,37 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        if(request.getMethod().toString().equalsIgnoreCase("GET")) {
-            final String tenantId = request.getHeader("tenantId");
-            HttpResponseStatus status = HttpResponseStatus.OK;
+        Tracker.getInstance().track(request);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            String responseBody = null;
-            final Timer.Context httpEventsFetchTimerContext = httpEventsFetchTimer.time();
-            try {
-                HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
-                Map<String, List<String>> params = requestWithParams.getQueryParams();
+        final String tenantId = request.getHeader("tenantId");
+        HttpResponseStatus status = HttpResponseStatus.OK;
 
-                if (params == null || params.size() == 0) {
-                    throw new InvalidDataException("Query should contain at least one query parameter");
-                }
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseBody = null;
+        final Timer.Context httpEventsFetchTimerContext = httpEventsFetchTimer.time();
+        try {
+            HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+            Map<String, List<String>> params = requestWithParams.getQueryParams();
 
-                parseDateFieldInQuery(params, "from");
-                parseDateFieldInQuery(params, "until");
-                List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
-                responseBody = objectMapper.writeValueAsString(searchResult);
-            } catch (InvalidDataException e) {
-                log.error(String.format("Exception %s", e.toString()));
-                responseBody = String.format("Error: %s", e.getMessage());
-                status = HttpResponseStatus.BAD_REQUEST;
-            } catch (Exception e) {
-                log.error(String.format("Exception %s", e.toString()));
-                responseBody = String.format("Error: %s", e.getMessage());
-                status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-            } finally {
-                Map <String, String> headers = new HashMap<String, String>();
-                headers.put("Access-Control-Allow-Origin", "*");
-                DefaultHandler.sendResponse(ctx, request, responseBody, status, headers);
-                httpEventsFetchTimerContext.stop();
+            if (params == null || params.size() == 0) {
+                throw new InvalidDataException("Query should contain at least one query parameter");
             }
-        }
-        else if(request.getMethod().toString().equalsIgnoreCase("OPTIONS")){
-            Map <String, String> headers = new HashMap<String, String>();
-            headers.put("Access-Control-Allow-Origin", "*");
-            headers.put("Access-Control-Allow-Methods", "GET");
-            headers.put("Access-Control-Allow-Headers", "X-Auth-Token, Accept");
-            headers.put("Access-Control-Max-Age", "1728000");
-            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.NO_CONTENT, headers);
+
+            parseDateFieldInQuery(params, "from");
+            parseDateFieldInQuery(params, "until");
+            List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
+            responseBody = objectMapper.writeValueAsString(searchResult);
+        } catch (InvalidDataException e) {
+            log.error(String.format("Exception %s", e.toString()));
+            responseBody = String.format("Error: %s", e.getMessage());
+            status = HttpResponseStatus.BAD_REQUEST;
+        } catch (Exception e) {
+            log.error(String.format("Exception %s", e.toString()));
+            responseBody = String.format("Error: %s", e.getMessage());
+            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            DefaultHandler.sendResponse(ctx, request, responseBody, status, null);
+            httpEventsFetchTimerContext.stop();
         }
     }
 

@@ -342,8 +342,9 @@ public class TrackerTest {
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] tenantId " + tenantId + " added.");
-        verify(loggerMock, times(1)).info("[TRACKER] Response for tenantId " + tenantId + " request " + requestUri + "?query=locator1\n" +
+        verify(loggerMock, times(1)).info("[TRACKER] Response for tenantId " + tenantId + " GET request " + requestUri + "?query=locator1\n" +
                 "RESPONSE_STATUS: 200\n" +
+                "RESPONSE HEADERS: \n" +
                 "RESPONSE_CONTENT:\n" +
                 "[TRACKER] Response for tenantId " + tenantId);
     }

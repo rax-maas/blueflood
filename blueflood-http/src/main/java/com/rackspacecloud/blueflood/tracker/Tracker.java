@@ -179,7 +179,7 @@ public class Tracker implements TrackerMBean {
 
             // log request
             String logMessage = "[TRACKER] " +
-                    request.getMethod().toString() + " request for tenantId " + tenantId + ": " + request.getUri() + queryParams + "\n" +
+                    request.getMethod() + " request for tenantId " + tenantId + ": " + request.getUri() + queryParams + "\n" +
                     "HEADERS: " + headers +
                     requestContent;
 
@@ -203,6 +203,12 @@ public class Tracker implements TrackerMBean {
             // get parameters
             String queryParams = getQueryParameters(request);
 
+            // get headers
+            String headers = "";
+            for (String headerName : response.getHeaderNames()) {
+                headers += "\n" + headerName + "\t" + response.getHeader(headerName);
+            }
+
             // get response content
             String responseContent = "";
             if ((messageBody != null) && (!messageBody.isEmpty())) {
@@ -210,8 +216,9 @@ public class Tracker implements TrackerMBean {
             }
 
             String logMessage = "[TRACKER] " +
-                    "Response for tenantId " + tenantId + " request " + request.getUri() + queryParams + "\n" +
-                    "RESPONSE_STATUS: " + status.getCode() +
+                    "Response for tenantId " + tenantId + " " + request.getMethod() + " request " + request.getUri() + queryParams +
+                    "\nRESPONSE_STATUS: " + status.getCode() +
+                    "\nRESPONSE HEADERS: " + headers +
                     responseContent;
 
             log.info(logMessage);

@@ -154,7 +154,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
+        Tracker.getInstance().trackResponse(request, response);
     }
 }
