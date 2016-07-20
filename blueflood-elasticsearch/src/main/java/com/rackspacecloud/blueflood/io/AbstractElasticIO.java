@@ -10,9 +10,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.lang3.StringUtils;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -238,8 +236,18 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *  {
      *      "size": 0,
      *      "query": {
-     *          "term": {
-     *              "tenantId": "836986"
+     *          "bool" : {
+     *              "must" : [ {
+     *                  "term" : {
+     *                      "tenantId" : "ratanasv"
+     *                  }
+     *              }, {
+     *                  "regexp" : {
+     *                      "metric_name" : {
+     *                         "value" : "<regex>"
+     *                      }
+     *                  }
+     *              } ]
      *          }
      *      },
      *      "aggs": {
@@ -253,6 +261,9 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      *          }
      *      }
      *  }
+     *
+     * The two regex expressions used in the query above would be same, one to filter
+     * at query level and another to filter the aggregation buckets.
      *
      * Execution hint of "map" works by using field values directly instead of ordinals
      * in order to aggregate data per-bucket
@@ -270,11 +281,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
                         .executionHint("map")
                         .size(0);
 
+        TermQueryBuilder tenantIdQuery = QueryBuilders.termQuery(ESFieldLabel.tenantId.toString(), tenant);
+        RegexpQueryBuilder metricNameQuery = QueryBuilders.regexpQuery(ESFieldLabel.metric_name.name(), regexMetricName);
+
         return client.prepareSearch(new String[] {ELASTICSEARCH_INDEX_NAME_READ})
                 .setRouting(tenant)
                 .setSize(0)
                 .setVersion(true)
-                .setQuery(QueryBuilders.termQuery(ESFieldLabel.tenantId.toString(), tenant))
+                .setQuery(QueryBuilders.boolQuery().must(tenantIdQuery).must(metricNameQuery))
                 .addAggregation(aggregationBuilder)
                 .execute()
                 .actionGet();
