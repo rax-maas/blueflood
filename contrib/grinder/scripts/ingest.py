@@ -40,7 +40,7 @@ class IngestThread(AbstractThread):
 
     @classmethod
     def generate_metrics_for_tenant(cls, tenant_id, metrics_per_tenant):
-        l = [];
+        l = []
         for x in range(metrics_per_tenant):
             l.append([tenant_id, x])
         return l

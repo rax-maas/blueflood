@@ -36,7 +36,7 @@ class AnnotationsIngestThread(AbstractThread):
     @classmethod
     def generate_annotations_for_tenant(cls, tenant_id,
                                         annotations_per_tenant):
-        l = [];
+        l = []
         for x in range(annotations_per_tenant):
             l.append([tenant_id, x])
         return l
