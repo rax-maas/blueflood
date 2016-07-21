@@ -52,9 +52,9 @@ class SinglePlotQuery(AbstractQuery):
         frm = time - self.one_day
         resolution = 'FULL'
         url = "%s/v2.0/%d/views/%s?from=%d&to=%s&resolution=%s" % (
-        default_config['query_url'],
-        tenant_id, metric_name, frm,
-        to, resolution)
+            default_config['query_url'],
+            tenant_id, metric_name, frm,
+            to, resolution)
         result = self.query_request.GET(url)
         #    logger(result.getText())
         return result
@@ -79,9 +79,9 @@ class MultiPlotQuery(AbstractQuery):
         frm = time - self.one_day
         resolution = 'FULL'
         url = "%s/v2.0/%d/views?from=%d&to=%d&resolution=%s" % (
-        default_config['query_url'],
-        tenant_id, frm,
-        to, resolution)
+            default_config['query_url'],
+            tenant_id, frm,
+            to, resolution)
         result = self.query_request.POST(url, payload)
         #    logger(result.getText())
         return result
@@ -101,8 +101,8 @@ class SearchQuery(AbstractQuery):
         tenant_id = random.randint(0, default_config['num_tenants'])
         metric_regex = self.generate_metrics_regex()
         url = "%s/v2.0/%d/metrics/search?query=%s" % (
-        default_config['query_url'],
-        tenant_id, metric_regex)
+            default_config['query_url'],
+            tenant_id, metric_regex)
         result = self.query_request.GET(url)
         #    logger(result.getText())
         return result
@@ -119,7 +119,7 @@ class AnnotationsQuery(AbstractQuery):
         to = time
         frm = time - self.one_day
         url = "%s/v2.0/%d/events/getEvents?from=%d&until=%d" % (
-        default_config['query_url'], tenant_id, frm, to)
+            default_config['query_url'], tenant_id, frm, to)
         result = self.query_request.GET(url)
         return result
 
@@ -138,8 +138,8 @@ class EnumSearchQuery(AbstractQuery):
         tenant_id = random.randint(0, default_config['enum_num_tenants'])
         metric_regex = self.generate_metrics_regex()
         url = "%s/v2.0/%d/metrics/search?query=%s&include_enum_values=true" % (
-        default_config['query_url'],
-        tenant_id, metric_regex)
+            default_config['query_url'],
+            tenant_id, metric_regex)
         result = self.query_request.GET(url)
         return result
 
@@ -157,9 +157,9 @@ class EnumSinglePlotQuery(AbstractQuery):
         frm = time - self.one_day
         resolution = 'FULL'
         url = "%s/v2.0/%d/views/%s?from=%d&to=%s&resolution=%s" % (
-        default_config['query_url'],
-        tenant_id, metric_name, frm,
-        to, resolution)
+            default_config['query_url'],
+            tenant_id, metric_name, frm,
+            to, resolution)
         result = self.query_request.GET(url)
         #    logger(result.getText())
         return result
@@ -184,9 +184,9 @@ class EnumMultiPlotQuery(AbstractQuery):
         frm = time - self.one_day
         resolution = 'FULL'
         url = "%s/v2.0/%d/views?from=%d&to=%d&resolution=%s" % (
-        default_config['query_url'],
-        tenant_id, frm,
-        to, resolution)
+            default_config['query_url'],
+            tenant_id, frm,
+            to, resolution)
         result = self.query_request.POST(url, payload)
         #    logger(result.getText())
         return result

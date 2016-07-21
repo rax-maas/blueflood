@@ -125,10 +125,10 @@ class BluefloodTests(unittest.TestCase):
         # confirm that a threadnum after all valid thread types raises an
         # exception
         tot_threads = (
-        ingest.default_config['ingest_concurrency'] + ingest.default_config[
-            'enum_ingest_concurrency'] + ingest.default_config[
-            'query_concurrency'] + ingest.default_config[
-            'annotations_concurrency'])
+            ingest.default_config['ingest_concurrency'] +
+            ingest.default_config['enum_ingest_concurrency'] +
+            ingest.default_config['query_concurrency'] +
+            ingest.default_config['annotations_concurrency'])
         self.assertRaises(Exception, self.tm.setup_thread, tot_threads)
 
         # confirm that the correct batches of ingest metrics are created for
