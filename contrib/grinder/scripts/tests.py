@@ -1,5 +1,5 @@
-# It is difficult to invoke the Python coverage tool externally with Jython, so it
-# is being invoked internally here:
+# It is difficult to invoke the Python coverage tool externally with Jython, so
+# it is being invoked internally here:
 from __future__ import division
 import net.grinder.script.Grinder
 
@@ -102,7 +102,8 @@ class BluefloodTests(unittest.TestCase):
         t1 = self.tm.setup_thread(0)
         self.assertEqual(type(t1), ingest.IngestThread)
 
-        # confirm that the threadnum after all ingest threads is EnumIngestThread
+        # confirm that the threadnum after all ingest threads is
+        # EnumIngestThread
         t1 = self.tm.setup_thread(
             ingestenum.default_config['enum_ingest_concurrency'])
         self.assertEqual(type(t1), ingestenum.EnumIngestThread)
@@ -113,14 +114,16 @@ class BluefloodTests(unittest.TestCase):
                                       'enum_ingest_concurrency'])
         self.assertEqual(type(t1), query.QueryThread)
 
-        # confirm that the threadnum after all ingest+query threads is an annotations query thread
+        # confirm that the threadnum after all ingest+query threads is an
+        # annotations query thread
         t1 = self.tm.setup_thread(ingest.default_config['ingest_concurrency'] +
                                   ingestenum.default_config[
                                       'enum_ingest_concurrency'] +
                                   ingest.default_config['query_concurrency'])
         self.assertEqual(type(t1), annotationsingest.AnnotationsIngestThread)
 
-        # confirm that a threadnum after all valid thread types raises an exception
+        # confirm that a threadnum after all valid thread types raises an
+        # exception
         tot_threads = (
         ingest.default_config['ingest_concurrency'] + ingest.default_config[
             'enum_ingest_concurrency'] + ingest.default_config[
@@ -128,7 +131,8 @@ class BluefloodTests(unittest.TestCase):
             'annotations_concurrency'])
         self.assertRaises(Exception, self.tm.setup_thread, tot_threads)
 
-        # confirm that the correct batches of ingest metrics are created for worker 0
+        # confirm that the correct batches of ingest metrics are created for
+        # worker 0
         self.tm.create_all_metrics(0)
 
         # confirm annotationsingest
@@ -162,7 +166,8 @@ class BluefloodTests(unittest.TestCase):
                           [[1, 2], [1, 3], [1, 4]],
                           [[1, 5], [1, 6]]])
 
-        # confirm that the correct batch slices are created for individual threads
+        # confirm that the correct batch slices are created for individual
+        # threads
         thread = ingest.IngestThread(0)
         self.assertEqual(thread.slice,
                          [[[0, 0], [0, 1], [0, 2]],
@@ -181,26 +186,31 @@ class BluefloodTests(unittest.TestCase):
             query.default_config['singleplot_per_interval'] / num_query_nodes))
         multi_plot_queries_agent0 = int(math.ceil(
             query.default_config['multiplot_per_interval'] / num_query_nodes))
-        search_queries_agent0 = int(math.ceil(query.default_config[
-                                                  'search_queries_per_interval'] / num_query_nodes))
-        enum_search_queries_agent0 = int(math.ceil(query.default_config[
-                                                       'enum_search_queries_per_interval'] / num_query_nodes))
-        enum_single_plot_queries_agent0 = int(math.ceil(query.default_config[
-                                                            'enum_single_plot_queries_per_interval'] / num_query_nodes))
-        enum_multi_plot_queries_agent0 = int(math.ceil(query.default_config[
-                                                           'enum_multiplot_per_interval'] / num_query_nodes))
-        annotation_queries_agent0 = int(math.ceil(query.default_config[
-                                                      'annotations_queries_per_interval'] / num_query_nodes))
+        search_queries_agent0 = int(math.ceil(
+            query.default_config[
+                'search_queries_per_interval'] / num_query_nodes))
+        enum_search_queries_agent0 = int(math.ceil(
+            query.default_config[
+                'enum_search_queries_per_interval'] / num_query_nodes))
+        enum_single_plot_queries_agent0 = int(math.ceil(
+            query.default_config[
+                'enum_single_plot_queries_per_interval'] / num_query_nodes))
+        enum_multi_plot_queries_agent0 = int(math.ceil(
+            query.default_config[
+                'enum_multiplot_per_interval'] / num_query_nodes))
+        annotation_queries_agent0 = int(math.ceil(
+            query.default_config[
+                'annotations_queries_per_interval'] / num_query_nodes))
 
-        self.assertEqual(query.QueryThread.queries,
-                         ([
-                              query.SinglePlotQuery] * single_plot_queries_agent0 + [
-                              query.MultiPlotQuery] * multi_plot_queries_agent0 + [
-                              query.SearchQuery] * search_queries_agent0 + [
-                              query.EnumSearchQuery] * enum_search_queries_agent0 + [
-                              query.EnumSinglePlotQuery] * enum_single_plot_queries_agent0 + [
-                              query.AnnotationsQuery] * annotation_queries_agent0) + [
-                             query.EnumMultiPlotQuery] * enum_multi_plot_queries_agent0)
+        self.assertEqual(
+            query.QueryThread.queries,
+            ([query.SinglePlotQuery] * single_plot_queries_agent0 +
+             [query.MultiPlotQuery] * multi_plot_queries_agent0 +
+             [query.SearchQuery] * search_queries_agent0 +
+             [query.EnumSearchQuery] * enum_search_queries_agent0 +
+             [query.EnumSinglePlotQuery] * enum_single_plot_queries_agent0 +
+             [query.AnnotationsQuery] * annotation_queries_agent0) +
+            [query.EnumMultiPlotQuery] * enum_multi_plot_queries_agent0)
 
         thread = query.QueryThread(0)
         self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
@@ -223,7 +233,8 @@ class BluefloodTests(unittest.TestCase):
         thread = query.QueryThread(16)
         self.assertEqual(thread.slice, [query.EnumMultiPlotQuery] * 1)
 
-        # confirm that the correct batches of ingest metrics are created for worker 1
+        # confirm that the correct batches of ingest metrics are created for
+        # worker 1
         self.tm.create_all_metrics(1)
         self.assertEqual(ingest.IngestThread.metrics,
                          [[[2, 0], [2, 1], [2, 2]],
@@ -242,30 +253,37 @@ class BluefloodTests(unittest.TestCase):
                          [[[2, 6]]])
 
         # confirm that the correct batches of queries are created for worker 1
-        single_plot_queries_agent1 = query.default_config[
-                                         'singleplot_per_interval'] - single_plot_queries_agent0
-        multi_plot_queries_agent1 = query.default_config[
-                                        'multiplot_per_interval'] - multi_plot_queries_agent0
-        search_queries_agent1 = query.default_config[
-                                    'search_queries_per_interval'] - search_queries_agent0
-        enum_search_queries_agent1 = query.default_config[
-                                         'enum_search_queries_per_interval'] - enum_search_queries_agent0
-        enum_single_plot_queries_agent1 = query.default_config[
-                                              'enum_single_plot_queries_per_interval'] - enum_single_plot_queries_agent0
-        annotation_queries_agent1 = query.default_config[
-                                        'annotations_queries_per_interval'] - annotation_queries_agent0
-        enum_multi_plot_queries_agent1 = query.default_config[
-                                             'enum_multiplot_per_interval'] - enum_multi_plot_queries_agent0
+        single_plot_queries_agent1 = \
+            query.default_config['singleplot_per_interval'] - \
+            single_plot_queries_agent0
+        multi_plot_queries_agent1 = \
+            query.default_config['multiplot_per_interval'] - \
+            multi_plot_queries_agent0
+        search_queries_agent1 = \
+            query.default_config['search_queries_per_interval'] - \
+            search_queries_agent0
+        enum_search_queries_agent1 = \
+            query.default_config['enum_search_queries_per_interval'] - \
+            enum_search_queries_agent0
+        enum_single_plot_queries_agent1 = \
+            query.default_config['enum_single_plot_queries_per_interval'] - \
+            enum_single_plot_queries_agent0
+        annotation_queries_agent1 = \
+            query.default_config['annotations_queries_per_interval'] - \
+            annotation_queries_agent0
+        enum_multi_plot_queries_agent1 = \
+            query.default_config['enum_multiplot_per_interval'] - \
+            enum_multi_plot_queries_agent0
 
-        self.assertEqual(query.QueryThread.queries,
-                         ([
-                              query.SinglePlotQuery] * single_plot_queries_agent1 + [
-                              query.MultiPlotQuery] * multi_plot_queries_agent1 + [
-                              query.SearchQuery] * search_queries_agent1 + [
-                              query.EnumSearchQuery] * enum_search_queries_agent1 + [
-                              query.EnumSinglePlotQuery] * enum_single_plot_queries_agent1 + [
-                              query.AnnotationsQuery] * annotation_queries_agent1) + [
-                             query.EnumMultiPlotQuery] * enum_multi_plot_queries_agent1)
+        self.assertEqual(
+            query.QueryThread.queries,
+            ([query.SinglePlotQuery] * single_plot_queries_agent1 +
+             [query.MultiPlotQuery] * multi_plot_queries_agent1 +
+             [query.SearchQuery] * search_queries_agent1 +
+             [query.EnumSearchQuery] * enum_search_queries_agent1 +
+             [query.EnumSinglePlotQuery] * enum_single_plot_queries_agent1 +
+             [query.AnnotationsQuery] * annotation_queries_agent1) +
+            [query.EnumMultiPlotQuery] * enum_multi_plot_queries_agent1)
 
         thread = query.QueryThread(0)
         self.assertEqual(thread.slice, [query.SinglePlotQuery] * 2)
@@ -353,8 +371,9 @@ class BluefloodTests(unittest.TestCase):
 
         url, payload = thread.make_request(pp)
         # confirm request generates proper URL and payload
-        self.assertEqual(url,
-                         'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/2/events')
+        self.assertEqual(
+            url,
+            'http://qe01.metrics-ingest.api.rackspacecloud.com/v2.0/2/events')
         self.assertEqual(eval(payload), valid_payload)
 
         # confirm request increments position if not at end of report interval

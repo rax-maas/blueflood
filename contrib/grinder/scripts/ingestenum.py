@@ -23,8 +23,8 @@ class EnumIngestThread(AbstractThread):
     def create_metrics(cls, agent_number):
         """ Generate all the metrics for this worker
 
-        The metrics are a list of batches.  Each batch is a list of metrics processed by
-        a single metrics ingest request.
+        The metrics are a list of batches.  Each batch is a list of metrics
+        processed by a single metrics ingest request.
         """
         metrics = generate_metrics_tenants(default_config['enum_num_tenants'],
                                            default_config[

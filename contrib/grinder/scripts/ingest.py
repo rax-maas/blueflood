@@ -22,14 +22,14 @@ class IngestThread(AbstractThread):
     def create_metrics(cls, agent_number):
         """ Generate all the metrics for this worker
 
-        The metrics are a list of batches.  Each batch is a list of metrics processed by
-        a single metrics ingest request.
+        The metrics are a list of batches.  Each batch is a list of metrics
+        processed by a single metrics ingest request.
         """
-        metrics = generate_metrics_tenants(default_config['num_tenants'],
-                                           default_config['metrics_per_tenant'],
-                                           agent_number,
-                                           default_config['num_nodes'],
-                                           cls.generate_metrics_for_tenant)
+        metrics = generate_metrics_tenants(
+            default_config['num_tenants'],
+            default_config['metrics_per_tenant'],
+            agent_number, default_config['num_nodes'],
+            cls.generate_metrics_for_tenant)
 
         cls.metrics = cls.divide_metrics_into_batches(metrics, default_config[
             'batch_size'])

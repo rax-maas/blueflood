@@ -21,7 +21,8 @@ class AbstractQuery(object):
 
     @classmethod
     def create_metrics(cls, agent_number):
-        # divide the total number of each query type into the ones need by this worker
+        # divide the total number of each query type into the ones need by this
+        # worker
         total_queries = default_config[cls.query_interval_name]
         start_job, end_job = generate_job_range(total_queries,
                                                 default_config['num_nodes'],
@@ -113,7 +114,8 @@ class AnnotationsQuery(AbstractQuery):
     test_number = 6
 
     def generate(self, time, logger):
-        tenant_id = random.randint(0, default_config['annotations_num_tenants'])
+        tenant_id = random.randint(0,
+                                   default_config['annotations_num_tenants'])
         to = time
         frm = time - self.one_day
         url = "%s/v2.0/%d/events/getEvents?from=%d&until=%d" % (
@@ -212,9 +214,10 @@ class QueryThread(AbstractThread):
         AbstractThread.__init__(self, thread_num)
         self.query_instances = [x(thread_num, self.num_threads()) for x in
                                 self.query_types]
-        total_queries_for_current_node = reduce(lambda x, y: x + y,
-                                                [x.num_queries_for_current_node
-                                                 for x in self.query_instances])
+        total_queries_for_current_node = reduce(
+            lambda x, y: x + y,
+            [x.num_queries_for_current_node
+             for x in self.query_instances])
         start, end = generate_job_range(total_queries_for_current_node,
                                         self.num_threads(),
                                         thread_num)
@@ -229,8 +232,8 @@ class QueryThread(AbstractThread):
             self.sleep(1000000)
             return None
         self.check_position(logger, len(self.slice))
-        result = self.query_fn_dict[self.slice[self.position]](int(self.time()),
-                                                               logger)
+        result = self.query_fn_dict[self.slice[self.position]](
+            int(self.time()), logger)
         self.position += 1
         return result
 
