@@ -52,7 +52,7 @@ import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpIntegrationTestBase extends IntegrationTestBase {
 
-    public static final long TIME_DIFF_MS = 40000;
+    protected static final long TIME_DIFF_MS = 40000;
 
     //A time stamp 2 days ago
     protected final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
@@ -63,6 +63,11 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     protected static ElasticIO elasticIO;
     protected static EventsIO eventsSearchIO;
     protected static EsSetup esSetup;
+
+    protected static String configAllowedOrigins = "test.domain1.com, test.domain2.com, test.domain3.com";
+    protected static String configAllowedHeaders = "XYZ, ABC";
+    protected static String configAllowedMethods = "GET, POST, PUT";
+    protected static String configAllowedMaxAge = "6000";
 
     private static HttpIngestionService httpIngestionService;
     private static HttpQueryService httpQueryService;
@@ -85,9 +90,14 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     private Random random = new Random( System.currentTimeMillis() );
 
     @BeforeClass
-    public static void setUpHttp() throws Exception{
+    public static void setUpHttp() throws Exception {
 
         Configuration.getInstance().init();
+        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_ORIGINS, configAllowedOrigins);
+        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_HEADERS, configAllowedHeaders);
+        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_METHODS, configAllowedMethods);
+        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_MAX_AGE, configAllowedMaxAge);
+
 
         // This is to help with Travis, which intermittently fail the following tests due
         // to getting TimeoutException. This is done here because it needs to be before
@@ -425,7 +435,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     protected void assertResponseHeaderAllowOrigin(HttpResponse response) {
         // assert allowed origins
-        String[] allowedOrigins = CoreConfig.CORS_ALLOWED_ORIGINS.getDefaultValue().split(",");
+        String[] allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
 
         Header[] allowOriginResponse = response.getHeaders("Access-Control-Allow-Origin");
         Assert.assertTrue("Missing allow origin in response", allowOriginResponse.length > 0);

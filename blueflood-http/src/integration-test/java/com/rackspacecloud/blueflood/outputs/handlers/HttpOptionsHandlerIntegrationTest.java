@@ -41,10 +41,10 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Before
     public void setUp() {
         parameterMap = new HashMap<String, String>();
-        allowedOrigins = CoreConfig.CORS_ALLOWED_ORIGINS.getDefaultValue().split(",");
-        allowedHeaders = CoreConfig.CORS_ALLOWED_HEADERS.getDefaultValue().split(",");
-        allowedMethods = CoreConfig.CORS_ALLOWED_METHODS.getDefaultValue().split(",");
-        allowedMaxAge = CoreConfig.CORS_ALLOWED_MAX_AGE.getDefaultValue();
+        allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
+        allowedHeaders = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS).split(",");
+        allowedMethods = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_METHODS).split(",");
+        allowedMaxAge = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_MAX_AGE);
     }
 
     @Test
@@ -85,28 +85,6 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
         HttpOptions httpOptions = new HttpOptions(getQueryMetricViewsURI(tenantId, "test.cors.metric"));
         HttpResponse response = client.execute(httpOptions);
         assertCorsResponseHeaders(response, allowedOrigins, allowedHeaders, allowedMethods, allowedMaxAge);
-    }
-
-    @Test
-    public void testHttpOptionsHandlerWithConfigs() throws Exception {
-        // test configuration overwrites
-        String configAllowedOrigins = "test.domain1.com, test.domain2.com, test.domain3.com";
-        String configAllowedHeaders = "XYZ, ABC";
-        String configAllowedMethods = "PUT, DELETE";
-        String configAllowedMaxAge = "6000";
-
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_ORIGINS, configAllowedOrigins);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_HEADERS, configAllowedHeaders);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_METHODS, configAllowedMethods);
-        Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_MAX_AGE, configAllowedMaxAge);
-
-        HttpOptions httpOptions = new HttpOptions(getQueryEventsURI(tenantId));
-        HttpResponse response = client.execute(httpOptions);
-        assertCorsResponseHeaders(response,
-                configAllowedOrigins.split(","),
-                configAllowedHeaders.split(","),
-                configAllowedMethods.split(","),
-                configAllowedMaxAge);
     }
 
     private void assertCorsResponseHeaders(HttpResponse response,

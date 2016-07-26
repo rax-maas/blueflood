@@ -31,6 +31,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
+
+    private static final String ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponseStatus status) {
         respond(ctx, req, new DefaultHttpResponse(HTTP_1_1, status));
     }
@@ -38,7 +41,9 @@ public class HttpResponder {
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
 
         // set response headers
-        res.setHeader("Access-Control-Allow-Origin", Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS));
+        if (ALLOWED_ORIGINS != null && !ALLOWED_ORIGINS.isEmpty()) {
+            res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS);
+        }
 
         if (res.getContent() != null) {
             setContentLength(res, res.getContent().readableBytes());

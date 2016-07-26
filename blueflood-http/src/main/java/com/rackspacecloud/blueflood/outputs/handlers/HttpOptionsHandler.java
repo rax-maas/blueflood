@@ -17,6 +17,11 @@ import java.util.Map;
  */
 public class HttpOptionsHandler implements HttpRequestHandler {
 
+    private final String ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+    private final String ALLOWED_METHODS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_METHODS);
+    private final String ALLOWED_HEADERS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS);
+    private final String ALLOWED_MAX_AGE = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_MAX_AGE);
+
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
         // log the request if tracking enabled
@@ -24,10 +29,12 @@ public class HttpOptionsHandler implements HttpRequestHandler {
 
         // set CORS headers in the response
         Map<String, String> headers = new HashMap<String, String>();
-        headers.put("Access-Control-Allow-Origin", Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS));
-        headers.put("Access-Control-Allow-Methods", Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_METHODS));
-        headers.put("Access-Control-Allow-Headers", Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS));
-        headers.put("Access-Control-Max-Age", Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_MAX_AGE));
+        if (ALLOWED_ORIGINS != null && !ALLOWED_ORIGINS.isEmpty()) {
+            headers.put("Access-Control-Allow-Origin", ALLOWED_ORIGINS);
+            headers.put("Access-Control-Allow-Methods", ALLOWED_METHODS);
+            headers.put("Access-Control-Allow-Headers", ALLOWED_HEADERS);
+            headers.put("Access-Control-Max-Age", ALLOWED_MAX_AGE);
+        }
         DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.NO_CONTENT, headers);
     }
 
