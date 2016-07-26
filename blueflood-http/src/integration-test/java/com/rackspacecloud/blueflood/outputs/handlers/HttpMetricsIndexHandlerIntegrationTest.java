@@ -84,7 +84,7 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
     @Test
     public void testHttpMetricsIndexHandler_HappyCaseNoResults() throws Exception {
         parameterMap = new HashMap<String, String>();
-        parameterMap.put("query","dne." + baseMillis + "." + getPostfix());
+        parameterMap.put("query", "dne." + baseMillis + "." + getPostfix());
         HttpGet get = new HttpGet(getQuerySearchURI(tenantId));
         HttpResponse response = client.execute(get);
 

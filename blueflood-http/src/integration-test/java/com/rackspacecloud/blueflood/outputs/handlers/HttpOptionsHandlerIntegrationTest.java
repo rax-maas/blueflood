@@ -124,7 +124,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
         Assert.assertTrue("Missing allow origin in response", allowOriginResponse.length > 0);
 
         String actualAllowOrigin = allowOriginResponse[0].getValue();
-        Assert.assertEquals("Invalid number of allowed origins", allowedOrigins.length, actualAllowOrigin.split(",").length);
+        Assert.assertEquals("Invalid number of allowed origins: " + actualAllowOrigin, allowedOrigins.length, actualAllowOrigin.split(",").length);
         for (String allowedOrigin : allowedOrigins) {
             Assert.assertTrue("Missing allowed origin " + allowedOrigin, actualAllowOrigin.contains(allowedOrigin));
         }
@@ -134,7 +134,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
         Assert.assertTrue("Missing allow headers in response", allowHeadersResponse.length > 0);
 
         String actualAllowHeaders = allowHeadersResponse[0].getValue();
-        Assert.assertEquals("Invalid number of allowed headers", allowedHeaders.length, actualAllowHeaders.split(",").length);
+        Assert.assertEquals("Invalid number of allowed headers: " + actualAllowHeaders, allowedHeaders.length, actualAllowHeaders.split(",").length);
         for (String allowedHeader : allowedHeaders) {
             Assert.assertTrue("Missing allowed header " + allowedHeader, actualAllowHeaders.contains(allowedHeader));
         }
@@ -144,7 +144,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
         Assert.assertTrue("Missing allow methods in response", allowMethodsResponse.length > 0);
 
         String actualAllowMethods = allowMethodsResponse[0].getValue();
-        Assert.assertEquals("Invalid number of allowed methods", allowedMethods.length, actualAllowMethods.split(",").length);
+        Assert.assertEquals("Invalid number of allowed methods: " + actualAllowMethods, allowedMethods.length, actualAllowMethods.split(",").length);
         for (String allowedMethod : allowedMethods) {
             Assert.assertTrue("Missing allowed method " + allowedMethod, actualAllowMethods.contains(allowedMethod));
         }
