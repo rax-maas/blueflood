@@ -77,13 +77,13 @@ public class RollupBatchWriter {
         }
         if (writeBasicContexts.size() > 0) {
             LOG.debug(
-                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d basic contexts",
                             writeBasicContexts.size()));
             executor.execute(new RollupBatchWriteRunnable(writeBasicContexts, context, basicMetricsRW));
         }
         if (writePreAggrContexts.size() > 0) {
             LOG.debug(
-                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d contexts",
+                    String.format("drainBatch(): kicking off RollupBatchWriteRunnables for %d preAggr contexts",
                             writePreAggrContexts.size()));
             executor.execute(new RollupBatchWriteRunnable(writePreAggrContexts, context, preAggregatedRW));
         }

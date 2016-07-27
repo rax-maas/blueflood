@@ -9,6 +9,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,8 @@ import java.util.*;
 public class DBasicMetricsRW extends DAbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DBasicMetricsRW.class );
+    private static final Timer writeTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Write");
+    private static final Timer waitResultsTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Wait Write Results");
 
     private boolean areStringMetricsDropped;
     private Set<String> keptTenantIdsSet;
@@ -354,5 +357,15 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         return simpleIO;
       else
         return basicIO;
+    }
+
+    @Override
+    public Timer.Context startWriteTimer() {
+        return writeTimer.time();
+    }
+
+    @Override
+    public Timer.Context startWaitResultsTimer() {
+        return waitResultsTimer.time();
     }
 }

@@ -149,7 +149,8 @@ class LocatorFetchRunnable implements Runnable {
     public void finishExecution(long waitStart, RollupExecutionContext executionContext) {
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
-            log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
+            log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms",
+                    new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
@@ -166,8 +167,10 @@ class LocatorFetchRunnable implements Runnable {
             // continue on, but log the problem so that we can fix things later.
             executionContext.markUnsuccessful(any);
             executionContext.decrementReadCounter();
-            log.error(any.getMessage(), any);
-            log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
+            log.error(String.format(
+                            "BasicRollup failed for %s, locator %s, at %d",
+                            parentSlotKey, locator, serverTime),
+                    any);
         }
 
         return rollCount;

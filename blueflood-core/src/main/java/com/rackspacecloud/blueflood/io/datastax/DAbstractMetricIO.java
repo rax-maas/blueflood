@@ -66,7 +66,15 @@ public abstract class DAbstractMetricIO {
         // multiple statements
         BatchStatement batch = new BatchStatement();
         addRollupToBatch(batch, locator, rollup, collectionTime, granularity, ttl);
-        return session.executeAsync(batch);
+
+        Collection<Statement> statements = batch.getStatements();
+        if ( statements.size() > 1 ) {
+            return session.executeAsync(batch);
+        } else {
+            // if we get here, we have only 1 statement
+            Statement stat = statements.iterator().next();
+            return session.executeAsync(stat);
+        }
     }
 
     /**

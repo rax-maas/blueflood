@@ -165,6 +165,7 @@ public class RollupRunnable implements Runnable {
                     singleRollupReadContext.getRange().toString(),
                     srcGran.name(),
                     e});
+            executionContext.markUnsuccessful(e);
         } finally {
             executionContext.decrementReadCounter();
             timerContext.stop();
