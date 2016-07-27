@@ -97,7 +97,4 @@ class IngestThread(AbstractThread):
             logger("XXXXX: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
         return result
 
-    if result.getStatusCode() == 500:
-      logger("XXXXX: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
-
 ThreadManager.add_type(IngestThread)
