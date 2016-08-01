@@ -93,6 +93,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     public static void setUpHttp() throws Exception {
 
         Configuration.getInstance().init();
+        Configuration.getInstance().setProperty(CoreConfig.CORS_ENABLED, "true");
         Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_ORIGINS, configAllowedOrigins);
         Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_HEADERS, configAllowedHeaders);
         Configuration.getInstance().setProperty(CoreConfig.CORS_ALLOWED_METHODS, configAllowedMethods);
@@ -116,13 +117,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     }
 
     @AfterClass
-    public static void shutdown() {
-        Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
-        Configuration.getInstance().setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name(), "");
-        Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
-        System.clearProperty(CoreConfig.DISCOVERY_MODULES.name());
-        System.clearProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name());
-        System.clearProperty(CoreConfig.EVENTS_MODULES.name());
+    public static void shutdown() throws IOException {
+        Configuration.getInstance().init();
 
         if (esSetup != null) {
             esSetup.terminate();

@@ -177,7 +177,8 @@ public enum CoreConfig implements ConfigDefaults {
     AFTER_CURRENT_COLLECTIONTIME_MS("600000"),
 
     // Cross-Origin Resource Sharing
-    CORS_ALLOWED_ORIGINS(""),
+    CORS_ENABLED("false"),
+    CORS_ALLOWED_ORIGINS("*"),
     CORS_ALLOWED_METHODS("GET, POST"),
     CORS_ALLOWED_HEADERS("X-Auth-Token, Accept"),
     CORS_ALLOWED_MAX_AGE("1728000");

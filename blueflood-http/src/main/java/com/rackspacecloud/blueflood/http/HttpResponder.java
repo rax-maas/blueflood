@@ -32,7 +32,8 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
 
-    private static final String ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+    private static final boolean CORS_ENABLED = Configuration.getInstance().getBooleanProperty(CoreConfig.CORS_ENABLED);
+    private static final String CORS_ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
 
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponseStatus status) {
         respond(ctx, req, new DefaultHttpResponse(HTTP_1_1, status));
@@ -41,8 +42,8 @@ public class HttpResponder {
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
 
         // set response headers
-        if (ALLOWED_ORIGINS != null && !ALLOWED_ORIGINS.isEmpty()) {
-            res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS);
+        if (CORS_ENABLED) {
+            res.setHeader("Access-Control-Allow-Origin", CORS_ALLOWED_ORIGINS);
         }
 
         if (res.getContent() != null) {
