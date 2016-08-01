@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
@@ -61,6 +62,8 @@ public class IOContainerTest {
         when( DatastaxIO.getSession()).thenReturn( mockSession );
         PreparedStatement mockPreparedStatement = mock( PreparedStatement.class );
         when( mockSession.prepare( any( RegularStatement.class ) ) ).thenReturn( mockPreparedStatement );
+        when( mockSession.prepare( anyString() ) ).thenReturn( mockPreparedStatement );
+        when( mockPreparedStatement.setConsistencyLevel( any(ConsistencyLevel.class) ) ).thenReturn( mockPreparedStatement );
     }
 
     @Test

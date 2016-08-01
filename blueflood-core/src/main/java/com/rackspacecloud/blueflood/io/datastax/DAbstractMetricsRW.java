@@ -48,12 +48,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     protected abstract DAbstractMetricIO getIO( String rollupType, Granularity gran );
 
     /**
-     * Returns the Timer.Context object for timing the Datastax write
-     * @return
-     */
-    protected abstract Timer.Context startWriteTimer();
-
-    /**
      * Returns the Timer.Context object for timing the waits of the write results
      * @return
      */
@@ -76,43 +70,34 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
         Map<ResultSetFuture, SingleRollupWriteContext> futureLocatorMap = new HashMap<ResultSetFuture, SingleRollupWriteContext>();
         Timer.Context ctx = Instrumentation.getWriteTimerContext( writeContexts.get( 0 ).getDestinationCF().getName() );
         try {
-            Timer.Context writeOnlyTimer = startWriteTimer();
-            try {
-                for (SingleRollupWriteContext writeContext : writeContexts) {
-                    Rollup rollup = writeContext.getRollup();
-                    Locator locator = writeContext.getLocator();
-                    Granularity granularity = writeContext.getGranularity();
-                    int ttl = getTtl(locator, rollup.getRollupType(), granularity);
+            for (SingleRollupWriteContext writeContext : writeContexts) {
+                Rollup rollup = writeContext.getRollup();
+                Locator locator = writeContext.getLocator();
+                Granularity granularity = writeContext.getGranularity();
+                int ttl = getTtl(locator, rollup.getRollupType(), granularity);
 
-                    // lookup the right writer
-                    RollupType rollupType = writeContext.getRollup().getRollupType();
-                    DAbstractMetricIO io = getIO(rollupType.name().toLowerCase(), granularity);
+                // lookup the right writer
+                RollupType rollupType = writeContext.getRollup().getRollupType();
+                DAbstractMetricIO io = getIO(rollupType.name().toLowerCase(), granularity);
 
-                    ResultSetFuture future = io.putAsync(locator, writeContext.getTimestamp(), rollup, writeContext.getGranularity(), ttl);
-                    futureLocatorMap.put(future, writeContext);
-                }
-            } finally {
-                writeOnlyTimer.stop();
+                ResultSetFuture future = io.putAsync(locator, writeContext.getTimestamp(), rollup, writeContext.getGranularity(), ttl);
+                futureLocatorMap.put(future, writeContext);
             }
 
-            try {
-                for (final ResultSetFuture future : futureLocatorMap.keySet()) {
-                    final SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
-                    Timer.Context resultsWaitTimer = startWaitResultsTimer();
-                    try {
-                        future.getUninterruptibly().all();
-                    } catch (Exception ex) {
-                        Instrumentation.markWriteError();
-                        LOG.error(String.format("error writing locator %s, granularity %s, timestamp %d",
+            for (final ResultSetFuture future : futureLocatorMap.keySet()) {
+                final SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
+                Timer.Context resultsWaitTimer = startWaitResultsTimer();
+                try {
+                    future.getUninterruptibly().all();
+                } catch (Exception ex) {
+                    Instrumentation.markWriteError();
+                    LOG.error(String.format("error writing locator %s, granularity %s, timestamp %d",
                                         writeContext.getLocator(), writeContext.getGranularity(),
                                         writeContext.getTimestamp()),
                                 ex);
-                    } finally {
-                        resultsWaitTimer.stop();
-                    }
+                } finally {
+                    resultsWaitTimer.stop();
                 }
-            } finally {
-
             }
         } finally {
             ctx.stop();

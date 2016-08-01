@@ -39,7 +39,6 @@ import java.util.*;
 public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements PreaggregatedRW {
 
     private static final Logger LOG = LoggerFactory.getLogger(DPreaggregatedMetricsRW.class);
-    private static final Timer writeTimer = Metrics.timer(DPreaggregatedMetricsRW.class, "PreAggr Metrics Write");
     private static final Timer waitResultsTimer = Metrics.timer(DPreaggregatedMetricsRW.class, "PreAggr Metrics Wait Write Results");
 
     private final DCounterIO counterIO = new DCounterIO();
@@ -186,11 +185,6 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
         }
 
         return io;
-    }
-
-    @Override
-    public Timer.Context startWriteTimer() {
-        return writeTimer.time();
     }
 
     @Override

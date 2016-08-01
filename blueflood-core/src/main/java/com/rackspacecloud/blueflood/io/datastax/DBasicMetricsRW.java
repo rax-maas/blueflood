@@ -23,7 +23,6 @@ import java.util.*;
 public class DBasicMetricsRW extends DAbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DBasicMetricsRW.class );
-    private static final Timer writeTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Write");
     private static final Timer waitResultsTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Wait Write Results");
 
     private boolean areStringMetricsDropped;
@@ -357,11 +356,6 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         return simpleIO;
       else
         return basicIO;
-    }
-
-    @Override
-    public Timer.Context startWriteTimer() {
-        return writeTimer.time();
     }
 
     @Override

@@ -93,8 +93,6 @@ class IngestThread(AbstractThread):
                                         self.slice[self.position])
         self.position += 1
         result = self.request.POST(self.ingest_url(), payload)
-        if result.getStatusCode() == 500:
-            logger("XXXXX: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
         return result
 
 ThreadManager.add_type(IngestThread)

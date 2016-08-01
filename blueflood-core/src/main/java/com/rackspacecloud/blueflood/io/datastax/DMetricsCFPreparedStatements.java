@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io.datastax;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.rackspacecloud.blueflood.io.CassandraModel;
@@ -97,22 +98,28 @@ public class DMetricsCFPreparedStatements {
         //
         insertToMetricsPreaggrFullStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsPreaggr5MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_5M_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_5M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsPreaggr20MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_20M_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_20M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsPreaggr60MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_60M_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_60M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsPreaggr240MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_240M_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_240M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsPreaggr1440MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_PREAGGREGATED_1440M_NAME));
+                        CassandraModel.CF_METRICS_PREAGGREGATED_1440M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
 
         //
         // Preaggr select statements
@@ -159,22 +166,28 @@ public class DMetricsCFPreparedStatements {
         //
         insertToMetricsBasicFullStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_FULL_NAME));
+                        CassandraModel.CF_METRICS_FULL_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsBasic5MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_5M_NAME));
+                        CassandraModel.CF_METRICS_5M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsBasic20MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_20M_NAME));
+                        CassandraModel.CF_METRICS_20M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsBasic60MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_60M_NAME));
+                        CassandraModel.CF_METRICS_60M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsBasic240MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_240M_NAME));
+                        CassandraModel.CF_METRICS_240M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
         insertToMetricsBasic1440MStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
-                        CassandraModel.CF_METRICS_1440M_NAME));
+                        CassandraModel.CF_METRICS_1440M_NAME))
+                .setConsistencyLevel(ConsistencyLevel.ONE); // needed by maven cassandra plugin
 
         //
         // Basic select statements
