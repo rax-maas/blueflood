@@ -96,6 +96,9 @@ public class DMetricsCFPreparedStatements {
         //
         // Preaggr insert statements
         //
+        // TODO: The call to setConsistency(ONE) is required by
+        // the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
         insertToMetricsPreaggrFullStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
                         CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME))
@@ -164,6 +167,9 @@ public class DMetricsCFPreparedStatements {
         //
         // Basic insert statements
         //
+        // TODO: The call to setConsistency(ONE) is required by
+        // the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
+        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
         insertToMetricsBasicFullStatement = session.prepare(
                 String.format(INSERT_KEY_COLUMN_VALUE_TTL_FORMAT,
                         CassandraModel.CF_METRICS_FULL_NAME))
