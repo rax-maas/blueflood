@@ -46,18 +46,18 @@ public class DefaultHandler implements HttpRequestHandler {
             Iterator<String> itr = headers.keySet().iterator();
             while(itr.hasNext()){
                 String headerKey = itr.next();
-                response.setHeader(headerKey,headers.get(headerKey));
+                response.setHeader(headerKey, headers.get(headerKey));
             }
         }
-        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
 
+        final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
         try {
             if (messageBody != null && !messageBody.isEmpty()) {
                 response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
 
-            Tracker.getInstance().trackResponse(request, response);
             HttpResponder.respond(channel, request, response);
+            Tracker.getInstance().trackResponse(request, response);
         } finally {
             sendResponseTimerContext.stop();
         }

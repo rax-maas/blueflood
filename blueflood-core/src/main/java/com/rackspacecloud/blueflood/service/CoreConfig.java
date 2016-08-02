@@ -174,8 +174,14 @@ public enum CoreConfig implements ConfigDefaults {
     // 3 days - this matches the TTL for our metrics_full table, we don't accept anything older than the TTL.
     BEFORE_CURRENT_COLLECTIONTIME_MS("259200000"),
     // 10 minutes
-    AFTER_CURRENT_COLLECTIONTIME_MS("600000");
+    AFTER_CURRENT_COLLECTIONTIME_MS("600000"),
 
+    // Cross-Origin Resource Sharing
+    CORS_ENABLED("false"),
+    CORS_ALLOWED_ORIGINS("*"),
+    CORS_ALLOWED_METHODS("GET, POST"),
+    CORS_ALLOWED_HEADERS("X-Auth-Token, Accept"),
+    CORS_ALLOWED_MAX_AGE("1728000");
 
     static {
         Configuration.getInstance().loadDefaults(CoreConfig.values());

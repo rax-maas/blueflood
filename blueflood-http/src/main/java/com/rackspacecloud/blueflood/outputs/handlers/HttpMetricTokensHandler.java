@@ -40,9 +40,9 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, HttpRequest request) {
 
-        final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
-
         Tracker.getInstance().track(request);
+
+        final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
 
         final String tenantId = request.getHeader("tenantId");
 
@@ -81,8 +81,8 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
             response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
+        Tracker.getInstance().trackResponse(request, response);
     }
 
     public String getSerializedJSON(final List<MetricToken> metricTokens) {

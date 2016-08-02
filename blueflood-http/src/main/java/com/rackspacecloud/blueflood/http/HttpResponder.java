@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -29,11 +31,21 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
+
+    private static final boolean CORS_ENABLED = Configuration.getInstance().getBooleanProperty(CoreConfig.CORS_ENABLED);
+    private static final String CORS_ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponseStatus status) {
         respond(ctx, req, new DefaultHttpResponse(HTTP_1_1, status));
     }
 
     public static void respond(ChannelHandlerContext ctx, HttpRequest req, HttpResponse res) {
+
+        // set response headers
+        if (CORS_ENABLED) {
+            res.setHeader("Access-Control-Allow-Origin", CORS_ALLOWED_ORIGINS);
+        }
+
         if (res.getContent() != null) {
             setContentLength(res, res.getContent().readableBytes());
         }

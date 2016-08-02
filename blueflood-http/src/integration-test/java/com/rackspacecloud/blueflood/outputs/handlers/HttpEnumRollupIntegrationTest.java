@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -28,8 +29,7 @@ import org.junit.*;
 import java.util.*;
 
 public class HttpEnumRollupIntegrationTest extends HttpIntegrationTestBase {
-    // A timestamp 2 days ago
-    private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
+
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String enumMetricName = "enumMet_"+IntegrationTestBase.randString(8);
 
