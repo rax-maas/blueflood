@@ -48,12 +48,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     protected abstract DAbstractMetricIO getIO( String rollupType, Granularity gran );
 
     /**
-     * Returns the Timer.Context object for timing the waits of the write results
-     * @return
-     */
-    protected abstract Timer.Context startWaitResultsTimer();
-
-    /**
      * This method inserts a collection of metrics in the
      * {@link com.rackspacecloud.blueflood.service.SingleRollupWriteContext}
      * objects to the appropriate Cassandra column family
@@ -85,18 +79,15 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             }
 
             for (final ResultSetFuture future : futureLocatorMap.keySet()) {
-                final SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
-                Timer.Context resultsWaitTimer = startWaitResultsTimer();
                 try {
                     future.getUninterruptibly().all();
                 } catch (Exception ex) {
                     Instrumentation.markWriteError();
+                    final SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
                     LOG.error(String.format("error writing locator %s, granularity %s, timestamp %d",
                                         writeContext.getLocator(), writeContext.getGranularity(),
                                         writeContext.getTimestamp()),
                                 ex);
-                } finally {
-                    resultsWaitTimer.stop();
                 }
             }
         } finally {

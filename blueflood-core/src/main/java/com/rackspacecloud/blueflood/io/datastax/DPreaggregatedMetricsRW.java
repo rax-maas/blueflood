@@ -186,10 +186,5 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
 
         return io;
     }
-
-    @Override
-    public Timer.Context startWaitResultsTimer() {
-        return waitResultsTimer.time();
-    }
 }
 

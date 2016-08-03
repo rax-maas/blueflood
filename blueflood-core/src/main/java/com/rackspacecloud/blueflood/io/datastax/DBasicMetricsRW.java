@@ -357,9 +357,4 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
       else
         return basicIO;
     }
-
-    @Override
-    public Timer.Context startWaitResultsTimer() {
-        return waitResultsTimer.time();
-    }
 }
