@@ -28,7 +28,7 @@ elasticsearch:
 
 #Graphite-API Integration
 graphite-api:
-  image: rackerlabs/graphite-api
+  image: rackerlabs/graphite-api-blueflood-finder
   ports:
         - "8888:8888"
   links:
