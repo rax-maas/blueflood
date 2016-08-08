@@ -5,7 +5,6 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
-import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -18,7 +17,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * This class deals with aspects of reading/writing metrics which are common accross all column families
+ * This class deals with aspects of reading/writing metrics which are common across all column families
  * using Datastax driver
  */
 public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
@@ -26,7 +25,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
 
     protected final LocatorIO locatorIO;
-
 
     /**
      * Constructor
@@ -74,19 +72,22 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
                 // lookup the right writer
                 RollupType rollupType = writeContext.getRollup().getRollupType();
-                DAbstractMetricIO io = getIO( rollupType.name().toLowerCase(), granularity );
+                DAbstractMetricIO io = getIO(rollupType.name().toLowerCase(), granularity);
 
                 ResultSetFuture future = io.putAsync(locator, writeContext.getTimestamp(), rollup, writeContext.getGranularity(), ttl);
                 futureLocatorMap.put(future, writeContext);
             }
 
-            for (ResultSetFuture future : futureLocatorMap.keySet()) {
+            for (final ResultSetFuture future : futureLocatorMap.keySet()) {
                 try {
                     future.getUninterruptibly().all();
                 } catch (Exception ex) {
                     Instrumentation.markWriteError();
-                    SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
-                    LOG.error(String.format("error writing to locator %s, granularity %s", writeContext.getLocator(), writeContext.getGranularity()), ex);
+                    final SingleRollupWriteContext writeContext = futureLocatorMap.get(future);
+                    LOG.error(String.format("error writing locator %s, granularity %s, timestamp %d",
+                                        writeContext.getLocator(), writeContext.getGranularity(),
+                                        writeContext.getTimestamp()),
+                                ex);
                 }
             }
         } finally {

@@ -95,5 +95,4 @@ class IngestThread(AbstractThread):
         result = self.request.POST(self.ingest_url(), payload)
         return result
 
-
 ThreadManager.add_type(IngestThread)
