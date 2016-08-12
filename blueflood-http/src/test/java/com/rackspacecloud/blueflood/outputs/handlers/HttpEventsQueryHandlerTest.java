@@ -16,12 +16,10 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.types.Event;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.*;
+import io.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
@@ -35,15 +33,17 @@ public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
     private HttpEventsQueryHandler handler;
     private ChannelHandlerContext context;
     private Channel channel;
+    private ChannelFuture channelFuture;
 
 
     public HttpEventsQueryHandlerTest() {
         searchIO = mock(EventsIO.class);
         handler = new HttpEventsQueryHandler(searchIO);
         channel = mock(Channel.class);
+        channelFuture = mock(ChannelFuture.class);
         context = mock(ChannelHandlerContext.class);
-        when(context.getChannel()).thenReturn(channel);
-        when(channel.write(anyString())).thenReturn(new SucceededChannelFuture(channel));
+        when(context.channel()).thenReturn(channel);
+        when(channel.write(anyString())).thenReturn(channelFuture);
     }
 
 

@@ -42,7 +42,7 @@ public class HttpEnumRollupIntegrationTest extends HttpIntegrationTestBase {
     private final Map<Locator, Map<Granularity, Integer>> enumlocatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
 
     @BeforeClass
-    public static void setUpHttp() {
+    public static void setUpHttp() throws Exception {
         httpQueryService = new HttpQueryService();
         httpQueryService.startService();
         vendor = new HttpClientVendor();

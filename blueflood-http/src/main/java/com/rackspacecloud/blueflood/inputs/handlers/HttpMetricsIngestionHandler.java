@@ -36,8 +36,8 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,28 +93,28 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         try {
 
             Tracker.getInstance().track(request);
 
             requestCount.inc();
-            final String tenantId = request.getHeader("tenantId");
+            final String tenantId = request.headers().get("tenantId");
             JSONMetricsContainer jsonMetricsContainer;
             List<Metric> metrics;
 
             final Timer.Context jsonTimerContext = jsonTimer.time();
 
-            final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
+            final String body = request.content().toString(Constants.DEFAULT_CHARSET);
             try {
                 jsonMetricsContainer = createContainer(body, tenantId);
 
                 if (jsonMetricsContainer == null) {
-                    log.warn(ctx.getChannel().getRemoteAddress() + " Failed to create jsonMetricsContainer.");
+                    log.warn(ctx.channel().remoteAddress() + " Failed to create jsonMetricsContainer.");
                     DefaultHandler.sendResponse(ctx, request, "No valid metrics", HttpResponseStatus.BAD_REQUEST);
                     return;
                 } else if (jsonMetricsContainer.getJsonMetrics().isEmpty()) {
-                    log.warn(ctx.getChannel().getRemoteAddress() + " Json metrics is empty, no valid json metrics to parse.");
+                    log.warn(ctx.channel().remoteAddress() + " Json metrics is empty, no valid json metrics to parse.");
                     DefaultHandler.sendResponse(ctx, request, "Error converting JSON payload to metric objects", HttpResponseStatus.BAD_REQUEST);
                     return;
                 }
@@ -137,7 +137,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Someting wasn't right (data out of range, etc.)
-                log.warn(ctx.getChannel().getRemoteAddress() + " " + ex.getMessage());
+                log.warn(ctx.channel().remoteAddress() + " " + ex.getMessage());
                 DefaultHandler.sendResponse(ctx, request, "Invalid data " + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (IOException e) {
@@ -156,7 +156,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             List<String> errors = jsonMetricsContainer.getValidationErrors();
             if (metrics == null || metrics.isEmpty()) {
                 // empty container
-                log.warn(ctx.getChannel().getRemoteAddress() + " No valid metrics");
+                log.warn(ctx.channel().remoteAddress() + " No valid metrics");
                 DefaultHandler.sendResponse(ctx, request, getResponseBody( errors ), HttpResponseStatus.BAD_REQUEST );
                 return;
             }

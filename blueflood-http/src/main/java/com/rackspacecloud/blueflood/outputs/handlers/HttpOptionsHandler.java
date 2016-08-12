@@ -5,9 +5,9 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +24,7 @@ public class HttpOptionsHandler implements HttpRequestHandler {
     private final String CORS_ALLOWED_MAX_AGE = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_MAX_AGE);
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         // log the request if tracking enabled
         Tracker.getInstance().track(request);
 

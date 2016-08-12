@@ -73,8 +73,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
-    private static int httpPortIngest;
-    private static int httpPortQuery;
+    protected static int httpPortIngest;
+    protected static int httpPortQuery;
 
     public final String postPath = "/v2.0/%s/ingest";
     public final String postEventsPath = "/v2.0/%s/events";
@@ -118,11 +118,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     @AfterClass
     public static void shutdown() throws IOException {
-        Configuration.getInstance().init();
 
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
+        Configuration.getInstance().init();
 
         if (vendor != null) {
             vendor.shutdown();
@@ -134,6 +131,10 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
         if (httpIngestionService != null) {
             httpIngestionService.shutdownService();
+        }
+
+        if (esSetup != null) {
+            esSetup.terminate();
         }
     }
 
@@ -165,7 +166,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         ((EnumElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES)).setClient(esSetup.client());
     }
 
-    private static void setupIngestionServer(){
+    private static void setupIngestionServer() throws Exception {
         // setup ingestion server
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
@@ -177,7 +178,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         httpIngestionService.startService(context);
     }
 
-    private static void setupQueryServer() {
+    private static void setupQueryServer() throws Exception {
         // setup query server
         httpPortQuery = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         httpQueryService = new HttpQueryService();
@@ -222,7 +223,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     }
 
     public HttpResponse postGenMetric( String tenantId, String postfix, String url ) throws Exception {
-        return httpPost( tenantId, url, generateJSONMetricsData( postfix ) );
+        return httpPost(tenantId, url, generateJSONMetricsData(postfix));
     }
 
     public HttpResponse postGenMetric( String tenantId, String postfix, String url, long time ) throws Exception {

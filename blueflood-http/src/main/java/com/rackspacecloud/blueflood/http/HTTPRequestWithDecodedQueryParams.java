@@ -16,31 +16,75 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.DecoderResult;
+import io.netty.handler.codec.http.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+/**
+ * This class is a special type of {@link io.netty.handler.codec.http.HttpRequest}
+ * that knows how to decode the query parameters.
+ */
+public class HttpRequestWithDecodedQueryParams implements FullHttpRequest {
 
-public class HTTPRequestWithDecodedQueryParams implements HttpRequest {
     private Map<String, List<String>> queryParams;
-    private DefaultHttpRequest request;
+    protected FullHttpRequest request;
 
-    private HTTPRequestWithDecodedQueryParams(DefaultHttpRequest request, Map<String, List<String>> queryParams) {
+    protected HttpRequestWithDecodedQueryParams(FullHttpRequest request, Map<String, List<String>> queryParams) {
         this.request = request;
         this.queryParams = queryParams;
     }
 
-    public static HTTPRequestWithDecodedQueryParams createHttpRequestWithDecodedQueryParams(DefaultHttpRequest request) {
+    public static HttpRequestWithDecodedQueryParams create(FullHttpRequest request) {
         final QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
-        request.setUri(decoder.getPath());
-        return new HTTPRequestWithDecodedQueryParams(request, decoder.getParameters());
+        request.setUri(decoder.path());
+        return new HttpRequestWithDecodedQueryParams(request, decoder.parameters());
     }
 
     public Map<String, List<String>> getQueryParams() {
         return queryParams;
+    }
+
+    // --------------------
+    // from FullHttpRequest
+    @Override
+    public HttpRequestWithDecodedQueryParams copy() {
+        return create(request.copy());
+    }
+
+    @Override
+    public FullHttpRequest retain(int increment) {
+        return request.retain(increment);
+    }
+
+    @Override
+    public FullHttpRequest retain() {
+        return request.retain();
+    }
+
+    @Override
+    public ByteBuf content() {
+        return request.content();
+    }
+    // --------------------
+    
+    // --------------------
+    // from HttpRequest
+    @Override
+    public String getUri() {
+        return request.getUri();
+    }
+
+    @Override
+    public FullHttpRequest setUri(String uri) {
+        return request.setUri(uri);
+    }
+
+    @Override
+    public FullHttpRequest setProtocolVersion(HttpVersion httpVersion) {
+        return request.setProtocolVersion(httpVersion);
     }
 
     @Override
@@ -49,112 +93,71 @@ public class HTTPRequestWithDecodedQueryParams implements HttpRequest {
     }
 
     @Override
-    public void setMethod(HttpMethod method) {
-        request.setMethod(method);
+    public FullHttpRequest setMethod(HttpMethod httpMethod) {
+        return request.setMethod(httpMethod);
     }
+    // --------------------
 
-    @Override
-    public String getUri() {
-        return request.getUri();
-    }
-
-    @Override
-    public void setUri(String uri) {
-        request.setUri(uri);
-    }
-
-    @Override
-    public String getHeader(String name) {
-        return request.getHeader(name);
-    }
-
-    @Override
-    public List<String> getHeaders(String name) {
-        return request.getHeaders(name);
-    }
-
-    @Override
-    public List<Map.Entry<String, String>> getHeaders() {
-        return request.getHeaders();
-    }
-
-    @Override
-    public boolean containsHeader(String name) {
-        return request.containsHeader(name);
-    }
-
-    @Override
-    public Set<String> getHeaderNames() {
-        return request.getHeaderNames();
-    }
-
+    // --------------------
+    // from HttpMessage
     @Override
     public HttpVersion getProtocolVersion() {
         return request.getProtocolVersion();
     }
+    // --------------------
 
+    // --------------------
+    // from HttpObject
     @Override
-    public void setProtocolVersion(HttpVersion version) {
-        request.setProtocolVersion(version);
-    }
-
-    @Override
-    public ChannelBuffer getContent() {
-        return request.getContent();
+    public DecoderResult getDecoderResult() {
+        return request.getDecoderResult();
     }
 
     @Override
-    public void setContent(ChannelBuffer content) {
-        request.setContent(content);
+    public void setDecoderResult(DecoderResult decoderResult) {
+        request.setDecoderResult(decoderResult);
+    }
+    // --------------------
+
+    // --------------------
+    // from HttpMessage
+    public HttpHeaders headers() {
+        return request.headers();
+    }
+    // --------------------
+
+    // --------------------
+    // from LastHttpContent
+    @Override
+    public HttpHeaders trailingHeaders() {
+        return request.trailingHeaders();
+    }
+    // --------------------
+
+    // --------------------
+    // from HttpContent
+    @Override
+    public HttpContent duplicate() {
+        return request.duplicate();
+    }
+    // --------------------
+
+    // --------------------
+    // from ReferencedCounted
+    @Override
+    public boolean release() {
+        return request.release();
     }
 
     @Override
-    public void addHeader(String name, Object value) {
-        request.addHeader(name, value);
+    public boolean release(int decrement) {
+        return request.release(decrement);
     }
 
     @Override
-    public void setHeader(String name, Object value) {
-        request.addHeader(name, value);
+    public int refCnt() {
+        return request.refCnt();
     }
+    // --------------------
 
-    @Override
-    public void setHeader(String name, Iterable<?> values) {
-        request.setHeader(name, values);
-    }
-
-    @Override
-    public void removeHeader(String name) {
-        request.removeHeader(name);
-    }
-
-    @Override
-    public void clearHeaders() {
-        request.clearHeaders();
-    }
-
-    @Deprecated
-    public long getContentLength() {
-        return request.getContentLength();
-    }
-
-    @Deprecated
-    public long getContentLength(long defaultValue) {
-        return request.getContentLength(defaultValue);
-    }
-
-    @Override
-    public boolean isChunked() {
-        return request.isChunked();
-    }
-
-    @Override
-    public void setChunked(boolean chunked) {
-        request.setChunked(chunked);
-    }
-
-    @Deprecated
-    public boolean isKeepAlive() {
-        return request.isKeepAlive();
-    }
 }

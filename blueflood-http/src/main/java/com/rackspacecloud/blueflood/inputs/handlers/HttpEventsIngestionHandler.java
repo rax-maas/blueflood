@@ -26,21 +26,15 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
-import com.rackspacecloud.blueflood.http.HttpResponder;
-import com.rackspacecloud.blueflood.io.EventsIO;
-import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.types.Event;
-import org.codehaus.jackson.map.JsonMappingException;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
-import org.joda.time.DateTime;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
@@ -57,18 +51,20 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-        final String tenantId = request.getHeader(Event.FieldLabels.tenantId.name());
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+        final String tenantId = request.headers().get(Event.FieldLabels.tenantId.name());
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
         final Timer.Context httpEventsIngestTimerContext = httpEventsIngestTimer.time();
         try {
-            Event event = objectMapper.readValue(request.getContent().array(), Event.class);
+            String body = request.content().toString(0,
+                    request.content().writerIndex(),
+                    CharsetUtil.UTF_8);
+            Event event = objectMapper.readValue(body, Event.class);
 
             long timestamp = event.getWhen();
             long current = System.currentTimeMillis();
-
 
             if (event.getWhat().equals("")) {
                 throw new InvalidDataException(String.format( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
