@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import io.netty.util.CharsetUtil;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public class Constants {
             throw new RuntimeException("Invalid FullResSerializer.CUR_VERSION. Please increment until this exception does not happen.");
     }
 
-    public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+    public static final Charset DEFAULT_CHARSET = CharsetUtil.UTF_8;
 
     private Constants() {}
 }

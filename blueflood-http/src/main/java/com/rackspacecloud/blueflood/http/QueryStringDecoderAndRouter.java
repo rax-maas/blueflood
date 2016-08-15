@@ -51,19 +51,12 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Ful
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable thr) {
-        if (thr.getCause() instanceof IllegalArgumentException) {
-            if ("empty text".equals(thr.getCause().getMessage())) {
-                // pass. we ignore these because this is what happens when a connection is closed with prejudice by us.
-                // netty tries to finish reading the buffer to create a message to send through the pipeline.
-            } else {
-                log.error(thr.getCause().getMessage(), thr.getCause());
-            }
-        } else if (thr.getCause() instanceof TooLongFrameException) {
+        if (thr.getCause() instanceof TooLongFrameException) {
             // todo: meter these so we observe DOS conditions.
             log.warn(String.format("Long frame from %s", ctx.channel().remoteAddress()));
             HttpResponder.respond(ctx, null, HttpResponseStatus.BAD_REQUEST);
         } else {
-            log.warn("Exception event received: ", thr);
+            log.warn(String.format("Exception event received from %s: ", ctx.channel().remoteAddress()), thr);
         }
     }
 }

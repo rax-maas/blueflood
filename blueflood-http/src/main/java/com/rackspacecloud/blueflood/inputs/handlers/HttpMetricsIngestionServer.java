@@ -160,7 +160,7 @@ public class HttpMetricsIngestionServer {
         });
         pipeline.addLast("inflater", new HttpContentDecompressor());
         pipeline.addLast("chunkaggregator", new HttpObjectAggregator(Constants.MAX_CONTENT_LENGTH));
-        pipeline.addLast("encoder2", new HttpResponseDecoder());
+        pipeline.addLast("respdecoder", new HttpResponseDecoder());
         pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
     }
 
