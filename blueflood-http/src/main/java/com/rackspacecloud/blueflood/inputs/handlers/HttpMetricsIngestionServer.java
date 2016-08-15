@@ -67,6 +67,7 @@ public class HttpMetricsIngestionServer {
     private String httpIngestHost;
     private Processor processor;
     private HttpEventsIngestionHandler httpEventsIngestionHandler;
+    private final int httpMaxContentLength;
 
     private TimeValue timeout;
 
@@ -83,6 +84,7 @@ public class HttpMetricsIngestionServer {
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.processor = new Processor(context, timeout);
+        this.httpMaxContentLength = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_CONTENT_LENGTH);
 
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
@@ -159,7 +161,7 @@ public class HttpMetricsIngestionServer {
             }
         });
         pipeline.addLast("inflater", new HttpContentDecompressor());
-        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(Constants.MAX_CONTENT_LENGTH));
+        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(httpMaxContentLength));
         pipeline.addLast("respdecoder", new HttpResponseDecoder());
         pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
     }

@@ -40,6 +40,7 @@ public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
     private final int httpQueryPort;
     private final String httpQueryHost;
+    private final int httpMaxContentLength;
     private Channel serverChannel;
     private EventsIO eventsIO;
     private EventLoopGroup acceptorGroup;
@@ -48,6 +49,7 @@ public class HttpMetricDataQueryServer {
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         this.httpQueryHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_QUERY_HOST);
+        this.httpMaxContentLength = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_CONTENT_LENGTH);
 
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_READ_WORKER_THREADS);
@@ -120,7 +122,7 @@ public class HttpMetricDataQueryServer {
                 }
             }
         });
-        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(Constants.MAX_CONTENT_LENGTH));
+        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(httpMaxContentLength));
         pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
     }
 
