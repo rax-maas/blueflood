@@ -77,6 +77,28 @@ public abstract class DAbstractMetricIO {
         }
     }
 
+    public Statement createStatement(Locator locator, long collectionTime, Rollup rollup, Granularity granularity, int ttl) {
+        final PreparedStatement statement;
+
+        if( rollup.getRollupType() == RollupType.BF_BASIC ) {
+
+            // Strings and Booleans don't get rolled up.  I'd like to verify
+            // that none are passed in, but that would require a db access
+
+            statement = metricsCFPreparedStatements.basicGranToInsertStatement.get( granularity );
+        }
+        else {
+            statement = metricsCFPreparedStatements.preaggrGranToInsertStatement.get(granularity);
+        }
+
+        BoundStatement bound = statement.bind(locator.toString(),
+                collectionTime,
+                toByteBuffer(rollup),
+                ttl);
+
+        return bound;
+    }
+
     /**
      * Fetch rollup objects for a {@link com.rackspacecloud.blueflood.types.Locator}
      * from the specified column family and range.
@@ -158,24 +180,8 @@ public abstract class DAbstractMetricIO {
                                     long collectionTime,
                                     Granularity granularity,
                                     int ttl) {
-        PreparedStatement statement;
-
-        if( rollup.getRollupType() == RollupType.BF_BASIC ) {
-
-            // Strings and Booleans don't get rolled up.  I'd like to verify
-            // that none are passed in, but that would require a db access
-
-            statement = metricsCFPreparedStatements.basicGranToInsertStatement.get( granularity );
-        }
-        else {
-            statement = metricsCFPreparedStatements.preaggrGranToInsertStatement.get(granularity);
-        }
-
-        BoundStatement bound = statement.bind(locator.toString(),
-                                    collectionTime,
-                                    toByteBuffer(rollup),
-                                    ttl);
-        batch.add(bound);
+        Statement statement = createStatement(locator, collectionTime, rollup, granularity, ttl);
+        batch.add(statement);
     }
 
     /**
