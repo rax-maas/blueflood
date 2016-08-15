@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
+import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -11,12 +11,12 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import io.netty.buffer.Unpooled;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,15 +38,15 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
 
         final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
 
-        final String tenantId = request.getHeader("tenantId");
+        final String tenantId = request.headers().get("tenantId");
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+        HttpRequestWithDecodedQueryParams requestWithParams = (HttpRequestWithDecodedQueryParams) request;
 
         // get the query param
         List<String> query = requestWithParams.getQueryParams().get("query");
@@ -72,13 +72,13 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                               HttpResponseStatus status) {
 
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
         HttpResponder.respond(channel, request, response);

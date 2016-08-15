@@ -26,7 +26,7 @@ public class HttpIngestionService implements IngestionService {
     private HttpMetricsIngestionServer server;
     private ScheduleContext context;
 
-    public void startService(ScheduleContext context) {
+    public void startService(ScheduleContext context) throws InterruptedException {
         this.context = context;
 
         getHttpMetricsIngestionServer().startServer();

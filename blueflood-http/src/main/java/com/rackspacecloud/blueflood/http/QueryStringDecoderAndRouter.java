@@ -16,51 +16,47 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
-import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.TooLongFrameException;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QueryStringDecoderAndRouter extends SimpleChannelUpstreamHandler {
+/**
+ * This class is our Netty's HTTP inbound handler. It is responsible to
+ * process incoming HttpRequest and route it to the right class.
+ *
+ * This class is used by both POST (Ingest) and GET (Query) servers.
+ */
+public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
 
     public QueryStringDecoderAndRouter(RouteMatcher router) {
+        super(true);
         this.router = router;
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        Object msg = e.getMessage();
-        if (msg instanceof DefaultHttpRequest) {
-            final DefaultHttpRequest request = (DefaultHttpRequest) msg;
-            router.route(ctx, HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(request));
-        } else {
-            log.error("Ignoring non HTTP message {}, from {}", e.getMessage(), e.getRemoteAddress());
-            throw new Exception("Non-HTTP message from " + e.getRemoteAddress());
-        }
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.flush();
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-        if (e.getCause() instanceof IllegalArgumentException) {
-            if ("empty text".equals(e.getCause().getMessage())) {
-                // pass. we ignore these because this is what happens when a connection is closed with prejudice by us.
-                // netty tries to finish reading the buffer to create a message to send through the pipeline.
-            } else {
-                log.error(e.getCause().getMessage(), e.getCause());
-            }
-        } else if (e.getCause() instanceof TooLongFrameException) {
+    public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
+        router.route(ctx, HttpRequestWithDecodedQueryParams.create(msg));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable thr) {
+        if (thr.getCause() instanceof TooLongFrameException) {
             // todo: meter these so we observe DOS conditions.
-            log.warn(String.format("Long frame from %s", ctx.getChannel().getRemoteAddress()));
+            log.warn(String.format("Long frame from %s", ctx.channel().remoteAddress()));
             HttpResponder.respond(ctx, null, HttpResponseStatus.BAD_REQUEST);
         } else {
-            log.warn("Exception event received: ", e.getCause());
+            log.warn(String.format("Exception event received from %s: ", ctx.channel().remoteAddress()), thr);
         }
     }
 }

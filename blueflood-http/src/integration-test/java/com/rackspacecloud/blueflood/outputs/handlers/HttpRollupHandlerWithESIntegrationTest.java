@@ -54,7 +54,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     IMetric metric;
 
     @BeforeClass
-    public static void setUpHttp() {
+    public static void setUpHttp() throws Exception {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
                 "com.rackspacecloud.blueflood.io.ElasticIO");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");

@@ -16,9 +16,9 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpRequest;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.FullHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +26,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A class responsible for matching URI to a pattern and routing
+ * requests to the appropriate {@link HttpRequestHandler}
+ */
 public class RouteMatcher {
     private final Map<Pattern, PatternRouteBinding> getBindings;
     private final Map<Pattern, PatternRouteBinding> putBindings;
@@ -69,8 +73,8 @@ public class RouteMatcher {
         return this;
     }
 
-    public void route(ChannelHandlerContext context, HttpRequest request) {
-        final String method = request.getMethod().getName();
+    public void route(ChannelHandlerContext context, FullHttpRequest request) {
+        final String method = request.getMethod().name();
         final String URI = request.getUri();
 
         // Method not implemented for any resource. So return 501.
@@ -100,23 +104,23 @@ public class RouteMatcher {
             return;
         }
         PatternRouteBinding binding = null;
-        if (method.equals(HttpMethod.GET.getName())) {
+        if (method.equals(HttpMethod.GET.name())) {
             binding = getBindings.get(pattern);
-        } else if (method.equals(HttpMethod.PUT.getName())) {
+        } else if (method.equals(HttpMethod.PUT.name())) {
             binding = putBindings.get(pattern);
-        } else if (method.equals(HttpMethod.POST.getName())) {
+        } else if (method.equals(HttpMethod.POST.name())) {
             binding = postBindings.get(pattern);
-        } else if (method.equals(HttpMethod.DELETE.getName())) {
+        } else if (method.equals(HttpMethod.DELETE.name())) {
             binding = deleteBindings.get(pattern);
-        } else if (method.equals(HttpMethod.PATCH.getName())) {
+        } else if (method.equals(HttpMethod.PATCH.name())) {
             binding = deleteBindings.get(pattern);
-        } else if (method.equals(HttpMethod.OPTIONS.getName())) {
+        } else if (method.equals(HttpMethod.OPTIONS.name())) {
             binding = optionsBindings.get(pattern);
-         } else if (method.equals(HttpMethod.HEAD.getName())) {
+         } else if (method.equals(HttpMethod.HEAD.name())) {
             binding = headBindings.get(pattern);
-        } else if (method.equals(HttpMethod.TRACE.getName())) {
+        } else if (method.equals(HttpMethod.TRACE.name())) {
             binding = traceBindings.get(pattern);
-        } else if (method.equals(HttpMethod.CONNECT.getName())) {
+        } else if (method.equals(HttpMethod.CONNECT.name())) {
             binding = connectBindings.get(pattern);
         }
 
@@ -129,35 +133,35 @@ public class RouteMatcher {
     }
 
     public void get(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.GET.getName(), handler, getBindings);
+        addBinding(pattern, HttpMethod.GET.name(), handler, getBindings);
     }
 
     public void put(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.PUT.getName(), handler, putBindings);
+        addBinding(pattern, HttpMethod.PUT.name(), handler, putBindings);
     }
 
     public void post(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.POST.getName(), handler, postBindings);
+        addBinding(pattern, HttpMethod.POST.name(), handler, postBindings);
     }
 
     public void delete(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.DELETE.getName(), handler, deleteBindings);
+        addBinding(pattern, HttpMethod.DELETE.name(), handler, deleteBindings);
     }
 
     public void head(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.HEAD.getName(), handler, headBindings);
+        addBinding(pattern, HttpMethod.HEAD.name(), handler, headBindings);
     }
 
     public void options(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.OPTIONS.getName(), handler, optionsBindings);
+        addBinding(pattern, HttpMethod.OPTIONS.name(), handler, optionsBindings);
     }
 
     public void connect(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.CONNECT.getName(), handler, connectBindings);
+        addBinding(pattern, HttpMethod.CONNECT.name(), handler, connectBindings);
     }
 
     public void patch(String pattern, HttpRequestHandler handler) {
-        addBinding(pattern, HttpMethod.PATCH.getName(), handler, patchBindings);
+        addBinding(pattern, HttpMethod.PATCH.name(), handler, patchBindings);
     }
 
     public Set<String> getSupportedMethodsForURL(String URL) {
@@ -165,7 +169,7 @@ public class RouteMatcher {
         return getSupportedMethods(pattern);
     }
 
-    private HttpRequest updateRequestHeaders(HttpRequest request, PatternRouteBinding binding) {
+    private FullHttpRequest updateRequestHeaders(FullHttpRequest request, PatternRouteBinding binding) {
         Matcher m = binding.pattern.matcher(request.getUri());
         if (m.matches()) {
             Map<String, String> headers = new HashMap<String, String>(m.groupCount());
@@ -180,14 +184,14 @@ public class RouteMatcher {
             }
 
             for (Map.Entry<String, String> header : headers.entrySet()) {
-                request.addHeader(header.getKey(), header.getValue());
+                request.headers().add(header.getKey(), header.getValue());
             }
         }
 
         return request;
     }
 
-    private void route(ChannelHandlerContext context, HttpRequest request, HttpRequestHandler handler) {
+    private void route(ChannelHandlerContext context, FullHttpRequest request, HttpRequestHandler handler) {
         if (handler == null) {
             handler = unsupportedVerbsHandler;
         }

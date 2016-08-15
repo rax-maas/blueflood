@@ -36,7 +36,6 @@ import static org.junit.Assert.*;
 public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     private final String tenant_id = "333333";
-    private final String metric_name = "test.metric.splot";
     private final long now = System.currentTimeMillis();
     private final long start = now - TIME_DIFF_MS;
     private final long end = now + TIME_DIFF_MS;

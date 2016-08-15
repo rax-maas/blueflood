@@ -16,13 +16,13 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
+import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.types.Event;
+import io.netty.buffer.Unpooled;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.*;
+import io.netty.handler.codec.http.*;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -39,6 +39,7 @@ public class HttpEventsIngestionHandlerTest {
     private HttpEventsIngestionHandler handler;
     private ChannelHandlerContext context;
     private Channel channel;
+    private ChannelFuture channelFuture;
     private static final String TENANT = "tenant";
 
     public HttpEventsIngestionHandlerTest() {
@@ -46,8 +47,9 @@ public class HttpEventsIngestionHandlerTest {
         handler = new HttpEventsIngestionHandler(searchIO);
         channel = mock(Channel.class);
         context = mock(ChannelHandlerContext.class);
-        when(context.getChannel()).thenReturn(channel);
-        when(channel.write(anyString())).thenReturn(new SucceededChannelFuture(channel));
+        channelFuture = mock(ChannelFuture.class);
+        when(context.channel()).thenReturn(channel);
+        when(channel.write(anyString())).thenReturn(channelFuture);
     }
 
     private Map<String, Object> createRandomEvent() {
@@ -62,19 +64,19 @@ public class HttpEventsIngestionHandlerTest {
         return event.toMap();
     }
 
-    private HttpRequest createPutOneEventRequest(Map<String, Object> event) throws IOException {
+    private FullHttpRequest createPutOneEventRequest(Map<String, Object> event) throws IOException {
         List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
         events.add(event);
         final String requestBody = new ObjectMapper().writeValueAsString(events.get(0));
         return createRequest(HttpMethod.POST, "", requestBody);
     }
 
-    private HttpRequest createRequest(HttpMethod method, String uri, String requestBody) {
-        DefaultHttpRequest rawRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, method, "/v2.0/" + TENANT + "/events/" + uri);
-        rawRequest.setHeader("tenantId", TENANT);
+    private FullHttpRequest createRequest(HttpMethod method, String uri, String requestBody) {
+        DefaultFullHttpRequest rawRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, "/v2.0/" + TENANT + "/events/" + uri);
+        rawRequest.headers().set("tenantId", TENANT);
         if (!requestBody.equals(""))
-            rawRequest.setContent(ChannelBuffers.copiedBuffer(requestBody.getBytes()));
-        return HTTPRequestWithDecodedQueryParams.createHttpRequestWithDecodedQueryParams(rawRequest);
+            rawRequest.content().writeBytes(Unpooled.copiedBuffer(requestBody.getBytes()));
+        return HttpRequestWithDecodedQueryParams.create(rawRequest);
     }
 
     @Test
@@ -90,23 +92,23 @@ public class HttpEventsIngestionHandlerTest {
     public void testMalformedEventPut() throws Exception {
         final String malformedJSON = "{\"when\":, what]}";
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
-        ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
-        assertNotSame(argument.getValue().getContent().toString(Charset.defaultCharset()), "");
+        assertNotSame(argument.getValue().content().toString(Charset.defaultCharset()), "");
     }
 
     @Test
     public void testMinimumEventPut() throws Exception {
         Map<String, Object> event = new HashMap<String, Object>();
         event.put(Event.FieldLabels.data.name(), "data");
-        ArgumentCaptor<DefaultHttpResponse> argument = ArgumentCaptor.forClass(DefaultHttpResponse.class);
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createPutOneEventRequest(event));
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
 
-        String error = argument.getValue().getContent().toString(Charset.defaultCharset());
+        String error = argument.getValue().content().toString(Charset.defaultCharset());
 
-        assertEquals(argument.getValue().getContent().toString(Charset.defaultCharset()), "Invalid Data: " + HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least 'what' field.");
+        assertEquals(argument.getValue().content().toString(Charset.defaultCharset()), "Invalid Data: " + HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least 'what' field.");
     }
 }

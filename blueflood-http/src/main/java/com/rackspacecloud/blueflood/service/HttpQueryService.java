@@ -26,7 +26,7 @@ import java.io.IOException;
  */
 public class HttpQueryService implements QueryService {
     private HttpMetricDataQueryServer server;
-    public void startService() {
+    public void startService() throws InterruptedException {
         getServer().startServer();
     }
 

@@ -36,28 +36,28 @@ import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
-import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.HttpVersion;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpContentDecompressor;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static org.jboss.netty.channel.Channels.pipeline;
 
 public class HttpMetricsIngestionServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionServer.class);
@@ -66,22 +66,38 @@ public class HttpMetricsIngestionServer {
     private String httpIngestHost;
     private Processor processor;
     private HttpEventsIngestionHandler httpEventsIngestionHandler;
+    private final int httpMaxContentLength;
 
     private TimeValue timeout;
-    private static int MAX_CONTENT_LENGTH = 1048576; // 1 MB
 
-    private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels");
+    private EventLoopGroup acceptorGroup;
+    private EventLoopGroup workerGroup;
+    private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels", GlobalEventExecutor.INSTANCE);
 
+    /**
+     * Constructor. Instantiate Metrics Ingest server
+     * @param context
+     */
     public HttpMetricsIngestionServer(ScheduleContext context) {
         this.httpIngestPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         this.httpIngestHost = Configuration.getInstance().getStringProperty(HttpConfig.HTTP_INGESTION_HOST);
         this.timeout = DEFAULT_TIMEOUT; //TODO: make configurable
         this.processor = new Processor(context, timeout);
-    }
+        this.httpMaxContentLength = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_MAX_CONTENT_LENGTH);
 
-    public void startServer() {
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
+        acceptorGroup = new NioEventLoopGroup(acceptThreads); // acceptor threads
+        workerGroup = new NioEventLoopGroup(workerThreads);   // client connections threads
+    }
+
+    /**
+     * Starts the Ingest server
+     *
+     * @throws InterruptedException
+     */
+    public void startServer() throws InterruptedException {
+
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
@@ -95,72 +111,64 @@ public class HttpMetricsIngestionServer {
         router.post("/v2.0/:tenantId/ingest/aggregated", new HttpAggregatedIngestionHandler(processor, timeout));
         router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
         router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
+        final RouteMatcher finalRouter = router;
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
-        ChannelFactory channelFactory =
-                new NioServerSocketChannelFactory(
-                        Executors.newFixedThreadPool(acceptThreads),
-                        Executors.newFixedThreadPool(workerThreads));
-        ServerBootstrap server = new ServerBootstrap(channelFactory);
+        ServerBootstrap server = new ServerBootstrap();
+        server.group(acceptorGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel channel) throws Exception {
+                        setupPipeline(channel, finalRouter);
+                    }
+                });
 
-        server.setPipelineFactory(new MetricsHttpServerPipelineFactory(router));
-        Channel serverChannel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort));
-        allOpenChannels.add(serverChannel);
+        Channel channel = server.bind(new InetSocketAddress(httpIngestHost, httpIngestPort)).sync().channel();
+        allOpenChannels.add(channel);
 
         //register the tracker MBean for JMX/jolokia
         log.info("Registering tracker service");
         Tracker.getInstance().register();
     }
 
-    private class MetricsHttpServerPipelineFactory implements ChannelPipelineFactory {
-        private RouteMatcher router;
+    private void setupPipeline(SocketChannel channel, RouteMatcher router) {
+        final ChannelPipeline pipeline = channel.pipeline();
 
-        public MetricsHttpServerPipelineFactory(RouteMatcher router) {
-            this.router = router;
-        }
+        pipeline.addLast("encoder", new HttpResponseEncoder());
+        pipeline.addLast("decoder", new HttpRequestDecoder() {
 
-        @Override
-        public ChannelPipeline getPipeline() throws Exception {
-            final ChannelPipeline pipeline = pipeline();
-
-            pipeline.addLast("decoder", new HttpRequestDecoder() {
-                
-                // if something bad happens during the decode, assume the client send bad data. return a 400.
-                @Override
-                public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-                    try {
-                        if (ctx.getChannel().isWritable()) {
-                            log.debug("request decoder error " + e.getCause().toString() + " on channel " + ctx.getChannel().toString());
-                            ctx.getChannel().write(
-                                    new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST))
-                                    .addListener(ChannelFutureListener.CLOSE);
-                        } else {
-                            log.debug("channel " + ctx.getChannel().toString() + " is no longer writeable, not sending 400 response back to client");
-                        }
-                    } catch (Exception ex) {
-                        // If we are getting exception trying to write,
-                        // don't propagate to caller. It may cause this
-                        // method to be called again and will produce
-                        // stack overflow. So just log it here.
-                        log.debug("Can't write to channel " + ctx.getChannel().toString(), ex);
+            // if something bad happens during the decode, assume the client send bad data. return a 400.
+            @Override
+            public void exceptionCaught(ChannelHandlerContext ctx, Throwable thr) throws Exception {
+                try {
+                    if (ctx.channel().isWritable()) {
+                        log.debug("request decoder error " + thr.getCause().toString() + " on channel " + ctx.channel().toString());
+                        ctx.channel().write(
+                                new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST))
+                                .addListener(ChannelFutureListener.CLOSE);
+                    } else {
+                        log.debug("channel " + ctx.channel().toString() + " is no longer writeable, not sending 400 response back to client");
                     }
+                } catch (Exception ex) {
+                    // If we are getting exception trying to write,
+                    // don't propagate to caller. It may cause this
+                    // method to be called again and will produce
+                    // stack overflow. So just log it here.
+                    log.debug("Can't write to channel " + ctx.channel().toString(), ex);
                 }
-            });
-            pipeline.addLast("chunkaggregator", new HttpChunkAggregator(MAX_CONTENT_LENGTH));
-            pipeline.addLast("inflater", new HttpContentDecompressor());
-            pipeline.addLast("encoder", new HttpResponseEncoder());
-            pipeline.addLast("encoder2", new HttpResponseDecoder());
-            pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
-
-            return pipeline;
-        }
+            }
+        });
+        pipeline.addLast("inflater", new HttpContentDecompressor());
+        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(httpMaxContentLength));
+        pipeline.addLast("respdecoder", new HttpResponseDecoder());
+        pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
     }
 
     private HttpEventsIngestionHandler getHttpEventsIngestionHandler() {
         if (this.httpEventsIngestionHandler == null) {
             this.httpEventsIngestionHandler = new HttpEventsIngestionHandler((EventsIO) ModuleLoader.getInstance(EventsIO.class, CoreConfig.EVENTS_MODULES));
         }
-
         return this.httpEventsIngestionHandler;
     }
 
@@ -246,5 +254,7 @@ public class HttpMetricsIngestionServer {
         } catch (InterruptedException e) {
             // Pass
         }
+        acceptorGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
     }
 }

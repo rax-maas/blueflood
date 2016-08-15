@@ -20,9 +20,9 @@ import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -31,29 +31,32 @@ public class DefaultHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
     }
 
-    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status) {
+    public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request,
+                                    String messageBody, HttpResponseStatus status) {
         sendResponse(channel, request, messageBody, status, null);
     }
     
-    public static void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody, HttpResponseStatus status, Map<String, String> headers) {
+    public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
+                                    HttpResponseStatus status, Map<String, String> headers) {
 
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-        if(headers!=null && !headers.keySet().isEmpty()){
+        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
+                                                    status);
+        if (headers!=null && !headers.keySet().isEmpty()){
             Iterator<String> itr = headers.keySet().iterator();
             while(itr.hasNext()){
                 String headerKey = itr.next();
-                response.setHeader(headerKey, headers.get(headerKey));
+                response.headers().add(headerKey, headers.get(headerKey));
             }
         }
 
         final Timer.Context sendResponseTimerContext = sendResponseTimer.time();
         try {
             if (messageBody != null && !messageBody.isEmpty()) {
-                response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+                response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
 
             HttpResponder.respond(channel, request, response);

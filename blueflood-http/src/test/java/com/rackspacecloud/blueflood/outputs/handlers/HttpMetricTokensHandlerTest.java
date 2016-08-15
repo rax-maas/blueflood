@@ -2,10 +2,10 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.MetricToken;
+import io.netty.channel.ChannelFuture;
 import junit.framework.Assert;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.SucceededChannelFuture;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -23,6 +23,7 @@ public class HttpMetricTokensHandlerTest extends BaseHandlerTest {
     private DiscoveryIO mockDiscoveryHandle = mock(DiscoveryIO.class);
     private ChannelHandlerContext context;
     private Channel channel;
+    private ChannelFuture channelFuture;
 
     private HttpMetricTokensHandler handler;
 
@@ -31,9 +32,10 @@ public class HttpMetricTokensHandlerTest extends BaseHandlerTest {
         handler = new HttpMetricTokensHandler(mockDiscoveryHandle);
 
         channel = mock(Channel.class);
+        channelFuture = mock(ChannelFuture.class);
         context = mock(ChannelHandlerContext.class);
-        when(context.getChannel()).thenReturn(channel);
-        when(channel.write(anyString())).thenReturn(new SucceededChannelFuture(channel));
+        when(context.channel()).thenReturn(channel);
+        when(channel.write(anyString())).thenReturn(channelFuture);
     }
 
 

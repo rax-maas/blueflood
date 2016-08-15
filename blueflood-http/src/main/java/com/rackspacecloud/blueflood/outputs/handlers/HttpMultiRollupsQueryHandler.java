@@ -20,7 +20,7 @@ import com.google.gson.*;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
+import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.http.HttpResponder;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -33,12 +33,11 @@ import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMultiRollupsQueryHandler.class);
@@ -73,19 +71,19 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
 
-        final String tenantId = request.getHeader("tenantId");
+        final String tenantId = request.headers().get("tenantId");
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
+        if (!(request instanceof HttpRequestWithDecodedQueryParams)) {
             sendResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
+        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
 
         if (body == null || body.isEmpty()) {
             sendResponse(ctx, request, "Invalid body. Expected JSON array of metrics.",
@@ -108,7 +106,7 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+        HttpRequestWithDecodedQueryParams requestWithParams = (HttpRequestWithDecodedQueryParams) request;
         final Timer.Context httpBatchMetricsFetchTimerContext = httpBatchMetricsFetchTimer.time();
         try {
             RollupsQueryParams params = PlotRequestParser.parseParams(requestWithParams.getQueryParams());
@@ -145,13 +143,13 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
         return locators;
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                               HttpResponseStatus status) {
 
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
         HttpResponder.respond(channel, request, response);
