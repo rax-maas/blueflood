@@ -95,7 +95,7 @@ ln -s /etc/nginx/sites-available/grafana /etc/nginx/sites-enabled/grafana
 /etc/init.d/nginx restart
 
 pip install gunicorn
-pip install --upgrade "git+http://github.com/rackerlabs/graphite-api.git@george/fetch_multi_with_patches"
+pip install --upgrade "git+http://github.com/rackerlabs/graphite-api.git@1.1.3-rax.1"
 
 #WE still get the latest code for blueflood_grafana_plugin
 git -C /tmp clone https://github.com/rackerlabs/blueflood.git
