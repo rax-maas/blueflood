@@ -60,6 +60,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         Tracker.getInstance().track(request);
 
         final Timer.Context timerContext = handlerTimer.time();
+        long ingestTime = System.currentTimeMillis();
 
         // this is all JSON.
         final String body = request.content().toString(Constants.DEFAULT_CHARSET);
@@ -85,6 +86,13 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                     else {
                         // failed validation, add to error
                         errors.addAll( bundleValidationErrors );
+                    }
+
+                    if (bundle.hasDelayedMetrics(ingestTime)) {
+                        Tracker.getInstance().trackDelayedAggregatedMetricsTenant(bundle.getTenantId(),
+                                bundle.getTimestamp(),
+                                bundle.getDelayTime(ingestTime),
+                                bundle.getAllMetricNames());
                     }
                 }
 

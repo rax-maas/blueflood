@@ -69,6 +69,14 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
 
             AggregatedPayload payload = createPayload( body );
 
+            long ingestTime = System.currentTimeMillis();
+            if (payload.hasDelayedMetrics(ingestTime)) {
+                Tracker.getInstance().trackDelayedAggregatedMetricsTenant(payload.getTenantId(),
+                        payload.getTimestamp(),
+                        payload.getDelayTime(ingestTime),
+                        payload.getAllMetricNames());
+            }
+
             List<String> errors = payload.getValidationErrors();
             if ( errors.isEmpty() ) {
                 // no validation errors, process bundle

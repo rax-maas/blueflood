@@ -25,6 +25,7 @@ import java.util.*;
 // Using nested classes for now. Expect this to be cleaned up.
 public class AggregatedPayload {
 
+    private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
     private final long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private final long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
@@ -72,6 +73,52 @@ public class AggregatedPayload {
         }
 
         return errors;
+    }
+
+    public boolean hasDelayedMetrics(long ingestTime) {
+        if ( getDelayTime(ingestTime) > TRACKER_DELAYED_METRICS_MILLIS ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public long getDelayTime(long ingestTime) {
+        return ingestTime - timestamp;
+    }
+
+    public List<String> getAllMetricNames() {
+        List<String> metricNames = new java.util.ArrayList<String>();
+        if ( gauges != null && gauges.length > 0) {
+            for (int index=0; index<gauges.length; index++) {
+                metricNames.add(gauges[index].getName());
+            }
+        }
+
+        if ( counters != null && counters.length > 0) {
+            for (int index=0; index<counters.length; index++) {
+                metricNames.add(counters[index].getName());
+            }
+        }
+
+        if ( timers != null && timers.length > 0) {
+            for (int index=0; index<timers.length; index++) {
+                metricNames.add(timers[index].getName());
+            }
+        }
+
+        if ( sets != null && sets.length > 0) {
+            for (int index=0; index<sets.length; index++) {
+                metricNames.add(sets[index].getName());
+            }
+        }
+
+        if ( enums != null && enums.length > 0) {
+            for (int index=0; index<enums.length; index++) {
+                metricNames.add(enums[index].getName());
+            }
+        }
+        return metricNames;
     }
 
     //@SafeVarargs (1.7 only doge)

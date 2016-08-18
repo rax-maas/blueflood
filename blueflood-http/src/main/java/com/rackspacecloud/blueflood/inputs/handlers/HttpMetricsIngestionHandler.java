@@ -120,7 +120,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 }
 
                 if (jsonMetricsContainer.areDelayedMetricsPresent()) {
-                    Tracker.getInstance().trackDelayedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetrics());
+                    Tracker.getInstance().trackDelayedAggregatedMetricsTenant(tenantId, jsonMetricsContainer.getDelayedMetrics());
                 }
 
                 metrics = jsonMetricsContainer.getValidMetrics();
