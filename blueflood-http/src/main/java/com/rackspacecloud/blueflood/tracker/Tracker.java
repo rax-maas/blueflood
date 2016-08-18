@@ -240,7 +240,7 @@ public class Tracker implements TrackerMBean {
      * @param tenantid
      * @param delayedMetrics
      */
-    public void trackDelayedAggregatedMetricsTenant(String tenantid, final List<Metric> delayedMetrics) {
+    public void trackDelayedMetricsTenant(String tenantid, final List<Metric> delayedMetrics) {
         if (isTrackingDelayedMetrics) {
             String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s", tenantid);
             log.info(logMessage);

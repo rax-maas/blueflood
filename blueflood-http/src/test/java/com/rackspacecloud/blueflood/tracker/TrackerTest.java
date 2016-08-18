@@ -387,7 +387,7 @@ public class TrackerTest {
     public void testTrackDelayedMetricsTenant() {
         // enable tracking delayed metrics and track
         tracker.setIsTrackingDelayedMetrics();
-        tracker.trackDelayedAggregatedMetricsTenant(tenantId, delayedMetrics);
+        tracker.trackDelayedMetricsTenant(tenantId, delayedMetrics);
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics started");
@@ -400,7 +400,7 @@ public class TrackerTest {
     public void testDoesNotTrackDelayedMetricsTenant() {
         // disable tracking delayed metrics and track
         tracker.resetIsTrackingDelayedMetrics();
-        tracker.trackDelayedAggregatedMetricsTenant(tenantId, delayedMetrics);
+        tracker.trackDelayedMetricsTenant(tenantId, delayedMetrics);
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics stopped");
@@ -433,7 +433,7 @@ public class TrackerTest {
     public void testDoesNotTrackDelayedAggregatedMetricsTenant() {
         // disable tracking delayed metrics and track
         tracker.resetIsTrackingDelayedMetrics();
-        tracker.trackDelayedAggregatedMetricsTenant(tenantId, delayedMetrics);
+        tracker.trackDelayedMetricsTenant(tenantId, delayedMetrics);
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics stopped");
