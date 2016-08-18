@@ -24,6 +24,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -278,7 +279,7 @@ public class Tracker implements TrackerMBean {
             // log individual delayed metrics locator and collectionTime
             double delayMin = delayTimeMs / 1000 / 60;
             logMessage = String.format("[TRACKER][DELAYED METRIC] %s have collectionTime %s which is delayed by %.2f minutes",
-                        String.join(",", delayedMetricNames),
+                    StringUtils.join(delayedMetricNames, ","),
                         dateFormatter.format(new Date(collectionTimeMs)),
                         delayMin);
             log.info(logMessage);
