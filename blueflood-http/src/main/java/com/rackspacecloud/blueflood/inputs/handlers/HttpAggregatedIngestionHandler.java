@@ -27,6 +27,8 @@ import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.ChannelHandlerContext;
@@ -46,6 +48,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    private final Clock clock = new DefaultClockImpl();
     
     public HttpAggregatedIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.processor = processor;
@@ -67,7 +70,16 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             requestCount.inc();
             MetricsCollection collection = new MetricsCollection();
 
-            AggregatedPayload payload = createPayload( body );
+            AggregatedPayload payload = AggregatedPayload.create( body );
+
+            long ingestTime = clock.now().getMillis();
+            if (payload.hasDelayedMetrics(ingestTime)) {
+                Tracker.getInstance().trackDelayedAggregatedMetricsTenant(payload.getTenantId(),
+                        payload.getTimestamp(),
+                        payload.getDelayTime(ingestTime),
+                        payload.getAllMetricNames());
+                payload.markDelayMetricsReceived(ingestTime);
+            }
 
             List<String> errors = payload.getValidationErrors();
             if ( errors.isEmpty() ) {
@@ -105,10 +117,5 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             requestCount.dec();
             timerContext.stop();
         }
-    }
-    
-    public static AggregatedPayload createPayload(String json) {
-        AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
-        return payload;
     }
 }

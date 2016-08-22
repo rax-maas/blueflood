@@ -1,0 +1,10 @@
+{
+    "tenantId":"333333",
+    "timestamp":"%TIMESTAMP%",
+    "gauges":[
+        {
+            "name":"G200ms%POSTFIX%",
+            "value":145
+        }
+    ]
+}

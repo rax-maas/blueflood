@@ -409,4 +409,36 @@ public class TrackerTest {
         verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric2 has collectionTime 2016-01-01 00:00:00"));
     }
 
+    @Test
+    public void testTrackDelayedAggregatedMetricsTenant() {
+        // enable tracking delayed metrics and track
+        tracker.setIsTrackingDelayedMetrics();
+
+        List<String> delayedMetricNames = new ArrayList<String>() {{
+            for ( Metric metric : delayedMetrics ) {
+                add(metric.getLocator().toString());
+            }
+        }};
+        long ingestTime = System.currentTimeMillis();
+        tracker.trackDelayedAggregatedMetricsTenant(tenantId, delayedMetrics.get(0).getCollectionTime(), ingestTime, delayedMetricNames);
+
+        // verify
+        verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics started");
+        verify(loggerMock, atLeastOnce()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, atLeastOnce()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1" + "," +
+                                                            tenantId + ".delayed.metric2 have collectionTime 2016-01-01 00:00:00 which is delayed"));
+    }
+
+    @Test
+    public void testDoesNotTrackDelayedAggregatedMetricsTenant() {
+        // disable tracking delayed metrics and track
+        tracker.resetIsTrackingDelayedMetrics();
+        tracker.trackDelayedMetricsTenant(tenantId, delayedMetrics);
+
+        // verify
+        verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics stopped");
+        verify(loggerMock, never()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1" + "," +
+                tenantId + ".delayed.metric2 have collectionTime 2016-01-01 00:00:00 which is delayed"));
+    }
 }

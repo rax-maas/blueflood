@@ -26,6 +26,8 @@ import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.ChannelHandlerContext;
@@ -47,6 +49,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    private final Clock clock = new DefaultClockImpl();
 
     public HttpAggregatedMultiIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.processor = processor;
@@ -60,6 +63,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         Tracker.getInstance().track(request);
 
         final Timer.Context timerContext = handlerTimer.time();
+        long ingestTime = clock.now().getMillis();
 
         // this is all JSON.
         final String body = request.content().toString(Constants.DEFAULT_CHARSET);
@@ -85,6 +89,14 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                     else {
                         // failed validation, add to error
                         errors.addAll( bundleValidationErrors );
+                    }
+
+                    if (bundle.hasDelayedMetrics(ingestTime)) {
+                        Tracker.getInstance().trackDelayedAggregatedMetricsTenant(bundle.getTenantId(),
+                                bundle.getTimestamp(),
+                                bundle.getDelayTime(ingestTime),
+                                bundle.getAllMetricNames());
+                        bundle.markDelayMetricsReceived(ingestTime);
                     }
                 }
 
