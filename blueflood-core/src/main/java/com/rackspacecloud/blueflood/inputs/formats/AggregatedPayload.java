@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.google.gson.Gson;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
@@ -26,6 +28,8 @@ import java.util.*;
 public class AggregatedPayload {
 
     private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
+    private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+    private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
     private final long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private final long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
@@ -42,6 +46,11 @@ public class AggregatedPayload {
     private BluefloodEnum[] enums;
     
     private Map<String, Object> metadata;
+
+    public static AggregatedPayload create(String json) {
+        AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
+        return payload;
+    }
     
     public String toString() {
         return String.format("%s (%d)", tenantId, timestamp);
@@ -75,16 +84,44 @@ public class AggregatedPayload {
         return errors;
     }
 
+    /**
+     * Determines if the metrics represented in this {@link AggregatedPayload}
+     * has collection timestamp that we consider "late" or "delayed".
+     *
+     * @param ingestTime
+     * @return
+     */
     public boolean hasDelayedMetrics(long ingestTime) {
-        if ( getDelayTime(ingestTime) > TRACKER_DELAYED_METRICS_MILLIS ) {
-            return true;
-        } else {
-            return false;
-        }
+        return getDelayTime(ingestTime) > TRACKER_DELAYED_METRICS_MILLIS;
     }
 
+    /**
+     * Calculates how many milliseconds is the collection timestamp of
+     * this {@link AggregatedPayload} delayed by.
+     *
+     * @param ingestTime  ingest timestamp in milliseconds
+     * @return
+     */
     public long getDelayTime(long ingestTime) {
         return ingestTime - timestamp;
+    }
+
+    /**
+     * Marks/instruments our internal metrics that we have received
+     * short or delayed metrics
+     *
+     * @param ingestTime
+     * @return
+     */
+    public void markDelayMetricsReceived(long ingestTime) {
+        long delay = getDelayTime(ingestTime);
+        if ( delay > MAX_AGE_ALLOWED ) {
+            if ( delay <= SHORT_DELAY ) {
+                Instrumentation.markMetricsWithShortDelayReceived();
+            } else {
+                Instrumentation.markMetricsWithLongDelayReceived();
+            }
+        }
     }
 
     public List<String> getAllMetricNames() {
@@ -108,7 +145,7 @@ public class AggregatedPayload {
         }
 
         if ( sets != null && sets.length > 0) {
-            for (int index=0; index<sets.length; index++) {
+            for (int index = 0; index < sets.length; index++) {
                 metricNames.add(sets[index].getName());
             }
         }
