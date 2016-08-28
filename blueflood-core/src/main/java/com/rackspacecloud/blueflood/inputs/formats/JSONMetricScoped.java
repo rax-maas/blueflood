@@ -15,27 +15,14 @@
  */
 package com.rackspacecloud.blueflood.inputs.formats;
 
-import org.apache.commons.lang.StringUtils;
-
-import java.util.List;
+import org.hibernate.validator.constraints.NotEmpty;
 
 public class JSONMetricScoped extends JSONMetric {
+
+    @NotEmpty
     private String tenantId;
 
     public String getTenantId() { return tenantId; }
 
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
-
-    @Override
-    public List<String> getValidationErrors() {
-
-        List<String> errors = super.getValidationErrors();
-
-        // validate tenantid
-        if (StringUtils.isBlank(tenantId)) {
-            errors.add ( "'" + getMetricName() + "': No tenantId is provided for the metric." );
-        }
-
-        return errors;
-    }
 }

@@ -15,21 +15,31 @@
  */
 package com.rackspacecloud.blueflood.inputs.formats;
 
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRange;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRangeLimits;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.Range;
 
-import java.util.List;
+import javax.validation.constraints.NotNull;
 
 // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.
 public class JSONMetric {
 
-    final long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-    final long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+    final static String ERROR_MESSAGE = "xxx " + EpochRangeLimits.BEFORE_CURRENT_TIME_MS.getValue();
 
+    @NotEmpty
     private String metricName;
+
     private Object metricValue;
+
+    @EpochRange(maxPast = EpochRangeLimits.BEFORE_CURRENT_TIME_MS,
+                maxFuture = EpochRangeLimits.AFTER_CURRENT_TIME_MS,
+                message = "Out of bounds. Cannot be more than ${maxPast.getValue()} milliseconds into the past. Cannot be more than ${maxPast.getValue()} milliseconds into the future")
     private long collectionTime;
+
+    @Range(min=1, max=Integer.MAX_VALUE)
     private int ttlInSeconds;
+
     private String unit;
 
     public String getMetricName() {
@@ -70,21 +80,6 @@ public class JSONMetric {
 
     public void setTtlInSeconds(int ttlInSeconds) {
         this.ttlInSeconds = ttlInSeconds;
-    }
-
-    public List<String> getValidationErrors() {
-        List<String> errors = new java.util.ArrayList<String>();
-
-        long currentTime = System.currentTimeMillis();
-        if ( collectionTime < currentTime - BEFORE_CURRENT_COLLECTIONTIME_MS ) {
-            // collectionTime is too far in the past
-            errors.add( "'" + metricName + "': 'collectionTime' '" + collectionTime + "' is more than '" + BEFORE_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the past." );
-        } else if ( collectionTime > currentTime + AFTER_CURRENT_COLLECTIONTIME_MS ) {
-            // collectionTime is too far in the future
-            errors.add( "'" + metricName + "': 'collectionTime' '" + collectionTime + "' is more than '" + AFTER_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the future." );
-        }
-
-        return errors;
     }
 
 }

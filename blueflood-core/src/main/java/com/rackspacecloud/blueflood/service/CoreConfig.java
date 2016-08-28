@@ -148,7 +148,7 @@ public enum CoreConfig implements ConfigDefaults {
     METADATA_CACHE_PERSISTENCE_PERIOD_MINS("10"),
     META_CACHE_RETENTION_IN_MINUTES("10"),
     
-    // how long we typically wait to schedule a rollup.
+    // how long we typicklly wait to schedule a rollup.
     ROLLUP_DELAY_MILLIS("300000"),
     SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS("300000"),
     LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS("300000"),
