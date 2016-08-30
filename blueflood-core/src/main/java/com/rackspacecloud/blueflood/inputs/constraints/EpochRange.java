@@ -12,6 +12,16 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+
+/**
+ *
+ * The annotated element has to be in the appropriate range relative to the current time.
+ * Applicable for values of type long which represent time in epoch. The range of the
+ * element is defined as below.
+ *
+ * (currentTime - maxPast) <= element <= (currentTime + maxFuture)
+ *
+ */
 @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 @Retention(RUNTIME)
 @Documented

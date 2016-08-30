@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
@@ -26,6 +27,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 
 import java.io.*;
@@ -34,6 +36,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
@@ -79,15 +83,18 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         long time = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postGenMetric( TID, postfix, postPath, time );
+        HttpResponse response = postGenMetric(TID, postfix, postPath, time);
+
+        ErrorResponse errorResponse = getErrorResponse(response);
 
         assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
+        for (int i = 0; i < 3; i++) {
+            assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
+            assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                    " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        }
 
-        String[] output = getBodyArray( response );
-
-        assertTrue(output[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 1 ] ) );
-        assertTrue(output[ 2 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 2 ] ) );
-        assertTrue(output[ 3 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, output[ 3 ] ) );
     }
 
     @Test
@@ -97,15 +104,17 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         long time = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postGenMetric( TID, postfix, postPath, time );
+        HttpResponse response = postGenMetric(TID, postfix, postPath, time);
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        String[] output = getBodyArray( response );
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        assertEquals( 4, output.length );
-        assertTrue( output[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 1 ] ) );
-        assertTrue( output[ 2 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 2 ] ) );
-        assertTrue( output[ 3 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, output[ 3 ] ) );
+        assertEquals(400, response.getStatusLine().getStatusCode());
+        assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
+        for (int i = 0; i < 3; i++) {
+            assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
+            assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                    " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        }
     }
 
     @Test
@@ -122,11 +131,11 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
 
         HttpResponse response = httpPost( TID, postMultiPath, jsonBody );
-        String[] output = getBodyArray( response );
+        ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
             assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
-            assertEquals("", output[0]);
+            assertTrue("", errorResponse.getErrors().size() > 0);
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -139,7 +148,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix() );
+        HttpResponse response = postMetric("333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix());
 
         String[] errors = getBodyArray( response );
 
@@ -199,11 +208,11 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String postfix = getPostfix();
 
-        HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json",
+        HttpResponse response = postMetric("333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json",
                 timestamp,
-                postfix );
+                postfix);
 
-        String errors[] = getBodyArray( response );
+        String errors[] = getBodyArray(response);
 
         assertEquals( 400, response.getStatusLine().getStatusCode() );
 
@@ -246,7 +255,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String postfix = getPostfix();
 
-        HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json", postfix );
+        HttpResponse response = postMetric("333333", postAggregatedMultiPath, "sample_multi_aggregated_payload.json", postfix);
 
         MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
 
@@ -290,8 +299,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);
         jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
 
-        HttpResponse response = httpPost( TID, postAggregatedMultiPath, jsonBody );
-        String[] output = getBodyArray( response );
+        HttpResponse response = httpPost(TID, postAggregatedMultiPath, jsonBody);
+        String[] output = getBodyArray(response);
 
         try {
             assertEquals("Should get status 207 from " + String.format(postAggregatedMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
@@ -310,7 +319,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String postfix = getPostfix();
 
-        HttpResponse response = postMetric( "333333", postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix );
+        HttpResponse response = postMetric("333333", postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
 
         MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
 
@@ -356,7 +365,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     public void testCompressedRequests() throws Exception{
 
         URIBuilder builder = getMetricsURIBuilder()
-                .setPath( "/v2.0/acTEST/ingest" );
+                .setPath("/v2.0/acTEST/ingest");
 
         HttpPost post = new HttpPost( builder.build() );
         String content = generateJSONMetricsData();
@@ -385,7 +394,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long start = System.currentTimeMillis() - TIME_DIFF_MS;
         long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
-        HttpResponse response = httpPost( TID, postMultiPath, generateMultitenantJSONMetricsData() );
+        HttpResponse response = httpPost(TID, postMultiPath, generateMultitenantJSONMetricsData());
 
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
@@ -414,7 +423,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testMultiTenantFailureForSingleTenantHandler() throws Exception {
 
-        HttpResponse response = httpPost( TID, postPath, generateMultitenantJSONMetricsData() );
+        HttpResponse response = httpPost(TID, postPath, generateMultitenantJSONMetricsData());
         try {
             assertEquals( 400, response.getStatusLine().getStatusCode() );
         }
@@ -426,15 +435,16 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testMultiTenantFailureWithoutTenant() throws Exception {
 
-        HttpResponse response = postGenMetric( TID, "", postMultiPath );
-
-        String[] output= getBodyArray( response );
+        HttpResponse response = postGenMetric(TID, "", postMultiPath);
+        ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
-            assertEquals( 400, response.getStatusLine().getStatusCode() );
-            assertTrue( output[ 1 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 1 ] ) );
-            assertTrue( output[ 2 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 2 ] ) );
-            assertTrue( output[ 3 ] + " did not match no tenant id pattern " + NO_TENANT_ID_REGEX, Pattern.matches( NO_TENANT_ID_REGEX, output[ 3 ] ) );
+            assertEquals(400, response.getStatusLine().getStatusCode());
+            assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
+            for (int i = 0; i < 3; i++) {
+                assertEquals("Invalid error source", "tenantId", errorResponse.getErrors().get(i).getSource());
+                assertEquals("Invalid error message", "may not be empty", errorResponse.getErrors().get(0).getMessage());
+            }
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -455,15 +465,19 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = jsonBody.replaceAll("%TENANT_ID_2%", "");
         jsonBody = jsonBody.replaceAll("%TENANT_ID_3%", TID);
 
-        HttpResponse response = httpPost( TID, postMultiPath, jsonBody );
-        String[] output = getBodyArray( response );
+        HttpResponse response = httpPost(TID, postMultiPath, jsonBody);
+        ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
-            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
-            assertEquals("", output[0]);
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode());
+            assertTrue("No errors found", errorResponse.getErrors().size() > 0);
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
         }
+    }
+
+    private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {
+        return new ObjectMapper().readValue(response.getEntity().getContent(), ErrorResponse.class);
     }
 }
