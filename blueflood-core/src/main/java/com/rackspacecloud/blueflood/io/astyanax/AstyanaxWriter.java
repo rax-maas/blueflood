@@ -277,6 +277,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                                 metric.getMetricValue(),
                                 (AbstractSerializer) (Serializers.serializerFor(metric.getMetricValue().getClass())),
                                 metric.getTtlInSeconds());
+                        Instrumentation.markFullResPreaggregatedMetricWritten();
                     }
                 }
                 

@@ -43,6 +43,7 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
+    private static final Meter fullResPreaggregatedMetricWritten;
     private static final Meter metricsWithShortDelayReceived;
     private static final Meter metricsWithLongDelayReceived;
     private static final Meter enumMetricWritten;
@@ -57,6 +58,7 @@ public class Instrumentation implements InstrumentationMBean {
         scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
+        fullResPreaggregatedMetricWritten = Metrics.meter(kls, "Full Resolution Preaggregated Metrics Written");
         enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
         metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
         metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
@@ -168,6 +170,10 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markFullResMetricWritten() {
         fullResMetricWritten.mark();
+    }
+
+    public static void markFullResPreaggregatedMetricWritten() {
+        fullResPreaggregatedMetricWritten.mark();
     }
 
     public static void markEnumMetricWritten() {
