@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonParseException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
+import com.rackspacecloud.blueflood.http.MediaTypeChecker;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.tracker.Tracker;
@@ -32,6 +33,7 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +47,8 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpAggregatedIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpAggregatedIngestionHandler.class, "HTTP Request Count");
-    
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
+
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
     private final Clock clock = new DefaultClockImpl();
@@ -61,13 +64,32 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
 
         Tracker.getInstance().track(request);
 
+        requestCount.inc();
+
+        if ( !mediaTypeChecker.isContentTypeValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
+
+        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
+
+
         final Timer.Context timerContext = handlerTimer.time();
 
         // this is all JSON.
         final String body = request.content().toString(Constants.DEFAULT_CHARSET);
         try {
             // block until things get ingested.
-            requestCount.inc();
+
             MetricsCollection collection = new MetricsCollection();
 
             AggregatedPayload payload = AggregatedPayload.create( body );

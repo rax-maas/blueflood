@@ -20,9 +20,7 @@ import com.google.gson.*;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BatchedMetricsJSONOutputSerializer;
@@ -49,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpRequestHandler {
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpMultiRollupsQueryHandler.class);
     private final BatchedMetricsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe
@@ -74,6 +73,14 @@ public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpR
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
+
+        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
 
         final String tenantId = request.headers().get("tenantId");
 

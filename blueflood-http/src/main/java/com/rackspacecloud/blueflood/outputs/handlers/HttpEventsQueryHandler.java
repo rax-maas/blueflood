@@ -5,6 +5,7 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
+import com.rackspacecloud.blueflood.http.MediaTypeChecker;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
@@ -21,6 +22,7 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
     private EventsIO searchIO;
     private final Timer httpEventsFetchTimer = Metrics.timer(HttpEventsQueryHandler.class, "Handle HTTP request for fetching events");
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     public HttpEventsQueryHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
@@ -30,6 +32,14 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
+
+        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
 
         final String tenantId = request.headers().get("tenantId");
         HttpResponseStatus status = HttpResponseStatus.OK;

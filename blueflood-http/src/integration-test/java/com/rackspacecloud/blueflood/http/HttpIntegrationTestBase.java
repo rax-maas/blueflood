@@ -262,12 +262,29 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         return client.execute(post);
     }
 
+    public HttpResponse httpPost( String tenantId, String urlPath, String content, ContentType contentType ) throws URISyntaxException, IOException {
+
+        HttpPost post = getHttpPost( tenantId, urlPath, content, contentType );
+
+        return client.execute(post);
+    }
+
     private HttpPost getHttpPost( String tenantId, String urlPath, String json ) throws URISyntaxException {
         // build url to aggregated ingestion endpoint
         URIBuilder builder = getMetricsURIBuilder()
                 .setPath(String.format(urlPath, tenantId));
         HttpPost post = new HttpPost(builder.build());
         HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        post.setEntity(entity);
+        return post;
+    }
+
+    private HttpPost getHttpPost( String tenantId, String urlPath, String content, ContentType contentType  ) throws URISyntaxException {
+        // build url to aggregated ingestion endpoint
+        URIBuilder builder = getMetricsURIBuilder()
+                .setPath(String.format(urlPath, tenantId));
+        HttpPost post = new HttpPost(builder.build());
+        HttpEntity entity = new StringEntity(content, contentType);
         post.setEntity(entity);
         return post;
     }

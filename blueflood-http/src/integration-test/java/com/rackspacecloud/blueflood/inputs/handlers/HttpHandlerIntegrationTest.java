@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.google.common.net.HttpHeaders;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
@@ -23,11 +24,14 @@ import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.*;
@@ -44,7 +48,7 @@ import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    static private final String TID = "acTEST";
+    static private final String TENANT_ID = "acTEST";
 
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
@@ -57,7 +61,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long start = System.currentTimeMillis() - TIME_DIFF_MS;
         long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
-        HttpResponse response = postGenMetric( TID, postfix, postPath );
+        HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath );
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
         try {
@@ -83,7 +87,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         long time = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postGenMetric(TID, postfix, postPath, time);
+        HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time );
 
         ErrorResponse errorResponse = getErrorResponse(response);
 
@@ -104,7 +108,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         long time = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postGenMetric(TID, postfix, postPath, time);
+        HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time );
 
         ErrorResponse errorResponse = getErrorResponse(response);
 
@@ -128,13 +132,13 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", pastTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);
-        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TENANT_ID);
 
-        HttpResponse response = httpPost( TID, postMultiPath, jsonBody );
+        HttpResponse response = httpPost( TENANT_ID, postMultiPath, jsonBody );
         ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
-            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
             assertTrue("", errorResponse.getErrors().size() > 0);
         }
         finally {
@@ -297,13 +301,13 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", pastTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", futureTime);
-        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TID);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TENANT_ID);
 
-        HttpResponse response = httpPost(TID, postAggregatedMultiPath, jsonBody);
+        HttpResponse response = httpPost(TENANT_ID, postAggregatedMultiPath, jsonBody );
         String[] output = getBodyArray(response);
 
         try {
-            assertEquals("Should get status 207 from " + String.format(postAggregatedMultiPath, TID), 207, response.getStatusLine().getStatusCode() );
+            assertEquals("Should get status 207 from " + String.format(postAggregatedMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
             assertEquals("", output[0]);
         }
         finally {
@@ -342,7 +346,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     public void testBadRequests() throws Exception {
 
 
-        HttpResponse response = httpPost( TID, postPath, "" );
+        HttpResponse response = httpPost(TENANT_ID, postPath, "" );
 
         try {
             assertEquals( 400, response.getStatusLine().getStatusCode() );
@@ -351,7 +355,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
         }
 
-        response = httpPost( TID, postPath, "Some incompatible json body" );
+        response = httpPost(TENANT_ID, postPath, "Some incompatible json body" );
 
         try {
             assertEquals( 400, response.getStatusLine().getStatusCode() );
@@ -394,7 +398,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long start = System.currentTimeMillis() - TIME_DIFF_MS;
         long end = System.currentTimeMillis() + TIME_DIFF_MS;
 
-        HttpResponse response = httpPost(TID, postMultiPath, generateMultitenantJSONMetricsData());
+        HttpResponse response = httpPost(TENANT_ID, postMultiPath, generateMultitenantJSONMetricsData() );
 
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
 
@@ -423,7 +427,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testMultiTenantFailureForSingleTenantHandler() throws Exception {
 
-        HttpResponse response = httpPost(TID, postPath, generateMultitenantJSONMetricsData());
+        HttpResponse response = httpPost(TENANT_ID, postPath, generateMultitenantJSONMetricsData() );
         try {
             assertEquals( 400, response.getStatusLine().getStatusCode() );
         }
@@ -435,7 +439,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testMultiTenantFailureWithoutTenant() throws Exception {
 
-        HttpResponse response = postGenMetric(TID, "", postMultiPath);
+        HttpResponse response = postGenMetric(TENANT_ID, "", postMultiPath );
         ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
@@ -461,15 +465,15 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_2%\"", validTime);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_3%\"", validTime);
-        jsonBody = jsonBody.replaceAll("%TENANT_ID_1%", TID);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_1%", TENANT_ID);
         jsonBody = jsonBody.replaceAll("%TENANT_ID_2%", "");
-        jsonBody = jsonBody.replaceAll("%TENANT_ID_3%", TID);
+        jsonBody = jsonBody.replaceAll("%TENANT_ID_3%", TENANT_ID);
 
-        HttpResponse response = httpPost(TID, postMultiPath, jsonBody);
+        HttpResponse response = httpPost(TENANT_ID, postMultiPath, jsonBody);
         ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
-            assertEquals("Should get status 207 from " + String.format(postMultiPath, TID), 207, response.getStatusLine().getStatusCode());
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode());
             assertTrue("No errors found", errorResponse.getErrors().size() > 0);
         }
         finally {
@@ -479,5 +483,89 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {
         return new ObjectMapper().readValue(response.getEntity().getContent(), ErrorResponse.class);
+    }
+
+    @Test
+    public void testIngestWithContentTypeNonJsonShouldReturn415() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postPath, "random text", ContentType.APPLICATION_SVG_XML);
+        assertEquals("content-type non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testIngestMultiWithContentTypeNonJsonShouldReturn415() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postMultiPath, "random text", ContentType.APPLICATION_SVG_XML );
+        assertEquals("content-type non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testIngestAggregatedWithContentTypeNonJsonShouldReturn415() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postAggregatedPath, "random text", ContentType.APPLICATION_SVG_XML );
+        assertEquals("content-type non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testIngestAggregatedMultiWithContentTypeNonJsonShouldReturn415() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postAggregatedMultiPath, "random text", ContentType.APPLICATION_SVG_XML );
+        assertEquals("content-type non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testIngestEventWithContentTypeNonJsonShouldReturn415() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postEventsPath, "random text", ContentType.APPLICATION_SVG_XML );
+        assertEquals("content-type non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testSearchMetricsWithAcceptNonJsonShouldReturn415() throws Exception {
+
+        // test the GET /v2.0/%s/metrics/search
+        URIBuilder query_builder = getMetricDataQueryURIBuilder()
+                .setPath(String.format(getSearchPath, TENANT_ID));
+        query_builder.setParameter("query", "foo.bar.none");
+        HttpGet searchRequest = new HttpGet(query_builder.build());
+        searchRequest.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_ATOM_XML.toString());
+        HttpResponse response = client.execute(searchRequest);
+        assertEquals("accept non Json should get 415", 415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testGetViewWithAcceptNonJsonShouldReturn415() throws Exception {
+        // test the GET /v2.0/%s/views/%s
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
+        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
+        HttpGet get = new HttpGet(getQueryMetricViewsURI(TENANT_ID, "bogus.name"));
+        get.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_ATOM_XML.toString());
+        HttpResponse response = client.execute(get);
+        Assert.assertEquals(415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testGetAnnotationWithAcceptNonJsonShouldReturn415() throws Exception {
+        // test the GET /v2.0/%s/events
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
+        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
+        HttpGet get = new HttpGet(getQueryEventsURI(TENANT_ID));
+        get.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_ATOM_XML.toString());
+        HttpResponse response = client.execute(get);
+        Assert.assertEquals(415, response.getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void testGetTokenSearchWithAcceptNonJsonShouldReturn415() throws Exception {
+        // test the GET /v2.0/%s/metrics_name/search
+        parameterMap = new HashMap<String, String>();
+        parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
+        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
+        HttpGet get = new HttpGet(getQueryTokenSearchURI(TENANT_ID));
+        get.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_ATOM_XML.toString());
+        HttpResponse response = client.execute(get);
+        Assert.assertEquals(415, response.getStatusLine().getStatusCode());
     }
 }

@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
+import com.rackspacecloud.blueflood.http.MediaTypeChecker;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -41,7 +42,9 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
+
     private EventsIO searchIO;
     private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
             "Handle HTTP request for ingesting events");
@@ -52,6 +55,23 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+
+        if ( !mediaTypeChecker.isContentTypeValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
+
+        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
+
         final String tenantId = request.headers().get(Event.FieldLabels.tenantId.name());
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";

@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
+import com.rackspacecloud.blueflood.http.MediaTypeChecker;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
@@ -34,6 +35,7 @@ import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.codehaus.jackson.JsonParseException;
@@ -60,7 +62,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
-
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
@@ -125,9 +127,26 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         try {
 
             Tracker.getInstance().track(request);
-
             requestCount.inc();
+
+            if ( !mediaTypeChecker.isContentTypeValid(request.headers()) ) {
+                DefaultHandler.sendResponse(ctx, request,
+                        String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                        HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+                );
+                return;
+            }
+
+            if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+                DefaultHandler.sendResponse(ctx, request,
+                        String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                        HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+                );
+                return;
+            }
+
             final String tenantId = request.headers().get("tenantId");
+
             JSONMetricsContainer jsonMetricsContainer;
             List<Metric> validMetrics;
 

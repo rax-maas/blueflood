@@ -1,8 +1,6 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.SearchResult;
@@ -23,6 +21,7 @@ import java.util.List;
 
 
 public class HttpMetricsIndexHandler implements HttpRequestHandler {
+    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIndexHandler.class);
     private DiscoveryIO discoveryHandle;
 
@@ -30,6 +29,14 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
+
+        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
+            DefaultHandler.sendResponse(ctx, request,
+                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+            );
+            return;
+        }
 
         final String tenantId = request.headers().get("tenantId");
 
