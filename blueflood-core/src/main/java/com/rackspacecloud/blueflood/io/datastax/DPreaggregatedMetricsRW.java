@@ -128,7 +128,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
             for (ResultSetFuture future : futureLocatorMap.keySet()) {
                 try {
                     future.getUninterruptibly().all();
-                    Instrumentation.markFullResPreaggregatedMetricWritten();
+                    if (granularity == Granularity.FULL) {
+                        Instrumentation.markFullResPreaggregatedMetricWritten();
+                    }
                 } catch (Exception ex) {
                     Instrumentation.markWriteError();
                     LOG.error(String.format("error writing preaggregated metric for locator %s, granularity %s",
