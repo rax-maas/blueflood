@@ -129,6 +129,23 @@ class TenantBluefloodFinder(threading.Thread):
       r = requests.get(url, params=payload, headers=headers)
     return r
 
+  def find_nodes_endpoint(self, endpoint, tenant):
+    return "%s/v2.0/%s/metric_name/search" % (endpoint, tenant)
+
+  def find_nodes_from_bf(self, query):
+    logger.info("BluefloodClient.find_nodes_from_bf: %s", str(query))
+    payload = {'query': query.pattern}
+    headers = auth.headers()
+
+    endpoint = self.find_nodes_endpoint(self.bf_query_endpoint, self.tenant)
+    r = self.make_request(endpoint, payload, headers)
+
+    if r.status_code != 200:
+      logger.info("BF(find_metrics_with_enum_values) responded with response code: [%s] endpoint [%s]",
+                  r.status_code, endpoint)
+
+    return r.json()
+
   def find_metrics_endpoint(self, endpoint, tenant):
     return "%s/v2.0/%s/metrics/search?include_enum_values=true" % (endpoint, tenant)
 
@@ -149,6 +166,8 @@ class TenantBluefloodFinder(threading.Thread):
         ret_dict[m['metric']] = v
       return ret_dict
     else:
+      logger.info("BF(find_metrics_with_enum_values) responded with response code: [%s] endpoint [%s]",
+                  r.status_code, endpoint)
       return {}
 
   def find_metrics(self, query):
@@ -227,19 +246,6 @@ class TenantBluefloodFinder(threading.Thread):
         if not self.complete(metric, complete_len):
           yield BranchNode('.'.join(metric_parts[:query_depth]))
 
-
-  def make_non_enum_node(self, metric, enums, complete_len):
-    if not self.complete(metric, complete_len):
-      metric_parts = metric.split('.')
-      yield BranchNode('.'.join(metric_parts[:complete_len]))
-    else:
-      if enums:
-        yield BranchNode(metric)
-      else:
-        yield TenantBluefloodLeafNode(metric,
-                                    TenantBluefloodReader(metric, self.tenant, self.bf_query_endpoint,
-                                                          self.enable_submetrics, self.submetric_aliases, None))
-
   def make_enum_nodes(self, metric, enums, pattern):
     for e in enums:
       metric_with_enum = metric + '.' + e
@@ -248,32 +254,22 @@ class TenantBluefloodFinder(threading.Thread):
                                       TenantBluefloodReader(metric_with_enum, self.tenant, self.bf_query_endpoint,
                                                             self.enable_submetrics, self.submetric_aliases, e))
 
-
-
   def find_nodes_without_submetrics(self, query):
-    query_parts = query.pattern.split('.')
-    complete_len = len(query_parts)
+    """
+    This method is a generator which yields branch/leaf nodes that are available for a given query.
+    """
+    nodes_dict = self.find_nodes_from_bf(query)
 
-    # do a background read to see if this is an enum metric
-    if complete_len > 1:
-      enum_name = ".".join(query_parts[:-1])
-      self.metrics_q.put(enum_name)
+    for node in nodes_dict:
+      for metric_name, is_leaf in node.items():
+        logger.debug("Metric name(could be partial): [%s] is_leaf: [%s]", metric_name, is_leaf)
 
-    # find non enum nodes
-    for (metric, enums) in self.find_metrics(query.pattern).items():
-      for n in self.make_non_enum_node(metric, enums, complete_len):
-        logger.debug("Node: %s", n)
-        yield n
-
-    # get the results of the background read to add enums
-    if complete_len > 1:
-      d = self.data_q.get()
-      for metric, enums in d.items():
-        metric_len = len(metric.split('.'))
-        if enums and (metric_len + 1 == complete_len):
-          for n in self.make_enum_nodes(metric, enums, query.pattern):
-            logger.debug("Node: %s", n)
-            yield n
+        if is_leaf:
+          yield TenantBluefloodLeafNode(metric_name,
+                                        TenantBluefloodReader(metric_name, self.tenant, self.bf_query_endpoint,
+                                                              self.enable_submetrics, self.submetric_aliases, None))
+        else:
+          yield BranchNode(metric_name)
 
   def find_nodes(self, query):
     """
