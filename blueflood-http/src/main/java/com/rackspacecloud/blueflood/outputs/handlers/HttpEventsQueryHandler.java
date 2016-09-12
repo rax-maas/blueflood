@@ -5,7 +5,6 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.MediaTypeChecker;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
