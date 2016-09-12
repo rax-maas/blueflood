@@ -33,14 +33,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
 
         Tracker.getInstance().track(request);
 
-        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
-            DefaultHandler.sendResponse(ctx, request,
-                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
-                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
-            );
-            return;
-        }
-
         final String tenantId = request.headers().get("tenantId");
         HttpResponseStatus status = HttpResponseStatus.OK;
 

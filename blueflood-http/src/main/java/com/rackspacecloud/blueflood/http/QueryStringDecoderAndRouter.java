@@ -20,6 +20,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
 public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(QueryStringDecoderAndRouter.class);
     private final RouteMatcher router;
+    private final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     public QueryStringDecoderAndRouter(RouteMatcher router) {
         super(true);
@@ -45,8 +48,30 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Ful
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
-        router.route(ctx, HttpRequestWithDecodedQueryParams.create(msg));
+    public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+
+        // for POST requests, check Content-Type header
+        if ( request.getMethod() == HttpMethod.POST ) {
+            if (!mediaTypeChecker.isContentTypeValid(request.headers())) {
+                DefaultHandler.sendResponse(ctx, request,
+                        String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
+                        HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+                );
+                return;
+            }
+        }
+
+        // for GET or POST requests, check Accept header
+        if ( request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.POST ) {
+            if (!mediaTypeChecker.isAcceptValid(request.headers())) {
+                DefaultHandler.sendResponse(ctx, request,
+                        String.format("Unsupported media type for Accept: %s", request.headers().get(HttpHeaders.Names.ACCEPT)),
+                        HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
+                );
+                return;
+            }
+        }
+        router.route(ctx, HttpRequestWithDecodedQueryParams.create(request));
     }
 
     @Override

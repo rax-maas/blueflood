@@ -25,11 +25,11 @@ public class MediaTypeChecker {
         // if we get no Content-Type or we get application/json, then it's valid
         // any other, it's invalid
         return (Strings.isNullOrEmpty(contentType) ||
-                contentType.contains(MEDIA_TYPE_APPLICATION_JSON));
+                contentType.toLowerCase().contains(MEDIA_TYPE_APPLICATION_JSON));
     }
 
     /**
-     * Checks the Accept header to see if it clients accept the correct
+     * Checks the Accept header to see if clients accept the correct
      * media type
      * @param headers
      * @return
@@ -41,6 +41,6 @@ public class MediaTypeChecker {
         // or application/json, then it's valid
         return ( Strings.isNullOrEmpty(accept) ||
                 accept.contains(ACCEPT_ALL) ||
-                accept.contains(MEDIA_TYPE_APPLICATION_JSON));
+                accept.toLowerCase().contains(MEDIA_TYPE_APPLICATION_JSON));
     }
 }

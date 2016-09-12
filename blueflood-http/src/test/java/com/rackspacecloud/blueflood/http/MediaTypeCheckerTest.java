@@ -31,6 +31,16 @@ public class MediaTypeCheckerTest {
     }
 
     @Test
+    public void contentTypeJsonMixedCaseShouldBeValid() {
+
+        HttpHeaders mockHeaders = mock(HttpHeaders.class);
+        when(mockHeaders.get(HttpHeaders.Names.CONTENT_TYPE)).thenReturn("aPpLiCaTiOn/JSON");
+
+        assertTrue("content-type aPpLiCaTiOn/JSON should be valid", mediaTypeChecker.isContentTypeValid(mockHeaders));
+    }
+
+
+    @Test
     public void contentTypeJsonWithCharsetShouldBeValid() {
 
         HttpHeaders mockHeaders = mock(HttpHeaders.class);

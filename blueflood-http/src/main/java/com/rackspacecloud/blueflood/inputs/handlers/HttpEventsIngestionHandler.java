@@ -56,22 +56,6 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
-        if ( !mediaTypeChecker.isContentTypeValid(request.headers()) ) {
-            DefaultHandler.sendResponse(ctx, request,
-                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
-                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
-            );
-            return;
-        }
-
-        if ( !mediaTypeChecker.isAcceptValid(request.headers()) ) {
-            DefaultHandler.sendResponse(ctx, request,
-                    String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
-                    HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
-            );
-            return;
-        }
-
         final String tenantId = request.headers().get(Event.FieldLabels.tenantId.name());
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
