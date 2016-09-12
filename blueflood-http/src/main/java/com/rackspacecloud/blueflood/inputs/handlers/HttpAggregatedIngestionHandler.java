@@ -47,7 +47,6 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
     
     private static final Timer handlerTimer = Metrics.timer(HttpAggregatedIngestionHandler.class, "HTTP statsd metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpAggregatedIngestionHandler.class, "HTTP Request Count");
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;

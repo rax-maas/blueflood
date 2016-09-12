@@ -48,7 +48,6 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
     private static final Timer handlerTimer = Metrics.timer(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi metrics ingestion timer");
     private static final Counter requestCount = Metrics.counter(HttpAggregatedMultiIngestionHandler.class, "HTTP aggregated multi Request Count");
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;

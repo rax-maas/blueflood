@@ -62,7 +62,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;

@@ -42,7 +42,6 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
     private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
 
     private EventsIO searchIO;

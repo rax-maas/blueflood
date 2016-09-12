@@ -21,7 +21,6 @@ import java.util.List;
 
 
 public class HttpMetricsIndexHandler implements HttpRequestHandler {
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIndexHandler.class);
     private DiscoveryIO discoveryHandle;
 

@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class HttpMultiRollupsQueryHandler extends RollupHandler implements HttpRequestHandler {
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpMultiRollupsQueryHandler.class);
     private final BatchedMetricsOutputSerializer<JSONObject> serializer;
     private final Gson gson;           // thread-safe

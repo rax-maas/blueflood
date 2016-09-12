@@ -47,7 +47,6 @@ import java.util.*;
 
 public class HttpRollupsQueryHandler extends RollupHandler
             implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpRollupsQueryHandler.class);
     
     private final BasicRollupsOutputSerializer<JSONObject> serializer;

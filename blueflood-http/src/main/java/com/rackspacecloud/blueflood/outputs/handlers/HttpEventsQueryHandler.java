@@ -22,7 +22,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpEventsQueryHandler.class);
     private EventsIO searchIO;
     private final Timer httpEventsFetchTimer = Metrics.timer(HttpEventsQueryHandler.class, "Handle HTTP request for fetching events");
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
 
     public HttpEventsQueryHandler(EventsIO searchIO) {
         this.searchIO = searchIO;

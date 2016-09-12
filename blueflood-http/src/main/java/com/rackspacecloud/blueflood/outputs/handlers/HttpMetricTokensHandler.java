@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class HttpMetricTokensHandler implements HttpRequestHandler {
-    private static final MediaTypeChecker mediaTypeChecker = new MediaTypeChecker();
     private static final Logger log = LoggerFactory.getLogger(HttpMetricTokensHandler.class);
     private DiscoveryIO discoveryHandle;
 
