@@ -18,7 +18,7 @@ import static junit.framework.Assert.assertTrue;
  */
 public class AggregatedPayloadTest {
 
-    private static final long TIME_DIFF_MS = 2000;
+    private static final long TIME_DIFF_MS = 30000;
     private static final String POSTFIX = ".post";
 
     private AggregatedPayload payload;

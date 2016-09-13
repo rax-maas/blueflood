@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.types.Event;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
@@ -34,7 +35,12 @@ public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
     private ChannelHandlerContext context;
     private Channel channel;
     private ChannelFuture channelFuture;
+    private DateTime nowDateTime;
 
+    @Before
+    public void setup() {
+        nowDateTime = new DateTime().withSecondOfMinute(0).withMillisOfSecond(0);
+    }
 
     public HttpEventsQueryHandlerTest() {
         searchIO = mock(EventsIO.class);
@@ -90,6 +96,6 @@ public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
     }
 
     private String nowTimestamp() {
-        return Long.toString(convertDateTimeToTimestamp(new DateTime().withSecondOfMinute(0).withMillisOfSecond(0)));
+        return Long.toString(convertDateTimeToTimestamp(nowDateTime));
     }
 }
