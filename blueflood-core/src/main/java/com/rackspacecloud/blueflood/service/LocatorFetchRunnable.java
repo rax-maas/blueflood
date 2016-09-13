@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.IOContainer;
@@ -48,6 +49,7 @@ class LocatorFetchRunnable implements Runnable {
     private ScheduleContext scheduleCtx;
     private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private static final Histogram locatorsPerShard = Metrics.histogram(RollupService.class, "Locators Per Shard");
 
     private Range parentRange;
 
@@ -189,6 +191,7 @@ class LocatorFetchRunnable implements Runnable {
         try {
             // get a list of all locators to rollup for a shard
             locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
+            locatorsPerShard.update(locators.size());
         } catch (Exception e) {
             executionContext.markUnsuccessful(e);
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
