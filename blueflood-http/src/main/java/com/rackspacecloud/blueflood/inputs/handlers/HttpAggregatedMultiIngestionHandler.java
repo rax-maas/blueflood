@@ -117,7 +117,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        DefaultHandler.sendErrorResponse(ctx, request, "Internal error persisting data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
                 }
