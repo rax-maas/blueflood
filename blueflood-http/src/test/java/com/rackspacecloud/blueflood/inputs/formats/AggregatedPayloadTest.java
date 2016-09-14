@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.Test;
@@ -11,6 +12,7 @@ import java.util.regex.Pattern;
 import static com.rackspacecloud.blueflood.TestUtils.FUTURE_COLLECTION_TIME_REGEX;
 import static com.rackspacecloud.blueflood.TestUtils.PAST_COLLECTION_TIME_REGEX;
 import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 /**
@@ -32,8 +34,9 @@ public class AggregatedPayloadTest {
         String json = getJsonFromFile("sample_payload.json", timestamp, POSTFIX);
         payload = AggregatedPayload.create(json);
 
-        List<String> errors = payload.getValidationErrors();
-        assertTrue( "'" + errors.get(0) + "' does not match pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches(FUTURE_COLLECTION_TIME_REGEX, errors.get(0)) );
+        List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
+                "Cannot be more than 259200000 milliseconds into the future", errors.get(0).getMessage());
     }
 
     @Test
@@ -45,8 +48,9 @@ public class AggregatedPayloadTest {
         String json = getJsonFromFile( "sample_payload.json", timestamp, POSTFIX);
         payload = AggregatedPayload.create(json);
 
-        List<String> errors = payload.getValidationErrors();
-        assertTrue( "'" + errors.get(0) + "' does not match pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get(0) ) );
+        List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
+                "Cannot be more than 259200000 milliseconds into the future", errors.get(0).getMessage());
     }
 
     @Test

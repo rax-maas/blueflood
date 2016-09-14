@@ -16,10 +16,25 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.hibernate.validator.constraints.NotEmpty;
+
 import java.util.Arrays;
 
 public class BluefloodSet {
+
+    public BluefloodSet() {
+    }
+
+    @VisibleForTesting
+    public BluefloodSet(String name, String[] values) {
+        this.name = name;
+        this.values = values;
+    }
+
+    @NotEmpty
     private String name;
+
     private String[] values;
 
     public String getName() {

@@ -153,13 +153,13 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
         HttpResponse response = postMetric("333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix());
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        String[] errors = getBodyArray( response );
-
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        assertEquals( 2, errors.length );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( errors[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ));
+        assertEquals(400, response.getStatusLine().getStatusCode());
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -168,14 +168,14 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
-        HttpResponse response = postMetric( "333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix() );
+        HttpResponse response = postMetric("333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix());
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        String[] errors = getBodyArray( response );
-
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        assertEquals( 2, errors.length );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( errors[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertEquals(400, response.getStatusLine().getStatusCode());
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -216,15 +216,14 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                 timestamp,
                 postfix);
 
-        String errors[] = getBodyArray(response);
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals(400, response.getStatusLine().getStatusCode());
 
-        assertEquals( 4, errors.length );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( errors[ 1 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
-        assertTrue( errors[ 2 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
-        assertTrue( errors[ 3 ] + " did not match past pattern " + PAST_COLLECTION_TIME_REGEX, Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
+        assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
 
@@ -240,15 +239,14 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                 timestamp,
                 postfix );
 
-        String errors[] = getBodyArray( response );
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
+        assertEquals(400, response.getStatusLine().getStatusCode());
 
-        assertEquals( 4, errors.length );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( errors[ 1 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
-        assertTrue( errors[ 2 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 2 ] ) );
-        assertTrue( errors[ 3 ] + " did not match future pattern " + FUTURE_COLLECTION_TIME_REGEX, Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 3 ] ) );
+        assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test

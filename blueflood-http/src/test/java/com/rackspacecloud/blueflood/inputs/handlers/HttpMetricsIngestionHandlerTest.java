@@ -1,26 +1,22 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
+import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.elasticsearch.common.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mortbay.util.ajax.JSON;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -33,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpMetricsIngestionHandlerTest {
+public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
 
     private HttpMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;
@@ -59,7 +55,7 @@ public class HttpMetricsIngestionHandlerTest {
     @Test
     public void testEmptyRequest() throws IOException {
         String requestBody = "";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -78,7 +74,7 @@ public class HttpMetricsIngestionHandlerTest {
     @Test
     public void testEmptyJsonRequest() throws IOException {
         String requestBody = "{}"; //causes JsonMappingException
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -96,7 +92,7 @@ public class HttpMetricsIngestionHandlerTest {
     @Test
     public void testInvalidJsonRequest() throws IOException {
         String requestBody = "{\"xxxx\": yyyy}"; //causes JsonMappingException
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -114,7 +110,7 @@ public class HttpMetricsIngestionHandlerTest {
     @Test
     public void testEmptyJsonArrayRequest() throws IOException {
         String requestBody = "[]"; //causes JsonMappingException
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -133,7 +129,7 @@ public class HttpMetricsIngestionHandlerTest {
     @Test
     public void testEmptyMetricRequest() throws IOException {
         String requestBody = "[{}]"; //causes JsonMappingException
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -154,7 +150,7 @@ public class HttpMetricsIngestionHandlerTest {
                 24 * 60 * 60, 1); //empty metric name
 
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -180,7 +176,7 @@ public class HttpMetricsIngestionHandlerTest {
         String singleMetric = createRequestBody(metricName, collectionTimeInPast, 24 * 60 * 60, 1); //collection in past
 
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -206,7 +202,7 @@ public class HttpMetricsIngestionHandlerTest {
         String singleMetric = createRequestBody(metricName, collectionTimeInFuture, 24 * 60 * 60, 1); //collection in future
 
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -229,7 +225,7 @@ public class HttpMetricsIngestionHandlerTest {
         String metricName = "a.b.c";
         String singleMetric = createRequestBody(metricName, new DefaultClockImpl().now().getMillis(), 0, 1); //ttl of 0
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -253,7 +249,7 @@ public class HttpMetricsIngestionHandlerTest {
                 24 * 60 * 60, null); //empty metric value
 
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -282,7 +278,7 @@ public class HttpMetricsIngestionHandlerTest {
         String singleMetric2 = createRequestBody(metricName2, collectionTimeInPast, 24 * 60 * 60, 1); //collection in past
 
         String requestBody = "[" + singleMetric1 + "," + singleMetric2 + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createIngestRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -321,18 +317,10 @@ public class HttpMetricsIngestionHandlerTest {
         return new ObjectMapper().writeValueAsString(metric);
     }
 
-    private FullHttpRequest createHttpRequest(HttpMethod method, String uri, String requestBody) {
-        DefaultFullHttpRequest rawRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, "/v2.0/" + TENANT + "/ingest/" + uri);
-        rawRequest.headers().set("tenantId", TENANT);
-        if (!requestBody.equals(""))
-            rawRequest.content().writeBytes(Unpooled.copiedBuffer(requestBody.getBytes()));
-        return HttpRequestWithDecodedQueryParams.create(rawRequest);
+    private FullHttpRequest createIngestRequest(String requestBody) {
+        return super.createPutRequest("/v2.0/" + TENANT + "/ingest/", requestBody);
     }
 
-
-    private ErrorResponse getErrorResponse(String error) throws IOException {
-        return new ObjectMapper().readValue(error, ErrorResponse.class);
-    }
 
     public JSONMetricsContainer getContainer(String tenantId, String jsonBody) throws IOException {
         HttpMetricsIngestionHandler handler = new HttpMetricsIngestionHandler(null, new TimeValue(5, TimeUnit.SECONDS));

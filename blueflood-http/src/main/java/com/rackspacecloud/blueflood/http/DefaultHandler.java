@@ -18,21 +18,58 @@ package com.rackspacecloud.blueflood.http;
 
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class DefaultHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
 
+    private static final Logger log = LoggerFactory.getLogger(DefaultHandler.class);
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
+    }
+
+
+    private static String prepareErrorResponse(String tenantId, String message) {
+        return "{\"errors\": [{\"tenantId\": \"" + tenantId + "\", \"message\": \"" + message + "\"}]}";
+    }
+
+    public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+                                   List<ErrorResponse.ErrorData> validationErrors, HttpResponseStatus status) {
+        final String tenantId = request.headers().get("tenantId");
+
+        try {
+
+            String responseBody = new ObjectMapper().writeValueAsString(new ErrorResponse(validationErrors));
+            sendResponse(ctx, request, responseBody, status);
+
+        } catch (IOException e) {
+
+            log.warn("Error preparing response", e);
+            sendErrorResponse(ctx, request, "Error preparing response", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
+                                   String messageBody, HttpResponseStatus status) {
+        final String tenantId = request.headers().get("tenantId");
+        String responseBody = prepareErrorResponse(tenantId, messageBody);
+
+        sendResponse(ctx, request, responseBody, status);
     }
 
     public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request,

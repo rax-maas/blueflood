@@ -1,14 +1,12 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricScoped;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
+import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,7 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class HttpMultitenantMetricsIngestionHandlerTest {
+public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest {
 
     private HttpMultitenantMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;
@@ -51,13 +49,33 @@ public class HttpMultitenantMetricsIngestionHandlerTest {
     }
 
     @Test
+    public void testMultiMetricsEmptyArrays() throws IOException {
+        String requestBody = "[]";
+        FullHttpRequest request = createRequest(requestBody);
+
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid metric name", null, errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+        assertEquals("Invalid error source", null, errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "No valid metrics", errorResponse.getErrors().get(0).getMessage());
+    }
+
+    @Test
     public void testSingleMetricEmptyTenantId() throws IOException {
         String metricName = "a.b.c";
         String singleMetric = createRequestBody("", metricName, new DefaultClockImpl().now().getMillis(),
                 24 * 60 * 60, 1); //empty metric name
 
         String requestBody = "[" + singleMetric + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -90,7 +108,7 @@ public class HttpMultitenantMetricsIngestionHandlerTest {
         String singleMetric2 = createRequestBody(TENANT2, metricName2, collectionTimeInPast, 24 * 60 * 60, 1); //collection in past
 
         String requestBody = "[" + singleMetric1 + "," + singleMetric2 + "]";
-        FullHttpRequest request = createHttpRequest(HttpMethod.POST, "", requestBody);
+        FullHttpRequest request = createRequest(requestBody);
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -131,17 +149,8 @@ public class HttpMultitenantMetricsIngestionHandlerTest {
         return new ObjectMapper().writeValueAsString(metric);
     }
 
-    private FullHttpRequest createHttpRequest(HttpMethod method, String uri, String requestBody) {
-        DefaultFullHttpRequest rawRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, "/v2.0/" + TENANT + "/ingest/" + uri);
-        rawRequest.headers().set("tenantId", TENANT);
-        if (!requestBody.equals(""))
-            rawRequest.content().writeBytes(Unpooled.copiedBuffer(requestBody.getBytes()));
-        return HttpRequestWithDecodedQueryParams.create(rawRequest);
+    private FullHttpRequest createRequest(String requestBody) {
+        return super.createPutRequest("/v2.0/" + TENANT + "/ingest/multi", requestBody);
     }
 
-
-    private ErrorResponse getErrorResponse(String error) throws IOException {
-        System.out.println(error);
-        return new ObjectMapper().readValue(error, ErrorResponse.class);
-    }
 }
