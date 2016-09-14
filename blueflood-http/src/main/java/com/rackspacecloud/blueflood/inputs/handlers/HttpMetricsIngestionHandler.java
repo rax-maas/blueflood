@@ -61,7 +61,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
 
-
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
     private final HttpMetricsIngestionServer.Processor processor;
@@ -125,9 +124,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
         try {
 
             Tracker.getInstance().track(request);
-
             requestCount.inc();
+
             final String tenantId = request.headers().get("tenantId");
+
             JSONMetricsContainer jsonMetricsContainer;
             List<Metric> validMetrics;
 

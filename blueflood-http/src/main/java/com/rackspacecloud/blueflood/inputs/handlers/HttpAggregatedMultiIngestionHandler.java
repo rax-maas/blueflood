@@ -62,94 +62,96 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
         Tracker.getInstance().track(request);
 
-        final Timer.Context timerContext = handlerTimer.time();
-        long ingestTime = clock.now().getMillis();
+        requestCount.inc();
 
-        // this is all JSON.
-        final String body = request.content().toString(Constants.DEFAULT_CHARSET);
         try {
-            // block until things get ingested.
-            requestCount.inc();
-            List<AggregatedPayload> bundleList = createBundleList(body);
 
-            if (bundleList.size() > 0) {
-                // has aggregated metric bundle in body
-                // convert and add metric bundle to MetricsCollection if valid
-                MetricsCollection collection = new MetricsCollection();
-                List<String> errors = new ArrayList<String>();
+            final Timer.Context timerContext = handlerTimer.time();
+            long ingestTime = clock.now().getMillis();
 
-                // for each metric bundle
-                for (AggregatedPayload bundle : bundleList) {
-                    // validate, convert, and add to collection
-                    List<String> bundleValidationErrors = bundle.getValidationErrors();
-                    if (bundleValidationErrors.isEmpty()) {
-                        // no validation error, add to collection
-                        collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+            // this is all JSON.
+            String body = null;
+            try {
+                body = request.content().toString(Constants.DEFAULT_CHARSET);
+                List<AggregatedPayload> bundleList = createBundleList(body);
+
+                if (bundleList.size() > 0) {
+                    // has aggregated metric bundle in body
+                    // convert and add metric bundle to MetricsCollection if valid
+                    MetricsCollection collection = new MetricsCollection();
+                    List<String> errors = new ArrayList<String>();
+
+                    // for each metric bundle
+                    for (AggregatedPayload bundle : bundleList) {
+                        // validate, convert, and add to collection
+                        List<String> bundleValidationErrors = bundle.getValidationErrors();
+                        if (bundleValidationErrors.isEmpty()) {
+                            // no validation error, add to collection
+                            collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
+                        } else {
+                            // failed validation, add to error
+                            errors.addAll(bundleValidationErrors);
+                        }
+
+                        if (bundle.hasDelayedMetrics(ingestTime)) {
+                            Tracker.getInstance().trackDelayedAggregatedMetricsTenant(bundle.getTenantId(),
+                                    bundle.getTimestamp(),
+                                    bundle.getDelayTime(ingestTime),
+                                    bundle.getAllMetricNames());
+                            bundle.markDelayMetricsReceived(ingestTime);
+                        }
                     }
-                    else {
-                        // failed validation, add to error
-                        errors.addAll( bundleValidationErrors );
-                    }
 
-                    if (bundle.hasDelayedMetrics(ingestTime)) {
-                        Tracker.getInstance().trackDelayedAggregatedMetricsTenant(bundle.getTenantId(),
-                                bundle.getTimestamp(),
-                                bundle.getDelayTime(ingestTime),
-                                bundle.getAllMetricNames());
-                        bundle.markDelayMetricsReceived(ingestTime);
-                    }
-                }
-
-                // if has validation errors and no valid metrics
-                if (!errors.isEmpty() && collection.size() == 0) {
-                    // return BAD_REQUEST and error
-                    DefaultHandler.sendResponse( ctx, request,
-                            HttpMetricsIngestionHandler.getResponseBody(errors),
-                            HttpResponseStatus.BAD_REQUEST );
-                    return;
-                }
-
-                // process valid metrics in collection
-                ListenableFuture<List<Boolean>> futures = processor.apply(collection);
-                List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
-                for (Boolean persisted : persisteds) {
-                    if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    // if has validation errors and no valid metrics
+                    if (!errors.isEmpty() && collection.size() == 0) {
+                        // return BAD_REQUEST and error
+                        DefaultHandler.sendResponse(ctx, request,
+                                HttpMetricsIngestionHandler.getResponseBody(errors),
+                                HttpResponseStatus.BAD_REQUEST);
                         return;
                     }
-                }
 
-                // return OK or MULTI_STATUS response depending if there were validation errors
-                if (errors.isEmpty()) {
-                    // no validation error, response OK
+                    // process valid metrics in collection
+                    ListenableFuture<List<Boolean>> futures = processor.apply(collection);
+                    List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
+                    for (Boolean persisted : persisteds) {
+                        if (!persisted) {
+                            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                            return;
+                        }
+                    }
+
+                    // return OK or MULTI_STATUS response depending if there were validation errors
+                    if (errors.isEmpty()) {
+                        // no validation error, response OK
+                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
+                        return;
+                    } else {
+                        // has some validation errors, response MULTI_STATUS
+                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                        return;
+                    }
+
+                } else {
+                    // no aggregated metric bundles in body, response OK
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
                     return;
                 }
-                else {
-                    // has some validation errors, response MULTI_STATUS
-                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
-                    return;
-                }
-
+            } catch (JsonParseException ex) {
+                log.debug(String.format("BAD JSON: %s", body));
+                log.error(ex.getMessage(), ex);
+                DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            } catch (TimeoutException ex) {
+                DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+            } catch (Exception ex) {
+                log.debug(String.format("BAD JSON: %s", body));
+                log.error("Other exception while trying to parse content", ex);
+                DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            } finally {
+                timerContext.stop();
             }
-            else {
-                // no aggregated metric bundles in body, response OK
-                DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
-                return;
-            }
-        } catch (JsonParseException ex) {
-            log.debug(String.format("BAD JSON: %s", body));
-            log.error(ex.getMessage(), ex);
-            DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
-        } catch (TimeoutException ex) {
-            DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
-        } catch (Exception ex) {
-            log.debug(String.format("BAD JSON: %s", body));
-            log.error("Other exception while trying to parse content", ex);
-            DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             requestCount.dec();
-            timerContext.stop();
         }
     }
 

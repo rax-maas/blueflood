@@ -32,6 +32,7 @@ import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -262,12 +263,23 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         return client.execute(post);
     }
 
+    public HttpResponse httpPost( String tenantId, String urlPath, String content, ContentType contentType ) throws URISyntaxException, IOException {
+
+        HttpPost post = getHttpPost( tenantId, urlPath, content, contentType );
+
+        return client.execute(post);
+    }
+
     private HttpPost getHttpPost( String tenantId, String urlPath, String json ) throws URISyntaxException {
+        return getHttpPost(tenantId, urlPath, json, ContentType.APPLICATION_JSON);
+    }
+
+    private HttpPost getHttpPost( String tenantId, String urlPath, String content, ContentType contentType ) throws URISyntaxException {
         // build url to aggregated ingestion endpoint
         URIBuilder builder = getMetricsURIBuilder()
                 .setPath(String.format(urlPath, tenantId));
         HttpPost post = new HttpPost(builder.build());
-        HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        HttpEntity entity = new StringEntity(content, contentType);
         post.setEntity(entity);
         return post;
     }
@@ -326,6 +338,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         HttpPost query_post = new HttpPost(query_builder.build());
         HttpEntity entity = new StringEntity(metricNames);
         query_post.setEntity(entity);
+        query_post.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 
         return client.execute(query_post);
     }

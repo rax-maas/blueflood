@@ -42,6 +42,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
+
     private EventsIO searchIO;
     private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
             "Handle HTTP request for ingesting events");
@@ -52,6 +53,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
+
         final String tenantId = request.headers().get(Event.FieldLabels.tenantId.name());
         HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
