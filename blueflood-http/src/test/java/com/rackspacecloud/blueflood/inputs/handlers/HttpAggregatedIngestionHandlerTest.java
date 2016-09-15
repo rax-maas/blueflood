@@ -29,7 +29,6 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,7 +43,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
@@ -565,6 +563,6 @@ public class HttpAggregatedIngestionHandlerTest extends BaseHandlerTest {
 
 
     private FullHttpRequest createIngestRequest(String requestBody) {
-        return super.createPutRequest("/v2.0/" + TENANT + "/aggregated/", requestBody);
+        return super.createPostRequest("/v2.0/" + TENANT + "/aggregated/", requestBody);
     }
 }

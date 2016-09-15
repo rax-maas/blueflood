@@ -226,6 +226,6 @@ public class HttpAggregatedMultiIngestionHandlerTest extends BaseHandlerTest {
 
 
     private FullHttpRequest createIngestRequest(String requestBody) {
-        return super.createPutRequest("/v2.0/" + TENANT + "/aggregated/multi", requestBody);
+        return super.createPostRequest("/v2.0/" + TENANT + "/aggregated/multi", requestBody);
     }
 }

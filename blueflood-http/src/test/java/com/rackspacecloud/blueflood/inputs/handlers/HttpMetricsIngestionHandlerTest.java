@@ -318,7 +318,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
     }
 
     private FullHttpRequest createIngestRequest(String requestBody) {
-        return super.createPutRequest("/v2.0/" + TENANT + "/ingest/", requestBody);
+        return super.createPostRequest("/v2.0/" + TENANT + "/ingest/", requestBody);
     }
 
 

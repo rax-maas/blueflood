@@ -150,7 +150,7 @@ public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest 
     }
 
     private FullHttpRequest createRequest(String requestBody) {
-        return super.createPutRequest("/v2.0/" + TENANT + "/ingest/multi", requestBody);
+        return super.createPostRequest("/v2.0/" + TENANT + "/ingest/multi", requestBody);
     }
 
 }

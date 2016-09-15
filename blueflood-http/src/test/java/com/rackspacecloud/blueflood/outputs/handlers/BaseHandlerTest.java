@@ -19,7 +19,7 @@ public class BaseHandlerTest {
         return createRequest(HttpMethod.GET, uri, "");
     }
 
-    protected FullHttpRequest createPutRequest(String uri, String requestBody) {
+    protected FullHttpRequest createPostRequest(String uri, String requestBody) {
         return createRequest(HttpMethod.POST, uri, requestBody);
     }
 
