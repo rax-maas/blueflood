@@ -72,7 +72,6 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         String body = null;
         try {
-            // block until things get ingested.
             body = request.content().toString(Constants.DEFAULT_CHARSET);
             List<AggregatedPayload> bundleList = createBundleList(body);
 

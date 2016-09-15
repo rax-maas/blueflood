@@ -55,7 +55,7 @@ public class DefaultHandler implements HttpRequestHandler {
 
         } catch (IOException e) {
 
-            log.warn("Error preparing response", e);
+            log.error("Error preparing response", e);
             sendErrorResponse(ctx, request, "Error preparing response", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
     }

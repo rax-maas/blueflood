@@ -93,6 +93,7 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
                 List<Boolean> persisteds = futures.get( timeout.getValue(), timeout.getUnit() );
                 for ( Boolean persisted : persisteds ) {
                     if (!persisted) {
+                        log.error("Internal error persisting data for tenantId:" + payload.getTenantId());
                         DefaultHandler.sendErrorResponse(ctx, request, "Internal error persisting data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
