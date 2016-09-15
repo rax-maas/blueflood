@@ -62,7 +62,7 @@ public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest 
 
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
-        assertEquals("Invalid metric name", null, errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
         assertEquals("Invalid error source", null, errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid error message", "No valid metrics", errorResponse.getErrors().get(0).getMessage());

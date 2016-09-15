@@ -132,7 +132,7 @@ public class AstyanaxReader extends AstyanaxIO {
                 if (isBatch) { Instrumentation.markBatchReadError(e); }
                 else { Instrumentation.markReadError(e); }
             }
-            log.warn((isBatch ? "Batch " : "") + " read query failed for column family " + CF.getName(), e);
+            log.error((isBatch ? "Batch " : "") + " read query failed for column family " + CF.getName() + " for locators: " + StringUtils.join(locators, ","), e);
         } finally {
             ctx.stop();
         }

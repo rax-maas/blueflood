@@ -24,11 +24,14 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,15 +46,8 @@ public class DefaultHandler implements HttpRequestHandler {
         HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
     }
 
-
-    private static String prepareErrorResponse(String tenantId, String message) {
-        return "{\"errors\": [{\"tenantId\": \"" + tenantId + "\", \"message\": \"" + message + "\"}]}";
-    }
-
     public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
                                    List<ErrorResponse.ErrorData> validationErrors, HttpResponseStatus status) {
-        final String tenantId = request.headers().get("tenantId");
-
         try {
 
             String responseBody = new ObjectMapper().writeValueAsString(new ErrorResponse(validationErrors));
@@ -65,11 +61,14 @@ public class DefaultHandler implements HttpRequestHandler {
     }
 
     public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
-                                   String messageBody, HttpResponseStatus status) {
+                                   final String message, HttpResponseStatus status) {
         final String tenantId = request.headers().get("tenantId");
-        String responseBody = prepareErrorResponse(tenantId, messageBody);
 
-        sendResponse(ctx, request, responseBody, status);
+        List<ErrorResponse.ErrorData> errrors = new ArrayList<ErrorResponse.ErrorData>(){{
+            add(new ErrorResponse.ErrorData(tenantId, null, null, message));
+        }};
+
+        sendErrorResponse(ctx, request, errrors, status);
     }
 
     public static void sendResponse(ChannelHandlerContext channel, FullHttpRequest request,

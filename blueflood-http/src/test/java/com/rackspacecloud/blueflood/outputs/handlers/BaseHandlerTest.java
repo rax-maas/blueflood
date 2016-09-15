@@ -32,7 +32,6 @@ public class BaseHandlerTest {
     }
 
     protected ErrorResponse getErrorResponse(String error) throws IOException {
-        System.out.println(error);
         return new ObjectMapper().readValue(error, ErrorResponse.class);
     }
 }
