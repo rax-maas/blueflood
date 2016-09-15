@@ -103,7 +103,8 @@ class LocatorFetchRunnable implements Runnable {
         final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
         Set<Locator> locators = getLocators(executionContext);
-
+        if (log.isTraceEnabled())
+            log.trace("locators retrieved: {}", locators.size());
         for (Locator locator : locators) {
             rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator);
         }
@@ -192,9 +193,9 @@ class LocatorFetchRunnable implements Runnable {
             // get a list of all locators to rollup for a shard
             locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
             locatorsPerShard.update(locators.size());
-        } catch (Exception e) {
-            executionContext.markUnsuccessful(e);
+        } catch (Throwable e) {
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
+            executionContext.markUnsuccessful(e);
         }
         return locators;
     }
