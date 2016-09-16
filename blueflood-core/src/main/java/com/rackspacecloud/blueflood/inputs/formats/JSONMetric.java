@@ -20,8 +20,6 @@ import com.rackspacecloud.blueflood.inputs.constraints.EpochRangeLimits;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.NotNull;
-
 // Jackson compatible class. Jackson uses reflection to call these methods and so they have to match JSON keys.
 public class JSONMetric {
 

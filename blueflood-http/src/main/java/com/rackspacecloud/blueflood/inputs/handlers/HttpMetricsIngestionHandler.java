@@ -146,29 +146,29 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
             } catch (JsonParseException e) {
                 log.warn("Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId, "Cannot parse content"),
+                DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (JsonMappingException e) {
                 log.warn("Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId, "Cannot parse content"),
+                DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (InvalidDataException ex) {
                 // todo: we should measure these. if they spike, we track down the bad client.
                 // this is strictly a client problem. Something wasn't right (data out of range, etc.)
                 log.warn(ctx.channel().remoteAddress() + " " + ex.getMessage());
-                DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId,"Invalid data " + ex.getMessage()),
+                DefaultHandler.sendErrorResponse(ctx, request, "Invalid data " + ex.getMessage(),
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (IOException e) {
                 log.warn("IO Exception parsing content", e);
-                DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId, "Cannot parse content"),
+                DefaultHandler.sendErrorResponse(ctx, request, "Cannot parse content",
                         HttpResponseStatus.BAD_REQUEST);
                 return;
             } catch (Exception e) {
                 log.warn("Other exception while trying to parse content", e);
-                DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId,"Failed parsing content"),
+                DefaultHandler.sendErrorResponse(ctx, request, "Failed parsing content",
                         HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 return;
             } finally {
@@ -182,10 +182,10 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 log.warn(ctx.channel().remoteAddress() + " No valid metrics");
 
                 if (validationErrors.isEmpty()) {
-                    DefaultHandler.sendResponse(ctx, request, prepareErrorResponse(tenantId, "No valid metrics"),
+                    DefaultHandler.sendErrorResponse(ctx, request, "No valid metrics",
                             HttpResponseStatus.BAD_REQUEST);
                 } else {
-                    sendErrorResponse(ctx, request, validationErrors, HttpResponseStatus.BAD_REQUEST);
+                    DefaultHandler.sendErrorResponse(ctx, request, validationErrors, HttpResponseStatus.BAD_REQUEST);
                 }
                 return;
             }
@@ -200,8 +200,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                     if (!persisted) {
                         log.warn("Trouble persisting metrics:");
                         log.warn(String.format("%s", Arrays.toString(validMetrics.toArray())));
-                        DefaultHandler.sendResponse(ctx, request,
-                                prepareErrorResponse(tenantId,"Persisted failed for metrics"), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        DefaultHandler.sendErrorResponse(ctx, request, "Persisted failed for metrics",
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
                 }
@@ -209,7 +209,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 // after processing metrics, return either OK or MULTI_STATUS depending on number of valid metrics
                 if( !validationErrors.isEmpty() ) {
                     // has some validation errors, return MULTI_STATUS
-                    sendErrorResponse(ctx, request, validationErrors, HttpResponseStatus.MULTI_STATUS);
+                    DefaultHandler.sendErrorResponse(ctx, request, validationErrors, HttpResponseStatus.MULTI_STATUS);
                 }
                 else {
                     // no validation error, return OK
@@ -217,36 +217,15 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                 }
 
             } catch (TimeoutException e) {
-                DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+                DefaultHandler.sendErrorResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {
                 log.error("Exception persisting metrics", e);
-                DefaultHandler.sendResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                DefaultHandler.sendErrorResponse(ctx, request, "Error persisting metrics", HttpResponseStatus.INTERNAL_SERVER_ERROR);
             } finally {
                 persistingTimerContext.stop();
             }
         } finally {
             requestCount.dec();
-        }
-    }
-
-    private String prepareErrorResponse(String tenantId, String message) {
-        return "{\"errors\": [{\"tenantId\": \"" + tenantId + "\", \"message\": \"" + message + "\"}]}";
-    }
-
-    private void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
-                                   List<ErrorResponse.ErrorData> validationErrors, HttpResponseStatus status) {
-        final String tenantId = request.headers().get("tenantId");
-
-        try {
-
-            String responseBody = new ObjectMapper().writeValueAsString(new ErrorResponse(validationErrors));
-            DefaultHandler.sendResponse(ctx, request, responseBody, status);
-
-        } catch (IOException e) {
-
-            log.warn("Error preparing response", e);
-            String responseBody = prepareErrorResponse(tenantId, "Error preparing response");
-            DefaultHandler.sendResponse(ctx, request, responseBody, HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

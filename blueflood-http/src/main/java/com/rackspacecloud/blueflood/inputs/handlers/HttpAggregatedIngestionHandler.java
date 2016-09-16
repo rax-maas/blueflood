@@ -20,10 +20,12 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonParseException;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
 import com.rackspacecloud.blueflood.utils.Clock;
@@ -61,65 +63,67 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
 
         Tracker.getInstance().track(request);
 
+        requestCount.inc();
+
+        final Timer.Context timerContext = handlerTimer.time();
+        String body = null;
+
         try {
-            requestCount.inc();
+            // this is all JSON.
+            body = request.content().toString(Constants.DEFAULT_CHARSET);
 
-            final Timer.Context timerContext = handlerTimer.time();
-            String body = null;
+            MetricsCollection collection = new MetricsCollection();
 
-            try {
-                // this is all JSON.
-                body = request.content().toString(Constants.DEFAULT_CHARSET);
+            AggregatedPayload payload = AggregatedPayload.create(body);
 
-                MetricsCollection collection = new MetricsCollection();
-
-                AggregatedPayload payload = AggregatedPayload.create(body);
-
-                long ingestTime = clock.now().getMillis();
-                if (payload.hasDelayedMetrics(ingestTime)) {
-                    Tracker.getInstance().trackDelayedAggregatedMetricsTenant(payload.getTenantId(),
-                            payload.getTimestamp(),
-                            payload.getDelayTime(ingestTime),
-                            payload.getAllMetricNames());
-                    payload.markDelayMetricsReceived(ingestTime);
-                }
-
-                List<String> errors = payload.getValidationErrors();
-                if (errors.isEmpty()) {
-                    // no validation errors, process bundle
-                    collection.add(PreaggregateConversions.buildMetricsCollection(payload));
-                    ListenableFuture<List<Boolean>> futures = processor.apply(collection);
-                    List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
-                    for (Boolean persisted : persisteds) {
-                        if (!persisted) {
-                            DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                            return;
-                        }
-                    }
-                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
-                } else {
-                    // has validation errors for the single metric, return BAD_REQUEST
-                    DefaultHandler.sendResponse(ctx,
-                            request,
-                            HttpMetricsIngestionHandler.getResponseBody(errors),
-                            HttpResponseStatus.BAD_REQUEST);
-                }
-
-            } catch (JsonParseException ex) {
-                log.debug(String.format("BAD JSON: %s", body));
-                log.error(ex.getMessage(), ex);
-                DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
-            } catch (TimeoutException ex) {
-                DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
-            } catch (Exception ex) {
-                log.debug(String.format("JSON request payload: %s", body));
-                log.error("Error saving data", ex);
-                DefaultHandler.sendResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
-            } finally {
-                timerContext.stop();
+            long ingestTime = clock.now().getMillis();
+            if (payload.hasDelayedMetrics(ingestTime)) {
+                Tracker.getInstance().trackDelayedAggregatedMetricsTenant(payload.getTenantId(),
+                        payload.getTimestamp(),
+                        payload.getDelayTime(ingestTime),
+                        payload.getAllMetricNames());
+                payload.markDelayMetricsReceived(ingestTime);
             }
+
+            List<ErrorResponse.ErrorData> validationErrors = payload.getValidationErrors();
+            if ( validationErrors.isEmpty() ) {
+                // no validation errors, process bundle
+                collection.add( PreaggregateConversions.buildMetricsCollection( payload ) );
+                ListenableFuture<List<Boolean>> futures = processor.apply( collection );
+                List<Boolean> persisteds = futures.get( timeout.getValue(), timeout.getUnit() );
+                for ( Boolean persisted : persisteds ) {
+                    if (!persisted) {
+                        log.error("Internal error persisting data for tenantId:" + payload.getTenantId());
+                        DefaultHandler.sendErrorResponse(ctx, request, "Internal error persisting data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        return;
+                    }
+                }
+                DefaultHandler.sendResponse( ctx, request, null, HttpResponseStatus.OK );
+            } else {
+                // has validation errors for the single metric, return BAD_REQUEST
+                DefaultHandler.sendErrorResponse(ctx,
+                        request,
+                        validationErrors,
+                        HttpResponseStatus.BAD_REQUEST);
+            }
+        } catch (JsonParseException ex) {
+            log.debug(String.format("BAD JSON: %s", body));
+            log.error(ex.getMessage(), ex);
+            DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+        } catch (InvalidDataException ex) {
+            log.debug(String.format("Invalid request body: %s", body));
+            log.error(ex.getMessage(), ex);
+            DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+        } catch (TimeoutException ex) {
+            DefaultHandler.sendErrorResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+        } catch (Exception ex) {
+            log.debug(String.format("JSON request payload: %s", body));
+            log.error("Error saving data", ex);
+            DefaultHandler.sendErrorResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
+            timerContext.stop();
             requestCount.dec();
         }
+
     }
 }

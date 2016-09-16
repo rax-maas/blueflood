@@ -16,12 +16,21 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRange;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRangeLimits;
 import com.rackspacecloud.blueflood.io.Instrumentation;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import org.hibernate.validator.constraints.NotEmpty;
 
+import javax.validation.*;
+import javax.validation.constraints.AssertTrue;
 import java.util.*;
 
 // Using nested classes for now. Expect this to be cleaned up.
@@ -30,28 +39,101 @@ public class AggregatedPayload {
     private static final long TRACKER_DELAYED_METRICS_MILLIS = Configuration.getInstance().getLongProperty(CoreConfig.TRACKER_DELAYED_METRICS_MILLIS);
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
     private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
-    private final long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-    private final long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
+    @NotEmpty
     private String tenantId;
+
+    @EpochRange(maxPast = EpochRangeLimits.BEFORE_CURRENT_TIME_MS,
+            maxFuture = EpochRangeLimits.AFTER_CURRENT_TIME_MS,
+            message = "Out of bounds. Cannot be more than ${maxPast.getValue()} milliseconds into the past. Cannot be more than ${maxPast.getValue()} milliseconds into the future")
     private long timestamp; // millis since epoch.
 
     // this field is optional
+    @org.hibernate.validator.constraints.Range(min=0, max=Long.MAX_VALUE)
     private long flushInterval = 0;
-    
+
+    @Valid
     private BluefloodGauge[] gauges;
+
+    @Valid
     private BluefloodCounter[] counters;
+
+    @Valid
     private BluefloodTimer[] timers;
+
+    @Valid
     private BluefloodSet[] sets;
+
     private BluefloodEnum[] enums;
     
-    private Map<String, Object> metadata;
+    private final List<ErrorResponse.ErrorData> validationErrors;
 
-    public static AggregatedPayload create(String json) {
+    private static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    protected static final Validator validator = factory.getValidator();
+
+    public AggregatedPayload() {
+        this.validationErrors = new java.util.ArrayList<ErrorResponse.ErrorData>();
+    }
+
+    public static AggregatedPayload create(JsonElement json) {
         AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
+        validate(payload);
+
         return payload;
     }
-    
+
+    public static AggregatedPayload create(String json) {
+
+        AggregatedPayload payload = new Gson().fromJson(json, AggregatedPayload.class);
+        validate(payload);
+
+        return payload;
+    }
+
+    private static void validate(AggregatedPayload payload) {
+        if (payload == null) {
+            throw new InvalidDataException("Invalid request body");
+        }
+
+        Set<ConstraintViolation<AggregatedPayload>> constraintViolations = validator.validate(payload);
+        for (ConstraintViolation<AggregatedPayload> constraintViolation : constraintViolations) {
+            String source = constraintViolation.getPropertyPath().toString().equalsIgnoreCase("valid") ? "" :
+                    constraintViolation.getPropertyPath().toString();
+
+            String metricName = "";
+
+            Object leafBean = constraintViolation.getLeafBean();
+            if (leafBean instanceof BluefloodGauge) {
+                metricName = ((BluefloodGauge) leafBean).getName();
+            } else if (leafBean instanceof BluefloodCounter) {
+                metricName = ((BluefloodCounter) leafBean).getName();
+            } else if (leafBean instanceof BluefloodTimer) {
+                metricName = ((BluefloodTimer) leafBean).getName();
+            } else if (leafBean instanceof BluefloodSet) {
+                metricName = ((BluefloodSet) leafBean).getName();
+            }
+
+            payload.validationErrors.add(new ErrorResponse.ErrorData(payload.getTenantId(), metricName,
+                    source, constraintViolation.getMessage()));
+        }
+    }
+
+    @VisibleForTesting
+    public AggregatedPayload(String tenantId, long timestamp, long flushInterval, BluefloodGauge[] gauges,
+                             BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets,
+                             BluefloodEnum[] enums) {
+
+        this();
+        this.tenantId = tenantId;
+        this.timestamp = timestamp;
+        this.flushInterval = flushInterval;
+        this.gauges = gauges;
+        this.counters = counters;
+        this.timers = timers;
+        this.sets = sets;
+        this.enums = enums;
+    }
+
     public String toString() {
         return String.format("%s (%d)", tenantId, timestamp);
     }
@@ -69,19 +151,22 @@ public class AggregatedPayload {
     public Collection<BluefloodSet> getSets() { return safeAsList(sets); }
     public Collection<BluefloodEnum> getEnums() { return safeAsList(enums); }
 
-    public List<String> getValidationErrors() {
-        List<String> errors = new java.util.ArrayList<String>();
+    public List<ErrorResponse.ErrorData> getValidationErrors() {
+        return this.validationErrors;
+    }
 
-        long currentTime = System.currentTimeMillis();
-        if ( timestamp > currentTime + AFTER_CURRENT_COLLECTIONTIME_MS ) {
-            // timestamp is too far in the future
-            errors.add( "'timestamp' '" + timestamp + "' is more than '" + AFTER_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the future." );
-        } else if ( timestamp < currentTime - BEFORE_CURRENT_COLLECTIONTIME_MS ) {
-            // timestamp is too far in the past
-            errors.add( "'timestamp' '" + timestamp + "' is more than '" + BEFORE_CURRENT_COLLECTIONTIME_MS + "' milliseconds into the past." );
-        }
+    /**
+     * This method is invoked by the validator automatically
+     */
+    @AssertTrue(message="Atleast one of the aggregated metrics(gauges, counters, timers, sets) are expected")
+    private boolean isValid() {
+        boolean isGaugePresent = gauges != null && gauges.length > 0;
+        boolean isCounterPresent = counters != null && counters.length > 0;
+        boolean isTimerPresent = timers != null && timers.length > 0;
+        boolean isSetPresent = sets != null && sets.length > 0;
+        boolean isEnumPresent = enums != null && enums.length > 0;
 
-        return errors;
+        return (isGaugePresent || isCounterPresent || isTimerPresent || isSetPresent || isEnumPresent);
     }
 
     /**

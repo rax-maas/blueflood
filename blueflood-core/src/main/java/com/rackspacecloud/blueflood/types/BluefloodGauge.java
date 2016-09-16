@@ -16,8 +16,26 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.validation.constraints.NotNull;
+
 public class BluefloodGauge {
+
+    public BluefloodGauge() {
+    }
+
+    @VisibleForTesting
+    public BluefloodGauge(String name, Number value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    @NotEmpty
     private String name;
+
+    @NotNull
     private Number value;
 
     public String getName() {

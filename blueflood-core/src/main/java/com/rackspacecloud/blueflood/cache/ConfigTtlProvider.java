@@ -113,7 +113,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
             value = config.getIntegerProperty(configKey);
             if (value < 0) return false;
         } catch (NumberFormatException ex) {
-            log.debug(String.format("No valid TTL config set for granularity: %s, rollup type: %s",
+            log.trace(String.format("No valid TTL config set for granularity: %s, rollup type: %s",
                     gran.name(), rollupType.name()), ex);
             return false;
         }
@@ -126,7 +126,7 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         final TimeValue ttl = ttlMapper.get(gran, rollupType);
 
         if (ttl == null) {
-            log.debug("No valid TTL entry for granularity: {}, rollup type: {}" +
+            log.trace("No valid TTL entry for granularity: {}, rollup type: {}" +
                       " in config. Resorting to safe TTL values.",
                        gran.name(), rollupType.name());
             return Optional.absent();
