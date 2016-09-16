@@ -191,7 +191,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -217,7 +217,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -299,7 +299,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid tenant", metricName2, errorResponse.getErrors().get(1).getMetricName());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(1).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
 
     }
 

@@ -32,7 +32,7 @@ public class JSONMetric {
 
     @EpochRange(maxPast = EpochRangeLimits.BEFORE_CURRENT_TIME_MS,
                 maxFuture = EpochRangeLimits.AFTER_CURRENT_TIME_MS,
-                message = "Out of bounds. Cannot be more than ${maxPast.getValue()} milliseconds into the past. Cannot be more than ${maxPast.getValue()} milliseconds into the future")
+                message = "Out of bounds. Cannot be more than ${maxPast.getValue()} milliseconds into the past. Cannot be more than ${maxFuture.getValue()} milliseconds into the future")
     private long collectionTime;
 
     @Range(min=1, max=Integer.MAX_VALUE)

@@ -19,21 +19,27 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.MetricsRW;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static junit.framework.Assert.assertEquals;
 
 /**
  * Integration Tests for GET .../metric_name/search
@@ -101,10 +107,15 @@ public class HttpMetricTokensHandlerIntegrationTest extends HttpIntegrationTestB
         HttpGet get = new HttpGet(getQueryTokenSearchURI(tenantId));
         HttpResponse response = client.execute(get);
 
-        String responseString = EntityUtils.toString(response.getEntity());
-        Assert.assertEquals(400, response.getStatusLine().getStatusCode());
-        Assert.assertEquals("Invalid Query String", responseString);
-        assertResponseHeaderAllowOrigin(response);
+        ErrorResponse errorResponse = getErrorResponse(response);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error message", "Invalid Query String", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid tenant", tenantId, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST.code(), response.getStatusLine().getStatusCode());
     }
 
+    private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {
+        return new ObjectMapper().readValue(response.getEntity().getContent(), ErrorResponse.class);
+    }
 }

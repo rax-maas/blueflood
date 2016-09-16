@@ -2,7 +2,10 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.MetricToken;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import io.netty.channel.ChannelFuture;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import junit.framework.Assert;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,9 +15,12 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
+import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -41,14 +47,34 @@ public class HttpMetricTokensHandlerTest extends BaseHandlerTest {
 
     @Test
     public void emptyPrefix() throws Exception {
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/metric_name/search"));
+        verify(channel).write(argument.capture());
         verify(mockDiscoveryHandle, never()).getMetricTokens(anyString(), anyString());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error message", "Invalid Query String", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
     @Test
     public void invalidQuerySize() throws Exception {
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/metric_name/search?query=foo&query=bar"));
+        verify(channel).write(argument.capture());
         verify(mockDiscoveryHandle, never()).getMetricTokens(anyString(), anyString());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error message", "Invalid Query String", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
 

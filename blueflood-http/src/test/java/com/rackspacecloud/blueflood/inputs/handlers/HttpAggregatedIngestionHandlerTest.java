@@ -249,7 +249,7 @@ public class HttpAggregatedIngestionHandlerTest extends BaseHandlerTest {
 
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
-                "Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                "Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "timestamp", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
         assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
@@ -275,7 +275,7 @@ public class HttpAggregatedIngestionHandlerTest extends BaseHandlerTest {
 
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
-                "Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                "Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "timestamp", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
         assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
