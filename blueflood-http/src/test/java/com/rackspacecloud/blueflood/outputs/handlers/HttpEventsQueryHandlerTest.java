@@ -32,7 +32,7 @@ import java.util.*;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
+public class HttpEventsQueryHandlerTest extends HandlerTestsBase {
 
     private EventsIO searchIO;
     private HttpEventsQueryHandler handler;

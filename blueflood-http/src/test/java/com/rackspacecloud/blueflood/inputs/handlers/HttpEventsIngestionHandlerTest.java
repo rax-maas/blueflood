@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
@@ -38,7 +38,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static junit.framework.Assert.*;
 
-public class HttpEventsIngestionHandlerTest extends BaseHandlerTest {
+public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
 
     private EventsIO searchIO;
     private HttpEventsIngestionHandler handler;

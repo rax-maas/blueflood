@@ -22,7 +22,7 @@ import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.Channel;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class HttpAggregatedMultiIngestionHandlerTest extends BaseHandlerTest {
+public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
 
     private HttpAggregatedMultiIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;

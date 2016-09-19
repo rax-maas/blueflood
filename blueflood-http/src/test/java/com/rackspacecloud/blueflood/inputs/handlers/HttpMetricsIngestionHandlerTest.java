@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
+public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
 
     private HttpMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;

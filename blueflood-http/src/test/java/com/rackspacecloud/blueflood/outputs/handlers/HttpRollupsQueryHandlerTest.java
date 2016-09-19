@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class HttpRollupsQueryHandlerTest extends BaseHandlerTest {
+public class HttpRollupsQueryHandlerTest extends HandlerTestsBase {
 
     private HttpRollupsQueryHandler handler;
 

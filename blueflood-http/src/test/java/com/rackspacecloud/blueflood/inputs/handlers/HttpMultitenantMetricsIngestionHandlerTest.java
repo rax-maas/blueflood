@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricScoped;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
@@ -25,7 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest {
+public class HttpMultitenantMetricsIngestionHandlerTest extends HandlerTestsBase {
 
     private HttpMultitenantMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;

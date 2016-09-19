@@ -24,7 +24,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class HttpMetricTokensHandlerTest extends BaseHandlerTest {
+public class HttpMetricTokensHandlerTest extends HandlerTestsBase {
 
     private DiscoveryIO mockDiscoveryHandle = mock(DiscoveryIO.class);
     private ChannelHandlerContext context;
