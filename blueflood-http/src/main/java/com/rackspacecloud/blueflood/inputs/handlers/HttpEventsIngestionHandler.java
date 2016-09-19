@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Timer;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.io.EventsIO;
@@ -37,10 +38,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
@@ -70,6 +68,16 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
                     CharsetUtil.UTF_8);
             Event event = objectMapper.readValue(body, Event.class);
 
+            // To verify if the request has multiple elements. If some one sends request with multiple root elements,
+            // parser does not throw any validation exceptions. We are checking it manually here.
+            Iterator<Event> iterator = objectMapper.reader(Event.class).readValues(body);
+            if (iterator.hasNext()) {
+                iterator.next();
+                if (iterator.hasNext()) { //has more than one element
+                    throw new InvalidDataException("Only one event is allowed per request");
+                }
+            }
+
             Set<ConstraintViolation<Event>> constraintViolations = validator.validate(event);
 
             List<ErrorResponse.ErrorData> validationErrors = new ArrayList<ErrorResponse.ErrorData>();
@@ -90,6 +98,10 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             response = String.format("Invalid Data: %s", e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (JsonParseException e){
+            log.error(String.format("Exception %s", e.toString()));
+            response = String.format("Invalid Data: %s", e.getMessage());
+            DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
+        } catch (InvalidDataException e) {
             log.error(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
