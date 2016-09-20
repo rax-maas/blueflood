@@ -94,15 +94,15 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
             searchIO.insert(tenantId, Arrays.asList(event.toMap()));
             DefaultHandler.sendResponse(ctx, request, response, HttpResponseStatus.OK);
         } catch (JsonMappingException e) {
-            log.error(String.format("Exception %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (JsonParseException e){
-            log.error(String.format("Exception %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (InvalidDataException e) {
-            log.error(String.format("Exception %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (Exception e) {

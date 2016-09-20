@@ -147,7 +147,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
             // let's not log the full exception, just the message.
-            log.warn(e.getMessage());
+            log.debug(e.getMessage());
             DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
