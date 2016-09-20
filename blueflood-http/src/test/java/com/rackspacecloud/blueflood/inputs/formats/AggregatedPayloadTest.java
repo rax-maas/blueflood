@@ -36,7 +36,7 @@ public class AggregatedPayloadTest {
 
         List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
-                "Cannot be more than 259200000 milliseconds into the future", errors.get(0).getMessage());
+                "Cannot be more than 600000 milliseconds into the future", errors.get(0).getMessage());
     }
 
     @Test
@@ -50,7 +50,7 @@ public class AggregatedPayloadTest {
 
         List<ErrorResponse.ErrorData> errors = payload.getValidationErrors();
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past. " +
-                "Cannot be more than 259200000 milliseconds into the future", errors.get(0).getMessage());
+                "Cannot be more than 600000 milliseconds into the future", errors.get(0).getMessage());
     }
 
     @Test

@@ -32,7 +32,6 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
         Tracker.getInstance().track(request);
 
         final String tenantId = request.headers().get("tenantId");
-        HttpResponseStatus status = HttpResponseStatus.OK;
 
         ObjectMapper objectMapper = new ObjectMapper();
         String responseBody = null;
@@ -49,16 +48,16 @@ public class HttpEventsQueryHandler implements HttpRequestHandler {
             parseDateFieldInQuery(params, "until");
             List<Map<String, Object>> searchResult = searchIO.search(tenantId, params);
             responseBody = objectMapper.writeValueAsString(searchResult);
+            DefaultHandler.sendResponse(ctx, request, responseBody, HttpResponseStatus.OK, null);
         } catch (InvalidDataException e) {
             log.error(String.format("Exception %s", e.toString()));
             responseBody = String.format("Error: %s", e.getMessage());
-            status = HttpResponseStatus.BAD_REQUEST;
+            DefaultHandler.sendErrorResponse(ctx, request, responseBody, HttpResponseStatus.BAD_REQUEST);
         } catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             responseBody = String.format("Error: %s", e.getMessage());
-            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+            DefaultHandler.sendErrorResponse(ctx, request, responseBody, HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            DefaultHandler.sendResponse(ctx, request, responseBody, status, null);
             httpEventsFetchTimerContext.stop();
         }
     }

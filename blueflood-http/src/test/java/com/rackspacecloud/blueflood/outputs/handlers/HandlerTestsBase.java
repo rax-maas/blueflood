@@ -11,7 +11,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
 
-public class BaseHandlerTest {
+public class HandlerTestsBase {
 
     protected static final String TENANT = "tenant";
 

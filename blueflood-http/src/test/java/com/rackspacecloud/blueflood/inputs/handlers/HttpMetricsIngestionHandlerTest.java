@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
+public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
 
     private HttpMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;
@@ -191,7 +191,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -217,7 +217,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -299,7 +299,7 @@ public class HttpMetricsIngestionHandlerTest extends BaseHandlerTest {
         assertEquals("Invalid tenant", metricName2, errorResponse.getErrors().get(1).getMetricName());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(1).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
 
     }
 

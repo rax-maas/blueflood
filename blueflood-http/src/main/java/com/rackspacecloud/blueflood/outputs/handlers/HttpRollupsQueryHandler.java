@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -56,7 +57,13 @@ public class HttpRollupsQueryHandler extends RollupHandler
             "Handle HTTP request for metrics");
 
     public HttpRollupsQueryHandler() {
-        this.serializer = new JSONBasicRollupsOutputSerializer();
+        this(new JSONBasicRollupsOutputSerializer());
+
+    }
+
+    @VisibleForTesting
+    HttpRollupsQueryHandler(BasicRollupsOutputSerializer<JSONObject> serializer) {
+        this.serializer = serializer;
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         this.parser = new JsonParser();
     }
@@ -113,7 +120,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
         final String metricName = request.headers().get("metricName");
 
         if (!(request instanceof HttpRequestWithDecodedQueryParams)) {
-            sendResponse(ctx, request, "Missing query params: from, to, points",
+            DefaultHandler.sendErrorResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
@@ -140,14 +147,14 @@ public class HttpRollupsQueryHandler extends RollupHandler
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
             // let's not log the full exception, just the message.
-            log.warn(e.getMessage());
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            log.debug(e.getMessage());
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             httpMetricsFetchTimerContext.stop();
         }

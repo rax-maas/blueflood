@@ -18,7 +18,12 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import io.netty.buffer.Unpooled;
 import org.codehaus.jackson.map.ObjectMapper;
 import io.netty.channel.*;
@@ -33,7 +38,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static junit.framework.Assert.*;
 
-public class HttpEventsIngestionHandlerTest {
+public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
 
     private EventsIO searchIO;
     private HttpEventsIngestionHandler handler;
@@ -89,13 +94,118 @@ public class HttpEventsIngestionHandlerTest {
     }
 
     @Test
+    public void testInvalidRequestBody() throws Exception {
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, createRequest(HttpMethod.POST, "", "{\"xxx\": \"yyy\"}"));
+        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
     public void testMalformedEventPut() throws Exception {
-        final String malformedJSON = "{\"when\":, what]}";
+        final String malformedJSON = "{\"when\":, what]}"; //causes JsonParseException
         handler.handle(context, createRequest(HttpMethod.POST, "", malformedJSON));
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
-        assertNotSame(argument.getValue().content().toString(Charset.defaultCharset()), "");
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
+    public void testEmptyPut() throws Exception {
+        Map<String, Object> event = new HashMap<String, Object>();
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, createPutOneEventRequest(event));
+        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        System.out.println(errorResponse);
+        assertEquals("Number of errors invalid", 2, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
+    public void testEmptyWhatField() throws Exception {
+        Map<String, Object> event = new HashMap<String, Object>();
+        event.put(Event.FieldLabels.what.name(), "");
+        event.put(Event.FieldLabels.when.name(), System.currentTimeMillis());
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, createPutOneEventRequest(event));
+        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid error message", "may not be empty", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
+    public void testWhenFieldInThePast() throws Exception {
+
+        long collectionTimeInPast = new DefaultClockImpl().now().getMillis() - 1000
+                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        Map<String, Object> event = new HashMap<String, Object>();
+        event.put(Event.FieldLabels.what.name(), "xxxx");
+        event.put(Event.FieldLabels.when.name(), collectionTimeInPast);
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, createPutOneEventRequest(event));
+        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
+    public void testWhenFieldInTheFuture() throws Exception {
+
+        long collectionTimeInFuture = new DefaultClockImpl().now().getMillis() + 1000
+                + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+
+        Map<String, Object> event = new HashMap<String, Object>();
+        event.put(Event.FieldLabels.what.name(), "xxxx");
+        event.put(Event.FieldLabels.when.name(), collectionTimeInFuture);
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, createPutOneEventRequest(event));
+        verify(searchIO, never()).insert(anyString(), anyList());
+        verify(channel).write(argument.capture());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
     @Test
@@ -107,8 +217,11 @@ public class HttpEventsIngestionHandlerTest {
         verify(searchIO, never()).insert(anyString(), anyList());
         verify(channel).write(argument.capture());
 
-        String error = argument.getValue().content().toString(Charset.defaultCharset());
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
 
-        assertEquals(argument.getValue().content().toString(Charset.defaultCharset()), "Invalid Data: " + HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least 'what' field.");
+        assertEquals("Number of errors invalid", 2, errorResponse.getErrors().size());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 }

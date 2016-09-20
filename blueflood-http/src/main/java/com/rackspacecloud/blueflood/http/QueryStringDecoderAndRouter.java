@@ -53,7 +53,7 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Ful
         // for POST requests, check Content-Type header
         if ( request.getMethod() == HttpMethod.POST ) {
             if (!mediaTypeChecker.isContentTypeValid(request.headers())) {
-                DefaultHandler.sendResponse(ctx, request,
+                DefaultHandler.sendErrorResponse(ctx, request,
                         String.format("Unsupported media type for Content-Type: %s", request.headers().get(HttpHeaders.Names.CONTENT_TYPE)),
                         HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
                 );
@@ -64,7 +64,7 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Ful
         // for GET or POST requests, check Accept header
         if ( request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.POST ) {
             if (!mediaTypeChecker.isAcceptValid(request.headers())) {
-                DefaultHandler.sendResponse(ctx, request,
+                DefaultHandler.sendErrorResponse(ctx, request,
                         String.format("Unsupported media type for Accept: %s", request.headers().get(HttpHeaders.Names.ACCEPT)),
                         HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
                 );

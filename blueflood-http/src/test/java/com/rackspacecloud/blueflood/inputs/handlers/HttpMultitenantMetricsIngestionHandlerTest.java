@@ -2,7 +2,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricScoped;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.outputs.handlers.BaseHandlerTest;
+import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
@@ -25,7 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest {
+public class HttpMultitenantMetricsIngestionHandlerTest extends HandlerTestsBase {
 
     private HttpMultitenantMetricsIngestionHandler handler;
     private HttpMetricsIngestionServer.Processor processor;
@@ -129,7 +129,7 @@ public class HttpMultitenantMetricsIngestionHandlerTest extends BaseHandlerTest 
         assertEquals("Invalid tenant", metricName2, errorResponse.getErrors().get(1).getMetricName());
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(1).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 259200000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
 
     }
 

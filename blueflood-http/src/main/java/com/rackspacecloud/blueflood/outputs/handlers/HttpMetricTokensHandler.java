@@ -49,7 +49,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
         // get the query param
         List<String> query = requestWithParams.getQueryParams().get("query");
         if (query == null || query.size() != 1) {
-            sendResponse(ctx, request, "Invalid Query String",
+            DefaultHandler.sendErrorResponse(ctx, request, "Invalid Query String",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
@@ -64,7 +64,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
             sendResponse(ctx, request, getSerializedJSON(metricTokens), HttpResponseStatus.OK);
         } catch (Exception e) {
             log.error(String.format("Exception occurred while trying to get metrics index for %s", tenantId), e);
-            sendResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             httpMetricNameTokensHandlerTimerContext.stop();
         }

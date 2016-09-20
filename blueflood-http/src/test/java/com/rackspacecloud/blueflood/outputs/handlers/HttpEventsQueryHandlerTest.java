@@ -17,18 +17,22 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.types.Event;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
+import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
+public class HttpEventsQueryHandlerTest extends HandlerTestsBase {
 
     private EventsIO searchIO;
     private HttpEventsQueryHandler handler;
@@ -55,8 +59,18 @@ public class HttpEventsQueryHandlerTest extends BaseHandlerTest {
 
     @Test
     public void testElasticSearchSearchNotCalledEmptyQuery() throws Exception {
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, createGetRequest("/v2.0/" + TENANT + "/events/"));
+        verify(channel).write(argument.capture());
         verify(searchIO, never()).search(TENANT, new HashMap<String, List<String>>());
+
+        String errorResponseBody = argument.getValue().content().toString(Charset.defaultCharset());
+        ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
+
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error message", "Error: Query should contain at least one query parameter", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
     private void testQuery(String query, Map<String, List<String>> params) throws Exception {

@@ -16,36 +16,40 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
-import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.io.EventsIO;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.types.Event;
+import com.rackspacecloud.blueflood.utils.Metrics;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.util.CharsetUtil;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
-import com.rackspacecloud.blueflood.utils.Metrics;
 import org.codehaus.jackson.map.ObjectMapper;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
-import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.util.*;
 
 public class HttpEventsIngestionHandler implements HttpRequestHandler {
-
-    private static final long pastDiff = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-    private static final long futureDiff = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
     private static final Logger log = LoggerFactory.getLogger(HttpEventsIngestionHandler.class);
 
     private EventsIO searchIO;
     private final com.codahale.metrics.Timer httpEventsIngestTimer = Metrics.timer(HttpEventsIngestionHandler.class,
             "Handle HTTP request for ingesting events");
+
+    private static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    protected static final Validator validator = factory.getValidator();
 
     public HttpEventsIngestionHandler(EventsIO searchIO) {
         this.searchIO = searchIO;
@@ -55,7 +59,6 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         final String tenantId = request.headers().get(Event.FieldLabels.tenantId.name());
-        HttpResponseStatus status = HttpResponseStatus.OK;
         String response = "";
         ObjectMapper objectMapper = new ObjectMapper();
         final Timer.Context httpEventsIngestTimerContext = httpEventsIngestTimer.time();
@@ -65,40 +68,48 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
                     CharsetUtil.UTF_8);
             Event event = objectMapper.readValue(body, Event.class);
 
-            long timestamp = event.getWhen();
-            long current = System.currentTimeMillis();
-
-            if (event.getWhat().equals("")) {
-                throw new InvalidDataException(String.format( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "Event should contain at least '%s' field.", Event.FieldLabels.what.name()));
+            // To verify if the request has multiple elements. If some one sends request with multiple root elements,
+            // parser does not throw any validation exceptions. We are checking it manually here.
+            Iterator<Event> iterator = objectMapper.reader(Event.class).readValues(body);
+            if (iterator.hasNext()) {
+                iterator.next();
+                if (iterator.hasNext()) { //has more than one element
+                    throw new InvalidDataException("Only one event is allowed per request");
+                }
             }
 
-            if ( timestamp > current + futureDiff ) {
-                throw new InvalidDataException( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "'" + event.getWhat() + "': 'when' '" + timestamp + "' is more than '" + futureDiff + "' milliseconds into the future." );
+            Set<ConstraintViolation<Event>> constraintViolations = validator.validate(event);
+
+            List<ErrorResponse.ErrorData> validationErrors = new ArrayList<ErrorResponse.ErrorData>();
+            for (ConstraintViolation<Event> constraintViolation : constraintViolations) {
+                validationErrors.add(new ErrorResponse.ErrorData(tenantId, "",
+                        constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
             }
 
-            if ( timestamp < current - pastDiff ) {
-                throw new InvalidDataException( HttpMetricsIngestionHandler.ERROR_HEADER + System.lineSeparator() + "'" + event.getWhat() + "': 'when' '" + timestamp + "' is more than '" + pastDiff + "' milliseconds into the past." );
+            if (!validationErrors.isEmpty()) {
+                DefaultHandler.sendErrorResponse(ctx, request, validationErrors, HttpResponseStatus.BAD_REQUEST);
+                return;
             }
 
             searchIO.insert(tenantId, Arrays.asList(event.toMap()));
+            DefaultHandler.sendResponse(ctx, request, response, HttpResponseStatus.OK);
         } catch (JsonMappingException e) {
-            log.error(String.format("Exception %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
-            status = HttpResponseStatus.BAD_REQUEST;
+            DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (JsonParseException e){
-            log.error(String.format("Exception %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
-            status = HttpResponseStatus.BAD_REQUEST;
+            DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (InvalidDataException e) {
-            log.error(String.format("InvalidDataException %s", e.toString()));
+            log.debug(String.format("Exception %s", e.toString()));
             response = String.format("Invalid Data: %s", e.getMessage());
-            status = HttpResponseStatus.BAD_REQUEST;
+            DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.BAD_REQUEST);
         } catch (Exception e) {
             log.error(String.format("Exception %s", e.toString()));
             response = String.format("Error: %s", e.getMessage());
-            status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+            DefaultHandler.sendErrorResponse(ctx, request, response, HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            DefaultHandler.sendResponse(ctx, request, response, status);
             httpEventsIngestTimerContext.stop();
         }
     }
