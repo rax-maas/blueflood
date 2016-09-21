@@ -89,11 +89,23 @@ public class PlotRequestParser {
             throw new InvalidRequestException("Invalid parameter: to="+ to);
         }
 
-        long fromTime = Long.parseLong(from.get(0));
-        long toTime = Long.parseLong(to.get(0));
+        long fromTime;
+
+        try {
+            fromTime = Long.parseLong(from.get(0));
+        } catch (NumberFormatException e) {
+            throw new InvalidRequestException("parameter 'from' must be a valid long");
+        }
+
+        long toTime;
+        try {
+            toTime = Long.parseLong(to.get(0));
+        } catch (NumberFormatException e) {
+            throw new InvalidRequestException("parameter 'to' must be a valid long");
+        }
 
         if (toTime <= fromTime) {
-            throw new InvalidRequestException("paramter 'to' must be greater than 'from'");
+            throw new InvalidRequestException("parameter 'to' must be greater than 'from'");
         }
 
         Set<BasicRollupsOutputSerializer.MetricStat> stats = getStatsToFilter(select);
@@ -102,10 +114,19 @@ public class PlotRequestParser {
             try {
                 return new RollupsQueryParams(fromTime, toTime, Integer.parseInt(points.get(0)), stats);
             } catch (NumberFormatException ex) {
-                throw new InvalidRequestException("'points' param must be a valid integer");
+                throw new InvalidRequestException("parameter 'points' must be a valid integer");
             }
         } else {
-            return new RollupsQueryParams(fromTime, toTime, Resolution.fromString(res.get(0)), stats);
+
+            Resolution resolution;
+
+            try {
+                resolution = Resolution.fromString(res.get(0));
+            } catch (IllegalArgumentException e) {
+                throw new InvalidRequestException("parameter 'resolution' is not valid. Allowed values ['FULL', 'MIN5', 'MIN20', 'MIN60', 'MIN240', 'MIN1440']");
+            }
+
+            return new RollupsQueryParams(fromTime, toTime, resolution, stats);
         }
     }
 
