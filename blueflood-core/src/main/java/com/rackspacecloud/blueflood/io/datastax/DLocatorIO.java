@@ -25,7 +25,7 @@ import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.utils.Util;
+import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class DLocatorIO implements LocatorIO {
                 .value(VALUE, bindMarker());
         putValue = DatastaxIO.getSession()
                 .prepare(insert)
-                .setConsistencyLevel( ConsistencyLevel.ONE);  // TODO: remove later; required by the cassandra-maven-plugin 2.0.0-1
+                .setConsistencyLevel( ConsistencyLevel.LOCAL_ONE );  // TODO: remove later; required by the cassandra-maven-plugin 2.0.0-1
                                                               // (see https://issues.apache.org/jira/browse/CASSANDRA-6238)
 
     }
@@ -101,7 +101,12 @@ public class DLocatorIO implements LocatorIO {
 
         // bound values and execute
         BoundStatement bs = putValue.bind(shard, locator.toString(), "");
-        session.execute(bs);
+        Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
+        try {
+            session.execute(bs);
+        } finally {
+            timer.stop();
+        }
     }
 
     /**

@@ -46,12 +46,17 @@ public class ALocatorIO implements LocatorIO {
      */
     @Override
     public void insertLocator(Locator locator) throws IOException {
+        Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
         try {
             MutationBatch mutationBatch = AstyanaxIO.getKeyspace().prepareMutationBatch();
             AstyanaxWriter.getInstance().insertLocator(locator, mutationBatch);
             mutationBatch.execute();
         } catch (Exception e) {
             throw new IOException(e);
+        } finally {
+            if ( timer != null ) {
+                timer.stop();
+            }
         }
     }
 
