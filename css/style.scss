@@ -1,0 +1,9 @@
+---
+# this ensures Jekyll reads the file to be transformed into CSS later
+# only Main files contain this front matter, not partials.
+# The source sass files are location at /_sass
+---
+@import "base";
+@import "sidenav";
+@import "custom-navbar";
+@import "pygments";
