@@ -54,9 +54,7 @@ public class ALocatorIO implements LocatorIO {
         } catch (Exception e) {
             throw new IOException(e);
         } finally {
-            if ( timer != null ) {
-                timer.stop();
-            }
+            timer.stop();
         }
     }
 

@@ -99,10 +99,10 @@ public class DLocatorIO implements LocatorIO {
         // get shard this locator would belong to
         long shard = (long) Util.getShard(locator.toString());
 
-        // bound values and execute
-        BoundStatement bs = putValue.bind(shard, locator.toString(), "");
         Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
         try {
+            // bound values and execute
+            BoundStatement bs = putValue.bind(shard, locator.toString(), "");
             session.execute(bs);
         } finally {
             timer.stop();
