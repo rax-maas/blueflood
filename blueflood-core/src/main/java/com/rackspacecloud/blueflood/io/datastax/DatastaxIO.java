@@ -57,12 +57,18 @@ public class DatastaxIO {
         CodecRegistry codecRegistry = new CodecRegistry();
 
         cluster = Cluster.builder()
-                .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc("datacenter1").build()))
+                .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc("datacenter1").build(), false))
                 .withPoolingOptions(getPoolingOptions(dbHosts.size()))
                 .withCodecRegistry(codecRegistry)
                 .withSocketOptions(getSocketOptions())
                 .addContactPointsWithPorts(dbHosts)
                 .build();
+
+        QueryLogger queryLogger = QueryLogger.builder()
+                .withConstantThreshold(5000)
+                .build();
+
+        cluster.register(queryLogger);
 
         if ( LOG.isDebugEnabled() ) {
             logDebugConnectionInfo();
