@@ -20,7 +20,7 @@ RUN apt-get update && \
     apt-get install -y libcairo2-dev --force-yes && \
     apt-get install -y libffi-dev --force-yes && \
     pip install gunicorn &&\
-	pip install --upgrade "git+http://github.com/rackerlabs/graphite-api.git@george/fetch_multi_with_patches" &&\
+	pip install --upgrade "git+http://github.com/rackerlabs/graphite-api.git@1.1.3-rax.1" &&\
 	git -C /tmp clone https://github.com/rackerlabs/blueflood.git &&\
     git -C /tmp/blueflood checkout master &&\
 	cd /tmp/blueflood/contrib/graphite &&\

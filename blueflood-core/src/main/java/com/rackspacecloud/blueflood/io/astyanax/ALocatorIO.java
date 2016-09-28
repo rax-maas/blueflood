@@ -46,12 +46,15 @@ public class ALocatorIO implements LocatorIO {
      */
     @Override
     public void insertLocator(Locator locator) throws IOException {
+        Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_LOCATOR_NAME);
         try {
             MutationBatch mutationBatch = AstyanaxIO.getKeyspace().prepareMutationBatch();
             AstyanaxWriter.getInstance().insertLocator(locator, mutationBatch);
             mutationBatch.execute();
         } catch (Exception e) {
             throw new IOException(e);
+        } finally {
+            timer.stop();
         }
     }
 
@@ -72,13 +75,15 @@ public class ALocatorIO implements LocatorIO {
             RowQuery<Long, Locator> query = AstyanaxIO.getKeyspace()
                     .prepareQuery(CassandraModel.CF_METRICS_LOCATOR)
                     .getKey(shard);
+            if (LOG.isTraceEnabled())
+                LOG.trace("ALocatorIO.getLocators() executing: select * from \"" + CassandraModel.KEYSPACE + "\"." + CassandraModel.CF_METRICS_LOCATOR_NAME + " where key=" + Long.toString(shard));
             return query.execute().getResult().getColumnNames();
         } catch (NotFoundException e) {
             Instrumentation.markNotFound(CassandraModel.CF_METRICS_LOCATOR_NAME);
             return Collections.emptySet();
         } catch (ConnectionException ex) {
             Instrumentation.markReadError(ex);
-            LOG.error("Connection exception during getLocators(" + Long.toString(shard) + " )", ex);
+            LOG.error("Connection exception during getLocators(" + Long.toString(shard) + ")", ex);
             throw new IOException("Error reading locators", ex);
         } finally {
             ctx.stop();

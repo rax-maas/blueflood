@@ -16,12 +16,14 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.EnumValidator;
 import com.rackspacecloud.blueflood.types.Locator;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
 
@@ -85,12 +88,14 @@ public class HttpEnumIntegrationTest extends HttpIntegrationTestBase {
 
         // post enum metric for ingestion and verify
         HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", timestamp, postfix );
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        String[] errors = getBodyArray( response );
+        assertEquals(400, response.getStatusLine().getStatusCode());
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -105,11 +110,17 @@ public class HttpEnumIntegrationTest extends HttpIntegrationTestBase {
 
         // post enum metric for ingestion and verify
         HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_enums_payload.json", timestamp, postfix );
+        ErrorResponse errorResponse = getErrorResponse(response);
 
-        String[] errors = getBodyArray( response );
+        assertEquals(400, response.getStatusLine().getStatusCode());
 
-        assertEquals( 400, response.getStatusLine().getStatusCode() );
-        assertEquals( ERROR_TITLE, errors[ 0 ] );
-        assertTrue( Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors[ 1 ] ) );
+        assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
+        assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
+                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+    }
+
+    private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {
+        return new ObjectMapper().readValue(response.getEntity().getContent(), ErrorResponse.class);
     }
 }

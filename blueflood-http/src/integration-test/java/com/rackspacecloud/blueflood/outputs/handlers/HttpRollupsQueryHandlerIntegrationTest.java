@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 Rackspace
+ * Copyright 2013-2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,18 +30,22 @@ import java.net.URISyntaxException;
 
 import static org.junit.Assert.*;
 
+/**
+ * Integration Tests for GET .../views/:metricName (aka Singleplot views)
+ */
 public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    @Test
-    public void testSingleplotQuery() throws Exception {
+    private final String tenant_id = "333333";
+    private final long now = System.currentTimeMillis();
+    private final long start = now - TIME_DIFF_MS;
+    private final long end = now + TIME_DIFF_MS;
 
-        long start = System.currentTimeMillis() - TIME_DIFF_MS;
-        long end = System.currentTimeMillis() + TIME_DIFF_MS;
+    @Test
+    public void testHttpRollupsQueryHandler() throws Exception {
 
         String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String tenant_id = "333333";
         final String metric_name = "3333333.G1s" + postfix;
 
         // post multi metrics for ingestion and verify
@@ -68,19 +72,16 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertTrue( meta.get( "next_href" ).isJsonNull() );
         assertEquals( 1,  meta.get( "count" ).getAsInt() );
         assertTrue( meta.get( "marker" ).isJsonNull() );
+
+        assertResponseHeaderAllowOrigin(response);
     }
 
     @Test
-    public void testSingleplotQueryWithEnum() throws Exception {
-
-        long now = System.currentTimeMillis();
-        long start = now - TIME_DIFF_MS;
-        long end = now + TIME_DIFF_MS;
+    public void testHttpRollupsQueryHandler_WithEnum() throws Exception {
 
         String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String tenant_id = "333333";
         final String metric_name = "enum_metric_test" + postfix;
 
         // post multi metrics for ingestion and verify
@@ -112,6 +113,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( 1,  meta.get( "count" ).getAsInt() );
         assertTrue( meta.get( "marker" ).isJsonNull() );
 
+        assertResponseHeaderAllowOrigin(response);
     }
 
     /**

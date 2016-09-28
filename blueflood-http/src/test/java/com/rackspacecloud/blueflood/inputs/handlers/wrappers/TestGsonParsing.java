@@ -31,13 +31,13 @@ public class TestGsonParsing {
     @Test
     public void testLameButValidJSON() {
         String badJson = "{}";
-        AggregatedPayload payload = HttpAggregatedIngestionHandler.createPayload(badJson);
+        AggregatedPayload payload = AggregatedPayload.create(badJson);
     }
     
     @Test(expected = JsonSyntaxException.class)
     public void testInvalidJSON() {
         String badJson = "{tenantId:}";
-        AggregatedPayload payload = HttpAggregatedIngestionHandler.createPayload(badJson);
+        AggregatedPayload payload = AggregatedPayload.create(badJson);
     }
     
     @Test

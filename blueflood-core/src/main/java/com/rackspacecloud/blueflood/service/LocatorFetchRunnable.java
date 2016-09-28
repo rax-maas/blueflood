@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.service;
 
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.io.IOContainer;
@@ -48,6 +49,7 @@ class LocatorFetchRunnable implements Runnable {
     private ScheduleContext scheduleCtx;
     private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
+    private static final Histogram locatorsPerShard = Metrics.histogram(RollupService.class, "Locators Per Shard");
 
     private Range parentRange;
 
@@ -101,7 +103,8 @@ class LocatorFetchRunnable implements Runnable {
         final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
         Set<Locator> locators = getLocators(executionContext);
-
+        if (log.isTraceEnabled())
+            log.trace("locators retrieved: {}", locators.size());
         for (Locator locator : locators) {
             rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator);
         }
@@ -149,7 +152,8 @@ class LocatorFetchRunnable implements Runnable {
     public void finishExecution(long waitStart, RollupExecutionContext executionContext) {
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
-            log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms", new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
+            log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms",
+                    new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
@@ -166,8 +170,10 @@ class LocatorFetchRunnable implements Runnable {
             // continue on, but log the problem so that we can fix things later.
             executionContext.markUnsuccessful(any);
             executionContext.decrementReadCounter();
-            log.error(any.getMessage(), any);
-            log.error("BasicRollup failed for {} at {}", parentSlotKey, serverTime);
+            log.error(String.format(
+                            "BasicRollup failed for %s, locator %s, at %d",
+                            parentSlotKey, locator, serverTime),
+                    any);
         }
 
         return rollCount;
@@ -186,9 +192,10 @@ class LocatorFetchRunnable implements Runnable {
         try {
             // get a list of all locators to rollup for a shard
             locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
-        } catch (Exception e) {
-            executionContext.markUnsuccessful(e);
+            locatorsPerShard.update(locators.size());
+        } catch (Throwable e) {
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
+            executionContext.markUnsuccessful(e);
         }
         return locators;
     }

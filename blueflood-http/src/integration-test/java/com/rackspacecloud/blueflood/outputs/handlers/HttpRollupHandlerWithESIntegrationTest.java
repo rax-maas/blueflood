@@ -20,7 +20,6 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
 import com.rackspacecloud.blueflood.io.*;
-import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -55,7 +54,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     IMetric metric;
 
     @BeforeClass
-    public static void setUpHttp() {
+    public static void setUpHttp() throws Exception {
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
                 "com.rackspacecloud.blueflood.io.ElasticIO");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");

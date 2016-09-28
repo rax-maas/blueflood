@@ -20,17 +20,21 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.*;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +51,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    private final Clock clock = new DefaultClockImpl();
 
     public HttpAggregatedMultiIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
         this.processor = processor;
@@ -55,45 +60,54 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
     // our own stuff.
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
 
+        requestCount.inc();
+
         final Timer.Context timerContext = handlerTimer.time();
+        long ingestTime = clock.now().getMillis();
 
         // this is all JSON.
-        final String body = request.getContent().toString(Constants.DEFAULT_CHARSET);
+        String body = null;
         try {
-            // block until things get ingested.
-            requestCount.inc();
+            body = request.content().toString(Constants.DEFAULT_CHARSET);
             List<AggregatedPayload> bundleList = createBundleList(body);
 
             if (bundleList.size() > 0) {
                 // has aggregated metric bundle in body
                 // convert and add metric bundle to MetricsCollection if valid
                 MetricsCollection collection = new MetricsCollection();
-                List<String> errors = new ArrayList<String>();
+                List<ErrorResponse.ErrorData> errors = new ArrayList<ErrorResponse.ErrorData>();
 
                 // for each metric bundle
                 for (AggregatedPayload bundle : bundleList) {
                     // validate, convert, and add to collection
-                    List<String> bundleValidationErrors = bundle.getValidationErrors();
+                    List<ErrorResponse.ErrorData> bundleValidationErrors = bundle.getValidationErrors();
                     if (bundleValidationErrors.isEmpty()) {
                         // no validation error, add to collection
                         collection.add(PreaggregateConversions.buildMetricsCollection(bundle));
-                    }
-                    else {
+                    } else {
                         // failed validation, add to error
-                        errors.addAll( bundleValidationErrors );
+                        errors.addAll(bundleValidationErrors);
+                    }
+
+                    if (bundle.hasDelayedMetrics(ingestTime)) {
+                        Tracker.getInstance().trackDelayedAggregatedMetricsTenant(bundle.getTenantId(),
+                                bundle.getTimestamp(),
+                                bundle.getDelayTime(ingestTime),
+                                bundle.getAllMetricNames());
+                        bundle.markDelayMetricsReceived(ingestTime);
                     }
                 }
 
                 // if has validation errors and no valid metrics
                 if (!errors.isEmpty() && collection.size() == 0) {
                     // return BAD_REQUEST and error
-                    DefaultHandler.sendResponse( ctx, request,
-                            HttpMetricsIngestionHandler.getResponseBody(errors),
-                            HttpResponseStatus.BAD_REQUEST );
+                    DefaultHandler.sendErrorResponse(ctx, request,
+                            errors,
+                            HttpResponseStatus.BAD_REQUEST);
                     return;
                 }
 
@@ -102,7 +116,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                 List<Boolean> persisteds = futures.get(timeout.getValue(), timeout.getUnit());
                 for (Boolean persisted : persisteds) {
                     if (!persisted) {
-                        DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        DefaultHandler.sendErrorResponse(ctx, request, "Internal error persisting data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
                         return;
                     }
                 }
@@ -112,15 +126,13 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                     // no validation error, response OK
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
                     return;
-                }
-                else {
+                } else {
                     // has some validation errors, response MULTI_STATUS
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
                     return;
                 }
 
-            }
-            else {
+            } else {
                 // no aggregated metric bundles in body, response OK
                 DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
                 return;
@@ -128,29 +140,40 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));
             log.error(ex.getMessage(), ex);
-            DefaultHandler.sendResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
+        } catch (InvalidDataException ex) {
+            log.debug(String.format("Invalid request body: %s", body));
+            log.error(ex.getMessage(), ex);
+            DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (TimeoutException ex) {
-            DefaultHandler.sendResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
+            DefaultHandler.sendErrorResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
         } catch (Exception ex) {
             log.debug(String.format("BAD JSON: %s", body));
             log.error("Other exception while trying to parse content", ex);
-            DefaultHandler.sendResponse(ctx, request, "Failed parsing content", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, "Internal error saving data", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            requestCount.dec();
             timerContext.stop();
+            requestCount.dec();
         }
+
     }
 
     public static List<AggregatedPayload> createBundleList(String json) {
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
-        JsonArray jArray = parser.parse(json).getAsJsonArray();
+        JsonElement element = parser.parse(json);
+
+        if (!element.isJsonArray()) {
+            throw new InvalidDataException("Invalid request body");
+        }
+
+        JsonArray jArray = element.getAsJsonArray();
 
         ArrayList<AggregatedPayload> bundleList = new ArrayList<AggregatedPayload>();
 
         for(JsonElement obj : jArray )
         {
-            AggregatedPayload bundle = gson.fromJson( obj , AggregatedPayload.class);
+            AggregatedPayload bundle = AggregatedPayload.create(obj);
             bundleList.add(bundle);
         }
 

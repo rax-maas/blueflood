@@ -16,15 +16,14 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.exceptions.InvalidRequestException;
 import com.rackspacecloud.blueflood.exceptions.SerializationException;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.outputs.serializers.BasicRollupsOutputSerializer;
@@ -38,15 +37,14 @@ import com.rackspacecloud.blueflood.types.Resolution;
 import com.rackspacecloud.blueflood.outputs.utils.RollupsQueryParams;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.codahale.metrics.Timer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class HttpRollupsQueryHandler extends RollupHandler
             implements MetricDataQueryInterface<MetricData>, HttpRequestHandler {
@@ -59,7 +57,13 @@ public class HttpRollupsQueryHandler extends RollupHandler
             "Handle HTTP request for metrics");
 
     public HttpRollupsQueryHandler() {
-        this.serializer = new JSONBasicRollupsOutputSerializer();
+        this(new JSONBasicRollupsOutputSerializer());
+
+    }
+
+    @VisibleForTesting
+    HttpRollupsQueryHandler(BasicRollupsOutputSerializer<JSONObject> serializer) {
+        this.serializer = serializer;
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         this.parser = new JsonParser();
     }
@@ -108,20 +112,20 @@ public class HttpRollupsQueryHandler extends RollupHandler
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
 
-        final String tenantId = request.getHeader("tenantId");
-        final String metricName = request.getHeader("metricName");
+        final String tenantId = request.headers().get("tenantId");
+        final String metricName = request.headers().get("metricName");
 
-        if (!(request instanceof HTTPRequestWithDecodedQueryParams)) {
-            sendResponse(ctx, request, "Missing query params: from, to, points",
+        if (!(request instanceof HttpRequestWithDecodedQueryParams)) {
+            DefaultHandler.sendErrorResponse(ctx, request, "Missing query params: from, to, points",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+        HttpRequestWithDecodedQueryParams requestWithParams = (HttpRequestWithDecodedQueryParams) request;
 
         final Timer.Context httpMetricsFetchTimerContext = httpMetricsFetchTimer.time();
         try {
@@ -143,29 +147,29 @@ public class HttpRollupsQueryHandler extends RollupHandler
             sendResponse(ctx, request, jsonStringRep, HttpResponseStatus.OK);
         } catch (InvalidRequestException e) {
             // let's not log the full exception, just the message.
-            log.warn(e.getMessage());
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
+            log.debug(e.getMessage());
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            sendResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             httpMetricsFetchTimerContext.stop();
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                              HttpResponseStatus status) {
 
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
+        Tracker.getInstance().trackResponse(request, response);
     }
 }

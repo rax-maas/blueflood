@@ -17,12 +17,16 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.inputs.formats.*;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 
+import javax.validation.ConstraintViolation;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestionHandler {
 
@@ -38,6 +42,25 @@ public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestion
                         typeFactory.constructCollectionType(List.class,
                                 JSONMetricScoped.class)
                 );
-        return new JSONMetricsContainer(tenantId, jsonMetrics);
+
+        //validation
+        List<ErrorResponse.ErrorData> validationErrors = new ArrayList<ErrorResponse.ErrorData>();
+        List<JSONMetric> validJsonMetrics = new ArrayList<JSONMetric>();
+
+        for (JSONMetric metric: jsonMetrics) {
+            JSONMetricScoped scopedMetric = (JSONMetricScoped) metric;
+            Set<ConstraintViolation<JSONMetricScoped>> constraintViolations = validator.validate(scopedMetric);
+
+            if (constraintViolations.size() == 0) {
+                validJsonMetrics.add(metric);
+            } else {
+                for (ConstraintViolation<JSONMetricScoped> constraintViolation : constraintViolations) {
+                    validationErrors.add(new ErrorResponse.ErrorData(scopedMetric.getTenantId(), metric.getMetricName(),
+                            constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+                }
+            }
+        }
+
+        return new JSONMetricsContainer(tenantId, validJsonMetrics, validationErrors);
     }
 }

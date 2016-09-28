@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Rackspace
+ * Copyright 2013-2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -13,12 +13,22 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
 
+/**
+ * Specifies the behavior of classes who knows how to handle
+ * an {@link io.netty.handler.codec.http.FullHttpRequest} object
+ */
 public interface HttpRequestHandler {
-    public void handle(ChannelHandlerContext ctx, HttpRequest request);
+
+    /**
+     * Handles the incoming {@link io.netty.handler.codec.http.FullHttpRequest}
+     *
+     * @param ctx
+     * @param request
+     */
+    void handle(ChannelHandlerContext ctx, FullHttpRequest request);
 }

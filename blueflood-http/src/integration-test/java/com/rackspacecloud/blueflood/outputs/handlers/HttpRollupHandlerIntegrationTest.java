@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
@@ -56,7 +57,8 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
     private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
 
     @BeforeClass
-    public static void setUpHttp() {
+    public static void setUpHttp() throws Exception {
+        // this method suppress the @BeforeClass method of the parent
         queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
         httpQueryService = new HttpQueryService();
         httpQueryService.startService();

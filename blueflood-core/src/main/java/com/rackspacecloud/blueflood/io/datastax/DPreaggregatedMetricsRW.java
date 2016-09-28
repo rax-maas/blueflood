@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ import java.util.*;
 public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements PreaggregatedRW {
 
     private static final Logger LOG = LoggerFactory.getLogger(DPreaggregatedMetricsRW.class);
+    private static final Timer waitResultsTimer = Metrics.timer(DPreaggregatedMetricsRW.class, "PreAggr Metrics Wait Write Results");
 
     private final DCounterIO counterIO = new DCounterIO();
     private final DGagueIO gaugeIO = new DGagueIO();
@@ -126,6 +128,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
             for (ResultSetFuture future : futureLocatorMap.keySet()) {
                 try {
                     future.getUninterruptibly().all();
+                    if (granularity == Granularity.FULL) {
+                        Instrumentation.markFullResPreaggregatedMetricWritten();
+                    }
                 } catch (Exception ex) {
                     Instrumentation.markWriteError();
                     LOG.error(String.format("error writing preaggregated metric for locator %s, granularity %s",

@@ -1,14 +1,15 @@
 package com.rackspacecloud.blueflood.tracker;
 
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
+import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpHeaders;
 import junit.framework.Assert;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,7 +29,6 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -44,10 +44,9 @@ public class TrackerTest {
     String tenantId = "121212";
 
     private static Logger loggerMock;
-    private HTTPRequestWithDecodedQueryParams httpRequestMock;
+    private HttpRequestWithDecodedQueryParams httpRequestMock;
     private HttpMethod httpMethodMock;
-    private ChannelBuffer channelBufferMock;
-    private HttpResponse httpResponseMock;
+    private FullHttpResponse httpResponseMock;
     private HttpResponseStatus httpResponseStatusMock;
     private Map<String, List<String>> queryParams;
     private List<Metric> delayedMetrics;
@@ -70,20 +69,25 @@ public class TrackerTest {
         reset(loggerMock);
 
         // mock HttpRequest, method, queryParams, channelBuffer, responseStatus
-        httpRequestMock = mock(HTTPRequestWithDecodedQueryParams.class);
+        httpRequestMock = mock(HttpRequestWithDecodedQueryParams.class);
         httpMethodMock = mock(HttpMethod.class);
-        channelBufferMock = mock(ChannelBuffer.class);
         queryParams = new HashMap<String, List<String>>();
 
         // mock HttpResponse and HttpResponseStatus
-        httpResponseMock = mock(HttpResponse.class);
+        httpResponseMock = mock(FullHttpResponse.class);
         httpResponseStatusMock = mock(HttpResponseStatus.class);
 
         // mock headers
+        HttpHeaders headers = mock(HttpHeaders.class);
         Set<String> headerNames = new HashSet<String>();
         headerNames.add("X-Auth-Token");
-        when(httpRequestMock.getHeaderNames()).thenReturn(headerNames);
-        when(httpRequestMock.getHeader("X-Auth-Token")).thenReturn("AUTHTOKEN");
+        when(httpRequestMock.headers()).thenReturn(headers);
+        when(headers.names()).thenReturn(headerNames);
+        when(headers.get("X-Auth-Token")).thenReturn("AUTHTOKEN");
+
+        HttpHeaders responseHeaders = mock(HttpHeaders.class);
+        when(httpResponseMock.headers()).thenReturn(responseHeaders);
+        when(responseHeaders.names()).thenReturn(new HashSet<String>());
 
         // setup delayed metrics
         Locator locator1 = Locator.createLocatorFromPathComponents(tenantId, "delayed", "metric1");
@@ -228,7 +232,7 @@ public class TrackerTest {
     }
 
     @Test
-    public void testTrackTenant() {
+    public void testTrackTenant() throws Exception {
 
         // setup mock returns for ingest POST
         when(httpRequestMock.getUri()).thenReturn("/v2.0/" + tenantId + "/ingest");
@@ -241,7 +245,7 @@ public class TrackerTest {
         queryParams.put("param1", paramValues);
         when((httpRequestMock).getQueryParams()).thenReturn(queryParams);
 
-        when(channelBufferMock.toString(any(Charset.class))).thenReturn("[\n" +
+        String payload =        "[\n" +
                 "      {\n" +
                 "        \"collectionTime\": 1376509892612,\n" +
                 "        \"ttlInSeconds\": 172800,\n" +
@@ -254,8 +258,8 @@ public class TrackerTest {
                 "        \"metricValue\": 66,\n" +
                 "        \"metricName\": \"example.metric.two\"\n" +
                 "      },\n" +
-                "    ]'");
-        when(httpRequestMock.getContent()).thenReturn(channelBufferMock);
+                "    ]'";
+        when(httpRequestMock.content()).thenReturn(Unpooled.copiedBuffer(payload.getBytes("UTF-8")));
 
         // add tenant and track
         tracker.addTenant(tenantId);
@@ -317,7 +321,7 @@ public class TrackerTest {
     }
 
     @Test
-    public void testTrackResponse() {
+    public void testTrackResponse() throws Exception {
 
         // setup mock returns for query POST
         String requestUri = "/v2.0/" + tenantId + "/metrics/search";
@@ -330,11 +334,12 @@ public class TrackerTest {
         queryParams.put("query", paramValues);
         when((httpRequestMock).getQueryParams()).thenReturn(queryParams);
 
-        when(httpResponseStatusMock.getCode()).thenReturn(200);
+        when(httpResponseStatusMock.code()).thenReturn(200);
         when(httpResponseMock.getStatus()).thenReturn(httpResponseStatusMock);
 
-        when(channelBufferMock.toString(any(Charset.class))).thenReturn("[TRACKER] Response for tenantId " + tenantId);
-        when(httpResponseMock.getContent()).thenReturn(channelBufferMock);
+        //when(channelBufferMock.toString(any(Charset.class))).thenReturn(
+        String result = "[TRACKER] Response for tenantId " + tenantId;
+        when(httpResponseMock.content()).thenReturn(Unpooled.copiedBuffer(result.getBytes("UTF-8")));
 
         // add tenant and track
         tracker.addTenant(tenantId);
@@ -342,8 +347,9 @@ public class TrackerTest {
 
         // verify
         verify(loggerMock, atLeastOnce()).info("[TRACKER] tenantId " + tenantId + " added.");
-        verify(loggerMock, times(1)).info("[TRACKER] Response for tenantId " + tenantId + " request " + requestUri + "?query=locator1\n" +
+        verify(loggerMock, times(1)).info("[TRACKER] Response for tenantId " + tenantId + " GET request " + requestUri + "?query=locator1\n" +
                 "RESPONSE_STATUS: 200\n" +
+                "RESPONSE HEADERS: \n" +
                 "RESPONSE_CONTENT:\n" +
                 "[TRACKER] Response for tenantId " + tenantId);
     }
@@ -403,4 +409,36 @@ public class TrackerTest {
         verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric2 has collectionTime 2016-01-01 00:00:00"));
     }
 
+    @Test
+    public void testTrackDelayedAggregatedMetricsTenant() {
+        // enable tracking delayed metrics and track
+        tracker.setIsTrackingDelayedMetrics();
+
+        List<String> delayedMetricNames = new ArrayList<String>() {{
+            for ( Metric metric : delayedMetrics ) {
+                add(metric.getLocator().toString());
+            }
+        }};
+        long ingestTime = System.currentTimeMillis();
+        tracker.trackDelayedAggregatedMetricsTenant(tenantId, delayedMetrics.get(0).getCollectionTime(), ingestTime, delayedMetricNames);
+
+        // verify
+        verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics started");
+        verify(loggerMock, atLeastOnce()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, atLeastOnce()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1" + "," +
+                                                            tenantId + ".delayed.metric2 have collectionTime 2016-01-01 00:00:00 which is delayed"));
+    }
+
+    @Test
+    public void testDoesNotTrackDelayedAggregatedMetricsTenant() {
+        // disable tracking delayed metrics and track
+        tracker.resetIsTrackingDelayedMetrics();
+        tracker.trackDelayedMetricsTenant(tenantId, delayedMetrics);
+
+        // verify
+        verify(loggerMock, atLeastOnce()).info("[TRACKER] Tracking delayed metrics stopped");
+        verify(loggerMock, never()).info("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics " + tenantId);
+        verify(loggerMock, never()).info(contains("[TRACKER][DELAYED METRIC] " + tenantId + ".delayed.metric1" + "," +
+                tenantId + ".delayed.metric2 have collectionTime 2016-01-01 00:00:00 which is delayed"));
+    }
 }

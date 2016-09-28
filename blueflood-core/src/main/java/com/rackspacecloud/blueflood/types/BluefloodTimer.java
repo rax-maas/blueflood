@@ -16,14 +16,23 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class BluefloodTimer {
+
+    @NotEmpty
     private String name;
+
+    @NotNull
     private Number count;
+
     private Number rate;
     private Number min;
     private Number max;
@@ -31,8 +40,18 @@ public class BluefloodTimer {
     private Number avg;
     private Number median;
     private Number std;
+
     private Map<String, Percentile> percentiles;
     private Map<String, Number> histogram;
+
+    public BluefloodTimer() {
+    }
+
+    @VisibleForTesting
+    public BluefloodTimer(String name, Number count) {
+        this.name = name;
+        this.count = count;
+    }
 
     public String getName() {
         return name;

@@ -82,8 +82,10 @@ class MultiPlotQuery(AbstractQuery):
             default_config['query_url'],
             tenant_id, frm,
             to, resolution)
-        result = self.query_request.POST(url, payload)
-        #    logger(result.getText())
+        headers = ( NVPair("Content-Type", "application/json"), )
+        result = self.query_request.POST(url, payload, headers)
+        if result.getStatusCode() in [400, 415, 500]:
+            logger("Error: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
         return result
 
 
@@ -187,8 +189,10 @@ class EnumMultiPlotQuery(AbstractQuery):
             default_config['query_url'],
             tenant_id, frm,
             to, resolution)
-        result = self.query_request.POST(url, payload)
-        #    logger(result.getText())
+        headers = ( NVPair("Content-Type", "application/json"), )
+        result = self.query_request.POST(url, payload, headers)
+        if result.getStatusCode() in [400, 415, 500]:
+            logger("Error: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
         return result
 
 

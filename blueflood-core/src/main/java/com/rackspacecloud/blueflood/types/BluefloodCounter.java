@@ -16,9 +16,31 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.validation.constraints.NotNull;
+
 public class BluefloodCounter {
+
+    public BluefloodCounter(String name) {
+        this.name = name;
+    }
+
+    @VisibleForTesting
+    public BluefloodCounter(String name, Number value, Number rate) {
+        this.name = name;
+        this.value = value;
+        this.rate = rate;
+    }
+
+    @NotEmpty
     private String name;
+
+    @NotNull
     private Number value;
+
+    @NotNull
     private Number rate;
 
     public String getName() {

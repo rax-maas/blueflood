@@ -16,12 +16,24 @@
 
 package com.rackspacecloud.blueflood.types;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRange;
+import com.rackspacecloud.blueflood.inputs.constraints.EpochRangeLimits;
+import org.hibernate.validator.constraints.NotEmpty;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class Event {
+
+    @EpochRange(maxPast = EpochRangeLimits.BEFORE_CURRENT_TIME_MS,
+            maxFuture = EpochRangeLimits.AFTER_CURRENT_TIME_MS,
+            message = "Out of bounds. Cannot be more than ${maxPast.getValue()} milliseconds into the past. Cannot be more than ${maxFuture.getValue()} milliseconds into the future")
     private long when = 0;
+
+    @NotEmpty
     private String what = "";
+
     private String data = "";
     private String tags = "";
 
@@ -36,6 +48,15 @@ public class Event {
     public static final String untilParameterName = "until";
     public static final String fromParameterName = "from";
     public static final String tagsParameterName = FieldLabels.tags.name();
+
+    public Event() {
+    }
+
+    @VisibleForTesting
+    public Event(long when, String what) {
+        this.when = when;
+        this.what = what;
+    }
 
     public Map<String, Object> toMap() {
         return new HashMap<String, Object>() {

@@ -55,6 +55,9 @@ public enum HttpConfig implements ConfigDefaults {
     // Maximum number of batch requests that can be queued
     MAX_BATCH_READ_REQUESTS_TO_QUEUE("10"),
 
+    // Maximum number of bytes a request body can have
+    HTTP_MAX_CONTENT_LENGTH("1048576"),
+
     // Maximum number of threads in type and unit processor threadpool
     HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10");
 

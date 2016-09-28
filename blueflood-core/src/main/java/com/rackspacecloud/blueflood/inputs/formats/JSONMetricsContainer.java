@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.formats;
 
 import com.rackspacecloud.blueflood.io.Instrumentation;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -35,44 +36,30 @@ public class JSONMetricsContainer {
     private static final long SHORT_DELAY = Configuration.getInstance().getLongProperty(CoreConfig.SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS);
 
     private final String tenantId;
-    private final List<JSONMetric> jsonMetrics;
-    private final List<Metric> metrics = new ArrayList<Metric>();
+
+    private final List<Metric> validMetrics;
+    private final List<ErrorResponse.ErrorData> validationErrors;
     private final List<Metric> delayedMetrics = new ArrayList<Metric>();
-    private final List<String> errors = new ArrayList<String>();
 
-    public JSONMetricsContainer(String tenantId, List<JSONMetric> metrics) {
+    public JSONMetricsContainer(String tenantId, List<JSONMetric> validJsonMetrics, List<ErrorResponse.ErrorData> validationErrors) {
         this.tenantId = tenantId;
-        this.jsonMetrics = metrics;
-        processJson();
-    }
-
-    public List<String> getValidationErrors() {
-        return errors;
+        this.validMetrics = processJson(validJsonMetrics);
+        this.validationErrors = validationErrors;
     }
 
     public List<Metric> getValidMetrics() {
-        return metrics;
+        return validMetrics;
     }
 
-    public List<JSONMetric> getJsonMetrics() {
-        return jsonMetrics;
+    public List<ErrorResponse.ErrorData> getValidationErrors() {
+        return validationErrors;
     }
 
-    private List<Metric> processJson() {
+    private List<Metric> processJson(List<JSONMetric> jsonMetrics) {
 
-        if (jsonMetrics == null || jsonMetrics.isEmpty()) {
-            return null;
-        }
+        List<Metric> metrics = new ArrayList<Metric>();
 
         for (JSONMetric jsonMetric : jsonMetrics) {
-
-            // validate metric and retrieve error message if failed
-            List<String> metricValidationErrors = jsonMetric.getValidationErrors();
-            if ( !metricValidationErrors.isEmpty() ) {
-                // has metric has validation errors, do not convert metric and add to errors list and go to next metric
-                errors.addAll(metricValidationErrors);
-                continue;
-            }
 
             if (jsonMetric.getMetricValue() == null) {
                 // skip null value
@@ -90,6 +77,7 @@ public class JSONMetricsContainer {
 
             final Metric metric = new Metric(locator, jsonMetric.getMetricValue(), jsonMetric.getCollectionTime(),
                     new TimeValue(jsonMetric.getTtlInSeconds(), TimeUnit.SECONDS), jsonMetric.getUnit());
+
             long delay = new DateTime().getMillis() - metric.getCollectionTime();
 
             if (delay > TRACKER_DELAYED_METRICS_MILLIS) {

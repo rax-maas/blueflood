@@ -17,7 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 public interface IngestionService {
-    public void startService(ScheduleContext context);
-    public void shutdownService();
+    void startService(ScheduleContext context) throws InterruptedException;
+    void shutdownService();
 }
 

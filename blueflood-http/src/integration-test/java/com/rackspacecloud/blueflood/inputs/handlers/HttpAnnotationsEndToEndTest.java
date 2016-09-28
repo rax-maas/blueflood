@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Event;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -53,7 +54,6 @@ public class HttpAnnotationsEndToEndTest {
     private static ScheduleContext context;
     private static EventsIO eventsSearchIO;
     private static HttpQueryService httpQueryService;
-    private static  Map <String, String> parameterMap;
     private final String tenant_id = "333333";
     private static EsSetup esSetup;
     //A time stamp 2 days ago
@@ -99,10 +99,10 @@ public class HttpAnnotationsEndToEndTest {
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         Thread.sleep(1000);
 
-        parameterMap = new HashMap<String, String>();
+        Map<String,String> parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
         parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
-        HttpGet get = new HttpGet(getAnnotationsQueryURI());
+        HttpGet get = new HttpGet(getAnnotationsQueryURI(parameterMap));
         response = client.execute(get);
 
         String responseString = EntityUtils.toString(response.getEntity());
@@ -119,6 +119,7 @@ public class HttpAnnotationsEndToEndTest {
                 ContentType.APPLICATION_JSON);
         post.setEntity(entity);
         post.setHeader(Event.FieldLabels.tenantId.name(), tenantId);
+        post.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
         HttpResponse response = client.execute(post);
         return response;
     }
@@ -136,7 +137,7 @@ public class HttpAnnotationsEndToEndTest {
         return events.toString();
     }
 
-    private URI getAnnotationsQueryURI() throws URISyntaxException {
+    private URI getAnnotationsQueryURI(Map<String, String> parameterMap) throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
                 .setPort(queryPort).setPath("/v2.0/" + tenant_id + "/events/getEvents");
 

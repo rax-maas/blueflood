@@ -1,9 +1,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
-import com.rackspacecloud.blueflood.http.HttpRequestHandler;
-import com.rackspacecloud.blueflood.http.HttpResponder;
+import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.MetricToken;
@@ -11,12 +9,12 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import io.netty.buffer.Unpooled;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,20 +36,20 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handle(ChannelHandlerContext ctx, HttpRequest request) {
-
-        final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
+    public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         Tracker.getInstance().track(request);
 
-        final String tenantId = request.getHeader("tenantId");
+        final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
 
-        HTTPRequestWithDecodedQueryParams requestWithParams = (HTTPRequestWithDecodedQueryParams) request;
+        final String tenantId = request.headers().get("tenantId");
+
+        HttpRequestWithDecodedQueryParams requestWithParams = (HttpRequestWithDecodedQueryParams) request;
 
         // get the query param
         List<String> query = requestWithParams.getQueryParams().get("query");
         if (query == null || query.size() != 1) {
-            sendResponse(ctx, request, "Invalid Query String",
+            DefaultHandler.sendErrorResponse(ctx, request, "Invalid Query String",
                     HttpResponseStatus.BAD_REQUEST);
             return;
         }
@@ -66,23 +64,23 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
             sendResponse(ctx, request, getSerializedJSON(metricTokens), HttpResponseStatus.OK);
         } catch (Exception e) {
             log.error(String.format("Exception occurred while trying to get metrics index for %s", tenantId), e);
-            sendResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            DefaultHandler.sendErrorResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
             httpMetricNameTokensHandlerTimerContext.stop();
         }
     }
 
-    private void sendResponse(ChannelHandlerContext channel, HttpRequest request, String messageBody,
+    private void sendResponse(ChannelHandlerContext channel, FullHttpRequest request, String messageBody,
                               HttpResponseStatus status) {
 
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
 
         if (messageBody != null && !messageBody.isEmpty()) {
-            response.setContent(ChannelBuffers.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
+            response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        Tracker.getInstance().trackResponse(request, response);
         HttpResponder.respond(channel, request, response);
+        Tracker.getInstance().trackResponse(request, response);
     }
 
     public String getSerializedJSON(final List<MetricToken> metricTokens) {

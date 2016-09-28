@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.utils.MetricHelper;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.jboss.netty.util.CharsetUtil;
+import io.netty.util.CharsetUtil;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;

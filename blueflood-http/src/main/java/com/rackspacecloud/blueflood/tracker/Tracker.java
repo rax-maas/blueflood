@@ -16,12 +16,15 @@
 
 package com.rackspacecloud.blueflood.tracker;
 
-import com.rackspacecloud.blueflood.http.HTTPRequestWithDecodedQueryParams;
+import com.rackspacecloud.blueflood.http.HttpRequestWithDecodedQueryParams;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.types.Metric;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +42,10 @@ public class Tracker implements TrackerMBean {
     public static final String trackerName = String.format("com.rackspacecloud.blueflood.tracker:type=%s", Tracker.class.getSimpleName());
 
     private static final Logger log = LoggerFactory.getLogger(Tracker.class);
-    private final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
 
+    private static final String EMPTY_STRING = "";
+
+    private final Pattern patternGetTid = Pattern.compile( "/v\\d+\\.\\d+/([^/]+)/.*" );
     private DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     // Tracker is a singleton
@@ -163,23 +168,27 @@ public class Tracker implements TrackerMBean {
         if (isTracking(tenantId)) {
 
             // get headers
-            String headers = "";
-            for (String headerName : request.getHeaderNames()) {
-                headers += "\n" + headerName + "\t" + request.getHeader(headerName);
+            String headers = EMPTY_STRING;
+            for (String headerName : request.headers().names()) {
+                headers += "\n" + headerName + "\t" + request.headers().get(headerName);
             }
 
             // get parameters
             String queryParams = getQueryParameters(request);
 
             // get request content
-            String requestContent = request.getContent().toString(Constants.DEFAULT_CHARSET);
-            if ((requestContent != null) && (!requestContent.isEmpty())) {
-                requestContent = "\nREQUEST_CONTENT:\n" + requestContent;
+            String requestContent = EMPTY_STRING;
+            if ( request instanceof FullHttpRequest ) {
+                FullHttpRequest fullReq = (FullHttpRequest)request;
+                requestContent = fullReq.content().toString(Constants.DEFAULT_CHARSET);
+                if ((requestContent != null) && (!requestContent.isEmpty())) {
+                    requestContent = "\nREQUEST_CONTENT:\n" + requestContent;
+                }
             }
 
             // log request
             String logMessage = "[TRACKER] " +
-                    request.getMethod().toString() + " request for tenantId " + tenantId + ": " + request.getUri() + queryParams + "\n" +
+                    request.getMethod() + " request for tenantId " + tenantId + ": " + request.getUri() + queryParams + "\n" +
                     "HEADERS: " + headers +
                     requestContent;
 
@@ -189,7 +198,7 @@ public class Tracker implements TrackerMBean {
         }
     }
 
-    public void trackResponse(HttpRequest request, HttpResponse response) {
+    public void trackResponse(HttpRequest request, FullHttpResponse response) {
         // check if tenantId is being tracked by JMX TenantTrackerMBean and log the response if it is
         // HttpRequest is needed for original request uri and tenantId
         if (request == null) return;
@@ -198,10 +207,16 @@ public class Tracker implements TrackerMBean {
         String tenantId = findTid( request.getUri() );
         if (isTracking(tenantId)) {
             HttpResponseStatus status = response.getStatus();
-            String messageBody = response.getContent().toString(Constants.DEFAULT_CHARSET);
+            String messageBody = response.content().toString(Constants.DEFAULT_CHARSET);
 
             // get parameters
             String queryParams = getQueryParameters(request);
+
+            // get headers
+            String headers = "";
+            for (String headerName : response.headers().names()) {
+                headers += "\n" + headerName + "\t" + response.headers().get(headerName);
+            }
 
             // get response content
             String responseContent = "";
@@ -210,8 +225,9 @@ public class Tracker implements TrackerMBean {
             }
 
             String logMessage = "[TRACKER] " +
-                    "Response for tenantId " + tenantId + " request " + request.getUri() + queryParams + "\n" +
-                    "RESPONSE_STATUS: " + status.getCode() +
+                    "Response for tenantId " + tenantId + " " + request.getMethod() + " request " + request.getUri() + queryParams +
+                    "\nRESPONSE_STATUS: " + status.code() +
+                    "\nRESPONSE HEADERS: " + headers +
                     responseContent;
 
             log.info(logMessage);
@@ -219,7 +235,13 @@ public class Tracker implements TrackerMBean {
 
     }
 
-    public void trackDelayedMetricsTenant(String tenantid, List<Metric> delayedMetrics) {
+    /**
+     * This method is used to log delayed metrics, if tracking delayed metrics
+     * is turned on for this Blueflood service.
+     * @param tenantid
+     * @param delayedMetrics
+     */
+    public void trackDelayedMetricsTenant(String tenantid, final List<Metric> delayedMetrics) {
         if (isTrackingDelayedMetrics) {
             String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s", tenantid);
             log.info(logMessage);
@@ -238,9 +260,35 @@ public class Tracker implements TrackerMBean {
         }
     }
 
+    /**
+     * This method logs the delayed aggregated metrics for a particular tenant,
+     * if tracking delayed metric is turned on for this Blueflood service.
+     * Aggregated metrics have one single timestamp for the group of metrics that
+     * are sent in one request.
+     *
+     * @param tenantId              the tenantId who's the sender of the metrics
+     * @param collectionTimeMs      the collection timestamp (ms) in request payload
+     * @param delayTimeMs           the delayed time (ms)
+     * @param delayedMetricNames    the list of delayed metrics in request payload
+     */
+    public void trackDelayedAggregatedMetricsTenant(String tenantId, long collectionTimeMs, long delayTimeMs, List<String> delayedMetricNames) {
+        if (isTrackingDelayedMetrics) {
+            String logMessage = String.format("[TRACKER][DELAYED METRIC] Tenant sending delayed metrics %s", tenantId);
+            log.info(logMessage);
+
+            // log individual delayed metrics locator and collectionTime
+            double delayMin = delayTimeMs / 1000 / 60;
+            logMessage = String.format("[TRACKER][DELAYED METRIC] %s have collectionTime %s which is delayed by %.2f minutes",
+                    StringUtils.join(delayedMetricNames, ","),
+                        dateFormatter.format(new Date(collectionTimeMs)),
+                        delayMin);
+            log.info(logMessage);
+        }
+    }
+
     String getQueryParameters(HttpRequest httpRequest) {
         String params = "";
-        Map<String, List<String>> parameters = ((HTTPRequestWithDecodedQueryParams) httpRequest).getQueryParams();
+        Map<String, List<String>> parameters = ((HttpRequestWithDecodedQueryParams) httpRequest).getQueryParams();
 
         for (Map.Entry<String, List<String>> param : parameters.entrySet()) {
             String paramName = param.getKey();

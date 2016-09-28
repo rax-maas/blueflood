@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 Rackspace
+ * Copyright 2013-2016 Rackspace
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
-
 import org.junit.Test;
 
 import java.io.IOException;
@@ -32,19 +31,19 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
-
+/**
+ * Integration Tests for POST .../views (aka Multiplot views)
+ */
 public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    private static final long TIME_DIFF = 2000;
+    private final long TIME_DIFF = 2000;
+    private final String tenant_id = "333333";
+    private long start = System.currentTimeMillis() - TIME_DIFF;
+    private long end = System.currentTimeMillis() + TIME_DIFF;
 
     @Test
-    public void testMultiplotQuery() throws Exception {
+    public void testHttpMultiRollupsQueryHandler() throws Exception {
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String tenant_id = "333333";
-
-        long start = System.currentTimeMillis() - TIME_DIFF;
-        long end = System.currentTimeMillis() + TIME_DIFF;
-
         String postfix = getPostfix();
 
         // post multi metrics for ingestion and verify
@@ -92,27 +91,27 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
         JsonObject data1a = data1.get( 0 ).getAsJsonObject();
         assertTrue( data1a.has( "timestamp" ) );
-        assertEquals( 1, data1a.get( "numPoints" ).getAsInt() );
-        assertEquals( 56, data1a.get( "latest" ).getAsInt() );
+        assertEquals(1, data1a.get("numPoints").getAsInt());
+        assertEquals(56, data1a.get("latest").getAsInt());
+
+        assertResponseHeaderAllowOrigin(response);
     }
 
     @Test
-    public void testMultiplotQueryWithEnum() throws Exception {
-        long start = System.currentTimeMillis() - TIME_DIFF;
-        long end = System.currentTimeMillis() + TIME_DIFF;
+    public void testHttpMultiRollupsQueryHandler_WithEnum() throws Exception {
 
         String postfix = getPostfix();
 
         // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String tenant_id = "99988877";
+        final String tenant_id_enum = "99988877";
         final String metric_name = "call_xyz_api" + postfix;
 
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
+        HttpResponse response = postMetric(tenant_id_enum, postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
-        JsonObject responseObject = getMultiMetricRetry( tenant_id, start, end, "", "FULL", "enum_values", String.format("['%s']", metric_name), 1 );
+        JsonObject responseObject = getMultiMetricRetry( tenant_id_enum, start, end, "", "FULL", "enum_values", String.format("['%s']", metric_name), 1 );
 
         assertNotNull( "No values for metrics found", responseObject );
 
@@ -130,6 +129,8 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         JsonObject data1 = data.get( 0 ).getAsJsonObject();
         assertTrue( data1.has( "timestamp" ) );
         assertEquals( 1, data1.getAsJsonObject( "enum_values" ).get( "OK" ).getAsInt() );
+
+        assertResponseHeaderAllowOrigin(response);
     }
 
     /**

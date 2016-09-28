@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -29,6 +30,7 @@ public class RollupBatchWriteRunnable implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(RollupBatchWriteRunnable.class);
     private static final Histogram rollupsPerBatch = Metrics.histogram(RollupService.class, "Rollups Per Batch");
+    private static final Meter rollupsWriteRate = Metrics.meter(RollupService.class, "Rollups Write Rate");
     private static final Timer batchWriteTimer = Metrics.timer(RollupService.class, "Rollup Batch Write");
 
     private final RollupExecutionContext executionContext;
@@ -51,11 +53,12 @@ public class RollupBatchWriteRunnable implements Runnable {
         } catch (Exception e) {
             LOG.warn("not able to insert rollups", e);
             executionContext.markUnsuccessful(e);
-
+        } finally {
+            executionContext.decrementWriteCounter(writeContexts.size());
+            rollupsPerBatch.update(writeContexts.size());
+            rollupsWriteRate.mark(writeContexts.size());
+            RollupService.lastRollupTime.set(System.currentTimeMillis());
+            ctx.stop();
         }
-        executionContext.decrementWriteCounter(writeContexts.size());
-        rollupsPerBatch.update(writeContexts.size());
-        RollupService.lastRollupTime.set(System.currentTimeMillis());
-        ctx.stop();
     }
 }

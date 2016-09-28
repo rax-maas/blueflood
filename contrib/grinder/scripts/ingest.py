@@ -7,7 +7,7 @@ except ImportError:
 from utils import *
 from net.grinder.script import Test
 from net.grinder.plugin.http import HTTPRequest
-
+from HTTPClient import NVPair
 
 class IngestThread(AbstractThread):
     # The list of metric numbers for all threads in this worker
@@ -92,8 +92,10 @@ class IngestThread(AbstractThread):
         payload = self.generate_payload(int(self.time()),
                                         self.slice[self.position])
         self.position += 1
-        result = self.request.POST(self.ingest_url(), payload)
+        headers = ( NVPair("Content-Type", "application/json"), )
+        result = self.request.POST(self.ingest_url(tenant_id), payload, headers)
+        if result.getStatusCode() in [400, 415, 500]:
+            logger("Error: status code=" + str(result.getStatusCode()) + " response=" + result.getText())
         return result
-
 
 ThreadManager.add_type(IngestThread)

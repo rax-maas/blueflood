@@ -16,6 +16,8 @@
 
 package com.rackspacecloud.blueflood.inputs.formats;
 
+import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionHandlerTest;
+import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Metric;
@@ -24,11 +26,11 @@ import org.codehaus.jackson.map.type.TypeFactory;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
+import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsData;
 import static org.junit.Assert.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class JSONMetricsContainerTest {
 
@@ -63,10 +65,10 @@ public class JSONMetricsContainerTest {
     public void testBigIntHandling() throws IOException {
         String jsonBody = "[{\"collectionTime\": " + current + ",\"ttlInSeconds\":172800,\"metricValue\":18446744073709000000,\"metricName\":\"used\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container = getContainer( "786659", jsonBody );
+        JSONMetricsContainer container = getContainer("786659", jsonBody);
 
         List<Metric> metrics = container.getValidMetrics();
-        assertTrue( container.getValidationErrors().isEmpty() );
+        assertTrue(container.getValidationErrors().isEmpty());
     }
 
     @Test
@@ -80,7 +82,7 @@ public class JSONMetricsContainerTest {
         List<Metric> metrics = container.getValidMetrics();
 
         assertTrue( container.getValidationErrors().isEmpty() );
-        assertTrue( container.areDelayedMetricsPresent() );
+        assertTrue(container.areDelayedMetricsPresent());
     }
 
     @Test
@@ -93,63 +95,18 @@ public class JSONMetricsContainerTest {
         List<Metric> metrics = container.getValidMetrics();
 
         assertTrue( container.getValidationErrors().isEmpty() );
-        assertFalse( container.areDelayedMetricsPresent() );
+        assertFalse(container.areDelayedMetricsPresent());
     }
 
     @Test
     public void testScopedJsonMetric() throws IOException {
         String jsonBody = "[{\"tenantId\": 12345, \"collectionTime\":" + current + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container =  getScopedContainer( "786659", jsonBody);
+        JSONMetricsContainer container =  getScopedContainer("786659", jsonBody);
         assertTrue( container.getValidationErrors().isEmpty() );
     }
 
-    @Test
-    public void testScopedJsonMetricNoTenantFail() throws IOException {
-        String jsonBody = "[{\"collectionTime\":" + current + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
 
-        JSONMetricsContainer container =  getScopedContainer( "786659", jsonBody );
-        List<String> errors = container.getValidationErrors();
-
-        assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( NO_TENANT_ID_REGEX, errors.get( 0 ) ) );
-    }
-
-    @Test
-    public void testNoCollectionTime() throws IOException {
-
-        String jsonBody = "[{\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
-
-        JSONMetricsContainer container = getContainer( "786659", jsonBody );
-        List<String> errors = container.getValidationErrors();
-
-        assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
-    }
-
-    @Test
-    public void testCollectionTimeFutureFail() throws IOException {
-
-        long time = current + 1000 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
-        String jsonBody = "[{\"collectionTime\":" + time + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
-
-        JSONMetricsContainer container = getContainer( "786659", jsonBody );
-        List<String> errors = container.getValidationErrors();
-        assertEquals( 1, errors.size() );
-        assertTrue(  Pattern.matches( FUTURE_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
-    }
-
-    @Test
-    public void testCollectionTimePastFail() throws IOException {
-
-        long time = current - 1000 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-        String jsonBody = "[{\"collectionTime\":" + time + ",\"ttlInSeconds\":172800,\"metricValue\":1844,\"metricName\":\"metricName1\",\"unit\":\"unknown\"}]";
-
-        JSONMetricsContainer container = getContainer( "786659", jsonBody );
-        List<String> errors = container.getValidationErrors();
-        assertEquals( 1, errors.size() );
-        assertTrue( Pattern.matches( PAST_COLLECTION_TIME_REGEX, errors.get( 0 ) ) );
-    }
 
     private JSONMetricsContainer getScopedContainer( String name, String jsonBody ) throws java.io.IOException {
 
@@ -158,16 +115,11 @@ public class JSONMetricsContainerTest {
                         jsonBody,
                         typeFactory.constructCollectionType(List.class, JSONMetricScoped.class)
                 );
-        return new JSONMetricsContainer( name, jsonMetrics);
+        return new JSONMetricsContainer( name, jsonMetrics, new ArrayList<ErrorResponse.ErrorData>());
     }
-    private JSONMetricsContainer getContainer( String name, String jsonBody ) throws java.io.IOException {
+    private JSONMetricsContainer getContainer( String tenantId, String jsonBody ) throws java.io.IOException {
 
-        List<JSONMetric> jsonMetrics =
-                mapper.readValue(
-                        jsonBody,
-                        typeFactory.constructCollectionType(List.class, JSONMetric.class)
-                );
-        return new JSONMetricsContainer( name, jsonMetrics);
+        return new HttpMetricsIngestionHandlerTest().getContainer(tenantId, jsonBody);
     }
 
 }
