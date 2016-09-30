@@ -47,12 +47,12 @@ the slice have been handled, the thread just goes to sleep.
 ##Installing
 ```bash
 cd /tmp
-wget http://iweb.dl.sourceforge.net/project/grinder/The%20Grinder%203/3.11/grinder-3.11-binary.zip
+wget https://sourceforge.net/projects/grinder/files/The%20Grinder%203/3.11/grinder-3.11-binary.zip/download
 wget http://opensource.xhaus.com/attachments/download/3/jyson-1.0.2.zip
 cd $BLUEFLOOD_INSTALL/contrib/grinder
 mkdir resources
 cd resources
-unzip /tmp/grinder-3.11-binary.zip
+unzip /tmp/download
 unzip /tmp/jyson-1.0.2.zip
 ```
 
