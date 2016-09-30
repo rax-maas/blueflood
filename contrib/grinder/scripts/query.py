@@ -7,6 +7,7 @@ except ImportError:
 from utils import *
 from net.grinder.script import Test
 from net.grinder.plugin.http import HTTPRequest
+from HTTPClient import NVPair
 import itertools
 
 
