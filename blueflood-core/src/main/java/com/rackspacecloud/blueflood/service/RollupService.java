@@ -286,7 +286,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                                     stamp.getLastRollupTimestamp(), isReroll});
 
                     locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors,
-                            rollupWriteExecutors, enumValidatorExecutor));
+                            rollupWriteExecutors, enumValidatorExecutor, isReroll));
 
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that

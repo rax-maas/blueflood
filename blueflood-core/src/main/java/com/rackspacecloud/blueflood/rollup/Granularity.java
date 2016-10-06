@@ -365,6 +365,13 @@ public final class Granularity {
         return null;
     }
 
+    public static Granularity getRollupGranularity(String s) {
+        for (Granularity g : rollupGranularities)
+            if (g.name().equals(s) || g.shortName().equals(s))
+                return g;
+        return null;
+    }
+
     @Override
     public String toString() {
         return name();

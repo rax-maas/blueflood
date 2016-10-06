@@ -7,6 +7,8 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -19,11 +21,16 @@ import java.util.Map;
  */
 public class ABasicMetricsRW extends AbstractMetricsRW {
 
+    public ABasicMetricsRW(boolean isTrackingDelayedMetrics, Clock clock) {
+        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
+        this.clock = clock;
+    }
+
     @Override
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {
 
         try {
-            AstyanaxWriter.getInstance().insertFull(metrics);
+            AstyanaxWriter.getInstance().insertFull(metrics, isTrackingDelayedMetrics, clock);
         } catch (ConnectionException e) {
             throw new IOException(e);
         }

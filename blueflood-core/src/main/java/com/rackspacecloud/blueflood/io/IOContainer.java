@@ -21,6 +21,7 @@ import com.rackspacecloud.blueflood.io.astyanax.*;
 import com.rackspacecloud.blueflood.io.datastax.*;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +41,12 @@ public class IOContainer {
     private static final Logger LOG = LoggerFactory.getLogger(IOContainer.class);
     private static IOContainer FROM_CONFIG_INSTANCE = null;
 
+
+
     private ShardStateIO shardStateIO;
     private MetadataIO metadataIO;
     private LocatorIO locatorIO;
+    private DelayedLocatorIO delayedLocatorIO;
     private ExcessEnumIO excessEnumIO;
     private EnumReaderIO enumReaderIO;
     private AbstractMetricsRW preAggregatedMetricsRW;
@@ -58,10 +62,16 @@ public class IOContainer {
      */
     public static synchronized IOContainer fromConfig() {
         if ( FROM_CONFIG_INSTANCE == null ) {
+
             String driver = configuration.getStringProperty(CoreConfig.CASSANDRA_DRIVER);
             LOG.info(String.format("Using driver %s", driver));
-            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver));
+
+            boolean isTrackingDelayedMetrics = configuration.getBooleanProperty(CoreConfig.ENABLE_TRACKING_DELAYED_METRICS);
+            LOG.info(String.format("Tracking delayed metrics: %s", isTrackingDelayedMetrics));
+
+            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver), isTrackingDelayedMetrics);
         }
+
         return FROM_CONFIG_INSTANCE;
     }
 
@@ -75,8 +85,9 @@ public class IOContainer {
      * {@link com.rackspacecloud.blueflood.io.IOContainer.DriverType}
      *
      * @param driver
+     * @param isTrackingDelayedMetrics
      */
-    private IOContainer(DriverType driver) {
+    private IOContainer(DriverType driver, boolean isTrackingDelayedMetrics) {
 
         if ( driver == DriverType.DATASTAX ) {
 
@@ -86,21 +97,25 @@ public class IOContainer {
             metadataIO = new DMetadataIO();
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
+            delayedLocatorIO = new DDelayedLocatorIO();
             excessEnumIO = new DExcessEnumIO();
             DEnumIO enumIO = new DEnumIO();
             enumReaderIO = enumIO;
-            basicMetricsRW = new DBasicMetricsRW(locatorIO, stringMetricsDropped, tenantIdsKept);
-            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO);
+            basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, stringMetricsDropped,
+                    tenantIdsKept, isTrackingDelayedMetrics, new DefaultClockImpl());
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO,
+                    isTrackingDelayedMetrics, new DefaultClockImpl());
 
         } else {
 
             metadataIO = new AMetadataIO();
             shardStateIO = new AShardStateIO();
             locatorIO = new ALocatorIO();
+            delayedLocatorIO = new ADelayedLocatorIO();
             excessEnumIO = new AExcessEnumIO();
             enumReaderIO = new AEnumIO();
-            basicMetricsRW = new ABasicMetricsRW();
-            preAggregatedMetricsRW = new APreaggregatedMetricsRW();
+            basicMetricsRW = new ABasicMetricsRW(isTrackingDelayedMetrics, new DefaultClockImpl());
+            preAggregatedMetricsRW = new APreaggregatedMetricsRW(isTrackingDelayedMetrics, new DefaultClockImpl());
         }
     }
 
@@ -123,6 +138,13 @@ public class IOContainer {
      */
     public LocatorIO getLocatorIO() {
         return locatorIO;
+    }
+
+    /**
+     * @return a class for reading/writing delayed locators
+     */
+    public DelayedLocatorIO getDelayedLocatorIO() {
+        return delayedLocatorIO;
     }
 
     /**

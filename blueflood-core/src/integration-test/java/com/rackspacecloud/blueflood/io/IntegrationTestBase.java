@@ -20,13 +20,12 @@ import com.google.common.cache.Cache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
-import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
-import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
 import org.junit.Assert;
@@ -106,7 +105,7 @@ public class IntegrationTestBase {
         Metric metric = new Metric(locator, value, System.currentTimeMillis(),
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
-        AstyanaxWriter.getInstance().insertFull(metrics);
+        AstyanaxWriter.getInstance().insertFull(metrics, false, new DefaultClockImpl());
         Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
         insertedLocators.invalidateAll();
 
@@ -118,7 +117,7 @@ public class IntegrationTestBase {
         PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
         metrics.add(metric);
 
-        AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+        AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL, false, new DefaultClockImpl());
 
         Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(AstyanaxWriter.getInstance(), "insertedLocators");
         insertedLocators.invalidateAll();

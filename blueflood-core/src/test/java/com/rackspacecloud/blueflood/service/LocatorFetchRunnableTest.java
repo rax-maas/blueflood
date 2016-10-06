@@ -11,8 +11,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -25,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertNotNull;
@@ -65,7 +62,7 @@ public class LocatorFetchRunnableTest {
 
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
                 destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                enumValidatorExecutor, false);
 
         executionContext = mock(RollupExecutionContext.class);
         rollupBatchWriter = mock(RollupBatchWriter.class);

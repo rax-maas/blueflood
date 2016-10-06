@@ -24,7 +24,10 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +57,11 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     /**
      * Constructor
      * @param locatorIO
+     * @param isTrackingDelayedMetrics
      */
-    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO) {
-        super(locatorIO);
+    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
+                                   boolean isTrackingDelayedMetrics, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isTrackingDelayedMetrics, clock);
         rollupTypeToIO.put(RollupType.COUNTER, counterIO);
         rollupTypeToIO.put(RollupType.ENUM, enumIO);
         rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
@@ -120,8 +125,11 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                         locatorIO.insertLocator(locator);
                         setLocatorCurrent(locator);
                     }  else {
-                        LOG.debug("insertMetrics(): not inserting locator " + locator);
+                        LOG.trace("insertMetrics(): not inserting locator " + locator);
                     }
+
+                    insertDelayedLocator(metric);
+
                 }
             }
 

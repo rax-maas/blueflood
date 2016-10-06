@@ -11,8 +11,11 @@ import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,14 +30,26 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
 
+    private static final Configuration configuration = Configuration.getInstance();
+    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(configuration.getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
+
+    private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
     protected final LocatorIO locatorIO;
+    protected final DelayedLocatorIO delayedLocatorIO;
 
     /**
      * Constructor
      * @param locatorIO
+     * @param isTrackingDelayedMetrics
      */
-    protected DAbstractMetricsRW(LocatorIO locatorIO) {
+    protected DAbstractMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
+                                 boolean isTrackingDelayedMetrics, Clock clock) {
+        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
         this.locatorIO = locatorIO;
+        this.delayedLocatorIO = delayedLocatorIO;
+        this.clock = clock;
     }
 
     /**
@@ -112,7 +127,9 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     public MetricData getDatapointsForRange(final Locator locator,
                                             Range range,
                                             Granularity granularity) {
-        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{ add(locator); }}, range, granularity);
+        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{
+            add(locator);
+        }}, range, granularity);
         return result.get(locator);
     }
 
@@ -135,7 +152,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                                                               String columnFamily,
                                                               Granularity granularity ) {
 
-        Timer.Context ctx = Instrumentation.getReadTimerContext( columnFamily );
+        Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamily);
 
         try {
 
@@ -309,5 +326,28 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             return new DataType(meta);
         }
         return DataType.NUMERIC;
+    }
+
+    /**
+     * insert delayed metrics
+     *
+     * @param metric
+     * @throws IOException
+     */
+    protected void insertDelayedLocator(IMetric metric) throws IOException {
+        Locator locator = metric.getLocator();
+        if (isTrackingDelayedMetrics) {
+
+            long delay = clock.now().getMillis() - metric.getCollectionTime();
+            if (delay > MAX_AGE_ALLOWED) {
+
+                //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
+                int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+                if (!isDelayedLocatorForASlotCurrent(slot, locator)) {
+                    delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
+                    setDelayedLocatorForASlotCurrent(slot, locator);
+                }
+            }
+        }
     }
 }

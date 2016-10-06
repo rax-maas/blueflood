@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -48,8 +47,10 @@ class LocatorFetchRunnable implements Runnable {
     private SlotKey parentSlotKey;
     private ScheduleContext scheduleCtx;
     private long serverTime;
+    private boolean isReroll;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
     private static final Histogram locatorsPerShard = Metrics.histogram(RollupService.class, "Locators Per Shard");
+    private static final Histogram locatorsPerShardForReroll = Metrics.histogram(RollupService.class, "Locators Per Shard for re-rolls");
 
     private Range parentRange;
 
@@ -57,10 +58,11 @@ class LocatorFetchRunnable implements Runnable {
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
                          ThreadPoolExecutor rollupWriteExecutor,
-                         ExecutorService enumValidatorExecutor) {
+                         ExecutorService enumValidatorExecutor,
+                         boolean isReroll) {
 
         initialize(scheduleCtx, destSlotKey, rollupReadExecutor,
-                rollupWriteExecutor, enumValidatorExecutor);
+                rollupWriteExecutor, enumValidatorExecutor, isReroll);
     }
 
     @VisibleForTesting
@@ -68,7 +70,8 @@ class LocatorFetchRunnable implements Runnable {
                            SlotKey destSlotKey,
                            ExecutorService rollupReadExecutor,
                            ThreadPoolExecutor rollupWriteExecutor,
-                           ExecutorService enumValidatorExecutor) {
+                           ExecutorService enumValidatorExecutor,
+                           boolean isReroll) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
@@ -77,6 +80,7 @@ class LocatorFetchRunnable implements Runnable {
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
         this.enumValidatorExecutor = enumValidatorExecutor;
         this.parentRange = getGranularity().deriveRange(getParentSlot(), serverTime);
+        this.isReroll= isReroll;
     }
 
     protected Granularity getGranularity() { return parentSlotKey.getGranularity(); }
@@ -192,7 +196,12 @@ class LocatorFetchRunnable implements Runnable {
         try {
             // get a list of all locators to rollup for a shard
             locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
-            locatorsPerShard.update(locators.size());
+
+            if (isReroll) {
+                locatorsPerShardForReroll.update(locators.size());
+            } else {
+                locatorsPerShard.update(locators.size());
+            }
         } catch (Throwable e) {
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
             executionContext.markUnsuccessful(e);

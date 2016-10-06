@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -36,6 +37,11 @@ import java.util.Map;
  * using Astyanax driver
  */
 public class APreaggregatedMetricsRW extends AbstractMetricsRW implements PreaggregatedRW{
+
+    public APreaggregatedMetricsRW(boolean isTrackingDelayedMetrics, Clock clock) {
+        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
+        this.clock = clock;
+    }
 
     /**
      * Inserts a collection of metrics to the metrics_preaggregated_full column family
@@ -59,7 +65,7 @@ public class APreaggregatedMetricsRW extends AbstractMetricsRW implements Preagg
     @Override
     public void insertMetrics(Collection<IMetric> metrics, Granularity granularity) throws IOException {
         try {
-            AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getPreaggregatedColumnFamily(granularity));
+            AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getPreaggregatedColumnFamily(granularity), isTrackingDelayedMetrics, clock);
         } catch (ConnectionException ex) {
             throw new IOException(ex);
         }

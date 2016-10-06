@@ -15,6 +15,13 @@ CREATE TABLE IF NOT EXISTS "DATA".metrics_locator (
     PRIMARY KEY (key, column1)
 ) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
 
+CREATE TABLE IF NOT EXISTS "DATA".metrics_delayed_locator (
+    key text,
+    column1 text,
+    value text,
+    PRIMARY KEY (key, column1)
+) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
+
 CREATE TABLE IF NOT EXISTS "DATA".metrics_discovery (
     key text,
     column1 text,

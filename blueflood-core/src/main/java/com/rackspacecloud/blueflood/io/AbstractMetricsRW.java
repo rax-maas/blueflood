@@ -26,6 +26,7 @@ import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,15 @@ public abstract class AbstractMetricsRW implements MetricsRW {
             CacheBuilder.newBuilder().expireAfterAccess(10,
                         TimeUnit.MINUTES).concurrencyLevel(16).build();
 
+    // this collection is used to reduce the number of delayed locators that get written per slot. Simply, if a locator
+    // has been seen for a slot, don't bother.
+    private static final Cache<String, Boolean> insertedDelayedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
+            TimeUnit.MINUTES).concurrencyLevel(16).build();
+
     private static final Logger LOG = LoggerFactory.getLogger(AbstractMetricsRW.class);
+
+    protected boolean isTrackingDelayedMetrics;
+    protected Clock clock;
 
     /**
      * Checks if Locator is recently inserted
@@ -66,12 +75,24 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         return insertedLocators.getIfPresent(loc.toString()) != null;
     }
 
+    public synchronized boolean isDelayedLocatorForASlotCurrent(int slot, Locator locator) {
+        return insertedDelayedLocators.getIfPresent(getLocatorSlotKey(slot, locator)) != null;
+    }
+
+    private static String getLocatorSlotKey(int slot, Locator locator) {
+        return slot + "," + locator.toString();
+    }
+
     /**
      * Marks the Locator as recently inserted
      * @param loc
      */
     protected synchronized void setLocatorCurrent(Locator loc) {
         insertedLocators.put(loc.toString(), Boolean.TRUE);
+    }
+
+    protected synchronized void setDelayedLocatorForASlotCurrent(int slot, Locator locator) {
+        insertedDelayedLocators.put(getLocatorSlotKey(slot, locator), Boolean.TRUE);
     }
 
     /**

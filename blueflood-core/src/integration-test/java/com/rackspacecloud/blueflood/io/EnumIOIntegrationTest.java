@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.Before;
@@ -280,7 +281,7 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
             // write using Astyanax
             AstyanaxWriter writer = AstyanaxWriter.getInstance();
-            writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL);
+            writer.insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL, false, new DefaultClockImpl());
 
             // read using Datastax
             final List<Locator> locators = new ArrayList<Locator>() {{
@@ -314,7 +315,7 @@ public class EnumIOIntegrationTest extends IntegrationTestBase  {
 
             // write using Astyanax
             AstyanaxWriter writer = AstyanaxWriter.getInstance();
-            writer.insertMetrics(metrics, CassandraModel.getColumnFamily(BluefloodEnumRollup.class, granularity));
+            writer.insertMetrics(metrics, CassandraModel.getColumnFamily(BluefloodEnumRollup.class, granularity), false, new DefaultClockImpl());
 
             // read using Datastax, ask for 5 minutes back
             final List<Locator> locators = new ArrayList<Locator>() {{

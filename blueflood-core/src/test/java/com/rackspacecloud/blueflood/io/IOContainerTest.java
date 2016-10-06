@@ -6,6 +6,7 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
 import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -13,6 +14,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
@@ -59,11 +61,28 @@ public class IOContainerTest {
         // mock DatastaxIO.getSession() & Session
         PowerMockito.mockStatic( DatastaxIO.class );
         Session mockSession = mock( Session.class );
-        when( DatastaxIO.getSession()).thenReturn( mockSession );
+        when( DatastaxIO.getSession()).thenReturn(mockSession);
         PreparedStatement mockPreparedStatement = mock( PreparedStatement.class );
         when( mockSession.prepare( any( RegularStatement.class ) ) ).thenReturn( mockPreparedStatement );
-        when( mockSession.prepare( anyString() ) ).thenReturn( mockPreparedStatement );
-        when( mockPreparedStatement.setConsistencyLevel( any(ConsistencyLevel.class) ) ).thenReturn( mockPreparedStatement );
+        when( mockSession.prepare( anyString() ) ).thenReturn(mockPreparedStatement);
+        when( mockPreparedStatement.setConsistencyLevel(any(ConsistencyLevel.class)) ).thenReturn( mockPreparedStatement );
+    }
+
+
+    @Test
+    public void testDatastaxDriverConfig() {
+
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
+        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
+        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY))).thenReturn("20m");
+
+        IOContainer.resetInstance();
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
+        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO);
+        MetadataIO metadataIO = ioContainer.getMetadataIO();
+        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO);
     }
 
     @Test
@@ -99,20 +118,6 @@ public class IOContainerTest {
         assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
-    @Test
-    public void testDatastaxDriverConfig() {
-
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
-        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
-        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
-
-        IOContainer.resetInstance();
-        IOContainer ioContainer = IOContainer.fromConfig();
-        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO );
-        MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO );
-    }
 
     /**
      * This class is the test class for {@link com.rackspacecloud.blueflood.io.IOContainer.DriverType}
