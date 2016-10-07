@@ -84,7 +84,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
         IMetric currentMetric = numericMap.get(delayedLocator);
         final IMetric delayedMetric = new Metric(currentMetric.getLocator(), currentMetric.getMetricValue(),
                 currentMetric.getCollectionTime() - MAX_AGE_ALLOWED - 1000, new TimeValue(currentMetric.getTtlInSeconds(),
-                TimeUnit.MILLISECONDS), "unit");
+                TimeUnit.SECONDS), "unit");
         numericMap.put(delayedLocator, delayedMetric);
 
         // write with astyanax
@@ -96,7 +96,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
         }};
         Map<Locator, MetricData> results = datastaxMetricsRW.getDatapointsForRange(
                 locators,
-                getRangeFromMinAgoToNow(5),
+                getRangeFromMinAgoToNow(5 + (int ) (MAX_AGE_ALLOWED / 60 / 1000)),
                 Granularity.FULL );
 
         assertEquals( "number of locators", numericMap.keySet().size(), results.keySet().size() );
@@ -139,14 +139,6 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
         when(clock.now()).thenReturn(new Instant(numericMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
 
         MetricsRW astyanaxMetricsRW1 = new ABasicMetricsRW(true, clock);
-
-        //making one metric delayed
-        final Locator delayedLocator = numericMap.keySet().iterator().next();
-        IMetric currentMetric = numericMap.get(delayedLocator);
-        final IMetric delayedMetric = new Metric(currentMetric.getLocator(), currentMetric.getMetricValue(),
-                currentMetric.getCollectionTime() - MAX_AGE_ALLOWED - 1000, new TimeValue(currentMetric.getTtlInSeconds(),
-                TimeUnit.MILLISECONDS), "unit");
-        numericMap.put(delayedLocator, delayedMetric);
 
         // write with astyanax
         astyanaxMetricsRW1.insertMetrics( numericMap.values() );
@@ -496,7 +488,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
-        assertEquals( String.format( "number of points for locator %s", locator ), 1, pointMap.values().size() );
+        assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size() );
 
         IMetric expectedMetric = numericMap.get(locator);
         assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
@@ -523,8 +515,8 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
     public void testNumericSingleMetricDatapointsRange( Granularity granularity ) throws IOException {
 
         // write with astyanax
-        List<SingleRollupWriteContext> writeContexts = toWriteContext( numericMap.values(), granularity);
-        astyanaxMetricsRW.insertRollups( writeContexts );
+        List<SingleRollupWriteContext> writeContexts = toWriteContext(numericMap.values(), granularity);
+        astyanaxMetricsRW.insertRollups(writeContexts );
 
         Locator locator = numericMap.keySet().iterator().next();
 
@@ -533,16 +525,16 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 getRangeFromMinAgoToNow(5),
                 granularity );
 
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), result );
+        assertNotNull(String.format("metric data for locator %s exists", locator ), result );
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
-        assertEquals( String.format( "number of points for locator %s", locator ), 1, pointMap.values().size() );
+        assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size() );
 
         IMetric expectedMetric = numericMap.get( locator );
-        assertNotNull( String.format( "point for locator %s at timestamp %s exists",
+        assertNotNull(String.format("point for locator %s at timestamp %s exists",
                 locator, expectedMetric.getCollectionTime(),
-                pointMap.get( expectedMetric.getCollectionTime() ) ) );
+                pointMap.get(expectedMetric.getCollectionTime() ) ) );
 
         BasicRollup rollup = (BasicRollup)pointMap.get(expectedMetric.getCollectionTime()).getData();
         assertEquals( String.format( "locator %s average is the same", locator ),
@@ -573,7 +565,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 getRangeFromMinAgoToNow(5),
                 Granularity.FULL );
 
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), result );
+        assertNotNull(String.format("metric data for locator %s exists", locator ), result );
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
@@ -589,7 +581,8 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 expectedMetric.getMetricValue(),
                 point.getData());
 
-        Set<Locator> locatorsFromDB = retrieveLocators(new HashSet<Locator>(){{ add(locator); }});
+        Set<Locator> locatorsFromDB = retrieveLocators(new HashSet<Locator>() {{
+            add(locator); }});
         assertEquals("String/Boolean locator's inserted in metrics_locator CF", 0, locatorsFromDB.size());
     }
 
@@ -601,7 +594,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
     public void testStringSingleMetricDatapointsForRange( Granularity granularity ) throws IOException {
 
         // write with astyanax
-        astyanaxMetricsRW.insertMetrics( stringMap.values() );
+        astyanaxMetricsRW.insertMetrics(stringMap.values() );
         final Locator locator = stringMap.keySet().iterator().next();
 
         MetricData result = astyanaxMetricsRW.getDatapointsForRange(
@@ -609,7 +602,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 getRangeFromMinAgoToNow(5),
                 granularity );
 
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), result );
+        assertNotNull(String.format("metric data for locator %s exists", locator ), result );
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
@@ -635,7 +628,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
     public void testBooleanSingleMetricDatapointsForRangeFull() throws IOException {
 
         // write with astyanax
-        astyanaxMetricsRW.insertMetrics( boolMap.values() );
+        astyanaxMetricsRW.insertMetrics(boolMap.values() );
         final Locator locator = boolMap.keySet().iterator().next();
 
         MetricData result = datastaxMetricsRW.getDatapointsForRange(
@@ -643,7 +636,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 getRangeFromMinAgoToNow(5),
                 Granularity.FULL );
 
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), result );
+        assertNotNull(String.format("metric data for locator %s exists", locator ), result );
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
@@ -683,7 +676,7 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
                 getRangeFromMinAgoToNow(5),
                 granularity );
 
-        assertNotNull( String.format( "metric data for locator %s exists", locator ), result );
+        assertNotNull(String.format("metric data for locator %s exists", locator ), result );
 
         Points points = result.getData();
         Map<Long, Points.Point> pointMap = points.getPoints();
@@ -795,15 +788,15 @@ public class BasicMetricsRWAsytanaxWriteIntegrationTest extends BasicMetricsRWIn
             Locator locator = entry.getKey();
 
             MetricData metricData = results.get(locator);
-            assertNotNull( String.format( "metric data for locator %s exists", locator ), metricData );
+            assertNotNull(String.format("metric data for locator %s exists", locator), metricData );
 
             Points points = metricData.getData();
             Map<Long, Points.Point> pointMap = points.getPoints();
-            assertEquals( String.format( "number of points for locator %s", locator ), 1, pointMap.values().size() );
+            assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size() );
 
             IMetric expectedMetric = entry.getValue();
-            assertNotNull( String.format( "point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
-                    pointMap.get( expectedMetric.getCollectionTime() ) ) );
+            assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
+                    pointMap.get(expectedMetric.getCollectionTime() ) ) );
 
             BasicRollup rollup = (BasicRollup)pointMap.get(expectedMetric.getCollectionTime()).getData();
             assertEquals( String.format( "locator %s average is the same", locator ),

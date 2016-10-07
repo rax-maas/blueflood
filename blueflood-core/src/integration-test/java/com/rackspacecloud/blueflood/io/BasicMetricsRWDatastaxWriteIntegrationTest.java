@@ -91,7 +91,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
         }};
         Map<Locator, MetricData> results = astyanaxMetricsRW.getDatapointsForRange(
                 locators,
-                getRangeFromMinAgoToNow(5),
+                getRangeFromMinAgoToNow(5 + (int) (MAX_AGE_ALLOWED / 60 / 1000)),
                 Granularity.FULL );
 
         assertEquals( "number of locators", numericMap.keySet().size(), results.keySet().size() );
