@@ -41,11 +41,11 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     /**
      * Constructor
      * @param locatorIO
-     * @param isTrackingDelayedMetrics
+     * @param isRecordingDelayedMetrics
      */
     protected DAbstractMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
-                                 boolean isTrackingDelayedMetrics, Clock clock) {
-        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
+                                 boolean isRecordingDelayedMetrics, Clock clock) {
+        this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
         this.locatorIO = locatorIO;
         this.delayedLocatorIO = delayedLocatorIO;
         this.clock = clock;

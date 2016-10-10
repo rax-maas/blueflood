@@ -41,19 +41,19 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * See #DBasicMetricsRW(boolean, List) to change the behavior.
      */
     @VisibleForTesting
-    public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO, boolean isTrackingDelayedMetrics, Clock clock) {
-        this(locatorIO, delayedLocatorIO, false, new ArrayList<String>(), isTrackingDelayedMetrics, clock);
+    public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO, boolean isRecordingDelayedMetrics, Clock clock) {
+        this(locatorIO, delayedLocatorIO, false, new ArrayList<String>(), isRecordingDelayedMetrics, clock);
     }
 
     /**
      * Constructor
      *  @param ignoreStringMetrics
      * @param tenantIdsKept
-     * @param isTrackingDelayedMetrics
+     * @param isRecordingDelayedMetrics
      */
     public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO, boolean ignoreStringMetrics,
-                           List<String> tenantIdsKept, boolean isTrackingDelayedMetrics, Clock clock) {
-        super(locatorIO, delayedLocatorIO, isTrackingDelayedMetrics, clock);
+                           List<String> tenantIdsKept, boolean isRecordingDelayedMetrics, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
         this.areStringMetricsDropped = ignoreStringMetrics;
         this.keptTenantIdsSet  = new HashSet<String>(tenantIdsKept);
     }
@@ -93,7 +93,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                         locatorIO.insertLocator( locator );
                 }
 
-                if (isTrackingDelayedMetrics) {
+                if (isRecordingDelayedMetrics) {
                     //retaining the same conditional logic that was used to insertLocator(locator) above.
                     if (!DataType.isStringOrBoolean(metric.getMetricValue())) {
                         insertLocatorIfDelayed(metric);

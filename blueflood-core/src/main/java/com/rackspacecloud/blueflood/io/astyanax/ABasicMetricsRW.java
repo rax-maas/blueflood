@@ -21,8 +21,8 @@ import java.util.Map;
  */
 public class ABasicMetricsRW extends AbstractMetricsRW {
 
-    public ABasicMetricsRW(boolean isTrackingDelayedMetrics, Clock clock) {
-        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
+    public ABasicMetricsRW(boolean isRecordingDelayedMetrics, Clock clock) {
+        this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
         this.clock = clock;
     }
 
@@ -30,7 +30,7 @@ public class ABasicMetricsRW extends AbstractMetricsRW {
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {
 
         try {
-            AstyanaxWriter.getInstance().insertFull(metrics, isTrackingDelayedMetrics, clock);
+            AstyanaxWriter.getInstance().insertFull(metrics, isRecordingDelayedMetrics, clock);
         } catch (ConnectionException e) {
             throw new IOException(e);
         }

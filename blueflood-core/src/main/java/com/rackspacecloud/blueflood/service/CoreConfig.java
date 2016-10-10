@@ -158,7 +158,7 @@ public enum CoreConfig implements ConfigDefaults {
 
     //the granulariy for which we store delayed metrics. Allowed values are 5m, 20m, 60m, 240m, 1440m
     DELAYED_METRICS_STORAGE_GRANULARITY("20m"),
-    ENABLE_TRACKING_DELAYED_METRICS("true"),
+    RECORD_DELAYED_METRICS("true"),
 
     SHOULD_STORE_UNITS("true"),
     USE_ES_FOR_UNITS("false"),

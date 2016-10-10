@@ -86,13 +86,14 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     @Parameterized.Parameters
     public static Collection<Object[]> getRWs() {
 
+        List<Object[]> rws = new ArrayList<Object[]>();
+
         AbstractMetricsRW aBasicMetricsRW = new ABasicMetricsRW(true, mockClock);
         AbstractMetricsRW aPreAggrMetricsRW = new APreaggregatedMetricsRW(true, mockClock);
 
         AbstractMetricsRW dBasicMetricsRW = new DBasicMetricsRW(new DLocatorIO(), new DDelayedLocatorIO(), true, mockClock);
         AbstractMetricsRW dPreAggrMetricsRW = new DPreaggregatedMetricsRW(new DEnumIO(), new DLocatorIO(), new DDelayedLocatorIO(), true, mockClock);
 
-        List<Object[]> rws = new ArrayList<Object[]>();
         rws.add(new Object[]{aBasicMetricsRW, aPreAggrMetricsRW});
         rws.add(new Object[]{dBasicMetricsRW, dPreAggrMetricsRW});
 

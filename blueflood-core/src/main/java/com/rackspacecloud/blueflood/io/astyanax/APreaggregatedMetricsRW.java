@@ -38,8 +38,8 @@ import java.util.Map;
  */
 public class APreaggregatedMetricsRW extends AbstractMetricsRW implements PreaggregatedRW{
 
-    public APreaggregatedMetricsRW(boolean isTrackingDelayedMetrics, Clock clock) {
-        this.isTrackingDelayedMetrics = isTrackingDelayedMetrics;
+    public APreaggregatedMetricsRW(boolean isRecordingDelayedMetrics, Clock clock) {
+        this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
         this.clock = clock;
     }
 
@@ -65,7 +65,7 @@ public class APreaggregatedMetricsRW extends AbstractMetricsRW implements Preagg
     @Override
     public void insertMetrics(Collection<IMetric> metrics, Granularity granularity) throws IOException {
         try {
-            AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getPreaggregatedColumnFamily(granularity), isTrackingDelayedMetrics, clock);
+            AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.getPreaggregatedColumnFamily(granularity), isRecordingDelayedMetrics, clock);
         } catch (ConnectionException ex) {
             throw new IOException(ex);
         }

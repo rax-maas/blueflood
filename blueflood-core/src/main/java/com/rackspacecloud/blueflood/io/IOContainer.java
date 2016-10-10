@@ -66,10 +66,10 @@ public class IOContainer {
             String driver = configuration.getStringProperty(CoreConfig.CASSANDRA_DRIVER);
             LOG.info(String.format("Using driver %s", driver));
 
-            boolean isTrackingDelayedMetrics = configuration.getBooleanProperty(CoreConfig.ENABLE_TRACKING_DELAYED_METRICS);
-            LOG.info(String.format("Tracking delayed metrics: %s", isTrackingDelayedMetrics));
+            boolean isRecordingDelayedMetrics = configuration.getBooleanProperty(CoreConfig.RECORD_DELAYED_METRICS);
+            LOG.info(String.format("Recording delayed metrics: %s", isRecordingDelayedMetrics));
 
-            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver), isTrackingDelayedMetrics);
+            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver), isRecordingDelayedMetrics);
         }
 
         return FROM_CONFIG_INSTANCE;
@@ -85,9 +85,9 @@ public class IOContainer {
      * {@link com.rackspacecloud.blueflood.io.IOContainer.DriverType}
      *
      * @param driver
-     * @param isTrackingDelayedMetrics
+     * @param isRecordingDelayedMetrics
      */
-    private IOContainer(DriverType driver, boolean isTrackingDelayedMetrics) {
+    private IOContainer(DriverType driver, boolean isRecordingDelayedMetrics) {
 
         if ( driver == DriverType.DATASTAX ) {
 
@@ -102,9 +102,9 @@ public class IOContainer {
             DEnumIO enumIO = new DEnumIO();
             enumReaderIO = enumIO;
             basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, stringMetricsDropped,
-                    tenantIdsKept, isTrackingDelayedMetrics, new DefaultClockImpl());
+                    tenantIdsKept, isRecordingDelayedMetrics, new DefaultClockImpl());
             preAggregatedMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO,
-                    isTrackingDelayedMetrics, new DefaultClockImpl());
+                    isRecordingDelayedMetrics, new DefaultClockImpl());
 
         } else {
 
@@ -114,8 +114,8 @@ public class IOContainer {
             delayedLocatorIO = new ADelayedLocatorIO();
             excessEnumIO = new AExcessEnumIO();
             enumReaderIO = new AEnumIO();
-            basicMetricsRW = new ABasicMetricsRW(isTrackingDelayedMetrics, new DefaultClockImpl());
-            preAggregatedMetricsRW = new APreaggregatedMetricsRW(isTrackingDelayedMetrics, new DefaultClockImpl());
+            basicMetricsRW = new ABasicMetricsRW(isRecordingDelayedMetrics, new DefaultClockImpl());
+            preAggregatedMetricsRW = new APreaggregatedMetricsRW(isRecordingDelayedMetrics, new DefaultClockImpl());
         }
     }
 

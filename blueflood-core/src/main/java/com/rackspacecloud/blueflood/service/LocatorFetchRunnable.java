@@ -25,7 +25,6 @@ import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Range;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +51,8 @@ class LocatorFetchRunnable implements Runnable {
     private static final Histogram locatorsPerShard = Metrics.histogram(RollupService.class, "Locators Per Shard");
     private static final Histogram locatorsPerShardForReroll = Metrics.histogram(RollupService.class, "Locators Per Shard for re-rolls");
 
-    private static boolean ENABLE_TRACKING_DELAYED_METRICS =
-            Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TRACKING_DELAYED_METRICS);
+    private static boolean RECORD_DELAYED_METRICS =
+            Configuration.getInstance().getBooleanProperty(CoreConfig.RECORD_DELAYED_METRICS);
 
     private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
@@ -112,7 +111,7 @@ class LocatorFetchRunnable implements Runnable {
         //if delayed metric tracking is enabled, if its re-roll, if slot granularity is no coarser than DELAYED_METRICS_STORAGE_GRANULARITY, get delayed locators
         Set<Locator> locators;
         boolean isReroll = scheduleCtx.isReroll(parentSlotKey);
-        if (ENABLE_TRACKING_DELAYED_METRICS &&
+        if (RECORD_DELAYED_METRICS &&
                 isReroll &&
                 !getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
 

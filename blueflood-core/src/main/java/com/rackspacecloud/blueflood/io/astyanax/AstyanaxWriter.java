@@ -122,7 +122,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
-    public void insertFull(Collection<? extends IMetric> metrics, boolean isTrackingDelayedMetrics, Clock clock) throws ConnectionException {
+    public void insertFull(Collection<? extends IMetric> metrics, boolean isRecordingDelayedMetrics, Clock clock) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_FULL_NAME);
 
         try {
@@ -148,7 +148,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
-                if (isTrackingDelayedMetrics) {
+                if (isRecordingDelayedMetrics) {
                     //retaining the same conditional logic that was used to insertLocator(locator, batch) above.
                     if (!isString && !isBoolean && mutationBatch != null) {
                         insertLocatorIfDelayed(metric, mutationBatch, clock);
@@ -292,7 +292,7 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
     
     // generic IMetric insertion. All other metric insertion methods could use this one.
-    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf, boolean isTrackingDelayedMetrics, Clock clock) throws ConnectionException {
+    public void insertMetrics(Collection<IMetric> metrics, ColumnFamily cf, boolean isRecordingDelayedMetrics, Clock clock) throws ConnectionException {
         Timer.Context ctx = Instrumentation.getWriteTimerContext(cf.getName());
         Multimap<Locator, IMetric> map = asMultimap(metrics);
         MutationBatch batch = keyspace.prepareMutationBatch();
@@ -334,7 +334,7 @@ public class AstyanaxWriter extends AstyanaxIO {
                         }
                     }
 
-                    if (isTrackingDelayedMetrics) {
+                    if (isRecordingDelayedMetrics) {
                         //retaining the same conditional logic that was used to perform insertLocator(locator, batch).
                         if (locatorInsertOk) {
                             insertLocatorIfDelayed(metric, batch, clock);

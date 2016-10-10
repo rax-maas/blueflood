@@ -60,7 +60,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractMetricsRW.class);
 
-    protected boolean isTrackingDelayedMetrics;
+    protected boolean isRecordingDelayedMetrics;
     protected Clock clock;
 
     /**
