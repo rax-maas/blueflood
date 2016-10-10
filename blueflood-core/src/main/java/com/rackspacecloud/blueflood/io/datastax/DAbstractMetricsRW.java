@@ -28,13 +28,12 @@ import java.util.*;
  */
 public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
-    private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
-
-    private static final Configuration configuration = Configuration.getInstance();
-    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
-            Granularity.getRollupGranularity(configuration.getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
+    private static final Logger LOG = LoggerFactory.getLogger(DAbstractMetricsRW.class);
 
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
+    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     protected final LocatorIO locatorIO;
     protected final DelayedLocatorIO delayedLocatorIO;
@@ -329,24 +328,21 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     }
 
     /**
-     * insert delayed metrics
+     * This method inserts the locator into the metric_delayed_locator column family, if the metric is delayed.
      *
      * @param metric
      * @throws IOException
      */
-    protected void insertDelayedLocator(IMetric metric) throws IOException {
+    protected void insertLocatorIfDelayed(IMetric metric) throws IOException {
         Locator locator = metric.getLocator();
-        if (isTrackingDelayedMetrics) {
+        long delay = clock.now().getMillis() - metric.getCollectionTime();
+        if (delay > MAX_AGE_ALLOWED) {
 
-            long delay = clock.now().getMillis() - metric.getCollectionTime();
-            if (delay > MAX_AGE_ALLOWED) {
-
-                //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
-                int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
-                if (!isDelayedLocatorForASlotCurrent(slot, locator)) {
-                    delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
-                    setDelayedLocatorForASlotCurrent(slot, locator);
-                }
+            //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
+            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+            if (!isDelayedLocatorForASlotCurrent(slot, locator)) {
+                delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
+                setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
     }

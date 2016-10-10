@@ -45,7 +45,7 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
 
         this.lfr = mock(LocatorFetchRunnable.class);
         this.lfr.initialize(scheduleCtx, destSlotKey,
-                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor, false);
+                rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor);
         doCallRealMethod().when(lfr).drainExecutionContext(
                 anyLong(), anyInt(), Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -101,8 +101,8 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                anyBoolean());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -138,8 +138,8 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                anyBoolean());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -176,8 +176,8 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                anyBoolean());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -216,8 +216,8 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                anyBoolean());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());
@@ -253,8 +253,8 @@ public class LocatorFetchRunnableDrainExecutionContextTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any(),
-                anyBoolean());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).drainExecutionContext(anyLong(), anyInt(),
                 Matchers.<RollupExecutionContext>any(),
                 Matchers.<RollupBatchWriter>any());

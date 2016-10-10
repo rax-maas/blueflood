@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io.astyanax;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
@@ -43,7 +44,6 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,8 +148,11 @@ public class AstyanaxWriter extends AstyanaxIO {
                     AstyanaxWriter.setLocatorCurrent(locator);
                 }
 
-                if (!isString && !isBoolean && mutationBatch != null) {
-                    insertDelayedLocator(metric, mutationBatch, isTrackingDelayedMetrics, clock);
+                if (isTrackingDelayedMetrics) {
+                    //retaining the same conditional logic that was used to insertLocator(locator, batch) above.
+                    if (!isString && !isBoolean && mutationBatch != null) {
+                        insertLocatorIfDelayed(metric, mutationBatch, clock);
+                    }
                 }
 
                 insertMetric(metric, mutationBatch);
@@ -169,21 +172,24 @@ public class AstyanaxWriter extends AstyanaxIO {
         }
     }
 
-    private void insertDelayedLocator(IMetric metric, MutationBatch mutationBatch, boolean isTrackingDelayedMetrics, Clock clock) {
+    /**
+     * This method inserts the locator into the metric_delayed_locator column family, if the metric is delayed.
+     *
+     * @param metric
+     * @param mutationBatch
+     * @param clock
+     */
+    private void insertLocatorIfDelayed(IMetric metric, MutationBatch mutationBatch, Clock clock) {
         Locator locator = metric.getLocator();
 
-        if (isTrackingDelayedMetrics) {
+        long delay = clock.now().getMillis() - metric.getCollectionTime();
+        if (delay > MAX_AGE_ALLOWED) {
 
-            long delay = clock.now().getMillis() - metric.getCollectionTime();
-            if (delay > MAX_AGE_ALLOWED) {
-
-                //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
-                int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
-                if (!AstyanaxWriter.isDelayedLocatorForASlotCurrent(slot, locator)) {
-
-                    insertDelayedLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator, mutationBatch);
-                    AstyanaxWriter.setDelayedLocatorForASlotCurrent(slot, locator);
-                }
+            //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
+            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+            if (!AstyanaxWriter.isDelayedLocatorForASlotCurrent(slot, locator)) {
+                insertDelayedLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator, mutationBatch);
+                AstyanaxWriter.setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
     }
@@ -328,8 +334,11 @@ public class AstyanaxWriter extends AstyanaxIO {
                         }
                     }
 
-                    if (locatorInsertOk) {
-                        insertDelayedLocator(metric, batch, isTrackingDelayedMetrics, clock);
+                    if (isTrackingDelayedMetrics) {
+                        //retaining the same conditional logic that was used to perform insertLocator(locator, batch).
+                        if (locatorInsertOk) {
+                            insertLocatorIfDelayed(metric, batch, clock);
+                        }
                     }
                 }
                 

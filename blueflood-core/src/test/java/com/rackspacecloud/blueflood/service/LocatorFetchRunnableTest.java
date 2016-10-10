@@ -62,7 +62,7 @@ public class LocatorFetchRunnableTest {
 
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
                 destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor, false);
+                enumValidatorExecutor);
 
         executionContext = mock(RollupExecutionContext.class);
         rollupBatchWriter = mock(RollupBatchWriter.class);

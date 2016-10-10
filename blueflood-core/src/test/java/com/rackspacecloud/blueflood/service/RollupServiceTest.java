@@ -105,6 +105,7 @@ public class RollupServiceTest {
         verify(context, times(2)).hasScheduled();
         verify(context).getNextScheduled();
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
+        verify(context, times(1)).isReroll(any(SlotKey.class));
         verifyNoMoreInteractions(context);
 
         verify(locatorFetchExecutors).execute(Matchers.<Runnable>any());
@@ -146,6 +147,7 @@ public class RollupServiceTest {
         verify(context).getNextScheduled();
         verify(context, times(2)).getCurrentTimeMillis();  // one from LocatorFetchRunnable ctor, one from run
         verify(context).pushBackToScheduled(Matchers.<SlotKey>any(), anyBoolean());
+        verify(context, times(1)).isReroll(any(SlotKey.class));
         verifyNoMoreInteractions(context);
 
         verify(locatorFetchExecutors).execute(Matchers.<Runnable>any());

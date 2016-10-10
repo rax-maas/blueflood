@@ -24,8 +24,6 @@ import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.*;
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -128,7 +126,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                         LOG.trace("insertMetrics(): not inserting locator " + locator);
                     }
 
-                    insertDelayedLocator(metric);
+                    if (isTrackingDelayedMetrics) {
+                        insertLocatorIfDelayed(metric);
+                    }
 
                 }
             }

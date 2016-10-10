@@ -79,7 +79,7 @@ public abstract class AbstractMetricsRW implements MetricsRW {
         return insertedDelayedLocators.getIfPresent(getLocatorSlotKey(slot, locator)) != null;
     }
 
-    private static String getLocatorSlotKey(int slot, Locator locator) {
+    private String getLocatorSlotKey(int slot, Locator locator) {
         return slot + "," + locator.toString();
     }
 

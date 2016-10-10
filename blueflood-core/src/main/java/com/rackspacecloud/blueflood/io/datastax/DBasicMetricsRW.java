@@ -9,8 +9,6 @@ import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -35,9 +33,6 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     private DRawIO rawIO = new DRawIO();
     private DSimpleNumberIO simpleIO = new DSimpleNumberIO();
     private final DBasicNumericIO basicIO = new DBasicNumericIO();
-
-    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
-            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     /**
      * Constructor
@@ -98,8 +93,11 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                         locatorIO.insertLocator( locator );
                 }
 
-                if (!DataType.isStringOrBoolean(metric.getMetricValue())) {
-                    insertDelayedLocator(metric);
+                if (isTrackingDelayedMetrics) {
+                    //retaining the same conditional logic that was used to insertLocator(locator) above.
+                    if (!DataType.isStringOrBoolean(metric.getMetricValue())) {
+                        insertLocatorIfDelayed(metric);
+                    }
                 }
 
                 futures.put( locator, rawIO.insertAsync( metric ) );
@@ -280,7 +278,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                 try {
 
                     metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(),
-                            isBoolean, metadataCache.getUnitString( future.getKey() ) ) );
+                            isBoolean, metadataCache.getUnitString(future.getKey()) ) );
                 }
                 catch (Exception e ) {
 
