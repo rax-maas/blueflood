@@ -38,8 +38,10 @@ import static org.junit.Assert.*;
         "com.rackspacecloud.blueflood.utils.Metrics",
         "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class})
-@SuppressStaticInitializationFor( {"com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
-        "com.rackspacecloud.blueflood.cache.MetadataCache"} )
+@SuppressStaticInitializationFor( {
+        "com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
+        "com.rackspacecloud.blueflood.cache.MetadataCache",
+        "com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW"} )
 @RunWith(PowerMockRunner.class)
 public class IOContainerTest {
 
@@ -68,22 +70,6 @@ public class IOContainerTest {
         when( mockPreparedStatement.setConsistencyLevel(any(ConsistencyLevel.class)) ).thenReturn( mockPreparedStatement );
     }
 
-
-    @Test
-    public void testDatastaxDriverConfig() {
-
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
-        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
-        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
-        when(mockConfiguration.getStringProperty(eq(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY))).thenReturn("20m");
-
-        IOContainer.resetInstance();
-        IOContainer ioContainer = IOContainer.fromConfig();
-        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO);
-        MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO);
-    }
 
     @Test
     public void testNullDriverConfig() throws Exception {
@@ -118,6 +104,20 @@ public class IOContainerTest {
         assertTrue("MetadataIO instance is Astyanax", metadataIO instanceof AMetadataIO);
     }
 
+    @Test
+    public void testDatastaxDriverConfig() {
+
+        when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
+        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
+        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
+
+        IOContainer.resetInstance();
+        IOContainer ioContainer = IOContainer.fromConfig();
+        ShardStateIO shardStateIO = ioContainer.getShardStateIO();
+        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO);
+        MetadataIO metadataIO = ioContainer.getMetadataIO();
+        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO);
+    }
 
     /**
      * This class is the test class for {@link com.rackspacecloud.blueflood.io.IOContainer.DriverType}
