@@ -34,7 +34,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     private static final int MAX_ROLLUP_READ_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS);
     private static final int MAX_ROLLUP_WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
     private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS);
-    private static TimeValue DEFAULT_TIMEOUT = new TimeValue(5, TimeUnit.SECONDS);
+    private static TimeValue timeout = new TimeValue(10, TimeUnit.SECONDS);
 
     private final ShardStateIO io = IOContainer.fromConfig().getShardStateIO();
     private BatchWriter batchWriter;
@@ -52,6 +52,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     private ExecutorService enumValidatorExecutor;
 
     private static final Clock mockClock = mock(Clock.class);
+
 
     private final long REF_TIME = 1234000L; //start time of slot 4 for metrics_5m
 
@@ -128,7 +129,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
                         .withMaxPoolSize(WRITE_THREADS)
                         .withSynchronousQueue()
                         .build(),
-                DEFAULT_TIMEOUT,
+                timeout,
                 mock(Counter.class),
                 ingestionCtx,
                 new MetricsRWDelegator(basicMetricsRW, preAggrMetricsRW)
@@ -266,7 +267,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
 
         when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
         ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
-        futures.get(DEFAULT_TIMEOUT.getValue(), DEFAULT_TIMEOUT.getUnit());
+        futures.get(timeout.getValue(), timeout.getUnit());
 
         ingestPusher.performOperation(); // Shard state is persisted on ingestion host
     }
