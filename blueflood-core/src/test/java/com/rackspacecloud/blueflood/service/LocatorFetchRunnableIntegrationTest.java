@@ -37,7 +37,6 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     private static TimeValue timeout = new TimeValue(5, TimeUnit.SECONDS);
 
     private final ShardStateIO io = IOContainer.fromConfig().getShardStateIO();
-    private BatchWriter batchWriter;
 
     private ScheduleContext ingestionCtx;
     private ShardStateWorker ingestPuller;
@@ -119,21 +118,6 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
         // Shard workers for ingest ctx
         ingestPuller = new ShardStatePuller(shards, ingestionCtx.getShardStateManager(), this.io);
         ingestPusher = new ShardStatePusher(shards, ingestionCtx.getShardStateManager(), this.io);
-
-
-
-        batchWriter = new BatchWriter(
-                new ThreadPoolBuilder()
-                        .withName("Metric Batch Writing")
-                        .withCorePoolSize(WRITE_THREADS)
-                        .withMaxPoolSize(WRITE_THREADS)
-                        .withSynchronousQueue()
-                        .build(),
-                timeout,
-                mock(Counter.class),
-                ingestionCtx,
-                new MetricsRWDelegator(basicMetricsRW, preAggrMetricsRW)
-        );
 
         rollupReadExecutor = new ThreadPoolExecutor(MAX_ROLLUP_READ_THREADS, MAX_ROLLUP_READ_THREADS, 30, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<Runnable>(), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
@@ -264,6 +248,19 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
         for (int shard: metricsShardMap.keySet()) {
             input.add(metricsShardMap.get(shard));
         }
+
+        BatchWriter batchWriter = new BatchWriter(
+                new ThreadPoolBuilder()
+                        .withName("Metric Batch Writing")
+                        .withCorePoolSize(WRITE_THREADS)
+                        .withMaxPoolSize(WRITE_THREADS)
+                        .withSynchronousQueue()
+                        .build(),
+                timeout,
+                mock(Counter.class),
+                ingestionCtx,
+                new MetricsRWDelegator(basicMetricsRW, preAggrMetricsRW)
+        );
 
         try {
             when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
