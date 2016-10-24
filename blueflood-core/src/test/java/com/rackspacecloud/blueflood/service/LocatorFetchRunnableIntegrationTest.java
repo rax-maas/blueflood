@@ -34,7 +34,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     private static final int MAX_ROLLUP_READ_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_READ_THREADS);
     private static final int MAX_ROLLUP_WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_ROLLUP_WRITE_THREADS);
     private static int WRITE_THREADS = Configuration.getInstance().getIntegerProperty(CoreConfig.METRICS_BATCH_WRITER_THREADS);
-    private static TimeValue timeout = new TimeValue(10, TimeUnit.SECONDS);
+    private static TimeValue timeout = new TimeValue(5, TimeUnit.SECONDS);
 
     private final ShardStateIO io = IOContainer.fromConfig().getShardStateIO();
     private BatchWriter batchWriter;
@@ -265,9 +265,13 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
             input.add(metricsShardMap.get(shard));
         }
 
-        when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
-        ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
-        futures.get(timeout.getValue(), timeout.getUnit());
+        try {
+            when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
+            ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
+            futures.get(timeout.getValue(), timeout.getUnit());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         ingestPusher.performOperation(); // Shard state is persisted on ingestion host
     }
