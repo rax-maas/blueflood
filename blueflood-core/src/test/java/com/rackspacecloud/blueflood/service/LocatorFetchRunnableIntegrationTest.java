@@ -262,14 +262,9 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
                 new MetricsRWDelegator(basicMetricsRW, preAggrMetricsRW)
         );
 
-        try {
-            when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
-            ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
-            futures.get(timeout.getValue(), timeout.getUnit());
-        } catch (InterruptedException e) {
-            // Dont know the reason we are getting InterruptedException here but we can ignore this exception because
-            // it is not relevant fo this test case
-        }
+        when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
+        ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
+        futures.get(timeout.getValue(), timeout.getUnit());
 
         ingestPusher.performOperation(); // Shard state is persisted on ingestion host
     }
