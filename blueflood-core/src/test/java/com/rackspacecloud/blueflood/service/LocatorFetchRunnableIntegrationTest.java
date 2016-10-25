@@ -1,10 +1,9 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.codahale.metrics.Counter;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
-import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
+import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.IntegrationTestBase;
+import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.io.astyanax.ABasicMetricsRW;
 import com.rackspacecloud.blueflood.io.astyanax.APreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.*;
@@ -15,6 +14,7 @@ import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.joda.time.Instant;
 import org.junit.Before;
 import org.junit.Test;
@@ -243,28 +243,18 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
 
 
     private void ingestMetrics(Map<Integer, List<IMetric>> metricsShardMap, long currentTimeDuringIngest) throws Exception {
+
         //inserting metrics corresponding to slot 4 for shards 1 and 2
-        ArrayList<List<IMetric>> input = new ArrayList<List<IMetric>>();
-        for (int shard: metricsShardMap.keySet()) {
-            input.add(metricsShardMap.get(shard));
-        }
-
-        BatchWriter batchWriter = new BatchWriter(
-                new ThreadPoolBuilder()
-                        .withName("Metric Batch Writing")
-                        .withCorePoolSize(WRITE_THREADS)
-                        .withMaxPoolSize(WRITE_THREADS)
-                        .withSynchronousQueue()
-                        .build(),
-                timeout,
-                mock(Counter.class),
-                ingestionCtx,
-                new MetricsRWDelegator(basicMetricsRW, preAggrMetricsRW)
-        );
-
         when(mockClock.now()).thenReturn(new Instant(currentTimeDuringIngest));
-        ListenableFuture<List<Boolean>> futures = batchWriter.apply(input);
-        futures.get(timeout.getValue(), timeout.getUnit());
+        for (int shard: metricsShardMap.keySet()) {
+
+            List<IMetric> batch = metricsShardMap.get(shard);
+            basicMetricsRW.insertMetrics(batch);
+
+            for (IMetric metric : batch) {
+                ingestionCtx.update(metric.getCollectionTime(), Util.getShard(metric.getLocator().toString()));
+            }
+        }
 
         ingestPusher.performOperation(); // Shard state is persisted on ingestion host
     }
