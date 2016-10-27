@@ -16,12 +16,7 @@
 
 package com.rackspacecloud.blueflood.io.astyanax;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
@@ -32,6 +27,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
@@ -39,16 +35,16 @@ import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.rollup.SlotKey;
-import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Clock;
-import com.rackspacecloud.blueflood.utils.Metrics;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class AstyanaxWriter extends AstyanaxIO {
     private static final Logger log = LoggerFactory.getLogger(AstyanaxWriter.class);
@@ -69,27 +65,6 @@ public class AstyanaxWriter extends AstyanaxIO {
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
-
-    // this collection is used to reduce the number of locators that get written.  Simply, if a locator has been
-    // seen within the last 10 minutes, don't bother.
-    private static final Cache<String, Boolean> insertedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
-            TimeUnit.MINUTES).concurrencyLevel(16).build();
-
-    // this collection is used to reduce the number of delayed locators that get written per slot. Simply, if a locator
-    // has been seen for a slot, don't bother.
-    private static final Cache<String, Boolean> insertedDelayedLocators = CacheBuilder.newBuilder().expireAfterAccess(10,
-            TimeUnit.MINUTES).concurrencyLevel(16).build();
-
-
-    static {
-        Metrics.getRegistry().register(MetricRegistry.name(AstyanaxWriter.class, "Current Locators Count"),
-                new Gauge<Long>() {
-                    @Override
-                    public Long getValue() {
-                        return insertedLocators.size();
-                    }
-                });
-    }
 
     private boolean shouldPersistStringMetric(IMetric metric) {
         String tenantId = metric.getLocator().getTenantId();
@@ -142,10 +117,10 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // col = locator (acct + entity + check + dimension.metric)
                 // value = <nothing>
                 // do not do it for string or boolean metrics though.
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
                     if (!isString && !isBoolean && mutationBatch != null)
                         insertLocator(locator, mutationBatch);
-                    AstyanaxWriter.setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrent(locator);
                 }
 
                 if (isRecordingDelayedMetrics) {
@@ -187,9 +162,9 @@ public class AstyanaxWriter extends AstyanaxIO {
 
             //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
             int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
-            if (!AstyanaxWriter.isDelayedLocatorForASlotCurrent(slot, locator)) {
+            if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
                 insertDelayedLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator, mutationBatch);
-                AstyanaxWriter.setDelayedLocatorForASlotCurrent(slot, locator);
+                LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
     }
@@ -217,7 +192,7 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private void insertMetric(IMetric metric, MutationBatch mutationBatch) {
         final boolean isString = DataType.isStringMetric(metric.getMetricValue());
-        final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
+        final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
 
         if (isString || isBoolean) {
             // they were already casting long to int in Metrics.setTtl()
@@ -342,10 +317,10 @@ public class AstyanaxWriter extends AstyanaxIO {
                     }
                 }
                 
-                if (!AstyanaxWriter.isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
                     if (locatorInsertOk)
                         insertLocator(locator, batch);
-                    AstyanaxWriter.setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrent(locator);
                 }
             }
             try {
@@ -358,26 +333,6 @@ public class AstyanaxWriter extends AstyanaxIO {
         } finally {
             ctx.stop();
         }
-    }
-
-    public static boolean isLocatorCurrent(Locator loc) {
-        return insertedLocators.getIfPresent(loc.toString()) != null;
-    }
-
-    public static boolean isDelayedLocatorForASlotCurrent(int slot, Locator locator) {
-        return insertedDelayedLocators.getIfPresent(getLocatorSlotKey(slot, locator)) != null;
-    }
-
-    private static void setLocatorCurrent(Locator loc) {
-        insertedLocators.put(loc.toString(), Boolean.TRUE);
-    }
-
-    private static void setDelayedLocatorForASlotCurrent(int slot, Locator locator) {
-        insertedDelayedLocators.put(getLocatorSlotKey(slot, locator), Boolean.TRUE);
-    }
-
-    private static String getLocatorSlotKey(int slot, Locator locator) {
-        return slot + "," + locator.toString();
     }
 
     public void insertRollups(List<SingleRollupWriteContext> writeContexts) throws ConnectionException {

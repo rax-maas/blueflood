@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import com.datastax.driver.core.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -119,9 +120,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                             granularity, metric.getTtlInSeconds());
                     futureLocatorMap.put(future, locator);
 
-                    if ( !isLocatorCurrent(locator) ) {
+                    if ( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
                         locatorIO.insertLocator(locator);
-                        setLocatorCurrent(locator);
+                        LocatorCache.getInstance().setLocatorCurrent(locator);
                     }  else {
                         LOG.trace("insertMetrics(): not inserting locator " + locator);
                     }

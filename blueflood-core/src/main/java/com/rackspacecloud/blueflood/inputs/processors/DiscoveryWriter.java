@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
@@ -90,7 +91,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
             }
 
             for (IMetric m : list) {
-                if (!isLocatorCurrent(m)) {
+                if (!LocatorCache.getInstance().isLocatorCurrent(m.getLocator())) {
                     willIndex.add(m);
                 }
             }
@@ -98,17 +99,6 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
         return willIndex;
     }
 
-    private static boolean isLocatorCurrent(IMetric m) {
-        Locator locator = m.getLocator();
-        RollupType rollupType = m.getRollupType();
-        if ( rollupType == null || rollupType == RollupType.BF_BASIC ) {
-            return IOContainer.fromConfig().getBasicMetricsRW().isLocatorCurrent(locator);
-        } else {
-            return IOContainer.fromConfig().getPreAggregatedMetricsRW().isLocatorCurrent(locator);
-        }
-    }
-    
-    
     public ListenableFuture<Boolean> processMetrics(final List<List<IMetric>> input) {
         // process en masse.
         return getThreadPool().submit(new Callable<Boolean>() {
