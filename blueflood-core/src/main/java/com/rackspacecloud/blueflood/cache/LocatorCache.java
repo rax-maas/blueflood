@@ -14,17 +14,14 @@ public class LocatorCache {
 
     // this collection is used to reduce the number of locators that get written.
     // Simply, if a locator has been seen within the last 10 minutes, don't bother.
-    private final Cache<String, Boolean> insertedLocators =
-            CacheBuilder.newBuilder().expireAfterAccess(10,
-                    TimeUnit.MINUTES).concurrencyLevel(16).build();
+    private final Cache<String, Boolean> insertedLocators;
 
     // this collection is used to reduce the number of delayed locators that get
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
-    private final Cache<String, Boolean> insertedDelayedLocators =
-            CacheBuilder.newBuilder().expireAfterAccess(10,
-                    TimeUnit.MINUTES).concurrencyLevel(16).build();
+    private final Cache<String, Boolean> insertedDelayedLocators;
 
-    private static LocatorCache instance = new LocatorCache();
+    private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES);
+
 
     static {
         Metrics.getRegistry().register(MetricRegistry.name(LocatorCache.class, "Current Locators Count"),
@@ -44,8 +41,25 @@ public class LocatorCache {
                 });
     }
 
+
     public static LocatorCache getInstance() {
         return instance;
+    }
+
+    protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit) {
+
+        insertedLocators =
+                CacheBuilder.newBuilder().expireAfterAccess(expireAfterAccessDuration,
+                        expireAfterAccessTimeUnit).concurrencyLevel(16).build();
+
+        insertedDelayedLocators =
+                CacheBuilder.newBuilder().expireAfterAccess(expireAfterAccessDuration,
+                        expireAfterAccessTimeUnit).concurrencyLevel(16).build();
+    }
+
+    @VisibleForTesting
+    public static LocatorCache getInstance(Long duration, TimeUnit timeUnit) {
+        return new LocatorCache(duration, timeUnit);
     }
 
     public long getCurrentLocatorCount() {
