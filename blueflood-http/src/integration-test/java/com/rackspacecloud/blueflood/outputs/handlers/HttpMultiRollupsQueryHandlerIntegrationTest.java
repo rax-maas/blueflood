@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -98,6 +99,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
     }
 
     @Test
+    @Ignore
     public void testHttpMultiRollupsQueryHandler_WithEnum() throws Exception {
 
         String postfix = getPostfix();
