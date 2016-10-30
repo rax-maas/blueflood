@@ -20,11 +20,13 @@ import com.codahale.metrics.Timer;
 import com.datastax.driver.core.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Multimap;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.*;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +56,11 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
     /**
      * Constructor
      * @param locatorIO
+     * @param isRecordingDelayedMetrics
      */
-    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO) {
-        super(locatorIO);
+    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
+                                   boolean isRecordingDelayedMetrics, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
         rollupTypeToIO.put(RollupType.COUNTER, counterIO);
         rollupTypeToIO.put(RollupType.ENUM, enumIO);
         rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
@@ -116,12 +120,17 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                             granularity, metric.getTtlInSeconds());
                     futureLocatorMap.put(future, locator);
 
-                    if ( !isLocatorCurrent(locator) ) {
+                    if ( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
                         locatorIO.insertLocator(locator);
-                        setLocatorCurrent(locator);
+                        LocatorCache.getInstance().setLocatorCurrent(locator);
                     }  else {
-                        LOG.debug("insertMetrics(): not inserting locator " + locator);
+                        LOG.trace("insertMetrics(): not inserting locator " + locator);
                     }
+
+                    if (isRecordingDelayedMetrics) {
+                        insertLocatorIfDelayed(metric);
+                    }
+
                 }
             }
 

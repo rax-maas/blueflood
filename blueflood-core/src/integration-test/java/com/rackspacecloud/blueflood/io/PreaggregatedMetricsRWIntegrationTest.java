@@ -20,25 +20,37 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.APreaggregatedMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DDelayedLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
 import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import com.rackspacecloud.blueflood.utils.Util;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.junit.After;
+import org.joda.time.Instant;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * A class to test the various implementation of PreaggregatedMetricsRW.
@@ -51,9 +63,16 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
     protected LocatorIO locatorIO = new DLocatorIO();
+    protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
     protected DEnumIO enumIO = new DEnumIO();
-    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO);
-    protected APreaggregatedMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW();
+    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, false, new DefaultClockImpl());
+    protected APreaggregatedMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW(false, new DefaultClockImpl());
+
+    protected static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
+    protected static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
+
 
     protected Map<Locator, IMetric>  expectedLocatorMetricMap = new HashMap<Locator, IMetric>();
     protected IMetric timerMetric;
@@ -168,6 +187,57 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
     }
 
     /**
+     * For a given list of locators, figure the shard they belong to and for all those shards
+     * get all the locators in metric_locator column family
+     *
+     * @param ingestedLocators
+     * @return
+     * @throws IOException
+     */
+    protected Set<Locator> retrieveLocators(Set<Locator> ingestedLocators) throws IOException {
+
+        Set<Long> shards = new HashSet<Long>();
+        for (Locator locator: ingestedLocators) {
+            long shard = (long) Util.getShard(locator.toString());
+            shards.add(shard);
+        }
+
+        Set<Locator> locatorsFromDB = new HashSet<Locator>();
+        for (Long shard: shards) {
+            locatorsFromDB.addAll(locatorIO.getLocators(shard));
+        }
+
+        return locatorsFromDB;
+    }
+
+    /**
+     * For a given list of metrics, figure out the shard and slot they belong to and for those
+     * shard and slot combinations, get all the locators from metrics_delayed_locator column family.
+     *
+     * @param metrics
+     * @return
+     * @throws IOException
+     */
+    protected Set<Locator> retrieveLocatorsByShardAndSlot(List<IMetric> metrics) throws IOException {
+        Set<String> slotKeys = new HashSet<String>();
+
+        for (IMetric metric: metrics) {
+            int shard = Util.getShard(metric.getLocator().toString());
+            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+            SlotKey slotKey = SlotKey.of(DELAYED_METRICS_STORAGE_GRANULARITY, slot, shard);
+
+            slotKeys.add(slotKey.toString());
+        }
+
+        Set<Locator> locatorsFromDB = new HashSet<Locator>();
+        for (String slotKeyStr:  slotKeys) {
+            locatorsFromDB.addAll(delayedLocatorIO.getLocators(SlotKey.parse(slotKeyStr)));
+        }
+
+        return locatorsFromDB;
+    }
+
+    /**
      * A class that test cross-driver data correctness. This one has all the data
      * written using Datastax and read using Astyanax.
      *
@@ -210,6 +280,63 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
                 Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
                 Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
             }
+
+            Set<Locator> ingestedLocators = expectedLocatorMetricMap.keySet();
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(new ArrayList<IMetric>(expectedLocatorMetricMap.values()));
+            assertTrue("Locators which are not delayed identified as delayed", Collections.disjoint(locatorsFromDBByShardAndSlot, locators));
+        }
+
+        @Test
+        @Parameters(method = "getGranularitiesToTest")
+        public void testMultiMetricsDatapointsRangeWithDelayedMetrics(Granularity granularity) throws Exception {
+
+            Clock clock = mock(Clock.class);
+            final Locator locator1 = expectedLocatorMetricMap.keySet().iterator().next();
+            when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
+
+            // write with datastax
+            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, true, clock);
+            datastaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values(), granularity);
+
+            // read with astyanaxRW.getDatapointsForRange()
+            List<Locator> locators = new ArrayList<Locator>() {{
+                addAll(expectedLocatorMetricMap.keySet());
+            }};
+            Map<Locator, MetricData> results = astyanaxMetricsRW.getDatapointsForRange(
+                    locators,
+                    getRangeFromMinAgoToNow(5),
+                    granularity);
+
+            Assert.assertEquals("number of locators", expectedLocatorMetricMap.keySet().size(), results.keySet().size());
+
+            for ( Map.Entry<Locator, IMetric> entry : expectedLocatorMetricMap.entrySet() ) {
+                Locator locator = entry.getKey();
+
+                MetricData metricData = results.get(locator);
+                Assert.assertNotNull(String.format("metric data for locator %s exists", locator), metricData);
+
+                Points points = metricData.getData();
+                Map<Long, Points.Point> pointMap = points.getPoints();
+                Assert.assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size());
+
+                IMetric expectedMetric = entry.getValue();
+                Assert.assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
+                        pointMap.get(expectedMetric.getCollectionTime())));
+
+                Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
+                Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
+            }
+
+            Set<Locator> ingestedLocators = expectedLocatorMetricMap.keySet();
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(new ArrayList<IMetric>(expectedLocatorMetricMap.values()));
+            locatorsFromDBByShardAndSlot.retainAll(ingestedLocators);
+            assertEquals("Locators which are not delayed identified as delayed", locators.size(), locatorsFromDBByShardAndSlot.size());
         }
 
         @Test
@@ -257,7 +384,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             datastaxMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
 
             // pick first locator from input metrics, read with Astyanax.getDataToRollup
-            Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
+            final Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
             IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
             MetricData metricData =
                     astyanaxMetricsRW.getDatapointsForRange (locator,
@@ -274,6 +401,47 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
             Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
 
+            Set<Locator> ingestedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+        }
+
+        @Test
+        public void testSingleMetricDatapointForRangeWithDelayedMetrics() throws Exception {
+
+            Clock clock = mock(Clock.class);
+            final Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
+            when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator).getCollectionTime() + MAX_AGE_ALLOWED + 1));
+
+            // write with datastax
+            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, true, clock);
+            datastaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values());
+
+            // pick first locator from input metrics, read with Astyanax.getDataToRollup
+            IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
+            MetricData metricData =
+                    astyanaxMetricsRW.getDatapointsForRange (locator,
+                            getRangeFromMinAgoToNow(5),
+                            Granularity.FULL);
+
+            Points points = metricData.getData();
+            Map<Long, Points.Point> pointMap = points.getPoints();
+            Assert.assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size());
+
+            Assert.assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
+                    pointMap.get(expectedMetric.getCollectionTime())));
+
+            Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
+            Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
+
+            Set<Locator> ingestedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            List<IMetric> ingestedDelayedMetrics = new ArrayList<IMetric>(){{ add(expectedLocatorMetricMap.get(locator)); }};
+            Set<Locator> ingestedDelayedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(ingestedDelayedMetrics);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDBByShardAndSlot.containsAll(ingestedDelayedLocators));
         }
 
         @Test
@@ -347,6 +515,63 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
                 Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
                 Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
             }
+
+            Set<Locator> ingestedLocators = expectedLocatorMetricMap.keySet();
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(new ArrayList<IMetric>(expectedLocatorMetricMap.values()));
+            assertTrue("Locators which are not delayed identified as delayed", Collections.disjoint(locatorsFromDBByShardAndSlot, locators));
+        }
+
+        @Test
+        @Parameters(method = "getGranularitiesToTest")
+        public void testMultiMetricsDatapointsRangeWithDelayedMetrics(Granularity granularity) throws Exception {
+
+            Clock clock = mock(Clock.class);
+            final Locator locator1 = expectedLocatorMetricMap.keySet().iterator().next();
+            when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
+
+            // write with astyanax
+            APreaggregatedMetricsRW astyanaxMetricsRW1 = new APreaggregatedMetricsRW(true, clock);
+            astyanaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values(), granularity);
+
+            List<Locator> locators = new ArrayList<Locator>() {{
+                addAll(expectedLocatorMetricMap.keySet());
+            }};
+            // read with datastax
+            Map<Locator, MetricData> results = datastaxMetricsRW.getDatapointsForRange(
+                    locators,
+                    getRangeFromMinAgoToNow(5),
+                    granularity);
+
+            Assert.assertEquals("number of locators", expectedLocatorMetricMap.keySet().size(), results.keySet().size());
+
+            for ( Map.Entry<Locator, IMetric> entry : expectedLocatorMetricMap.entrySet() ) {
+                Locator locator = entry.getKey();
+
+                MetricData metricData = results.get(locator);
+                Assert.assertNotNull(String.format("metric data for locator %s exists", locator), metricData);
+
+                Points points = metricData.getData();
+                Map<Long, Points.Point> pointMap = points.getPoints();
+                Assert.assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size());
+
+                IMetric expectedMetric = entry.getValue();
+                Assert.assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
+                        pointMap.get(expectedMetric.getCollectionTime())));
+
+                Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
+                Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
+            }
+
+            Set<Locator> ingestedLocators = expectedLocatorMetricMap.keySet();
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(new ArrayList<IMetric>(expectedLocatorMetricMap.values()));
+            locatorsFromDBByShardAndSlot.retainAll(ingestedLocators);
+            assertEquals("Locators which are not delayed identified as delayed", locators.size(), locatorsFromDBByShardAndSlot.size());
         }
 
         @Test
@@ -395,7 +620,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             astyanaxMetricsRW.insertMetrics(expectedLocatorMetricMap.values());
 
             // pick first locator from input metrics, read with Astyanax.getDataToRollup
-            Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
+            final Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
             IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
             MetricData metricData =
                     datastaxMetricsRW.getDatapointsForRange (locator,
@@ -412,6 +637,51 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
             Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
 
+            Set<Locator> ingestedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            List<IMetric> ingestedDelayedMetrics = new ArrayList<IMetric>(){{ add(expectedLocatorMetricMap.get(locator)); }};
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(ingestedDelayedMetrics);
+            assertEquals("Locators which are not delayed identified as delayed", 0, locatorsFromDBByShardAndSlot.size());
+        }
+
+        @Test
+        public void testSingleMetricDatapointForRangeWithDelayedMetrics() throws Exception {
+
+            Clock clock = mock(Clock.class);
+            final Locator locator = expectedLocatorMetricMap.keySet().iterator().next();
+            when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator).getCollectionTime() + MAX_AGE_ALLOWED + 1));
+
+            // write with astyanax
+            APreaggregatedMetricsRW astyanaxMetricsRW1 = new APreaggregatedMetricsRW(true, clock);
+            astyanaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values());
+
+            // pick first locator from input metrics, read with Astyanax.getDataToRollup
+            IMetric expectedMetric = expectedLocatorMetricMap.get(locator);
+            MetricData metricData =
+                    datastaxMetricsRW.getDatapointsForRange (locator,
+                            getRangeFromMinAgoToNow(5),
+                            Granularity.FULL);
+
+            Points points = metricData.getData();
+            Map<Long, Points.Point> pointMap = points.getPoints();
+            Assert.assertEquals(String.format("number of points for locator %s", locator), 1, pointMap.values().size());
+
+            Assert.assertNotNull(String.format("point for locator %s at timestamp %s exists", locator, expectedMetric.getCollectionTime(),
+                    pointMap.get(expectedMetric.getCollectionTime())));
+
+            Points.Point point = pointMap.get(expectedMetric.getCollectionTime());
+            Assert.assertTrue(String.format("locator %s data is the same", locator), expectedMetric.getMetricValue().equals(point.getData()));
+
+            Set<Locator> ingestedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDB = retrieveLocators(ingestedLocators);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDB.containsAll(ingestedLocators));
+
+            List<IMetric> ingestedDelayedMetrics = new ArrayList<IMetric>(){{ add(expectedLocatorMetricMap.get(locator)); }};
+            Set<Locator> ingestedDelayedLocators = new HashSet<Locator>(){{ add(locator); }};
+            Set<Locator> locatorsFromDBByShardAndSlot = retrieveLocatorsByShardAndSlot(ingestedDelayedMetrics);
+            assertTrue("Some of the ingested locator's missing from db", locatorsFromDBByShardAndSlot.containsAll(ingestedDelayedLocators));
         }
 
         @Test

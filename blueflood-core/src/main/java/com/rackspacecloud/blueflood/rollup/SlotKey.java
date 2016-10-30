@@ -18,16 +18,12 @@ package com.rackspacecloud.blueflood.rollup;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.Constants;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Immutable data structure representing the current slot being checked.
@@ -163,5 +159,30 @@ public final class SlotKey {
         result = 31 * result + slot;
         result = 31 * result + granularity.hashCode();
         return result;
+    }
+
+    /**
+     * This method would extrapolate a given slotkey to a corresponding parent slotkey of a given(higher) granularity.
+     *
+     * For example: For a given slotkey 'metrics_5m,1,30' which corresponds to granularity=5m, slot=1, shard=30, if we
+     *              extrapolate this to a destination granularity of 20m, this would return 'metrics_20m,0,30',  which
+     *              corresponds to granularity=20m, slot=0, shard=30 which is a parent key of the given slotkey
+     *
+     * @param destGranularity
+     * @return
+     */
+    public SlotKey extrapolate(Granularity destGranularity) {
+
+        if (destGranularity.equals(this.getGranularity())) {
+            return this;
+        }
+        if (!destGranularity.isCoarser(getGranularity())) {
+            throw new IllegalArgumentException("Destination granularity must be coarser than the current granularity");
+        }
+
+        int factor = getGranularity().numSlots() / destGranularity.numSlots();
+        int parentSlot = getSlot() / factor;
+
+        return SlotKey.of(destGranularity, parentSlot, getShard());
     }
 }

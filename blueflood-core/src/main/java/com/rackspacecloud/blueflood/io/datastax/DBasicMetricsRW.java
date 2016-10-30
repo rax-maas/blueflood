@@ -3,12 +3,15 @@ package com.rackspacecloud.blueflood.io.datastax;
 import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +25,7 @@ import java.util.*;
  */
 public class DBasicMetricsRW extends DAbstractMetricsRW {
 
-    private static final Logger LOG = LoggerFactory.getLogger( DBasicMetricsRW.class );
+    private static final Logger LOG = LoggerFactory.getLogger(DBasicMetricsRW.class);
     private static final Timer waitResultsTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Wait Write Results");
 
     private boolean areStringMetricsDropped;
@@ -38,18 +41,20 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      * ingestion of String metrics for all tenants.
      * See #DBasicMetricsRW(boolean, List) to change the behavior.
      */
-    public DBasicMetricsRW(LocatorIO locatorIO) {
-        this(locatorIO, false, new ArrayList<String>());
+    @VisibleForTesting
+    public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO, boolean isRecordingDelayedMetrics, Clock clock) {
+        this(locatorIO, delayedLocatorIO, false, new ArrayList<String>(), isRecordingDelayedMetrics, clock);
     }
 
     /**
      * Constructor
-     *
-     * @param ignoreStringMetrics
+     *  @param ignoreStringMetrics
      * @param tenantIdsKept
+     * @param isRecordingDelayedMetrics
      */
-    public DBasicMetricsRW(LocatorIO locatorIO, boolean ignoreStringMetrics, List<String> tenantIdsKept) {
-        super(locatorIO);
+    public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO, boolean ignoreStringMetrics,
+                           List<String> tenantIdsKept, boolean isRecordingDelayedMetrics, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
         this.areStringMetricsDropped = ignoreStringMetrics;
         this.keptTenantIdsSet  = new HashSet<String>(tenantIdsKept);
     }
@@ -75,20 +80,26 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
             for( IMetric metric : metrics ) {
 
                 if (!shouldPersist(metric)) {
-                    LOG.trace( String.format( "Metric %s shouldn't be persisted, skipping insert", metric.getLocator().toString() ) );
+                    LOG.trace(String.format("Metric %s shouldn't be persisted, skipping insert", metric.getLocator().toString()));
                     continue;
                 }
 
                 Locator locator = metric.getLocator();
 
-                if( !isLocatorCurrent( locator ) ) {
+                if( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
 
-                    setLocatorCurrent( locator );
+                    LocatorCache.getInstance().setLocatorCurrent(locator);
 
                     if( !DataType.isStringOrBoolean( metric.getMetricValue() ) )
                         locatorIO.insertLocator( locator );
                 }
 
+                if (isRecordingDelayedMetrics) {
+                    //retaining the same conditional logic that was used to insertLocator(locator) above.
+                    if (!DataType.isStringOrBoolean(metric.getMetricValue())) {
+                        insertLocatorIfDelayed(metric);
+                    }
+                }
 
                 futures.put( locator, rawIO.insertAsync( metric ) );
             }
@@ -163,8 +174,8 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
         String columnFamily = CassandraModel.getBasicColumnFamilyName( gran );
 
-        metrics.putAll( super.getDatapointsForRange( numerics, range, columnFamily, gran ) );
-        metrics.putAll( getBooleanDataForRange( booleans, range ) );
+        metrics.putAll( super.getDatapointsForRange( numerics, range, columnFamily, gran));
+            metrics.putAll(getBooleanDataForRange(booleans, range));
         metrics.putAll( getStringDataForRange( strings, range ) );
         metrics.putAll( getNumericOrStringDataForRange( unknowns, range, columnFamily, gran ) );
 
@@ -268,7 +279,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                 try {
 
                     metrics.put( future.getKey(), rawIO.createMetricDataStringBoolean( future.getValue(),
-                            isBoolean, metadataCache.getUnitString( future.getKey() ) ) );
+                            isBoolean, metadataCache.getUnitString(future.getKey()) ) );
                 }
                 catch (Exception e ) {
 

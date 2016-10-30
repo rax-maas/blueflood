@@ -48,7 +48,8 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any());
+                Matchers.<ExecutorService>any()
+        );
         doCallRealMethod().when(lfr).run();
 
         executionContext = mock(RollupExecutionContext.class);
@@ -96,7 +97,8 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).run();
         verify(lfr, times(3)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -120,6 +122,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(any(SlotKey.class));
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -129,7 +132,8 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -165,6 +169,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(any(SlotKey.class));
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -174,7 +179,8 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();
@@ -210,6 +216,7 @@ public class LocatorFetchRunnableRunTest {
         verifyZeroInteractions(executionContext);
         verifyZeroInteractions(rollupBatchWriter);
         verify(scheduleCtx).getCurrentTimeMillis();
+        verify(scheduleCtx).isReroll(any(SlotKey.class));
         verifyNoMoreInteractions(scheduleCtx);
         verifyZeroInteractions(rollupReadExecutor);
         verifyZeroInteractions(rollupWriteExecutor);
@@ -219,7 +226,8 @@ public class LocatorFetchRunnableRunTest {
                 Matchers.<SlotKey>any(),
                 Matchers.<ExecutorService>any(),
                 Matchers.<ThreadPoolExecutor>any(),
-                Matchers.<ExecutorService>any());
+                Matchers.<ExecutorService>any()
+        );
         verify(lfr).run();
         verify(lfr, times(2)).getGranularity();
         verify(lfr, times(1)).getParentSlot();

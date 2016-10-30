@@ -6,6 +6,7 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
 import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
+import com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -13,6 +14,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
@@ -36,8 +38,10 @@ import static org.junit.Assert.*;
         "com.rackspacecloud.blueflood.utils.Metrics",
         "com.codahale.metrics.*"})
 @PrepareForTest({Configuration.class})
-@SuppressStaticInitializationFor( {"com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
-        "com.rackspacecloud.blueflood.cache.MetadataCache"} )
+@SuppressStaticInitializationFor( {
+        "com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
+        "com.rackspacecloud.blueflood.cache.MetadataCache",
+        "com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW"} )
 @RunWith(PowerMockRunner.class)
 public class IOContainerTest {
 
@@ -59,12 +63,13 @@ public class IOContainerTest {
         // mock DatastaxIO.getSession() & Session
         PowerMockito.mockStatic( DatastaxIO.class );
         Session mockSession = mock( Session.class );
-        when( DatastaxIO.getSession()).thenReturn( mockSession );
+        when( DatastaxIO.getSession()).thenReturn(mockSession);
         PreparedStatement mockPreparedStatement = mock( PreparedStatement.class );
         when( mockSession.prepare( any( RegularStatement.class ) ) ).thenReturn( mockPreparedStatement );
-        when( mockSession.prepare( anyString() ) ).thenReturn( mockPreparedStatement );
-        when( mockPreparedStatement.setConsistencyLevel( any(ConsistencyLevel.class) ) ).thenReturn( mockPreparedStatement );
+        when( mockSession.prepare( anyString() ) ).thenReturn(mockPreparedStatement);
+        when( mockPreparedStatement.setConsistencyLevel(any(ConsistencyLevel.class)) ).thenReturn( mockPreparedStatement );
     }
+
 
     @Test
     public void testNullDriverConfig() throws Exception {
@@ -109,9 +114,9 @@ public class IOContainerTest {
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();
         ShardStateIO shardStateIO = ioContainer.getShardStateIO();
-        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO );
+        assertTrue("ShardStateIO instance is Datastax", shardStateIO instanceof DShardStateIO);
         MetadataIO metadataIO = ioContainer.getMetadataIO();
-        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO );
+        assertTrue("MetadataIO instance is Datastax", metadataIO instanceof DMetadataIO);
     }
 
     /**

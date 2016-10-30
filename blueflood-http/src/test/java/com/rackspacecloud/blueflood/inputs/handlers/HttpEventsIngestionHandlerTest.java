@@ -163,7 +163,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
     @Test
     public void testWhenFieldInThePast() throws Exception {
 
-        long collectionTimeInPast = new DefaultClockImpl().now().getMillis() - 1000
+        long collectionTimeInPast = new DefaultClockImpl().now().getMillis() - 10000
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
         Map<String, Object> event = new HashMap<String, Object>();
@@ -187,7 +187,7 @@ public class HttpEventsIngestionHandlerTest extends HandlerTestsBase {
     @Test
     public void testWhenFieldInTheFuture() throws Exception {
 
-        long collectionTimeInFuture = new DefaultClockImpl().now().getMillis() + 1000
+        long collectionTimeInFuture = new DefaultClockImpl().now().getMillis() + 10000
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
         Map<String, Object> event = new HashMap<String, Object>();

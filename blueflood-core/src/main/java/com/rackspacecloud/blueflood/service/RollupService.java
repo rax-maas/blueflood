@@ -279,8 +279,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 try {
                     UpdateStamp stamp = shardStateManager.getUpdateStamp(slotKey);
                     long currentTimeMillis = context.getCurrentTimeMillis();
-                    final long timeElapsedSinceLastRollup = currentTimeMillis - stamp.getLastRollupTimestamp();
-                    boolean isReroll = timeElapsedSinceLastRollup < ShardStateManager.REROLL_TIME_SPAN_ASSUMED_VALUE;
+                    boolean isReroll = context.isReroll(slotKey);
                     log.info("Scheduling slotKey {} @ {} last collection time: {} last rollup time: {} isReroll: {}",
                             new Object[]{slotKey, currentTimeMillis, stamp.getTimestamp(),
                                     stamp.getLastRollupTimestamp(), isReroll});

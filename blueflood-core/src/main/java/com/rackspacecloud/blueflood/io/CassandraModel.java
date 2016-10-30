@@ -4,8 +4,10 @@ import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.LongSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.LocatorSerializer;
+import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotKeySerializer;
 import com.rackspacecloud.blueflood.io.serializers.astyanax.SlotStateSerializer;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SlotState;
@@ -26,6 +28,7 @@ public class CassandraModel {
     public static final String CF_METRICS_STATE_NAME = "metrics_state";
     public static final String CF_METRICS_METADATA_NAME = "metrics_metadata";
     public static final String CF_METRICS_LOCATOR_NAME = "metrics_locator";
+    public static final String CF_METRICS_DELAYED_LOCATOR_NAME = "metrics_delayed_locator";
     public static final String CF_METRICS_STRING_NAME = "metrics_string";
     public static final String CF_METRICS_ENUM_NAME = "metrics_enum";
     public static final String CF_METRICS_EXCESS_ENUMS_NAME = "metrics_excess_enums";
@@ -71,6 +74,12 @@ public class CassandraModel {
     public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>(CF_METRICS_LOCATOR_NAME,
             LongSerializer.get(),
             LocatorSerializer.get());
+
+    public static final ColumnFamily<SlotKey, Locator> CF_METRICS_DELAYED_LOCATOR = new ColumnFamily<SlotKey,
+            Locator>(CF_METRICS_DELAYED_LOCATOR_NAME,
+            SlotKeySerializer.get(),
+            LocatorSerializer.get());
+
     public static final ColumnFamily<Long, SlotState> CF_METRICS_STATE = new ColumnFamily<Long, SlotState>(CF_METRICS_STATE_NAME,
             LongSerializer.get(),
             SlotStateSerializer.get());
@@ -87,7 +96,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-            CF_METRICS_METADATA, CF_METRICS_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
+            CF_METRICS_METADATA, CF_METRICS_LOCATOR, CF_METRICS_DELAYED_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;

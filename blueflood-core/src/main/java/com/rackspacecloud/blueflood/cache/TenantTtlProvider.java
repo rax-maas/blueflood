@@ -24,6 +24,7 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 public interface TenantTtlProvider {
 
     public static final int LOCATOR_TTL = 604800;   // ttl for locators in seconds, 604800s = 1 week
+    public static final int DELAYED_LOCATOR_TTL = 259200;   // ttl for delayed locators in seconds, 259200s = 3 days
 
     public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType);
 

@@ -6,13 +6,17 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.google.common.collect.Table;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +29,27 @@ import java.util.*;
  */
 public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
-    private static final Logger LOG = LoggerFactory.getLogger( DAbstractMetricsRW.class );
+    private static final Logger LOG = LoggerFactory.getLogger(DAbstractMetricsRW.class);
+
+    private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
+    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     protected final LocatorIO locatorIO;
+    protected final DelayedLocatorIO delayedLocatorIO;
 
     /**
      * Constructor
      * @param locatorIO
+     * @param isRecordingDelayedMetrics
      */
-    protected DAbstractMetricsRW(LocatorIO locatorIO) {
+    protected DAbstractMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
+                                 boolean isRecordingDelayedMetrics, Clock clock) {
+        this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
         this.locatorIO = locatorIO;
+        this.delayedLocatorIO = delayedLocatorIO;
+        this.clock = clock;
     }
 
     /**
@@ -112,7 +127,9 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     public MetricData getDatapointsForRange(final Locator locator,
                                             Range range,
                                             Granularity granularity) {
-        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{ add(locator); }}, range, granularity);
+        Map<Locator, MetricData> result = getDatapointsForRange(new ArrayList<Locator>() {{
+            add(locator);
+        }}, range, granularity);
         return result.get(locator);
     }
 
@@ -135,7 +152,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                                                               String columnFamily,
                                                               Granularity granularity ) {
 
-        Timer.Context ctx = Instrumentation.getReadTimerContext( columnFamily );
+        Timer.Context ctx = Instrumentation.getReadTimerContext(columnFamily);
 
         try {
 
@@ -309,5 +326,25 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             return new DataType(meta);
         }
         return DataType.NUMERIC;
+    }
+
+    /**
+     * This method inserts the locator into the metric_delayed_locator column family, if the metric is delayed.
+     *
+     * @param metric
+     * @throws IOException
+     */
+    protected void insertLocatorIfDelayed(IMetric metric) throws IOException {
+        Locator locator = metric.getLocator();
+        long delay = clock.now().getMillis() - metric.getCollectionTime();
+        if (delay > MAX_AGE_ALLOWED) {
+
+            //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
+            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+            if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
+                delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
+                LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
+            }
+        }
     }
 }

@@ -4,11 +4,17 @@ import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
 import com.rackspacecloud.blueflood.io.astyanax.ABasicMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
+import com.rackspacecloud.blueflood.io.datastax.DDelayedLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
+import com.rackspacecloud.blueflood.rollup.SlotKey;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
+import com.rackspacecloud.blueflood.utils.Util;
 import org.junit.Before;
 
 
@@ -34,12 +40,19 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
     protected LocatorIO locatorIO = new DLocatorIO();
-    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO);
-    protected MetricsRW astyanaxMetricsRW = new ABasicMetricsRW();
+    protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
+
+    protected MetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, new DefaultClockImpl());
+    protected MetricsRW astyanaxMetricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
     protected Map<Locator, IMetric> numericMap = new HashMap<Locator, IMetric>();
     protected Map<Locator, IMetric> stringMap = new HashMap<Locator, IMetric>();
     protected Map<Locator, IMetric> boolMap = new HashMap<Locator, IMetric>();
+
+    protected static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+
+    protected static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     /**
      * Generate numeric, string and boolean metrics to be used by the tests.
@@ -166,4 +179,57 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
                 CassandraModel.getBasicColumnFamily( destGran ),
                 metric.getCollectionTime());
     }
+
+
+    /**
+     * For a given list of locators, figure the shard they belong to and for all those shards
+     * get all the locators in metric_locator column family
+     *
+     * @param ingestedLocators
+     * @return
+     * @throws IOException
+     */
+    protected Set<Locator> retrieveLocators(Set<Locator> ingestedLocators) throws IOException {
+
+        Set<Long> shards = new HashSet<Long>();
+        for (Locator locator: ingestedLocators) {
+            long shard = (long) Util.getShard(locator.toString());
+            shards.add(shard);
+        }
+
+        Set<Locator> locatorsFromDB = new HashSet<Locator>();
+        for (Long shard: shards) {
+            locatorsFromDB.addAll(locatorIO.getLocators(shard));
+        }
+
+        return locatorsFromDB;
+    }
+
+    /**
+     * For a given list of metrics, figure out the shard and slot they belong to and for those
+     * shard and slot combinations, get all the locators from metrics_delayed_locator column family.
+     *
+     * @param metrics
+     * @return
+     * @throws IOException
+     */
+    protected Set<Locator> retrieveLocatorsByShardAndSlot(List<IMetric> metrics) throws IOException {
+        Set<String> slotKeys = new HashSet<String>();
+
+        for (IMetric metric: metrics) {
+            int shard = Util.getShard(metric.getLocator().toString());
+            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+            SlotKey slotKey = SlotKey.of(DELAYED_METRICS_STORAGE_GRANULARITY, slot, shard);
+
+            slotKeys.add(slotKey.toString());
+        }
+
+        Set<Locator> locatorsFromDB = new HashSet<Locator>();
+        for (String slotKeyStr:  slotKeys) {
+            locatorsFromDB.addAll(delayedLocatorIO.getLocators(SlotKey.parse(slotKeyStr)));
+        }
+
+        return locatorsFromDB;
+    }
+
 }

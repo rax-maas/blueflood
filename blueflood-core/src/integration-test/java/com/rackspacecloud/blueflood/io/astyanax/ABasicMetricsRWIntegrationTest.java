@@ -20,6 +20,7 @@ import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
@@ -41,7 +42,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
         try {
             Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
-            MetricsRW metricsRW = new ABasicMetricsRW();
+            MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
             final long baseMillis = 1333635148000L; // some point during 5 April 2012.
             long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -79,7 +80,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
         try {
             Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", true);
 
-            MetricsRW metricsRW = new ABasicMetricsRW();
+            MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
             final long baseMillis = 1333635148000L; // some point during 5 April 2012.
             long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -120,7 +121,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
         try {
             Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
 
-            MetricsRW metricsRW = new ABasicMetricsRW();
+            MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
             final long baseMillis = 1333635148000L; // some point during 5 April 2012.
             long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -158,7 +159,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
         try {
             Whitebox.setInternalState(AstyanaxWriter.getInstance(), "areStringMetricsDropped", false);
 
-            MetricsRW metricsRW = new ABasicMetricsRW();
+            MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
             final long baseMillis = 1333635148000L; // some point during 5 April 2012.
             long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -199,7 +200,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
     //consecutive writes, it's always persisted.
     public void testStringMetricsWithDifferentValuesArePersisted() throws Exception {
 
-        MetricsRW metricsRW = new ABasicMetricsRW();
+        MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -238,7 +239,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
     //Numeric value is always persisted.
     public void testNumericMetricsAreAlwaysPersisted() throws Exception {
 
-        MetricsRW metricsRW = new ABasicMetricsRW();
+        MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -269,7 +270,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
     //In this test, the same value is sent, and the metric is not persisted except for the first time.
     public void testBooleanMetricsWithSameValueAreNotPersisted() throws Exception {
 
-        MetricsRW metricsRW = new ABasicMetricsRW();
+        MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         long lastMillis = baseMillis + (300 * 1000); // 300 seconds.
@@ -304,7 +305,7 @@ public class ABasicMetricsRWIntegrationTest extends IntegrationTestBase {
     //In this test, we alternately persist true and false. All the boolean metrics are persisted.
     public void testBooleanMetricsWithDifferentValuesArePersisted() throws Exception {
 
-        MetricsRW metricsRW = new ABasicMetricsRW();
+        MetricsRW metricsRW = new ABasicMetricsRW(false, new DefaultClockImpl());
 
         final long baseMillis = 1333635148000L; // some point during 5 April 2012.
         long lastMillis = baseMillis + (300 * 1000); // 300 seconds.

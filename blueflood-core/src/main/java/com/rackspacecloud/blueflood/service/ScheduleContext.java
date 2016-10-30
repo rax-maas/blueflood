@@ -268,6 +268,11 @@ public class ScheduleContext implements IngestionContext, ScheduleContextMBean {
         }
     }
 
+    boolean isReroll(SlotKey slotKey) {
+        return shardStateManager.getSlotStateManager(slotKey.getShard(), slotKey.getGranularity())
+                .isReroll(slotKey.getSlot(), scheduleTime);
+    }
+
     boolean areChildKeysOrSelfKeyScheduledOrRunning(SlotKey slotKey) {
         // if any ineligible (children and self) keys are running or scheduled to run, we shouldn't work on this.
         Collection<SlotKey> ineligibleKeys = slotKey.getChildrenKeys();

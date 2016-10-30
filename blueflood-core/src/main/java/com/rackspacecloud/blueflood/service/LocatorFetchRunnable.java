@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -50,6 +49,13 @@ class LocatorFetchRunnable implements Runnable {
     private long serverTime;
     private static final Timer rollupLocatorExecuteTimer = Metrics.timer(RollupService.class, "Locate and Schedule Rollups for Slot");
     private static final Histogram locatorsPerShard = Metrics.histogram(RollupService.class, "Locators Per Shard");
+    private static final Histogram locatorsPerShardForReroll = Metrics.histogram(RollupService.class, "Locators Per Shard for re-rolls");
+
+    private static boolean RECORD_DELAYED_METRICS =
+            Configuration.getInstance().getBooleanProperty(CoreConfig.RECORD_DELAYED_METRICS);
+
+    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     private Range parentRange;
 
@@ -102,9 +108,23 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = createRollupExecutionContext();
         final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
-        Set<Locator> locators = getLocators(executionContext);
+        //if delayed metric tracking is enabled, if its re-roll, if slot granularity is no coarser than DELAYED_METRICS_STORAGE_GRANULARITY, get delayed locators
+        Set<Locator> locators;
+        boolean isReroll = scheduleCtx.isReroll(parentSlotKey);
+        if (RECORD_DELAYED_METRICS &&
+                isReroll &&
+                !getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
+
+            locators = getDelayedLocators(executionContext, parentSlotKey.extrapolate(DELAYED_METRICS_STORAGE_GRANULARITY));
+        } else {
+            locators = getLocators(executionContext);
+        }
+
+        log.info(String.format("Number of locators getting rolled up for slotkey: [%s] are %s; isReroll: %s", parentSlotKey, locators.size(), isReroll));
+
         if (log.isTraceEnabled())
             log.trace("locators retrieved: {}", locators.size());
+
         for (Locator locator : locators) {
             rollCount = processLocator(rollCount, executionContext, rollupBatchWriter, locator);
         }
@@ -153,7 +173,7 @@ class LocatorFetchRunnable implements Runnable {
         if (executionContext.wasSuccessful()) {
             this.scheduleCtx.clearFromRunning(parentSlotKey);
             log.info("Successful completion of rollups for (gran,slot,shard) {} in {} ms",
-                    new Object[] {parentSlotKey, System.currentTimeMillis() - waitStart});
+                    new Object[]{parentSlotKey, System.currentTimeMillis() - waitStart});
         } else {
             log.error("Performing BasicRollups for {} failed", parentSlotKey);
             this.scheduleCtx.pushBackToScheduled(parentSlotKey, false);
@@ -186,13 +206,33 @@ class LocatorFetchRunnable implements Runnable {
         rollupReadExecutor.execute(rollupRunnable);
     }
 
+    public Set<Locator> getDelayedLocators(RollupExecutionContext executionContext, SlotKey slotkey) {
+        Set<Locator> locators = new HashSet<Locator>();
+
+        try {
+            // get a list of all delayed locators to rollup for a slot key.
+            locators.addAll(IOContainer.fromConfig().getDelayedLocatorIO().getLocators(slotkey));
+            locatorsPerShardForReroll.update(locators.size());
+        } catch (Throwable e) {
+            log.error("Failed reading delayed locators for slot: " + getParentSlot(), e);
+            executionContext.markUnsuccessful(e);
+        }
+
+        return locators;
+    }
+
     public Set<Locator> getLocators(RollupExecutionContext executionContext) {
         Set<Locator> locators = new HashSet<Locator>();
 
         try {
             // get a list of all locators to rollup for a shard
             locators.addAll(IOContainer.fromConfig().getLocatorIO().getLocators(getShard()));
-            locatorsPerShard.update(locators.size());
+
+            if (scheduleCtx.isReroll(parentSlotKey)) {
+                locatorsPerShardForReroll.update(locators.size());
+            } else {
+                locatorsPerShard.update(locators.size());
+            }
         } catch (Throwable e) {
             log.error("Failed reading locators for slot: " + getParentSlot(), e);
             executionContext.markUnsuccessful(e);
