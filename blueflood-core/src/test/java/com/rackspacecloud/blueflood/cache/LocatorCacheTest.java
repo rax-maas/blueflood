@@ -16,7 +16,7 @@ public class LocatorCacheTest {
 
     @Before
     public void setup() {
-        locatorCache = LocatorCache.getInstance(2L, TimeUnit.SECONDS);
+        locatorCache = LocatorCache.getInstance(2L, TimeUnit.SECONDS, 3L, TimeUnit.SECONDS);
 
     }
 
@@ -35,6 +35,35 @@ public class LocatorCacheTest {
         Thread.sleep(2000L); //sleeping for 2 seconds to let the locator expire from cache
 
         assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+    }
+
+    @Test
+    public void testSetLocatorCurrentCheckForExpirationWithoutReads() throws InterruptedException {
+
+        locatorCache.setLocatorCurrent(LOCATOR);
+
+        Thread.sleep(3001L);
+        // it has been more than 3 seconds since it was written.
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+
+    }
+
+    @Test
+    public void testSetLocatorCurrentCheckForExpiration() throws InterruptedException {
+
+        locatorCache.setLocatorCurrent(LOCATOR);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+
+        Thread.sleep(1000L);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+
+        Thread.sleep(1000L);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+
+        Thread.sleep(1001L);
+        // it has been more than 3 seconds since it was written. So it has to expire even if it was accessed 1sec before.
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+
     }
 
     @Test

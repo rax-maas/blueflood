@@ -20,7 +20,8 @@ public class LocatorCache {
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
     private final Cache<String, Boolean> insertedDelayedLocators;
 
-    private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES);
+    private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES,
+                                                            3, TimeUnit.DAYS);
 
 
     static {
@@ -46,20 +47,29 @@ public class LocatorCache {
         return instance;
     }
 
-    protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit) {
+    protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
+                           long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
 
         insertedLocators =
-                CacheBuilder.newBuilder().expireAfterAccess(expireAfterAccessDuration,
-                        expireAfterAccessTimeUnit).concurrencyLevel(16).build();
+                CacheBuilder.newBuilder()
+                        .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
+                        .expireAfterWrite(expireAfterWriteDuration, expireAfterWriteTimeUnit)
+                        .concurrencyLevel(16)
+                        .build();
 
         insertedDelayedLocators =
-                CacheBuilder.newBuilder().expireAfterAccess(expireAfterAccessDuration,
-                        expireAfterAccessTimeUnit).concurrencyLevel(16).build();
+                CacheBuilder.newBuilder()
+                        .expireAfterAccess(expireAfterAccessDuration, expireAfterAccessTimeUnit)
+                        .concurrencyLevel(16)
+                        .build();
     }
 
     @VisibleForTesting
-    public static LocatorCache getInstance(Long duration, TimeUnit timeUnit) {
-        return new LocatorCache(duration, timeUnit);
+    public static LocatorCache getInstance(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
+                                           long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
+
+        return new LocatorCache(expireAfterAccessDuration, expireAfterAccessTimeUnit,
+                                expireAfterWriteDuration, expireAfterWriteTimeUnit);
     }
 
     public long getCurrentLocatorCount() {
