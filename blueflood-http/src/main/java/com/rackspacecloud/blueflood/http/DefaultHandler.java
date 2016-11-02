@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
@@ -38,6 +39,7 @@ import java.util.Map;
 
 public class DefaultHandler implements HttpRequestHandler {
     private static final Timer sendResponseTimer = Metrics.timer(DefaultHandler.class, "HTTP response sending timer");
+    private static final Meter sendingErrorResponses = Metrics.meter(DefaultHandler.class, "Http Error Responses");
 
     private static final Logger log = LoggerFactory.getLogger(DefaultHandler.class);
 
@@ -49,6 +51,7 @@ public class DefaultHandler implements HttpRequestHandler {
     public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
                                    List<ErrorResponse.ErrorData> validationErrors, HttpResponseStatus status) {
         try {
+            sendingErrorResponses.mark();
 
             String responseBody = new ObjectMapper().writeValueAsString(new ErrorResponse(validationErrors));
             sendResponse(ctx, request, responseBody, status);

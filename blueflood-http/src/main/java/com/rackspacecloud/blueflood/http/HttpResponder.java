@@ -21,23 +21,20 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.*;
-import static io.netty.handler.codec.http.HttpHeaders.Values.*;
-import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
-import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
+import static io.netty.handler.codec.http.HttpHeaders.Values.KEEP_ALIVE;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
 
     private static final boolean CORS_ENABLED = Configuration.getInstance().getBooleanProperty(CoreConfig.CORS_ENABLED);
     private static final String CORS_ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+
+    private static final Logger log = LoggerFactory.getLogger(HttpResponder.class);
 
     public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status) {
         respond(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, status));
@@ -50,18 +47,19 @@ public class HttpResponder {
             res.headers().add("Access-Control-Allow-Origin", CORS_ALLOWED_ORIGINS);
         }
 
-
         if (res.content() != null) {
-            setContentLength(res, res.content().readableBytes());
+            HttpUtil.setContentLength(res, res.content().readableBytes());
         }
 
-        if ( isKeepAlive(req) ) {
+        boolean isKeepAlive = HttpUtil.isKeepAlive(req);
+        if (isKeepAlive) {
             res.headers().add(CONNECTION, KEEP_ALIVE);
         }
 
         // Send the response and close the connection if necessary.
         ctx.channel().write(res);
-        if (req == null || !isKeepAlive(req)) {
+        if (req == null || !isKeepAlive) {
+            log.debug("Closing channel. isKeepAlive:" + isKeepAlive);
             ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
         }
     }

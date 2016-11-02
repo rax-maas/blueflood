@@ -118,7 +118,11 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                     ResultSetFuture future = io.putAsync(locator, metric.getCollectionTime(),
                             (Rollup) metric.getMetricValue(),
                             granularity, metric.getTtlInSeconds());
+
                     futureLocatorMap.put(future, locator);
+                    if (granularity == Granularity.FULL) {
+                        Instrumentation.markFullResPreaggregatedMetricWritten();
+                    }
 
                     if ( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
                         locatorIO.insertLocator(locator);
@@ -136,10 +140,7 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
 
             for (ResultSetFuture future : futureLocatorMap.keySet()) {
                 try {
-                    future.getUninterruptibly().all();
-                    if (granularity == Granularity.FULL) {
-                        Instrumentation.markFullResPreaggregatedMetricWritten();
-                    }
+                    future.getUninterruptibly().all();  
                 } catch (Exception ex) {
                     Instrumentation.markWriteError();
                     LOG.error(String.format("error writing preaggregated metric for locator %s, granularity %s",
