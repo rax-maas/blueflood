@@ -128,7 +128,7 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                     return;
                 } else {
                     // has some validation errors, response MULTI_STATUS
-                    DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.MULTI_STATUS);
+                    DefaultHandler.sendErrorResponse(ctx, request, errors, HttpResponseStatus.MULTI_STATUS);
                     return;
                 }
 
