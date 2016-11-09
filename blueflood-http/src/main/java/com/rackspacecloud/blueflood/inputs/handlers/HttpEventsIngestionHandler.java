@@ -82,8 +82,10 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
 
             List<ErrorResponse.ErrorData> validationErrors = new ArrayList<ErrorResponse.ErrorData>();
             for (ConstraintViolation<Event> constraintViolation : constraintViolations) {
-                validationErrors.add(new ErrorResponse.ErrorData(tenantId, "",
-                        constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+                validationErrors.add(
+                        new ErrorResponse.ErrorData(tenantId, "",
+                        constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage(),
+                        event.getWhen()));
             }
 
             if (!validationErrors.isEmpty()) {

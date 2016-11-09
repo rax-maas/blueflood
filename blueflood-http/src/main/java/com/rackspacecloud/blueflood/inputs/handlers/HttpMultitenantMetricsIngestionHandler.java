@@ -55,8 +55,10 @@ public class HttpMultitenantMetricsIngestionHandler extends HttpMetricsIngestion
                 validJsonMetrics.add(metric);
             } else {
                 for (ConstraintViolation<JSONMetricScoped> constraintViolation : constraintViolations) {
-                    validationErrors.add(new ErrorResponse.ErrorData(scopedMetric.getTenantId(), metric.getMetricName(),
-                            constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+                    validationErrors.add(
+                            new ErrorResponse.ErrorData(scopedMetric.getTenantId(), metric.getMetricName(),
+                            constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage(),
+                            metric.getCollectionTime()));
                 }
             }
         }

@@ -65,7 +65,7 @@ public class DefaultHandler implements HttpRequestHandler {
         final String tenantId = request.headers().get("tenantId");
 
         List<ErrorResponse.ErrorData> errrors = new ArrayList<ErrorResponse.ErrorData>(){{
-            add(new ErrorResponse.ErrorData(tenantId, null, null, message));
+            add(new ErrorResponse.ErrorData(tenantId, null, null, message, null));
         }};
 
         sendErrorResponse(ctx, request, errrors, status);

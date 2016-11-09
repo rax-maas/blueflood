@@ -113,12 +113,8 @@ public class AggregatedPayload {
                 metricName = ((BluefloodSet) leafBean).getName();
             }
 
-            if ((metricName.isEmpty()) && (payload.getAllMetricNames().size() > 0)) {
-                metricName = payload.getAllMetricNames().get(0);
-            }
-
             payload.validationErrors.add(new ErrorResponse.ErrorData(payload.getTenantId(), metricName,
-                    source, constraintViolation.getMessage()));
+                    source, constraintViolation.getMessage(), payload.getTimestamp()));
         }
     }
 

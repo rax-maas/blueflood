@@ -204,7 +204,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid error message", "may not be empty", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "tenantId", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", "", errorResponse.getErrors().get(0).getTenantId());
-        assertEquals("Invalid metric name", "gauge.a.b", errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
@@ -226,7 +226,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid error message", "must be between 0 and 9223372036854775807", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "flushInterval", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
-        assertEquals("Invalid metric name", "gauge.a.b", errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
@@ -252,7 +252,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
                 "Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "timestamp", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
-        assertEquals("Invalid metric name", "gauge.a.b", errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
@@ -278,7 +278,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
                 "Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "timestamp", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
-        assertEquals("Invalid metric name", "gauge.a.b", errorResponse.getErrors().get(0).getMetricName());
+        assertEquals("Invalid metric name", "", errorResponse.getErrors().get(0).getMetricName());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
