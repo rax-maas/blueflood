@@ -114,7 +114,7 @@ public class AggregatedPayload {
             }
 
             payload.validationErrors.add(new ErrorResponse.ErrorData(payload.getTenantId(), metricName,
-                    source, constraintViolation.getMessage()));
+                    source, constraintViolation.getMessage(), payload.getTimestamp()));
         }
     }
 
@@ -158,7 +158,7 @@ public class AggregatedPayload {
     /**
      * This method is invoked by the validator automatically
      */
-    @AssertTrue(message="Atleast one of the aggregated metrics(gauges, counters, timers, sets) are expected")
+    @AssertTrue(message="At least one of the aggregated metrics(gauges, counters, timers, sets) are expected")
     private boolean isValid() {
         boolean isGaugePresent = gauges != null && gauges.length > 0;
         boolean isCounterPresent = counters != null && counters.length > 0;

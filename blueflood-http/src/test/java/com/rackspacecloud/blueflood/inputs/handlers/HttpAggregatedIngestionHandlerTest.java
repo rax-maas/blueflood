@@ -296,7 +296,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         ErrorResponse errorResponse = getErrorResponse(errorResponseBody);
 
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
-        assertEquals("Invalid error message", "Atleast one of the aggregated metrics(gauges, counters, timers, sets) " +
+        assertEquals("Invalid error message", "At least one of the aggregated metrics(gauges, counters, timers, sets) " +
                 "are expected", errorResponse.getErrors().get(0).getMessage());
         assertEquals("Invalid source", "", errorResponse.getErrors().get(0).getSource());
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
