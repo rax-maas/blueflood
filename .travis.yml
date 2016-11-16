@@ -10,7 +10,8 @@ cache:
   directories:
     - $HOME/.m2
 
-install:
+# this is to suppress Travis running its default mvn install
+install: true
 
 script: 
   - mvn clean install -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
