@@ -42,10 +42,11 @@ deploy:
     jdk: oraclejdk7
 
 after_deploy:
+  # change pom.xml files to the next dev version
   - source versions.properties; mvn versions:set -DnewVersion=${NEXT_DEV_VERSION}
+  - mvn versions:commit  # commit the new version in the pom.xml file
   - git commit -a -m "Updating pom.xml files to the next development version for build $TRAVIS_BUILD_NUMBER"
   - git push -q https://$API_KEY@gihub.com/rackerlabs/blueflood origin master
-  - mvn versions:commit
 
 notifications:
   irc: "irc.freenode.net#blueflood"
