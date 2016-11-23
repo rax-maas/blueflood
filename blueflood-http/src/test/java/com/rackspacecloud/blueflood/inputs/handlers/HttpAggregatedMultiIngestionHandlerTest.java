@@ -210,8 +210,8 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
 
         String responseBody = argument.getValue().content().toString(Charset.defaultCharset());
 
-        assertEquals("Invalid response", "", responseBody);
-        assertEquals("Invalid status", HttpResponseStatus.OK, argument.getValue().getStatus());
+        assertEquals("Invalid response", "No valid metrics", responseBody);
+        assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
 
     private String createRequestBody(String tenantId, long collectionTime, long flushInterval, BluefloodGauge[] gauges,
