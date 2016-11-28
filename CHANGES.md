@@ -1,7 +1,13 @@
 # CHANGES
 
 ## IN PROGRESS
-* Added response body for 207 errors listing the rejected metrics and why
+
+## blueflood-2.0.0
+* Switched to officially building with JDK 8
+  NOTE: after this release, JDK 7 will no longer be supported.
+* Added response body for 207 errors listing the rejected metrics and the reasons
+* Fixed Issue #748, avoided missing rollups due to metrics_locator not updated because
+  metrics never expired from cache
 * Improved handling of delayed metrics by re-rolling only those metrics (not the whole shard)
 
 ## rax-release-v1.0.2981
