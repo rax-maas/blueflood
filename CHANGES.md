@@ -3,8 +3,7 @@
 ## IN PROGRESS
 
 ## blueflood-2.0.0
-* Switched to officially building with JDK 8
-  NOTE: after this release, JDK 7 will no longer be supported.
+* Switched to officially building with JDK 8. **NOTE**: after this release, JDK 7 will no longer be supported.
 * Added response body for 207 errors listing the rejected metrics and the reasons
 * Fixed Issue #748, avoided missing rollups due to metrics_locator not updated because
   metrics never expired from cache
