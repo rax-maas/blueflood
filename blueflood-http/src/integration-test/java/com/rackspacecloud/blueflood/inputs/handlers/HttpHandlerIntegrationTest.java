@@ -37,18 +37,18 @@ import org.junit.Test;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
 
 public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     static private final String TENANT_ID = "acTEST";
+    static private long BEFORE_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+    static private long AFTER_CURRENT_COLLECTIONTIME_MS = Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
@@ -85,7 +85,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String postfix = getPostfix();
 
-        long time = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        long time = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
 
         HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time );
 
@@ -95,8 +95,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
         for (int i = 0; i < 3; i++) {
             assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
-            assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                    " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+            assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                    " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
         }
 
     }
@@ -106,7 +106,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         String postfix = getPostfix();
 
-        long time = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        long time = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
         HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time );
 
@@ -116,8 +116,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
         for (int i = 0; i < 3; i++) {
             assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
-            assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                    " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+            assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                    " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
         }
     }
 
@@ -125,8 +125,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     public void testHttpIngestionPartialInvalidCollectionTime() throws Exception {
         String postfix = getPostfix();
         long validTime = System.currentTimeMillis();
-        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
+        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
         String jsonBody = getJsonFromFile("sample_multi_payload_with_different_time.json", postfix);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
@@ -139,7 +139,11 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         try {
             assertEquals("Should get status 207 from " + String.format(postMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
-            assertTrue("", errorResponse.getErrors().size() > 0);
+            for (int i = 0; i < 4; i++) {
+                assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
+                assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                        " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
+            }
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -149,8 +153,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testHttpAggregatedIngestionInvalidPastCollectionTime() throws IOException, URISyntaxException {
 
-        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
-                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
 
         HttpResponse response = postMetric("333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix());
         ErrorResponse errorResponse = getErrorResponse(response);
@@ -158,15 +161,14 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals(400, response.getStatusLine().getStatusCode());
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
         assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
-        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
     public void testHttpAggregatedIngestionInvalidFutureCollectionTime() throws IOException, URISyntaxException {
 
-        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
-                + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
         HttpResponse response = postMetric("333333", postAggregatedPath, "sample_payload.json", timestamp, getPostfix());
         ErrorResponse errorResponse = getErrorResponse(response);
@@ -174,8 +176,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         assertEquals(400, response.getStatusLine().getStatusCode());
         assertEquals("Number of errors invalid", 1, errorResponse.getErrors().size());
         assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
-        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -207,8 +209,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testHttpAggregatedMultiIngestionInvalidPastCollectionTime() throws IOException, URISyntaxException {
 
-        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS
-                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+        long timestamp = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
 
         String postfix = getPostfix();
 
@@ -222,16 +223,15 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
         assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
-        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
 
     @Test
     public void testHttpAggregatedMultiIngestionInvalidFutureCollectionTime() throws IOException, URISyntaxException {
 
-        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS
-                + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        long timestamp = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
         String postfix = getPostfix();
 
@@ -245,8 +245,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         assertEquals("Number of errors invalid", 3, errorResponse.getErrors().size());
         assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(0).getSource());
-        assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
-                " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
+        assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(0).getMessage());
     }
 
     @Test
@@ -292,8 +292,8 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     public void testHttpAggregatedMultiPartialInvalidCollectionTime() throws Exception {
         String postfix = getPostfix();
         long validTime = System.currentTimeMillis();
-        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
+        long pastTime = System.currentTimeMillis() - TIME_DIFF_MS - BEFORE_CURRENT_COLLECTIONTIME_MS;
+        long futureTime = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
         String jsonBody = getJsonFromFile("sample_multi_aggregated_payload_with_different_time.json", postfix);
         jsonBody = updateTimeStampJson(jsonBody, "\"%TIMESTAMP_1%\"", validTime);
@@ -302,11 +302,15 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
         jsonBody = jsonBody.replaceAll("%TENANT_ID_.%", TENANT_ID);
 
         HttpResponse response = httpPost(TENANT_ID, postAggregatedMultiPath, jsonBody );
-        String[] output = getBodyArray(response);
+        ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
             assertEquals("Should get status 207 from " + String.format(postAggregatedMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
-            assertEquals("", output[0]);
+            for (int i = 0; i < 2; i++) {
+                assertEquals("Invalid error source", "timestamp", errorResponse.getErrors().get(i).getSource());
+                assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
+                        " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
+            }
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -472,7 +476,10 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         try {
             assertEquals("Should get status 207 from " + String.format(postMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode());
-            assertTrue("No errors found", errorResponse.getErrors().size() > 0);
+            for (int i = 0; i < 2; i++) {
+                assertEquals("Invalid error source", "tenantId", errorResponse.getErrors().get(i).getSource());
+                assertEquals("Invalid error message", "may not be empty", errorResponse.getErrors().get(i).getMessage());
+            }
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently

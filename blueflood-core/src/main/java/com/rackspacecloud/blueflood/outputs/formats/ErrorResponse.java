@@ -31,6 +31,7 @@ public class ErrorResponse {
     public static class ErrorData {
 
         private String tenantId;
+        private Long timestamp;
         private String metricName;
         private String source;
         private String message;
@@ -38,15 +39,28 @@ public class ErrorResponse {
         public ErrorData() {
         }
 
-        public ErrorData(String tenantId, String metricName, String source, String message) {
+        /***
+         * Data class for storing error message for a metric from an ingest validation error
+         * @param tenantId the tenantId of for the metric
+         * @param metricName the name of the metric
+         * @param source the source of the error within the metric, i.e. the field with the violiation
+         * @param message the error message
+         * @param timestamp the collectionTime of a metric, timestamp of an aggregated metric, or when value of an event
+         */
+        public ErrorData(String tenantId, String metricName, String source, String message, Long timestamp) {
             this.tenantId = tenantId == null ? "" : tenantId;
             this.metricName = metricName == null ? "" : metricName;
             this.source = source;
             this.message = message;
+            this.timestamp = timestamp;
         }
 
         public String getTenantId() {
             return tenantId;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
         }
 
         public String getMetricName() {
@@ -65,6 +79,10 @@ public class ErrorResponse {
             this.tenantId = tenantId;
         }
 
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
+
         public void setMetricName(String metricName) {
             this.metricName = metricName;
         }
@@ -81,6 +99,7 @@ public class ErrorResponse {
         public String toString() {
             return "ErrorData{" +
                     "tenantId='" + tenantId + '\'' +
+                    ", timestamp='" + timestamp + '\'' +
                     ", metricName='" + metricName + '\'' +
                     ", source='" + source + '\'' +
                     ", message='" + message + '\'' +

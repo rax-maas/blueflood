@@ -113,7 +113,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             } else {
                 for (ConstraintViolation<JSONMetric> constraintViolation : constraintViolations) {
                     validationErrors.add(new ErrorResponse.ErrorData(tenantId, metric.getMetricName(),
-                            constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+                            constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage(),
+                            metric.getCollectionTime()));
                 }
             }
         }
