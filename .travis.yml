@@ -1,7 +1,5 @@
 language: java
 jdk:
-  - oraclejdk7
-  - openjdk7
   - oraclejdk8
 
 sudo: false
@@ -39,7 +37,7 @@ deploy:
     repo: rackerlabs/blueflood
     tags: false
     branch: rax-release
-    jdk: oraclejdk7
+    jdk: oraclejdk8
 
 after_deploy:
   # change pom.xml files to the next dev version
