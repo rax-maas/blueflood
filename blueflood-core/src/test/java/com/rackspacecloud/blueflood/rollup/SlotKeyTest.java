@@ -51,6 +51,35 @@ public class SlotKeyTest {
     }
 
     @Test
+    public void test_getChildrenKeys_with_destinationGranularity() {
+        // the relationship between slots plays out here.
+        int shard = 0;
+        int slot = 0;
+
+        // min5 slots contain only their full res counterpart.
+        assertEquals("Incorrect number of children - scenario 0", 1, SlotKey.of(Granularity.MIN_5, slot, shard).getChildrenKeys(Granularity.FULL).size());
+
+        //1 level
+        assertEquals("Incorrect number of children - scenario 1", 4, SlotKey.of(Granularity.MIN_20, slot, shard).getChildrenKeys(Granularity.MIN_5).size());
+
+        //2 levels
+        assertEquals("Incorrect number of children - scenario 2", 3 * 4, SlotKey.of(Granularity.MIN_60, slot, shard).getChildrenKeys(Granularity.MIN_5).size());
+
+        //4 levels
+        assertEquals("Incorrect number of children - scenario 3", 6 * 4 * 3 * 4, SlotKey.of(Granularity.MIN_1440, slot, shard).getChildrenKeys(Granularity.MIN_5).size());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetChildrenKeysWithSameDestGranularity() {
+        SlotKey.of(Granularity.MIN_20, 1, 1).getChildrenKeys(Granularity.MIN_20);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetChildrenKeysWithInvalidDestGranularity() {
+        SlotKey.of(Granularity.MIN_20, 1, 1).getChildrenKeys(Granularity.MIN_60);
+    }
+
+    @Test
     public void testExtrapolate() {
         int shard = 1;
 

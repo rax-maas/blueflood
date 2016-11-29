@@ -158,6 +158,8 @@ public enum CoreConfig implements ConfigDefaults {
 
     //the granularity for which we store delayed metrics. Allowed values are 5m, 20m, 60m, 240m, 1440m
     DELAYED_METRICS_STORAGE_GRANULARITY("20m"),
+    //the granularity upto which we re-roll only the delayed metrics instead of the entire shard
+    DELAYED_METRICS_REROLL_GRANULARITY("60m"),
     RECORD_DELAYED_METRICS("true"),
 
     SHOULD_STORE_UNITS("true"),

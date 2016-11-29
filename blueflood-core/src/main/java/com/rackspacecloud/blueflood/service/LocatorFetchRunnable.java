@@ -57,6 +57,10 @@ class LocatorFetchRunnable implements Runnable {
     private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
+    private static Granularity DELAYED_METRICS_REROLL_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_REROLL_GRANULARITY));
+
+
     private Range parentRange;
 
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
@@ -109,13 +113,25 @@ class LocatorFetchRunnable implements Runnable {
         final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
         //if delayed metric tracking is enabled, if its re-roll, if slot granularity is no coarser than DELAYED_METRICS_STORAGE_GRANULARITY, get delayed locators
-        Set<Locator> locators;
+        Set<Locator> locators = new HashSet<Locator>();
         boolean isReroll = scheduleCtx.isReroll(parentSlotKey);
+
         if (RECORD_DELAYED_METRICS &&
                 isReroll &&
-                !getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
+                !getGranularity().isCoarser(DELAYED_METRICS_REROLL_GRANULARITY)) {
 
-            locators = getDelayedLocators(executionContext, parentSlotKey.extrapolate(DELAYED_METRICS_STORAGE_GRANULARITY));
+            if (getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
+
+                // For example, if we are re-rolling a 60m slot, and we store delayed metrics at 20m, we need to
+                // grab delayed metrics for 3 * 20m slots corresponding to the 60m slot.
+                for (SlotKey slotKey: parentSlotKey.getChildrenKeys(DELAYED_METRICS_STORAGE_GRANULARITY)) {
+                    locators.addAll(getDelayedLocators(executionContext, slotKey));
+                }
+
+            } else {
+                locators = getDelayedLocators(executionContext, parentSlotKey.extrapolate(DELAYED_METRICS_STORAGE_GRANULARITY));
+            }
+
         } else {
             locators = getLocators(executionContext);
         }
