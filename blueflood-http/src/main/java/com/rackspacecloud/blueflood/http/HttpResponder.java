@@ -21,12 +21,17 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
-import static io.netty.handler.codec.http.HttpHeaders.Values.KEEP_ALIVE;
+import static io.netty.handler.codec.http.HttpHeaders.Names.*;
+import static io.netty.handler.codec.http.HttpHeaders.Values.*;
+import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
+import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpResponder {
@@ -48,10 +53,10 @@ public class HttpResponder {
         }
 
         if (res.content() != null) {
-            HttpUtil.setContentLength(res, res.content().readableBytes());
+            setContentLength(res, res.content().readableBytes());
         }
 
-        boolean isKeepAlive = HttpUtil.isKeepAlive(req);
+        boolean isKeepAlive = isKeepAlive(req);
         if (isKeepAlive) {
             res.headers().add(CONNECTION, KEEP_ALIVE);
         }
@@ -59,7 +64,7 @@ public class HttpResponder {
         // Send the response and close the connection if necessary.
         ctx.channel().write(res);
         if (req == null || !isKeepAlive) {
-            log.debug("Closing channel. isKeepAlive:" + isKeepAlive);
+            log.debug("Closing channel. isKeepAlive:" + isKeepAlive + " on channel: " + ctx.channel().toString());
             ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
         }
     }
