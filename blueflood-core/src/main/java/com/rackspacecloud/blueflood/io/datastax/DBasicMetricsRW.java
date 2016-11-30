@@ -102,6 +102,9 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                 }
 
                 futures.put( locator, rawIO.insertAsync( metric ) );
+
+                // this is marking  metrics_strings & metrics_full together.
+                Instrumentation.markFullResMetricWritten();
             }
 
             for( Map.Entry<Locator, ResultSetFuture> f : futures.entrySet() ) {
@@ -110,8 +113,6 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                     ResultSet result = f.getValue().getUninterruptibly();
 
                     LOG.trace( "result.size=" + result.all().size() );
-                    // this is marking  metrics_strings & metrics_full together.
-                    Instrumentation.markFullResMetricWritten();
                 }
                 catch ( Exception e ) {
                     Instrumentation.markWriteError();

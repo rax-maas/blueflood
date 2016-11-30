@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
@@ -60,6 +61,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
 
     private static final Logger log = LoggerFactory.getLogger(HttpMetricsIngestionHandler.class);
     private static final Counter requestCount = Metrics.counter(HttpMetricsIngestionHandler.class, "HTTP Request Count");
+    private static final Meter requestsReceived = Metrics.meter(HttpMetricsIngestionHandler.class, "Http Requests received");
 
     protected final ObjectMapper mapper;
     protected final TypeFactory typeFactory;
@@ -123,6 +125,8 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         try {
+
+            requestsReceived.mark();
 
             Tracker.getInstance().track(request);
             requestCount.inc();
