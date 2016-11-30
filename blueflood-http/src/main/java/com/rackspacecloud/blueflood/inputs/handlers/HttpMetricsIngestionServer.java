@@ -29,6 +29,7 @@ import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -44,7 +45,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.internal.logging.InternalLogLevel;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +97,6 @@ public class HttpMetricsIngestionServer {
      */
     public void startServer() throws InterruptedException {
 
-
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
         router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
@@ -134,9 +139,10 @@ public class HttpMetricsIngestionServer {
             // if something bad happens during the decode, assume the client send bad data. return a 400.
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable thr) throws Exception {
+                log.debug("Exception during decoding", thr);
                 try {
                     if (ctx.channel().isWritable()) {
-                        log.debug("request decoder error " + thr.getCause().toString() + " on channel " + ctx.channel().toString());
+                        log.debug("request decoder error " + thr.getCause() + " on channel " + ctx.channel().toString());
                         ctx.channel().write(
                                 new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST))
                                 .addListener(ChannelFutureListener.CLOSE);

@@ -1,6 +1,7 @@
 # CHANGES
 
 ## IN PROGRESS
+* Upgraded datastax driver to 3.1.2
 
 ## blueflood-2.0.0
 * Switched to officially building with JDK 8. **NOTE**: after this release, JDK 7 will no longer be supported.
