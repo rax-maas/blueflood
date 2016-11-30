@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.service;
 
+import com.rackspacecloud.blueflood.io.DelayedLocatorIO;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.LocatorIO;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -11,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -25,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
@@ -41,6 +44,7 @@ public class LocatorFetchRunnableTest {
     ThreadPoolExecutor rollupWriteExecutor;
     ExecutorService enumValidatorExecutor;
     LocatorIO locatorIO;
+    DelayedLocatorIO delayedLocatorIO;
 
     LocatorFetchRunnable lfr;
 
@@ -48,14 +52,15 @@ public class LocatorFetchRunnableTest {
     RollupBatchWriter rollupBatchWriter;
 
     List<Locator> locators;
-
+    final int TEST_SHARD = 0;
+    
     @Before
     public void setUp() throws IOException {
 
         Configuration.getInstance().init();
 
         this.scheduleCtx = mock(ScheduleContext.class);
-        this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
+        this.destSlotKey = SlotKey.of(Granularity.FULL, TEST_SHARD, 0);
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
         this.enumValidatorExecutor = mock(ExecutorService.class);
@@ -71,10 +76,14 @@ public class LocatorFetchRunnableTest {
 
         // mock IOContainer and LocatorIO
         locatorIO = mock(LocatorIO.class);
+        delayedLocatorIO = mock(DelayedLocatorIO.class);
         PowerMockito.mockStatic(IOContainer.class);
         IOContainer ioContainer = mock(IOContainer.class);
         when(IOContainer.fromConfig()).thenReturn(ioContainer);
         when(ioContainer.getLocatorIO()).thenReturn(locatorIO);
+        when(ioContainer.getDelayedLocatorIO()).thenReturn(delayedLocatorIO);
+        when(scheduleCtx.isReroll(any(SlotKey.class))).thenReturn(false);
+        when(locatorIO.getLocators(anyInt())).thenReturn(locators);
     }
 
     @After
@@ -101,13 +110,13 @@ public class LocatorFetchRunnableTest {
         // given
         Set<Locator> expected = new HashSet<Locator>(locators);
 
-        when(locatorIO.getLocators(0)).thenReturn(locators);
+        when(locatorIO.getLocators(TEST_SHARD)).thenReturn(locators);
 
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(locatorIO, times(1)).getLocators(0);
+        verify(locatorIO, times(1)).getLocators(TEST_SHARD);
         verifyNoMoreInteractions(locatorIO);
         verifyZeroInteractions(executionContext);
         Assert.assertEquals(expected, actual);
@@ -117,13 +126,13 @@ public class LocatorFetchRunnableTest {
     public void getLocatorsExceptionYieldsEmptySet() throws IOException {
 
         // given
-        when(locatorIO.getLocators(0)).thenThrow(new RuntimeException(""));
+        when(locatorIO.getLocators(TEST_SHARD)).thenThrow(new RuntimeException(""));
 
         // when
         Set<Locator> actual = lfr.getLocators(executionContext);
 
         // then
-        verify(locatorIO, times(1)).getLocators(0);
+        verify(locatorIO, times(1)).getLocators(TEST_SHARD);
         verifyNoMoreInteractions(locatorIO);
         verify(executionContext, times(1)).markUnsuccessful(Matchers.<Throwable>any());
         verifyNoMoreInteractions(executionContext);
@@ -239,4 +248,125 @@ public class LocatorFetchRunnableTest {
         //then
         assertNotNull(batchWriter);
     }
+
+    @Test
+    public void testGetLocatorsForRegularRollup() throws IOException {
+
+        boolean isReroll = false;
+        SlotKey destSlotKey = SlotKey.of(Granularity.MIN_20, 0, TEST_SHARD);
+
+        Granularity delayedMetricsRerollGranularity = Granularity.MIN_20;
+        Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
+
+        LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor);
+        when(scheduleCtx.isReroll(any(SlotKey.class))).thenReturn(isReroll);
+        when(locatorIO.getLocators(anyInt())).thenReturn(locators);
+
+        Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
+                delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
+
+        assertEquals(locators.size(), locatorsForRollup.size());
+    }
+
+    @Test
+    public void testGetLocatorsForReRollLowerLevelToStorageGranularity() throws IOException {
+
+        boolean isReroll = true;
+        SlotKey destSlotKey = SlotKey.of(Granularity.MIN_5, 0, TEST_SHARD);
+
+        Granularity delayedMetricsRerollGranularity = Granularity.MIN_60;
+        Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
+
+        LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor);
+
+        //ingested delayed metric
+        HashSet<Locator> delayedLocators = new HashSet<Locator>() {{
+            add(locators.get(0));
+        }};
+        when(delayedLocatorIO.getLocators(SlotKey.of(Granularity.MIN_20, 0, TEST_SHARD))).thenReturn(delayedLocators);
+
+        Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
+                delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
+
+        assertEquals(delayedLocators.size(), locatorsForRollup.size());
+    }
+
+    @Test
+    public void testGetLocatorsForReRollSameAsStorageGranularity() throws IOException {
+
+        boolean isReroll = true;
+        SlotKey destSlotKey = SlotKey.of(Granularity.MIN_20, 0, TEST_SHARD);
+
+        Granularity delayedMetricsRerollGranularity = Granularity.MIN_60;
+        Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
+
+        LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor);
+
+        //ingested delayed metric
+        HashSet<Locator> delayedLocators = new HashSet<Locator>() {{
+            add(locators.get(0));
+        }};
+        when(delayedLocatorIO.getLocators(SlotKey.of(Granularity.MIN_20, 0, TEST_SHARD))).thenReturn(delayedLocators);
+
+        Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
+                delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
+
+        assertEquals(delayedLocators.size(), locatorsForRollup.size());
+    }
+
+    @Test
+    public void testGetLocatorsForReRollHigherLevelToStorageGranularity() throws IOException {
+
+        boolean isReroll = true;
+        SlotKey destSlotKey = SlotKey.of(Granularity.MIN_60, 0, TEST_SHARD);
+
+        Granularity delayedMetricsRerollGranularity = Granularity.MIN_60;
+        Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
+
+        LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor);
+
+        //ingested delayed metric
+        HashSet<Locator> delayedLocators1 = new HashSet<Locator>() {{
+            add(locators.get(0));
+        }};
+        HashSet<Locator> delayedLocators2 = new HashSet<Locator>() {{
+            add(locators.get(1));
+        }};
+        when(delayedLocatorIO.getLocators(SlotKey.of(Granularity.MIN_20, 0, TEST_SHARD))).thenReturn(delayedLocators1);
+        when(delayedLocatorIO.getLocators(SlotKey.of(Granularity.MIN_20, 1, TEST_SHARD))).thenReturn(delayedLocators1);
+        when(delayedLocatorIO.getLocators(SlotKey.of(Granularity.MIN_20, 2, TEST_SHARD))).thenReturn(delayedLocators2);
+
+        Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
+                delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
+
+        assertEquals(delayedLocators1.size() + delayedLocators2.size(), locatorsForRollup.size());
+    }
+
+    @Test
+    public void testGetLocatorsForReRollHigherLevelToRerollGranularity() throws IOException {
+
+        boolean isReroll = true;
+        SlotKey destSlotKey = SlotKey.of(Granularity.MIN_240, 0, TEST_SHARD);
+
+        Granularity delayedMetricsRerollGranularity = Granularity.MIN_60;
+        Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
+
+        LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
+                enumValidatorExecutor);
+
+        Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
+                delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
+
+        assertEquals(locators.size(), locatorsForRollup.size());
+    }
+
 }

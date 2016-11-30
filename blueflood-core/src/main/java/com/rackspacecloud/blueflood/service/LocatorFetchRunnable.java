@@ -112,29 +112,10 @@ class LocatorFetchRunnable implements Runnable {
         final RollupExecutionContext executionContext = createRollupExecutionContext();
         final RollupBatchWriter rollupBatchWriter = createRollupBatchWriter(executionContext);
 
-        //if delayed metric tracking is enabled, if its re-roll, if slot granularity is no coarser than DELAYED_METRICS_STORAGE_GRANULARITY, get delayed locators
-        Set<Locator> locators = new HashSet<Locator>();
         boolean isReroll = scheduleCtx.isReroll(parentSlotKey);
 
-        if (RECORD_DELAYED_METRICS &&
-                isReroll &&
-                !getGranularity().isCoarser(DELAYED_METRICS_REROLL_GRANULARITY)) {
-
-            if (getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
-
-                // For example, if we are re-rolling a 60m slot, and we store delayed metrics at 20m, we need to
-                // grab delayed metrics for 3 * 20m slots corresponding to the 60m slot.
-                for (SlotKey slotKey: parentSlotKey.getChildrenKeys(DELAYED_METRICS_STORAGE_GRANULARITY)) {
-                    locators.addAll(getDelayedLocators(executionContext, slotKey));
-                }
-
-            } else {
-                locators = getDelayedLocators(executionContext, parentSlotKey.extrapolate(DELAYED_METRICS_STORAGE_GRANULARITY));
-            }
-
-        } else {
-            locators = getLocators(executionContext);
-        }
+        Set<Locator> locators = getLocators(executionContext, isReroll,
+                DELAYED_METRICS_REROLL_GRANULARITY, DELAYED_METRICS_STORAGE_GRANULARITY);
 
         log.info(String.format("Number of locators getting rolled up for slotkey: [%s] are %s; isReroll: %s", parentSlotKey, locators.size(), isReroll));
 
@@ -149,6 +130,51 @@ class LocatorFetchRunnable implements Runnable {
         drainExecutionContext(waitStart, rollCount, executionContext, rollupBatchWriter);
 
         timerCtx.stop();
+    }
+
+
+    /**
+     * This methods gets locators to rollup a slot.
+     *
+     * During re-rolls, If the granularity of the slot is finer(or equal) to the configured
+     * DELAYED_METRICS_REROLL_GRANULARITY, we re-roll only the delayed locator's corresponding
+     * to that slot. if not, we re-roll the locators of the entire shard.
+     *
+     * @param executionContext
+     * @param isReroll
+     * @param delayedMetricsRerollGranularity
+     * @param delayedMetricsStorageGranularity
+     * @return
+     */
+    protected Set<Locator> getLocators(RollupExecutionContext executionContext,
+                                       boolean isReroll,
+                                       Granularity delayedMetricsRerollGranularity,
+                                       Granularity delayedMetricsStorageGranularity) {
+        Set<Locator> locators = new HashSet<Locator>();
+
+        //if delayed metric tracking is enabled, if its re-roll, if slot granularity is no coarser than
+        // DELAYED_METRICS_REROLL_GRANULARITY, get delayed locators
+        if (RECORD_DELAYED_METRICS &&
+                isReroll &&
+                !getGranularity().isCoarser(delayedMetricsRerollGranularity)) {
+
+            if (getGranularity().isCoarser(delayedMetricsStorageGranularity)) {
+
+                // For example, if we are re-rolling a 60m slot, and we store delayed metrics at 20m, we need to
+                // grab delayed metrics for 3 * 20m slots corresponding to the 60m slot.
+                for (SlotKey slotKey: parentSlotKey.getChildrenKeys(delayedMetricsStorageGranularity)) {
+                    locators.addAll(getDelayedLocators(executionContext, slotKey));
+                }
+
+            } else {
+                locators = getDelayedLocators(executionContext,
+                        parentSlotKey.extrapolate(delayedMetricsStorageGranularity));
+            }
+
+        } else {
+            locators = getLocators(executionContext);
+        }
+        return locators;
     }
 
     protected RollupExecutionContext createRollupExecutionContext() {
