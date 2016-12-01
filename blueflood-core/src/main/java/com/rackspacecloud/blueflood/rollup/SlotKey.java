@@ -149,7 +149,7 @@ public final class SlotKey {
     public Collection<SlotKey> getChildrenKeys(Granularity destGranularity) {
 
         if (!getGranularity().isCoarser(destGranularity)) {
-            throw new IllegalArgumentException("Current granularity must be coarser than the destination granularity");
+            throw new IllegalArgumentException(String.format("Current granularity [%s] must be coarser than the destination granularity [%s]", getGranularity(), destGranularity));
         }
 
         List<SlotKey> result = new ArrayList<SlotKey>();
