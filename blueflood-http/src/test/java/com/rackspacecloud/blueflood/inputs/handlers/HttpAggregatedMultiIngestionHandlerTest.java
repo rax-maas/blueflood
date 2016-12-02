@@ -144,15 +144,6 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
             ensureSerializability(timers);
         }
     }
-
-    @Test
-    public void testEnums() {
-        for (AggregatedPayload bundle : bundleList) {
-            Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, bundle.getEnums());
-            Assert.assertEquals(1, enums.size());
-            ensureSerializability(enums);
-        }
-    }
     
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics
     // follow a different creation path that what we currently have in tests.
@@ -213,17 +204,6 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid response", "No valid metrics", responseBody);
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
-
-    private String createRequestBody(String tenantId, long collectionTime, long flushInterval, BluefloodGauge[] gauges,
-                                     BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets,
-                                     BluefloodEnum[] enums) {
-
-        AggregatedPayload payload = new AggregatedPayload(tenantId, collectionTime, flushInterval,
-                gauges, counters, timers, sets, enums);
-
-        return new Gson().toJson(payload, AggregatedPayload.class);
-    }
-
 
     private FullHttpRequest createIngestRequest(String requestBody) {
         return super.createPostRequest("/v2.0/" + TENANT + "/aggregated/multi", requestBody);

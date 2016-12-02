@@ -39,7 +39,6 @@ public class LocatorFetchRunnableTest {
     SlotKey destSlotKey;
     ExecutorService rollupReadExecutor;
     ThreadPoolExecutor rollupWriteExecutor;
-    ExecutorService enumValidatorExecutor;
     LocatorIO locatorIO;
 
     LocatorFetchRunnable lfr;
@@ -58,11 +57,9 @@ public class LocatorFetchRunnableTest {
         this.destSlotKey = SlotKey.of(Granularity.FULL, 0, 0);
         this.rollupReadExecutor = mock(ExecutorService.class);
         this.rollupWriteExecutor = mock(ThreadPoolExecutor.class);
-        this.enumValidatorExecutor = mock(ExecutorService.class);
 
         this.lfr = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
 
         executionContext = mock(RollupExecutionContext.class);
         rollupBatchWriter = mock(RollupBatchWriter.class);

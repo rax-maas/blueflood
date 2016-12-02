@@ -25,18 +25,6 @@ public class ModuleLoaderTest {
                     "discoveryModule should be instanceof ElasticIO, but is " + discoveryModule.getClass(),
                     discoveryModule instanceof ElasticIO);
 
-            // test that ModuleLoader for ENUMS_DISCOVERY_MODULES loads EnumElasticIO
-            System.setProperty("ENUMS_DISCOVERY_MODULES", "com.rackspacecloud.blueflood.io.EnumElasticIO");
-            Configuration.getInstance().init();
-            Object enumsDiscoveryModule = ModuleLoader.getInstance(EnumElasticIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
-            Assert.assertNotNull("enumsDiscoveryModule should not be null", enumsDiscoveryModule);
-            Assert.assertTrue(
-                    "enumsDiscoveryModule should be instanceof DiscoveryIO, but is " + enumsDiscoveryModule.getClass(),
-                    enumsDiscoveryModule instanceof DiscoveryIO);
-            Assert.assertTrue(
-                    "enumsDiscoveryModule should be instanceof EnumElasticIO, but is " + enumsDiscoveryModule.getClass(),
-                    enumsDiscoveryModule instanceof EnumElasticIO);
-
             // test that ModuleLoader for EVENTS_MODULES loads EventElasticSearchIO
             System.setProperty("EVENTS_MODULES", "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
             Configuration.getInstance().init();
@@ -55,15 +43,10 @@ public class ModuleLoaderTest {
                     (ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)) instanceof EventsIO);
 
             Assert.assertFalse(
-                    "ModuleLoader should not returned EventsIO instance for ENUMS_DISCOVERY_MODULES",
-                    (ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES)) instanceof EventsIO);
-
-            Assert.assertFalse(
                     "ModuleLoader should not returned DiscoveryIO instance for EVENTS_MODULES",
                     (ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.EVENTS_MODULES)) instanceof DiscoveryIO);
         } finally {
             System.clearProperty("DISCOVERY_MODULES");
-            System.clearProperty("ENUMS_DISCOVERY_MODULES");
             System.clearProperty("EVENTS_MODULES");
         }
     }

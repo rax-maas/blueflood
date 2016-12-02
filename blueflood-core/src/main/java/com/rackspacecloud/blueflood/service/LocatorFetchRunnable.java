@@ -43,7 +43,6 @@ class LocatorFetchRunnable implements Runnable {
     
     private ExecutorService rollupReadExecutor;
     private ThreadPoolExecutor rollupWriteExecutor;
-    private ExecutorService enumValidatorExecutor;
     private SlotKey parentSlotKey;
     private ScheduleContext scheduleCtx;
     private long serverTime;
@@ -62,26 +61,23 @@ class LocatorFetchRunnable implements Runnable {
     LocatorFetchRunnable(ScheduleContext scheduleCtx,
                          SlotKey destSlotKey,
                          ExecutorService rollupReadExecutor,
-                         ThreadPoolExecutor rollupWriteExecutor,
-                         ExecutorService enumValidatorExecutor) {
+                         ThreadPoolExecutor rollupWriteExecutor) {
 
         initialize(scheduleCtx, destSlotKey, rollupReadExecutor,
-                rollupWriteExecutor, enumValidatorExecutor);
+                rollupWriteExecutor);
     }
 
     @VisibleForTesting
     public void initialize(ScheduleContext scheduleCtx,
                            SlotKey destSlotKey,
                            ExecutorService rollupReadExecutor,
-                           ThreadPoolExecutor rollupWriteExecutor,
-                           ExecutorService enumValidatorExecutor) {
+                           ThreadPoolExecutor rollupWriteExecutor) {
 
         this.rollupReadExecutor = rollupReadExecutor;
         this.rollupWriteExecutor = rollupWriteExecutor;
         this.parentSlotKey = destSlotKey;
         this.scheduleCtx = scheduleCtx;
         this.serverTime = scheduleCtx.getCurrentTimeMillis();
-        this.enumValidatorExecutor = enumValidatorExecutor;
         this.parentRange = getGranularity().deriveRange(getParentSlot(), serverTime);
     }
 
@@ -202,7 +198,7 @@ class LocatorFetchRunnable implements Runnable {
     public void executeRollupForLocator(RollupExecutionContext executionContext, RollupBatchWriter rollupBatchWriter, Locator locator) {
         executionContext.incrementReadCounter();
         final SingleRollupReadContext singleRollupReadContext = new SingleRollupReadContext(locator, parentRange, getGranularity());
-        RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter, enumValidatorExecutor);
+        RollupRunnable rollupRunnable = new RollupRunnable(executionContext, singleRollupReadContext, rollupBatchWriter);
         rollupReadExecutor.execute(rollupRunnable);
     }
 

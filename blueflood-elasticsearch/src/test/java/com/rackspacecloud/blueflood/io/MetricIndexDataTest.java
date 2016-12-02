@@ -334,8 +334,8 @@ public class MetricIndexDataTest {
             }
         }
 
-        EnumElasticIO enumElasticIO = new EnumElasticIO();
-        Pattern patternToGet2Levels = Pattern.compile(enumElasticIO.regexForPrevToNextLevel(query));
+        ElasticIO elasticIO = new ElasticIO();
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexForPrevToNextLevel(query));
 
         Map<String, Long> outputMap = new HashMap<String, Long>();
         for (Map.Entry<String, Long> entry: metricIndexMap.entrySet()) {

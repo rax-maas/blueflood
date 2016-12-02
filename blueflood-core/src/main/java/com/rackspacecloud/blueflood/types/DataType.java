@@ -16,8 +16,6 @@
 
 package com.rackspacecloud.blueflood.types;
 
-import java.math.BigInteger;
-
 public class DataType {
     private final String type;
 
@@ -63,10 +61,6 @@ public class DataType {
 
     public static boolean isStringOrBoolean( Object metricValue ) {
         return isBooleanMetric( metricValue ) || isStringMetric( metricValue );
-    }
-
-    public static boolean isEnumMetric(Object metricValue) {
-        return metricValue instanceof BluefloodEnumRollup;
     }
 
     public static boolean isKnownMetricType(DataType incoming) {

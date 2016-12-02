@@ -26,7 +26,6 @@ import static org.junit.Assert.*;
 public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
 
     private CassandraUtilsIO cassandraUtilsIO = new ACassandraUtilsIO();
-    ExcessEnumIO excessEnumIO = IOContainer.fromConfig().getExcessEnumIO();
 
     @Test
     public void testEnsureStringMetricsDoNotEndUpInNumericSpace() throws Exception {
@@ -66,49 +65,6 @@ public class AstyanaxWriterIntegrationTest extends IntegrationTestBase {
         assertEquals( "Ensure " + CassandraModel.CF_METRICS_LOCATOR_NAME + "is 1 after",
                 1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_LOCATOR_NAME ) );
 
-    }
-
-    @Test
-    public void testExcessEnumMetricGetsWritten() throws Exception {
-        assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 0 before",
-                0, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
-
-        Locator loc1 = Locator.createLocatorFromPathComponents("acONE", "entityId", "checkId", "mz", "metric");
-        Locator loc2 = Locator.createLocatorFromPathComponents("acTWO", "entityId", "checkId", "mz", "metric");
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-
-        excessEnumIO.insertExcessEnumMetric(loc1);
-        assertEquals(  "Ensure " + CassandraModel.CF_METRICS_ENUM_NAME + " 1 after",
-                1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
-
-        // new locator means new row.
-        excessEnumIO.insertExcessEnumMetric(loc2);
-        assertEquals(  "Ensure " + CassandraModel.CF_METRICS_ENUM_NAME + " 2 after",
-                2, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
-    }
-
-    @Test
-    public void testExcessEnumMetricDoesNotDuplicates() throws Exception {
-        assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 0 before",
-                0, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
-
-        Locator loc1 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
-        Locator loc2 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
-        Locator loc3 = Locator.createLocatorFromPathComponents("ac", "entityId", "checkId", "mz", "metric");
-        Locator loc4 = Locator.createLocatorFromPathComponents("acNEW", "entityId", "checkId", "mz", "metric");
-        AstyanaxWriter writer = AstyanaxWriter.getInstance();
-
-        // same locator means same row.
-        excessEnumIO.insertExcessEnumMetric(loc1);
-        excessEnumIO.insertExcessEnumMetric(loc2);
-        excessEnumIO.insertExcessEnumMetric(loc3);
-        assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 1 after",
-                1, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
-
-        // new locator means new row.
-        excessEnumIO.insertExcessEnumMetric(loc4);
-        assertEquals( "Ensure " + CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME + " 2 after",
-                2, cassandraUtilsIO.getKeyCount( CassandraModel.CF_METRICS_EXCESS_ENUMS_NAME ) );
     }
 
 }

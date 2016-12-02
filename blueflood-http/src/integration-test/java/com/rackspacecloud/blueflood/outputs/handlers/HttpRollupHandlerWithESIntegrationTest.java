@@ -30,7 +30,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.junit.*;
 
 import java.net.URI;
@@ -102,9 +101,9 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         }
 
         AbstractMetricsRW preaggregatedRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
-        metric = writeEnumMetric(preaggregatedRW, "enum_metric2", "333333");
+        metric = writeGaugeMetric(preaggregatedRW, "gauge_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
-        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
+        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.GAUGE.toString());
 
         granToPoints.put(Granularity.FULL, 1440);
         granToPoints.put(Granularity.MIN_5, 289);
@@ -112,17 +111,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         granToPoints.put(Granularity.MIN_60, 25);
         granToPoints.put(Granularity.MIN_240, 7);
         granToPoints.put(Granularity.MIN_1440, 2);
-    }
-
-    @Test
-    public void testEnumEndToEndHappyCase() throws Exception {
-        HttpGet get = new HttpGet(getMetricsQueryURI("enum_metric2", "333333", metric.getCollectionTime() - 10000));
-        HttpResponse response = client.execute(get);
-
-        String responseString = EntityUtils.toString(response.getEntity());
-        Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-        Assert.assertTrue(responseString.contains("enumValue")); //Verifying that the payload has string values and not hashcodes
-        Assert.assertTrue(responseString.contains("\"type\": \"enum\"")); //Verifying that the payload has an enum type
     }
 
     @Test
@@ -218,9 +206,9 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         return builder.build();
     }
 
-    protected IMetric writeEnumMetric(MetricsRW metricsRW, String name, String tenantid) throws Exception {
+    protected IMetric writeGaugeMetric(MetricsRW metricsRW, String name, String tenantid) throws Exception {
         final List<IMetric> metrics = new ArrayList<IMetric>();
-        PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
+        PreaggregatedMetric metric = getGaugeMetric(name, tenantid, System.currentTimeMillis());
         metrics.add(metric);
 
         metricsRW.insertMetrics(metrics);

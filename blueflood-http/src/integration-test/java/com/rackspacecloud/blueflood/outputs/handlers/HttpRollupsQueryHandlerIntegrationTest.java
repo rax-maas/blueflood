@@ -53,7 +53,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
-        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "", null );
+        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "");
 
         assertNotNull( "No values for " + metric_name + " found", responseObject );
 
@@ -68,46 +68,6 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
         assertEquals( 397, value.get( "latest" ).getAsInt() );
 
         JsonObject meta = responseObject.get( "metadata" ).getAsJsonObject();
-        assertTrue( meta.get( "limit" ).isJsonNull() );
-        assertTrue( meta.get( "next_href" ).isJsonNull() );
-        assertEquals( 1,  meta.get( "count" ).getAsInt() );
-        assertTrue( meta.get( "marker" ).isJsonNull() );
-
-        assertResponseHeaderAllowOrigin(response);
-    }
-
-    @Test
-    public void testHttpRollupsQueryHandler_WithEnum() throws Exception {
-
-        String postfix = getPostfix();
-
-        // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String metric_name = "enum_metric_test" + postfix;
-
-        // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_single_enum_payload.json", now, postfix );
-        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
-        EntityUtils.consume(response.getEntity());
-
-        JsonObject responseObject = getSingleMetricRetry( tenant_id, metric_name, start, end, "", "FULL", "", "v3" );
-
-        assertNotNull( String.format("GET metric %s, JSON response should not be null", metric_name), responseObject );
-
-        assertEquals( String.format("metric %s: unit", metric_name), "unknown", responseObject.get( "unit" ).getAsString() );
-
-        JsonArray values = responseObject.getAsJsonArray( "values" );
-        assertEquals( String.format("metric %s: values array member count", metric_name), 1, values.size() );
-
-        JsonObject value = values.get( 0 ).getAsJsonObject();
-
-        assertEquals( String.format("metric %s: numPoints", metric_name), 1, value.get( "numPoints" ).getAsInt() );
-        assertTrue(String.format("metric %s: timestamp should not be null", metric_name), value.has("timestamp"));
-        assertNotNull(String.format("metric %s: enum_values should not be null", metric_name), value.getAsJsonObject("enum_values"));
-        assertNotNull(String.format("metric %s: enum_values v3 should not be null, payload: %s", metric_name, responseObject.toString()), value.getAsJsonObject("enum_values").get("v3"));
-        assertEquals( String.format("metric %s: enum_values v3 int value", metric_name), 1, value.getAsJsonObject( "enum_values" ).get( "v3" ).getAsInt() );
-        assertEquals( String.format("metric %s: type", metric_name), "enum", value.get( "type").getAsString() );
-
-        JsonObject meta = responseObject.getAsJsonObject( "metadata" );
         assertTrue( meta.get( "limit" ).isJsonNull() );
         assertTrue( meta.get( "next_href" ).isJsonNull() );
         assertEquals( 1,  meta.get( "count" ).getAsInt() );
@@ -140,8 +100,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
                                             long end,
                                             String points,
                                             String resolution,
-                                            String select,
-                                            String enumValue) throws URISyntaxException, IOException, InterruptedException {
+                                            String select) throws URISyntaxException, IOException, InterruptedException {
 
         for( int i = 0; i < 10 ; i++ ) {
             // query for multiplot metric and assert results
@@ -156,22 +115,7 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
 
             JsonArray arrayValues  = responseObject.getAsJsonArray( "values" );
             if ( arrayValues.size() == 1 ) {
-                // if enumValues is null or empty, then
-                // we care about the values here
-                if ( Strings.isNullOrEmpty(enumValue) ) {
-                    return responseObject;
-                }
-
-                // enumValues have something, let's check the data
-                JsonObject value = arrayValues.get( 0 ).getAsJsonObject();
-                if ( value != null ) {
-                    JsonObject jsonEnumValues = value.getAsJsonObject("enum_values");
-                    if ( jsonEnumValues != null ) {
-                        if ( jsonEnumValues.get(enumValue) != null ) {
-                            return responseObject;
-                        }
-                    }
-                }
+                return responseObject;
             }
 
             System.out.println(String.format("Data for metric %s is not found, sleeping and retrying, payload: %s", metric_name, responseContent));

@@ -17,7 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.MetricRegistry;
-import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.ShardStateIO;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -123,11 +122,6 @@ public class BluefloodServiceStarter {
                     throw new BluefloodServiceStarterException(1, "Error starting ingestion service: " + module, e);
                 }
             }
-
-            final Thread eerThread = new Thread(ExcessEnumReader.getInstance(), "Excess Enum Table Reader");
-            eerThread.start();
-            log.info("Started Excess Enum Reader ingestion service");
-            services_started++;
 
             log.info("Started " + services_started + " ingestion services");
         } else {

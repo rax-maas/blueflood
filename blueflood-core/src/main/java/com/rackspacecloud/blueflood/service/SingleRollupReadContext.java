@@ -34,12 +34,6 @@ public class SingleRollupReadContext {
     private final Range range;
     private static final Timer executeTimer = Metrics.timer(RollupService.class, "Rollup Execution Timer");
     private static final Histogram waitHist = Metrics.histogram(RollupService.class, "Rollup Wait Histogram");
-    private static HashMap<Granularity, Meter> granToEnumMeters = new HashMap<Granularity, Meter>();
-    static {
-        for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
-            granToEnumMeters.put(rollupGranularity, Metrics.meter(RollupService.class, String.format("%s Enum Metrics Rolled up", rollupGranularity.shortName())));
-        }
-    }
 
     // documenting that this represents the DESTINATION granularity, not the SOURCE granularity.
     private final Granularity rollupGranularity;
@@ -57,8 +51,6 @@ public class SingleRollupReadContext {
     Histogram getWaitHist() {
         return waitHist;
     }
-
-    Meter getEnumMetricsMeterForGranularity(Granularity g) { return granToEnumMeters.get(g); }
 
     Granularity getRollupGranularity() {
         return this.rollupGranularity;

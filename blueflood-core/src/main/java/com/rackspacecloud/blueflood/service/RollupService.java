@@ -54,7 +54,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
     private final ThreadPoolExecutor rollupReadExecutors;
     private final ThreadPoolExecutor rollupWriteExecutors;
 
-    private final ThreadPoolExecutor enumValidatorExecutor;
     private long pollerPeriod;
     private final long configRefreshInterval;
 
@@ -154,14 +153,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
                 new ThreadPoolExecutor.AbortPolicy()
         );
 
-        // create executor threadpool for EnumValidator
-        int enumValidatorThreadCount = Configuration.getInstance().getIntegerProperty(CoreConfig.ENUM_VALIDATOR_THREADS);
-        ThreadPoolExecutor _enumValidatorExecutor = new ThreadPoolBuilder()
-                .withName("enum-validator")
-                .withCorePoolSize(enumValidatorThreadCount)
-                .withMaxPoolSize(enumValidatorThreadCount)
-                .build();
-
         initializeGauges();
 
         locatorFetchExecutors = _locatorFetchExecutors;
@@ -172,8 +163,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
 
         rollupWriteExecutors = _rollupWriteExecutors;
         InstrumentedThreadPoolExecutor.instrument(rollupWriteExecutors, "RollupWritesThreadpool");
-
-        this.enumValidatorExecutor = _enumValidatorExecutor;
     }
     @VisibleForTesting
     public RollupService(ScheduleContext context,
@@ -181,7 +170,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
                          ThreadPoolExecutor locatorFetchExecutors,
                          ThreadPoolExecutor rollupReadExecutors,
                          ThreadPoolExecutor rollupWriteExecutors,
-                         ThreadPoolExecutor enumValidatorExecutor,
                          long rollupDelayMillis,
                          long rollupDelayForMetricsWithShortDelay,
                          long rollupWaitForMetricsWithLongDelay,
@@ -193,7 +181,6 @@ public class RollupService implements Runnable, RollupServiceMBean {
         this.locatorFetchExecutors = locatorFetchExecutors;
         this.rollupReadExecutors = rollupReadExecutors;
         this.rollupWriteExecutors = rollupWriteExecutors;
-        this.enumValidatorExecutor = enumValidatorExecutor;
         this.rollupDelayMillis = rollupDelayMillis;
         this.rollupDelayForMetricsWithShortDelay = rollupDelayForMetricsWithShortDelay;
         this.rollupWaitForMetricsWithLongDelay = rollupWaitForMetricsWithLongDelay;
@@ -285,7 +272,7 @@ public class RollupService implements Runnable, RollupServiceMBean {
                                     stamp.getLastRollupTimestamp(), isReroll});
 
                     locatorFetchExecutors.execute(new LocatorFetchRunnable(context, slotKey, rollupReadExecutors,
-                            rollupWriteExecutors, enumValidatorExecutor));
+                            rollupWriteExecutors));
 
                 } catch (RejectedExecutionException ex) {
                     // puts it back at the top of the list of scheduled slots.  When this happens it means that

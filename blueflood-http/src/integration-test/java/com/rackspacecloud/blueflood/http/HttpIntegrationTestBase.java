@@ -144,7 +144,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
         // setup config
         System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
-        System.setProperty(CoreConfig.ENUMS_DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.EnumElasticIO");
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
 
         // setup elasticsearch test clusters with blueflood mappings
@@ -153,9 +152,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        esSetup.execute(EsSetup.createIndex(EnumElasticIO.ENUMS_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping(EnumElasticIO.ENUMS_DOCUMENT_TYPE, EsSetup.fromClassPath("metrics_mapping_enums.json")));
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
@@ -164,7 +160,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         elasticIO = new ElasticIO(esSetup.client());
         eventsSearchIO = new EventElasticSearchIO(esSetup.client());
         ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
-        ((EnumElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES)).setClient(esSetup.client());
     }
 
     private static void setupIngestionServer() throws Exception {
@@ -282,15 +277,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         HttpEntity entity = new StringEntity(content, contentType);
         post.setEntity(entity);
         return post;
-    }
-
-    public HttpResponse queryMetricIncludeEnum(String tenantId, String metricName) throws URISyntaxException, IOException {
-        URIBuilder query_builder = getMetricDataQueryURIBuilder()
-                .setPath(String.format(getSearchPath, tenantId));
-        query_builder.setParameter("query", metricName);
-        query_builder.setParameter("include_enum_values", "true");
-        HttpGet query_get = new HttpGet(query_builder.build());
-        return client.execute(query_get);
     }
 
     public HttpResponse querySingleplot(String tenantId, String metricName, long fromTime, long toTime, String points, String resolution, String select)

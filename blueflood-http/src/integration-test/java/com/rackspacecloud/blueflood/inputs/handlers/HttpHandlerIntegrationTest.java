@@ -276,12 +276,6 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                     locator1, RollupType.COUNTER, new Range(start, end),
                     CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
             assertEquals( 1, points1.getPoints().size() );
-
-            final Locator locator2 = Locator.createLocatorFromPathComponents( "5405577", "call_xyz_api" + postfix );
-            Points<BluefloodEnumRollup> points2 = metricsRW.getDataToRollup(
-                    locator2, RollupType.ENUM, new Range(start, end),
-                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
-            assertEquals( 1, points2.getPoints().size() );
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
@@ -311,33 +305,6 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                 assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
                         " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
             }
-        }
-        finally {
-            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
-        }
-    }
-
-    @Test
-    public void testHttpAggregatedMultiIngestion_WithMultipleEnumPoints() throws Exception {
-
-        long start = System.currentTimeMillis() - TIME_DIFF_MS;
-        long end = System.currentTimeMillis() + TIME_DIFF_MS;
-
-        String postfix = getPostfix();
-
-        HttpResponse response = postMetric("333333", postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
-
-        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
-
-        try {
-            assertEquals( 200, response.getStatusLine().getStatusCode() );
-            verify( context, atLeastOnce() ).update( anyLong(), anyInt() );
-
-            final Locator locator2 = Locator.createLocatorFromPathComponents( "99988877", "call_xyz_api" + postfix );
-            Points<BluefloodEnumRollup> points2 = metricsRW.getDataToRollup(
-                    locator2, RollupType.ENUM, new Range(start, end),
-                    CassandraModel.getPreaggregatedColumnFamilyName(Granularity.FULL));
-            assertEquals( 2, points2.getPoints().size() );
         }
         finally {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.types.BluefloodTimer;
-import com.rackspacecloud.blueflood.inputs.handlers.HttpAggregatedIngestionHandler;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,7 +53,6 @@ public class TestGsonParsing {
         assertEquals(6, payload.getCounters().size());
         assertEquals(4, payload.getTimers().size());
         assertEquals(2, payload.getSets().size());
-        assertEquals(1, payload.getEnums().size());
     }
 
     @Test

@@ -17,8 +17,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -37,9 +35,6 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String METRICS_TOKENS_AGGREGATE = "metric_tokens";
     public static String ELASTICSEARCH_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
-
-    public static String ENUMS_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_WRITE);
-    public static String ENUMS_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_ENUMS_INDEX_NAME_READ);
 
     private int MAX_RESULT_LIMIT = 100000;
     public static final String REGEX_TOKEN_DELIMTER = "\\.";
@@ -102,19 +97,15 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
     /**
-     * This method returns a list of MetricToken's matching the given glob query. The enum
-     * values of a metric name are considered as an extension of metric name.
+     * This method returns a list of MetricToken's matching the given glob query.
      *
      * for metric names: foo.bar.xxx,
      *                   foo.bar.baz.qux,
-     *                   foo.bar with enum values [one, two]
      *
      * for query=foo.bar.*, returns the below list of metric tokens
      *
      * new MetricToken("foo.bar.xxx", true)   <- From metric foo.bar.xxx
      * new MetricToken("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
-     * new MetricToken("foo.bar.one", true)   <- From metric foo.bar
-     * new MetricToken("foo.bar.two", true)   <- From metric foo.bar
      *
      * @param tenant
      * @param query is glob representation of hierarchical levels of token. Ex: foo.bar.*
@@ -142,81 +133,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         //token paths matching query, which also have a next level.
         tokenInfoBuilder.addTokenPathWithNextLevel(metricIndexData.getTokenPathsWithNextLevel());
 
-        Set<String> completeMetricsMatchingQueryPrevLevel = metricIndexData.getCompleteMetricNamesAtBaseLevel();
         Set<String> completeMetricsMatchingQuery = metricIndexData.getCompleteMetricNamesAtBasePlusOneLevel();
 
-        //For complete metric names matching query, initializing isLeaf as true(Will change if metric has enum values).
+        //For complete metric names matching query, initializing isLeaf as true.
         for (String nextLevelMetricName: completeMetricsMatchingQuery) {
             tokenInfoBuilder.addTokenPath(nextLevelMetricName, true);
         }
 
-        if (totalTokens > 1 && (completeMetricsMatchingQueryPrevLevel.size() > 0 || completeMetricsMatchingQuery.size() > 0)) {
-            searchForEnumValues(tenant, query, tokenInfoBuilder);
-        }
-
         return tokenInfoBuilder.build();
-    }
-
-
-    /**
-     * For the given query, if there are complete metric names at previous level of query or at query level,
-     * we need to determine if any of these metric names have enum values.
-     *
-     * If they do,for previous level of query, enum values will be used as the next level of tokens and for query
-     * level, they would be used to determine if metric name has next level or not.
-     *
-     * @param tenant
-     * @param query
-     * @param tokenInfoBuilder
-     * @return
-     */
-    private MetricTokenListBuilder searchForEnumValues(final String tenant, String query,
-                                                MetricTokenListBuilder tokenInfoBuilder) {
-
-
-        String[] queryTokens = query.split(REGEX_TOKEN_DELIMTER);
-
-        //for query = foo.bar.*, we are finding if foo.bar* has enum values
-        int esQueryTokenLength = queryTokens.length - 1;
-        String enumQuery = StringUtils.join(queryTokens, REGEX_TOKEN_DELIMTER, 0, esQueryTokenLength);
-
-        List<String> queries = new ArrayList<String>();
-        queries.add(enumQuery + "*");  //query is a glob. Adding '*' would get any metrics starting with the given query.
-
-        String queryRegex = getRegex(query);
-        Pattern pattern = Pattern.compile(queryRegex);
-
-        List<SearchResult> searchResults = searchESByIndexes(tenant, queries, new String[]{ENUMS_INDEX_NAME_READ});
-        for (SearchResult searchResult: searchResults) {
-
-            if (searchResult.getEnumValues() != null && !searchResult.getEnumValues().isEmpty()) {
-
-                String metricName = searchResult.getMetricName();
-                String[] tokens = metricName.split(REGEX_TOKEN_DELIMTER);
-
-                int enumMetricLevel = tokens.length - esQueryTokenLength;
-
-                if (enumMetricLevel == 0) {
-                    //for metrics at previous level of query, enum values are grabbed as next level of tokens
-                    for (String enumValue: searchResult.getEnumValues()) {
-
-                        String metricNameWithEnumExtension = metricName + "." + enumValue;
-                        Matcher matcher = pattern.matcher(metricNameWithEnumExtension);
-                        if (matcher.matches()) {
-                            tokenInfoBuilder.addMetricNameWithEnumExtension(metricNameWithEnumExtension);
-                        }
-                    }
-                } else if (enumMetricLevel == 1) {
-                    //for metrics at query level, metrics names are set with isLeaf as false
-                    Matcher matcher = pattern.matcher(searchResult.getMetricName());
-                    if (matcher.matches()) {
-                        tokenInfoBuilder.addTokenPath(searchResult.getMetricName(), false);
-                    }
-                }
-            }
-        }
-
-        return tokenInfoBuilder;
     }
 
     private int getTotalTokens(String query) {

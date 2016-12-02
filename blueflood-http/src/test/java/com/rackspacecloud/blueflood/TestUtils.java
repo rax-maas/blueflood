@@ -154,7 +154,7 @@ public class TestUtils {
 
     public static String updateTimeStampJson(String json, String timestampName, long timestampMillis) {
         // JSON might have several entries for the same metric.  If they have the same timestamp, they could overwrite
-        // each other in the case of enums.  Not using sleep() here to increment the time as to not have to deal with
+        // each other.  Not using sleep() here to increment the time as to not have to deal with
         // interruptedexception.  Rather, incrementing the time by 1 ms.
         long increment = 0;
 
