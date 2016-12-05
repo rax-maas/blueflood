@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.io.Constants;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -132,6 +133,33 @@ public final class SlotKey {
             result.addAll(child.getChildrenKeys());
         }
         return result;
+    }
+
+    /**
+     * Same as the method {@link #getChildrenKeys()} except this method returns only
+     * the children corresponding to the destination granularity.
+     *
+     * For example, a slot key of granularity
+     * {@link Granularity#MIN_1440 MIN_1440}, for destination granularity of
+     * {@link Granularity#MIN_60 MIN_60}, will have 6*4=24 children.
+     *
+     * @param destGranularity
+     * @return
+     */
+    public Collection<SlotKey> getChildrenKeys(Granularity destGranularity) {
+
+        if (!getGranularity().isCoarser(destGranularity)) {
+            throw new IllegalArgumentException(String.format("Current granularity [%s] must be coarser than the destination granularity [%s]", getGranularity(), destGranularity));
+        }
+
+        List<SlotKey> result = new ArrayList<SlotKey>();
+        for(SlotKey slotKey: this.getChildrenKeys()) {
+            if (slotKey.getGranularity().equals(destGranularity)) {
+                result.add(slotKey);
+            }
+        }
+
+        return Collections.unmodifiableList(result);
     }
 
     /**
