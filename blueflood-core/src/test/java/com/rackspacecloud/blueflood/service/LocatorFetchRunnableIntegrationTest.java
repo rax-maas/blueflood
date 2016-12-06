@@ -62,6 +62,9 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
     private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
+    private static Granularity DELAYED_METRICS_REROLL_GRANULARITY =
+            Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_REROLL_GRANULARITY));
+
     private final List<String> shard1Locators = Arrays.asList(
             "-1.int.perf01.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.131",
             "-100.int.perf01.abcdefg.hijklmnop.qrstuvw.xyz.ABCDEFG.HIJKLMNOP.QRSTUVW.XYZ.abcdefg.hijklmnop.qrstuvw.xyz.met.119");
@@ -224,7 +227,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
 
             locatorFetchRunnable.run();
 
-            if (slotKey.getGranularity().isCoarser(DELAYED_METRICS_STORAGE_GRANULARITY)) {
+            if (slotKey.getGranularity().isCoarser(DELAYED_METRICS_REROLL_GRANULARITY)) {
                 //verifying number of locators read and rollups written are same as the number of delayed locators during re-roll.
                 verify(rollupExecutionContext, times(generatedMetrics.get(slotKey.getShard()).size())).incrementReadCounter();
                 verify(rollupBatchWriter, times(generatedMetrics.get(slotKey.getShard()).size()))

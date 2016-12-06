@@ -108,7 +108,8 @@ public class LocatorFetchRunnableRunTest {
         lfr.initialize(scheduleCtx, destSlotKey,
                 rollupReadExecutor, rollupWriteExecutor);
         doReturn(generateLocators(0)).when(lfr).getLocators(
-                Matchers.<RollupExecutionContext>any());
+                Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         // when
         lfr.run();
@@ -132,7 +133,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, times(1)).getParentSlot();
         verify(lfr).createRollupExecutionContext();
         verify(lfr).createRollupBatchWriter(Matchers.<RollupExecutionContext>any());
-        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any());
+        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         verify(lfr, never()).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
@@ -153,7 +155,8 @@ public class LocatorFetchRunnableRunTest {
         lfr.initialize(scheduleCtx, destSlotKey,
                 rollupReadExecutor, rollupWriteExecutor);
         doReturn(generateLocators(1)).when(lfr).getLocators(
-                Matchers.<RollupExecutionContext>any());
+                Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         // when
         lfr.run();
@@ -177,7 +180,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, times(1)).getParentSlot();
         verify(lfr).createRollupExecutionContext();
         verify(lfr).createRollupBatchWriter(Matchers.<RollupExecutionContext>any());
-        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any());
+        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         verify(lfr, times(1)).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
@@ -198,7 +202,8 @@ public class LocatorFetchRunnableRunTest {
         lfr.initialize(scheduleCtx, destSlotKey,
                 rollupReadExecutor, rollupWriteExecutor);
         doReturn(generateLocators(3)).when(lfr).getLocators(
-                Matchers.<RollupExecutionContext>any());
+                Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         // when
         lfr.run();
@@ -222,7 +227,8 @@ public class LocatorFetchRunnableRunTest {
         verify(lfr, times(1)).getParentSlot();
         verify(lfr).createRollupExecutionContext();
         verify(lfr).createRollupBatchWriter(Matchers.<RollupExecutionContext>any());
-        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any());
+        verify(lfr).getLocators(Matchers.<RollupExecutionContext>any(),
+                anyBoolean(), any(Granularity.class), any(Granularity.class));
 
         verify(lfr, times(3)).processLocator(anyInt(),
                 Matchers.<RollupExecutionContext>any(),
