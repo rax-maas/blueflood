@@ -47,8 +47,6 @@ public class IOContainer {
     private MetadataIO metadataIO;
     private LocatorIO locatorIO;
     private DelayedLocatorIO delayedLocatorIO;
-    private ExcessEnumIO excessEnumIO;
-    private EnumReaderIO enumReaderIO;
     private AbstractMetricsRW preAggregatedMetricsRW;
     private AbstractMetricsRW basicMetricsRW;
 
@@ -98,12 +96,9 @@ public class IOContainer {
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
             delayedLocatorIO = new DDelayedLocatorIO();
-            excessEnumIO = new DExcessEnumIO();
-            DEnumIO enumIO = new DEnumIO();
-            enumReaderIO = enumIO;
             basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, stringMetricsDropped,
                     tenantIdsKept, isRecordingDelayedMetrics, new DefaultClockImpl());
-            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO,
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO,
                     isRecordingDelayedMetrics, new DefaultClockImpl());
 
         } else {
@@ -112,8 +107,6 @@ public class IOContainer {
             shardStateIO = new AShardStateIO();
             locatorIO = new ALocatorIO();
             delayedLocatorIO = new ADelayedLocatorIO();
-            excessEnumIO = new AExcessEnumIO();
-            enumReaderIO = new AEnumIO();
             basicMetricsRW = new ABasicMetricsRW(isRecordingDelayedMetrics, new DefaultClockImpl());
             preAggregatedMetricsRW = new APreaggregatedMetricsRW(isRecordingDelayedMetrics, new DefaultClockImpl());
         }
@@ -145,28 +138,6 @@ public class IOContainer {
      */
     public DelayedLocatorIO getDelayedLocatorIO() {
         return delayedLocatorIO;
-    }
-
-    /**
-     * @return a class for reading/writing Excess Enum Metrics
-     */
-    public ExcessEnumIO getExcessEnumIO() {
-        return excessEnumIO;
-    }
-
-    /**
-     * @return a class for reading Enum
-     */
-    public EnumReaderIO getEnumReaderIO() {
-        return enumReaderIO;
-    }
-
-    /**
-     *
-     * @param enumReaderIO
-     */
-    public void setEnumReaderIO(EnumReaderIO enumReaderIO) {
-        this.enumReaderIO = enumReaderIO;
     }
 
     /**

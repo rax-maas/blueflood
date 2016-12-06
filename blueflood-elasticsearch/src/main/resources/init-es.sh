@@ -44,7 +44,6 @@ function checkFile
 
 checkFile index_settings.json
 checkFile metrics_mapping.json
-checkFile metrics_mapping_enums.json
 checkFile events_mapping.json
 
 #delete the old indices
@@ -57,7 +56,6 @@ curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_write/' >& /dev/null
 
 #create the new indices
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/enums'
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/events'
 
 #create the aliases
@@ -73,12 +71,6 @@ curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
         { "add" : { "alias" : "metric_metadata_read", "index" : "metric_metadata" } }
     ]
 }'
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/_aliases' -d '
-{
-    "actions" : [
-        { "add" : { "alias" : "metric_metadata_read", "index" : "enums" } }
-    ]
-}'
 
 #add index settings to metric_metadata index
 curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_close'
@@ -89,15 +81,6 @@ curl $AUTH -XPOST $ELASTICSEARCH_URL'/metric_metadata/_open'
 #add mappings to metric_metadata index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' >& /dev/null
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @metrics_mapping.json
-
-#add index settings to enums index
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/enums/_close'
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/enums/_settings' -d  @index_settings.json
-curl $AUTH -XPOST $ELASTICSEARCH_URL'/enums/_open'
-
-#add mappings to enums index
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/enums/_mapping/metrics'  >& /dev/null
-curl $AUTH -XPUT $ELASTICSEARCH_URL'/enums/_mapping/metrics' -d @metrics_mapping_enums.json
 
 #add mappings to graphite_event index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/_mapping/graphite_event' >& /dev/null

@@ -29,11 +29,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
 
 public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     
@@ -48,7 +44,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     private final Locator gaugeLocator = Locator.createLocatorFromPathComponents("runnabletest", "gauge");
     private final Locator timerLocator = Locator.createLocatorFromPathComponents("runnabletest", "timer");
     private final Locator setLocator = Locator.createLocatorFromPathComponents("runnabletest", "set");
-    private final Locator enumLocator = Locator.createLocatorFromPathComponents("runnabletest", "enum");
     private final Locator normalLocator = Locator.createLocatorFromPathComponents("runnabletest", "just_some_data");
     
     private final Range range = new Range(0, 6 * 60 * 1000);
@@ -67,7 +62,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         cache.put(gaugeLocator, cacheKey, RollupType.GAUGE.name());
         cache.put(timerLocator, cacheKey, RollupType.TIMER.name());
         cache.put(setLocator, cacheKey, RollupType.SET.name());
-        cache.put(enumLocator, cacheKey, RollupType.ENUM.name());
         // do not put normalLocator in the cache. it will constitute a miss.
         
         // put some full resolution data.
@@ -102,10 +96,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
             
             BluefloodSetRollup rollup = new BluefloodSetRollup().withObject(i);
             metric = new PreaggregatedMetric(time, setLocator, ttl, rollup);
-            preaggregatedMetrics.add(metric);
-
-            BluefloodEnumRollup enumRollup = new BluefloodEnumRollup().withHashedEnumValue((long)i, (long)5*(i+1));
-            metric = new PreaggregatedMetric(time, enumLocator, ttl, enumRollup);
             preaggregatedMetrics.add(metric);
 
             metric = new Metric(normalLocator, i, time, ttl, "centipawns");
@@ -145,7 +135,7 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(normalLocator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, null);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
 
         while (!rec.doneReading() && !rec.doneWriting()) {
@@ -183,11 +173,6 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
     public void testSetRollup() throws IOException {
         testRolledupMetric(setLocator, RollupType.SET);
     }
-
-    @Test
-    public void testEnumRollup() throws IOException {
-        testRolledupMetric(enumLocator, RollupType.ENUM);
-    }
     
     private void testRolledupMetric(Locator locator, RollupType rollupType) throws IOException {
         System.out.println("testRolledupMetric: for locator = " + locator + ", rollupTYpe=" + rollupType);
@@ -208,13 +193,8 @@ public class RollupRunnableIntegrationTest extends IntegrationTestBase {
         RollupExecutionContext rec = new RollupExecutionContext(Thread.currentThread());
         SingleRollupReadContext rc = new SingleRollupReadContext(locator, range, Granularity.MIN_5);
         RollupBatchWriter batchWriter = new RollupBatchWriter(new ThreadPoolBuilder().build(), rec);
-        ThreadPoolExecutor enumValidatorExec = mock(ThreadPoolExecutor.class);
-        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter, enumValidatorExec);
+        RollupRunnable rr = new RollupRunnable(rec, rc, batchWriter);
         rr.run();
-
-        if (rollupType == RollupType.ENUM) {
-            verify(enumValidatorExec, times(1)).execute(any(EnumValidator.class));
-        }
 
         // assert something in 5m for this locator.
         while (!rec.doneReading() && !rec.doneWriting()) {

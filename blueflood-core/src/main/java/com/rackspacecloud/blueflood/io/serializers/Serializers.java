@@ -34,7 +34,6 @@ public class Serializers {
     public static SetRollupSerializer setRollupInstance = new SetRollupSerializer();
     public static GaugeRollupSerializer gaugeRollupInstance = new GaugeRollupSerializer();
     public static CounterRollupSerializer counterRollupInstance = new CounterRollupSerializer();
-    public static EnumRollupSerializer enumRollupInstance = new EnumRollupSerializer();
 
     static class Type {
         static final byte B_ROLLUP = (byte)'r';
@@ -44,7 +43,6 @@ public class Serializers {
         static final byte B_TIMER = (byte)'T';
         static final byte B_SET = (byte)'S';
         static final byte B_GAUGE = (byte)'G';
-        static final byte B_ENUM = (byte)'E';
     }
     
     /** return a serializer for a specific type */
@@ -64,8 +62,6 @@ public class Serializers {
             return (AbstractSerializer<T>) counterRollupInstance;
         else if (type.equals(BluefloodGaugeRollup.class))
             return (AbstractSerializer<T>)gaugeRollupInstance;
-        else if (type.equals(BluefloodEnumRollup.class))
-            return (AbstractSerializer<T>)enumRollupInstance;
         else if (type.equals(BluefloodSetRollup.class))
             return (AbstractSerializer<T>)setRollupInstance;
         else if (type.equals(SimpleNumber.class))
@@ -205,25 +201,6 @@ public class Serializers {
         }
     }
 
-    public static class EnumRollupSerializer extends AbstractSerializer<BluefloodEnumRollup> {
-
-        private static EnumSerDes serDes = new EnumSerDes();
-
-        // prevent people from instantiating this class
-        private EnumRollupSerializer() {
-        }
-
-        @Override
-        public ByteBuffer toByteBuffer(BluefloodEnumRollup enumRollup) {
-            return serDes.serialize(enumRollup);
-        }
-
-        @Override
-        public BluefloodEnumRollup fromByteBuffer(ByteBuffer byteBuffer) {
-            return serDes.deserialize(byteBuffer);
-        }
-    }
-    
     // for now let's try to get away with a single serializer for all single value rollups. We'll still encode specific
     // types so we can differentiate.
     public static class CounterRollupSerializer extends AbstractSerializer<BluefloodCounterRollup> {

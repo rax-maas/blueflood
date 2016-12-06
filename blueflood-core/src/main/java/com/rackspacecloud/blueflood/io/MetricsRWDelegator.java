@@ -79,11 +79,9 @@ public class MetricsRWDelegator {
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
 
         MetadataCache metadataCache = MetadataCache.getInstance();
-        EnumMetricData enumMetricData = new EnumMetricData(IOContainer.fromConfig().getEnumReaderIO());
 
         List<Locator> basicLocators = new ArrayList<Locator>();
         List<Locator> preAggrLocators = new ArrayList<Locator>();
-        List<Locator> enumLocators = new ArrayList<Locator>();
         for ( Locator locator : locators ) {
             try {
                 RollupType rollupType = RollupType.fromString(
@@ -95,10 +93,6 @@ public class MetricsRWDelegator {
                         rollupType == RollupType.SET ||
                         rollupType == RollupType.TIMER) {
                     preAggrLocators.add(locator);
-                } else if ( rollupType == RollupType.ENUM ) {
-                    // enum has to be handled specially, because of
-                    // the join of 2 CFs
-                    enumLocators.add(locator);
                 } else {
                     basicLocators.add(locator);
                 }
@@ -113,10 +107,6 @@ public class MetricsRWDelegator {
         Map<Locator, MetricData> result = new HashMap<Locator, MetricData>();
         if ( ! basicLocators.isEmpty() ) {
             result.putAll(basicMetricsRW.getDatapointsForRange(basicLocators, range, gran));
-        }
-
-        if ( ! enumLocators.isEmpty() ) {
-            result.putAll(enumMetricData.getEnumMetricDataForRangeForLocatorList(enumLocators, range, gran));
         }
 
         if ( ! preAggrLocators.isEmpty() ) {

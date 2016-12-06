@@ -36,8 +36,6 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter writeErrMeter;
     private static final Meter readErrMeter;
     private static final Meter batchReadErrMeter;
-    private static final Meter excessEnumWriteErrMeter;
-    private static final Meter excessEnumReadErrMeter;
 
     // One-off meters
     private static final Meter scanAllColumnFamiliesMeter;
@@ -46,12 +44,9 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter fullResPreaggregatedMetricWritten;
     private static final Meter metricsWithShortDelayReceived;
     private static final Meter metricsWithLongDelayReceived;
-    private static final Meter enumMetricWritten;
 
     static {
         Class kls = Instrumentation.class;
-        excessEnumWriteErrMeter = Metrics.meter( kls, "writes", "Excess Enum Metrics Write Errors" );
-        excessEnumReadErrMeter = Metrics.meter( kls, "reads", "Excess Enum Metrics Read Errors" );
         writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
         readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
         batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Read Errors");
@@ -59,7 +54,6 @@ public class Instrumentation implements InstrumentationMBean {
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
         fullResPreaggregatedMetricWritten = Metrics.meter(kls, "Full Resolution Preaggregated Metrics Written");
-        enumMetricWritten = Metrics.meter( kls, "Enum Metrics Written" );
         metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
         metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
 
@@ -129,10 +123,6 @@ public class Instrumentation implements InstrumentationMBean {
         writeErrMeter.mark();
     }
 
-    public static void markExcessEnumWriteError() { excessEnumWriteErrMeter.mark(); }
-
-    public static void markExcessEnumReadError() { excessEnumReadErrMeter.mark(); }
-
     public static void markWriteError(ConnectionException e) {
         markWriteError();
         if (e instanceof PoolTimeoutException) {
@@ -174,10 +164,6 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markFullResPreaggregatedMetricWritten() {
         fullResPreaggregatedMetricWritten.mark();
-    }
-
-    public static void markEnumMetricWritten() {
-        enumMetricWritten.mark();
     }
 
     public static void markMetricsWithShortDelayReceived() {

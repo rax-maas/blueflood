@@ -58,11 +58,10 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
      * @param locatorIO
      * @param isRecordingDelayedMetrics
      */
-    public DPreaggregatedMetricsRW(DAbstractMetricIO enumIO, LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
+    public DPreaggregatedMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
                                    boolean isRecordingDelayedMetrics, Clock clock) {
         super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
         rollupTypeToIO.put(RollupType.COUNTER, counterIO);
-        rollupTypeToIO.put(RollupType.ENUM, enumIO);
         rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
         rollupTypeToIO.put(RollupType.SET, setIO);
         rollupTypeToIO.put(RollupType.TIMER, timerIO);

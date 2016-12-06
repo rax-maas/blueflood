@@ -25,7 +25,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
     private DiscoveryIO discoveryHandle;
 
     public HttpMetricTokensHandler() {
-        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
+        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
     }
 
     private final com.codahale.metrics.Timer HttpMetricNameTokensHandlerTimer = Metrics.timer(HttpMetricTokensHandler.class,

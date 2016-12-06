@@ -49,7 +49,6 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
 
     private ExecutorService rollupReadExecutor;
     private ThreadPoolExecutor rollupWriteExecutor;
-    private ExecutorService enumValidatorExecutor;
 
     private static final Clock mockClock = mock(Clock.class);
 
@@ -96,7 +95,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
         AbstractMetricsRW aPreAggrMetricsRW = new APreaggregatedMetricsRW(true, mockClock);
 
         AbstractMetricsRW dBasicMetricsRW = new DBasicMetricsRW(new DLocatorIO(), new DDelayedLocatorIO(), true, mockClock);
-        AbstractMetricsRW dPreAggrMetricsRW = new DPreaggregatedMetricsRW(new DEnumIO(), new DLocatorIO(), new DDelayedLocatorIO(), true, mockClock);
+        AbstractMetricsRW dPreAggrMetricsRW = new DPreaggregatedMetricsRW(new DLocatorIO(), new DDelayedLocatorIO(), true, mockClock);
 
         rws.add(new Object[]{aBasicMetricsRW, aPreAggrMetricsRW});
         rws.add(new Object[]{dBasicMetricsRW, dPreAggrMetricsRW});
@@ -158,7 +157,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
             scheduledSlotKeys.add(slotKey);
 
             LocatorFetchRunnable locatorFetchRunnable = spy(new LocatorFetchRunnable(rollupCtx, slotKey,
-                    rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor));
+                    rollupReadExecutor, rollupWriteExecutor));
 
             RollupExecutionContext rollupExecutionContext = spy(new RollupExecutionContext(Thread.currentThread()));
             RollupBatchWriter rollupBatchWriter = spy(new RollupBatchWriter(rollupWriteExecutor, rollupExecutionContext));
@@ -219,7 +218,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
             SlotKey slotKey = rollupCtx.getNextScheduled();
             scheduledSlotKeys2.add(slotKey);
             LocatorFetchRunnable locatorFetchRunnable = spy(new LocatorFetchRunnable(rollupCtx, slotKey,
-                    rollupReadExecutor, rollupWriteExecutor, enumValidatorExecutor));
+                    rollupReadExecutor, rollupWriteExecutor));
 
             RollupExecutionContext rollupExecutionContext = spy(new RollupExecutionContext(Thread.currentThread()));
             RollupBatchWriter rollupBatchWriter = spy(new RollupBatchWriter(rollupWriteExecutor, rollupExecutionContext));

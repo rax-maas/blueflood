@@ -44,7 +44,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
     @Test
     public void testHttpMultiRollupsQueryHandler() throws Exception {
-        // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
+        // ingest and rollup metrics and verify CF points and elastic search indexes
         String postfix = getPostfix();
 
         // post multi metrics for ingestion and verify
@@ -94,43 +94,6 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         assertTrue( data1a.has( "timestamp" ) );
         assertEquals(1, data1a.get("numPoints").getAsInt());
         assertEquals(56, data1a.get("latest").getAsInt());
-
-        assertResponseHeaderAllowOrigin(response);
-    }
-
-    @Test
-    @Ignore
-    public void testHttpMultiRollupsQueryHandler_WithEnum() throws Exception {
-
-        String postfix = getPostfix();
-
-        // ingest and rollup metrics with enum values and verify CF points and elastic search indexes
-        final String tenant_id_enum = "99988877";
-        final String metric_name = "call_xyz_api" + postfix;
-
-        // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id_enum, postAggregatedMultiPath, "sample_multi_enums_payload.json", postfix);
-        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
-        EntityUtils.consume(response.getEntity());
-
-        JsonObject responseObject = getMultiMetricRetry( tenant_id_enum, start, end, "", "FULL", "enum_values", String.format("['%s']", metric_name), 1 );
-
-        assertNotNull( "No values for metrics found", responseObject );
-
-        JsonArray metrics = responseObject.getAsJsonArray( "metrics" );
-        assertEquals( 1, metrics.size() );
-
-        JsonObject metric = metrics.get( 0 ).getAsJsonObject();
-        assertEquals( "unknown", metric.get( "unit" ).getAsString() );
-        assertEquals( metric_name, metric.get( "metric" ).getAsString() );
-        assertEquals( "enum", metric.get( "type" ).getAsString() );
-
-        JsonArray data = metric.getAsJsonArray( "data" );
-        assertEquals( 2, data.size() );
-
-        JsonObject data1 = data.get( 0 ).getAsJsonObject();
-        assertTrue( data1.has( "timestamp" ) );
-        assertEquals( 1, data1.getAsJsonObject( "enum_values" ).get( "OK" ).getAsInt() );
 
         assertResponseHeaderAllowOrigin(response);
     }

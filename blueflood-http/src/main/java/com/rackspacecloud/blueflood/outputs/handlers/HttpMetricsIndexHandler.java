@@ -41,18 +41,8 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             return;
         }
 
-        // get the include_enum_values param to determine if results should contain enum values if applicable
-        List<String> includeEnumValues = requestWithParams.getQueryParams().get("include_enum_values");
-
-        if ((includeEnumValues != null) &&
-            (includeEnumValues.size() != 0) &&
-            (includeEnumValues.get(0).compareToIgnoreCase("true") == 0)) {
-            // include_enum_values is present and set to true, use the ENUMS_DISCOVERY_MODULES as the discoveryHandle
-            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
-        } else {
-            // default discoveryHandle to DISCOVERY_MODULES
-            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
-        }
+        // default discoveryHandle to DISCOVERY_MODULES
+        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
 
         if (discoveryHandle == null) {
             sendResponse(ctx, request, null, HttpResponseStatus.NOT_FOUND);
@@ -91,18 +81,6 @@ public class HttpMetricsIndexHandler implements HttpRequestHandler {
             if (unit != null) {
                 //Preaggreated metrics do not have units. Do not want to return null units in query results.
                 resultNode.put("unit", unit);
-            }
-
-            // get enum values and add if applicable
-            List<String> enumValues = result.getEnumValues();
-            if (enumValues != null) {
-                // sort for consistent result ordering
-                Collections.sort(enumValues);
-                ArrayNode enumValuesArray = JsonNodeFactory.instance.arrayNode();
-                for (String val : enumValues) {
-                    enumValuesArray.add(val);
-                }
-                resultNode.put("enum_values", enumValuesArray);
             }
 
             resultArray.add(resultNode);

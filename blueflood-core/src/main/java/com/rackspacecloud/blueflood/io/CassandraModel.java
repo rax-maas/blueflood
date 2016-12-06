@@ -30,8 +30,6 @@ public class CassandraModel {
     public static final String CF_METRICS_LOCATOR_NAME = "metrics_locator";
     public static final String CF_METRICS_DELAYED_LOCATOR_NAME = "metrics_delayed_locator";
     public static final String CF_METRICS_STRING_NAME = "metrics_string";
-    public static final String CF_METRICS_ENUM_NAME = "metrics_enum";
-    public static final String CF_METRICS_EXCESS_ENUMS_NAME = "metrics_excess_enums";
 
     public static final String CF_METRICS_FULL_NAME = "metrics_full";
     public static final String CF_METRICS_5M_NAME = "metrics_5m";
@@ -66,11 +64,6 @@ public class CassandraModel {
             LocatorSerializer.get(),
             StringSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_ENUM = new ColumnFamily<Locator, Long>(CF_METRICS_ENUM_NAME,
-            LocatorSerializer.get(),
-            LongSerializer.get(),
-            StringSerializer.get());
-
     public static final ColumnFamily<Long, Locator> CF_METRICS_LOCATOR = new ColumnFamily<Long, Locator>(CF_METRICS_LOCATOR_NAME,
             LongSerializer.get(),
             LocatorSerializer.get());
@@ -84,10 +77,6 @@ public class CassandraModel {
             LongSerializer.get(),
             SlotStateSerializer.get());
 
-    public static final ColumnFamily<Locator, Long> CF_METRICS_EXCESS_ENUMS = new ColumnFamily<Locator, Long>(CF_METRICS_EXCESS_ENUMS_NAME,
-            LocatorSerializer.get(),
-            LongSerializer.get());
-
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
             CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
@@ -96,7 +85,7 @@ public class CassandraModel {
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
-            CF_METRICS_METADATA, CF_METRICS_LOCATOR, CF_METRICS_DELAYED_LOCATOR, CF_METRICS_STATE, CF_METRICS_EXCESS_ENUMS
+            CF_METRICS_METADATA, CF_METRICS_LOCATOR, CF_METRICS_DELAYED_LOCATOR, CF_METRICS_STATE
     };
 
     private static final Collection<ColumnFamily> ALL_COLUMN_FAMILIES;
@@ -174,7 +163,7 @@ public class CassandraModel {
         } else if (type.equals(BasicRollup.class)) {
             return METRICS_GRAN_TO_CF.get(granularity);
         } else if (type.equals(BluefloodSetRollup.class) || type.equals(BluefloodTimerRollup.class) || type.equals(BluefloodGaugeRollup.class) ||
-                type.equals(BluefloodCounterRollup.class) || type.equals(BluefloodEnumRollup.class)) {
+                type.equals(BluefloodCounterRollup.class) ) {
             return PREAG_GRAN_TO_CF.get(granularity);
         } else {
             throw new RuntimeException("Unsupported rollup type.");

@@ -44,23 +44,6 @@ public class MetricTokenListBuilderTest {
         
         Assert.assertTrue("outputTokens should not have more than expected", expectedTokens.containsAll(outputTokens));
         Assert.assertTrue("all outputTokens should be in the expected", outputTokens.containsAll(expectedTokens));
-        
-
-    }
-
-    @Test
-    public void testAddingEnumValues() {
-        MetricTokenListBuilder tokenListBuilder = new MetricTokenListBuilder();
-        final String metricName = "foo.bar.baz";
-        final String enumValue = "ev1";
-        String metricNameWithEnumExtension = metricName + "." + enumValue;
-        tokenListBuilder.addMetricNameWithEnumExtension(metricNameWithEnumExtension);
-
-        List<MetricToken> resultList = tokenListBuilder.build();
-        Assert.assertEquals("result size", 1, resultList.size());
-        Assert.assertEquals("result value", metricNameWithEnumExtension, resultList.get(0).getPath());
-        Assert.assertEquals("isLeaf result value", true, resultList.get(0).isLeaf());
-        Assert.assertEquals("token value", enumValue, resultList.get(0).getToken());
     }
 
     @Test

@@ -7,7 +7,6 @@ public enum RollupType {
     TIMER,
     SET,
     GAUGE,
-    ENUM,
     BF_BASIC,
     NOT_A_ROLLUP;
 
@@ -37,9 +36,6 @@ public enum RollupType {
             return RollupType.BF_BASIC;
         else if (value instanceof SimpleNumber)
             return RollupType.NOT_A_ROLLUP;
-        else if (value instanceof BluefloodEnumRollup) {
-            return RollupType.ENUM;
-        }
         else
             throw new Error(String.format("Cannot discern RollupType from %s", value.getClass().getSimpleName()));
     }
@@ -69,9 +65,6 @@ public enum RollupType {
         else if (rollupTypeClass.equals(BluefloodGaugeRollup.class)) {
             return RollupType.GAUGE;
         }
-        else if (rollupTypeClass.equals(BluefloodEnumRollup.class)) {
-            return RollupType.ENUM;
-        }
         else
             throw new Error(String.format("Cannot discern RollupType from %s", rollupTypeClass.getSimpleName()));
     }
@@ -90,8 +83,6 @@ public enum RollupType {
             return SimpleNumber.class;
         else if (type == RollupType.BF_BASIC && gran != Granularity.FULL)
             return BasicRollup.class;
-        else if(type == RollupType.ENUM)
-            return BluefloodEnumRollup.class;
         else
             throw new IllegalArgumentException(String.format("Unexpected type/gran combination: %s, %s", type, gran));
     }

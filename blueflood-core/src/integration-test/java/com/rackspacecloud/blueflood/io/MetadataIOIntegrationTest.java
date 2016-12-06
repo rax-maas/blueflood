@@ -69,7 +69,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         Table<Locator, String, String> meta = HashBasedTable.create();
         meta.put( l0, CACHE_KEY, RollupType.GAUGE.toString() );
-        meta.put( l1, CACHE_KEY, RollupType.ENUM.toString() );
+        meta.put( l1, CACHE_KEY, RollupType.SET.toString() );
 
         astyanaxMetadataIO.putAll( meta );
 
@@ -90,7 +90,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         Map.Entry<String, String> entry2 = row2.entrySet().iterator().next();
         assertEquals( CACHE_KEY, entry2.getKey() );
-        assertEquals( RollupType.ENUM.toString(), entry2.getValue() );
+        assertEquals( RollupType.SET.toString(), entry2.getValue() );
 
     }
 
@@ -102,7 +102,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         Table<Locator, String, String> meta = HashBasedTable.create();
         meta.put( l0, CACHE_KEY, RollupType.GAUGE.toString() );
-        meta.put( l1, CACHE_KEY, RollupType.ENUM.toString() );
+        meta.put( l1, CACHE_KEY, RollupType.SET.toString() );
 
         dMetadataIO.putAll( meta );
 
@@ -123,7 +123,7 @@ public class MetadataIOIntegrationTest extends IntegrationTestBase {
 
         Map.Entry<String, String> entry2 = row2.entrySet().iterator().next();
         assertEquals( CACHE_KEY, entry2.getKey() );
-        assertEquals( RollupType.ENUM.toString(), entry2.getValue() );
+        assertEquals( RollupType.SET.toString(), entry2.getValue() );
 
     }
 }

@@ -113,8 +113,6 @@ public interface BasicRollupsOutputSerializer<T> {
                     return ((BluefloodCounterRollup) rollup).getSampleCount();
                 else if (rollup instanceof BluefloodSetRollup)
                     return ((BluefloodSetRollup) rollup).getCount();
-                else if (rollup instanceof BluefloodEnumRollup)
-                    return ((BluefloodEnumRollup) rollup).getNumPoints();
                 else
                     // gauge.
                     throw new UnsupportedOperationException(
@@ -196,31 +194,12 @@ public interface BasicRollupsOutputSerializer<T> {
                 return rawSample;
             }
         },
-        ENUM_VALUES("enum_values") {
-            @Override
-            Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
-                if (rollup instanceof BluefloodEnumRollup)
-                    return ((BluefloodEnumRollup) rollup).getStringEnumValuesWithCounts();
-                else
-                    // every other type.
-                    throw new UnsupportedOperationException(
-                            String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
-            }
-
-            @Override
-            Object convertRawSampleToObject(Object rawSample) {
-                return rawSample;
-            }
-        },
         TYPE("type") {
             @Override
             Object convertRollupToObject(Rollup rollup) throws UnsupportedOperationException {
-                if (rollup instanceof BluefloodEnumRollup)
-                    return MetricData.Type.ENUM;
-                else
-                    // every other type.
-                    throw new UnsupportedOperationException(
-                            String.format("Enum values supported for this type: %s", rollup.getClass().getSimpleName()));
+                // every other type.
+                throw new UnsupportedOperationException(
+                            String.format("MetricStat values supported for this type: %s", rollup.getClass().getSimpleName()));
             }
 
             @Override

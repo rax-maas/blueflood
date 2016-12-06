@@ -18,7 +18,6 @@ package com.rackspacecloud.blueflood.service;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.GranularityException;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
@@ -35,7 +34,6 @@ import com.rackspacecloud.blueflood.eventemitter.RollupEventEmitter;
 import com.rackspacecloud.blueflood.eventemitter.RollupEvent;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /** rolls up data into one data point, inserts that data point. */
@@ -55,7 +53,6 @@ public class RollupRunnable implements Runnable {
     private static final Timer calcTimer = Metrics.timer(RollupRunnable.class, "Read And Calculate Rollup");
     private static final Meter noPointsToCalculateRollup = Metrics.meter(RollupRunnable.class, "No points to calculate rollup");
     private static HashMap<Granularity, Meter> granToMeters = new HashMap<Granularity, Meter>();
-    private ExecutorService enumValidatorExecutor;
 
     static {
         for (Granularity rollupGranularity : Granularity.rollupGranularities()) {
@@ -63,11 +60,10 @@ public class RollupRunnable implements Runnable {
         }
     }
 
-    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter, ExecutorService enumValidatorExecutor) {
+    public RollupRunnable(RollupExecutionContext executionContext, SingleRollupReadContext singleRollupReadContext, RollupBatchWriter rollupBatchWriter) {
         this.executionContext = executionContext;
         this.singleRollupReadContext = singleRollupReadContext;
         this.rollupBatchWriter = rollupBatchWriter;
-        this.enumValidatorExecutor = enumValidatorExecutor;
         startWait = System.currentTimeMillis();
     }
 
@@ -110,7 +106,6 @@ public class RollupRunnable implements Runnable {
             // TIMER        | BluefloodTimerRollup           | metrics_preaggr_{gran}
             // SET          | BluefloodSetRollup             | metrics_preaggr_{gran}
             // GAUGE        | BluefloodGaugeRollup           | metrics_preaggr_{gran}
-            // ENUM         | BluefloodEnumRollup            | metrics_preaggr_{gran}
             // BF_BASIC     | BasicRollup (if gran != full)  | metrics_{gran}
             //              | SimpleNumber (if gran == full) | metrics_full
 
@@ -118,14 +113,6 @@ public class RollupRunnable implements Runnable {
             MetricColumnFamily srcCF = CassandraModel.getColumnFamily(rollupClass, srcGran);
             Granularity dstGran = srcGran.coarser();
             MetricColumnFamily dstCF = CassandraModel.getColumnFamily(rollupClass, dstGran);
-
-            if (rollupType == RollupType.ENUM) {
-                singleRollupReadContext.getEnumMetricsMeterForGranularity(dstGran).mark();
-                //Run the validation for enums every 5 minutes, when data is being rolled up from full to 5m
-                if (dstGran.equals(Granularity.MIN_5) && Configuration.getInstance().getBooleanProperty(CoreConfig.ENUM_VALIDATOR_ENABLED) == true) {
-                    enumValidatorExecutor.execute(new EnumValidator(Sets.newHashSet(rollupLocator)));
-                }
-            }
 
             // first, get the points.
             AbstractMetricsRW metricsRW;
@@ -184,8 +171,6 @@ public class RollupRunnable implements Runnable {
                 return srcGran == Granularity.FULL ? Rollup.BasicFromRaw : Rollup.BasicFromBasic;
             case SET:
                 return Rollup.SetFromSet;
-            case ENUM:
-                return Rollup.EnumFromEnum;
             default:
                 break;
         }

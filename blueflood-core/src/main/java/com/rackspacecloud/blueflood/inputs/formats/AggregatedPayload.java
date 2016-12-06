@@ -63,8 +63,6 @@ public class AggregatedPayload {
 
     @Valid
     private BluefloodSet[] sets;
-
-    private BluefloodEnum[] enums;
     
     private final List<ErrorResponse.ErrorData> validationErrors;
 
@@ -120,8 +118,7 @@ public class AggregatedPayload {
 
     @VisibleForTesting
     public AggregatedPayload(String tenantId, long timestamp, long flushInterval, BluefloodGauge[] gauges,
-                             BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets,
-                             BluefloodEnum[] enums) {
+                             BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets) {
 
         this();
         this.tenantId = tenantId;
@@ -131,7 +128,6 @@ public class AggregatedPayload {
         this.counters = counters;
         this.timers = timers;
         this.sets = sets;
-        this.enums = enums;
     }
 
     public String toString() {
@@ -149,7 +145,6 @@ public class AggregatedPayload {
     public Collection<BluefloodCounter> getCounters() { return safeAsList(counters); }
     public Collection<BluefloodTimer> getTimers() { return safeAsList(timers); }
     public Collection<BluefloodSet> getSets() { return safeAsList(sets); }
-    public Collection<BluefloodEnum> getEnums() { return safeAsList(enums); }
 
     public List<ErrorResponse.ErrorData> getValidationErrors() {
         return this.validationErrors;
@@ -164,9 +159,8 @@ public class AggregatedPayload {
         boolean isCounterPresent = counters != null && counters.length > 0;
         boolean isTimerPresent = timers != null && timers.length > 0;
         boolean isSetPresent = sets != null && sets.length > 0;
-        boolean isEnumPresent = enums != null && enums.length > 0;
 
-        return (isGaugePresent || isCounterPresent || isTimerPresent || isSetPresent || isEnumPresent);
+        return (isGaugePresent || isCounterPresent || isTimerPresent || isSetPresent);
     }
 
     /**
@@ -235,11 +229,6 @@ public class AggregatedPayload {
             }
         }
 
-        if ( enums != null && enums.length > 0) {
-            for (int index=0; index<enums.length; index++) {
-                metricNames.add(enums[index].getName());
-            }
-        }
         return metricNames;
     }
 

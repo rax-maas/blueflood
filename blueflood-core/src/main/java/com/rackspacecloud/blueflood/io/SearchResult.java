@@ -24,18 +24,10 @@ import java.util.List;
 public class SearchResult {
     private final Locator locator;
     private final String unit;
-    private final List<String> enumValues;
 
     public SearchResult(String tenantId, String name, String unit) {
         this.locator = Locator.createLocatorFromDbKey(String.format("%s.%s", tenantId, name));
         this.unit = unit;
-        this.enumValues = null;
-    }
-
-    public SearchResult(String tenantId, String name, String unit, List<String> enumValues) {
-        this.locator = Locator.createLocatorFromDbKey(String.format("%s.%s", tenantId, name));
-        this.unit = unit;
-        this.enumValues = enumValues;
     }
 
     public String getTenantId() {
@@ -50,10 +42,6 @@ public class SearchResult {
         return unit;
     }
 
-    public List<String> getEnumValues() {
-        return enumValues;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder()
@@ -62,10 +50,6 @@ public class SearchResult {
 
         if (unit != null) {
             sb.append(", unit=").append(unit);
-        }
-
-        if (enumValues != null) {
-            sb.append(", enumValues=").append(enumValues.toString());
         }
 
         sb.append("]");
@@ -85,7 +69,7 @@ public class SearchResult {
         result = prime * result + ((unit == null) ? 0 : unit.hashCode());
 
         // hash code for enum values if not null
-        result = prime * result + ((enumValues == null) ? 0 : enumValues.hashCode());
+        result = prime * result;
 
         return result;
     }
@@ -114,18 +98,6 @@ public class SearchResult {
 
         if (unit != null) {
             result = result && unit.equals(other.unit);
-        }
-
-        List<String> otherEnumValues = other.getEnumValues();
-        if ((enumValues != null) || (otherEnumValues != null)){
-            boolean enumValuesEqual;
-            if (enumValues != null) {
-                enumValuesEqual = enumValues.equals(otherEnumValues);
-            }
-            else {
-                enumValuesEqual = otherEnumValues.equals(enumValues);
-            }
-            result = result && enumValuesEqual;
         }
 
         return result;

@@ -21,7 +21,6 @@ import com.google.common.collect.Sets;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.APreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DDelayedLocatorIO;
-import com.rackspacecloud.blueflood.io.datastax.DEnumIO;
 import com.rackspacecloud.blueflood.io.datastax.DLocatorIO;
 import com.rackspacecloud.blueflood.io.datastax.DPreaggregatedMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -64,8 +63,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
 
     protected LocatorIO locatorIO = new DLocatorIO();
     protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
-    protected DEnumIO enumIO = new DEnumIO();
-    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, false, new DefaultClockImpl());
+    protected DPreaggregatedMetricsRW datastaxMetricsRW = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO, false, new DefaultClockImpl());
     protected APreaggregatedMetricsRW astyanaxMetricsRW = new APreaggregatedMetricsRW(false, new DefaultClockImpl());
 
     protected static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
@@ -96,12 +94,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             expectedLocatorMetricMap.put(locator, pMetric);
             MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.COUNTER.toString());
-
-            // generate enum
-            pMetric = getEnumMetric(this.getClass().getSimpleName() + ".my.enum.values." + System.currentTimeMillis(), tenantId, startTimestamp);
-            expectedLocatorMetricMap.put(pMetric.getLocator(), pMetric);
-            MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
-            MetadataCache.getInstance().put(pMetric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
 
             // generate gauge
             BluefloodGaugeRollup gaugeRollup = new BluefloodGaugeRollup()
@@ -298,7 +290,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
 
             // write with datastax
-            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, true, clock);
+            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO, true, clock);
             datastaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values(), granularity);
 
             // read with astyanaxRW.getDatapointsForRange()
@@ -414,7 +406,7 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             when(clock.now()).thenReturn(new Instant(expectedLocatorMetricMap.get(locator).getCollectionTime() + MAX_AGE_ALLOWED + 1));
 
             // write with datastax
-            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(enumIO, locatorIO, delayedLocatorIO, true, clock);
+            DPreaggregatedMetricsRW datastaxMetricsRW1 = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO, true, clock);
             datastaxMetricsRW1.insertMetrics(expectedLocatorMetricMap.values());
 
             // pick first locator from input metrics, read with Astyanax.getDataToRollup

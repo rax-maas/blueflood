@@ -129,9 +129,6 @@ public class ModuleLoaderTest {
         Configuration.getInstance().setProperty(
                 CoreConfig.DISCOVERY_MODULES,
                 "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
-        Configuration.getInstance().setProperty(
-                CoreConfig.ENUMS_DISCOVERY_MODULES,
-                "com.rackspacecloud.blueflood.io.DummyDiscoveryIO");
 
         // when
         Object loadedModule1 = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
@@ -140,13 +137,8 @@ public class ModuleLoaderTest {
         Assert.assertNotNull(loadedModule1);
         Assert.assertEquals(DummyDiscoveryIO.class, loadedModule1.getClass());
 
-        // when
-        Object loadedModule2 = ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.ENUMS_DISCOVERY_MODULES);
-
         // then
-        Assert.assertNotNull(loadedModule2);
         Assert.assertEquals(DummyDiscoveryIO.class, loadedModule1.getClass());
-        Assert.assertNotSame(loadedModule1, loadedModule2);
     }
 
     @Test

@@ -26,7 +26,6 @@ public class RollupServiceTest {
     ThreadPoolExecutor locatorFetchExecutors;
     ThreadPoolExecutor rollupReadExecutors;
     ThreadPoolExecutor rollupWriteExecutors;
-    ThreadPoolExecutor enumValidatorExecutor;
     long rollupDelayMillis;
     long delayedMetricRollupDelayMillis;
     long rollupWaitPeriodMillis;
@@ -43,7 +42,6 @@ public class RollupServiceTest {
         locatorFetchExecutors = mock(ThreadPoolExecutor.class);
         rollupReadExecutors = mock(ThreadPoolExecutor.class);
         rollupWriteExecutors = mock(ThreadPoolExecutor.class);
-        enumValidatorExecutor = mock(ThreadPoolExecutor.class);
         rollupDelayMillis = 300000;
         delayedMetricRollupDelayMillis = 300000;
         rollupWaitPeriodMillis = 300000;
@@ -52,7 +50,7 @@ public class RollupServiceTest {
 
         service = new RollupService(context, shardStateManager,
                 locatorFetchExecutors, rollupReadExecutors,
-                rollupWriteExecutors, enumValidatorExecutor, rollupDelayMillis,
+                rollupWriteExecutors, rollupDelayMillis,
                 delayedMetricRollupDelayMillis, rollupWaitPeriodMillis, pollerPeriod,
                 configRefreshInterval);
     }
@@ -71,7 +69,6 @@ public class RollupServiceTest {
         verifyZeroInteractions(locatorFetchExecutors);
         verifyZeroInteractions(rollupReadExecutors);
         verifyZeroInteractions(rollupWriteExecutors);
-        verifyZeroInteractions(enumValidatorExecutor);
     }
 
     @Test
@@ -114,7 +111,6 @@ public class RollupServiceTest {
 
         verifyZeroInteractions(rollupReadExecutors);
         verifyZeroInteractions(rollupWriteExecutors);
-        verifyZeroInteractions(enumValidatorExecutor);
     }
 
     @Test
@@ -155,7 +151,6 @@ public class RollupServiceTest {
 
         verifyZeroInteractions(rollupReadExecutors);
         verifyZeroInteractions(rollupWriteExecutors);
-        verifyZeroInteractions(enumValidatorExecutor);
     }
 
     @Test
@@ -172,7 +167,6 @@ public class RollupServiceTest {
         verifyZeroInteractions(locatorFetchExecutors);
         verifyZeroInteractions(rollupReadExecutors);
         verifyZeroInteractions(rollupWriteExecutors);
-        verifyZeroInteractions(enumValidatorExecutor);
     }
 
     @Test
@@ -195,7 +189,6 @@ public class RollupServiceTest {
         verifyZeroInteractions(locatorFetchExecutors);
         verifyZeroInteractions(rollupReadExecutors);
         verifyZeroInteractions(rollupWriteExecutors);
-        verifyZeroInteractions(enumValidatorExecutor);
     }
 
     @Test

@@ -18,10 +18,8 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.cache.Cache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
-import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
-import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
@@ -29,7 +27,6 @@ import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.mockito.internal.util.reflection.Whitebox;
 
@@ -43,7 +40,6 @@ public class IntegrationTestBase {
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     protected static final Random RAND = new Random(System.currentTimeMillis());
     protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
-    protected static final List<String> enumValueList = Arrays.asList("A", "B", "C", "D", "E");
 
     @Before
     public void setUp() throws Exception {
@@ -113,26 +109,14 @@ public class IntegrationTestBase {
         return metric;
     }
 
-    protected IMetric astyanaxWriteEnumMetric(String name, String tenantid) throws Exception {
-        final List<IMetric> metrics = new ArrayList<IMetric>();
-        PreaggregatedMetric metric = getEnumMetric(name, tenantid, System.currentTimeMillis());
-        metrics.add(metric);
-
-        AstyanaxWriter.getInstance().insertMetrics(metrics, CassandraModel.CF_METRICS_PREAGGREGATED_FULL, false, new DefaultClockImpl());
-
-        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(LocatorCache.getInstance(), "insertedLocators");
-        insertedLocators.invalidateAll();
-
-        return metric;
-    }
-
-    protected PreaggregatedMetric getEnumMetric(String name, String tenantid, long timestamp) {
+    protected PreaggregatedMetric getGaugeMetric(String name, String tenantid, long timestamp) {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
-        return getEnumMetric(locator, timestamp);
+        return getGaugeMetric(locator, timestamp);
     }
 
-    protected PreaggregatedMetric getEnumMetric(Locator locator, long timestamp) {
-        BluefloodEnumRollup rollup = new BluefloodEnumRollup().withEnumValue("enumValue"+pickAnEnumValue());
+    protected PreaggregatedMetric getGaugeMetric(Locator locator, long timestamp) {
+        BluefloodGaugeRollup rollup = new BluefloodGaugeRollup()
+                .withLatest(timestamp, new Long(getRandomIntMetricValue()));
         return new PreaggregatedMetric(timestamp, locator, new TimeValue(1, TimeUnit.DAYS), rollup);
     }
 
@@ -183,11 +167,6 @@ public class IntegrationTestBase {
         return new Metric(locator, value, timestamp, new TimeValue(1, TimeUnit.DAYS), "unknown");
     }
 
-    protected String pickAnEnumValue() {
-        int index = RAND.nextInt(enumValueList.size() - 1);
-        return enumValueList.get(index);
-    }
-
     private enum UNIT_ENUM {
         SECS("seconds"),
         MSECS("milliseconds"),
@@ -225,83 +204,14 @@ public class IntegrationTestBase {
         metricsRW.insertRollups(writeContexts);
     }
 
-    protected void generateEnumRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
-        if (destGranularity == Granularity.FULL) {
-            throw new Exception("Can't roll up to FULL");
-        }
-
-        MetricsRW metricsRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
-        MetricColumnFamily destCF;
-        ArrayList<SingleRollupWriteContext> writeContexts = new ArrayList<SingleRollupWriteContext>();
-        for (Range range : Range.rangesForInterval(destGranularity, from, to)) {
-            destCF = CassandraModel.getColumnFamily(BluefloodEnumRollup.class, destGranularity);
-            Points<BluefloodEnumRollup> input = metricsRW.getDataToRollup(locator, RollupType.ENUM, range,
-                    CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME);
-            BluefloodEnumRollup enumRollup = BluefloodEnumRollup.buildRollupFromEnumRollups(input);
-            writeContexts.add(new SingleRollupWriteContext(enumRollup, locator, destGranularity, destCF, range.start));
-        }
-
-        metricsRW.insertRollups(writeContexts);
-    }
-
-    private static final String TENANT1 = "11111";
-    private static final String TENANT2 = "22222";
-    private static final long   DELTA_MS = 2000;
-
     protected Range getRangeFromMinAgoToNow(int deltaMin) {
         // ask for 5 minutes back
         long now = System.currentTimeMillis();
         return new Range(now - (deltaMin*60*1000), now);
     }
 
-    protected Map<Locator, List<IMetric>> generateEnumForTenants() throws Exception {
-        Map<Locator, List<IMetric>> locatorToMetrics = new HashMap<Locator, List<IMetric>>();
-
-        // setup some Enum data
-        long startTime = System.currentTimeMillis();
-        final Locator locator1 = Locator.createLocatorFromPathComponents(TENANT1, getClass().getSimpleName(), "my", "enum", "values");
-        final Locator locator2 = Locator.createLocatorFromPathComponents(TENANT2, getClass().getSimpleName(), "my", "enum", "values");
-        List<IMetric> metrics = new ArrayList<IMetric>();
-        PreaggregatedMetric metric = getEnumMetric(locator1, startTime - DELTA_MS);
-        metrics.add(metric);
-        locatorToMetrics.put(locator1, metrics);
-
-        metric = getEnumMetric(locator2, startTime);
-        metrics = new ArrayList<IMetric>();
-        metrics.add(metric);
-        locatorToMetrics.put(locator2, metrics);
-
-        // have to setup metadata so we correctly treat these metrics as
-        // RollupType.ENUM
-        MetadataCache.getInstance().put(locator1, MetricMetadata.TYPE.name().toLowerCase(), null);
-        MetadataCache.getInstance().put(locator1, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
-        MetadataCache.getInstance().put(locator2, MetricMetadata.TYPE.name().toLowerCase(), null);
-        MetadataCache.getInstance().put(locator2, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.ENUM.toString());
-        return locatorToMetrics;
-    }
-
     protected String getRandomTenantId() {
 
         return String.valueOf( RAND.nextInt( 5 ) );
-    }
-
-    protected void assertMetricDataEquals(MetricData expected, MetricData resultData) {
-
-        Assert.assertEquals("metric data has the same type", expected.getType(), resultData.getType());
-        Points expectedPoints = expected.getData();
-        Points resultPoints = resultData.getData();
-        Assert.assertEquals("metric data has same number of points", expectedPoints.getPoints().size(), resultPoints.getPoints().size());
-        Assert.assertEquals("metric data dataClass is the same", expectedPoints.getDataClass(), resultPoints.getDataClass());
-        Map<Long, Points.Point> expectedPointsMap = expectedPoints.getPoints();
-
-        for ( Map.Entry<Long, Points.Point> entry : expectedPointsMap.entrySet() ) {
-            Long timestamp = entry.getKey();
-            Map<Long, Points.Point> map = resultPoints.getPoints();
-            Points.Point resultPoint = map.get(timestamp);
-            Assert.assertNotNull(String.format("result at timestamp %d exists", timestamp), resultPoint);
-            Points.Point expectedPoint = entry.getValue();
-            Assert.assertEquals(String.format("point at timestamp %d is the same", timestamp), expectedPoint, resultPoint);
-        }
-
     }
 }

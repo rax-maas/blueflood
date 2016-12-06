@@ -49,16 +49,6 @@ public class RollupStaticsTest {
     }
 
     @Test
-    public void testEnumFromEnum() throws IOException {
-        Rollup.Type<BluefloodEnumRollup, BluefloodEnumRollup> factory = Rollup.EnumFromEnum;
-        Points<BluefloodEnumRollup> points = new Points<BluefloodEnumRollup>();
-        BluefloodEnumRollup rollup = factory.compute(points);
-
-        assertNotNull(rollup);
-        assertSame(BluefloodEnumRollup.class, rollup.getClass());
-    }
-
-    @Test
     public void testCounterFromCounter() throws IOException {
         Rollup.Type<BluefloodCounterRollup, BluefloodCounterRollup> factory = Rollup.CounterFromCounter;
         Points<BluefloodCounterRollup> points = new Points<BluefloodCounterRollup>();

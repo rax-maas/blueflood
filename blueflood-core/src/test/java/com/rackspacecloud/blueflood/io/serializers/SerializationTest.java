@@ -49,7 +49,6 @@ public class SerializationTest {
             Integer.class,
             Long.class,
             BluefloodTimerRollup.class,
-            BluefloodEnumRollup.class,
             BluefloodCounterRollup.class,
             BluefloodSetRollup.class,
             BluefloodGaugeRollup.class
@@ -297,7 +296,7 @@ public class SerializationTest {
         for (Field f : Serializers.Type.class.getDeclaredFields())
             if (f.getType().equals(byte.class))
                 serializerTypes.add((char)((Byte)f.get(MetricHelper.Type.class)).byteValue());
-        Assert.assertEquals(8, serializerTypes.size());
+        Assert.assertEquals(7, serializerTypes.size());
 
         // intersection should be zero.
         Assert.assertEquals(0, Sets.intersection(metricHelperTypes, serializerTypes).size());

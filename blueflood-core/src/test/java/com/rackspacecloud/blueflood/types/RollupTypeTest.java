@@ -1,12 +1,9 @@
 package com.rackspacecloud.blueflood.types;
 
-import com.bigml.histogram.Bin;
-import com.bigml.histogram.SimpleTarget;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -64,11 +61,6 @@ public class RollupTypeTest {
     }
 
     @Test
-    public void fromStringEnumYieldsEnum() {
-        assertEquals(RollupType.ENUM, RollupType.fromString("ENUM"));
-    }
-
-    @Test
     public void fromStringNotARollupYieldsNotARollup() {
         assertEquals(RollupType.NOT_A_ROLLUP, RollupType.fromString("NOT_A_ROLLUP"));
     }
@@ -121,12 +113,6 @@ public class RollupTypeTest {
     public void fromRollupSimpleNumberYieldsNotARollup() {
         Rollup rollup = new SimpleNumber(123L);
         assertEquals(RollupType.NOT_A_ROLLUP, RollupType.fromRollup(rollup));
-    }
-
-    @Test
-    public void fromRollupBluefloodEnumRollupYieldsEnum() {
-        Rollup rollup = new BluefloodEnumRollup();
-        assertEquals(RollupType.ENUM, RollupType.fromRollup(rollup));
     }
 
     class DummyRollup implements Rollup {
@@ -183,11 +169,6 @@ public class RollupTypeTest {
         assertEquals(RollupType.GAUGE, RollupType.fromRollupTypeClass(BluefloodGaugeRollup.class));
     }
 
-    @Test
-    public void fromRollupTypeClassBluefloodEnumRollupYieldsSet() {
-        assertEquals(RollupType.ENUM, RollupType.fromRollupTypeClass(BluefloodEnumRollup.class));
-    }
-
     @Test(expected = Error.class)
     public void fromRollupTypeClassCustomSubclassThrowsError() {
         // when
@@ -222,11 +203,6 @@ public class RollupTypeTest {
     @Test
     public void classOfGaugeYieldsBluefloodGaugeRollup() {
         assertEquals(BluefloodGaugeRollup.class, RollupType.classOf(RollupType.GAUGE, null));
-    }
-
-    @Test
-    public void classOfEnumYieldsBluefloodEnumRollup() {
-        assertEquals(BluefloodEnumRollup.class, RollupType.classOf(RollupType.ENUM, null));
     }
 
     @Test

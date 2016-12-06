@@ -134,14 +134,6 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         ensureSerializability(timers);
     }
 
-    @Test
-    public void testEnums() {
-        AggregatedPayload payload = AggregatedPayload.create(payloadJson);
-        Collection<PreaggregatedMetric> enums = PreaggregateConversions.convertEnums("1", 1, payload.getEnums());
-        assertEquals( 1, enums.size() );
-        ensureSerializability(enums);
-    }
-
     // ok. while we're out it, let's test serialization. Just for fun. The reasoning is that these metrics
     // follow a different creation path that what we currently have in tests.
     private static void ensureSerializability(Collection<PreaggregatedMetric> metrics) {
@@ -191,7 +183,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodGauge gauge = new BluefloodGauge("gauge.a.b", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody("",
-                new DefaultClockImpl().now().getMillis(), 0 , new BluefloodGauge[]{gauge}, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0 , new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -213,7 +205,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodGauge gauge = new BluefloodGauge("gauge.a.b", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), -1 , new BluefloodGauge[]{gauge}, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), -1 , new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -238,7 +230,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
                 - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
 
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                collectionTimeInPast, 0 , new BluefloodGauge[]{gauge}, null, null, null, null));
+                collectionTimeInPast, 0 , new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -264,7 +256,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
                 + Configuration.getInstance().getLongProperty( CoreConfig.AFTER_CURRENT_COLLECTIONTIME_MS );
 
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                collectionTimeInFuture, 0 , new BluefloodGauge[]{gauge}, null, null, null, null));
+                collectionTimeInFuture, 0 , new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -286,7 +278,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
     public void testAggregatedMetricsNotSet() throws IOException {
 
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0 , null, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0 , null, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -309,7 +301,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodGauge gauge = new BluefloodGauge("", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -331,7 +323,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         String metricName = "gauge.a.b";
         BluefloodGauge gauge = new BluefloodGauge(metricName, null);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -354,7 +346,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodCounter counter = new BluefloodCounter("", 5, 0.1);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -376,7 +368,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         String metricName = "counter.a.b";
         BluefloodCounter counter = new BluefloodCounter(metricName, null, 0.1);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -399,7 +391,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         String metricName = "counter.a.b";
         BluefloodCounter counter = new BluefloodCounter(metricName, 5, null);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -423,7 +415,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodTimer timer = new BluefloodTimer("", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -445,7 +437,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         String metricName = "timer.a.b";
         BluefloodTimer timer = new BluefloodTimer(metricName, null);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -467,7 +459,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodSet sets = new BluefloodSet("", new String[]{});
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, null, null, new BluefloodSet[]{sets}, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, null, null, new BluefloodSet[]{sets}));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -488,7 +480,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodGauge gauge = new BluefloodGauge("gauge.a.b", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, new BluefloodGauge[]{gauge}, null, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -505,7 +497,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodCounter counter = new BluefloodCounter("counter.a.b", 5, 0.1);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, new BluefloodCounter[]{counter}, null, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -522,7 +514,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodTimer timer = new BluefloodTimer("timer.a.b", 5);
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, null, new BluefloodTimer[]{timer}, null));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -539,7 +531,7 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
 
         BluefloodSet set = new BluefloodSet("set.a.b", new String[]{"", ""});;
         FullHttpRequest request = createIngestRequest(createRequestBody(TENANT,
-                new DefaultClockImpl().now().getMillis(), 0, null, null, null, new BluefloodSet[]{set}, null));
+                new DefaultClockImpl().now().getMillis(), 0, null, null, null, new BluefloodSet[]{set}));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -552,11 +544,10 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
     }
 
     private String createRequestBody(String tenantId, long collectionTime, long flushInterval, BluefloodGauge[] gauges,
-                                     BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets,
-                                     BluefloodEnum[] enums) {
+                                     BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets) {
 
         AggregatedPayload payload = new AggregatedPayload(tenantId, collectionTime, flushInterval,
-                gauges, counters, timers, sets, enums);
+                gauges, counters, timers, sets);
 
         return new Gson().toJson(payload, AggregatedPayload.class);
     }
