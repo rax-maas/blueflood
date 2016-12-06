@@ -1,6 +1,5 @@
 from net.grinder.script.Grinder import grinder
 import ingest
-import ingestenum
 import annotationsingest
 import query
 

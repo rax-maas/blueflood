@@ -106,7 +106,7 @@ public class HttpMetricDataQueryServer {
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable thr) throws Exception {
                 try {
                     if (ctx.channel().isWritable()) {
-                        log.debug("request decoder error " + thr.getCause().toString() + " on channel " + ctx.channel().toString());
+                        log.debug("request decoder error " + thr.getCause() + " on channel " + ctx.channel().toString());
                         ctx.channel().write(
                                 new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST))
                                             .addListener(ChannelFutureListener.CLOSE);
