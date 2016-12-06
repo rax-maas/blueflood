@@ -256,8 +256,7 @@ public class LocatorFetchRunnableTest {
         Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
 
         LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
         when(scheduleCtx.isReroll(any(SlotKey.class))).thenReturn(isReroll);
         when(locatorIO.getLocators(anyInt())).thenReturn(locators);
 
@@ -277,8 +276,7 @@ public class LocatorFetchRunnableTest {
         Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
 
         LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
 
         //ingested delayed metric
         HashSet<Locator> delayedLocators = new HashSet<Locator>() {{
@@ -302,8 +300,7 @@ public class LocatorFetchRunnableTest {
         Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
 
         LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
 
         //ingested delayed metric
         HashSet<Locator> delayedLocators = new HashSet<Locator>() {{
@@ -327,8 +324,7 @@ public class LocatorFetchRunnableTest {
         Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
 
         LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
 
         //ingested delayed metric
         HashSet<Locator> delayedLocators1 = new HashSet<Locator>() {{
@@ -357,8 +353,7 @@ public class LocatorFetchRunnableTest {
         Granularity delayedMetricsStorageGranularity = Granularity.MIN_20;
 
         LocatorFetchRunnable lfrunnable = new LocatorFetchRunnable(scheduleCtx,
-                destSlotKey, rollupReadExecutor, rollupWriteExecutor,
-                enumValidatorExecutor);
+                destSlotKey, rollupReadExecutor, rollupWriteExecutor);
 
         Set<Locator> locatorsForRollup = lfrunnable.getLocators(executionContext, isReroll,
                 delayedMetricsRerollGranularity, delayedMetricsStorageGranularity);
