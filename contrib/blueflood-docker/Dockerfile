@@ -46,7 +46,6 @@ ENV INGESTION_MODULES=com.rackspacecloud.blueflood.service.HttpIngestionService
 ENV QUERY_MODULES=com.rackspacecloud.blueflood.service.HttpQueryService
 ENV DISCOVERY_MODULES=com.rackspacecloud.blueflood.io.ElasticIO
 ENV EVENTS_MODULES=com.rackspacecloud.blueflood.io.EventElasticSearchIO
-ENV ENUMS_DISCOVERY_MODULES=com.rackspacecloud.blueflood.io.EnumElasticIO
 
 ENV ZOOKEEPER_CLUSTER=NONE
 
