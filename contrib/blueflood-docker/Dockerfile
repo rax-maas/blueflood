@@ -13,8 +13,7 @@ COPY ES-Setup /ES-Setup
 COPY load.cdl /blueflood.cdl
 
 COPY artifacts /
-RUN (ls blueflood-all-*.jar | sed "s|blueflood-all-\(.*\)-jar-with-dependencies.jar|\1|") >> BLUEFLOOD_VERSION
-RUN mv blueflood-all-*-jar-with-dependencies.jar blueflood-all-jar-with-dependencies.jar
+RUN ln -s blueflood-all-*-jar-with-dependencies.jar blueflood-all-jar-with-dependencies.jar
 
 ENV MAX_ROLLUP_THREADS=20
 ENV MAX_TIMEOUT_WHEN_EXHAUSTED=2000
