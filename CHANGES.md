@@ -1,6 +1,7 @@
 # CHANGES
 
 ## IN PROGRESS
+* Integrated docker build into maven
 * Upgraded datastax driver to 3.1.2
 * Added new configuration option DELAYED_METRICS_REROLL_GRANULARITY
 * Removed Enums metrics support
