@@ -15,6 +15,10 @@
   <artifactId>blueflood-all</artifactId>
   <packaging>jar</packaging>
 
+  <properties>
+    <main.basedir>${project.parent.basedir}</main.basedir>
+  </properties>
+
 
   <build>
     <plugins>
@@ -41,6 +45,38 @@
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
+        </configuration>
+      </plugin>
+
+      <!-- docker build -->
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <configuration>
+          <skipDocker>false</skipDocker>
+          <imageName>rackerlabs/blueflood</imageName>
+          <dockerDirectory>${main.basedir}/contrib/blueflood-docker</dockerDirectory>
+          <resources>
+            <resource>
+              <targetPath>/artifacts</targetPath>
+              <directory>${project.build.directory}</directory>
+              <include>${project.build.finalName}-jar-with-dependencies.jar</include>
+            </resource>
+            <resource>
+              <targetPath>/ES-Setup</targetPath>
+              <directory>${main.basedir}/blueflood-elasticsearch/src/main/resources</directory>
+              <include>*</include>
+            </resource>
+            <resource>
+              <targetPath>/</targetPath>
+              <directory>${main.basedir}/src/cassandra/cli</directory>
+              <include>load.cdl</include>
+            </resource>
+          </resources>
+          <imageTags>
+            <imageTag>${project.version}</imageTag>
+            <imageTag>latest</imageTag>
+          </imageTags>
         </configuration>
       </plugin>
     </plugins>
