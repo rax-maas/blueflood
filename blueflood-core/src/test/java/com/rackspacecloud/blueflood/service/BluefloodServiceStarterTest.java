@@ -95,6 +95,34 @@ public class BluefloodServiceStarterTest {
         // exception was thrown
     }
 
+    @Test
+    public void testCassandraHostWithHyphenSucceedsValidation() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "my-hostname:9160");
+
+        // when
+        BluefloodServiceStarter.validateCassandraHosts();
+
+        // then
+        // no exception was thrown
+    }
+
+    @Test
+    public void testCassandraHostWithUnderscoreSucceedsValidation() {
+
+        // given
+        Configuration config = Configuration.getInstance();
+        config.setProperty(CoreConfig.CASSANDRA_HOSTS, "my_hostname:9160");
+
+        // when
+        BluefloodServiceStarter.validateCassandraHosts();
+
+        // then
+        // no exception was thrown
+    }
+
     @Test(expected = BluefloodServiceStarterException.class)
     public void testIngestModeEnabledWithoutModules() {
 
