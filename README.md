@@ -34,6 +34,10 @@ Build an ['uber jar'](http://stackoverflow.com/questions/11947037/what-is-an-ube
 The uber jar will be found in ${BLUEFLOOD_DIR}/blueflood-all/target/blueflood-all-${VERSION}-jar-with-dependencies.jar.
 This jar contains all the dependencies necessary to run Blueflood with a very simple classpath.
 
+Build a docker image:
+
+    mvn clean package  docker:build -Pall-modules
+
 ### Running
 
 The best place to start is the [10 minute guide](https://github.com/rackerlabs/blueflood/wiki/10-Minute-Guide).

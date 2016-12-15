@@ -93,4 +93,4 @@ EOL
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=localhost \
         -Dcom.sun.management.jmxremote.port=9180 \
-        -classpath blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1
+        -classpath blueflood-all-jar-with-dependencies.jar com.rackspacecloud.blueflood.service.BluefloodServiceStarter 2>&1

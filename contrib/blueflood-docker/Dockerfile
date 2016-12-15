@@ -9,12 +9,11 @@ RUN apt-get install -y python python-dev python-pip python-virtualenv && \
     rm -rf /var/lib/apt/lists/*
 RUN pip install cqlsh==4.1.1
 
-RUN git clone https://github.com/rackerlabs/blueflood.git
-RUN mv ./blueflood/blueflood-elasticsearch/src/main/resources ./ES-Setup
-RUN mv ./blueflood/src/cassandra/cli/load.cdl ./blueflood.cdl
-RUN rm -r ./blueflood
+COPY ES-Setup /ES-Setup
+COPY load.cdl /blueflood.cdl
 
-RUN curl -s -L https://github.com/rackerlabs/blueflood/releases/latest | egrep -o 'rackerlabs/blueflood/releases/download/rax-release-.*/blueflood-all-.*-jar-with-dependencies.jar' |  xargs -I % curl -C - -L https://github.com/% --create-dirs -o ./blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar
+COPY artifacts /
+RUN ln -s blueflood-all-*-jar-with-dependencies.jar blueflood-all-jar-with-dependencies.jar
 
 ENV MAX_ROLLUP_THREADS=20
 ENV MAX_TIMEOUT_WHEN_EXHAUSTED=2000
