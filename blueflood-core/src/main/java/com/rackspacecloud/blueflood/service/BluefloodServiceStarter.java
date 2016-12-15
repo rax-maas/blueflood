@@ -46,7 +46,7 @@ public class BluefloodServiceStarter {
             throw new BluefloodServiceStarterException(-1, "No cassandra hosts found in configuration option 'CASSANDRA_HOSTS'");
         }
         for (String host : hosts.split(",")) {
-            if (!host.matches("[\\d\\w\\.]+:\\d+")) {
+            if (!host.matches("[\\d\\w\\.\\-_]+:\\d+")) {
                 log.error("Invalid Cassandra host found in Configuration option 'CASSANDRA_HOSTS' -- Should be of the form <hostname>:<port>");
                 throw new BluefloodServiceStarterException(-1, "Invalid Cassandra host found in Configuration option 'CASSANDRA_HOSTS' -- Should be of the form <hostname>:<port>");
             }
