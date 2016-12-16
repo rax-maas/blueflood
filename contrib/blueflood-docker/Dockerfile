@@ -15,7 +15,8 @@ COPY load.cdl /blueflood.cdl
 COPY artifacts /
 RUN ln -s blueflood-all-*-jar-with-dependencies.jar blueflood-all-jar-with-dependencies.jar
 
-ENV MAX_ROLLUP_THREADS=20
+ENV MAX_ROLLUP_READ_THREADS=20
+ENV MAX_ROLLUP_WRITE_THREADS=5
 ENV MAX_TIMEOUT_WHEN_EXHAUSTED=2000
 ENV SCHEDULE_POLL_PERIOD=60000
 ENV CONFIG_REFRESH_PERIOD=10000
