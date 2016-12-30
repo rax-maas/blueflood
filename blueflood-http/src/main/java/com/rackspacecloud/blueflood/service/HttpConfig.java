@@ -59,7 +59,10 @@ public enum HttpConfig implements ConfigDefaults {
     HTTP_MAX_CONTENT_LENGTH("1048576"),
 
     // Maximum number of threads in type and unit processor threadpool
-    HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10");
+    HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10"),
+
+    // Idle time allowed on a connection, with no inbound traffic, before closing the connection.
+    HTTP_CONNECTION_READ_IDLE_TIME_SECONDS("120");
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());

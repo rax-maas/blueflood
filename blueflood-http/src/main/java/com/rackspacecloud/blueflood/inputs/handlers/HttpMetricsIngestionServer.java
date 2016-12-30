@@ -48,8 +48,6 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +70,9 @@ public class HttpMetricsIngestionServer {
     private EventLoopGroup workerGroup;
     private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels", GlobalEventExecutor.INSTANCE);
 
+    private int HTTP_CONNECTION_READ_IDLE_TIME_SECONDS =
+            Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
+
     /**
      * Constructor. Instantiate Metrics Ingest server
      * @param context
@@ -87,8 +88,6 @@ public class HttpMetricsIngestionServer {
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
         acceptorGroup = new NioEventLoopGroup(acceptThreads); // acceptor threads
         workerGroup = new NioEventLoopGroup(workerThreads);   // client connections threads
-
-//        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
     }
 
     /**
@@ -134,9 +133,9 @@ public class HttpMetricsIngestionServer {
     private void setupPipeline(SocketChannel channel, RouteMatcher router) {
         final ChannelPipeline pipeline = channel.pipeline();
 
-//        pipeline.addLast("logging", new LoggingHandler(LogLevel.DEBUG));
-        pipeline.addLast("idleStateHandler", new IdleStateHandler(120, 0, 0));
-        pipeline.addLast("idleStateEventHandler", new IdleStateEventHandler());
+        pipeline.addLast("logging", new LoggingHandler(LogLevel.TRACE)); //duplex handler
+        pipeline.addLast("idleStateHandler", new IdleStateHandler(HTTP_CONNECTION_READ_IDLE_TIME_SECONDS, 0, 0)); //duplex handler
+        pipeline.addLast("eventHandler", new UserDefinedEventHandler()); //duplex handler
         pipeline.addLast("encoder", new HttpResponseEncoder()); //outbound handler
         pipeline.addLast("decoder", new HttpRequestDecoder() { //inbound handler
 
