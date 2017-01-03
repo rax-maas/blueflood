@@ -62,6 +62,14 @@ public class IOConfig {
     }
 
     /**
+     * Retrieves the datacenter location as known by Cassandra.
+     * @return name of the datacenter
+     */
+    public String getDatacenterName() {
+        return config.getStringProperty(CoreConfig.CASSANDRA_LOCAL_DATACENTER_NAME);
+    }
+
+    /**
      * Retrieves a set of unique Cassandra hosts with Binary Transport protocol
      * enabled from configuration file as a set of {@link java.net.InetSocketAddress}
      * objects.

@@ -57,7 +57,7 @@ public class DatastaxIO {
         CodecRegistry codecRegistry = new CodecRegistry();
 
         cluster = Cluster.builder()
-                .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc("datacenter1").build(), false))
+                .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc(ioconfig.getDatacenterName()).build(), false))
                 .withPoolingOptions(getPoolingOptions(dbHosts.size()))
                 .withCodecRegistry(codecRegistry)
                 .withSocketOptions(getSocketOptions())

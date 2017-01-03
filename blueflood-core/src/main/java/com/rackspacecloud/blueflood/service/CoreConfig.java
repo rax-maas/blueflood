@@ -24,6 +24,7 @@ public enum CoreConfig implements ConfigDefaults {
     DEFAULT_CASSANDRA_PORT("19180"),
     CASSANDRA_BINXPORT_HOSTS("localhost:9042"),
     CASSANDRA_BINXPORT_PORT("9042"),
+    CASSANDRA_LOCAL_DATACENTER_NAME("datacenter1"),
 
     // This number is only accurate if MAX_CASSANDRA_CONNECTIONS
     // is evenly divisible by number of hosts. For its connection
