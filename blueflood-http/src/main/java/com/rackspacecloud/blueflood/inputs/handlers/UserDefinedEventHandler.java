@@ -31,9 +31,11 @@ public class UserDefinedEventHandler extends ChannelDuplexHandler {
             if (e.state() == IdleState.READER_IDLE) {
 
                 log.info("Connection is closed as there is no inbound traffic for " +
-                        HTTP_CONNECTION_READ_IDLE_TIME_SECONDS + "seconds. Connection: [" + ctx.channel().toString() + "]");
+                        HTTP_CONNECTION_READ_IDLE_TIME_SECONDS + " seconds. Connection: [" + ctx.channel().toString() + "]");
                 ctx.close();
             }
+        } else {
+            log.warn("Unhandled event:" + evt + " on connection: " + ctx.channel().toString());
         }
     }
 }
