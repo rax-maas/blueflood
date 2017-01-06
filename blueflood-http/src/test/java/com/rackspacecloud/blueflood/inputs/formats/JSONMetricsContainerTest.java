@@ -54,12 +54,10 @@ public class JSONMetricsContainerTest {
         assertEquals( 1234566, metricsCollection.get( 0 ).getTtlInSeconds() );
         assertTrue( current - metricsCollection.get( 0 ).getCollectionTime() < MINUTE );
         assertEquals( "milliseconds", metricsCollection.get( 0 ).getUnit() );
-        assertEquals( "N", metricsCollection.get( 0 ).getDataType().toString() );
 
         assertEquals( "ac1.mzord.status", metricsCollection.get( 1 ).getLocator().toString() );
         assertEquals( 0, metricsCollection.get( 1 ).getMetricValue() );
         assertEquals( "unknown", metricsCollection.get( 1 ).getUnit() );
-        assertEquals( "N", metricsCollection.get( 1 ).getDataType().toString() );
     }
 
     @Test

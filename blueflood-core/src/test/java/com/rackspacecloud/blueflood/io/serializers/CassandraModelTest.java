@@ -3,7 +3,6 @@ package com.rackspacecloud.blueflood.io.serializers;
 import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.CassandraModel.MetricColumnFamily;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.RollupType;
 import junit.framework.Assert;
 import org.junit.Test;

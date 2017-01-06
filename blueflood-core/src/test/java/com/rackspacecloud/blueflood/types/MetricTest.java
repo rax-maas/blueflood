@@ -26,33 +26,6 @@ import static org.junit.Assert.fail;
 
 public class MetricTest {
 
-    // TODO: evaluate if this is necessary
-    @Test
-    public void testMetricType() {
-        Locator locator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
-
-        Metric metric = new Metric(locator, 1234567L, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, 1234567.678, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, 1234567, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        DataType failType = new DataType("X");
-        Assert.assertFalse(DataType.isKnownMetricType(failType));
-    }
-
     @Test
     public void testTTL() {
         Locator locator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
@@ -64,14 +37,6 @@ public class MetricTest {
         } catch (Exception e) {
             Assert.assertTrue(e instanceof RuntimeException);
         }
-    }
-
-    @Test
-    public void testMetricValueTypeDetectors() {
-
-        Object metricValueNum = 1234567L;
-        Assert.assertTrue(DataType.isNumericMetric(metricValueNum));
-
     }
     
     @Test
