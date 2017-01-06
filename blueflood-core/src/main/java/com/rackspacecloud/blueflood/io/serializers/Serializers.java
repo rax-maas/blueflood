@@ -121,7 +121,7 @@ public class Serializers {
         }
     }
     
-    private static class BasicRollupSerializer extends AbstractSerializer<BasicRollup> {
+    public static class BasicRollupSerializer extends AbstractSerializer<BasicRollup> {
         private BasicRollupSerDes serDes = new BasicRollupSerDes();
 
         // prevent people from instantiating this class

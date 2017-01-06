@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.io.astyanax;
 
 import com.codahale.metrics.Timer;
@@ -27,7 +26,6 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.shallows.EmptyColumnList;
 import com.netflix.astyanax.util.RangeBuilder;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -39,7 +37,6 @@ import com.rackspacecloud.blueflood.io.serializers.astyanax.StringMetadataSerial
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +49,6 @@ public class AstyanaxReader extends AstyanaxIO {
     private static final MetadataCache metaCache = MetadataCache.getInstance();
     private static final AstyanaxReader INSTANCE = new AstyanaxReader();
     private static final String rollupTypeCacheKey = MetricMetadata.ROLLUP_TYPE.toString().toLowerCase();
-    private static final String dataTypeCacheKey = MetricMetadata.TYPE.toString().toLowerCase();
-
     private static final Keyspace keyspace = getKeyspace();
 
     public static AstyanaxReader getInstance() {
@@ -125,39 +120,6 @@ public class AstyanaxReader extends AstyanaxIO {
         }
 
         return metaTable;
-    }
-
-    /**
-     * Method that makes the actual cassandra call to get the most recent string value for a locator
-     *
-     * @param locator  locator name
-     * @return String most recent string value for metric.
-     * @throws RuntimeException(com.netflix.astyanax.connectionpool.exceptions.ConnectionException)
-     */
-    public String getLastStringValue(Locator locator) {
-        Timer.Context ctx = Instrumentation.getReadTimerContext(CassandraModel.CF_METRICS_STRING_NAME);
-
-        try {
-            ColumnList<Long> query = keyspace
-                    .prepareQuery(CassandraModel.CF_METRICS_STRING)
-                    .getKey(locator)
-                    .withColumnRange(new RangeBuilder().setReversed(true).setLimit(1).build())
-                    .execute()
-                    .getResult();
-
-            return query.isEmpty() ? null : query.getColumnByIndex(0).getStringValue();
-        } catch (ConnectionException e) {
-            if (e instanceof NotFoundException) {
-                Instrumentation.markNotFound(CassandraModel.CF_METRICS_STRING_NAME);
-            } else {
-                Instrumentation.markReadError(e);
-            }
-            log.warn("Could not get previous string metric value for locator " +
-                    locator, e);
-            throw new RuntimeException(e);
-        } finally {
-            ctx.stop();
-        }
     }
 
     private ColumnList<Long> getColumnsFromDB(final Locator locator, ColumnFamily<Locator, Long> srcCF, Range range) {
@@ -243,64 +205,51 @@ public class AstyanaxReader extends AstyanaxIO {
         return points;
     }
 
-    public static String getType(Locator locator) {
-        String type = null;
-        try {
-            type = metaCache.get(locator, MetricMetadata.TYPE.name().toLowerCase(), String.class);
-        } catch (CacheException ex) {
-            log.warn("Cache exception reading type from MetadataCache. ", ex);
-        }
-        if (type == null) {
-            type = Util.UNKNOWN;
-        }
-        return type;
-    }
-
+    /**
+     * Get data points for a particular {@link Locator}, {@link Range}, and
+     * {@link Granularity}.
+     *
+     * This method is eventually called from Rollup process.
+     *
+     * @param locator
+     * @param range
+     * @param gran
+     * @return a {@link MetricData} containing the data points requested
+     */
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
-        try {
-            Object type = metaCache.get(locator, dataTypeCacheKey);
-            RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-
-            if (rollupType == null) {
-                rollupType = RollupType.BF_BASIC;
-            }
-            if (type == null) {
-                return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
-            }
-
-            DataType metricType = new DataType((String) type);
-            if (!DataType.isKnownMetricType(metricType)) {
-                return getNumericOrStringRollupDataForRange(locator, range, gran, rollupType);
-            }
-            if (metricType.equals(DataType.STRING)) {
-                gran = Granularity.FULL;
-                return getStringMetricDataForRange(locator, range, gran);
-            } else if (metricType.equals(DataType.BOOLEAN)) {
-                gran = Granularity.FULL;
-                return getBooleanMetricDataForRange(locator, range, gran);
-            } else {
-                return getNumericMetricDataForRange(locator, range, gran, rollupType, metricType);
-            }
-
-        } catch (CacheException e) {
-            log.warn("Caught exception trying to find metric type from meta cache for locator " + locator.toString(), e);
-            return getNumericOrStringRollupDataForRange(locator, range, gran, RollupType.BF_BASIC);
+        RollupType rollupType = null;
+        String rollupTypeStr = metaCache.safeGet(locator, rollupTypeCacheKey);
+        if ( rollupTypeStr != null ) {
+            rollupType = RollupType.fromString(rollupTypeStr);
         }
+        if ( rollupType == null ) {
+            rollupType = RollupType.BF_BASIC;
+        }
+
+        return getNumericMetricDataForRange(locator, range, gran, rollupType);
     }
 
-    // TODO: This should be the only method all output handlers call. We should be able to deprecate
-    // other individual metric fetch methods once this gets in.
+    /**
+     * Get data points for multiple {@link Locator}, for the specified {@link Range} and
+     * {@link Granularity}.
+     *
+     * This method is eventually called from all the output handlers for query requests.
+     *
+     * @param locators
+     * @param range
+     * @param gran
+     * @return
+     */
     public Map<Locator, MetricData> getDatapointsForRange(List<Locator> locators, Range range, Granularity gran) {
         ListMultimap<ColumnFamily, Locator> locatorsByCF =
                 ArrayListMultimap.create();
         Map<Locator, MetricData> results = new HashMap<Locator, MetricData>();
         for (Locator locator : locators) {
             try {
-                RollupType rollupType = RollupType.fromString((String)
+                RollupType rollupType = RollupType.fromString(
                         metaCache.get(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase()));
-                DataType dataType = getDataType(locator, MetricMetadata.TYPE.name().toLowerCase());
 
-                ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, dataType, gran);
+                ColumnFamily cf = CassandraModel.getColumnFamily(rollupType, gran);
                 List<Locator> locs = locatorsByCF.get(cf);
                 locs.add(locator);
             } catch (Exception e) {
@@ -332,42 +281,8 @@ public class AstyanaxReader extends AstyanaxIO {
         return results;
     }
 
-    // Used for string metrics
-    private MetricData getStringMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        Points<String> points = new Points<String>();
-        ColumnList<Long> results = getColumnsFromDB(locator, CassandraModel.CF_METRICS_STRING, range);
-
-        for (Column<Long> column : results) {
-            try {
-                points.add(new Points.Point<String>(column.getName(), column.getValue(StringSerializer.get())));
-            } catch (RuntimeException ex) {
-                log.error("Problem deserializing String data for " + locator + " (" + range + ") from " +
-                        CassandraModel.CF_METRICS_STRING.getName(), ex);
-            }
-        }
-
-        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.STRING);
-    }
-
-    private MetricData getBooleanMetricDataForRange(Locator locator, Range range, Granularity gran) {
-        Points<Boolean> points = new Points<Boolean>();
-        ColumnList<Long> results = getColumnsFromDB(locator, CassandraModel.CF_METRICS_STRING, range);
-
-        for (Column<Long> column : results) {
-            try {
-                points.add(new Points.Point<Boolean>(column.getName(), Boolean.valueOf( column.getValue(StringSerializer.get() ))));
-            } catch (RuntimeException ex) {
-                log.error("Problem deserializing Boolean data for " + locator + " (" + range + ") from " +
-                        CassandraModel.CF_METRICS_STRING.getName(), ex);
-            }
-        }
-
-        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.BOOLEAN);
-    }
-
-    // todo: replace this with methods that pertain to type (which can be used to derive a serializer).
-    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType, DataType dataType) {
-        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(rollupType, dataType, gran);
+    private MetricData getNumericMetricDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType) {
+        ColumnFamily<Locator, Long> CF = CassandraModel.getColumnFamily(rollupType, gran);
         Points points = new Points();
         ColumnList<Long> results = getColumnsFromDB(locator, CF, range);
 
@@ -383,31 +298,16 @@ public class AstyanaxReader extends AstyanaxIO {
             }
         }
 
-        return new MetricData(points, metaCache.getUnitString(locator), MetricData.Type.NUMBER);
-    }
-
-    // gets called when we DO NOT know what the data type is (numeric, string, etc.)
-    private MetricData getNumericOrStringRollupDataForRange(Locator locator, Range range, Granularity gran, RollupType rollupType) {
-        Instrumentation.markScanAllColumnFamilies();
-
-        final MetricData metricData = getNumericMetricDataForRange(locator, range, gran, rollupType, DataType.NUMERIC);
-
-        if (metricData.getData().getPoints().size() > 0) {
-            return metricData;
-        }
-
-        return getStringMetricDataForRange(locator, range, gran);
+        return new MetricData(points, metaCache.getUnitString(locator));
     }
 
     private MetricData transformColumnsToMetricData(Locator locator, ColumnList<Long> columns,
                                                     Granularity gran) {
         try {
             RollupType rollupType = RollupType.fromString(metaCache.get(locator, rollupTypeCacheKey));
-            DataType dataType = getDataType(locator, dataTypeCacheKey);
             String unit = metaCache.getUnitString(locator);
-            MetricData.Type outputType = MetricData.Type.from(rollupType, dataType);
-            Points points = getPointsFromColumns(columns, rollupType, dataType, gran);
-            MetricData data = new MetricData(points, unit, outputType);
+            Points points = getPointsFromColumns(columns, rollupType, gran);
+            MetricData data = new MetricData(points, unit);
             return data;
         } catch (Exception e) {
             return null;
@@ -423,10 +323,10 @@ public class AstyanaxReader extends AstyanaxIO {
     }
 
     private Points getPointsFromColumns(ColumnList<Long> columnList, RollupType rollupType,
-                                        DataType dataType, Granularity gran) {
+                                        Granularity gran) {
         Points points = new Points();
 
-        AbstractSerializer serializer = serializerFor(rollupType, dataType, gran);
+        AbstractSerializer serializer = serializerFor(rollupType, gran);
         for (Column<Long> column : columnList) {
             points.add(pointFromColumn(column, serializer));
         }

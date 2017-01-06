@@ -43,10 +43,10 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
     private static final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
-    private final String strMetricName = "strMet_" + IntegrationTestBase.randString(8);
+    private final String anotherMetricName = "anotherMet_" + IntegrationTestBase.randString(8);
     final Locator[] locators = new Locator[] {
             Locator.createLocatorFromPathComponents(tenantId, metricName),
-            Locator.createLocatorFromPathComponents(tenantId, strMetricName)
+            Locator.createLocatorFromPathComponents(tenantId, anotherMetricName)
     };
     private static int queryPort = 20000;
     private static HttpQueryService httpQueryService;
@@ -78,9 +78,9 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
             final long curMillis = baseMillis + (i * 60000);
             final List<IMetric> metrics = new ArrayList<IMetric>();
             final Metric metric = getRandomIntMetric(locators[0], curMillis);
-            final Metric stringMetric = getRandomStringmetric(locators[1], curMillis);
+            final Metric anotherMetric = getRandomIntMetric(locators[1], curMillis);
             metrics.add(metric);
-            metrics.add(stringMetric);
+            metrics.add(anotherMetric);
 
             analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
             metricsRW.insertMetrics(metrics);
@@ -103,16 +103,8 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
         answerForNumericMetric.put(Granularity.MIN_240, 7);
         answerForNumericMetric.put(Granularity.MIN_1440, 2);
 
-        final Map<Granularity, Integer> answerForStringMetric = new HashMap<Granularity, Integer>();
-        answerForStringMetric.put(Granularity.FULL, 1440);
-        answerForStringMetric.put(Granularity.MIN_5, 1440);
-        answerForStringMetric.put(Granularity.MIN_20, 1440);
-        answerForStringMetric.put(Granularity.MIN_60, 1440);
-        answerForStringMetric.put(Granularity.MIN_240, 1440);
-        answerForStringMetric.put(Granularity.MIN_1440, 1440);
-
         locatorToPoints.put(locators[0], answerForNumericMetric);
-        locatorToPoints.put(locators[1], answerForStringMetric);
+        locatorToPoints.put(locators[1], answerForNumericMetric);
     }
 
     @Test

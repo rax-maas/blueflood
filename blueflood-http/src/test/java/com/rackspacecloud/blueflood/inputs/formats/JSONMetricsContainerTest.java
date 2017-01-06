@@ -39,6 +39,7 @@ public class JSONMetricsContainerTest {
 
     private final TypeFactory typeFactory = TypeFactory.defaultInstance();
     private final long current = System.currentTimeMillis();
+
     @Test
     public void testJSONMetricsContainerConstruction() throws Exception {
          // Construct the JSONMetricsContainter from JSON metric objects
@@ -56,9 +57,9 @@ public class JSONMetricsContainerTest {
         assertEquals( "N", metricsCollection.get( 0 ).getDataType().toString() );
 
         assertEquals( "ac1.mzord.status", metricsCollection.get( 1 ).getLocator().toString() );
-        assertEquals( "Website is up", metricsCollection.get( 1 ).getMetricValue() );
+        assertEquals( 0, metricsCollection.get( 1 ).getMetricValue() );
         assertEquals( "unknown", metricsCollection.get( 1 ).getUnit() );
-        assertEquals( "S", metricsCollection.get( 1 ).getDataType().toString() );
+        assertEquals( "N", metricsCollection.get( 1 ).getDataType().toString() );
     }
 
     @Test

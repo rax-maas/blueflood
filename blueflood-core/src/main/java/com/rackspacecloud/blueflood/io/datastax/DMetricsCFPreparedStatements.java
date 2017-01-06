@@ -77,8 +77,6 @@ public class DMetricsCFPreparedStatements {
     protected final PreparedStatement insertToMetricsBasic240MStatement;
     protected final PreparedStatement insertToMetricsBasic1440MStatement;
 
-    protected final PreparedStatement selectFromMetricsStringForRangeStatement;
-
     protected final PreparedStatement selectFromMetricsBasicFullForRangeStatement;
     protected final PreparedStatement selectFromMetricsBasic5MForRangeStatement;
     protected final PreparedStatement selectFromMetricsBasic20MForRangeStatement;
@@ -198,9 +196,6 @@ public class DMetricsCFPreparedStatements {
         //
         // Basic select statements
         //
-        selectFromMetricsStringForRangeStatement = session.prepare(
-                String.format(SELECT_FOR_KEY_RANGE_FORMAT,
-                        CassandraModel.CF_METRICS_STRING_NAME));
         selectFromMetricsBasicFullForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_FULL_NAME));
@@ -219,8 +214,6 @@ public class DMetricsCFPreparedStatements {
         selectFromMetricsBasic1440MForRangeStatement = session.prepare(
                 String.format(SELECT_FOR_KEY_RANGE_FORMAT,
                         CassandraModel.CF_METRICS_1440M_NAME));
-
-        cfNameToSelectStatement.put( CassandraModel.CF_METRICS_STRING_NAME, selectFromMetricsStringForRangeStatement );
 
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_FULL_NAME, selectFromMetricsBasicFullForRangeStatement );
         cfNameToSelectStatement.put( CassandraModel.CF_METRICS_5M_NAME, selectFromMetricsBasic5MForRangeStatement );

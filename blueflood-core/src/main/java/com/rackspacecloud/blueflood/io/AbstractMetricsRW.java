@@ -31,13 +31,11 @@ import java.util.Map;
 
 /**
  * This is base class of all MetricsRW classes that deals with persisting/reading
- * data from metrics_string, metrics_{granularity} and metrics_preaggregated_{granularity} column
+ * data from metrics_{granularity} and metrics_preaggregated_{granularity} column
  * family. This contains some utility methods used/shared amongst various
  * implementation/subclasses of MetricsRW.
  */
 public abstract class AbstractMetricsRW implements MetricsRW {
-
-    protected static final String DATA_TYPE_CACHE_KEY = MetricMetadata.TYPE.toString().toLowerCase();
 
     protected static TenantTtlProvider TTL_PROVIDER = CombinedTtlProvider.getInstance();
 

@@ -120,21 +120,10 @@ public class AstyanaxIO {
         return keyspace;
     }
 
-    protected AbstractSerializer serializerFor(RollupType rollupType, DataType dataType, Granularity gran) {
+    protected AbstractSerializer serializerFor(RollupType rollupType, Granularity gran) {
         if (rollupType == null) {
             rollupType = RollupType.BF_BASIC;
         }
-
-        if (dataType == null) {
-            dataType = DataType.NUMERIC;
-        }
-
-        if (dataType.equals(DataType.STRING)) {
-            return StringSerializer.get();
-        } else if (dataType.equals(DataType.BOOLEAN)) {
-            return BooleanSerializer.get();
-        } else {
-            return Serializers.serializerFor(RollupType.classOf(rollupType, gran));
-        }
+        return Serializers.serializerFor(RollupType.classOf(rollupType, gran));
     }
 }

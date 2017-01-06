@@ -204,12 +204,12 @@ public class TestUtils {
         testMetric.put("collectionTime", collectionTime );
         metricsList.add(testMetric);
 
-        // String metric value
+        // status metric value, 0 is up, 1 is down
         testMetric = new TreeMap<String, Object>();
         testMetric.put("metricName", "mzord.status" + metricPostfix );
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "unknown");
-        testMetric.put("metricValue", "Website is up");
+        testMetric.put("metricValue", 0);
         testMetric.put("collectionTime", collectionTime );
         metricsList.add(testMetric);
 

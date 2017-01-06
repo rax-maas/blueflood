@@ -262,33 +262,19 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             Locator locator = entry.getKey();
             List<ResultSetFuture> futures = entry.getValue();
 
-            try {
+            DAbstractMetricIO io = locatorIO.get(locator);
 
-                DAbstractMetricIO io = locatorIO.get(locator);
+            // get ResultSets to a Table of locator, timestamp, rollup
+            Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue( futures, locator, granularity );
 
-                // get ResultSets to a Table of locator, timestamp, rollup
-                Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue( futures, locator, granularity );
+            Map<Long, Object> tsRollupMap = locatorTimestampRollup.row( locator );
 
-                Map<Long, Object> tsRollupMap = locatorTimestampRollup.row( locator );
+            // convert to Points and MetricData
+            Points points = convertToPoints( tsRollupMap );
 
-                // convert to Points and MetricData
-                Points points = convertToPoints( tsRollupMap );
-
-                // get the dataType for this locator
-                DataType dataType = getDataType( locator );
-
-                RollupType rollupType = getRollupType( tsRollupMap );
-
-                // create MetricData
-                MetricData.Type outputType = MetricData.Type.from( rollupType, dataType );
-                MetricData metricData = new MetricData( points, metadataCache.getUnitString( locator ), outputType );
-                locatorMetricDataMap.put( locator, metricData );
-
-            } catch (CacheException ex) {
-                Instrumentation.markReadError();
-                LOG.error(String.format("error getting dataType for locator %s, granularity %s",
-                        locator, granularity), ex);
-            }
+            // create MetricData
+            MetricData metricData = new MetricData( points, metadataCache.getUnitString( locator ) );
+            locatorMetricDataMap.put( locator, metricData );
         }
         return locatorMetricDataMap;
     }
@@ -308,24 +294,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             Object value = tsRollupMap.values().iterator().next();
             return value instanceof Rollup ? ( (Rollup) value ).getRollupType() : null;
         }
-    }
-
-
-    /**
-     * For a particular {@link com.rackspacecloud.blueflood.types.Locator}, get
-     * its corresponding {@link com.rackspacecloud.blueflood.types.DataType}
-     *
-     * @param locator
-     * @return
-     * @throws CacheException
-     */
-    protected DataType getDataType(Locator locator) throws CacheException {
-        MetadataCache metadataCache = MetadataCache.getInstance();
-        String meta = metadataCache.get(locator, DATA_TYPE_CACHE_KEY);
-        if (meta != null) {
-            return new DataType(meta);
-        }
-        return DataType.NUMERIC;
     }
 
     /**

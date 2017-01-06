@@ -13,9 +13,19 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.types;
 
+/**
+ * This class describes the various metrics data types that Blueflood
+ * supports.
+ *
+ * The DataType of a metric determines the:
+ * <ul>
+ *     <li>(de)serializer used to write/read to/from Cassandra</li>
+ *     <li>{@link com.rackspacecloud.blueflood.outputs.formats.MetricData}'s Type,
+ *     for query output</li>
+ * </ul>
+ */
 public class DataType {
     private final String type;
 
@@ -24,21 +34,18 @@ public class DataType {
         this.type = type;
     }
 
-    public final static DataType STRING = new DataType("S");
-    public final static DataType INT = new DataType("I");
-    public final static DataType LONG = new DataType("L");
-    public final static DataType DOUBLE = new DataType("D");
-    public final static DataType BOOLEAN = new DataType("B");
-    public final static DataType BIGINT = new DataType("BI");
+    // In the past, we supported String and Boolean DataType.
+    // But those have been removed due to scalability issues.
+    // So for now, we only support Numeric.
+
+    /**
+     * All metrics containing {@link Number} will get this type
+     */
     public final static DataType NUMERIC = new DataType("N");
 
     public static DataType getMetricType(Object metricValue) {
-        if (metricValue instanceof String) {
-            return STRING;
-        } else if (metricValue instanceof Number) {
+        if (metricValue instanceof Number) {
             return NUMERIC;
-        } else if (metricValue instanceof Boolean) {
-            return BOOLEAN;
         } else {
             throw new RuntimeException("Unknown metric value type " + metricValue.getClass());
         }
@@ -49,23 +56,8 @@ public class DataType {
         return metricType == DataType.NUMERIC;
     }
 
-    public static boolean isStringMetric(Object metricValue) {
-        final DataType metricType = getMetricType(metricValue);
-        return metricType == DataType.STRING;
-    }
-
-    public static boolean isBooleanMetric(Object metricValue) {
-        final DataType metricType = getMetricType(metricValue);
-        return metricType == DataType.BOOLEAN;
-    }
-
-    public static boolean isStringOrBoolean( Object metricValue ) {
-        return isBooleanMetric( metricValue ) || isStringMetric( metricValue );
-    }
-
     public static boolean isKnownMetricType(DataType incoming) {
-        return incoming.equals(STRING) || incoming.equals(NUMERIC)
-                || incoming.equals(BOOLEAN);
+        return incoming.equals(NUMERIC);
     }
 
     @Override

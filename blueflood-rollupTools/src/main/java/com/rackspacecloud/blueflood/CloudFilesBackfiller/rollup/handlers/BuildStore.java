@@ -137,9 +137,6 @@ public class BuildStore {
                             continue;
                         }
 
-                        // Bail out for string metrics
-                        if (metricPoint.getType() == String.class) continue;
-
                         Locator metricLocator;
                         if (checkFromJson.getCheckType().contains("remote")) {
                             String longMetricName = String.format("%s.rackspace.monitoring.entities.%s.checks.%s.%s.%s.%s",

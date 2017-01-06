@@ -13,11 +13,13 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.types;
 
+/**
+ * This class describes the kind of metadata we store in the
+ * metrics_metadata Column Family.
+ */
 public enum MetricMetadata {
-    TYPE (0),
     UNIT (1),
     ROLLUP_TYPE (2);
 

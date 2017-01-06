@@ -71,7 +71,7 @@ public class BaseElasticTest {
         List<IMetric> metrics = new ArrayList<IMetric>();
         for (String metricName: fullyQualifiedMetricNames) {
             metrics.add(new Metric(Locator.createLocatorFromPathComponents(tenantId, metricName),
-                    "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
+                    5647382910L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
         }
 
         createTestMetrics(metrics);
@@ -87,7 +87,7 @@ public class BaseElasticTest {
         List<IMetric> metrics = new ArrayList<IMetric>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
-            metric = new Metric(locator, "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+            metric = new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
             metrics.add(metric);
         }
         return metrics;

@@ -92,13 +92,13 @@ public class Metric implements IMetric {
         return DataType.isNumericMetric(metricValue);
     }
 
-    public boolean isString() {
-        return DataType.isStringMetric(metricValue);
-    }
-
-    public boolean isBoolean() {
-        return DataType.isBooleanMetric(metricValue);
-    }
+//    public boolean isString() {
+//        return DataType.isStringMetric(metricValue);
+//    }
+//
+//    public boolean isBoolean() {
+//        return DataType.isBooleanMetric(metricValue);
+//    }
 
     public void setTtl(TimeValue ttl) {
         if (!isValidTTL(ttl.toSeconds())) {

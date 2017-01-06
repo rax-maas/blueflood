@@ -101,8 +101,6 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         cache.setIO( metadataIO );
 
         cache.put(loc1, MetricMetadata.UNIT.name().toLowerCase(), "foo");
-        String str = cache.get(loc2, MetricMetadata.TYPE.name().toLowerCase(), String.class);
-        Assert.assertEquals(str, null); // This catches a bug where the hashCode of these two cache keys is identical. (loc2 type == loc1 unit)
     }
 
     @Test

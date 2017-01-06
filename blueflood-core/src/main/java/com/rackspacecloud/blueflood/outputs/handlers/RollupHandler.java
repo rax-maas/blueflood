@@ -241,11 +241,10 @@ public class RollupHandler {
     private Boolean repairMetrics (Locator locator, MetricData metricData, final long from,
                                    final long to,
                                    final Granularity g) {
-        boolean isRollable = metricData.getType().equals(MetricData.Type.NUMBER.toString());
         Boolean retValue = false;
 
         // if Granularity is FULL, we are missing raw data - can't generate that
-        if (ROLLUP_REPAIR && isRollable && g != Granularity.FULL && metricData != null) {
+        if (ROLLUP_REPAIR && g != Granularity.FULL && metricData != null) {
             if (metricData.getData().isEmpty()) { // data completely missing for range. complete repair.
                 rollupsRepairEntireRange.mark();
                 List<Points.Point> repairedPoints = repairRollupsOnRead(locator, g, from, to);

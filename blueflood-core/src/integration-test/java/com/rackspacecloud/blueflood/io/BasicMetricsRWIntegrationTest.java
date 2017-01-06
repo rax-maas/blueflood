@@ -23,8 +23,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base class for gesting BasicMetricsRW implementations for writing/reading basic metrics (SimpleNumber, String,
- * Booleans).  This class mostly creates:
+ * Base class for getting BasicMetricsRW implementations for writing/reading basic metrics
+ * (SimpleNumber).  This class mostly creates:
  * <ul>
  *  <li>the sample data which is read and written using the MetricsRW implementations
  *  <li>helper methods for creating {@link com.rackspacecloud.blueflood.service.SingleRollupWriteContext}
@@ -37,7 +37,6 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
     private static final String TENANT1 = "123456";
     private static final String TENANT2 = "987654";
     private static final String TENANT3 = "123789";
-    private static final TimeValue TTL = new TimeValue(24, TimeUnit.HOURS);
 
     protected LocatorIO locatorIO = new DLocatorIO();
     protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
@@ -55,7 +54,7 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
     /**
-     * Generate numeric, string and boolean metrics to be used by the tests.
+     * Generate numeric metrics to be used by the tests.
      *
      * @throws CacheException
      */
@@ -74,27 +73,6 @@ public class BasicMetricsRWIntegrationTest extends IntegrationTestBase {
                     new TimeValue(1, TimeUnit.DAYS),
                     "unit" );
             numericMap.put( locator, metric );
-            MetadataCache.getInstance().put( locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.NUMERIC.toString() );
-
-
-            // String
-            locator = Locator.createLocatorFromPathComponents( tid, className + ".string.metric." + System.currentTimeMillis() );
-            metric = new Metric( locator,
-                    "String_value." + (System.currentTimeMillis() % 100),
-                    System.currentTimeMillis(),
-                    new TimeValue(1, TimeUnit.DAYS), "unit" );
-            stringMap.put( locator, metric );
-            MetadataCache.getInstance().put( locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.STRING.toString() );
-
-            // Boolean
-            locator = Locator.createLocatorFromPathComponents( tid, className + ".boolean.metric." + System.currentTimeMillis() );
-            metric = new Metric( locator,
-                    System.currentTimeMillis() % 2 == 0 ?  true : false,
-                    System.currentTimeMillis(),
-                    new TimeValue(1, TimeUnit.DAYS), "unit" );
-            boolMap.put( locator, metric );
-            MetadataCache.getInstance().put( locator, MetricMetadata.TYPE.name().toLowerCase(), DataType.BOOLEAN.toString() );
-
         }
     }
 

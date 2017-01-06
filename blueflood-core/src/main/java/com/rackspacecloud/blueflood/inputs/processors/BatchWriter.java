@@ -90,8 +90,8 @@ public class BatchWriter extends FunctionWithThreadPool<List<List<IMetric>>, Lis
                     try {
                         // break into Metric and PreaggregatedMetric, as the put paths are somewhat different.
                         // todo: AstyanaxWriter needs a refactored insertFull() method that takes a collection of metrics,
-                        // susses out the string and boolean metrics for a different path, then segregates the Metric
-                        // and Preaggregated metrics and writes them to the appropriate column families.
+                        // then segregates the Metric and Preaggregated metrics and writes them to
+                        // the appropriate column families.
 
                         metricsRWDelegator.insertMetrics(batch);
 

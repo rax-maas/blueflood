@@ -51,10 +51,6 @@ public class AstyanaxWriter extends AstyanaxIO {
     private static final AstyanaxWriter instance = new AstyanaxWriter();
     private static final Keyspace keyspace = getKeyspace();
 
-    private boolean areStringMetricsDropped = Configuration.getInstance().getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
-    private List<String> tenantIdsKept = Configuration.getInstance().getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
-    private Set<String> keptTenantIdsSet = new HashSet<String>(tenantIdsKept);
-
     public static AstyanaxWriter getInstance() {
         return instance;
     }
@@ -66,35 +62,6 @@ public class AstyanaxWriter extends AstyanaxIO {
 
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
 
-    private boolean shouldPersistStringMetric(IMetric metric) {
-        String tenantId = metric.getLocator().getTenantId();
-
-        if(areStringMetricsDropped && !keptTenantIdsSet.contains(tenantId) ) {
-            return false;
-        }
-        else {
-            String currentValue = String.valueOf(metric.getMetricValue());
-            final String lastValue = AstyanaxReader.getInstance().getLastStringValue(metric.getLocator());
-
-            return lastValue == null || !currentValue.equals(lastValue);
-        }
-    }
-
-    private boolean shouldPersist(IMetric metric) {
-        boolean shouldPersistMetric = true;
-        try {
-            final DataType metricType = DataType.getMetricType( metric.getMetricValue() );
-            if (metricType.equals(DataType.STRING) || metricType.equals(DataType.BOOLEAN)) {
-                shouldPersistMetric = shouldPersistStringMetric(metric);
-            }
-        } catch (Exception e) {
-            // If we hit any exception, just persist the metric
-            shouldPersistMetric = true;
-        }
-
-        return shouldPersistMetric;
-    }
-
     // insert a full resolution chunk of data. I've assumed that there will not be a lot of overlap (these will all be
     // single column updates).
     public void insertFull(Collection<? extends IMetric> metrics, boolean isRecordingDelayedMetrics, Clock clock) throws ConnectionException {
@@ -105,27 +72,18 @@ public class AstyanaxWriter extends AstyanaxIO {
             for (IMetric metric: metrics) {
                 final Locator locator = metric.getLocator();
 
-                final boolean isString = DataType.isStringMetric( metric.getMetricValue() );
-                final boolean isBoolean = DataType.isBooleanMetric( metric.getMetricValue() );
-
-                if (!shouldPersist(metric)) {
-                    log.trace("Metric shouldn't be persisted, skipping insert", metric.getLocator().toString());
-                    continue;
-                }
-
                 // key = shard
                 // col = locator (acct + entity + check + dimension.metric)
                 // value = <nothing>
-                // do not do it for string or boolean metrics though.
                 if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
-                    if (!isString && !isBoolean && mutationBatch != null)
+                    if (mutationBatch != null)
                         insertLocator(locator, mutationBatch);
                     LocatorCache.getInstance().setLocatorCurrent(locator);
                 }
 
                 if (isRecordingDelayedMetrics) {
                     //retaining the same conditional logic that was used to insertLocator(locator, batch) above.
-                    if (!isString && !isBoolean && mutationBatch != null) {
+                    if (mutationBatch != null) {
                         insertLocatorIfDelayed(metric, mutationBatch, clock);
                     }
                 }
@@ -184,30 +142,14 @@ public class AstyanaxWriter extends AstyanaxIO {
     }
 
     private void insertMetric(IMetric metric, MutationBatch mutationBatch) {
-        final boolean isString = DataType.isStringMetric(metric.getMetricValue());
-        final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
-
-        if (isString || isBoolean) {
-            // they were already casting long to int in Metrics.setTtl()
-            metric.setTtlInSeconds((int)TTL_PROVIDER.getTTLForStrings(metric.getLocator().getTenantId()).get().toSeconds());
-            String persist;
-            if (isString) {
-                persist = (String) metric.getMetricValue();
-            } else { //boolean
-                persist = String.valueOf(metric.getMetricValue());
-            }
-            mutationBatch.withRow(CassandraModel.CF_METRICS_STRING, metric.getLocator())
-                    .putColumn(metric.getCollectionTime(), persist, metric.getTtlInSeconds());
-        } else {
-            try {
-                mutationBatch.withRow(CassandraModel.CF_METRICS_FULL, metric.getLocator())
+        try {
+            mutationBatch.withRow(CassandraModel.CF_METRICS_FULL, metric.getLocator())
                         .putColumn(metric.getCollectionTime(),
                                 metric.getMetricValue(),
                                 Serializers.serializerFor(Object.class),
                                 metric.getTtlInSeconds());
-            } catch (RuntimeException e) {
-                log.error("Error serializing full resolution data", e);
-            }
+        } catch (RuntimeException e) {
+            log.error("Error serializing full resolution data", e);
         }
     }
 
@@ -268,48 +210,25 @@ public class AstyanaxWriter extends AstyanaxIO {
             for (Locator locator : map.keySet()) {
                 ColumnListMutation<Long> mutation = batch.withRow(cf, locator);
                 
-                // we want to insert a locator only for non-string, non-boolean metrics. If there happen to be string or
-                // boolean metrics mixed in with numeric metrics, we still want to insert a locator.  If all metrics
-                // are boolean or string, we DO NOT want to insert a locator.
-                boolean locatorInsertOk = false;
-                
                 for (IMetric metric : map.get(locator)) {
-                    
-                    boolean shouldPersist = true;
-                    // todo: MetricsPersistenceOptimizerFactory interface needs to be retooled to accept IMetric
-                    if (metric instanceof Metric) {
-                        final boolean isString = DataType.isStringMetric(metric.getMetricValue());
-                        final boolean isBoolean = DataType.isBooleanMetric(metric.getMetricValue());
 
-                        if (!isString && !isBoolean)
-                            locatorInsertOk = true;
-                        shouldPersist = shouldPersist((Metric)metric);
-                    } else {
-                        locatorInsertOk = true;
-                    }
-                    
-                    if (shouldPersist) {
-                        mutation.putColumn(
+                    mutation.putColumn(
                                 metric.getCollectionTime(),
                                 metric.getMetricValue(),
                                 (AbstractSerializer) (Serializers.serializerFor(metric.getMetricValue().getClass())),
                                 metric.getTtlInSeconds());
-                        if (cf.getName().equals(CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME)) {
+                    if (cf.getName().equals(CassandraModel.CF_METRICS_PREAGGREGATED_FULL_NAME)) {
                             Instrumentation.markFullResPreaggregatedMetricWritten();
-                        }
                     }
 
                     if (isRecordingDelayedMetrics) {
                         //retaining the same conditional logic that was used to perform insertLocator(locator, batch).
-                        if (locatorInsertOk) {
-                            insertLocatorIfDelayed(metric, batch, clock);
-                        }
+                        insertLocatorIfDelayed(metric, batch, clock);
                     }
                 }
                 
                 if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
-                    if (locatorInsertOk)
-                        insertLocator(locator, batch);
+                    insertLocator(locator, batch);
                     LocatorCache.getInstance().setLocatorCurrent(locator);
                 }
             }
