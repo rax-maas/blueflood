@@ -1,6 +1,7 @@
 # CHANGES
 
 ## IN PROGRESS
+* Close idle connection with no inbound traffic after HTTP_CONNECTION_READ_IDLE_TIME_SECONDS  
 * Integrated docker build into maven
 * Upgraded datastax driver to 3.1.2
 * Added new configuration option DELAYED_METRICS_REROLL_GRANULARITY
