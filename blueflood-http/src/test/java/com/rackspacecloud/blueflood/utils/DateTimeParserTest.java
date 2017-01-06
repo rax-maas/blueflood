@@ -119,7 +119,6 @@ public class DateTimeParserTest {
         for (String dateTimeString: Arrays.asList("Fri", "14:42 Fri", "noon Fri")) {
             DateTime date = DateTimeParser.parse(dateTimeString);
             Assert.assertEquals(date.getDayOfWeek(), 5);
-            //Assert.assertTrue(todayDate.getYear() == date.getYear());
             Assert.assertTrue(todayDate.getDayOfYear() - date.getDayOfYear() <= 7);
         }
     }

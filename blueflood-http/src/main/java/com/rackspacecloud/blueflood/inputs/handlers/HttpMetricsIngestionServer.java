@@ -24,18 +24,17 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
+import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
 import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
 import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
 import com.rackspacecloud.blueflood.io.EventsIO;
-import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -47,10 +46,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.internal.logging.InternalLogLevel;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +69,9 @@ public class HttpMetricsIngestionServer {
     private EventLoopGroup acceptorGroup;
     private EventLoopGroup workerGroup;
     private ChannelGroup allOpenChannels = new DefaultChannelGroup("allOpenChannels", GlobalEventExecutor.INSTANCE);
+
+    private int HTTP_CONNECTION_READ_IDLE_TIME_SECONDS =
+            Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
 
     /**
      * Constructor. Instantiate Metrics Ingest server
@@ -133,8 +133,11 @@ public class HttpMetricsIngestionServer {
     private void setupPipeline(SocketChannel channel, RouteMatcher router) {
         final ChannelPipeline pipeline = channel.pipeline();
 
-        pipeline.addLast("encoder", new HttpResponseEncoder());
-        pipeline.addLast("decoder", new HttpRequestDecoder() {
+        pipeline.addLast("logging", new LoggingHandler(LogLevel.TRACE)); //duplex handler
+        pipeline.addLast("idleStateHandler", new IdleStateHandler(HTTP_CONNECTION_READ_IDLE_TIME_SECONDS, 0, 0)); //duplex handler
+        pipeline.addLast("eventHandler", new UserDefinedEventHandler()); //duplex handler
+        pipeline.addLast("encoder", new HttpResponseEncoder()); //outbound handler
+        pipeline.addLast("decoder", new HttpRequestDecoder() { //inbound handler
 
             // if something bad happens during the decode, assume the client send bad data. return a 400.
             @Override
@@ -158,10 +161,10 @@ public class HttpMetricsIngestionServer {
                 }
             }
         });
-        pipeline.addLast("inflater", new HttpContentDecompressor());
-        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(httpMaxContentLength));
-        pipeline.addLast("respdecoder", new HttpResponseDecoder());
-        pipeline.addLast("handler", new QueryStringDecoderAndRouter(router));
+        pipeline.addLast("inflater", new HttpContentDecompressor()); //inbound handler
+        pipeline.addLast("chunkaggregator", new HttpObjectAggregator(httpMaxContentLength)); //inbound handler
+        pipeline.addLast("respdecoder", new HttpResponseDecoder()); //inbound handler
+        pipeline.addLast("handler", new QueryStringDecoderAndRouter(router)); //inbound handler
     }
 
     private HttpEventsIngestionHandler getHttpEventsIngestionHandler() {
