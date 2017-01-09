@@ -50,21 +50,6 @@ CREATE TABLE IF NOT EXISTS "DATA".metrics_string (
     PRIMARY KEY (key, column1)
 ) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
 
-CREATE TABLE IF NOT EXISTS "DATA".metrics_enum (
-    key text,
-    column1 bigint,
-    value text,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-CREATE TABLE IF NOT EXISTS "DATA".metrics_excess_enums (
-    key text,
-    column1 bigint,
-    value bigint,
-    PRIMARY KEY (key, column1)
-) WITH COMPACT STORAGE AND speculative_retry = 'NONE';
-
-
 CREATE TABLE IF NOT EXISTS "DATA".metrics_full (
     key text,
     column1 bigint,

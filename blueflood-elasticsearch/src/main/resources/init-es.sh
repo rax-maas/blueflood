@@ -47,7 +47,6 @@ checkFile metrics_mapping.json
 checkFile events_mapping.json
 
 #delete the old indices
-curl $AUTH -XDELETE $ELASTICSEARCH_URL'/enums/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_v2/' >& /dev/null
