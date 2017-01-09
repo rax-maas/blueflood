@@ -183,6 +183,40 @@ public class TestUtils {
     }
 
     /**
+     * Generate a single metric data having string value using:
+     * <li> provided timestamp
+     * <li> random generated metric name postfix
+     *
+     * @param collectionTime
+     * @return
+     * @throws Exception
+     */
+    public static String generateJSONMetricsDataWithStringValue( long collectionTime ) throws Exception {
+
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsDataWithStringValue("", collectionTime));
+
+        return writer.toString();
+    }
+
+    /**
+     * Generate a single metric data having numeric string value using:
+     * <li> provided timestamp
+     * <li> random generated metric name postfix
+     *
+     * @param collectionTime
+     * @return
+     * @throws Exception
+     */
+    public static String generateJSONMetricsDataWithNumericStringValue( long collectionTime ) throws Exception {
+
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsDataWithNumericStringValue("", collectionTime));
+
+        return writer.toString();
+    }
+
+    /**
      * Returns a list of list of maps which represent metrics, each metric uses:
      * <li> provided timestamp
      * <li> metric name postfix
@@ -223,6 +257,39 @@ public class TestUtils {
         metricsList.add(testMetric);
 
         return metricsList;
-
     }
+
+    private static List<Map<String, Object>> generateMetricsDataWithStringValue( String metricPostfix, long collectionTime ) {
+
+        List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
+
+        // String metric value
+        Map<String, Object> testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.string.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", "random_string");
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        return metricsList;
+    }
+
+    private static List<Map<String, Object>> generateMetricsDataWithNumericStringValue( String metricPostfix, long collectionTime ) {
+
+        List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
+
+        // Numeric string metric value
+        Map<String, Object> testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.numeric.string.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", "2000");
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        return metricsList;
+    }
+
+
 }

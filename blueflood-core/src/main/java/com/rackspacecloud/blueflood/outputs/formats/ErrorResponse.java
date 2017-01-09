@@ -43,7 +43,7 @@ public class ErrorResponse {
          * Data class for storing error message for a metric from an ingest validation error
          * @param tenantId the tenantId of for the metric
          * @param metricName the name of the metric
-         * @param source the source of the error within the metric, i.e. the field with the violiation
+         * @param source the source of the error within the metric, i.e. the field with the violation
          * @param message the error message
          * @param timestamp the collectionTime of a metric, timestamp of an aggregated metric, or when value of an event
          */

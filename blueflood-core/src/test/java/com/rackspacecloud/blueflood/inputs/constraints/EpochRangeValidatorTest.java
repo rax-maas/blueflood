@@ -22,7 +22,7 @@ public class EpochRangeValidatorTest {
     public void setup() {
         metric.setMetricName("a.b.c.d");
         metric.setTtlInSeconds(1);
-        metric.setMetricValue(1);
+        metric.setMetricValue(new Integer(1));
 
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
