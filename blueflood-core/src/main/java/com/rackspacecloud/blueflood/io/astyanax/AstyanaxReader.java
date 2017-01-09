@@ -217,13 +217,10 @@ public class AstyanaxReader extends AstyanaxIO {
      * @return a {@link MetricData} containing the data points requested
      */
     public MetricData getDatapointsForRange(Locator locator, Range range, Granularity gran) {
-        RollupType rollupType = null;
+        RollupType rollupType = RollupType.BF_BASIC;
         String rollupTypeStr = metaCache.safeGet(locator, rollupTypeCacheKey);
         if ( rollupTypeStr != null ) {
             rollupType = RollupType.fromString(rollupTypeStr);
-        }
-        if ( rollupType == null ) {
-            rollupType = RollupType.BF_BASIC;
         }
 
         return getNumericMetricDataForRange(locator, range, gran, rollupType);
