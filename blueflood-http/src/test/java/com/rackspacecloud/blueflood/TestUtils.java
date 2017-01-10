@@ -12,6 +12,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 
 /**
@@ -28,6 +29,7 @@ public class TestUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String TIMESTAMP = "\"%TIMESTAMP%\"";
     private static final String POSTFIX = "%POSTFIX%";
+    private static final Random random = new Random();
 
     // making this just a static class, no instantiations
     private TestUtils() {}
@@ -225,10 +227,10 @@ public class TestUtils {
      * @return
      * @throws Exception
      */
-    public static String generateJSONMetricsDataWithAllWrongTypes( long collectionTime ) throws Exception {
+    public static String generateJSONMetricsDataWithAllWrongTypes( boolean generateRandomTenant, long collectionTime ) throws Exception {
 
         StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, generateMetricsDataWithAllWrongTypes("", collectionTime));
+        mapper.writeValue(writer, generateMetricsDataWithAllWrongTypes("", generateRandomTenant, collectionTime));
 
         return writer.toString();
     }
@@ -242,10 +244,10 @@ public class TestUtils {
      * @return
      * @throws Exception
      */
-    public static String generateJSONMetricsDataWithPartialWrongTypes( long collectionTime ) throws Exception {
+    public static String generateJSONMetricsDataWithPartialWrongTypes( boolean generateRandomTenant, long collectionTime ) throws Exception {
 
         StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, generateMetricsDataWithPartialWrongTypes("", collectionTime));
+        mapper.writeValue(writer, generateMetricsDataWithPartialWrongTypes("", generateRandomTenant, collectionTime));
 
         return writer.toString();
     }
@@ -293,12 +295,15 @@ public class TestUtils {
         return metricsList;
     }
 
-    public static List<Map<String, Object>> generateMetricsDataWithAllWrongTypes( String metricPostfix, long collectionTime ) {
+    public static List<Map<String, Object>> generateMetricsDataWithAllWrongTypes( String metricPostfix, boolean generateRandomTenant, long collectionTime ) {
 
         List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
 
         // String metric value
         Map<String, Object> testMetric = new TreeMap<String, Object>();
+        if ( generateRandomTenant ) {
+            testMetric.put("tenantId", random.nextInt());
+        }
         testMetric.put("metricName", "mzord.string.metric" + metricPostfix);
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
@@ -308,6 +313,9 @@ public class TestUtils {
 
         // String numeric metric value
         testMetric = new TreeMap<String, Object>();
+        if ( generateRandomTenant ) {
+            testMetric.put("tenantId", random.nextInt());
+        }
         testMetric.put("metricName", "mzord.string.numeric.metric" + metricPostfix);
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
@@ -317,6 +325,9 @@ public class TestUtils {
 
         // boolean metric value
         testMetric = new TreeMap<String, Object>();
+        if ( generateRandomTenant ) {
+            testMetric.put("tenantId", random.nextInt());
+        }
         testMetric.put("metricName", "mzord.boolean.metric" + metricPostfix);
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
@@ -327,12 +338,15 @@ public class TestUtils {
         return metricsList;
     }
 
-    private static List<Map<String, Object>> generateMetricsDataWithPartialWrongTypes( String metricPostfix, long collectionTime ) {
+    private static List<Map<String, Object>> generateMetricsDataWithPartialWrongTypes( String metricPostfix, boolean generateRandomTenant, long collectionTime ) {
 
-        List<Map<String, Object>> metricsList = generateMetricsDataWithAllWrongTypes(metricPostfix, collectionTime);
+        List<Map<String, Object>> metricsList = generateMetricsDataWithAllWrongTypes(metricPostfix, generateRandomTenant, collectionTime);
 
         // add a few valid ones
         Map<String, Object> testMetric = new TreeMap<String, Object>();
+        if ( generateRandomTenant ) {
+            testMetric.put("tenantId", random.nextInt());
+        }
         testMetric.put("metricName", "mzord.small.numeric.metric" + metricPostfix);
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "milliseconds");
@@ -342,6 +356,9 @@ public class TestUtils {
 
         // numeric metrics
         testMetric = new TreeMap<String, Object>();
+        if ( generateRandomTenant ) {
+            testMetric.put("tenantId", random.nextInt());
+        }
         testMetric.put("metricName", "mzord.another.numeric.metric" + metricPostfix);
         testMetric.put("ttlInSeconds", 1234566);
         testMetric.put("unit", "ounces");

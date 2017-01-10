@@ -152,7 +152,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testHttpIngestionAllInvalidStringBooleanMetrics() throws Exception {
 
-        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithAllWrongTypes(System.currentTimeMillis()));
+        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithAllWrongTypes(false, System.currentTimeMillis()));
         ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
@@ -170,7 +170,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Test
     public void testHttpIngestionPartialInvalidStringBooleanMetrics() throws Exception {
 
-        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithPartialWrongTypes(System.currentTimeMillis()));
+        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithPartialWrongTypes(false, System.currentTimeMillis()));
         ErrorResponse errorResponse = getErrorResponse(response);
 
         try {
@@ -184,6 +184,43 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
             EntityUtils.consume( response.getEntity() ); // Releases connection apparently
         }
     }
+
+    @Test
+    public void testHttpIngestionMultiAllInvalidStringBooleanMetrics() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postMultiPath, generateJSONMetricsDataWithAllWrongTypes(true, System.currentTimeMillis()));
+        ErrorResponse errorResponse = getErrorResponse(response);
+
+        try {
+            assertEquals("number of errors", 3, errorResponse.getErrors().size());
+            assertEquals("Should get status 400 from " + String.format(postMultiPath, TENANT_ID), 400, response.getStatusLine().getStatusCode() );
+            for (int i = 0; i < errorResponse.getErrors().size(); i++) {
+                assertEquals("Invalid error source", "metricValue", errorResponse.getErrors().get(i).getSource());
+            }
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
+    public void testHttpIngestionMultiPartialInvalidStringBooleanMetrics() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postMultiPath, generateJSONMetricsDataWithPartialWrongTypes(true, System.currentTimeMillis()));
+        ErrorResponse errorResponse = getErrorResponse(response);
+
+        try {
+            assertEquals("number of errors", 3, errorResponse.getErrors().size());
+            assertEquals("Should get status 207 from " + String.format(postMultiPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
+            for (int i = 0; i < errorResponse.getErrors().size(); i++) {
+                assertEquals("Invalid error source", "metricValue", errorResponse.getErrors().get(i).getSource());
+            }
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
 
     @Test
     public void testHttpAggregatedIngestionInvalidPastCollectionTime() throws IOException, URISyntaxException {
