@@ -155,7 +155,7 @@ public class TestUtils {
     public static String updateTimeStampJson(String json, String timestampName, long timestampMillis) {
         // JSON might have several entries for the same metric.  If they have the same timestamp, they could overwrite
         // each other.  Not using sleep() here to increment the time as to not have to deal with
-        // interruptedexception.  Rather, incrementing the time by 1 ms.
+        // InterruptedException.  Rather, incrementing the time by 1 ms.
         long increment = 0;
 
         while( json.contains( timestampName ) ) {
@@ -217,6 +217,40 @@ public class TestUtils {
     }
 
     /**
+     * Generate metric data having string and boolean values using:
+     * <li> provided timestamp
+     * <li> random generated metric name postfix
+     *
+     * @param collectionTime
+     * @return
+     * @throws Exception
+     */
+    public static String generateJSONMetricsDataWithAllWrongTypes( long collectionTime ) throws Exception {
+
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsDataWithAllWrongTypes("", collectionTime));
+
+        return writer.toString();
+    }
+
+    /**
+     * Generate metric data having string and boolean values using:
+     * <li> provided timestamp
+     * <li> random generated metric name postfix
+     *
+     * @param collectionTime
+     * @return
+     * @throws Exception
+     */
+    public static String generateJSONMetricsDataWithPartialWrongTypes( long collectionTime ) throws Exception {
+
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, generateMetricsDataWithPartialWrongTypes("", collectionTime));
+
+        return writer.toString();
+    }
+
+    /**
      * Returns a list of list of maps which represent metrics, each metric uses:
      * <li> provided timestamp
      * <li> metric name postfix
@@ -254,6 +288,65 @@ public class TestUtils {
         testMetric.put("unit", "unknown");
         testMetric.put("metricValue", null);
         testMetric.put("collectionTime", collectionTime );
+        metricsList.add(testMetric);
+
+        return metricsList;
+    }
+
+    public static List<Map<String, Object>> generateMetricsDataWithAllWrongTypes( String metricPostfix, long collectionTime ) {
+
+        List<Map<String, Object>> metricsList = new ArrayList<Map<String, Object>>();
+
+        // String metric value
+        Map<String, Object> testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.string.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", "random_string");
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        // String numeric metric value
+        testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.string.numeric.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", "666");
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        // boolean metric value
+        testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.boolean.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", true);
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        return metricsList;
+    }
+
+    private static List<Map<String, Object>> generateMetricsDataWithPartialWrongTypes( String metricPostfix, long collectionTime ) {
+
+        List<Map<String, Object>> metricsList = generateMetricsDataWithAllWrongTypes(metricPostfix, collectionTime);
+
+        // add a few valid ones
+        Map<String, Object> testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.small.numeric.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "milliseconds");
+        testMetric.put("metricValue", 123);
+        testMetric.put("collectionTime", collectionTime);
+        metricsList.add(testMetric);
+
+        // numeric metrics
+        testMetric = new TreeMap<String, Object>();
+        testMetric.put("metricName", "mzord.another.numeric.metric" + metricPostfix);
+        testMetric.put("ttlInSeconds", 1234566);
+        testMetric.put("unit", "ounces");
+        testMetric.put("metricValue", 4525);
+        testMetric.put("collectionTime", collectionTime);
         metricsList.add(testMetric);
 
         return metricsList;

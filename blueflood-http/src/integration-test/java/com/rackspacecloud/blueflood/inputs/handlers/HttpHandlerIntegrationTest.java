@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
 
@@ -108,7 +107,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
         long time = System.currentTimeMillis() + TIME_DIFF_MS + AFTER_CURRENT_COLLECTIONTIME_MS;
 
-        HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time );
+        HttpResponse response = postGenMetric(TENANT_ID, postfix, postPath, time);
 
         ErrorResponse errorResponse = getErrorResponse(response);
 
@@ -143,6 +142,42 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
                 assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(i).getSource());
                 assertEquals("Invalid error message", "Out of bounds. Cannot be more than " + BEFORE_CURRENT_COLLECTIONTIME_MS + " milliseconds into the past." +
                         " Cannot be more than " + AFTER_CURRENT_COLLECTIONTIME_MS + " milliseconds into the future", errorResponse.getErrors().get(i).getMessage());
+            }
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
+    public void testHttpIngestionAllInvalidStringBooleanMetrics() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithAllWrongTypes(System.currentTimeMillis()));
+        ErrorResponse errorResponse = getErrorResponse(response);
+
+        try {
+            assertEquals("number of errors", 3, errorResponse.getErrors().size());
+            assertEquals("Should get status 400 from " + String.format(postPath, TENANT_ID), 400, response.getStatusLine().getStatusCode() );
+            for (int i = 0; i < errorResponse.getErrors().size(); i++) {
+                assertEquals("Invalid error source", "metricValue", errorResponse.getErrors().get(i).getSource());
+            }
+        }
+        finally {
+            EntityUtils.consume( response.getEntity() ); // Releases connection apparently
+        }
+    }
+
+    @Test
+    public void testHttpIngestionPartialInvalidStringBooleanMetrics() throws Exception {
+
+        HttpResponse response = httpPost(TENANT_ID, postPath, generateJSONMetricsDataWithPartialWrongTypes(System.currentTimeMillis()));
+        ErrorResponse errorResponse = getErrorResponse(response);
+
+        try {
+            assertEquals("number of errors", 3, errorResponse.getErrors().size());
+            assertEquals("Should get status 207 from " + String.format(postPath, TENANT_ID), 207, response.getStatusLine().getStatusCode() );
+            for (int i = 0; i < errorResponse.getErrors().size(); i++) {
+                assertEquals("Invalid error source", "metricValue", errorResponse.getErrors().get(i).getSource());
             }
         }
         finally {
