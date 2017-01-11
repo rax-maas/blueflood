@@ -49,8 +49,7 @@ public class JSONBasicRollupOutputSerializerTest {
     @Test
     public void testTransformRollupDataAtFullRes() throws Exception {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown",
-                MetricData.Type.NUMBER);
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeFullResPoints(), "unknown");
 
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
 
@@ -82,8 +81,7 @@ public class JSONBasicRollupOutputSerializerTest {
     @Test
     public void testTransformRollupDataForCoarserGran() throws Exception {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown",
-                MetricData.Type.NUMBER);
+        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeRollupPoints(), "unknown");
         Set<MetricStat> filters = new HashSet<MetricStat>();
         filters.add(MetricStat.SUM);
         filters.add(MetricStat.AVERAGE);
@@ -122,39 +120,11 @@ public class JSONBasicRollupOutputSerializerTest {
     }
 
     @Test
-    public void testTransformRollupDataString() throws SerializationException{
-        final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
-        final MetricData metricData = new MetricData(FakeMetricDataGenerator.generateFakeStringPoints(), "unknown",
-                MetricData.Type.STRING);
-
-        JSONObject metricDataJSON = serializer.transformRollupData(metricData, filterStats);
-
-        final JSONArray data = (JSONArray) metricDataJSON.get("values");
-
-        // Assert that we have some data to test
-        Assert.assertTrue(data.size() > 0);
-
-        for (int i = 0; i < data.size(); i++ ) {
-            final JSONObject dataJSON = (JSONObject) data.get(i);
-            final Points.Point point = (Points.Point) metricData.getData().getPoints().get(dataJSON.get("timestamp"));
-
-            Assert.assertEquals(point.getData(), dataJSON.get("value"));
-
-            Assert.assertNull(dataJSON.get("average"));
-            Assert.assertNull(dataJSON.get("min"));
-            Assert.assertNull(dataJSON.get("max"));
-            Assert.assertNull(dataJSON.get("variance"));
-            Assert.assertNull(dataJSON.get("sum"));
-        }
-    }
-    
-    @Test
     public void testCounters() throws Exception {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(
                 FakeMetricDataGenerator.generateFakeCounterRollupPoints(), 
-                "unknown", 
-                MetricData.Type.NUMBER);
+                "unknown");
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_COUNTER);
         final JSONArray data = (JSONArray)metricDataJSON.get("values");
         
@@ -177,8 +147,7 @@ public class JSONBasicRollupOutputSerializerTest {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(
                 FakeMetricDataGenerator.generateFakeGaugeRollups(),
-                "unknown",
-                MetricData.Type.NUMBER);
+                "unknown");
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_GAUGE);
         final JSONArray data = (JSONArray)metricDataJSON.get("values");
         
@@ -204,8 +173,7 @@ public class JSONBasicRollupOutputSerializerTest {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(
                 FakeMetricDataGenerator.generateFakeSetRollupPoints(),
-                "unknown",
-                MetricData.Type.NUMBER);
+                "unknown");
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_SET);
         final JSONArray data = (JSONArray)metricDataJSON.get("values");
         
@@ -223,8 +191,7 @@ public class JSONBasicRollupOutputSerializerTest {
         final JSONBasicRollupsOutputSerializer serializer = new JSONBasicRollupsOutputSerializer();
         final MetricData metricData = new MetricData(
                 FakeMetricDataGenerator.generateFakeTimerRollups(),
-                "unknown",
-                MetricData.Type.NUMBER);
+                "unknown");
         
         JSONObject metricDataJSON = serializer.transformRollupData(metricData, PlotRequestParser.DEFAULT_TIMER);
         final JSONArray data = (JSONArray)metricDataJSON.get("values");

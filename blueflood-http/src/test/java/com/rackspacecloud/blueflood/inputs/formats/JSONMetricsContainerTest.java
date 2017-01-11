@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsData;
+import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsDataWithNumericStringValue;
+import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsDataWithStringValue;
 import static org.junit.Assert.*;
 
 public class JSONMetricsContainerTest {
@@ -39,6 +41,7 @@ public class JSONMetricsContainerTest {
 
     private final TypeFactory typeFactory = TypeFactory.defaultInstance();
     private final long current = System.currentTimeMillis();
+
     @Test
     public void testJSONMetricsContainerConstruction() throws Exception {
          // Construct the JSONMetricsContainter from JSON metric objects
@@ -53,12 +56,38 @@ public class JSONMetricsContainerTest {
         assertEquals( 1234566, metricsCollection.get( 0 ).getTtlInSeconds() );
         assertTrue( current - metricsCollection.get( 0 ).getCollectionTime() < MINUTE );
         assertEquals( "milliseconds", metricsCollection.get( 0 ).getUnit() );
-        assertEquals( "N", metricsCollection.get( 0 ).getDataType().toString() );
 
         assertEquals( "ac1.mzord.status", metricsCollection.get( 1 ).getLocator().toString() );
-        assertEquals( "Website is up", metricsCollection.get( 1 ).getMetricValue() );
+        assertEquals( 0, metricsCollection.get( 1 ).getMetricValue() );
         assertEquals( "unknown", metricsCollection.get( 1 ).getUnit() );
-        assertEquals( "S", metricsCollection.get( 1 ).getDataType().toString() );
+    }
+
+    @Test
+    public void testRejectStringMetric() throws Exception {
+        // Construct JSONMetricContainer from JSON metric objects
+        JSONMetricsContainer jsonMetricsContainer = getContainer("123456", generateJSONMetricsDataWithStringValue(System.currentTimeMillis()));
+
+        List<Metric> metricsCollection = jsonMetricsContainer.getValidMetrics();
+        assertEquals("# of valid metrics", 0, metricsCollection.size());
+
+        List<ErrorResponse.ErrorData> errors = jsonMetricsContainer.getValidationErrors();
+        assertEquals("# of errors", 1, errors.size());
+        ErrorResponse.ErrorData theError = errors.get(0);
+        assertEquals("source", "metricValue", theError.getSource());
+    }
+
+    @Test
+    public void testRejectNumericStringMetric() throws Exception {
+        // Construct JSONMetricContainer from JSON metric objects
+        JSONMetricsContainer jsonMetricsContainer = getContainer("123456", generateJSONMetricsDataWithNumericStringValue(System.currentTimeMillis()));
+
+        List<Metric> metricsCollection = jsonMetricsContainer.getValidMetrics();
+        assertEquals("# of valid metrics", 0, metricsCollection.size());
+
+        List<ErrorResponse.ErrorData> errors = jsonMetricsContainer.getValidationErrors();
+        assertEquals("# of errors", 1, errors.size());
+        ErrorResponse.ErrorData theError = errors.get(0);
+        assertEquals("source", "metricValue", theError.getSource());
     }
 
     @Test

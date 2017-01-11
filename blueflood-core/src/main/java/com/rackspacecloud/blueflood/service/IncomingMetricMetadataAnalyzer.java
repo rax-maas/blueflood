@@ -101,16 +101,6 @@ public class IncomingMetricMetadataAnalyzer {
         }
 
         List<IncomingMetricException> problems = new ArrayList<IncomingMetricException>();
-        IncomingMetricException typeProblem = null;
-
-        if (metric.getDataType() != DataType.NUMERIC) {
-            typeProblem = checkMeta(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(),
-                    metric.getDataType().toString());
-        }
-
-        if (typeProblem != null) {
-            problems.add(typeProblem);
-        }
 
         if (SHOULD_STORE_UNITS && (!USE_ES_FOR_UNITS || !ES_MODULE_FOUND)) {
             if (USE_ES_FOR_UNITS && !ES_MODULE_FOUND) {

@@ -29,7 +29,6 @@ public class CassandraModel {
     public static final String CF_METRICS_METADATA_NAME = "metrics_metadata";
     public static final String CF_METRICS_LOCATOR_NAME = "metrics_locator";
     public static final String CF_METRICS_DELAYED_LOCATOR_NAME = "metrics_delayed_locator";
-    public static final String CF_METRICS_STRING_NAME = "metrics_string";
 
     public static final String CF_METRICS_FULL_NAME = "metrics_full";
     public static final String CF_METRICS_5M_NAME = "metrics_5m";
@@ -51,7 +50,6 @@ public class CassandraModel {
     public static final MetricColumnFamily CF_METRICS_60M = new MetricColumnFamily(CF_METRICS_60M_NAME, new TimeValue(31 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_240M = new MetricColumnFamily(CF_METRICS_240M_NAME, new TimeValue(60 * 5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_1440M = new MetricColumnFamily(CF_METRICS_1440M_NAME, new TimeValue(365 * 5, TimeUnit.DAYS));
-    public static final MetricColumnFamily CF_METRICS_STRING = new MetricColumnFamily(CF_METRICS_STRING_NAME, new TimeValue(365 * 3 * 5, TimeUnit.DAYS));
 
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_FULL = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_FULL_NAME, new TimeValue(5, TimeUnit.DAYS));
     public static final MetricColumnFamily CF_METRICS_PREAGGREGATED_5M = new MetricColumnFamily(CF_METRICS_PREAGGREGATED_5M_NAME, new TimeValue(10, TimeUnit.DAYS));
@@ -80,8 +78,7 @@ public class CassandraModel {
     private static final MetricColumnFamily[] METRIC_COLUMN_FAMILES = new MetricColumnFamily[] {
             CF_METRICS_FULL, CF_METRICS_5M, CF_METRICS_20M, CF_METRICS_60M, CF_METRICS_240M, CF_METRICS_1440M,
             CF_METRICS_PREAGGREGATED_FULL, CF_METRICS_PREAGGREGATED_5M, CF_METRICS_PREAGGREGATED_20M,
-            CF_METRICS_PREAGGREGATED_60M, CF_METRICS_PREAGGREGATED_240M, CF_METRICS_PREAGGREGATED_1440M,
-            CF_METRICS_STRING
+            CF_METRICS_PREAGGREGATED_60M, CF_METRICS_PREAGGREGATED_240M, CF_METRICS_PREAGGREGATED_1440M
     };
 
     private static final ColumnFamily[] BF_SYSTEM_COLUMN_FAMILIES = new ColumnFamily[] {
@@ -115,7 +112,6 @@ public class CassandraModel {
 
         Map<ColumnFamily<Locator, Long>, Granularity> cfToGranMap = new HashMap<ColumnFamily<Locator, Long>, Granularity>();
         cfToGranMap.put(CF_METRICS_FULL, Granularity.FULL);
-        cfToGranMap.put(CF_METRICS_STRING, Granularity.FULL);
         cfToGranMap.put(CF_METRICS_5M, Granularity.MIN_5);
         cfToGranMap.put(CF_METRICS_20M, Granularity.MIN_20);
         cfToGranMap.put(CF_METRICS_60M, Granularity.MIN_60);
@@ -166,21 +162,13 @@ public class CassandraModel {
                 type.equals(BluefloodCounterRollup.class) ) {
             return PREAG_GRAN_TO_CF.get(granularity);
         } else {
-            throw new RuntimeException("Unsupported rollup type.");
+            throw new RuntimeException("Unsupported rollup type: " + type.getName());
         }
     }
 
-    public static MetricColumnFamily getColumnFamily(RollupType type, DataType dataType, Granularity gran) {
-        if (dataType == null) {
-            dataType = DataType.NUMERIC;
-        }
-
+    public static MetricColumnFamily getColumnFamily(RollupType type, Granularity gran) {
         if (type == null) {
             type = RollupType.BF_BASIC;
-        }
-
-        if (type == RollupType.BF_BASIC && (dataType.equals(DataType.BOOLEAN) || dataType.equals(DataType.STRING))) {
-            return CF_METRICS_STRING;
         }
 
         return getColumnFamily(RollupType.classOf(type, gran), gran);

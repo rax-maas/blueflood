@@ -89,15 +89,12 @@ public class IOContainer {
 
         if ( driver == DriverType.DATASTAX ) {
 
-            boolean stringMetricsDropped = configuration.getBooleanProperty(CoreConfig.STRING_METRICS_DROPPED);
-            List<String> tenantIdsKept = configuration.getListProperty(CoreConfig.TENANTIDS_TO_KEEP);
-
             metadataIO = new DMetadataIO();
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
             delayedLocatorIO = new DDelayedLocatorIO();
-            basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, stringMetricsDropped,
-                    tenantIdsKept, isRecordingDelayedMetrics, new DefaultClockImpl());
+            basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO,
+                    isRecordingDelayedMetrics, new DefaultClockImpl());
             preAggregatedMetricsRW = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO,
                     isRecordingDelayedMetrics, new DefaultClockImpl());
 

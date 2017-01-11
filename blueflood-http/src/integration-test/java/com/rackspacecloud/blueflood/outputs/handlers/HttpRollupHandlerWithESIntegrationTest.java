@@ -102,7 +102,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
         AbstractMetricsRW preaggregatedRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
         metric = writeGaugeMetric(preaggregatedRW, "gauge_metric2", "333333");
-        MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.TYPE.name().toLowerCase(), null);
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.GAUGE.toString());
 
         granToPoints.put(Granularity.FULL, 1440);

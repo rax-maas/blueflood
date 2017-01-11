@@ -13,22 +13,22 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.outputs.formats;
 
-import com.rackspacecloud.blueflood.types.DataType;
 import com.rackspacecloud.blueflood.types.Points;
-import com.rackspacecloud.blueflood.types.RollupType;
 
+/**
+ * This class represents the metric data that we return to
+ * callers when they call our query APIs.
+ */
 public class MetricData {
+    private static final String NUMBER = "number";
     private final Points data;
     private String unit;
-    private final Type type;
 
-    public MetricData(Points points, String unit, Type type) {
+    public MetricData(Points points, String unit) {
         this.data = points;
         this.unit = unit;
-        this.type = type;
     }
 
     public Points getData() {
@@ -40,44 +40,14 @@ public class MetricData {
     }
 
     public String getType() {
-        return type.toString();
+        // Previously, we have an enum to represent the type
+        // (number, boolean, string). Since we remove boolean
+        // and string, we now only support number. The string
+        // "number" gets returned as type attribute in the
+        // query output JSON payload. We return static string
+        // "number" here to preserve backwards compatibility
+        return NUMBER;
     }
 
     public void setUnit(String unit) { this.unit = unit; }
-
-    public enum Type {
-        NUMBER("number"),
-        BOOLEAN("boolean"),
-        STRING("string");
-
-        private Type(String s) {
-            this.name = s;
-        }
-
-        private String name;
-
-        @Override
-        public String toString() {
-            return name;
-        }
-
-        public static Type from(RollupType rollupType, DataType dataType) {
-            // We no longer store datatype metadata for Numeric datatypes
-            if (dataType == null) {
-                return NUMBER;
-            }
-
-            if (rollupType == null) {
-                rollupType = RollupType.BF_BASIC;
-            }
-
-            if (dataType.equals(DataType.STRING)) {
-                return STRING;
-            } else if (dataType.equals(DataType.BOOLEAN)) {
-                return BOOLEAN;
-            } else {
-                return NUMBER;
-            }
-        }
-    }
 }

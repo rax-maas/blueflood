@@ -61,7 +61,7 @@ public class ALocatorIO implements LocatorIO {
     /**
      * Returns the locators for a shard, i.e. those that should be rolled up, for a given shard.
      * 'Should' means:
-     *  1) A locator is capable of rollup (it is not a string/boolean metric).
+     *  1) A locator is capable of rollup.
      *  2) A locator has had new data in the past LOCATOR_TTL seconds.
      *
      * @param shard Number of the shard you want the locators for. 0-127 inclusive.

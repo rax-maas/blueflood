@@ -32,7 +32,6 @@ public class Metric implements IMetric {
     private Object metricValue;
     private final long collectionTime;
     private int ttlInSeconds;
-    private DataType dataType;
     private final String unit;
     private static BigDecimal DOUBLE_MAX = new BigDecimal(Double.MAX_VALUE);
 
@@ -44,7 +43,6 @@ public class Metric implements IMetric {
             throw new InvalidDataException("collection time must be greater than zero");
         }
         this.collectionTime = collectionTime;
-        this.dataType = DataType.getMetricType(metricValue);
         this.unit = unit;
 
         // TODO: Until we start handling BigInteger throughout, let's try to cast it to double if the int value is less
@@ -57,7 +55,6 @@ public class Metric implements IMetric {
                         + locator.toString() + " is bigger than Double.MAX_VALUE");
                 throw new RuntimeException("BigInteger cannot be force cast to double as it exceeds Double.MAX_VALUE");
             }
-            this.dataType = DataType.NUMERIC;
             this.metricValue = ((BigInteger) metricValue).doubleValue();
         }
 
@@ -72,10 +69,6 @@ public class Metric implements IMetric {
         return metricValue;
     }
 
-    public DataType getDataType() {
-        return dataType;
-    }
-
     public int getTtlInSeconds() {
         return ttlInSeconds;
     }
@@ -86,18 +79,6 @@ public class Metric implements IMetric {
 
     public String getUnit() {
         return unit;
-    }
-
-    public boolean isNumeric() {
-        return DataType.isNumericMetric(metricValue);
-    }
-
-    public boolean isString() {
-        return DataType.isStringMetric(metricValue);
-    }
-
-    public boolean isBoolean() {
-        return DataType.isBooleanMetric(metricValue);
     }
 
     public void setTtl(TimeValue ttl) {
@@ -124,7 +105,7 @@ public class Metric implements IMetric {
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s:%s:%s", locator.toString(), metricValue, dataType, ttlInSeconds, unit == null ? "" : unit.toString());
+        return String.format("%s:%s:%s:%s", locator.toString(), metricValue, ttlInSeconds, unit == null ? "" : unit.toString());
     }
 
     private boolean isValidTTL(long ttlInSeconds) {
@@ -140,7 +121,6 @@ public class Metric implements IMetric {
         if (locator.equals(other.getLocator()) &&
                 collectionTime == other.getCollectionTime() &&
                 ttlInSeconds == other.getTtlInSeconds() &&
-                dataType.equals(other.getDataType()) &&
                 unit.equals(other.getUnit())) {
             return true;
         }

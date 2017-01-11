@@ -108,8 +108,6 @@ public class IOContainerTest {
     public void testDatastaxDriverConfig() {
 
         when(mockConfiguration.getStringProperty(eq(CoreConfig.CASSANDRA_DRIVER))).thenReturn("datastax");
-        when(mockConfiguration.getBooleanProperty(eq(CoreConfig.STRING_METRICS_DROPPED))).thenReturn(Boolean.TRUE);
-        when(mockConfiguration.getListProperty(eq(CoreConfig.TENANTIDS_TO_KEEP))).thenReturn(new ArrayList<String>());
 
         IOContainer.resetInstance();
         IOContainer ioContainer = IOContainer.fromConfig();

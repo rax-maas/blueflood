@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.rackspacecloud.blueflood.cache;
 
 import com.codahale.metrics.*;
@@ -49,6 +48,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * This class implements caching of the data that lives in metrics_metadata
+ * Cassandra Column Family.
+ *
+ * The type of metadata we cache corresponds to the enum values
+ * in {@link MetricMetadata}
+ */
 public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBean {
     // todo: give each cache a name.
 
@@ -257,6 +263,25 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         }
 
         return val;
+    }
+
+    /**
+     * Similar to {@link #get(Locator, String)}, except this does not throw
+     * any {@link CacheException}. Instead, it may return null if the cache
+     * does not contain the requested locator for the specified key.
+     *
+     * @param locator
+     * @param key
+     * @return
+     */
+    public String safeGet(Locator locator, String key) {
+        String cacheValue = null;
+        try {
+            cacheValue = get(locator, key);
+        } catch (CacheException ex) {
+            log.trace(String.format("no cache value found for locator=%s, key=%s", locator.toString(), key));
+        }
+        return cacheValue;
     }
 
     public String getImmediately(Locator locator, String key) throws CacheException {

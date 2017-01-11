@@ -43,8 +43,9 @@ public class JSONMetricsContainer {
 
     public JSONMetricsContainer(String tenantId, List<JSONMetric> validJsonMetrics, List<ErrorResponse.ErrorData> validationErrors) {
         this.tenantId = tenantId;
-        this.validMetrics = processJson(validJsonMetrics);
         this.validationErrors = validationErrors;
+        this.validMetrics = processJson(validJsonMetrics);
+
     }
 
     public List<Metric> getValidMetrics() {
@@ -63,6 +64,15 @@ public class JSONMetricsContainer {
 
             if (jsonMetric.getMetricValue() == null) {
                 // skip null value
+                continue;
+            }
+
+            // if the metricValue sent is not a Number, then we should
+            // reject it
+            if ( ! (jsonMetric.getMetricValue() instanceof Number) ) {
+                ErrorResponse.ErrorData error = new ErrorResponse.ErrorData(tenantId, jsonMetric.getMetricName(), "metricValue",
+                        "metric value must be numeric", jsonMetric.getCollectionTime());
+                validationErrors.add(error);
                 continue;
             }
 

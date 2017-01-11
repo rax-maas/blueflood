@@ -92,7 +92,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.counter." + System.currentTimeMillis());
             PreaggregatedMetric pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), counterRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
-            MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.COUNTER.toString());
 
             // generate gauge
@@ -102,7 +101,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.gauge." + System.currentTimeMillis());
             pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), gaugeRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
-            MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.GAUGE.toString());
 
             // generate set
@@ -111,7 +109,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.set." + System.currentTimeMillis());
             pMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), setRollup);
             expectedLocatorMetricMap.put(locator, pMetric);
-            MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.SET.toString());
 
             // generate timer
@@ -127,7 +124,6 @@ public class PreaggregatedMetricsRWIntegrationTest extends IntegrationTestBase {
             locator = Locator.createLocatorFromPathComponents(tenantId, className + ".my.metric.timer." + System.currentTimeMillis());
             timerMetric = new PreaggregatedMetric(System.currentTimeMillis(), locator, new TimeValue(1, TimeUnit.DAYS), timerRollup);
             expectedLocatorMetricMap.put(locator, timerMetric);
-            MetadataCache.getInstance().put(locator, MetricMetadata.TYPE.name().toLowerCase(), null);
             MetadataCache.getInstance().put(locator, MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.TIMER.toString());
         }
     }

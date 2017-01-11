@@ -27,47 +27,9 @@ import static org.junit.Assert.fail;
 public class MetricTest {
 
     @Test
-    public void testMetricType() {
-        Locator locator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
-
-        Metric metric = new Metric(locator, "Foo", System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("S", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.STRING));
-        Assert.assertTrue("Metric should be string", metric.isString());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, 1234567L, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, 1234567.678, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, 1234567, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("N", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.NUMERIC));
-        Assert.assertTrue("Metric should be numeric", metric.isNumeric());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        metric = new Metric(locator, false, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
-        Assert.assertEquals("B", metric.getDataType().toString());
-        Assert.assertTrue(metric.getDataType().equals(DataType.BOOLEAN));
-        Assert.assertTrue("Metric should be boolean", metric.isBoolean());
-        Assert.assertTrue(DataType.isKnownMetricType(metric.getDataType()));
-
-        DataType failType = new DataType("X");
-        Assert.assertFalse(DataType.isKnownMetricType(failType));
-    }
-
-    @Test
     public void testTTL() {
         Locator locator = Locator.createLocatorFromPathComponents("tenantId", "metricName");
-        Metric metric = new Metric(locator, "Foo", System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
+        Metric metric = new Metric(locator, 134891734L, System.currentTimeMillis(), new TimeValue(5, TimeUnit.HOURS), "Unknown");
 
         try {
             metric.setTtl(new TimeValue(Long.MAX_VALUE, TimeUnit.SECONDS));
@@ -75,27 +37,6 @@ public class MetricTest {
         } catch (Exception e) {
             Assert.assertTrue(e instanceof RuntimeException);
         }
-    }
-
-    @Test
-    public void testMetricValueTypeDetectors() {
-        Object metricValueBool = false;
-
-        Assert.assertTrue(DataType.isBooleanMetric(metricValueBool));
-        Assert.assertTrue(!DataType.isNumericMetric(metricValueBool));
-        Assert.assertTrue(!DataType.isStringMetric(metricValueBool));
-
-        Object metricValueNum = 1234567L;
-
-        Assert.assertTrue(!DataType.isBooleanMetric(metricValueNum));
-        Assert.assertTrue(DataType.isNumericMetric(metricValueNum));
-        Assert.assertTrue(!DataType.isStringMetric(metricValueNum));
-
-        Object metricValueStr = "Foo";
-
-        Assert.assertTrue(!DataType.isBooleanMetric(metricValueStr));
-        Assert.assertTrue(!DataType.isNumericMetric(metricValueStr));
-        Assert.assertTrue(DataType.isStringMetric(metricValueStr));
     }
     
     @Test

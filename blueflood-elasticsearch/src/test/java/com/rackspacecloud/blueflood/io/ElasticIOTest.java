@@ -217,7 +217,7 @@ public class ElasticIOTest extends BaseElasticTest {
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
         ArrayList metricList = new ArrayList();
-        metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), "blarg", 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
+        metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
         elasticIO.insertDiscovery(metricList);
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
         // Set up aliases
