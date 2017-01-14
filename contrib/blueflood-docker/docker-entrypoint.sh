@@ -40,6 +40,11 @@ done
 export CASSANDRA_HOSTS="$CASSANDRA_HOST:9160"
 export CASSANDRA_BINXPORT_HOSTS="$CASSANDRA_HOST:9042"
 
+if [ $ROLLUP_KEYSPACE != "DATA" ]
+then
+    sed -i "s/\"DATA\"/\"$ROLLUP_KEYSPACE\"/g" blueflood.cdl
+fi
+
 cqlsh $CASSANDRA_HOST -f blueflood.cdl
 
 ######## Connecting to Elasticsearch #######
