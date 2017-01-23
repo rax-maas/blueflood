@@ -152,8 +152,6 @@ public enum CoreConfig implements ConfigDefaults {
     ROLLUP_DELAY_MILLIS("300000"),
     SHORT_DELAY_METRICS_ROLLUP_DELAY_MILLIS("300000"),
     LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS("300000"),
-    STRING_METRICS_DROPPED("false"),
-    TENANTIDS_TO_KEEP(""),
     TRACKER_DELAYED_METRICS_MILLIS("300000"),
 
     //the granularity for which we store delayed metrics. Allowed values are 5m, 20m, 60m, 240m, 1440m
