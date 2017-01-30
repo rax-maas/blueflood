@@ -6,21 +6,22 @@
 #WARNING: this script will destroy existing ES data and reset it to the proper init state
 # Example:
 #    Local ES: ./init-es.sh
-#    ES on OR: ./init-es.sh -u <url for OR:ES> -n <username> -p <password>
+#    ES on OR: ./init-es.sh -u <url for OR:ES> -n <username> -p <password> -r <boolean to reset>
 
 # Set default ES URL
 ELASTICSEARCH_URL=http://localhost:9200
 
 usage() {
-    echo "Usage: $0 [-u <remote ES url:string>(default: localhost:9200)] [-n <username:string>] [-p <password:string>]" 1>&2; 
+    echo "Usage: $0 [-u <remote ES url:string>(default: localhost:9200)] [-n <username:string>] [-p <password:string>] [-r <reset:boolean>(default: true)]" 1>&2;
     exit 1
 }
 
-while getopts "p:u:n:" o; do
+while getopts "p:u:n:r:" o; do
     case "${o}" in
         p) ES_PASSWD=$OPTARG ;;
         u) ELASTICSEARCH_URL=$OPTARG ;;
         n) ES_USERNAME=$OPTARG ;;
+        r) ES_RESET=$OPTARG ;;
         *) usage ;;
     esac
 done
@@ -42,11 +43,24 @@ function checkFile
   fi
 }
 
+# Exit initialization script when Blueflood is already initialized in ES and we don't need to reset it
+if [ "$ES_RESET" = false ]; then
+    #verify whether blueflood was already initialized by checking its marker index
+    BLUEFLOOD_INITIALIZED=$(curl $AUTH  -XHEAD --write-out %{http_code} $ELASTICSEARCH_URL'/blueflood_initialized_marker')
+
+    if [ $BLUEFLOOD_INITIALIZED = 200 ]; then
+        echo "ES already initialized for Blueflood. Skipping initialization process."
+        exit 0
+    fi
+fi
+
+
 checkFile index_settings.json
 checkFile metrics_mapping.json
 checkFile events_mapping.json
 
 #delete the old indices
+curl $AUTH -XDELETE $ELASTICSEARCH_URL'/blueflood_initialized_marker/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata/' >& /dev/null
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/metric_metadata_v2/' >& /dev/null
@@ -84,4 +98,7 @@ curl $AUTH -XPUT $ELASTICSEARCH_URL'/metric_metadata/_mapping/metrics' -d @metri
 #add mappings to graphite_event index
 curl $AUTH -XDELETE $ELASTICSEARCH_URL'/events/_mapping/graphite_event' >& /dev/null
 curl $AUTH -XPUT $ELASTICSEARCH_URL'/events/_mapping/graphite_event' -d @events_mapping.json
+
+#mark ES initialized for Blueflood by creating a marker index
+curl $AUTH -XPUT $ELASTICSEARCH_URL'/blueflood_initialized_marker'
 
