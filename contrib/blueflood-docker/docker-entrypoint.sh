@@ -71,7 +71,7 @@ done
 export ELASTICSEARCH_HOSTS="$ELASTICSEARCH_HOST:9300"
 
 cd ES-Setup
-./init-es.sh -u $ELASTICSEARCH_HOST:9200
+./init-es.sh -u $ELASTICSEARCH_HOST:9200 -r false
 cd ..
 
 printenv > blueflood.conf
