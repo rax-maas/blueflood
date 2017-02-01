@@ -47,7 +47,7 @@
     <!-- Used to locate the profile specific configuration file. -->
     <build.profile.id>dev</build.profile.id>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cassandra.plugin.version>2.0.0-1</cassandra.plugin.version>
+    <cassandra.plugin.version>2.1.7-1</cassandra.plugin.version>
     <cassandra.listenAddress>127.0.0.1</cassandra.listenAddress>
     <cassandra.skip>true</cassandra.skip>
     <skip.integration.tests>false</skip.integration.tests>
@@ -270,6 +270,8 @@
           <cassandraDir>/tmp/bf-cassandra-${cassandra.plugin.version}-${maven.build.timestamp}/</cassandraDir>
           <loadFailureIgnore>false</loadFailureIgnore>
           <startNativeTransport>true</startNativeTransport>
+          <script>${project.basedir}/src/cassandra/cli/load.cdl</script>
+          <cqlVersion>3.0.0</cqlVersion>
         </configuration>
         <executions>
           <execution>
