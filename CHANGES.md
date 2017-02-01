@@ -1,6 +1,7 @@
 # CHANGES
 
 ## IN PROGRESS
+* Updated to using cassandra-maven-plugin v2.1.7-1
 * Removed String and Boolean support
 * Removed caching of metrics Type in metrics_metadata Column Family and MetadataCache
 * Closed idle connection with no inbound traffic after HTTP_CONNECTION_READ_IDLE_TIME_SECONDS  
