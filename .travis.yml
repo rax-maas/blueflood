@@ -12,7 +12,7 @@ cache:
 install: true
 
 script: 
-  - mvn clean install -Pcassandra-2.0 -Dmaven.javadoc.skip --quiet
+  - mvn clean install -Dmaven.javadoc.skip --quiet
 
 after_success:
   - mvn package -P all-modules dependency:resolve -Dmaven.test.skip -Dmaven.javadoc.skip -Dcassandra.skip
