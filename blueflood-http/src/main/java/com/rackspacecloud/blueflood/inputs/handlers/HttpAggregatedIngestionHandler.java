@@ -108,11 +108,9 @@ public class HttpAggregatedIngestionHandler implements HttpRequestHandler {
             }
         } catch (JsonParseException ex) {
             log.debug(String.format("BAD JSON: %s", body));
-            log.error(ex.getMessage(), ex);
             DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (InvalidDataException ex) {
             log.debug(String.format("Invalid request body: %s", body));
-            log.error(ex.getMessage(), ex);
             DefaultHandler.sendErrorResponse(ctx, request, ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
         } catch (TimeoutException ex) {
             DefaultHandler.sendErrorResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
