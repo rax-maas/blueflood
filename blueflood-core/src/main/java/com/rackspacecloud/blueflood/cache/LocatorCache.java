@@ -20,33 +20,6 @@ public class LocatorCache {
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
     private final Cache<String, Boolean> insertedDelayedLocators;
 
-    private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES,
-                                                            3, TimeUnit.DAYS);
-
-
-    static {
-        Metrics.getRegistry().register(MetricRegistry.name(LocatorCache.class, "Current Locators Count"),
-                new Gauge<Long>() {
-                    @Override
-                    public Long getValue() {
-                        return instance.getCurrentLocatorCount();
-                    }
-                });
-
-        Metrics.getRegistry().register(MetricRegistry.name(LocatorCache.class, "Current Delayed Locators Count"),
-                new Gauge<Long>() {
-                    @Override
-                    public Long getValue() {
-                        return instance.getCurrentDelayedLocatorCount();
-                    }
-                });
-    }
-
-
-    public static LocatorCache getInstance() {
-        return instance;
-    }
-
     protected LocatorCache(long expireAfterAccessDuration, TimeUnit expireAfterAccessTimeUnit,
                            long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
 

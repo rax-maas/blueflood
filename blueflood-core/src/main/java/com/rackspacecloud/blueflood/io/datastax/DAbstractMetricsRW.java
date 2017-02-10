@@ -6,6 +6,7 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.google.common.collect.Table;
+import com.rackspacecloud.blueflood.cache.BatchLocatorCache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
 import com.rackspacecloud.blueflood.exceptions.CacheException;
@@ -309,9 +310,9 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
             //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
             int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
-            if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
+            if (!BatchLocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
                 delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
-                LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
+                BatchLocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
     }

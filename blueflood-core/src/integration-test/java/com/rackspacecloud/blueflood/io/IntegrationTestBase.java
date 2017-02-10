@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.google.common.cache.Cache;
+import com.rackspacecloud.blueflood.cache.BatchLocatorCache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.io.astyanax.AstyanaxWriter;
 import com.rackspacecloud.blueflood.io.datastax.DCassandraUtilsIO;
@@ -103,7 +104,7 @@ public class IntegrationTestBase {
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
         AstyanaxWriter.getInstance().insertFull(metrics, false, new DefaultClockImpl());
-        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(LocatorCache.getInstance(), "insertedLocators");
+        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(BatchLocatorCache.getInstance(), "insertedLocators");
         insertedLocators.invalidateAll();
 
         return metric;
