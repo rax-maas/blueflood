@@ -21,7 +21,7 @@ public class LocatorCache {
     private final Cache<String, Boolean> insertedDelayedLocators;
 
     private static LocatorCache instance = new LocatorCache(10, TimeUnit.MINUTES,
-            3, TimeUnit.DAYS);
+                                                            3, TimeUnit.DAYS);
 
 
     static {
@@ -69,7 +69,7 @@ public class LocatorCache {
                                            long expireAfterWriteDuration, TimeUnit expireAfterWriteTimeUnit) {
 
         return new LocatorCache(expireAfterAccessDuration, expireAfterAccessTimeUnit,
-                expireAfterWriteDuration, expireAfterWriteTimeUnit);
+                                expireAfterWriteDuration, expireAfterWriteTimeUnit);
     }
 
     public long getCurrentLocatorCount() {
@@ -133,7 +133,7 @@ public class LocatorCache {
      * @param loc
      */
     public synchronized void setLocatorCurrentInBatchLayer(Locator loc) {
-        getOrCreateInsertedLocatorEntry(loc).setBatchCurrent();;
+        getOrCreateInsertedLocatorEntry(loc).setBatchCurrent();
     }
 
     /**
