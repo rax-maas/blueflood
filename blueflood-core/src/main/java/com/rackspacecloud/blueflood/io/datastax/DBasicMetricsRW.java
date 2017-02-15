@@ -4,7 +4,6 @@ import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.annotations.VisibleForTesting;
-import com.rackspacecloud.blueflood.cache.BatchLocatorCache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
@@ -63,9 +62,9 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 Locator locator = metric.getLocator();
 
-                if( !BatchLocatorCache.getInstance().isLocatorCurrent(locator) ) {
+                if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
 
-                    BatchLocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                     locatorIO.insertLocator( locator );
                 }
 

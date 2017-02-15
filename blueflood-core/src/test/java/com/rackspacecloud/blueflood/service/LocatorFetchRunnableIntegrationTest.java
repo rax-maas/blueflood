@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.service;
 
-import com.rackspacecloud.blueflood.cache.BatchLocatorCache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.io.AbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.IOContainer;
@@ -129,7 +128,7 @@ public class LocatorFetchRunnableIntegrationTest extends IntegrationTestBase {
         rollupWriteExecutor = new ThreadPoolExecutor(MAX_ROLLUP_WRITE_THREADS, MAX_ROLLUP_WRITE_THREADS, 30, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<Runnable>(), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
 
-        BatchLocatorCache.getInstance().resetCache();
+        LocatorCache.getInstance().resetCache();
 
     }
 

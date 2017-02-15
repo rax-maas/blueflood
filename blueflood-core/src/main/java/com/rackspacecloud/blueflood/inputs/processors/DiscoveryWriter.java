@@ -18,27 +18,22 @@ package com.rackspacecloud.blueflood.inputs.processors;
 
 import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.cache.DiscoveryLocatorCache;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.concurrent.FunctionWithThreadPool;
-import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>, Void> {
 
@@ -94,7 +89,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
             }
 
             for (IMetric m : list) {
-                if (!DiscoveryLocatorCache.getInstance().isLocatorCurrent(m.getLocator())) {
+                if (!LocatorCache.getInstance().isLocatorCurrentInDiscoveryLayer(m.getLocator())) {
                     willIndex.add(m);
                 }
             }
@@ -124,7 +119,7 @@ public class DiscoveryWriter extends FunctionWithThreadPool<List<List<IMetric>>,
                 if(success) {
                     //when all metrics have been written successfully, mark them as current.
                     for(IMetric indexedMetric: willIndex) {
-                        DiscoveryLocatorCache.getInstance().setLocatorCurrent(indexedMetric.getLocator());
+                        LocatorCache.getInstance().setLocatorCurrentInDiscoveryLayer(indexedMetric.getLocator());
                     }
                 }
 

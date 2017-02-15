@@ -26,7 +26,6 @@ import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.serializers.AbstractSerializer;
-import com.rackspacecloud.blueflood.cache.BatchLocatorCache;
 import com.rackspacecloud.blueflood.cache.CombinedTtlProvider;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.TenantTtlProvider;
@@ -76,10 +75,10 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // key = shard
                 // col = locator (acct + entity + check + dimension.metric)
                 // value = <nothing>
-                if (!BatchLocatorCache.getInstance().isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator)) {
                     if (mutationBatch != null)
                         insertLocator(locator, mutationBatch);
-                    BatchLocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                 }
 
                 if (isRecordingDelayedMetrics) {
@@ -121,9 +120,9 @@ public class AstyanaxWriter extends AstyanaxIO {
 
             //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
             int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
-            if (!BatchLocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
+            if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
                 insertDelayedLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator, mutationBatch);
-                BatchLocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
+                LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
     }
@@ -228,9 +227,9 @@ public class AstyanaxWriter extends AstyanaxIO {
                     }
                 }
                 
-                if (!BatchLocatorCache.getInstance().isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator)) {
                     insertLocator(locator, batch);
-                    BatchLocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                 }
             }
             try {

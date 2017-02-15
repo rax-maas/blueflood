@@ -16,14 +16,12 @@
 
 package com.rackspacecloud.blueflood.inputs.processors;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.rackspacecloud.blueflood.cache.DiscoveryLocatorCache;
+import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,9 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.stub;
+import static org.mockito.Mockito.*;
 
 
 public class DiscoveryWriterTest {
@@ -98,7 +94,7 @@ public class DiscoveryWriterTest {
 
     @Before
     public void setUp() throws Exception {
-        DiscoveryLocatorCache.getInstance().resetCache();
+        LocatorCache.getInstance().resetCache();
     }
 
     @Test
@@ -189,5 +185,42 @@ public class DiscoveryWriterTest {
         // verify that only the part 2 metrics have been inserted which haven't been inserted by part 1
         verify(discovererA).insertDiscovery(flatTestDataPart2MinusPart1Data);
         verify(discovererB).insertDiscovery(flatTestDataPart2MinusPart1Data);
+    }
+
+    /**
+     * It can occur that a metric is current in the batch layer, but not in the discovery layer. In that case the
+     * DiscoveryWriter should still write the metric to the discovery layer. This test verifies this behaviour.
+     */
+    @Test
+    public void testProcessorWritesMetricsToDiscoveryLayerWhenOnlyBatchLayerIsCurrent() throws Exception {
+        DiscoveryWriter discWriter =
+                new DiscoveryWriter(new ThreadPoolBuilder()
+                        .withName("Metric Discovery Writing")
+                        .withCorePoolSize(10)
+                        .withMaxPoolSize(10)
+                        .withUnboundedQueue()
+                        .withRejectedHandler(new ThreadPoolExecutor.AbortPolicy())
+                        .build());
+
+        DiscoveryIO discovererA = mock(DiscoveryIO.class);
+        discWriter.registerIO(discovererA);
+
+        List<List<IMetric>> testdata = createTestData();
+
+        // Make sure we have data
+        Assert.assertTrue(testdata.size() >= 2);
+
+        List<IMetric> flatTestData = flattenDataset(testdata);
+
+        // Mark the first metric in the dataset as current in the batch layer, so that we can test whether it gets written to the discovery layer
+        LocatorCache.getInstance().setLocatorCurrentInBatchLayer(flatTestData.get(0).getLocator());
+
+        // Then, provide all the metrics in the dataset to the discovery writer
+        ListenableFuture<Boolean> result = discWriter.processMetrics(testdata);
+        // wait until DiscoveryWriter finishes processing the batch of fake metrics
+        Assert.assertTrue(result.get());
+
+        // verify that all metrics are inserted in the discovery layer, even while the first one was current in the batch layer
+        verify(discovererA).insertDiscovery(flatTestData);
     }
 }
