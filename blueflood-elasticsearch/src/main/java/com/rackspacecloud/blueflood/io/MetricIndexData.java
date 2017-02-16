@@ -1,5 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.rackspacecloud.blueflood.types.Token;
+
 import java.util.*;
 
 /**
@@ -75,7 +77,7 @@ public class MetricIndexData {
      */
     public void add(String metricIndex, long docCount) {
 
-        final String[] tokens = metricIndex.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER);
+        final String[] tokens = metricIndex.split(Token.REGEX_TOKEN_DELIMTER);
 
         /**
          *

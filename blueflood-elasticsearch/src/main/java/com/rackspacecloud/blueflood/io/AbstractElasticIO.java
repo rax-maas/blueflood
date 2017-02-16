@@ -18,6 +18,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 import java.util.*;
 
+import static com.rackspacecloud.blueflood.types.Token.REGEX_TOKEN_DELIMTER;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public abstract class AbstractElasticIO implements DiscoveryIO {
@@ -37,7 +38,6 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
 
     private int MAX_RESULT_LIMIT = 100000;
-    public static final String REGEX_TOKEN_DELIMTER = "\\.";
 
     //grabs chars until the next "." which is basically a token
     private static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";

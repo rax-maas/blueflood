@@ -46,6 +46,7 @@ public enum CoreConfig implements ConfigDefaults {
     INGESTION_MODULES(""),
     QUERY_MODULES(""),
     DISCOVERY_MODULES(""),
+    TOKEN_DISCOVERY_MODULES(""),
     EVENT_LISTENER_MODULES(""),
     EVENTS_MODULES(""),
 
@@ -55,6 +56,9 @@ public enum CoreConfig implements ConfigDefaults {
 
     DISCOVERY_WRITER_MIN_THREADS("5"),
     DISCOVERY_WRITER_MAX_THREADS("10"),
+
+    TOKEN_DISCOVERY_WRITER_MIN_THREADS("5"),
+    TOKEN_DISCOVERY_WRITER_MAX_THREADS("10"),
 
     // Maximum threads that would access the cache concurrently
     META_CACHE_MAX_CONCURRENCY("50"),
@@ -174,6 +178,9 @@ public enum CoreConfig implements ConfigDefaults {
     BEFORE_CURRENT_COLLECTIONTIME_MS("259200000"),
     // 10 minutes
     AFTER_CURRENT_COLLECTIONTIME_MS("600000"),
+
+    //Experimental feature to improve token search.
+    EXP_TOKEN_SEARCH_IMPROVEMENTS("false"),
 
     // Cross-Origin Resource Sharing
     CORS_ENABLED("false"),

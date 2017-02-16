@@ -103,6 +103,17 @@ public class LocatorCache {
     }
 
     /**
+     * Checks if Locator is recently inserted in the token discovery layer
+     *
+     * @param loc
+     * @return
+     */
+    public synchronized boolean isLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
+        return entry != null && entry.isTokenDiscoveryCurrent();
+    }
+
+    /**
      * Check if the delayed locator is recently inserted for a given slot
      *
      * @param slot
@@ -145,6 +156,14 @@ public class LocatorCache {
     }
 
     /**
+     * Marks the Locator as recently inserted in the token discovery layer
+     * @param loc
+     */
+    public synchronized void setLocatorCurrentInTokenDiscoveryLayer(Locator loc) {
+        getOrCreateInsertedLocatorEntry(loc).setTokenDiscoveryCurrent();
+    }
+
+    /**
      * Marks the delayed locator as recently inserted for a given slot
      * @param slot
      * @param locator
@@ -170,6 +189,7 @@ public class LocatorCache {
     private class LocatorCacheEntry {
         private boolean discoveryCurrent = false;
         private boolean batchCurrent = false;
+        private boolean tokenDiscoveryCurrent = false;
 
         void setDiscoveryCurrent() {
             this.discoveryCurrent = true;
@@ -179,12 +199,20 @@ public class LocatorCache {
             this.batchCurrent = true;
         }
 
+        void setTokenDiscoveryCurrent() {
+            this.tokenDiscoveryCurrent = true;
+        }
+
         boolean isDiscoveryCurrent() {
             return discoveryCurrent;
         }
 
         boolean isBatchCurrent() {
             return batchCurrent;
+        }
+
+        boolean isTokenDiscoveryCurrent() {
+            return tokenDiscoveryCurrent;
         }
     }
 

@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.rackspacecloud.blueflood.types.Token.REGEX_TOKEN_DELIMTER;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
@@ -56,7 +57,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(REGEX_TOKEN_DELIMTER).length - 1);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -78,7 +79,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo.bar
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(REGEX_TOKEN_DELIMTER).length - 1);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -99,7 +100,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(REGEX_TOKEN_DELIMTER).length - 1);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -119,7 +120,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(REGEX_TOKEN_DELIMTER).length - 1);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -141,7 +142,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(REGEX_TOKEN_DELIMTER).length - 1);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -305,7 +306,7 @@ public class MetricIndexDataTest {
 
         for (String metricName: metricNames) {
 
-            int totalTokens = metricName.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length;
+            int totalTokens = metricName.split(REGEX_TOKEN_DELIMTER).length;
 
             //imitating path hierarchy tokenizer(prefix-test-tokenizer) in analyzer(prefix-test-analyzer) we use.
             // For metric, foo.bar.baz path hierarchy tokenizer creates foo, foo.bar, foo.bar.baz
@@ -329,7 +330,7 @@ public class MetricIndexDataTest {
             metricIndexes.addAll(tokens);
 
             for (String metricIndex: metricIndexes) {
-                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0;
+                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0L;
                 metricIndexMap.put(metricIndex, count + 1);
             }
         }
