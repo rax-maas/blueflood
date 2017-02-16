@@ -62,9 +62,9 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
                 Locator locator = metric.getLocator();
 
-                if( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
+                if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
 
-                    LocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                     locatorIO.insertLocator( locator );
                 }
 

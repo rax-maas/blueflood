@@ -26,52 +26,102 @@ public class LocatorCacheTest {
     }
 
     @Test
-    public void testSetLocatorCurrent() throws InterruptedException {
+    public void testSetLocatorCurrentInBatchLayer() throws InterruptedException {
 
-        locatorCache.setLocatorCurrent(LOCATOR);
+        locatorCache.setLocatorCurrentInBatchLayer(LOCATOR);
 
-        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
         Thread.sleep(2000L); //sleeping for 2 seconds to let the locator expire from cache
 
-        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
     }
 
     @Test
-    public void testSetLocatorCurrentCheckForExpirationWithoutReads() throws InterruptedException {
+    public void testSetLocatorCurrentInBatchLayerCheckForExpirationWithoutReads() throws InterruptedException {
 
-        locatorCache.setLocatorCurrent(LOCATOR);
+        locatorCache.setLocatorCurrentInBatchLayer(LOCATOR);
 
         Thread.sleep(3001L);
         // it has been more than 3 seconds since it was written.
-        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
     }
 
     @Test
-    public void testSetLocatorCurrentCheckForExpiration() throws InterruptedException {
+    public void testSetLocatorCurrentInBatchLayerCheckForExpiration() throws InterruptedException {
 
-        locatorCache.setLocatorCurrent(LOCATOR);
-        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
-
-        Thread.sleep(1000L);
-        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+        locatorCache.setLocatorCurrentInBatchLayer(LOCATOR);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
         Thread.sleep(1000L);
-        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
+
+        Thread.sleep(1000L);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
         Thread.sleep(1001L);
         // it has been more than 3 seconds since it was written. So it has to expire even if it was accessed 1sec before.
-        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrent(LOCATOR));
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
     }
 
     @Test
-    public void testIsLocatorCurrent() throws InterruptedException {
-        assertTrue("locator which was never set is present in cache", !locatorCache.isLocatorCurrent(LOCATOR));
+    public void testIsLocatorCurrentInBatchLayer() throws InterruptedException {
+        assertTrue("locator which was never set is present in cache", !locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
 
-        locatorCache.setLocatorCurrent(LOCATOR);
-        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrent(LOCATOR));
+        locatorCache.setLocatorCurrentInBatchLayer(LOCATOR);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInBatchLayer(LOCATOR));
+
+    }
+
+    @Test
+    public void testSetLocatorCurrentInDiscoveryLayer() throws InterruptedException {
+
+        locatorCache.setLocatorCurrentInDiscoveryLayer(LOCATOR);
+
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+        Thread.sleep(2000L); //sleeping for 2 seconds to let the locator expire from cache
+
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+    }
+
+    @Test
+    public void testSetLocatorCurrentInDiscoveryLayerCheckForExpirationWithoutReads() throws InterruptedException {
+
+        locatorCache.setLocatorCurrentInDiscoveryLayer(LOCATOR);
+
+        Thread.sleep(3001L);
+        // it has been more than 3 seconds since it was written.
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+    }
+
+    @Test
+    public void testSetLocatorCurrentInDiscoveryLayerCheckForExpiration() throws InterruptedException {
+
+        locatorCache.setLocatorCurrentInDiscoveryLayer(LOCATOR);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+        Thread.sleep(1000L);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+        Thread.sleep(1000L);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+        Thread.sleep(1001L);
+        // it has been more than 3 seconds since it was written. So it has to expire even if it was accessed 1sec before.
+        assertTrue("locator not expired from cache", !locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+    }
+
+    @Test
+    public void testIsLocatorCurrentInDiscoveryLayer() throws InterruptedException {
+        assertTrue("locator which was never set is present in cache", !locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
+
+        locatorCache.setLocatorCurrentInDiscoveryLayer(LOCATOR);
+        assertTrue("locator not stored in cache", locatorCache.isLocatorCurrentInDiscoveryLayer(LOCATOR));
 
     }
 

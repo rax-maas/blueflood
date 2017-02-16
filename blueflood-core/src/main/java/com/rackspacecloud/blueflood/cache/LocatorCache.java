@@ -14,7 +14,7 @@ public class LocatorCache {
 
     // this collection is used to reduce the number of locators that get written.
     // Simply, if a locator has been seen within the last 10 minutes, don't bother.
-    private final Cache<String, Boolean> insertedLocators;
+    private final Cache<String, LocatorCacheEntry> insertedLocators;
 
     // this collection is used to reduce the number of delayed locators that get
     // written per slot. Simply, if a locator has been seen for a slot, don't bother.
@@ -81,13 +81,25 @@ public class LocatorCache {
     }
 
     /**
-     * Checks if Locator is recently inserted
+     * Checks if Locator is recently inserted in the batch layer
      *
      * @param loc
      * @return
      */
-    public synchronized boolean isLocatorCurrent(Locator loc) {
-        return insertedLocators.getIfPresent(loc.toString()) != null;
+    public synchronized boolean isLocatorCurrentInBatchLayer(Locator loc) {
+        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
+        return entry != null && entry.isBatchCurrent();
+    }
+
+    /**
+     * Checks if Locator is recently inserted in the discovery layer
+     *
+     * @param loc
+     * @return
+     */
+    public synchronized boolean isLocatorCurrentInDiscoveryLayer(Locator loc) {
+        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
+        return entry != null && entry.isDiscoveryCurrent();
     }
 
     /**
@@ -105,12 +117,31 @@ public class LocatorCache {
         return slot + "," + locator.toString();
     }
 
+    private LocatorCacheEntry getOrCreateInsertedLocatorEntry(Locator loc) {
+        LocatorCacheEntry entry = insertedLocators.getIfPresent(loc.toString());
+
+        if(entry == null) {
+            entry = new LocatorCacheEntry();
+            insertedLocators.put(loc.toString(), entry);
+        }
+
+        return entry;
+    }
+
     /**
-     * Marks the Locator as recently inserted
+     * Marks the Locator as recently inserted in the batch layer
      * @param loc
      */
-    public synchronized void setLocatorCurrent(Locator loc) {
-        insertedLocators.put(loc.toString(), Boolean.TRUE);
+    public synchronized void setLocatorCurrentInBatchLayer(Locator loc) {
+        getOrCreateInsertedLocatorEntry(loc).setBatchCurrent();
+    }
+
+    /**
+     * Marks the Locator as recently inserted in the discovery layer
+     * @param loc
+     */
+    public synchronized void setLocatorCurrentInDiscoveryLayer(Locator loc) {
+        getOrCreateInsertedLocatorEntry(loc).setDiscoveryCurrent();
     }
 
     /**
@@ -126,6 +157,35 @@ public class LocatorCache {
     public synchronized void resetCache() {
         insertedLocators.invalidateAll();
         insertedDelayedLocators.invalidateAll();
+    }
+
+    @VisibleForTesting
+    public synchronized void resetInsertedLocatorsCache() {
+        insertedLocators.invalidateAll();
+    }
+
+    /**
+     * Cache entry which defines where the locator has been inserted into during the caching period.
+     */
+    private class LocatorCacheEntry {
+        private boolean discoveryCurrent = false;
+        private boolean batchCurrent = false;
+
+        void setDiscoveryCurrent() {
+            this.discoveryCurrent = true;
+        }
+
+        void setBatchCurrent() {
+            this.batchCurrent = true;
+        }
+
+        boolean isDiscoveryCurrent() {
+            return discoveryCurrent;
+        }
+
+        boolean isBatchCurrent() {
+            return batchCurrent;
+        }
     }
 
 }

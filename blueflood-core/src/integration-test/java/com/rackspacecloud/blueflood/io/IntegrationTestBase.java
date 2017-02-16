@@ -103,8 +103,7 @@ public class IntegrationTestBase {
                 new TimeValue(1, TimeUnit.DAYS), "unknown");
         metrics.add(metric);
         AstyanaxWriter.getInstance().insertFull(metrics, false, new DefaultClockImpl());
-        Cache<String, Boolean> insertedLocators = (Cache<String, Boolean>) Whitebox.getInternalState(LocatorCache.getInstance(), "insertedLocators");
-        insertedLocators.invalidateAll();
+        LocatorCache.getInstance().resetInsertedLocatorsCache();
 
         return metric;
     }

@@ -123,9 +123,9 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                         Instrumentation.markFullResPreaggregatedMetricWritten();
                     }
 
-                    if ( !LocatorCache.getInstance().isLocatorCurrent(locator) ) {
+                    if ( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
                         locatorIO.insertLocator(locator);
-                        LocatorCache.getInstance().setLocatorCurrent(locator);
+                        LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                     }  else {
                         LOG.trace("insertMetrics(): not inserting locator " + locator);
                     }

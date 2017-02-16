@@ -75,10 +75,10 @@ public class AstyanaxWriter extends AstyanaxIO {
                 // key = shard
                 // col = locator (acct + entity + check + dimension.metric)
                 // value = <nothing>
-                if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator)) {
                     if (mutationBatch != null)
                         insertLocator(locator, mutationBatch);
-                    LocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                 }
 
                 if (isRecordingDelayedMetrics) {
@@ -227,9 +227,9 @@ public class AstyanaxWriter extends AstyanaxIO {
                     }
                 }
                 
-                if (!LocatorCache.getInstance().isLocatorCurrent(locator)) {
+                if (!LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator)) {
                     insertLocator(locator, batch);
-                    LocatorCache.getInstance().setLocatorCurrent(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                 }
             }
             try {
