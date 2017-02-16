@@ -168,8 +168,8 @@ public class LocatorCache {
      * Cache entry which defines where the locator has been inserted into during the caching period.
      */
     private class LocatorCacheEntry {
-        private Boolean discoveryCurrent = false;
-        private Boolean batchCurrent = false;
+        private boolean discoveryCurrent = false;
+        private boolean batchCurrent = false;
 
         void setDiscoveryCurrent() {
             this.discoveryCurrent = true;
@@ -179,11 +179,11 @@ public class LocatorCache {
             this.batchCurrent = true;
         }
 
-        Boolean isDiscoveryCurrent() {
+        boolean isDiscoveryCurrent() {
             return discoveryCurrent;
         }
 
-        Boolean isBatchCurrent() {
+        boolean isBatchCurrent() {
             return batchCurrent;
         }
     }
