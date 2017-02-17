@@ -37,6 +37,7 @@ public class HttpResponder {
 
     private static final boolean CORS_ENABLED = Configuration.getInstance().getBooleanProperty(CoreConfig.CORS_ENABLED);
     private static final String CORS_ALLOWED_ORIGINS = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS);
+    private static final String KEEP_ALIVE_TIMEOUT_STR = "timeout=";
 
     private static final Logger log = LoggerFactory.getLogger(HttpResponder.class);
 
@@ -70,17 +71,15 @@ public class HttpResponder {
             setContentLength(res, res.content().readableBytes());
         }
 
-        boolean isKeepAlive = false;
-        // if this config is set to non zero, it means we intend
-        // to close this connection after x seconds. We need to
-        // respond back with the right header to indicate this
-        if ( httpConnIdleTimeout >0 ) {
-            res.headers().add(CONNECTION, CLOSE);
-            res.headers().add(KEEP_ALIVE, "timeout="+httpConnIdleTimeout);
-        } else {
-            isKeepAlive = isKeepAlive(req);
-            if (isKeepAlive) {
-                res.headers().add(CONNECTION, KEEP_ALIVE);
+        boolean isKeepAlive = isKeepAlive(req);
+        if (isKeepAlive) {
+            res.headers().add(CONNECTION, KEEP_ALIVE);
+
+            // if this config is set to non zero, it means we intend
+            // to close this connection after x seconds. We need to
+            // respond back with the right headers to indicate this
+            if ( httpConnIdleTimeout > 0 ) {
+                res.headers().add(KEEP_ALIVE, KEEP_ALIVE_TIMEOUT_STR + httpConnIdleTimeout);
             }
         }
 
