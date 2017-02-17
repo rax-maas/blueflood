@@ -16,15 +16,14 @@
 
 package com.rackspacecloud.blueflood.http;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.HttpConfig;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +40,26 @@ public class HttpResponder {
 
     private static final Logger log = LoggerFactory.getLogger(HttpResponder.class);
 
-    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status) {
+    private static HttpResponder INSTANCE = new HttpResponder();
+
+    public static HttpResponder getInstance() { return INSTANCE; }
+
+    private int httpConnIdleTimeout =
+            Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
+
+    @VisibleForTesting
+    HttpResponder() {}
+
+    @VisibleForTesting
+    HttpResponder(int httpConnIdleTimeout) {
+        this.httpConnIdleTimeout = httpConnIdleTimeout;
+    }
+
+    public void respond(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status) {
         respond(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, status));
     }
 
-    public static void respond(ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
+    public void respond(ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
 
         // set response headers
         if (CORS_ENABLED) {
@@ -56,9 +70,18 @@ public class HttpResponder {
             setContentLength(res, res.content().readableBytes());
         }
 
-        boolean isKeepAlive = isKeepAlive(req);
-        if (isKeepAlive) {
-            res.headers().add(CONNECTION, KEEP_ALIVE);
+        boolean isKeepAlive = false;
+        // if this config is set to non zero, it means we intend
+        // to close this connection after x seconds. We need to
+        // respond back with the right header to indicate this
+        if ( httpConnIdleTimeout >0 ) {
+            res.headers().add(CONNECTION, CLOSE);
+            res.headers().add(KEEP_ALIVE, "timeout="+httpConnIdleTimeout);
+        } else {
+            isKeepAlive = isKeepAlive(req);
+            if (isKeepAlive) {
+                res.headers().add(CONNECTION, KEEP_ALIVE);
+            }
         }
 
         // Send the response and close the connection if necessary.
