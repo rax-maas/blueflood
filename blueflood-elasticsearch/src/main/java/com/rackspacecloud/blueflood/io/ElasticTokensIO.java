@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * {@link TokenDiscoveryIO} implementation using elastic search
+ */
 public class ElasticTokensIO implements TokenDiscoveryIO {
 
     public static final String ES_DOCUMENT_TYPE = "tokens";
@@ -97,8 +100,9 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         json = XContentFactory.jsonBuilder().startObject()
                               .field(ESFieldLabel.token.toString(), token.getToken())
-                              .field(ESFieldLabel.parent.toString(), token.getParent())
-                              .field(ESFieldLabel.is_leaf.toString(), token.isLeaf())
+                              .field(ESFieldLabel.path.toString(), token.getPath())
+                              .field(ESFieldLabel.isLeaf.toString(), token.isLeaf())
+                              .field(ESFieldLabel.tenantId.toString(), token.getLocator().getTenantId())
                               .endObject();
 
         return json;

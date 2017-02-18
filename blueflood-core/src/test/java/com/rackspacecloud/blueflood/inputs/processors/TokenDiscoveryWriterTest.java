@@ -43,11 +43,11 @@ public class TokenDiscoveryWriterTest {
 
         String[] expectedTokens = new String[] {"a", "b", "c", "d"};
 
-        String[] expectedParents = new String[] {
-                tenantID + ":",
-                tenantID + ":" + "a",
-                tenantID + ":" + "a.b",
-                tenantID + ":" + "a.b.c"};
+        String[] expectedPaths = new String[] {
+                "",
+                "a",
+                "a.b",
+                "a.b.c"};
 
         String[] expectedIds = new String[] {
                 tenantID + ":" + "a",
@@ -56,8 +56,9 @@ public class TokenDiscoveryWriterTest {
                 tenantID + ":" + "a.b.c.d:$"};
 
         List<Token> tokens = TokenDiscoveryWriter.getTokens(locator);
+        tokens.forEach(System.out::println);
 
-        verifyTokenInfos(expectedTokens, expectedParents, expectedIds, tokens);
+        verifyTokenInfos(tenantID, expectedTokens, expectedPaths, expectedIds, tokens);
     }
 
     @Test
@@ -68,11 +69,11 @@ public class TokenDiscoveryWriterTest {
         Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
 
         String[] expectedTokens = new String[] {"a"};
-        String[] expectedParents = new String[] {tenantID + ":"};
+        String[] expectedParents = new String[] {""};
         String[] expectedIds = new String[] {tenantID + ":" + "a:$"};
 
         List<Token> tokens = TokenDiscoveryWriter.getTokens(locator);
-        verifyTokenInfos(expectedTokens, expectedParents, expectedIds, tokens);
+        verifyTokenInfos(tenantID, expectedTokens, expectedParents, expectedIds, tokens);
     }
 
     @Test
@@ -86,10 +87,13 @@ public class TokenDiscoveryWriterTest {
         assertEquals("Total number of tokens invalid", 0, tokens.size());
     }
 
-    private void verifyTokenInfos(String[] expectedTokens, String[] expectedParents,
+    private void verifyTokenInfos(String tenantID, String[] expectedTokens, String[] expectedParents,
                                   String[] expectedIds, List<Token> actualTokenInfos) {
 
         assertEquals("Total number of tokens invalid", expectedTokens.length, actualTokenInfos.size());
+
+        actualTokenInfos.stream().forEach(x -> assertEquals(tenantID, x.getLocator().getTenantId()));
+
 
         String[] actualTokens = actualTokenInfos.stream()
                 .map(Token::getToken)
@@ -97,11 +101,11 @@ public class TokenDiscoveryWriterTest {
 
         assertArrayEquals("Tokens mismatch", expectedTokens, actualTokens);
 
-        String[] actualParents = actualTokenInfos.stream()
-                .map(Token::getParent)
+        String[] actualPaths = actualTokenInfos.stream()
+                .map(Token::getPath)
                 .collect(toList()).toArray(new String[0]);
 
-        assertArrayEquals("Token parents mismatch", expectedParents, actualParents);
+        assertArrayEquals("Token parents mismatch", expectedParents, actualPaths);
 
         String[] actualIds = actualTokenInfos.stream()
                 .map(Token::getDocumentId)
