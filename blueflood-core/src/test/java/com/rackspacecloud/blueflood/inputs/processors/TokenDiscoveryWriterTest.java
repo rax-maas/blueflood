@@ -102,7 +102,7 @@ public class TokenDiscoveryWriterTest {
         assertArrayEquals("Tokens mismatch", expectedTokens, actualTokens);
 
         String[] actualPaths = actualTokenInfos.stream()
-                .map(Token::getPath)
+                .map(Token::getParent)
                 .collect(toList()).toArray(new String[0]);
 
         assertArrayEquals("Token parents mismatch", expectedParents, actualPaths);

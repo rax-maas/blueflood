@@ -8,5 +8,5 @@ import java.util.List;
 public interface TokenDiscoveryIO {
     public void insertDiscovery(Token token) throws Exception;
     public void insertDiscovery(List<Token> tokens) throws Exception;
-    public List<MetricToken> getMetricTokens(String tenantId, String parent) throws Exception;
+    public List<MetricToken> getMetricTokens(String tenantId, String path) throws Exception;
 }

@@ -22,7 +22,7 @@ public enum ESFieldLabel {
     unit,
     enum_values,
     token,
-    path,
+    parent,
     isLeaf
 }
 

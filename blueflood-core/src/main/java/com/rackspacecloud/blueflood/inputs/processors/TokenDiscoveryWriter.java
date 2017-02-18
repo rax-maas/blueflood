@@ -75,10 +75,10 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
      *
      * For example: A locator of 1111:a.b.c.d would generate the following tokens
      *
-     * Token{token='a', path='', isLeaf=false, documentId='111111:a', locator=111111.a.b.c.d}
-     * Token{token='b', path='a', isLeaf=false, documentId='111111:a.b', locator=111111.a.b.c.d}
-     * Token{token='c', path='a.b', isLeaf=false, documentId='111111:a.b.c', locator=111111.a.b.c.d}
-     * Token{token='d', path='a.b.c', isLeaf=true, documentId='111111:a.b.c.d:$', locator=111111.a.b.c.d}
+     * Token{token='a', parent='', isLeaf=false, documentId='111111:a', locator=111111.a.b.c.d}
+     * Token{token='b', parent='a', isLeaf=false, documentId='111111:a.b', locator=111111.a.b.c.d}
+     * Token{token='c', parent='a.b', isLeaf=false, documentId='111111:a.b.c', locator=111111.a.b.c.d}
+     * Token{token='d', parent='a.b.c', isLeaf=true, documentId='111111:a.b.c.d:$', locator=111111.a.b.c.d}
      *
      * @return
      */

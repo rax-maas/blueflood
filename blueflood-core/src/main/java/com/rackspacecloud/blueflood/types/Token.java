@@ -11,16 +11,18 @@ import static java.util.stream.Collectors.joining;
  * level 2 token will have the following information.
  *
  *      token = 'c'
- *      path = '111111:a.b'
+ *      parent = 'a.b'
  *      isLeaf = false
  *      documentId = '111111:a.b.c'
+ *      tenantId = '111111'
  *
  * level 3 token which is a leaf node will have the following information
  *
  *      token = 'd'
- *      path = '111111:a.b.c'
+ *      parent = 'a.b.c'
  *      isLeaf = true
  *      documentId = '111111:a.b.c.d:$'
+ *      tenantId = '111111'
  *
  */
 public class Token {
@@ -30,7 +32,7 @@ public class Token {
     public static final String REGEX_TOKEN_DELIMTER = "\\.";
 
     private final String token;
-    private final String path;
+    private final String parent;
     private final boolean isLeaf;
 
     private final String documentId;
@@ -46,7 +48,7 @@ public class Token {
         this.isLeaf = level == tokens.length - 1;
 
         String prefix = locator.getTenantId() + Token.SEPARATOR;
-        this.path = joinTokens("", "", tokens, level);
+        this.parent = joinTokens("", "", tokens, level);
 
         String suffix = isLeaf ? LEAF_NODE_SUFFIX : "";
         this.documentId = joinTokens(prefix, suffix, tokens, level + 1);
@@ -86,8 +88,8 @@ public class Token {
         return token;
     }
 
-    public String getPath() {
-        return path;
+    public String getParent() {
+        return parent;
     }
 
     public boolean isLeaf() {
@@ -98,7 +100,7 @@ public class Token {
     public String toString() {
         return "Token{" +
                 "token='" + token + '\'' +
-                ", path='" + path + '\'' +
+                ", parent='" + parent + '\'' +
                 ", isLeaf=" + isLeaf +
                 ", documentId='" + documentId + '\'' +
                 ", locator=" + locator +

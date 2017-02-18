@@ -78,7 +78,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     }
 
     @Override
-    public List<MetricToken> getMetricTokens(String tenant, String prefix) throws Exception {
+    public List<MetricToken> getMetricTokens(String tenant, String path) throws Exception {
         return null;
     }
 
@@ -100,7 +100,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         json = XContentFactory.jsonBuilder().startObject()
                               .field(ESFieldLabel.token.toString(), token.getToken())
-                              .field(ESFieldLabel.path.toString(), token.getPath())
+                              .field(ESFieldLabel.parent.toString(), token.getParent())
                               .field(ESFieldLabel.isLeaf.toString(), token.isLeaf())
                               .field(ESFieldLabel.tenantId.toString(), token.getLocator().getTenantId())
                               .endObject();
