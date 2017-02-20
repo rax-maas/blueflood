@@ -79,7 +79,7 @@ public class QueryStringDecoderAndRouter extends SimpleChannelInboundHandler<Ful
         if (thr.getCause() instanceof TooLongFrameException) {
             // todo: meter these so we observe DOS conditions.
             log.warn(String.format("Long frame from %s", ctx.channel().remoteAddress()));
-            HttpResponder.respond(ctx, null, HttpResponseStatus.BAD_REQUEST);
+            HttpResponder.getInstance().respond(ctx, null, HttpResponseStatus.BAD_REQUEST);
         } else {
             log.warn(String.format("Exception event received from %s: ", ctx.channel().remoteAddress()), thr);
         }

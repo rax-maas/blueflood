@@ -169,7 +169,7 @@ public class HttpRollupsQueryHandler extends RollupHandler
             response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        HttpResponder.respond(channel, request, response);
+        HttpResponder.getInstance().respond(channel, request, response);
         Tracker.getInstance().trackResponse(request, response);
     }
 }
