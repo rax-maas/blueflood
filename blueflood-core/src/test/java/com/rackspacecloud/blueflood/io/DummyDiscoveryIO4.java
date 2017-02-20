@@ -33,7 +33,7 @@ public class DummyDiscoveryIO4 implements DiscoveryIO {
     }
 
     @Override
-    public List<MetricToken> getMetricTokens(String tenant, String prefix) throws Exception {
+    public List<MetricName> getMetricNames(String tenant, String prefix) throws Exception {
         return null;
     }
 }

@@ -20,15 +20,19 @@ import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import junit.framework.Assert;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.junit.Assert.assertEquals;
 
 public class ElasticIOTest extends BaseElasticTest {
 
@@ -66,7 +70,7 @@ public class ElasticIOTest extends BaseElasticTest {
         Discovery discovery = new Discovery(TENANT_A, METRIC_NAME);
         IndexRequestBuilder builder = elasticIO.createSingleRequest(discovery);
         Assert.assertNotNull(builder);
-        Assert.assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
+        assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
         final String expectedIndex =
                 "index {" +
                         "[" + ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "]" +
@@ -76,14 +80,14 @@ public class ElasticIOTest extends BaseElasticTest {
                         "\"tenantId\":\"" + TENANT_A + "\"," +
                         "\"metric_name\":\"" + METRIC_NAME + "\"" +
                         "}]}";
-        Assert.assertEquals(expectedIndex, builder.request().toString());
-        Assert.assertEquals(builder.request().routing(), TENANT_A);
+        assertEquals(expectedIndex, builder.request().toString());
+        assertEquals(builder.request().routing(), TENANT_A);
     }
 
     @Test
     public void testNoCrossTenantResults() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "*");
-        Assert.assertEquals(NUM_DOCS, results.size());
+        assertEquals(NUM_DOCS, results.size());
         for (SearchResult result : results) {
             Assert.assertNotNull(result.getTenantId());
             Assert.assertNotSame(TENANT_B, result.getTenantId());
@@ -110,7 +114,7 @@ public class ElasticIOTest extends BaseElasticTest {
         queries.add(query1);
         queries.add(query2);
         results = elasticIO.search(tenantId, queries);
-        Assert.assertEquals(results.size(), 2); //we searched for 2 unique metrics
+        assertEquals(results.size(), 2); //we searched for 2 unique metrics
         results.contains(new SearchResult(TENANT_A, query1, UNIT));
         results.contains(new SearchResult(TENANT_A, query2, UNIT));
     }
@@ -126,7 +130,7 @@ public class ElasticIOTest extends BaseElasticTest {
         queries.add(query2);
         results = elasticIO.search(tenantId, queries);
         // query1 will return 3 results, query2 will return 30 results, but we get back 32 because of intersection
-        Assert.assertEquals(results.size(), 32);
+        assertEquals(results.size(), 32);
     }
 
     @Test
@@ -139,7 +143,7 @@ public class ElasticIOTest extends BaseElasticTest {
         queries.add(query1);
         queries.add(query2);
         results = elasticIO.search(tenantId, queries);
-        Assert.assertEquals(results.size(), 2);
+        assertEquals(results.size(), 2);
     }
 
     public void testWildcard(String tenantId, String unit) throws Exception {
@@ -147,14 +151,14 @@ public class ElasticIOTest extends BaseElasticTest {
         List<SearchResult> results;
         results = elasticIO.search(tenantId, "one.two.*");
         List<Locator> locators = locatorMap.get(tenantId);
-        Assert.assertEquals(locators.size(), results.size());
+        assertEquals(locators.size(), results.size());
         for (Locator locator : locators) {
             entry =  new SearchResult(tenantId, locator.getMetricName(), unit);
             Assert.assertTrue((results.contains(entry)));
         }
 
         results = elasticIO.search(tenantId, "*.fourA.*");
-        Assert.assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
+        assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
                 entry = createExpectedResult(tenantId, x, "A", z, unit);
@@ -163,7 +167,7 @@ public class ElasticIOTest extends BaseElasticTest {
         }
 
         results = elasticIO.search(tenantId, "*.three1*.four*.five2");
-        Assert.assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
+        assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
         for (int x = 10; x < 20; x++) {
             for (String y : CHILD_ELEMENTS) {
                 entry = createExpectedResult(tenantId, x, y, 2, unit);
@@ -175,7 +179,7 @@ public class ElasticIOTest extends BaseElasticTest {
     @Test
     public void testGlobMatching() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.{three00,three01}.fourA.five0");
-        Assert.assertEquals(results.size(), 2);
+        assertEquals(results.size(), 2);
         results.contains(new SearchResult(TENANT_A, "one.two.three00.fourA.five0", UNIT));
         results.contains(new SearchResult(TENANT_A, "one.two.three01.fourA.five0", UNIT));
     }
@@ -184,10 +188,10 @@ public class ElasticIOTest extends BaseElasticTest {
     public void testGlobMatching2() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0?.fourA.five0");
         List<SearchResult> results2 = elasticIO.search(TENANT_A, "one.two.three0[0-9].fourA.five0");
-        Assert.assertEquals(10, results.size());
+        assertEquals(10, results.size());
         for (SearchResult result : results) {
             Assert.assertTrue(result.getMetricName().startsWith("one.two.three"));
-            Assert.assertEquals(result.getTenantId(), TENANT_A);
+            assertEquals(result.getTenantId(), TENANT_A);
             results2.contains(result);
         }
     }
@@ -195,7 +199,7 @@ public class ElasticIOTest extends BaseElasticTest {
     @Test
     public void testGlobMatching3() throws Exception {
         List<SearchResult> results = elasticIO.search(TENANT_A, "one.two.three0[01].fourA.five0");
-        Assert.assertEquals(2, results.size());
+        assertEquals(2, results.size());
         for (SearchResult result : results) {
             Assert.assertTrue(result.getMetricName().equals("one.two.three00.fourA.five0") || result.getMetricName().equals("one.two.three01.fourA.five0"));
         }
@@ -208,8 +212,8 @@ public class ElasticIOTest extends BaseElasticTest {
         Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
         // Metric is aleady there in old
         List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
-        Assert.assertEquals(results.size(), 1);
-        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        assertEquals(results.size(), 1);
+        assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
         // Actually create the new index
         esSetup.execute(EsSetup.createIndex(ES_DUP)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
@@ -226,27 +230,27 @@ public class ElasticIOTest extends BaseElasticTest {
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
-        Assert.assertEquals(results.size(), 1);
-        Assert.assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+        assertEquals(results.size(), 1);
+        assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
         elasticIO.setINDEX_NAME_READ(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ.getDefaultValue());
         elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
 
 
     @Test
-    public void testGetMetricTokens() throws Exception {
+    public void testGetMetricNames() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "one", results.get(0).getPath());
-        Assert.assertEquals("isLeaf for token", false, results.get(0).isLeaf());
+        assertEquals("Invalid total number of results", 1, results.size());
+        assertEquals("Next token mismatch", "one", results.get(0).getName());
+        assertEquals("isCompleteName for token", false, results.get(0).isCompleteName());
     }
 
     @Test
-    public void testGetMetricTokensMultipleMetrics() throws Exception {
+    public void testGetMetricNamesMultipleMetrics() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
 
@@ -254,31 +258,31 @@ public class ElasticIOTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one|false");
             add("foo|false");
         }};
 
-        Assert.assertEquals("Invalid total number of results", 2, results.size());
-        verifyTokenAndNextLevelFlag(results, expectedResults);
+        assertEquals("Invalid total number of results", 2, results.size());
+        verifyResults(results, expectedResults);
     }
 
     @Test
-    public void testGetMetricTokensSingleLevelPrefix() throws Exception {
+    public void testGetMetricNamesSingleLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.*";
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", 1, results.size());
-        Assert.assertEquals("Next token mismatch", "one.two", results.get(0).getPath());
-        Assert.assertEquals("Next level indicator wrong for token", false, results.get(0).isLeaf());
+        assertEquals("Invalid total number of results", 1, results.size());
+        assertEquals("Next token mismatch", "one.two", results.get(0).getName());
+        assertEquals("Next level indicator wrong for token", false, results.get(0).isCompleteName());
     }
 
     @Test
-    public void testGetMetricTokensWithWildCardPrefixMultipleLevels() throws Exception {
+    public void testGetMetricNamesWithWildCardPrefixMultipleLevels() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*";
 
@@ -286,45 +290,45 @@ public class ElasticIOTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two|false");
             add("foo.bar|false");
         }};
 
-        Assert.assertEquals("Invalid total number of results", 2, results.size());
-        verifyTokenAndNextLevelFlag(results, expectedResults);
+        assertEquals("Invalid total number of results", 2, results.size());
+        verifyResults(results, expectedResults);
     }
 
     @Test
-    public void testGetMetricTokensWithMultiLevelPrefix() throws Exception {
+    public void testGetMetricNamesWithMultiLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.*";
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (MetricToken metricToken : results) {
-            Assert.assertFalse("isLeaf value", metricToken.isLeaf());
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
+        for (MetricName metricName : results) {
+            Assert.assertFalse("isCompleteName value", metricName.isCompleteName());
         }
     }
 
     @Test
-    public void testGetMetricTokensWithWildCardPrefixAtTheEnd() throws Exception {
+    public void testGetMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.three*.*";
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
-        for (MetricToken metricToken : results) {
-            Assert.assertFalse("isLeaf value", metricToken.isLeaf());;
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
+        for (MetricName metricName : results) {
+            Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
         }
     }
 
     @Test
-    public void testGetMetricTokensWithWildCardAndBracketsPrefix() throws Exception {
+    public void testGetMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.{two,foo}.[ta]hree00.*";
 
@@ -332,7 +336,7 @@ public class ElasticIOTest extends BaseElasticTest {
             add("one.foo.three00.bar.baz");
         }});
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two.three00.fourA|false");
@@ -341,22 +345,91 @@ public class ElasticIOTest extends BaseElasticTest {
             add("one.foo.three00.bar|false");
         }};
 
-        Assert.assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
-        verifyTokenAndNextLevelFlag(results, expectedResults);
+        assertEquals("Invalid total number of results", CHILD_ELEMENTS.size() + 1, results.size());
+        verifyResults(results, expectedResults);
     }
 
     @Test
-    public void testGetMetricTokensWithMultiWildCardPrefix() throws Exception {
+    public void testGetMetricNamesWithMultiWildCardPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*.*";
 
-        List<MetricToken> results = elasticIO.getMetricTokens(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
-        Assert.assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
-        for (MetricToken metricToken : results) {
-            Assert.assertFalse("isLeaf value", metricToken.isLeaf());;
+        assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
+        for (MetricName metricName : results) {
+            Assert.assertFalse("isCompleteName value", metricName.isCompleteName());;
         }
     }
 
+    @Test
+    public void testRegexLevel0() {
+        List<String> terms = Arrays.asList("foo", "bar", "baz", "foo.bar", "foo.bar.baz", "foo.bar.baz.aux");
 
+        List<String> matchingTerms = new ArrayList<String>();
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexToGrabCurrentAndNextLevel("*"));
+        for (String term: terms) {
+            Matcher matcher = patternToGet2Levels.matcher(term);
+            if (matcher.matches()) {
+                matchingTerms.add(term);
+            }
+        }
+
+        assertEquals(1, matchingTerms.size());
+        assertEquals("foo.bar", matchingTerms.get(0));
+    }
+
+    @Test
+    public void testRegexLevel1() {
+        List<String> terms = Arrays.asList("foo", "bar", "baz", "foo.bar", "foo.bar.baz", "foo.bar.baz.aux");
+
+        List<String> matchingTerms = new ArrayList<String>();
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexToGrabCurrentAndNextLevel("foo.*"));
+        for (String term: terms) {
+            Matcher matcher = patternToGet2Levels.matcher(term);
+            if (matcher.matches()) {
+                matchingTerms.add(term);
+            }
+        }
+
+        assertEquals(2, matchingTerms.size());
+        assertEquals("foo.bar", matchingTerms.get(0));
+        assertEquals("foo.bar.baz", matchingTerms.get(1));
+    }
+
+    @Test
+    public void testRegexLevel2() {
+        List<String> terms = Arrays.asList("foo", "bar", "baz", "foo.bar", "foo.bar.baz", "foo.bar.baz.qux", "foo.bar.baz.qux.quux");
+
+        List<String> matchingTerms = new ArrayList<String>();
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexToGrabCurrentAndNextLevel("foo.bar.*"));
+        for (String term: terms) {
+            Matcher matcher = patternToGet2Levels.matcher(term);
+            if (matcher.matches()) {
+                matchingTerms.add(term);
+            }
+        }
+
+        assertEquals(2, matchingTerms.size());
+        assertEquals("foo.bar.baz", matchingTerms.get(0));
+        assertEquals("foo.bar.baz.qux", matchingTerms.get(1));
+    }
+
+    @Test
+    public void testRegexLevel3() {
+        List<String> terms = Arrays.asList("foo", "bar", "baz", "foo.bar", "foo.bar.baz", "foo.bar.baz.qux", "foo.bar.baz.qux.quux");
+
+        List<String> matchingTerms = new ArrayList<String>();
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexToGrabCurrentAndNextLevel("foo.bar.baz.*"));
+        for (String term: terms) {
+            Matcher matcher = patternToGet2Levels.matcher(term);
+            if (matcher.matches()) {
+                matchingTerms.add(term);
+            }
+        }
+
+        assertEquals(2, matchingTerms.size());
+        assertEquals("foo.bar.baz.qux", matchingTerms.get(0));
+        assertEquals("foo.bar.baz.qux.quux", matchingTerms.get(1));
+    }
 }
