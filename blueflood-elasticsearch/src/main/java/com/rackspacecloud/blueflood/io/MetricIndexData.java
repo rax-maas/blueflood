@@ -53,9 +53,9 @@ public class MetricIndexData {
     //for metric names which have next level. (compared to baseLevel)
     private final Set<String> metricNamesWithNextLevelSet = new LinkedHashSet<String>();
 
-    //contains all metric indexes which are of the same length as baseLevel. This is to determin if we
+    //contains all metric indexes which are of the same length as baseLevel. This is to determine if we
     //have any complete metric names at base level itself.
-    final Map<String, MetricIndexDocCount> metricNameBaseLevelMap = new HashMap<String, MetricIndexDocCount>();
+    final Map<String, MetricIndexDocCount> metricNameBaseLevelMap = new HashMap<>();
 
     public MetricIndexData(int baseLevel) {
         this.baseLevel = baseLevel;

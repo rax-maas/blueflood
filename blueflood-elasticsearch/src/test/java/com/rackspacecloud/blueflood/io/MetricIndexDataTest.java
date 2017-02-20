@@ -292,7 +292,7 @@ public class MetricIndexDataTest {
             metricIndexes.addAll(tokens);
 
             for (String metricIndex: metricIndexes) {
-                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0;
+                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0L;
                 metricIndexMap.put(metricIndex, count + 1);
             }
         }

@@ -16,8 +16,11 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import static java.util.stream.Collectors.toSet;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public abstract class AbstractElasticIO implements DiscoveryIO {
@@ -125,13 +128,23 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
         // if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
         int baseLevel = getTotalTokens(query);
-        MetricIndexData metricIndexData = buildMetricIndexData(response, query, baseLevel);
+        MetricIndexData metricIndexData = buildMetricIndexData(response, baseLevel);
 
-        MetricNameListBuilder metricNameListBuilder = new MetricNameListBuilder();
-        metricNameListBuilder.addMetricNameWithNextLevel(metricIndexData.getMetricNamesWithNextLevel());
-        metricNameListBuilder.addCompleteMetricName(metricIndexData.getCompleteMetricNamesAtBaseLevel());
+        List<MetricName> metricNames = new ArrayList<>();
 
-        return metricNameListBuilder.build();
+        //Metric Names matching query which have next level
+        metricNames.addAll(metricIndexData.getMetricNamesWithNextLevel()
+                                          .stream()
+                                          .map(x -> new MetricName(x, false))
+                                          .collect(toSet()));
+
+        //complete metric names matching query
+        metricNames.addAll(metricIndexData.getCompleteMetricNamesAtBaseLevel()
+                                          .stream()
+                                          .map(x -> new MetricName(x, true))
+                                          .collect(toSet()));
+
+        return metricNames;
     }
 
     private int getTotalTokens(String query) {
@@ -210,7 +223,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
 
-    private MetricIndexData buildMetricIndexData(final SearchResponse response, final String query, final int baseLevel) {
+    private MetricIndexData buildMetricIndexData(final SearchResponse response, final int baseLevel) {
 
         MetricIndexData metricIndexData = new MetricIndexData(baseLevel);
         Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
