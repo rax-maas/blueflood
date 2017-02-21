@@ -43,9 +43,11 @@ public class DefaultHandler implements HttpRequestHandler {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultHandler.class);
 
+    private static final HttpResponder responder = HttpResponder.getInstance();
+
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
-        HttpResponder.respond(ctx, request, HttpResponseStatus.OK);
+        responder.respond(ctx, request, HttpResponseStatus.OK);
     }
 
     public static void sendErrorResponse(ChannelHandlerContext ctx, FullHttpRequest request,
@@ -98,7 +100,7 @@ public class DefaultHandler implements HttpRequestHandler {
                 response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
             }
 
-            HttpResponder.respond(channel, request, response);
+            responder.respond(channel, request, response);
             Tracker.getInstance().trackResponse(request, response);
         } finally {
             sendResponseTimerContext.stop();
