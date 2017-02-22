@@ -126,7 +126,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             esMetricNamesQueryTimerCtx.stop();
         }
 
-        // if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
+        // For example, if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
         int baseLevel = getTotalTokens(query);
         MetricIndexData metricIndexData = buildMetricIndexData(response, baseLevel);
 
