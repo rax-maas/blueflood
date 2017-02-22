@@ -64,9 +64,9 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     }
 
     @Test
-    public void testHttpMetricTokensHandlerOptions() throws Exception {
+    public void testHttpMetricNamesHandlerOptions() throws Exception {
         // test query .../metric_name/search for CORS support
-        HttpOptions httpOptions = new HttpOptions(getQueryTokenSearchURI(tenantId));
+        HttpOptions httpOptions = new HttpOptions(getMetricNameSearchURI(tenantId));
         HttpResponse response = client.execute(httpOptions);
         assertCorsResponseHeaders(response, allowedOrigins, allowedHeaders, allowedMethods, allowedMaxAge);
     }

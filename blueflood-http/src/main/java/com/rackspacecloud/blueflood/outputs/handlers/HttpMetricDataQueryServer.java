@@ -69,7 +69,7 @@ public class HttpMetricDataQueryServer {
         router.get("/v2.0", new DefaultHandler());
         router.get("/v2.0/:tenantId/views/:metricName", new HttpRollupsQueryHandler());
         router.get("/v2.0/:tenantId/metrics/search", new HttpMetricsIndexHandler());
-        router.get("/v2.0/:tenantId/metric_name/search", new HttpMetricTokensHandler());
+        router.get("/v2.0/:tenantId/metric_name/search", new HttpMetricNamesHandler());
         router.get("/v2.0/:tenantId/events/getEvents", new HttpEventsQueryHandler(getEventsIO()));
 
         router.options("/v2.0/:tenantId/views/:metricName", new HttpOptionsHandler());

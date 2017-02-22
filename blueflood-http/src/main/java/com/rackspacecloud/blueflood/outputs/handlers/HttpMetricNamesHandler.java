@@ -4,7 +4,7 @@ import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.*;
 import com.rackspacecloud.blueflood.io.Constants;
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.MetricToken;
+import com.rackspacecloud.blueflood.io.MetricName;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -20,18 +20,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class HttpMetricTokensHandler implements HttpRequestHandler {
-    private static final Logger log = LoggerFactory.getLogger(HttpMetricTokensHandler.class);
+public class HttpMetricNamesHandler implements HttpRequestHandler {
+    private static final Logger log = LoggerFactory.getLogger(HttpMetricNamesHandler.class);
     private DiscoveryIO discoveryHandle;
 
-    public HttpMetricTokensHandler() {
+    public HttpMetricNamesHandler() {
         discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
     }
 
-    private final com.codahale.metrics.Timer HttpMetricNameTokensHandlerTimer = Metrics.timer(HttpMetricTokensHandler.class,
-            "Handle HTTP request for getMetricTokens");
+    private final com.codahale.metrics.Timer HttpMetricNamesHandlerTimer = Metrics.timer(HttpMetricNamesHandler.class,
+            "Handle HTTP request for getMetricNames");
 
-    public HttpMetricTokensHandler(DiscoveryIO discoveryHandle) {
+    public HttpMetricNamesHandler(DiscoveryIO discoveryHandle) {
         this.discoveryHandle = discoveryHandle;
     }
 
@@ -40,7 +40,7 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
 
         Tracker.getInstance().track(request);
 
-        final Timer.Context httpMetricNameTokensHandlerTimerContext = HttpMetricNameTokensHandlerTimer.time();
+        final Timer.Context httpMetricNamesHandlerTimerContext = HttpMetricNamesHandlerTimer.time();
 
         final String tenantId = request.headers().get("tenantId");
 
@@ -60,13 +60,13 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
         }
 
         try {
-            List<MetricToken> metricTokens = discoveryHandle.getMetricTokens(tenantId, query.get(0));
-            sendResponse(ctx, request, getSerializedJSON(metricTokens), HttpResponseStatus.OK);
+            List<MetricName> metricNames = discoveryHandle.getMetricNames(tenantId, query.get(0));
+            sendResponse(ctx, request, getSerializedJSON(metricNames), HttpResponseStatus.OK);
         } catch (Exception e) {
             log.error(String.format("Exception occurred while trying to get metrics index for %s", tenantId), e);
             DefaultHandler.sendErrorResponse(ctx, request, "Error getting metrics index", HttpResponseStatus.INTERNAL_SERVER_ERROR);
         } finally {
-            httpMetricNameTokensHandlerTimerContext.stop();
+            httpMetricNamesHandlerTimerContext.stop();
         }
     }
 
@@ -79,20 +79,20 @@ public class HttpMetricTokensHandler implements HttpRequestHandler {
             response.content().writeBytes(Unpooled.copiedBuffer(messageBody, Constants.DEFAULT_CHARSET));
         }
 
-        HttpResponder.respond(channel, request, response);
+        HttpResponder.getInstance().respond(channel, request, response);
         Tracker.getInstance().trackResponse(request, response);
     }
 
-    public String getSerializedJSON(final List<MetricToken> metricTokens) {
+    public String getSerializedJSON(final List<MetricName> metricNames) {
 
         ArrayNode tokenInfoArrayNode = JsonNodeFactory.instance.arrayNode();
-        for (MetricToken metricToken : metricTokens) {
+        for (MetricName metricName : metricNames) {
 
-            ObjectNode tokenInfoNode = JsonNodeFactory.instance.objectNode();
+            ObjectNode metricNameInfoNode = JsonNodeFactory.instance.objectNode();
 
-            tokenInfoNode.put(metricToken.getPath(), JsonNodeFactory.instance.booleanNode(metricToken.isLeaf()));
+            metricNameInfoNode.put(metricName.getName(), JsonNodeFactory.instance.booleanNode(metricName.isCompleteName()));
 
-            tokenInfoArrayNode.add(tokenInfoNode);
+            tokenInfoArrayNode.add(metricNameInfoNode);
         }
 
         return tokenInfoArrayNode.toString();

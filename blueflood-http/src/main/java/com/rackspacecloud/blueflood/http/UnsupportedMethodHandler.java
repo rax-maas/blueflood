@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.*;
 import java.util.Set;
 
 public class UnsupportedMethodHandler implements HttpRequestHandler {
+
     private final RouteMatcher routeMatcher;
     private final FullHttpResponse response;
 
@@ -41,6 +42,6 @@ public class UnsupportedMethodHandler implements HttpRequestHandler {
         }
         final String methodsAllowed =  result.length() > 0 ? result.substring(0, result.length() - 1): "";
         response.headers().add("Allow", methodsAllowed);
-        HttpResponder.respond(context, request, response);
+        HttpResponder.getInstance().respond(context, request, response);
     }
 }

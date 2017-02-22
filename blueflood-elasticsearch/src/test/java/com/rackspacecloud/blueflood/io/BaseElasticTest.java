@@ -106,19 +106,19 @@ public class BaseElasticTest {
         return metrics;
     }
 
-    protected void verifyTokenAndNextLevelFlag(List<MetricToken> results, Set<String> expectedResults) {
+    protected void verifyResults(List<MetricName> results, Set<String> expectedResults) {
         Set<String> formattedResults = formatForComparision(results);
         assertTrue("Expected results does not contain all of api results", expectedResults.containsAll(formattedResults));
         assertTrue("API results does not contain all of expected results", formattedResults.containsAll(expectedResults));
         Assert.assertEquals("Invalid total number of results", expectedResults.size(), results.size());
     }
 
-    protected Set<String> formatForComparision(List<MetricToken> results) {
+    protected Set<String> formatForComparision(List<MetricName> results) {
         final String DELIMITER = "|";
 
         Set<String> formattedResults = new HashSet<String>();
-        for (MetricToken metricToken : results) {
-            formattedResults.add(metricToken.getPath() + DELIMITER + metricToken.isLeaf());
+        for (MetricName metricName : results) {
+            formattedResults.add(metricName.getName() + DELIMITER + metricName.isCompleteName());
         }
 
         return formattedResults;

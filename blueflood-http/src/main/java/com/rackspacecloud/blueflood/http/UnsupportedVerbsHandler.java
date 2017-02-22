@@ -24,6 +24,6 @@ public class UnsupportedVerbsHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) {
-        HttpResponder.respond(ctx, request, HttpResponseStatus.NOT_IMPLEMENTED);
+        HttpResponder.getInstance().respond(ctx, request, HttpResponseStatus.NOT_IMPLEMENTED);
     }
 }

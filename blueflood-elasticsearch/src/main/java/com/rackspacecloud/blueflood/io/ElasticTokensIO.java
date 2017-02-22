@@ -78,7 +78,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     }
 
     @Override
-    public List<MetricToken> getMetricTokens(String tenant, String path) throws Exception {
+    public List<MetricName> getMetricNames(String tenant, String query) throws Exception {
         return null;
     }
 

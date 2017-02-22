@@ -24,6 +24,6 @@ public class NoRouteHandler implements HttpRequestHandler {
 
     @Override
     public void handle(ChannelHandlerContext context, FullHttpRequest request) {
-        HttpResponder.respond(context, request, HttpResponseStatus.NOT_FOUND);
+        HttpResponder.getInstance().respond(context, request, HttpResponseStatus.NOT_FOUND);
     }
 }

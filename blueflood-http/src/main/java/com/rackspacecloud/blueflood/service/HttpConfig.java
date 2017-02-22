@@ -62,7 +62,7 @@ public enum HttpConfig implements ConfigDefaults {
     HTTP_MAX_TYPE_UNIT_PROCESSOR_THREADS("10"),
 
     // Idle time allowed on a connection, with no inbound traffic, before closing the connection. Specify 0 to disable.
-    HTTP_CONNECTION_READ_IDLE_TIME_SECONDS("120");
+    HTTP_CONNECTION_READ_IDLE_TIME_SECONDS("0");
 
     static {
         Configuration.getInstance().loadDefaults(HttpConfig.values());

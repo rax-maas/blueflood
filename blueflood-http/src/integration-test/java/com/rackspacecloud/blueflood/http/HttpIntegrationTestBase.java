@@ -85,7 +85,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     public final String getEventsPath = "/v2.0/%s/events/getEvents";
     public final String getSearchPath = "/v2.0/%s/metrics/search";
-    public final String getTokenSearchPath = "/v2.0/%s/metric_name/search";
+    public final String getMetricNameSearchPath = "/v2.0/%s/metric_name/search";
     public final String getViewsPath = "/v2.0/%s/views";
 
     private Random random = new Random( System.currentTimeMillis() );
@@ -206,8 +206,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         return getQueryURI(String.format(getSearchPath, tenantId));
     }
 
-    public URI getQueryTokenSearchURI(String tenantId) throws URISyntaxException {
-        return getQueryURI(String.format(getTokenSearchPath, tenantId));
+    public URI getMetricNameSearchURI(String tenantId) throws URISyntaxException {
+        return getQueryURI(String.format(getMetricNameSearchPath, tenantId));
     }
 
     public URI getQueryViewsURI(String tenantId) throws URISyntaxException {
