@@ -7,8 +7,62 @@ import requests
 import time
 
 
+debug = False
+
+
 def get_unix_time(dt):
     return int(time.mktime(dt.timetuple()))
+
+
+def make_ingest_request(base_url, token, tenant, metric_name, unit, value,
+                        ttl_seconds=None, collection_time=None):
+    if ttl_seconds is None:
+        ttl_seconds = 172800
+    if collection_time is None:
+        collection_time = datetime.datetime.now()
+
+    url = '{}/v2.0/{}/ingest/multi'.format(base_url, tenant)
+
+    payload = [{
+        'tenantId': str(tenant),
+        'metricName': metric_name,
+        'unit': unit,
+        'metricValue': value,
+        'ttlInSeconds': ttl_seconds,
+        'collectionTime': get_unix_time(collection_time) * 1000
+    }]
+
+    request = requests.Request('POST', url, json=payload)
+    if token:
+        request.headers['X-Auth-Token'] = token
+    preq = request.prepare()
+
+    if debug:
+        print('Sending:')
+        print('    {} {}'.format(preq.method, preq.path_url))
+        for name, value in preq.headers.iteritems():
+            print('    {}: {}'.format(name, value))
+        if preq.body:
+            print('')
+            print('    {}'.format(preq.body))
+        print('')
+
+    session = requests.session()
+    response = session.send(preq)
+
+    if debug:
+        print('')
+        print('Received:')
+        print('    {} {}'.format(response.status_code, response.reason))
+        for name, value in response.headers.iteritems():
+            print('    {}: {}'.format(name, value))
+        print('')
+        if response.text:
+            print('    {}'.format(response.text))
+
+    success = 200 <= response.status_code < 300
+    print(response.text)
+    return success
 
 
 def main():
@@ -40,6 +94,9 @@ def main():
 
     args = parser.parse_args()
 
+    global debug
+    debug = args.debug
+
     print('args: {}'.format(args))
 
     if args.command == 'ingest':
@@ -48,60 +105,11 @@ def main():
             print('Error: No url specified.')
             exit(1)
 
-        tenant = args.tenant
-        metric_name = args.metric_name
-        unit = args.unit
-        value = args.value
-        ttl_seconds = args.ttl_seconds
-        collection_time = args.collection_time
-        if collection_time is None:
-            collection_time = datetime.datetime.now()
+        success = make_ingest_request(base_url, args.token, args.tenant,
+                                      args.metric_name, args.unit, args.value,
+                                      args.ttl_seconds, args.collection_time)
 
-        url = '{}/v2.0/{}/ingest/multi'.format(base_url, tenant)
-
-        payload = [{
-            'tenantId': str(tenant),
-            'metricName': metric_name,
-            'unit': unit,
-            'metricValue': value,
-            'ttlInSeconds': ttl_seconds,
-            'collectionTime': get_unix_time(collection_time) * 1000
-        }]
-
-        request = requests.Request('POST', url, json=payload)
-        if args.token:
-            request.headers['X-Auth-Token'] = args.token
-        preq = request.prepare()
-
-        if args.debug:
-            print('Sending:')
-            print('    {} {}'.format(preq.method, preq.path_url))
-            for name, value in preq.headers.iteritems():
-                print('    {}: {}'.format(name, value))
-            if preq.body:
-                print('')
-                print('    {}'.format(preq.body))
-            print('')
-
-        session = requests.session()
-        response = session.send(preq)
-
-        if args.debug:
-            print('')
-            print('Received:')
-            print('    {} {}'.format(response.status_code, response.reason))
-            for name, value in response.headers.iteritems():
-                print('    {}: {}'.format(name, value))
-            print('')
-            if response.text:
-                print('    {}'.format(response.text))
-
-        success = 200 <= response.status_code < 300
-        print(response.text)
         exit(0 if success else 1)
-
-        # print(payload_dict)
-        # exit(0)
 
     else:
         print('Unknown command "{}"'.format(args.command))
