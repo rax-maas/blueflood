@@ -11,7 +11,7 @@ def get_unix_time(dt):
     return int(time.mktime(dt.timetuple()))
 
 
-if __name__ == '__main__':
+def main():
 
     parser = argparse.ArgumentParser()
 
@@ -105,3 +105,6 @@ if __name__ == '__main__':
 
     else:
         print('Unknown command "{}"'.format(args.command))
+
+if __name__ == '__main__':
+    main()
