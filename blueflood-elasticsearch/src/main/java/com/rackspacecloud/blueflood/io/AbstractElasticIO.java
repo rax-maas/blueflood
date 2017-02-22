@@ -16,8 +16,11 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import static java.util.stream.Collectors.toSet;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public abstract class AbstractElasticIO implements DiscoveryIO {
@@ -26,7 +29,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
     // todo: these should be instances per client.
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
-    protected final Timer esMetricTokensQueryTimer = Metrics.timer(getClass(), "ES Metric Tokens Query Duration");
+    protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
     protected Meter classCastExceptionMeter = Metrics.meter(getClass(), "Failed Cast to IMetric");
@@ -97,50 +100,51 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
     /**
-     * This method returns a list of MetricToken's matching the given glob query.
+     * This method returns a list of {@link MetricName}'s matching the given glob query.
      *
-     * for metric names: foo.bar.xxx,
-     *                   foo.bar.baz.qux,
+     * for metrics: foo.bar.xxx,
+     *              foo.bar.baz.qux,
      *
-     * for query=foo.bar.*, returns the below list of metric tokens
+     * for query=foo.bar.*, returns the below list of metric names
      *
-     * new MetricToken("foo.bar.xxx", true)   <- From metric foo.bar.xxx
-     * new MetricToken("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
+     * new MetricName("foo.bar.xxx", true)   <- From metric foo.bar.xxx
+     * new MetricName("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
      *
      * @param tenant
      * @param query is glob representation of hierarchical levels of token. Ex: foo.bar.*
      * @return
      * @throws Exception
      */
-    public List<MetricToken> getMetricTokens(final String tenant, final String query) throws Exception {
+    public List<MetricName> getMetricNames(final String tenant, final String query) throws Exception {
 
-        Timer.Context esMetricTokensQueryTimerCtx = esMetricTokensQueryTimer.time();
+        Timer.Context esMetricNamesQueryTimerCtx = esMetricNamesQueryTimer.time();
         SearchResponse response;
 
         try {
-            response = getMetricTokensFromES(tenant, regexForPrevToNextLevel(query));
+            response = getMetricNamesFromES(tenant, regexToGrabCurrentAndNextLevel(query));
         } finally {
-            esMetricTokensQueryTimerCtx.stop();
+            esMetricNamesQueryTimerCtx.stop();
         }
 
-        int totalTokens = getTotalTokens(query);
+        // For example, if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
+        int baseLevel = getTotalTokens(query);
+        MetricIndexData metricIndexData = buildMetricIndexData(response, baseLevel);
 
-        // if query = foo.bar.*, query has 3 levels, we pick base level as 2 since regex grabbed metric paths from level 2
-        int baseLevel = totalTokens - 1;
-        MetricIndexData metricIndexData = buildMetricIndexData(response, query, baseLevel);
+        List<MetricName> metricNames = new ArrayList<>();
 
-        MetricTokenListBuilder tokenInfoBuilder = new MetricTokenListBuilder();
-        //token paths matching query, which also have a next level.
-        tokenInfoBuilder.addTokenPathWithNextLevel(metricIndexData.getTokenPathsWithNextLevel());
+        //Metric Names matching query which have next level
+        metricNames.addAll(metricIndexData.getMetricNamesWithNextLevel()
+                                          .stream()
+                                          .map(x -> new MetricName(x, false))
+                                          .collect(toSet()));
 
-        Set<String> completeMetricsMatchingQuery = metricIndexData.getCompleteMetricNamesAtBasePlusOneLevel();
+        //complete metric names matching query
+        metricNames.addAll(metricIndexData.getCompleteMetricNamesAtBaseLevel()
+                                          .stream()
+                                          .map(x -> new MetricName(x, true))
+                                          .collect(toSet()));
 
-        //For complete metric names matching query, initializing isLeaf as true.
-        for (String nextLevelMetricName: completeMetricsMatchingQuery) {
-            tokenInfoBuilder.addTokenPath(nextLevelMetricName, true);
-        }
-
-        return tokenInfoBuilder.build();
+        return metricNames;
     }
 
     private int getTotalTokens(String query) {
@@ -196,7 +200,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
      * @param regexMetricName
      * @return
      */
-    private SearchResponse getMetricTokensFromES(final String tenant, final String regexMetricName) {
+    private SearchResponse getMetricNamesFromES(final String tenant, final String regexMetricName) {
 
         AggregationBuilder aggregationBuilder =
                 AggregationBuilders.terms(METRICS_TOKENS_AGGREGATE)
@@ -219,7 +223,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
 
-    private MetricIndexData buildMetricIndexData(final SearchResponse response, final String query, final int baseLevel) {
+    private MetricIndexData buildMetricIndexData(final SearchResponse response, final int baseLevel) {
 
         MetricIndexData metricIndexData = new MetricIndexData(baseLevel);
         Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
@@ -232,24 +236,23 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     }
 
     /**
-     * Returns regex which could grab metric token paths from previous level to the next level
+     * Returns regex which could grab metric names from current level to the next level
      * for a given query.
      *
      * (Some exceptions when query has only one level due to the nature of underlying data)
      *
-     * for metric names: foo.bar.baz,
-     *                   foo.bar.baz.qux,
+     * for metrics : foo.bar.baz,
+     *               foo.bar.baz.qux,
      *
      * for query=foo.bar.*, the regex which this method returns will capture the following metric token paths.
      *
-     *  "foo.bar"           <- previous to query level
-     *  "foo.bar.baz"       <- same to query level
-     *  "foo.bar.baz.qux"   <- next to query level
+     *  "foo.bar.baz"       <- current level
+     *  "foo.bar.baz.qux"   <- next level
      *
      * @param query
      * @return
      */
-    protected String regexForPrevToNextLevel(final String query) {
+    protected String regexToGrabCurrentAndNextLevel(final String query) {
 
         if (StringUtils.isEmpty(query)) {
             throw new IllegalArgumentException("Query(glob) string cannot be null/empty");
@@ -261,17 +264,11 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         if (totalQueryTokens == 1) {
 
             // get metric names which matches the given query and have a next level,
-            // Ex: For metric foo.bar.baz.qux, if query=*, we should get foo.bar, foo.bar.baz. We are not
+            // Ex: For metric foo.bar.baz.qux, if query=*, we should get foo.bar. We are not
             // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
             String baseRegex = convertRegexToCaptureUptoNextToken(queryRegex);
             return baseRegex + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN;
 
-        } else if (totalQueryTokens == 2) {
-
-            return convertRegexToCaptureUptoNextToken(queryRegex) +
-                    "(" +
-                        REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN +
-                    ")" + "{0,1}";
         } else {
 
             String[] queryRegexParts = queryRegex.split("\\\\.");
@@ -282,16 +279,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             String queryRegexLastLevel = queryRegexParts[totalQueryTokens - 1];
             String lastTokenRegex = convertRegexToCaptureUptoNextToken(queryRegexLastLevel);
 
-            // Ex: For metric foo.bar.baz.qux.xxx, if query=foo.bar.b*, get foo.bar, foo.bar.baz, foo.bar.baz.qux
+            // Ex: For metric foo.bar.baz.qux.xxx, if query=foo.bar.b*, get foo.bar.baz, foo.bar.baz.qux
             // In this case baseRegex = "foo.bar", lastTokenRegex = "b[^.]*"' and the final
-            // regex is foo\.bar(\.b[^.]*(\.[^.]*){0,1}){0,1}
+            // regex is foo\.bar\.b[^.]*(\.[^.]*){0,1}
             return baseRegex +
-                    "(" +
                         REGEX_TOKEN_DELIMTER + lastTokenRegex +
                         "(" +
                             REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN +
-                        ")"  + "{0,1}" +
-                    ")" + "{0,1}";
+                        ")"  + "{0,1}";
         }
     }
 

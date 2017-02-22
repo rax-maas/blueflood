@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.utils;
 
 import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.MetricToken;
+import com.rackspacecloud.blueflood.io.MetricName;
 import com.rackspacecloud.blueflood.io.SearchResult;
 import com.rackspacecloud.blueflood.types.IMetric;
 
@@ -33,7 +33,7 @@ public class DummyDiscoveryIO3 implements DiscoveryIO {
     }
 
     @Override
-    public List<MetricToken> getMetricTokens(String tenant, String prefix) throws Exception {
+    public List<MetricName> getMetricNames(String tenant, String prefix) throws Exception {
         return null;
     }
 }

@@ -15,35 +15,24 @@ public class MetricIndexDataTest {
     //regex used by the current analyzer(in index_settings.json) to create metric indexes
     private static final Pattern patternToCreateMetricIndices = Pattern.compile("([^.]+)");
     private static final int METRIC_VALUE = 1;
+
     @Test
-    public void testTokenPathsWithNextLevelSingleIndex() {
-        MetricIndexData mi = new MetricIndexData(2);
+    public void testMetricNamesWithNextLevelSingleIndex() {
+        MetricIndexData mi = new MetricIndexData(3);
         mi.add("a.b.c.d", METRIC_VALUE);
 
-        assertEquals("tokens with next level", 1, mi.getTokenPathsWithNextLevel().size());
-        assertTrue("token value", mi.getTokenPathsWithNextLevel().contains("a.b.c"));
-        assertEquals("base level tokens", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level tokens", 0 , mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
+        assertEquals("metric names with next level", 1, mi.getMetricNamesWithNextLevel().size());
+        assertTrue("metric names", mi.getMetricNamesWithNextLevel().contains("a.b.c"));
+        assertEquals("Complete metric names", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
     }
 
     @Test
-    public void testLevel0CompleteMetricNameSingleIndex() {
-        MetricIndexData mi = new MetricIndexData(2);
-        mi.add("a.b", METRIC_VALUE);
-
-        assertEquals("tokens with next level", 0, mi.getTokenPathsWithNextLevel().size());
-        assertEquals("base level tokens", 1, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level tokens", 0 , mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
-    }
-
-    @Test
-    public void testLevel1CompleteMetricNameSingleIndex() {
-        MetricIndexData mi = new MetricIndexData(2);
+    public void testBaseLevelCompleteMetricNameSingleIndex() {
+        MetricIndexData mi = new MetricIndexData(3);
         mi.add("a.b.c", METRIC_VALUE);
 
-        assertEquals("tokens with next level", 0, mi.getTokenPathsWithNextLevel().size());
-        assertEquals("base level tokens", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level tokens", 1, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
+        assertEquals("metric names with next level", 0, mi.getMetricNamesWithNextLevel().size());
+        assertEquals("base level metric names", 1, mi.getCompleteMetricNamesAtBaseLevel().size());
     }
 
     @Test
@@ -56,15 +45,14 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
 
-        assertEquals("Tokens with next level count", 1, mi.getTokenPathsWithNextLevel().size());
-        assertEquals("Tokens with next level", true, mi.getTokenPathsWithNextLevel().contains("foo.bar.baz"));
+        assertEquals("metric names with next level count", 1, mi.getMetricNamesWithNextLevel().size());
+        assertEquals("metric names with next level", true, mi.getMetricNamesWithNextLevel().contains("foo.bar.baz"));
         assertEquals("base level complete metric names count", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level complete metric names count", 0, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
     }
 
     @Test
@@ -72,41 +60,20 @@ public class MetricIndexDataTest {
 
         ArrayList<String> metricNames = new ArrayList<String>() {{
             add("foo.bar.baz.qux.xxx");
-            add("foo.bar");
-        }};
-        String query = "foo.bar.*";
-        Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
-
-        //for base at foo.bar
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
-        for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
-            mi.add(entry.getKey(), entry.getValue());
-        }
-
-        assertEquals("base level complete metric names count", 1, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level complete metric names count", 0, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
-    }
-
-
-    @Test
-    public void testNextLevelCompleteMetricName() {
-
-        ArrayList<String> metricNames = new ArrayList<String>() {{
-            add("foo.bar.baz.qux");
             add("foo.bar.baz");
         }};
         String query = "foo.bar.*";
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
-        //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        //for base at foo.bar
+        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
 
-        assertEquals("base level complete metric names count", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level complete metric names count", 1, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
+        assertEquals("base level complete metric names count", 1, mi.getCompleteMetricNamesAtBaseLevel().size());
     }
+
 
     @Test
     public void testSingleLevelQuery() {
@@ -119,15 +86,14 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
 
-        assertEquals("Tokens with next level count", 1, mi.getTokenPathsWithNextLevel().size());
-        assertEquals("Tokens with next level", true, mi.getTokenPathsWithNextLevel().contains("foo"));
+        assertEquals("metric names with next level count", 1, mi.getMetricNamesWithNextLevel().size());
+        assertEquals("metric names with next level", true, mi.getMetricNamesWithNextLevel().contains("foo"));
         assertEquals("base level complete metric names count", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level complete metric names count", 0, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
     }
 
     @Test
@@ -141,15 +107,14 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length - 1);
+        MetricIndexData mi = new MetricIndexData(query.split(AbstractElasticIO.REGEX_TOKEN_DELIMTER).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
 
-        assertEquals("Tokens with next level count", 1, mi.getTokenPathsWithNextLevel().size());
-        assertEquals("Tokens with next level", true, mi.getTokenPathsWithNextLevel().contains("foo.bar"));
-        assertEquals("base level complete metric names count", 0, mi.getCompleteMetricNamesAtBaseLevel().size());
-        assertEquals("next level complete metric names count", 1, mi.getCompleteMetricNamesAtBasePlusOneLevel().size());
+        assertEquals("metric names with next level count", 1, mi.getMetricNamesWithNextLevel().size());
+        assertEquals("metric names with next level", true, mi.getMetricNamesWithNextLevel().contains("foo.bar"));
+        assertEquals("base level complete metric names count", 1, mi.getCompleteMetricNamesAtBaseLevel().size());
     }
 
     @Test
@@ -213,7 +178,6 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo.bar.*");
 
         Set<String> expectedIndexes = new HashSet<String>() {{
-            add("foo.bar|1");
             add("foo.bar.baz|1");
             add("foo.bar.baz.qux|1");
         }};
@@ -231,7 +195,6 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexMap = buildMetricIndexesSimilarToES(metricNames, "foo.bar.*");
 
         Set<String> expectedIndexes = new HashSet<String>() {{
-            add("foo.bar|3");
             add("foo.bar.baz|3");
             add("foo.bar.baz.qux|2");
         }};
@@ -329,13 +292,13 @@ public class MetricIndexDataTest {
             metricIndexes.addAll(tokens);
 
             for (String metricIndex: metricIndexes) {
-                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0;
+                Long count =  metricIndexMap.containsKey(metricIndex) ? metricIndexMap.get(metricIndex) : 0L;
                 metricIndexMap.put(metricIndex, count + 1);
             }
         }
 
         ElasticIO elasticIO = new ElasticIO();
-        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexForPrevToNextLevel(query));
+        Pattern patternToGet2Levels = Pattern.compile(elasticIO.regexToGrabCurrentAndNextLevel(query));
 
         Map<String, Long> outputMap = new HashMap<String, Long>();
         for (Map.Entry<String, Long> entry: metricIndexMap.entrySet()) {

@@ -44,7 +44,7 @@ import static junit.framework.Assert.assertEquals;
 /**
  * Integration Tests for GET .../metric_name/search
  */
-public class HttpMetricTokensHandlerIntegrationTest extends HttpIntegrationTestBase {
+public class HttpMetricNamesHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     private final String tenantId = "540123";
 
@@ -74,10 +74,10 @@ public class HttpMetricTokensHandlerIntegrationTest extends HttpIntegrationTestB
     }
 
     @Test
-    public void testHttpMetricTokensHandler_HappyCaseAllResults() throws Exception {
+    public void testHttpMetricNamesHandler_HappyCaseAllResults() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put("query", metricPrefix + ".*");
-        HttpGet get = new HttpGet(getQueryTokenSearchURI(tenantId));
+        HttpGet get = new HttpGet(getMetricNameSearchURI(tenantId));
         HttpResponse response = client.execute(get);
 
         String responseString = EntityUtils.toString(response.getEntity());
@@ -89,10 +89,10 @@ public class HttpMetricTokensHandlerIntegrationTest extends HttpIntegrationTestB
     }
 
     @Test
-    public void testHttpMetricTokensHandler_HappyCaseNoResults() throws Exception {
+    public void testHttpMetricNamesHandler_HappyCaseNoResults() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put("query","dne." + baseMillis + "." + getPostfix());
-        HttpGet get = new HttpGet(getQueryTokenSearchURI(tenantId));
+        HttpGet get = new HttpGet(getMetricNameSearchURI(tenantId));
         HttpResponse response = client.execute(get);
 
         String responseString = EntityUtils.toString(response.getEntity());
@@ -102,9 +102,9 @@ public class HttpMetricTokensHandlerIntegrationTest extends HttpIntegrationTestB
     }
 
     @Test
-    public void testHttpMetricTokensHandler_NoQueryParam() throws Exception {
+    public void testHttpMetricNamesHandler_NoQueryParam() throws Exception {
         parameterMap = new HashMap<String, String>();
-        HttpGet get = new HttpGet(getQueryTokenSearchURI(tenantId));
+        HttpGet get = new HttpGet(getMetricNameSearchURI(tenantId));
         HttpResponse response = client.execute(get);
 
         ErrorResponse errorResponse = getErrorResponse(response);

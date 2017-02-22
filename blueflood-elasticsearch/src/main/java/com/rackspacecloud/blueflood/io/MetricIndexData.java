@@ -10,14 +10,11 @@ import java.util.*;
  *   foo.bar.baz.aux -> [foo, foo.bar, foo.bar.baz, foo.bar.baz.aux, bar, baz, aux]
  *   foo.bar.baz     -> [foo, foo.bar, foo.bar.baz, bar, baz]
  *
- * If we request ES to return us upto next two levels of the metric indexes for foo.bar,
+ * If we request ES to return us upto the next level of the metric indexes for foo.bar.*,
  * we get this below response from ES where key is the metric index and doc_count is
  * the number of documents(think metric names) it points to.
  *
  * "buckets" : [ {
- *     "key" : "foo.bar",
- *     "doc_count" : 2
- *   }, {
  *     "key" : "foo.bar.baz",
  *     "doc_count" : 2
  *   }, {
@@ -27,7 +24,7 @@ import java.util.*;
  *
  * If we feed each metric index to this class by calling the add(metricIndex, docCount) method,
  * this class analyzes the data and provides methods to retrieve different aspects of this data
- * with respect to baseLevel(if set to 2 with above data, uses foo.bar as reference).
+ * with respect to baseLevel(if set to 3 with above data, uses foo.bar.baz as reference).
  *
  */
 public class MetricIndexData {
@@ -53,14 +50,12 @@ public class MetricIndexData {
 
     private final int baseLevel;
 
-    //for token paths which have two levels after baseLevel, contains token paths upto next level from baseLevel
-    private final Set<String> tokenPathWithNextLevelSet = new LinkedHashSet<String>();
+    //for metric names which have next level. (compared to baseLevel)
+    private final Set<String> metricNamesWithNextLevelSet = new LinkedHashSet<String>();
 
-    //contains all metric indexes which are of the same length as baseLevel
-    final Map<String, MetricIndexDocCount> metricIndexSameLevelMap = new HashMap<String, MetricIndexDocCount>();
-
-    //contains all metric indexes which are more than the length of baseLevel by one.
-    final Map<String, MetricIndexDocCount> metricIndexNextLevelMap = new HashMap<String, MetricIndexDocCount>();
+    //contains all metric indexes which are of the same length as baseLevel. This is to determine if we
+    //have any complete metric names at base level itself.
+    final Map<String, MetricIndexDocCount> metricNameBaseLevelMap = new HashMap<>();
 
     public MetricIndexData(int baseLevel) {
         this.baseLevel = baseLevel;
@@ -82,42 +77,31 @@ public class MetricIndexData {
          * For the ES response shown in class description, for a baseLevel of 2,
          * the data is classified as follows
          *
-         * tokenPathWithNextLevelSet    -> {foo.bar.baz}   (Token paths which are at base + 1 level and also have a subsequent level.)
+         * metricNamesWithNextLevelSet    -> {foo.bar.baz}   (Metric Names which are at base + 1 level and also have a subsequent level.)
          *
-         * Both these maps maintain data in the form {metricIndex, (actualDocCount, childrenTotalDocCount)}
+         * For count map, data is in the form {metricIndex, (actualDocCount, childrenTotalDocCount)}
          *
-         * metricIndexSameLevelMap   -> {foo.bar -> (2, 2)}     (all indexes which are of same length as baseLevel)
-         * metricIndexNextLevelMap   -> {foo.bar.baz -> (2, 1)} (all indexes which are more than the length of baseLevel by one)
+         * metricNameBaseLevelMap   -> {foo.bar.baz -> (2, 1)}     (all indexes which are of same length as baseLevel)
          *
          */
 
         switch (tokens.length - baseLevel) {
-            case 2:
+            case 1:
                 if (baseLevel > 0) {
-                    tokenPathWithNextLevelSet.add(metricIndex.substring(0, metricIndex.lastIndexOf(".")));
+                    metricNamesWithNextLevelSet.add(metricIndex.substring(0, metricIndex.lastIndexOf(".")));
                 } else {
-                    tokenPathWithNextLevelSet.add(metricIndex.substring(0, metricIndex.indexOf(".")));
+                    metricNamesWithNextLevelSet.add(metricIndex.substring(0, metricIndex.indexOf(".")));
                 }
 
-
-                //For foo.bar.baz.aux, baseLevel=2, we update children doc count of foo.bar.baz
-                addChildrenDocCount(metricIndexNextLevelMap,
-                        metricIndex.substring(0, metricIndex.lastIndexOf(".")),
-                        docCount);
-                break;
-
-            case 1:
-                setActualDocCount(metricIndexNextLevelMap, metricIndex, docCount);
-
-                //For foo.bar.baz, baseLevel=2 we update children doc count of foo.bar
-                addChildrenDocCount(metricIndexSameLevelMap,
-                        metricIndex.substring(0, metricIndex.lastIndexOf(".")),
-                        docCount);
+                //For foo.bar.baz, baseLevel=3 we update children doc count of foo.bar.baz
+                addChildrenDocCount(metricNameBaseLevelMap,
+                                    metricIndex.substring(0, metricIndex.lastIndexOf(".")),
+                                    docCount);
                 break;
 
             case 0:
 
-                setActualDocCount(metricIndexSameLevelMap, metricIndex, docCount);
+                setActualDocCount(metricNameBaseLevelMap, metricIndex, docCount);
                 break;
 
             default:
@@ -126,15 +110,15 @@ public class MetricIndexData {
     }
 
     /**
-     * Token paths which are at base + 1 level and also have a subsequent level.
+     * Metric Names which have next level compared to baseLevel.
      *
      * Ex: For metrics foo.bar.baz.qux, foo.bar.baz
-     *      if baseLevel = 2, returns foo.bar.baz
+     *      if baseLevel = 3, returns foo.bar.baz as there it has next level token 'qux'
      *
      * @return
      */
-    public Set<String> getTokenPathsWithNextLevel() {
-        return Collections.unmodifiableSet(tokenPathWithNextLevelSet);
+    public Set<String> getMetricNamesWithNextLevel() {
+        return Collections.unmodifiableSet(metricNamesWithNextLevelSet);
     }
 
     /**
@@ -146,20 +130,9 @@ public class MetricIndexData {
      * @return
      */
     public Set<String> getCompleteMetricNamesAtBaseLevel() {
-        return getCompleteMetricNames(metricIndexSameLevelMap);
+        return getCompleteMetricNames(metricNameBaseLevelMap);
     }
 
-    /**
-     * Returns complete metric names which are longer than baseLevel by one.
-     *
-     * Ex: For metrics foo.bar.baz.qux, foo.bar.baz
-     *      if baseLevel = 3, returns foo.bar.baz.qux
-     *
-     * @return
-     */
-    public Set<String> getCompleteMetricNamesAtBasePlusOneLevel() {
-        return getCompleteMetricNames(metricIndexNextLevelMap);
-    }
 
     /**
      *  Compares actualDocCount and total docCount of its immediate children of an index

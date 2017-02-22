@@ -9,6 +9,6 @@ public interface DiscoveryIO {
     public void insertDiscovery(List<IMetric> metrics) throws Exception;
     public List<SearchResult> search(String tenant, String query) throws Exception;
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception;
-    public List<MetricToken> getMetricTokens(String tenant, String prefix) throws Exception;
+    public List<MetricName> getMetricNames(String tenant, String prefix) throws Exception;
 
 }
