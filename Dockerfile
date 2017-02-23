@@ -1,18 +1,20 @@
 FROM java:7
 
-MAINTAINER gaurav.bajaj@rackspace.com
+MAINTAINER cloudmetrics-dev@lists.rackspace.com
 
-RUN apt-get update
-RUN apt-get install -y netcat
-RUN apt-get install -y git
-RUN apt-get install -y python python-dev python-pip python-virtualenv && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y --fix-missing && \
+    apt-get dist-upgrade -y && \
+    apt-get install -y netcat git-core python python-dev python-pip python-virtualenv && \
+    apt-get -y autoremove --purge && \
+    apt-get -y clean && \
+    apt-get -y autoclean
+
 RUN pip install cqlsh==4.1.1
 
 COPY ES-Setup /ES-Setup
 COPY load.cdl /blueflood.cdl
 
-COPY artifacts /
+COPY build /
 RUN ln -s blueflood-all-*-jar-with-dependencies.jar blueflood-all-jar-with-dependencies.jar
 
 ENV MAX_ROLLUP_READ_THREADS=20
@@ -54,7 +56,7 @@ ENV MIN_HEAP_SIZE=1G
 ENV MAX_HEAP_SIZE=1G
 
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 19000
 EXPOSE 20000

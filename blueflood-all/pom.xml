@@ -55,10 +55,10 @@
         <configuration>
           <skipDocker>false</skipDocker>
           <imageName>rackerlabs/blueflood</imageName>
-          <dockerDirectory>${main.basedir}/contrib/blueflood-docker</dockerDirectory>
+          <dockerDirectory>${main.basedir}</dockerDirectory>
           <resources>
             <resource>
-              <targetPath>/artifacts</targetPath>
+              <targetPath>/build</targetPath>
               <directory>${project.build.directory}</directory>
               <include>${project.build.finalName}-jar-with-dependencies.jar</include>
             </resource>
