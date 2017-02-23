@@ -9,14 +9,14 @@ else
 fi
 
 # Set addresses in cassandra config files
-sed -i "s/%seed_ip%/$SEED_IP/g" /src/config/cassandra.yaml
-sed -i "s/%listen_ip%/$IP/g" /src/config/cassandra.yaml
-sed -i "s/%listen_ip%/$IP/g" /src/config/cassandra-env.sh
-sed -i "s/%listen_ip%/$IP/g" /src/config/blueflood.conf
+sed -i "s/%seed_ip%/$SEED_IP/g" /opt/config/cassandra.yaml
+sed -i "s/%listen_ip%/$IP/g" /opt/config/cassandra.yaml
+sed -i "s/%listen_ip%/$IP/g" /opt/config/cassandra-env.sh
+sed -i "s/%listen_ip%/$IP/g" /opt/config/blueflood.conf
 
 # Copy cassandra configs to /etc/cassandra
-cp /src/config/cassandra-env.sh /etc/cassandra/
-cp /src/config/cassandra.yaml /etc/cassandra/
+cp /opt/config/cassandra-env.sh /etc/cassandra/
+cp /opt/config/cassandra.yaml /etc/cassandra/
 
 #export MAX_HEAP_SIZE="512M"
 #export HEAP_NEWSIZE="256M"
@@ -26,17 +26,17 @@ sleep 5;
 
 # Setup cassandra schema
 if [ -z $1 ]; then
-  cassandra-cli -h ${IP} -f /src/init.cql
+  cassandra-cli -h ${IP} -f /opt/init.cql
 fi
 
-# Copy blueflood configs to /src/blueflood
-cp /src/config/blueflood.conf /src/blueflood/
-cp /src/config/blueflood-log4j.properties /src/blueflood/
+# Copy blueflood configs to /opt/blueflood
+cp /opt/config/blueflood.conf /opt/blueflood/
+cp /opt/config/blueflood-log4j.properties /opt/blueflood/
 
 # Build blueflood
-cd /src/blueflood/
+cd /opt/blueflood/
 mvn package -P all-modules
-cp /src/blueflood/blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar /src/blueflood/
+cp /opt/blueflood/blueflood-all/target/blueflood-all-2.0.0-SNAPSHOT-jar-with-dependencies.jar /opt/blueflood/
 
 /usr/bin/java \
         -Dblueflood.config=file:blueflood.conf \

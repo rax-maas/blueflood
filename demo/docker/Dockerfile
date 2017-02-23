@@ -1,44 +1,38 @@
-FROM ubuntu:12.04
-# make sure the package repository is up to date
-RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
+FROM ubuntu:16.04
+
 RUN apt-get update
 
-# install net tools
-RUN apt-get -y -f install curl net-tools
-
-# install git
-RUN apt-get -y install git
-
-# install maven (building blueflood jar)
-RUN apt-get -y install maven
+RUN apt-get -y -f install curl net-tools git maven
 
 # add cassandra PPA
-RUN curl -L http://debian.datastax.com/debian/repo_key | apt-key add -
-RUN echo "deb http://debian.datastax.com/community/ stable main" >> /etc/apt/sources.list.d/datastax.list
-
-# install python-software-properties (so you can do add-apt-repository)
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q python-software-properties
+RUN apt-key adv --fetch-keys https://debian.datastax.com/debian/repo_key && \
+    echo 'deb     "https://debian.datastax.com/community/" stable main' > /etc/apt/sources.list.d/datastax.list
 
 # install oracle java from PPA (cassandra requires oracle java)
-RUN add-apt-repository ppa:webupd8team/java -y
-RUN apt-get update
-RUN echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7B2C3B0889BF5709A105D03AC2518248EEA14886 && \
+    echo 'deb     "http://ppa.launchpad.net/webupd8team/java/ubuntu" xenial main' > /etc/apt/sources.list.d/webupd8team.list && \
+    echo 'deb-src "http://ppa.launchpad.net/webupd8team/java/ubuntu" xenial main' > /etc/apt/sources.list.d/webupd8team.list && \
+    apt-get update
+
+RUN echo 'oracle-java7-installer shared/accepted-oracle-license-v1-1 select true' | /usr/bin/debconf-set-selections
 RUN apt-get install -y oracle-java7-installer
 
 # Set oracle java as the default java
 RUN update-java-alternatives -s java-7-oracle
 
 # install cassandra
-RUN apt-get install cassandra -y
+RUN apt-get install -y cassandra
 
-# git clone blueflood repo
-RUN git clone http://github.com/rackerlabs/blueflood.git /src/blueflood
+# git clone Blueflood repo
+RUN git clone http://github.com/rackerlabs/blueflood.git /opt/blueflood
 
 # start Cassandra
-ADD . /src
-RUN chmod +x /src/start.sh
+ADD . /opt
+RUN chmod +x /opt/start.sh
+
 EXPOSE 9160
 EXPOSE 7199
 EXPOSE 19000
 EXPOSE 20000
-CMD ["/src/start.sh"]
+
+CMD ["/opt/start.sh"]
