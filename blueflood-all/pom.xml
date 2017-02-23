@@ -55,7 +55,8 @@
         <configuration>
           <skipDocker>false</skipDocker>
           <imageName>rackerlabs/blueflood</imageName>
-          <dockerDirectory>${main.basedir}</dockerDirectory>
+          <baseImage>java</baseImage>
+          <entryPoint>["docker-entrypoint.sh"]</entryPoint>
           <resources>
             <resource>
               <targetPath>/build</targetPath>
