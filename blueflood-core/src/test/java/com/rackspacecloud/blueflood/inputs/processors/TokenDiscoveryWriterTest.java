@@ -35,86 +35,6 @@ public class TokenDiscoveryWriterTest {
     }
 
     @Test
-    public void testGetTokens() {
-
-        String tenantID = "111111";
-        String metricName = "a.b.c.d";
-        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
-
-        String[] expectedTokens = new String[] {"a", "b", "c", "d"};
-
-        String[] expectedPaths = new String[] {
-                "",
-                "a",
-                "a.b",
-                "a.b.c"};
-
-        String[] expectedIds = new String[] {
-                tenantID + ":" + "a",
-                tenantID + ":" + "a.b",
-                tenantID + ":" + "a.b.c",
-                tenantID + ":" + "a.b.c.d:$"};
-
-        List<Token> tokens = TokenDiscoveryWriter.getTokens(locator);
-        tokens.forEach(System.out::println);
-
-        verifyTokenInfos(tenantID, expectedTokens, expectedPaths, expectedIds, tokens);
-    }
-
-    @Test
-    public void testGetTokensForMetricWithOneToken() {
-
-        String tenantID = "111111";
-        String metricName = "a";
-        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
-
-        String[] expectedTokens = new String[] {"a"};
-        String[] expectedParents = new String[] {""};
-        String[] expectedIds = new String[] {tenantID + ":" + "a:$"};
-
-        List<Token> tokens = TokenDiscoveryWriter.getTokens(locator);
-        verifyTokenInfos(tenantID, expectedTokens, expectedParents, expectedIds, tokens);
-    }
-
-    @Test
-    public void testGetTokensForMetricNoTokens() {
-
-        String tenantID = "111111";
-        String metricName = "";
-        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
-
-        List<Token> tokens = TokenDiscoveryWriter.getTokens(locator);
-        assertEquals("Total number of tokens invalid", 0, tokens.size());
-    }
-
-    private void verifyTokenInfos(String tenantID, String[] expectedTokens, String[] expectedParents,
-                                  String[] expectedIds, List<Token> actualTokenInfos) {
-
-        assertEquals("Total number of tokens invalid", expectedTokens.length, actualTokenInfos.size());
-
-        actualTokenInfos.stream().forEach(x -> assertEquals(tenantID, x.getLocator().getTenantId()));
-
-
-        String[] actualTokens = actualTokenInfos.stream()
-                .map(Token::getToken)
-                .collect(toList()).toArray(new String[0]);
-
-        assertArrayEquals("Tokens mismatch", expectedTokens, actualTokens);
-
-        String[] actualPaths = actualTokenInfos.stream()
-                .map(Token::getParent)
-                .collect(toList()).toArray(new String[0]);
-
-        assertArrayEquals("Token parents mismatch", expectedParents, actualPaths);
-
-        String[] actualIds = actualTokenInfos.stream()
-                .map(Token::getDocumentId)
-                .collect(toList()).toArray(new String[0]);
-
-        assertArrayEquals("Token Ids mismatch", expectedIds, actualIds);
-    }
-
-    @Test
     public void testGenerateAndConsolidateTokens() {
 
         String tenantID = "111111";
@@ -168,7 +88,7 @@ public class TokenDiscoveryWriterTest {
         Locator locator1 = Locator.createLocatorFromPathComponents("111111", "a.b.c.d");
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        String[] tokens = locator1.getMetricName().split(Token.REGEX_TOKEN_DELIMTER);
+        String[] tokens = locator1.getMetricName().split(Locator.metricTokenSeparatorRegex);
         List<Token> expectedTokens = IntStream.range(0, tokens.length)
                                               .mapToObj(x -> new Token(locator1, tokens, x)).collect(toList());
 
@@ -235,10 +155,10 @@ public class TokenDiscoveryWriterTest {
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
         batch.add(Arrays.asList(new Metric(locator2, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        String[] tokens1 = locator1.getMetricName().split(Token.REGEX_TOKEN_DELIMTER);
+        String[] tokens1 = locator1.getMetricName().split(Locator.metricTokenSeparatorRegex);
         List<Token> expectedTokens = IntStream.range(0, tokens1.length)
                                               .mapToObj(x -> new Token(locator1, tokens1, x)).collect(toList());
-        String[] tokens2 = locator2.getMetricName().split(Token.REGEX_TOKEN_DELIMTER);
+        String[] tokens2 = locator2.getMetricName().split(Locator.metricTokenSeparatorRegex);
         expectedTokens.add( new Token(locator2, tokens2, 3)); //notice that there is only new expected token from the second locator.
 
         tokenWriter.processTokens(batch).get();

@@ -12,16 +12,13 @@ import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -71,30 +68,6 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
     }
 
     /**
-     * This method return list of tokens with their parents for a current Discovery object.
-     *
-     * For example: A locator of 1111:a.b.c.d would generate the following tokens
-     *
-     * Token{token='a', parent='', isLeaf=false, documentId='111111:a', locator=111111.a.b.c.d}
-     * Token{token='b', parent='a', isLeaf=false, documentId='111111:a.b', locator=111111.a.b.c.d}
-     * Token{token='c', parent='a.b', isLeaf=false, documentId='111111:a.b.c', locator=111111.a.b.c.d}
-     * Token{token='d', parent='a.b.c', isLeaf=true, documentId='111111:a.b.c.d:$', locator=111111.a.b.c.d}
-     *
-     * @return
-     */
-    static List<Token> getTokens(Locator locator) {
-
-        if (StringUtils.isEmpty(locator.getMetricName()) || StringUtils.isEmpty(locator.getTenantId()))
-            return new ArrayList<>();
-
-        String[] tokens = locator.getMetricName().split(Token.REGEX_TOKEN_DELIMTER);
-
-        return IntStream.range(0, tokens.length)
-                        .mapToObj(index -> new Token(locator, tokens, index))
-                        .collect(toList());
-    }
-
-    /**
      * This method takes a list of list of metrics and does the foloowing
      *
      * 1) Convert list of list of metrics to flat list of {@link Locator}'s
@@ -112,9 +85,9 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
                                         .map(IMetric::getLocator)
                                         .filter(locator -> !LocatorCache.getInstance().isLocatorCurrentInTokenDiscoveryLayer(locator));
 
-        return locators.flatMap(locator -> getTokens(locator).stream())
-                       .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
-                       .collect(toSet());
+        return Token.getConsolidatedTokens(locators)
+                    .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
+                    .collect(toSet());
     }
 
     public ListenableFuture<Boolean> processTokens(final List<List<IMetric>> input) {

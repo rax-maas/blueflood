@@ -2,9 +2,8 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.http.*;
-import com.rackspacecloud.blueflood.io.Constants;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.MetricName;
+import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -22,14 +21,22 @@ import java.util.List;
 
 public class HttpMetricNamesHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricNamesHandler.class);
-    private DiscoveryIO discoveryHandle;
+    private BaseDiscoveryIO discoveryHandle;
+
+    public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
+            Configuration.getInstance().getBooleanProperty(CoreConfig.EXP_TOKEN_SEARCH_IMPROVEMENTS);
 
     public HttpMetricNamesHandler() {
-        discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+        log.info("Token search improvements enabled: " + EXP_TOKEN_SEARCH_IMPROVEMENTS);
+        if (EXP_TOKEN_SEARCH_IMPROVEMENTS) {
+            discoveryHandle = (TokenDiscoveryIO) ModuleLoader.getInstance(TokenDiscoveryIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES);
+        } else {
+            discoveryHandle = (DiscoveryIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES);
+        }
     }
 
     private final com.codahale.metrics.Timer HttpMetricNamesHandlerTimer = Metrics.timer(HttpMetricNamesHandler.class,
-            "Handle HTTP request for getMetricNames");
+                                                                                         "Handle HTTP request for getMetricNames");
 
     public HttpMetricNamesHandler(DiscoveryIO discoveryHandle) {
         this.discoveryHandle = discoveryHandle;

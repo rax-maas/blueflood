@@ -23,8 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Locator implements Comparable<Locator> {
-    private static final String metricTokenSeparator;
-    private static final String metricTokenSeparatorRegex;
+    public static final String metricTokenSeparator;
+    public static final String metricTokenSeparatorRegex;
     private static final Logger log = LoggerFactory.getLogger(Locator.class);
     private String stringRep = null;
     private String tenantId = null;

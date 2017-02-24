@@ -57,14 +57,14 @@ public class TokenCache {
      *
      */
     public synchronized boolean isTokenCurrent(Token token) {
-        return insertedTokens.getIfPresent(token.getDocumentId()) != null;
+        return insertedTokens.getIfPresent(token.getId()) != null;
     }
 
     /**
      * Marks the token as recently inserted
      */
     public synchronized void setTokenCurrent(Token token) {
-        insertedTokens.put(token.getDocumentId(), Boolean.TRUE);
+        insertedTokens.put(token.getId(), Boolean.TRUE);
     }
 
     @VisibleForTesting
