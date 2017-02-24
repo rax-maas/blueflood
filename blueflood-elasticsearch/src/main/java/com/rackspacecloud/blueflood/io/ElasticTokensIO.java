@@ -228,7 +228,8 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
      * For a given glob, gives regex for {@code Locator.metricTokenSeparator} separated tokens
      *
      * For example:
-     *      globPattern of foo.*.* would produce a regex
+     *      globPattern of foo.*.* would produce a regex  foo\.[^.]+\.[^.]+
+     *      globPattern of foo.b*.* would produce a regex foo\.b[^.]*\.[^.]+
      *
      * @param globPattern
      * @return
