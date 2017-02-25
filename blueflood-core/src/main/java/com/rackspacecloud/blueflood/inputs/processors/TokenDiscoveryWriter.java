@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -38,7 +39,7 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
     public void registerIO(TokenDiscoveryIO io) {
         tokenDiscoveryIOs.add(io);
         writeErrorMeters.put(io.getClass(),
-                Metrics.meter(io.getClass(), "TokenDiscoveryWriter Write Errors")
+                             Metrics.meter(io.getClass(), "TokenDiscoveryWriter Write Errors")
         );
     }
 
@@ -68,26 +69,32 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
     }
 
     /**
-     * This method takes a list of list of metrics and does the foloowing
+     * For all of these {@link Locator}'s, generate a unique list of {@link Token}'s which are not in token cache
      *
-     * 1) Convert list of list of metrics to flat list of {@link Locator}'s
-     * 2) Filter only {@link Locator}'s which are not in token discovery layer cache.
-     * 3) For all of these {@link Locator}'s, generate a unique list of {@link Token}'s which are not in token cache
+     * @param locators
+     * @return
+     */
+    static Set<Token> generateAndConsolidateTokens(final List<Locator> locators) {
+
+        return Token.getConsolidatedTokens(locators.stream())
+                    .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
+                    .collect(toSet());
+    }
+
+    /**
+     * Get all locators corresponding to the metrics which are not current.
      *
      * @param input
      * @return
      */
-    static Set<Token> generateAndConsolidateTokens(final List<List<IMetric>> input) {
+    static List<Locator> getLocators(final List<List<IMetric>> input) {
 
         //converting list of lists of metrics to flat list of locators that are not current.
-        Stream<Locator> locators = input.stream()
-                                        .flatMap(List::stream)
-                                        .map(IMetric::getLocator)
-                                        .filter(locator -> !LocatorCache.getInstance().isLocatorCurrentInTokenDiscoveryLayer(locator));
-
-        return Token.getConsolidatedTokens(locators)
-                    .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
-                    .collect(toSet());
+        return input.stream()
+                    .flatMap(List::stream)
+                    .map(IMetric::getLocator)
+                    .filter(locator -> !LocatorCache.getInstance().isLocatorCurrentInTokenDiscoveryLayer(locator))
+                    .collect(toList());
     }
 
     public ListenableFuture<Boolean> processTokens(final List<List<IMetric>> input) {
@@ -95,8 +102,10 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
         return getThreadPool().submit(() -> {
             boolean success = true;
 
+            List<Locator> locators = getLocators(input);
+
             List<Token> tokens = new ArrayList<>();
-            tokens.addAll(generateAndConsolidateTokens(input));
+            tokens.addAll(generateAndConsolidateTokens(locators));
 
             if (tokens.size() > 0) {
                 for (TokenDiscoveryIO io : tokenDiscoveryIOs) {
@@ -111,14 +120,21 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
             }
 
             if (success && tokens.size() > 0) {
+
                 tokens.stream()
                       .filter(token -> !token.isLeaf()) //do not cache leaf nodes
                       .forEach(token -> {
 
-                          //updating cache
+                          //updating token cache
                           TokenCache.getInstance().setTokenCurrent(token);
-                          LocatorCache.getInstance().setLocatorCurrentInTokenDiscoveryLayer(token.getLocator());
                       });
+
+                locators.stream()
+                        .forEach(locator -> {
+
+                            //updating locator cache
+                            LocatorCache.getInstance().setLocatorCurrentInTokenDiscoveryLayer(locator);
+                        });
             }
 
             return success;

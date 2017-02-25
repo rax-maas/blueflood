@@ -128,6 +128,8 @@ public class HttpMetricsIngestionServer {
         //register the tracker MBean for JMX/jolokia
         log.info("Registering tracker service");
         Tracker.getInstance().register();
+
+        log.info("Token search improvements enabled: " + EXP_TOKEN_SEARCH_IMPROVEMENTS);
     }
 
     private void setupPipeline(SocketChannel channel, RouteMatcher router) {

@@ -44,7 +44,7 @@ public class TokenDiscoveryWriterTest {
         List<List<IMetric>> batch = new ArrayList<>();
         batch.add(Arrays.asList(new Metric(locator, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(batch);
+        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(TokenDiscoveryWriter.getLocators(batch));
 
         assertEquals("Invalid number of tokens", locator.getMetricName().split("\\.").length, tokens.size());
 
@@ -60,7 +60,7 @@ public class TokenDiscoveryWriterTest {
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
         batch.add(Arrays.asList(new Metric(locator2, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(batch);
+        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(TokenDiscoveryWriter.getLocators(batch));
 
         assertEquals("Invalid number of tokens", 5, tokens.size());
 

@@ -16,11 +16,14 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.util.concurrent.EsRejectedExecutionException;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +46,8 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
 
     protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
+
+    private static final Logger log = LoggerFactory.getLogger(ElasticTokensIO.class);
 
     public static String ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_TOKEN_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_TOKEN_INDEX_NAME_READ);
@@ -83,7 +88,9 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
             }
 
             bulk.execute().actionGet();
-
+        } catch (EsRejectedExecutionException esEx) {
+            log.error(("Error during bulk insert to ES with status: [" + esEx.status() + "] " +
+                    "with message: [" + esEx.getDetailedMessage() + "]"));
         } finally {
             ctx.stop();
         }
