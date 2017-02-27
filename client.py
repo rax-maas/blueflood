@@ -126,6 +126,10 @@ def main():
     ingest_sub.add_argument('--ttl-seconds', type=int, default=172800)
     ingest_sub.add_argument('--collection-time')
 
+    search_sub = subs.add_parser('search', help='Search for things.')
+    search_sub.add_argument('tenant')
+    search_sub.add_argument('query')
+
     args = parser.parse_args()
 
     global debug
@@ -133,20 +137,24 @@ def main():
 
     print('args: {}'.format(args))
 
-    if args.command == 'ingest':
-        base_url = args.url
-        if not base_url:
-            print('Error: No url specified.')
-            exit(1)
+    base_url = args.url
+    if not base_url:
+        print('Error: No url specified.')
+        exit(1)
 
+    success = False
+    if args.command == 'ingest':
         success = make_ingest_request(base_url, args.token, args.tenant,
                                       args.metric_name, args.unit, args.value,
                                       args.ttl_seconds, args.collection_time)
-
-        exit(0 if success else 1)
-
+    elif args.command == 'search':
+        success = make_search_query_request(base_url, args.token, args.tenant,
+                                            args.query)
     else:
         print('Unknown command "{}"'.format(args.command))
+        exit(1)
+
+    exit(0 if success else 1)
 
 if __name__ == '__main__':
     main()
