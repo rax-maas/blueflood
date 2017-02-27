@@ -75,10 +75,12 @@ def main():
     parser.add_argument('--debug', action='store_true',
                         help='Display additional info.')
     parser.add_argument('--url', type=str, action='store', default=BF_URL,
-                        help='The endpoint to send HTTP requests to.')
+                        help='The endpoint to send HTTP requests to. Defaults '
+                             'to the value of the BF_URL envvar.')
     parser.add_argument('--token', type=str, action='store', default=BF_TOKEN,
                         help='The authentication token of the account making '
-                             'the request')
+                             'the request. Defaults to the value of the '
+                             'BF_TOKEN envvar.')
 
     subs = parser.add_subparsers(help='subparsers?', dest='command')
 
