@@ -101,20 +101,18 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    BF_URL = environ.get('BF_URL', None)
     BF_TOKEN = environ.get('BF_TOKEN', None)
 
     parser.add_argument('--debug', action='store_true',
                         help='Display additional info.')
-    parser.add_argument('--url', type=str, action='store', default=BF_URL,
-                        help='The endpoint to send HTTP requests to. Defaults '
-                             'to the value of the BF_URL envvar.')
     parser.add_argument('--token', type=str, action='store', default=BF_TOKEN,
                         help='The authentication token of the account making '
                              'the request. Defaults to the value of the '
                              'BF_TOKEN envvar.')
 
     subs = parser.add_subparsers(help='subparsers?', dest='command')
+
+    BF_INGEST_URL = environ.get('BF_INGEST_URL', None)
 
     ingest_sub = subs.add_parser('ingest', help='Send metrics to blueflood.')
     ingest_sub.add_argument('tenant')
@@ -125,10 +123,22 @@ def main():
     ingest_sub.add_argument('value', type=int)
     ingest_sub.add_argument('--ttl-seconds', type=int, default=172800)
     ingest_sub.add_argument('--collection-time')
+    ingest_sub.add_argument('--url', type=str, action='store',
+                            default=BF_INGEST_URL,
+                            help='The endpoint to send HTTP ingest requests '
+                                 'to. Defaults to the value of the '
+                                 'BF_INGEST_URL envvar.')
+
+    BF_QUERY_URL = environ.get('BF_QUERY_URL', None)
 
     search_sub = subs.add_parser('search', help='Search for things.')
     search_sub.add_argument('tenant')
     search_sub.add_argument('query')
+    search_sub.add_argument('--url', type=str, action='store',
+                            default=BF_QUERY_URL,
+                            help='The endpoint to send HTTP query requests to. '
+                                 'Defaults to the value of the BF_QUERY_URL '
+                                 'envvar.')
 
     args = parser.parse_args()
 
@@ -137,6 +147,8 @@ def main():
 
     if debug:
         print('args: {}'.format(args))
+        print('BF_INGEST_URL={}'.format(BF_INGEST_URL))
+        print('BF_QUERY_URL={}'.format(BF_QUERY_URL))
 
     base_url = args.url
     if not base_url:
