@@ -14,6 +14,27 @@ def get_unix_time(dt):
     return int(time.mktime(dt.timetuple()))
 
 
+def print_request(request):
+    print('Sending:')
+    print('    {} {}'.format(request.method, request.path_url))
+    for name, value in request.headers.iteritems():
+        print('    {}: {}'.format(name, value))
+    if request.body:
+        print('')
+        print('    {}'.format(request.body))
+    print('')
+
+
+def print_response(response):
+    print('Received:')
+    print('    {} {}'.format(response.status_code, response.reason))
+    for name, value in response.headers.iteritems():
+        print('    {}: {}'.format(name, value))
+    print('')
+    if response.text:
+        print('    {}'.format(response.text))
+
+
 def make_ingest_request(base_url, token, tenant, metric_name, unit, value,
                         ttl_seconds=None, collection_time=None):
     if ttl_seconds is None:
@@ -38,27 +59,14 @@ def make_ingest_request(base_url, token, tenant, metric_name, unit, value,
     preq = request.prepare()
 
     if debug:
-        print('Sending:')
-        print('    {} {}'.format(preq.method, preq.path_url))
-        for name, value in preq.headers.iteritems():
-            print('    {}: {}'.format(name, value))
-        if preq.body:
-            print('')
-            print('    {}'.format(preq.body))
-        print('')
+        print_request(preq)
 
     session = requests.session()
     response = session.send(preq)
 
     if debug:
         print('')
-        print('Received:')
-        print('    {} {}'.format(response.status_code, response.reason))
-        for name, value in response.headers.iteritems():
-            print('    {}: {}'.format(name, value))
-        print('')
-        if response.text:
-            print('    {}'.format(response.text))
+        print_response(response)
 
     success = 200 <= response.status_code < 300
     print(response.text)
