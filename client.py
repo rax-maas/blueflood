@@ -73,6 +73,30 @@ def make_ingest_request(base_url, token, tenant, metric_name, unit, value,
     return success
 
 
+def make_search_query_request(base_url, token, tenant, query):
+
+    url = "{}/v2.0/{}/metrics/search?query={}".format(base_url, tenant, query)
+
+    request = requests.Request('GET', url)
+    if token:
+        request.headers['X-Auth-Token'] = token
+    preq = request.prepare()
+
+    if debug:
+        print_request(preq)
+
+    session = requests.session()
+    response = session.send(preq)
+
+    if debug:
+        print('')
+        print_response(response)
+
+    success = 200 <= response.status_code < 300
+    print(response.text)
+    return success
+
+
 def main():
 
     parser = argparse.ArgumentParser()
