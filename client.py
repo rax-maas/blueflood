@@ -135,7 +135,8 @@ def main():
     global debug
     debug = args.debug
 
-    print('args: {}'.format(args))
+    if debug:
+        print('args: {}'.format(args))
 
     base_url = args.url
     if not base_url:
