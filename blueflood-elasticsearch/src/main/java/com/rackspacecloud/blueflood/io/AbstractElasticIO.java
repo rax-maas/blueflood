@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.rackspacecloud.blueflood.types.Locator.metricTokenSeparatorRegex;
+import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
 import static java.util.stream.Collectors.toSet;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -152,7 +152,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         if (StringUtils.isEmpty(query))
             return 0;
 
-        return query.split(metricTokenSeparatorRegex).length;
+        return query.split(METRIC_TOKEN_SEPARATOR_REGEX).length;
     }
 
     /**
@@ -267,13 +267,13 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             // Ex: For metric foo.bar.baz.qux, if query=*, we should get foo.bar. We are not
             // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
             String baseRegex = convertRegexToCaptureUptoNextToken(queryRegex);
-            return baseRegex + metricTokenSeparatorRegex + REGEX_TO_GRAB_SINGLE_TOKEN;
+            return baseRegex + METRIC_TOKEN_SEPARATOR_REGEX + REGEX_TO_GRAB_SINGLE_TOKEN;
 
         } else {
 
             String[] queryRegexParts = queryRegex.split("\\\\.");
 
-            String queryRegexUptoPrevLevel = StringUtils.join(queryRegexParts, metricTokenSeparatorRegex, 0, totalQueryTokens - 1);
+            String queryRegexUptoPrevLevel = StringUtils.join(queryRegexParts, METRIC_TOKEN_SEPARATOR_REGEX, 0, totalQueryTokens - 1);
             String baseRegex = convertRegexToCaptureUptoNextToken(queryRegexUptoPrevLevel);
 
             String queryRegexLastLevel = queryRegexParts[totalQueryTokens - 1];
@@ -283,9 +283,9 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             // In this case baseRegex = "foo.bar", lastTokenRegex = "b[^.]*"' and the final
             // regex is foo\.bar\.b[^.]*(\.[^.]*){0,1}
             return baseRegex +
-                        metricTokenSeparatorRegex + lastTokenRegex +
+                    METRIC_TOKEN_SEPARATOR_REGEX + lastTokenRegex +
                         "(" +
-                            metricTokenSeparatorRegex + REGEX_TO_GRAB_SINGLE_TOKEN +
+                    METRIC_TOKEN_SEPARATOR_REGEX + REGEX_TO_GRAB_SINGLE_TOKEN +
                         ")"  + "{0,1}";
         }
     }

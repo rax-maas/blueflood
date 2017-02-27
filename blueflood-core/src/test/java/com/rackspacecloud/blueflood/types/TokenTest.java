@@ -11,8 +11,44 @@ import static org.junit.Assert.assertEquals;
 
 public class TokenTest {
 
+    @Test (expected = IllegalArgumentException.class)
+    public void createTokenNullTokens() {
+        String tenantID = "111111";
+        String metricName = "a.b.c.d";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
+
+        new Token(locator, null, 0);
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    public void createTokenEmptyTokens() {
+        String tenantID = "111111";
+        String metricName = "a.b.c.d";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
+
+        new Token(locator, new String[0], 0);
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    public void createTokenInvalidLevel1() {
+        String tenantID = "111111";
+        String metricName = "a.b.c.d";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
+
+        new Token(locator, metricName.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX), -1);
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    public void createTokenInvalidLevel2() {
+        String tenantID = "111111";
+        String metricName = "a.b.c.d";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
+
+        new Token(locator, metricName.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX), 4);
+    }
+
     @Test
-    public void testGetTokens() {
+    public void testGetTokensHappyCase() {
 
         String tenantID = "111111";
         String metricName = "a.b.c.d";

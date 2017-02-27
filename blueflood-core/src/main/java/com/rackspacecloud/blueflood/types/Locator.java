@@ -23,18 +23,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Locator implements Comparable<Locator> {
-    public static final String metricTokenSeparator;
-    public static final String metricTokenSeparatorRegex;
+    public static final String METRIC_TOKEN_SEPARATOR;
+    public static final String METRIC_TOKEN_SEPARATOR_REGEX;
     private static final Logger log = LoggerFactory.getLogger(Locator.class);
     private String stringRep = null;
     private String tenantId = null;
     private String metricName = null;
 
     static {
-        metricTokenSeparator = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : ".");
+        METRIC_TOKEN_SEPARATOR = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : ".");
         // ugh.
-        metricTokenSeparatorRegex = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : "\\.");
-        if (metricTokenSeparator.equals(",")) {
+        METRIC_TOKEN_SEPARATOR_REGEX = (Configuration.getInstance().getBooleanProperty(CoreConfig.USE_LEGACY_METRIC_SEPARATOR) ? "," : "\\.");
+        if (METRIC_TOKEN_SEPARATOR.equals(",")) {
             log.warn("Deprecation warning! Use of 'USE_LEGACY_METRIC_SEPARATOR' is deprecated and will be removed in v3.0");
         }
     }
@@ -50,8 +50,8 @@ public class Locator implements Comparable<Locator> {
     protected void setStringRep(String rep) throws IllegalArgumentException {
         // todo: null check and throw IllegalArgumentException?
         this.stringRep = rep;
-        tenantId = this.stringRep.split(metricTokenSeparatorRegex)[0];
-        metricName = this.stringRep.substring(this.stringRep.indexOf(metricTokenSeparator)+1);
+        tenantId = this.stringRep.split(METRIC_TOKEN_SEPARATOR_REGEX)[0];
+        metricName = this.stringRep.substring(this.stringRep.indexOf(METRIC_TOKEN_SEPARATOR)+1);
     }
 
     protected boolean isValidDBKey(String dbKey, String delim) {
@@ -85,7 +85,7 @@ public class Locator implements Comparable<Locator> {
     }
 
     public static Locator createLocatorFromPathComponents(String tenantId, String... parts) throws IllegalArgumentException {
-        return new Locator(tenantId + metricTokenSeparator + StringUtils.join(parts, metricTokenSeparator));
+        return new Locator(tenantId + METRIC_TOKEN_SEPARATOR + StringUtils.join(parts, METRIC_TOKEN_SEPARATOR));
     }
 
     public static Locator createLocatorFromDbKey(String fullyQualifiedMetricName) throws IllegalArgumentException {

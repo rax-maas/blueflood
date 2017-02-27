@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.io;
 
 import java.util.*;
 
-import static com.rackspacecloud.blueflood.types.Locator.metricTokenSeparatorRegex;
+import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
 
 /**
  * When we ingest these below metrics, ES generates the following indexes
@@ -73,7 +73,7 @@ public class MetricIndexData {
      */
     public void add(String metricIndex, long docCount) {
 
-        final String[] tokens = metricIndex.split(metricTokenSeparatorRegex);
+        final String[] tokens = metricIndex.split(METRIC_TOKEN_SEPARATOR_REGEX);
 
         /**
          *

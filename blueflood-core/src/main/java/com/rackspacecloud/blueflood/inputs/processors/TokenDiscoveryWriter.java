@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -69,20 +68,20 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
     }
 
     /**
-     * For all of these {@link Locator}'s, generate a unique list of {@link Token}'s which are not in token cache
+     * For all of these {@link Locator}'s, get a unique list of {@link Token}'s which are not in token cache
      *
      * @param locators
      * @return
      */
-    static Set<Token> generateAndConsolidateTokens(final List<Locator> locators) {
+    static Set<Token> getUniqueTokens(final List<Locator> locators) {
 
-        return Token.getConsolidatedTokens(locators.stream())
+        return Token.getUniqueTokens(locators.stream())
                     .filter(token -> !TokenCache.getInstance().isTokenCurrent(token))
                     .collect(toSet());
     }
 
     /**
-     * Get all locators corresponding to the metrics which are not current.
+     * Get all {@link Locator}'s corresponding to the metrics which are not current.
      *
      * @param input
      * @return
@@ -97,6 +96,18 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
                     .collect(toList());
     }
 
+    /**
+     * For a given batch of metrics, insert unique tokens using {@link TokenDiscoveryIO}.
+     *
+     * This methods has the following steps.
+     * 1) For a batch of metrics, get all locators, which are not current by calling {@link #getLocators(List)}.
+     * 2) For all these locators, get unique tokens, which are not current, by calling {@link #getUniqueTokens(List)}
+     * 3) insert tokens
+     * 4) After successful insertion, update both {@link LocatorCache} and {@link TokenCache}
+     *
+     * @param input
+     * @return
+     */
     public ListenableFuture<Boolean> processTokens(final List<List<IMetric>> input) {
 
         return getThreadPool().submit(() -> {
@@ -105,7 +116,7 @@ public class TokenDiscoveryWriter extends FunctionWithThreadPool<List<List<IMetr
             List<Locator> locators = getLocators(input);
 
             List<Token> tokens = new ArrayList<>();
-            tokens.addAll(generateAndConsolidateTokens(locators));
+            tokens.addAll(getUniqueTokens(locators));
 
             if (tokens.size() > 0) {
                 for (TokenDiscoveryIO io : tokenDiscoveryIOs) {

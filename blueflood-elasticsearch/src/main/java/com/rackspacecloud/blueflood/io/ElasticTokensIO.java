@@ -91,6 +91,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
         } catch (EsRejectedExecutionException esEx) {
             log.error(("Error during bulk insert to ES with status: [" + esEx.status() + "] " +
                     "with message: [" + esEx.getDetailedMessage() + "]"));
+            throw esEx;
         } finally {
             ctx.stop();
         }
@@ -171,7 +172,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
      */
     private BoolQueryBuilder buildESQuery(String tenantId, String query) {
 
-        String[] queryTokens = query.split(Locator.metricTokenSeparatorRegex);
+        String[] queryTokens = query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
         String lastToken = queryTokens[queryTokens.length - 1];
 
         BoolQueryBuilder bqb = boolQuery();
@@ -199,7 +200,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
             String parent = Arrays.stream(queryTokens)
                                   .limit(queryTokens.length - 1)
-                                  .collect(joining(Locator.metricTokenSeparator));
+                                  .collect(joining(Locator.METRIC_TOKEN_SEPARATOR));
 
             GlobPattern parentGlob = new GlobPattern(parent);
             if (parentGlob.hasWildcard()) {
@@ -232,7 +233,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     }
 
     /**
-     * For a given glob, gives regex for {@code Locator.metricTokenSeparator} separated tokens
+     * For a given glob, gives regex for {@code Locator.METRIC_TOKEN_SEPARATOR} separated tokens
      *
      * For example:
      *      globPattern of foo.*.* would produce a regex  foo\.[^.]+\.[^.]+
@@ -246,7 +247,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         return Arrays.stream(queryRegexParts)
                      .map(this::convertRegexToCaptureUptoNextToken)
-                     .collect(joining(Locator.metricTokenSeparatorRegex));
+                     .collect(joining(Locator.METRIC_TOKEN_SEPARATOR_REGEX));
     }
 
     private String convertRegexToCaptureUptoNextToken(String queryRegex) {
@@ -278,7 +279,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         StringBuilder metricName = new StringBuilder(parent);
         if (metricName.length() > 0) {
-            metricName.append(Locator.metricTokenSeparator);
+            metricName.append(Locator.METRIC_TOKEN_SEPARATOR);
         }
         metricName.append(token);
 

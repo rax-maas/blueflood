@@ -75,7 +75,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     private List<Token> createTestTokens(String tenantId) {
-        return Token.getConsolidatedTokens(createComplexTestLocators(tenantId).stream())
+        return Token.getUniqueTokens(createComplexTestLocators(tenantId).stream())
                     .collect(toList());
     }
 
@@ -89,7 +89,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.insertDiscovery(metrics);
 
         Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
-        elasticTokensIO.insertDiscovery(Token.getConsolidatedTokens(locators)
+        elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators)
                                              .collect(toList()));
     }
 
@@ -271,7 +271,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
 
-    private BaseDiscoveryIO getDiscoveryIO(String type) {
+    private MetricNameSearchIO getDiscoveryIO(String type) {
         if (type.equalsIgnoreCase("elasticTokensIO")) {
             return elasticTokensIO;
         } else {

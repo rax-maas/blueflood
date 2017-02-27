@@ -44,9 +44,9 @@ public class TokenDiscoveryWriterTest {
         List<List<IMetric>> batch = new ArrayList<>();
         batch.add(Arrays.asList(new Metric(locator, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(TokenDiscoveryWriter.getLocators(batch));
+        Set<Token> tokens = TokenDiscoveryWriter.getUniqueTokens(TokenDiscoveryWriter.getLocators(batch));
 
-        assertEquals("Invalid number of tokens", locator.getMetricName().split("\\.").length, tokens.size());
+        assertEquals("Invalid number of tokens", locator.getMetricName().split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length, tokens.size());
 
     }
 
@@ -60,14 +60,14 @@ public class TokenDiscoveryWriterTest {
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
         batch.add(Arrays.asList(new Metric(locator2, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        Set<Token> tokens = TokenDiscoveryWriter.generateAndConsolidateTokens(TokenDiscoveryWriter.getLocators(batch));
+        Set<Token> tokens = TokenDiscoveryWriter.getUniqueTokens(TokenDiscoveryWriter.getLocators(batch));
 
         assertEquals("Invalid number of tokens", 5, tokens.size());
 
     }
 
     @Test
-    public void testProcessTokens() throws Exception {
+    public void testProcessTokensMultipleLocatorsBeingIndexed() throws Exception {
 
         TokenDiscoveryWriter tokenWriter =
                 new TokenDiscoveryWriter(new ThreadPoolBuilder()
@@ -88,7 +88,7 @@ public class TokenDiscoveryWriterTest {
         Locator locator1 = Locator.createLocatorFromPathComponents("111111", "a.b.c.d");
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        String[] tokens = locator1.getMetricName().split(Locator.metricTokenSeparatorRegex);
+        String[] tokens = locator1.getMetricName().split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
         List<Token> expectedTokens = IntStream.range(0, tokens.length)
                                               .mapToObj(x -> new Token(locator1, tokens, x)).collect(toList());
 
@@ -110,7 +110,7 @@ public class TokenDiscoveryWriterTest {
     }
 
     @Test
-    public void testProcessTokensSameLocatorBeingIndexed() throws Exception {
+    public void testProcessTokensSingleLocatorBeingIndexed() throws Exception {
 
         TokenDiscoveryWriter tokenWriter =
                 new TokenDiscoveryWriter(new ThreadPoolBuilder()
@@ -155,10 +155,10 @@ public class TokenDiscoveryWriterTest {
         batch.add(Arrays.asList(new Metric(locator1, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
         batch.add(Arrays.asList(new Metric(locator2, 1, 1L, new TimeValue(5, TimeUnit.SECONDS), "")));
 
-        String[] tokens1 = locator1.getMetricName().split(Locator.metricTokenSeparatorRegex);
+        String[] tokens1 = locator1.getMetricName().split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
         List<Token> expectedTokens = IntStream.range(0, tokens1.length)
                                               .mapToObj(x -> new Token(locator1, tokens1, x)).collect(toList());
-        String[] tokens2 = locator2.getMetricName().split(Locator.metricTokenSeparatorRegex);
+        String[] tokens2 = locator2.getMetricName().split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
         expectedTokens.add( new Token(locator2, tokens2, 3)); //notice that there is only new expected token from the second locator.
 
         tokenWriter.processTokens(batch).get();

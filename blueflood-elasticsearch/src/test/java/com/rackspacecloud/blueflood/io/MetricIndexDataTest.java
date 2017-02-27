@@ -46,7 +46,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(Locator.metricTokenSeparatorRegex).length);
+        MetricIndexData mi = new MetricIndexData(query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -67,7 +67,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo.bar
-        MetricIndexData mi = new MetricIndexData(query.split(Locator.metricTokenSeparatorRegex).length);
+        MetricIndexData mi = new MetricIndexData(query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -87,7 +87,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(Locator.metricTokenSeparatorRegex).length);
+        MetricIndexData mi = new MetricIndexData(query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -108,7 +108,7 @@ public class MetricIndexDataTest {
         Map<String, Long> metricIndexes = buildMetricIndexesSimilarToES(metricNames, query);
 
         //for base at foo
-        MetricIndexData mi = new MetricIndexData(query.split(Locator.metricTokenSeparatorRegex).length);
+        MetricIndexData mi = new MetricIndexData(query.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length);
         for (Map.Entry<String, Long> entry: metricIndexes.entrySet()) {
             mi.add(entry.getKey(), entry.getValue());
         }
@@ -269,7 +269,7 @@ public class MetricIndexDataTest {
 
         for (String metricName: metricNames) {
 
-            int totalTokens = metricName.split(Locator.metricTokenSeparatorRegex).length;
+            int totalTokens = metricName.split(Locator.METRIC_TOKEN_SEPARATOR_REGEX).length;
 
             //imitating path hierarchy tokenizer(prefix-test-tokenizer) in analyzer(prefix-test-analyzer) we use.
             // For metric, foo.bar.baz path hierarchy tokenizer creates foo, foo.bar, foo.bar.baz

@@ -20,7 +20,6 @@ public enum ESFieldLabel {
     metric_name,
     tenantId,
     unit,
-    enum_values,
     token,
     parent,
     isLeaf

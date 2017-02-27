@@ -45,9 +45,20 @@ public class Token {
     private final String id;
     private final Locator locator;
 
+    /**
+     * Constructor used to create {@link Token} instances.
+     *
+     * @param locator is a metric locator
+     * @param tokens, array of tokens. For metric name a.b.c.d, tokens would be the array ["a", "b", "c", "d"]
+     * @param level level of token this object represents. Ex: level 1 of metric a.b.c.d, would be "b"
+     */
     public Token(Locator locator, String[] tokens, int level) {
 
-        if (level > tokens.length - 1)
+        if (tokens == null || tokens.length <= 0)
+            throw new IllegalArgumentException("Invalid tokens. Must be an array of size " +
+                                                       "greater than 0, representing tokens of a metric name.");
+
+        if (level < 0 || level > tokens.length - 1)
             throw new IllegalArgumentException("Invalid level for the given tokens");
 
         this.locator = locator;
@@ -64,7 +75,7 @@ public class Token {
     private String joinTokens(String prefix, String suffix, String[] tokens, int level) {
         return Arrays.stream(tokens)
                      .limit(level)
-                     .collect(joining(Locator.metricTokenSeparator, prefix, suffix));
+                     .collect(joining(Locator.METRIC_TOKEN_SEPARATOR, prefix, suffix));
     }
 
     @Override
@@ -121,14 +132,14 @@ public class Token {
         if (StringUtils.isEmpty(locator.getMetricName()) || StringUtils.isEmpty(locator.getTenantId()))
             return new ArrayList<>();
 
-        String[] tokens = locator.getMetricName().split(Locator.metricTokenSeparatorRegex);
+        String[] tokens = locator.getMetricName().split(Locator.METRIC_TOKEN_SEPARATOR_REGEX);
 
         return IntStream.range(0, tokens.length)
                         .mapToObj(index -> new Token(locator, tokens, index))
                         .collect(toList());
     }
 
-    public static Stream<Token> getConsolidatedTokens(Stream<Locator> locators) {
+    public static Stream<Token> getUniqueTokens(Stream<Locator> locators) {
         return locators.flatMap(locator -> Token.getTokens(locator).stream())
                        .collect(toSet())
                        .stream();

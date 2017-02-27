@@ -21,7 +21,7 @@ import java.util.List;
 
 public class HttpMetricNamesHandler implements HttpRequestHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricNamesHandler.class);
-    private BaseDiscoveryIO discoveryHandle;
+    private MetricNameSearchIO discoveryHandle;
 
     public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
             Configuration.getInstance().getBooleanProperty(CoreConfig.EXP_TOKEN_SEARCH_IMPROVEMENTS);

@@ -10,6 +10,20 @@ import com.rackspacecloud.blueflood.utils.Metrics;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class is used to cache locator's that were written recently to our persistence layers by the available writers.
+ * All the writers, check the cache to see if it is written recently(isCurrent) before writing them again.
+ *
+ * Different writers that we have:
+ *
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.BatchWriter} This writes to cassandra
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter} This supports metric discovery (/metric/search)
+ *  {@link com.rackspacecloud.blueflood.inputs.processors.TokenDiscoveryWriter} This support metric tokens discovery (metric_name/search)
+ *
+ * Each writer maintains its own indicator in {@link LocatorCacheEntry} to indicate whether a locator is current. This
+ * is useful in cases, where persisting a locator with one writer is successful but not with other writers.
+ *
+ */
 public class LocatorCache {
 
     // this collection is used to reduce the number of locators that get written.
