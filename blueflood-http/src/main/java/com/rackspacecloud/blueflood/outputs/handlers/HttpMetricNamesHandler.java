@@ -24,7 +24,7 @@ public class HttpMetricNamesHandler implements HttpRequestHandler {
     private MetricNameSearchIO discoveryHandle;
 
     public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
-            Configuration.getInstance().getBooleanProperty(CoreConfig.EXP_TOKEN_SEARCH_IMPROVEMENTS);
+            Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS);
 
     public HttpMetricNamesHandler() {
         log.info("Token search improvements enabled: " + EXP_TOKEN_SEARCH_IMPROVEMENTS);

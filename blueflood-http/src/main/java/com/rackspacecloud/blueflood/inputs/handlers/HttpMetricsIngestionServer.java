@@ -71,7 +71,7 @@ public class HttpMetricsIngestionServer {
             Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
 
     public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
-            Configuration.getInstance().getBooleanProperty(CoreConfig.EXP_TOKEN_SEARCH_IMPROVEMENTS);
+            Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS);
 
     /**
      * Constructor. Instantiate Metrics Ingest server

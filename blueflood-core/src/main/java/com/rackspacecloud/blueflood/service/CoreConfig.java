@@ -179,8 +179,8 @@ public enum CoreConfig implements ConfigDefaults {
     // 10 minutes
     AFTER_CURRENT_COLLECTIONTIME_MS("600000"),
 
-    //Experimental feature to improve token search.
-    EXP_TOKEN_SEARCH_IMPROVEMENTS("false"),
+    //Feature to improve token search. Enabling this will persist metric name tokens separately.
+    ENABLE_TOKEN_SEARCH_IMPROVEMENTS("false"),
 
     // Cross-Origin Resource Sharing
     CORS_ENABLED("false"),
