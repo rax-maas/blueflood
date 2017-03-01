@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Discovery {
+
+    protected final static String SEPARATOR = ":";
+
     private Map<String, Object> fields = new HashMap<String, Object>();
     private final String metricName;
     private final String tenantId;
@@ -46,7 +49,7 @@ public class Discovery {
     }
 
     public String getDocumentId() {
-        return tenantId + ":" + metricName;
+        return tenantId + SEPARATOR + metricName;
     }
 
     @Override

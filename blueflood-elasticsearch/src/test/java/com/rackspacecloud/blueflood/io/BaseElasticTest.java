@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertTrue;
 
-public class BaseElasticTest {
+public abstract class BaseElasticTest {
 
     protected static final int NUM_PARENT_ELEMENTS = 30;
     protected static final List<String> CHILD_ELEMENTS = Arrays.asList("A", "B", "C");
@@ -24,7 +24,6 @@ public class BaseElasticTest {
 
     protected static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
 
-    protected ElasticIO elasticIO;
     protected EsSetup esSetup;
 
     protected SearchResult createExpectedResult(String tenantId, int x, String y, int z, String unit) {
@@ -78,9 +77,12 @@ public class BaseElasticTest {
     }
 
     protected void createTestMetrics(List<IMetric> metrics) throws IOException {
-        elasticIO.insertDiscovery(metrics);
+        insertDiscovery(metrics);
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
+
+
+    protected abstract void insertDiscovery(List<IMetric> metrics) throws IOException;
 
     protected List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;

@@ -24,10 +24,7 @@ import com.rackspacecloud.blueflood.concurrent.ThreadPoolBuilder;
 import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.QueryStringDecoderAndRouter;
 import com.rackspacecloud.blueflood.http.RouteMatcher;
-import com.rackspacecloud.blueflood.inputs.processors.BatchWriter;
-import com.rackspacecloud.blueflood.inputs.processors.DiscoveryWriter;
-import com.rackspacecloud.blueflood.inputs.processors.RollupTypeCacher;
-import com.rackspacecloud.blueflood.inputs.processors.TypeAndUnitProcessor;
+import com.rackspacecloud.blueflood.inputs.processors.*;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.tracker.Tracker;
@@ -72,6 +69,9 @@ public class HttpMetricsIngestionServer {
 
     private int HTTP_CONNECTION_READ_IDLE_TIME_SECONDS =
             Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
+
+    public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
+            Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS);
 
     /**
      * Constructor. Instantiate Metrics Ingest server
@@ -128,6 +128,8 @@ public class HttpMetricsIngestionServer {
         //register the tracker MBean for JMX/jolokia
         log.info("Registering tracker service");
         Tracker.getInstance().register();
+
+        log.info("Token search improvements enabled: " + EXP_TOKEN_SEARCH_IMPROVEMENTS);
     }
 
     private void setupPipeline(SocketChannel channel, RouteMatcher router) {
@@ -187,6 +189,7 @@ public class HttpMetricsIngestionServer {
         private final TypeAndUnitProcessor typeAndUnitProcessor;
         private final RollupTypeCacher rollupTypeCacher;
         private final DiscoveryWriter discoveryWriter;
+        private final TokenDiscoveryWriter tokenDiscoveryWriter;
         private final BatchWriter batchWriter;
         private IncomingMetricMetadataAnalyzer metricMetadataAnalyzer =
             new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -208,26 +211,36 @@ public class HttpMetricsIngestionServer {
             typeAndUnitProcessor.withLogger(log);
 
             batchWriter = new BatchWriter(
-                    new ThreadPoolBuilder()
-                            .withName("Metric Batch Writing")
-                            .withCorePoolSize(WRITE_THREADS)
-                            .withMaxPoolSize(WRITE_THREADS)
-                            .withSynchronousQueue()
-                            .build(),
-                    timeout,
-                    bufferedMetrics,
-                    context
+                new ThreadPoolBuilder()
+                        .withName("Metric Batch Writing")
+                        .withCorePoolSize(WRITE_THREADS)
+                        .withMaxPoolSize(WRITE_THREADS)
+                        .withSynchronousQueue()
+                        .build(),
+                timeout,
+                bufferedMetrics,
+                context
             );
             batchWriter.withLogger(log);
 
             discoveryWriter =
-            new DiscoveryWriter(new ThreadPoolBuilder()
-                .withName("Metric Discovery Writing")
-                .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
-                .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
-                .withUnboundedQueue()
-                .build());
+                new DiscoveryWriter(new ThreadPoolBuilder()
+                    .withName("Metric Discovery Writing")
+                    .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MIN_THREADS))
+                    .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.DISCOVERY_WRITER_MAX_THREADS))
+                    .withUnboundedQueue()
+                    .build());
             discoveryWriter.withLogger(log);
+
+            tokenDiscoveryWriter =
+                new TokenDiscoveryWriter(
+                    new ThreadPoolBuilder()
+                        .withName("Metric Token Discovery Writing")
+                        .withCorePoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.TOKEN_DISCOVERY_WRITER_MIN_THREADS))
+                        .withMaxPoolSize(Configuration.getInstance().getIntegerProperty(CoreConfig.TOKEN_DISCOVERY_WRITER_MAX_THREADS))
+                        .withUnboundedQueue()
+                        .build());
+            tokenDiscoveryWriter.withLogger(log);
 
             // RollupRunnable keeps a static one of these. It would be nice if we could register it and share.
             MetadataCache rollupTypeCache = MetadataCache.createLoadingCacheInstance(
@@ -245,6 +258,10 @@ public class HttpMetricsIngestionServer {
             rollupTypeCacher.apply(collection);
             List<List<IMetric>> batches = collection.splitMetricsIntoBatches(BATCH_SIZE);
             discoveryWriter.apply(batches);
+
+            if (EXP_TOKEN_SEARCH_IMPROVEMENTS)
+                tokenDiscoveryWriter.processTokens(batches);
+
             return batchWriter.apply(batches);
         }
     }

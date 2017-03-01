@@ -30,7 +30,7 @@ public class DummyDiscoveryIO2 implements DiscoveryIO {
     }
 
     @Override
-    public List<MetricName> getMetricNames(String tenant, String prefix) throws Exception {
+    public List<MetricName> getMetricNames(String tenant, String query) throws Exception {
         return null;
     }
 }

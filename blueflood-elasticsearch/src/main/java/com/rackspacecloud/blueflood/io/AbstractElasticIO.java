@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
 import static java.util.stream.Collectors.toSet;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -39,11 +40,10 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String ELASTICSEARCH_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
 
-    private int MAX_RESULT_LIMIT = 100000;
-    public static final String REGEX_TOKEN_DELIMTER = "\\.";
+    public static int MAX_RESULT_LIMIT = 100000;
 
     //grabs chars until the next "." which is basically a token
-    private static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
+    protected static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
 
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
@@ -152,7 +152,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         if (StringUtils.isEmpty(query))
             return 0;
 
-        return query.split(REGEX_TOKEN_DELIMTER).length;
+        return query.split(METRIC_TOKEN_SEPARATOR_REGEX).length;
     }
 
     /**
@@ -267,13 +267,13 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             // Ex: For metric foo.bar.baz.qux, if query=*, we should get foo.bar. We are not
             // grabbing 0 level as it will give back bar, baz, qux because of the way data is structured.
             String baseRegex = convertRegexToCaptureUptoNextToken(queryRegex);
-            return baseRegex + REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN;
+            return baseRegex + METRIC_TOKEN_SEPARATOR_REGEX + REGEX_TO_GRAB_SINGLE_TOKEN;
 
         } else {
 
             String[] queryRegexParts = queryRegex.split("\\\\.");
 
-            String queryRegexUptoPrevLevel = StringUtils.join(queryRegexParts, REGEX_TOKEN_DELIMTER, 0, totalQueryTokens - 1);
+            String queryRegexUptoPrevLevel = StringUtils.join(queryRegexParts, METRIC_TOKEN_SEPARATOR_REGEX, 0, totalQueryTokens - 1);
             String baseRegex = convertRegexToCaptureUptoNextToken(queryRegexUptoPrevLevel);
 
             String queryRegexLastLevel = queryRegexParts[totalQueryTokens - 1];
@@ -283,9 +283,9 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             // In this case baseRegex = "foo.bar", lastTokenRegex = "b[^.]*"' and the final
             // regex is foo\.bar\.b[^.]*(\.[^.]*){0,1}
             return baseRegex +
-                        REGEX_TOKEN_DELIMTER + lastTokenRegex +
+                    METRIC_TOKEN_SEPARATOR_REGEX + lastTokenRegex +
                         "(" +
-                            REGEX_TOKEN_DELIMTER + REGEX_TO_GRAB_SINGLE_TOKEN +
+                    METRIC_TOKEN_SEPARATOR_REGEX + REGEX_TO_GRAB_SINGLE_TOKEN +
                         ")"  + "{0,1}";
         }
     }
