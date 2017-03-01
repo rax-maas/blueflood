@@ -53,6 +53,15 @@ doing:
 
     -DCONFIG_OPTION=NEW_VALUE
 
+## Additional Tools
+
+The Blueflood team maintains a number of tools that are related to the project, but not essential components of it. These tools are kept in various other repos:
+
+* Performance Tests: Scripts for load testing a blueflood installation using [The Grinder](http://grinder.sourceforge.net/). https://github.com/rackerlabs/raxmetrics-perf-test-scripts
+* Carbon Forwarder: a process that receives data from carbon (one of the components of [Graphite](https://graphiteapp.org/)) and sends it to a Blueflood instance. https://github.com/rackerlabs/blueflood-carbon-forwarder
+* Blueflood-Finder: a plugin for graphite-web and graphite-api that allows them to using a Blueflood instance as a data backend. https://github.com/rackerlabs/blueflood-graphite-finder
+* StatsD plugin: a statsD backend that sends metrics a Blueflood instance. https://github.com/rackerlabs/blueflood-statsd-backend
+
 ## Contributing
 
 First, we welcome bug reports and contributions.
