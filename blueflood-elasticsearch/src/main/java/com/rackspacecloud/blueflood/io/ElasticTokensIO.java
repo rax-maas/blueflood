@@ -100,10 +100,6 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
     IndexRequestBuilder createSingleRequest(Token token) throws IOException {
 
-        if (StringUtils.isEmpty(token.getToken())) {
-            throw new IllegalArgumentException("trying to insert token discovery without a token: " + token.getLocator());
-        }
-
         return client.prepareIndex(ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE, ES_DOCUMENT_TYPE)
                 .setId(token.getId())
                 .setSource(createSourceContent(token))
