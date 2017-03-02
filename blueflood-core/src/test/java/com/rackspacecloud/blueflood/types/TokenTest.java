@@ -69,7 +69,6 @@ public class TokenTest {
                 tenantID + ":" + "a.b.c.d:$"};
 
         List<Token> tokens = Token.getTokens(locator);
-        tokens.forEach(System.out::println);
 
         verifyTokenInfos(tenantID, expectedTokens, expectedParents, expectedIds, tokens);
     }
@@ -86,6 +85,37 @@ public class TokenTest {
         String[] expectedIds = new String[] {tenantID + ":" + "a:$"};
 
         List<Token> tokens = Token.getTokens(locator);
+        verifyTokenInfos(tenantID, expectedTokens, expectedParents, expectedIds, tokens);
+    }
+
+    @Test
+    public void testGetTokensWithEmptyTokenInBetween() {
+
+        String tenantID = "111111";
+        String metricName = "ingest00.HeaderNormalization.header-normalization..*_GET.count";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantID, metricName);
+
+
+        String[] expectedTokens = new String[] {"ingest00", "HeaderNormalization", "header-normalization", "", "*_GET", "count"};
+
+        String[] expectedParents = new String[] {
+                "",
+                "ingest00",
+                "ingest00.HeaderNormalization",
+                "ingest00.HeaderNormalization.header-normalization",
+                "ingest00.HeaderNormalization.header-normalization.",
+                "ingest00.HeaderNormalization.header-normalization..*_GET"};
+
+        String[] expectedIds = new String[] {
+                tenantID + ":" + "ingest00",
+                tenantID + ":" + "ingest00.HeaderNormalization",
+                tenantID + ":" + "ingest00.HeaderNormalization.header-normalization",
+                tenantID + ":" + "ingest00.HeaderNormalization.header-normalization.",
+                tenantID + ":" + "ingest00.HeaderNormalization.header-normalization..*_GET",
+                tenantID + ":" + "ingest00.HeaderNormalization.header-normalization..*_GET.count:$"};
+
+        List<Token> tokens = Token.getTokens(locator);
+
         verifyTokenInfos(tenantID, expectedTokens, expectedParents, expectedIds, tokens);
     }
 
