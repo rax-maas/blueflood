@@ -219,7 +219,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
             if (pattern.hasWildcard()) {
                 tokenQB = regexpQuery(ESFieldLabel.token.name(), pattern.compiled().toString());
             } else {
-                tokenQB = termQuery(ESFieldLabel.token.name(), query);
+                tokenQB = termQuery(ESFieldLabel.token.name(), lastToken);
             }
 
             bqb.must(tokenQB);
