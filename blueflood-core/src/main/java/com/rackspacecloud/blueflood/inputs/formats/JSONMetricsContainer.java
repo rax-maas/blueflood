@@ -116,4 +116,18 @@ public class JSONMetricsContainer {
         return delayedMetrics;
     }
 
+    /**
+     * Returns the count of metrics with "delayed" timestamp.
+     *
+     * @return
+     */
+    public int getDelayedMetricsCount() { return delayedMetrics.size(); }
+
+    /**
+     * Returns the count of metrics with non-delayed timestamp.
+     *
+     * @return
+     */
+    public int getNonDelayedMetricsCount() { return validMetrics.size() - delayedMetrics.size();  }
+
 }

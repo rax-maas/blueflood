@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.datastax.shaded.netty.util.internal.StringUtil;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.exceptions.PoolTimeoutException;
 import com.rackspacecloud.blueflood.utils.Metrics;
@@ -38,7 +39,6 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter batchReadErrMeter;
 
     // One-off meters
-    private static final Meter scanAllColumnFamiliesMeter;
     private static final Meter allPoolsExhaustedException;
     private static final Meter fullResMetricWritten;
     private static final Meter fullResPreaggregatedMetricWritten;
@@ -50,7 +50,6 @@ public class Instrumentation implements InstrumentationMBean {
         writeErrMeter = Metrics.meter(kls, "writes", "Cassandra Write Errors");
         readErrMeter = Metrics.meter(kls, "reads", "Cassandra Read Errors");
         batchReadErrMeter = Metrics.meter(kls, "reads", "Batch Cassandra Read Errors");
-        scanAllColumnFamiliesMeter = Metrics.meter(kls, "Scan all ColumnFamilies");
         allPoolsExhaustedException = Metrics.meter(kls, "All Pools Exhausted");
         fullResMetricWritten = Metrics.meter(kls, "Full Resolution Metrics Written");
         fullResPreaggregatedMetricWritten = Metrics.meter(kls, "Full Resolution Preaggregated Metrics Written");
@@ -154,10 +153,6 @@ public class Instrumentation implements InstrumentationMBean {
 
     }
 
-    public static void markScanAllColumnFamilies() {
-        scanAllColumnFamiliesMeter.mark();
-    }
-
     public static void markFullResMetricWritten() {
         fullResMetricWritten.mark();
     }
@@ -172,5 +167,19 @@ public class Instrumentation implements InstrumentationMBean {
 
     public static void markMetricsWithLongDelayReceived() {
         metricsWithLongDelayReceived.mark();
+    }
+
+    public static Meter getIngestedMetricsMeter(String tenantId) {
+        if ( StringUtil.isNullOrEmpty(tenantId) ) {
+            return null;
+        }
+        return Metrics.meter(Instrumentation.class, "tenants", tenantId, "Data Points Ingested");
+    }
+
+    public static Meter getIngestedDelayedMetricsMeter(String tenantId) {
+        if ( StringUtil.isNullOrEmpty(tenantId) ) {
+            return null;
+        }
+        return Metrics.meter(Instrumentation.class, "tenants", tenantId, "Delayed Data Points Ingested");
     }
 }

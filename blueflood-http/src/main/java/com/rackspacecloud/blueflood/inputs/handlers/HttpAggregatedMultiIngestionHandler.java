@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.*;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
@@ -25,6 +26,7 @@ import com.rackspacecloud.blueflood.http.DefaultHandler;
 import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.MetricsCollection;
@@ -51,11 +53,17 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
 
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    private final boolean enablePerTenantMetrics;
     private final Clock clock = new DefaultClockImpl();
 
     public HttpAggregatedMultiIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        this(processor, timeout, false);
+    }
+
+    public HttpAggregatedMultiIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout, boolean enablePerTenantMetrics) {
         this.processor = processor;
         this.timeout = timeout;
+        this.enablePerTenantMetrics = enablePerTenantMetrics;
     }
 
     // our own stuff.
@@ -72,6 +80,8 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         // this is all JSON.
         String body = null;
         try {
+            String submitterTenantId = request.headers().get(HttpMetricsIngestionServer.TENANT_ID_HEADER);
+
             body = request.content().toString(Constants.DEFAULT_CHARSET);
             List<AggregatedPayload> bundleList = createBundleList(body);
 
@@ -82,6 +92,8 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                 List<ErrorResponse.ErrorData> errors = new ArrayList<ErrorResponse.ErrorData>();
 
                 // for each metric bundle
+                int delayedMetricsCount = 0;
+                int metricsCount = 0;
                 for (AggregatedPayload bundle : bundleList) {
                     // validate, convert, and add to collection
                     List<ErrorResponse.ErrorData> bundleValidationErrors = bundle.getValidationErrors();
@@ -99,6 +111,9 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                                 bundle.getDelayTime(ingestTime),
                                 bundle.getAllMetricNames());
                         bundle.markDelayMetricsReceived(ingestTime);
+                        delayedMetricsCount += bundle.getAllMetricNames().size();
+                    } else {
+                        metricsCount += bundle.getAllMetricNames().size();
                     }
                 }
 
@@ -120,6 +135,8 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
                         return;
                     }
                 }
+
+                recordPerTenantMetrics(submitterTenantId, metricsCount, delayedMetricsCount);
 
                 // return OK or MULTI_STATUS response depending if there were validation errors
                 if (errors.isEmpty()) {
@@ -176,5 +193,18 @@ public class HttpAggregatedMultiIngestionHandler implements HttpRequestHandler {
         }
 
         return bundleList;
+    }
+
+    @VisibleForTesting
+    protected void recordPerTenantMetrics(String submitterTenantId, int metricsCount, int delayedMetricsCount) {
+        if ( enablePerTenantMetrics ) {
+            if ( metricsCount > 0 ) {
+                Instrumentation.getIngestedMetricsMeter(submitterTenantId).mark(metricsCount);
+            }
+            if ( delayedMetricsCount > 0 ) {
+                Instrumentation.getIngestedDelayedMetricsMeter(submitterTenantId).mark(delayedMetricsCount);
+            }
+
+        }
     }
 }

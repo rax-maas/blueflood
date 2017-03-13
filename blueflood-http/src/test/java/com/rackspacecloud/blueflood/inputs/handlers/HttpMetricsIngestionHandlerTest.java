@@ -1,7 +1,10 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Meter;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
 import com.rackspacecloud.blueflood.service.Configuration;
@@ -20,14 +23,14 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
 
@@ -37,6 +40,9 @@ public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
     private ChannelHandlerContext context;
     private Channel channel;
     private ChannelFuture channelFuture;
+
+    private Meter ingestedMetrics;
+    private Meter ingestedDelayedMetrics;
 
     private static final String TENANT = "tenant";
 
@@ -50,10 +56,13 @@ public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
         channelFuture = mock(ChannelFuture.class);
         when(context.channel()).thenReturn(channel);
         when(channel.write(anyString())).thenReturn(channelFuture);
+
+        ingestedMetrics = Instrumentation.getIngestedMetricsMeter(TENANT);
+        ingestedDelayedMetrics = Instrumentation.getIngestedDelayedMetricsMeter(TENANT);
     }
 
     @Test
-    public void testEmptyRequest() throws IOException {
+    public void emptyRequest_shouldGenerateErrorResponse() throws IOException {
         String requestBody = "";
         FullHttpRequest request = createIngestRequest(requestBody);
 
@@ -69,7 +78,6 @@ public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid tenant", TENANT, errorResponse.getErrors().get(0).getTenantId());
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
     }
-
 
     @Test
     public void testEmptyJsonRequest() throws IOException {
@@ -270,15 +278,7 @@ public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
     public void testMultiMetricsInvalidRequest() throws IOException {
         String metricName1 = "a.b.c.1";
         String metricName2 = "a.b.c.2";
-        long collectionTimeInPast = new DefaultClockImpl().now().getMillis() - 1000
-                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
-
-        String singleMetric1 = createRequestBody(metricName1, new DefaultClockImpl().now().getMillis(),
-                -1, 1); //invalid ttl value
-        String singleMetric2 = createRequestBody(metricName2, collectionTimeInPast, 24 * 60 * 60, 1); //collection in past
-
-        String requestBody = "[" + singleMetric1 + "," + singleMetric2 + "]";
-        FullHttpRequest request = createIngestRequest(requestBody);
+        FullHttpRequest request = createIngestRequest(generateInvalidMetrics(metricName1, metricName2));
 
         ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
         handler.handle(context, request);
@@ -300,7 +300,155 @@ public class HttpMetricsIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid error source", "collectionTime", errorResponse.getErrors().get(1).getSource());
         assertEquals("Invalid error message", "Out of bounds. Cannot be more than 259200000 milliseconds into the past." +
                 " Cannot be more than 600000 milliseconds into the future", errorResponse.getErrors().get(1).getMessage());
+    }
 
+    @Test
+    public void perTenantMetricsOn_emptyRequest_shouldNotRecordAnything() throws IOException {
+        String requestBody = "[{}]";
+        FullHttpRequest request = createIngestRequest(requestBody);
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        HttpMetricsIngestionHandler handler = spy(new HttpMetricsIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, never()).recordPerTenantMetrics(eq(TENANT), anyInt(), anyInt());
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_invalidMetrics_shouldNotRecordAnything() throws IOException {
+
+        String m1 = "foo.bar";
+        String m2 = "gee.wish";
+        FullHttpRequest request = createIngestRequest(generateInvalidMetrics(m1, m2));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        HttpMetricsIngestionHandler handler = spy(new HttpMetricsIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, never()).recordPerTenantMetrics(eq(TENANT), anyInt(), anyInt());
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordDelayedMetrics() throws Exception {
+        String delayedMetric1 = "delayed.me.1";
+        String delayedMetric2 = "delayed.me.2";
+        FullHttpRequest request = createIngestRequest(generateDelayedMetricsRequestString(delayedMetric1, delayedMetric2));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpMetricsIngestionHandler handler = spy(new HttpMetricsIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(0), eq(2));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 2, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordNonDelayedMetrics() throws Exception {
+        String metric1 = "i.am.on.time";
+        String metric2 = "i.am.on.time.again";
+        FullHttpRequest request = createIngestRequest(generateNonDelayedMetricsRequestString(metric1, metric2));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpMetricsIngestionHandler handler = spy(new HttpMetricsIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(2), eq(0));
+
+        assertEquals("ingested metrics count", 2, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOff_shouldNotRecordMetrics() throws Exception {
+        String metric1 = "i.am.on.time";
+        String metric2 = "i.am.on.time.again";
+        FullHttpRequest request = createIngestRequest(generateNonDelayedMetricsRequestString(metric1, metric2));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        // turn off per tenant metrics tracking
+        HttpMetricsIngestionHandler handler = spy(new HttpMetricsIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), false));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(2), eq(0));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+
+    }
+
+    private String generateInvalidMetrics(String invalidTtlMetricName, String invalidCollectionMetricName) throws IOException {
+
+        long collectionTimeInPast = new DefaultClockImpl().now().getMillis() - 1000
+                - Configuration.getInstance().getLongProperty( CoreConfig.BEFORE_CURRENT_COLLECTIONTIME_MS );
+
+        //invalid ttl value
+        String invalidTtl = createRequestBody(invalidTtlMetricName, new DefaultClockImpl().now().getMillis(), -1, 1);
+
+        // collection in the past
+        String invalidCollection = createRequestBody(invalidCollectionMetricName, collectionTimeInPast, 24 * 60 * 60, 1);
+
+        return "[" + invalidTtl + "," + invalidCollection + "]";
+    }
+
+    private String generateDelayedMetricsRequestString(String... metricNames) throws IOException {
+        long delayedTime = new DefaultClockImpl().now().getMillis() - 100 -
+                Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+        List<String> jsonMetrics = new ArrayList<>();
+        for (String metricName : metricNames) {
+            jsonMetrics.add(createRequestBody(metricName, delayedTime, 24*60*60, 1));
+        }
+        return "[" + StringUtils.join(jsonMetrics, ",") + "]";
+    }
+
+    private String generateNonDelayedMetricsRequestString(String... metricNames) throws IOException {
+        long timestamp = new DefaultClockImpl().now().getMillis();
+        List<String> jsonMetrics = new ArrayList<>();
+        for (String metricName : metricNames) {
+            jsonMetrics.add(createRequestBody(metricName, timestamp, 24*60*60, 1));
+        }
+        return "[" + StringUtils.join(jsonMetrics, ",") + "]";
     }
 
     private String createRequestBody(String metricName, long collectionTime, int ttl, Object metricValue) throws IOException {

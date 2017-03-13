@@ -19,6 +19,7 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.rackspacecloud.blueflood.cache.ConfigTtlProvider;
 import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
@@ -27,6 +28,7 @@ import com.rackspacecloud.blueflood.http.HttpRequestHandler;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetric;
 import com.rackspacecloud.blueflood.inputs.formats.JSONMetricsContainer;
 import com.rackspacecloud.blueflood.io.Constants;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -67,6 +69,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     protected final TypeFactory typeFactory;
     private final HttpMetricsIngestionServer.Processor processor;
     private final TimeValue timeout;
+    protected boolean enablePerTenantMetrics;
 
     private static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     protected static final Validator validator = factory.getValidator();
@@ -87,10 +90,15 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
     }
 
     public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout) {
+        this(processor, timeout, false);
+    }
+
+    public HttpMetricsIngestionHandler(HttpMetricsIngestionServer.Processor processor, TimeValue timeout, boolean enablePerTenantMetrics) {
         this.mapper = new ObjectMapper();
         this.typeFactory = TypeFactory.defaultInstance();
         this.timeout = timeout;
         this.processor = processor;
+        this.enablePerTenantMetrics = enablePerTenantMetrics;
     }
 
     protected JSONMetricsContainer createContainer(String body, String tenantId) throws JsonParseException, JsonMappingException, IOException {
@@ -131,7 +139,7 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             Tracker.getInstance().track(request);
             requestCount.inc();
 
-            final String tenantId = request.headers().get("tenantId");
+            final String tenantId = request.headers().get(HttpMetricsIngestionServer.TENANT_ID_HEADER);
 
             JSONMetricsContainer jsonMetricsContainer;
             List<Metric> validMetrics;
@@ -211,6 +219,9 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                     }
                 }
 
+                recordPerTenantMetrics(tenantId, jsonMetricsContainer.getNonDelayedMetricsCount(),
+                        jsonMetricsContainer.getDelayedMetricsCount());
+
                 // after processing metrics, return either OK or MULTI_STATUS depending on number of valid metrics
                 if( !validationErrors.isEmpty() ) {
                     // has some validation errors, return MULTI_STATUS
@@ -220,7 +231,6 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
                     // no validation error, return OK
                     DefaultHandler.sendResponse(ctx, request, null, HttpResponseStatus.OK);
                 }
-
             } catch (TimeoutException e) {
                 DefaultHandler.sendErrorResponse(ctx, request, "Timed out persisting metrics", HttpResponseStatus.ACCEPTED);
             } catch (Exception e) {
@@ -231,6 +241,14 @@ public class HttpMetricsIngestionHandler implements HttpRequestHandler {
             }
         } finally {
             requestCount.dec();
+        }
+    }
+
+    @VisibleForTesting
+    void recordPerTenantMetrics(String tenantId, int metricsCount, int delayedMetricsCount) {
+        if ( enablePerTenantMetrics ) {
+            Instrumentation.getIngestedMetricsMeter(tenantId).mark(metricsCount);
+            Instrumentation.getIngestedDelayedMetricsMeter(tenantId).mark(delayedMetricsCount);
         }
     }
 
