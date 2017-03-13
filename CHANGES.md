@@ -1,6 +1,9 @@
 # CHANGES
 
 ## IN PROGRESS
+* Added configuration option ENABLE_PER_TENANT_METRICS to enable recording per-tenant ingest metrics:
+  ** number of datapoints each tenant ingests
+  ** number of delayed datapoints each tenant ingests
 * Updated to using cassandra-maven-plugin v2.1.7-1
 * Removed String and Boolean support
 * Removed caching of metrics Type in metrics_metadata Column Family and MetadataCache
