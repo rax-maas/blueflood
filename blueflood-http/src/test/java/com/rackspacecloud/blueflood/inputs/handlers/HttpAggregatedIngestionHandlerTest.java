@@ -16,11 +16,13 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
@@ -43,6 +45,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
@@ -61,6 +64,8 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
     private Channel channel;
     private ChannelFuture channelFuture;
 
+    private Meter ingestedMetrics;
+    private Meter ingestedDelayedMetrics;
 
     private final String postfix = ".post";
     private static final String TENANT = "tenant";
@@ -79,6 +84,9 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         ListenableFuture mockFuture = mock(ListenableFuture.class);
         when(processor.apply(any(MetricsCollection.class))).thenReturn(mockFuture);
         when(mockFuture.get(anyLong(), any(TimeUnit.class))).thenReturn(new ArrayList<Boolean>());
+
+        ingestedMetrics = Instrumentation.getIngestedMetricsMeter(TENANT);
+        ingestedDelayedMetrics = Instrumentation.getIngestedDelayedMetricsMeter(TENANT);
     }
 
     @Before
@@ -542,6 +550,113 @@ public class HttpAggregatedIngestionHandlerTest extends HandlerTestsBase {
         assertEquals("Invalid response", "", responseBody);
         assertEquals("Invalid status", HttpResponseStatus.OK, argument.getValue().getStatus());
     }
+
+    @Test
+    public void perTenantMetricsOn_emptyRequest_shouldNotRecordAnything() throws IOException {
+        String requestBody = "{}";
+        FullHttpRequest request = createIngestRequest(requestBody);
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        HttpAggregatedIngestionHandler handler = spy(new HttpAggregatedIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, never()).recordPerTenantMetrics(eq(TENANT), anyInt(), anyInt());
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordDelayedMetrics() throws Exception {
+        BluefloodSet set1 = new BluefloodSet("delayed.me.1.set.a.b", new String[]{"", ""});
+        BluefloodSet set2 = new BluefloodSet("delayed.me.2.set.a.b", new String[]{"", ""});
+        long delayedTime = new DefaultClockImpl().now().getMillis() - 100 -
+                Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+        FullHttpRequest request = createIngestRequest(
+                                    createRequestBody(TENANT, delayedTime, 0, null, null,
+                                            null, new BluefloodSet[]{set1, set2}));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpAggregatedIngestionHandler handler = spy(new HttpAggregatedIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(0), eq(2));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 2, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordNonDelayedMetrics() throws Exception {
+        BluefloodSet set1 = new BluefloodSet("i.am.on.time.1.set.a.b", new String[]{"", ""});
+        BluefloodSet set2 = new BluefloodSet("i.am.on.time.2.set.a.b", new String[]{"", ""});
+        long timestamp = new DefaultClockImpl().now().getMillis();
+        FullHttpRequest request = createIngestRequest(
+                createRequestBody(TENANT, timestamp, 0, null, null,
+                        null, new BluefloodSet[]{set1, set2}));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpAggregatedIngestionHandler handler = spy(new HttpAggregatedIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(2), eq(0));
+
+        assertEquals("ingested metrics count", 2, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOff_shouldNotRecordMetrics() throws Exception {
+        BluefloodSet set1 = new BluefloodSet("i.am.on.time.1.set.a.b", new String[]{"", ""});
+        BluefloodSet set2 = new BluefloodSet("i.am.on.time.2.set.a.b", new String[]{"", ""});
+        long timestamp = new DefaultClockImpl().now().getMillis();
+        FullHttpRequest request = createIngestRequest(
+                createRequestBody(TENANT, timestamp, 0, null, null,
+                        null, new BluefloodSet[]{set1, set2}));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        // turn off per tenant metrics tracking
+        HttpAggregatedIngestionHandler handler = spy(new HttpAggregatedIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), false));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(2), eq(0));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+
+    }
+
 
     private String createRequestBody(String tenantId, long collectionTime, long flushInterval, BluefloodGauge[] gauges,
                                      BluefloodCounter[] counters, BluefloodTimer[] timers, BluefloodSet[] sets) {

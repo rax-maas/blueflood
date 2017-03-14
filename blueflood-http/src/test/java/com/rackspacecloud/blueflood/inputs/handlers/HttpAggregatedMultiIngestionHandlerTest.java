@@ -16,14 +16,19 @@
 
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.codahale.metrics.Meter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.netflix.astyanax.serializers.AbstractSerializer;
 import com.rackspacecloud.blueflood.inputs.formats.AggregatedPayload;
+import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.io.serializers.Serializers;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.outputs.handlers.HandlerTestsBase;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -46,12 +51,12 @@ import java.util.concurrent.TimeUnit;
 
 import static com.rackspacecloud.blueflood.TestUtils.*;
 import static junit.framework.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 
 public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
@@ -63,8 +68,10 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
     private Channel channel;
     private ChannelFuture channelFuture;
 
-    private static final String TENANT = "tenant";
+    private Meter ingestedMetrics;
+    private Meter ingestedDelayedMetrics;
 
+    private static final String TENANT = "tenant";
 
     private List<AggregatedPayload> bundleList;
 
@@ -86,6 +93,9 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
 
         String json = getJsonFromFile("sample_multi_aggregated_payload.json", postfix);
         bundleList = HttpAggregatedMultiIngestionHandler.createBundleList(json);
+
+        ingestedMetrics = Instrumentation.getIngestedMetricsMeter(TENANT);
+        ingestedDelayedMetrics = Instrumentation.getIngestedDelayedMetricsMeter(TENANT);
     }
 
     @Test
@@ -203,6 +213,103 @@ public class HttpAggregatedMultiIngestionHandlerTest extends HandlerTestsBase {
 
         assertEquals("Invalid response", "No valid metrics", responseBody);
         assertEquals("Invalid status", HttpResponseStatus.BAD_REQUEST, argument.getValue().getStatus());
+    }
+
+    @Test
+    public void perTenantMetricsOn_emptyRequest_shouldNotRecordAnything() throws IOException {
+        String requestBody = "[]";
+        FullHttpRequest request = createIngestRequest(requestBody);
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        HttpAggregatedMultiIngestionHandler handler = spy(new HttpAggregatedMultiIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, never()).recordPerTenantMetrics(eq(TENANT), anyInt(), anyInt());
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordDelayedMetrics() throws Exception {
+        long delayedTime = new DefaultClockImpl().now().getMillis() - 100 -
+                Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
+        FullHttpRequest request = createIngestRequest(
+                getJsonFromFile("sample_multi_aggregated_payload.json", delayedTime, postfix));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpAggregatedMultiIngestionHandler handler = spy(new HttpAggregatedMultiIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(0), eq(12));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 12, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOn_shouldRecordNonDelayedMetrics() throws Exception {
+        long timestamp = new DefaultClockImpl().now().getMillis();
+        FullHttpRequest request = createIngestRequest(
+                getJsonFromFile("sample_multi_aggregated_payload.json", timestamp, postfix));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        HttpAggregatedMultiIngestionHandler handler = spy(new HttpAggregatedMultiIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), true));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(12), eq(0));
+
+        assertEquals("ingested metrics count", 12, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+    }
+
+    @Test
+    public void perTenantMetricsOff_shouldNotRecordMetrics() throws Exception {
+        long timestamp = new DefaultClockImpl().now().getMillis();
+        FullHttpRequest request = createIngestRequest(
+                getJsonFromFile("sample_multi_aggregated_payload.json", timestamp, postfix));
+
+        long ingestedMetricsBefore = ingestedMetrics.getCount();
+        long ingestedDelayedMetricsBefore = ingestedDelayedMetrics.getCount();
+
+        ListenableFuture<List<Boolean>> futures = mock(ListenableFuture.class);
+        List<Boolean> answers = new ArrayList<>();
+        answers.add(Boolean.TRUE);
+        when(processor.apply(any())).thenReturn(futures);
+        when(futures.get(anyLong(), any())).thenReturn(answers);
+
+        // turn off per tenant metrics tracking
+        HttpAggregatedMultiIngestionHandler handler = spy(new HttpAggregatedMultiIngestionHandler(processor, new TimeValue(5, TimeUnit.SECONDS), false));
+        ArgumentCaptor<FullHttpResponse> argument = ArgumentCaptor.forClass(FullHttpResponse.class);
+        handler.handle(context, request);
+        verify(channel).write(argument.capture());
+        verify(handler, times(1)).recordPerTenantMetrics(eq(TENANT), eq(12), eq(0));
+
+        assertEquals("ingested metrics count", 0, ingestedMetrics.getCount() - ingestedMetricsBefore);
+        assertEquals("ingested delayed metrics count", 0, ingestedDelayedMetrics.getCount() - ingestedDelayedMetricsBefore);
+
     }
 
     private FullHttpRequest createIngestRequest(String requestBody) {

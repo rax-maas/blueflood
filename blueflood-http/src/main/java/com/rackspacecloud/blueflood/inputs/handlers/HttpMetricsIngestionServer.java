@@ -73,6 +73,15 @@ public class HttpMetricsIngestionServer {
     public static boolean EXP_TOKEN_SEARCH_IMPROVEMENTS =
             Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS);
 
+    private static final boolean ENABLE_PER_TENANT_METRICS =
+            Configuration.getInstance().getBooleanProperty(CoreConfig.ENABLE_PER_TENANT_METRICS);
+
+    /**
+     * This is HTTP Header name is inserted by RouterMatcher based on the
+     * router configuration in startServer()
+     */
+    public static final String TENANT_ID_HEADER = "tenantId";
+
     /**
      * Constructor. Instantiate Metrics Ingest server
      * @param context
@@ -99,16 +108,23 @@ public class HttpMetricsIngestionServer {
 
         RouteMatcher router = new RouteMatcher();
         router.get("/v1.0", new DefaultHandler());
-        router.post("/v1.0/multitenant/experimental/metrics", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v1.0/:tenantId/experimental/metrics/statsd", new HttpAggregatedIngestionHandler(processor, timeout));
+        router.post("/v1.0/multitenant/experimental/metrics",
+                new HttpMultitenantMetricsIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
+        router.post("/v1.0/:tenantId/experimental/metrics",
+                new HttpMetricsIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
+        router.post("/v1.0/:tenantId/experimental/metrics/statsd",
+                new HttpAggregatedIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
 
         router.get("/v2.0", new DefaultHandler());
-        router.post("/v2.0/:tenantId/ingest/multi", new HttpMultitenantMetricsIngestionHandler(processor, timeout));
-        router.post("/v2.0/:tenantId/ingest", new HttpMetricsIngestionHandler(processor, timeout));
-        router.post("/v2.0/:tenantId/ingest/aggregated", new HttpAggregatedIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest/multi",
+                new HttpMultitenantMetricsIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
+        router.post("/v2.0/:tenantId/ingest",
+                new HttpMetricsIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
+        router.post("/v2.0/:tenantId/ingest/aggregated",
+                new HttpAggregatedIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
         router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
-        router.post("/v2.0/:tenantId/ingest/aggregated/multi", new HttpAggregatedMultiIngestionHandler(processor, timeout));
+        router.post("/v2.0/:tenantId/ingest/aggregated/multi",
+                new HttpAggregatedMultiIngestionHandler(processor, timeout));
         final RouteMatcher finalRouter = router;
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);

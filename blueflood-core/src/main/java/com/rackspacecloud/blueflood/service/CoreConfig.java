@@ -182,6 +182,9 @@ public enum CoreConfig implements ConfigDefaults {
     //Feature to improve token search. Enabling this will persist metric name tokens separately.
     ENABLE_TOKEN_SEARCH_IMPROVEMENTS("false"),
 
+    //Count raw metrics ingested per tenant
+    ENABLE_PER_TENANT_METRICS("false"),
+
     // Cross-Origin Resource Sharing
     CORS_ENABLED("false"),
     CORS_ALLOWED_ORIGINS("*"),
