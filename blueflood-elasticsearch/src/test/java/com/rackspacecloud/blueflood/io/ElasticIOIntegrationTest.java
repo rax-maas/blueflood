@@ -414,6 +414,26 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
+    @Parameters({"elasticIO", "elasticTokensIO"})
+    public void testGetMetricNamesWithoutWildCard(String type) throws Exception {
+        String tenantId = TENANT_A;
+        String query = "one.foo.three00.bar.baz";
+
+        createTestMetrics(tenantId, new HashSet<String>() {{
+            add("one.foo.three00.bar.baz");
+        }});
+
+        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+
+        Set<String> expectedResults = new HashSet<String>() {{
+            add("one.foo.three00.bar.baz|true");
+        }};
+
+        assertEquals("Invalid total number of results", expectedResults.size(), results.size());
+        verifyResults(results, expectedResults);
+    }
+
+    @Test
     public void testRegexLevel0() {
         List<String> terms = Arrays.asList("foo", "bar", "baz", "foo.bar", "foo.bar.baz", "foo.bar.baz.aux");
 
