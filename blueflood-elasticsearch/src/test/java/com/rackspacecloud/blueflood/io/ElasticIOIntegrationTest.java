@@ -25,7 +25,9 @@ import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.client.Client;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,11 +67,27 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
                                .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
 
-        elasticTokensIO = new ElasticTokensIO(esSetup.client());
+        String TOKEN_INDEX_NAME_OLD = ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE + "_v1";
+        esSetup.execute(EsSetup.createIndex(TOKEN_INDEX_NAME_OLD)
+                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
 
+        elasticTokensIO = new ElasticTokensIO(esSetup.client()) {
+            @Override
+            protected String[] getIndexesToSearch() {
+                return new String[] {ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_READ,
+                                     TOKEN_INDEX_NAME_OLD};
+            }
+        };
+
+        //inserting to metric_tokens
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_A));
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_B));
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_C));
+
+        //inserting same tokens to old version of metric_tokens
+        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, esSetup.client());
+        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, esSetup.client());
+        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, esSetup.client());
 
         esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
@@ -78,6 +96,29 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         return Token.getUniqueTokens(createComplexTestLocators(tenantId).stream())
                     .collect(toList());
     }
+
+    public void insertTokenDiscovery(List<Token> tokens, String indexName, Client esClient) throws IOException {
+        if (tokens.size() == 0) return;
+
+        BulkRequestBuilder bulk = esClient.prepareBulk();
+
+        for (Token token : tokens) {
+            bulk.add(createSingleRequest(token, indexName, esClient));
+        }
+
+        bulk.execute().actionGet();
+    }
+
+
+    IndexRequestBuilder createSingleRequest(Token token, String indexName, Client esClient) throws IOException {
+
+        return esClient.prepareIndex(indexName, ElasticTokensIO.ES_DOCUMENT_TYPE)
+                     .setId(token.getId())
+                     .setSource(ElasticTokensIO.createSourceContent(token))
+                     .setCreate(true)
+                     .setRouting(token.getLocator().getTenantId());
+    }
+
 
     @After
     public void tearDown() {

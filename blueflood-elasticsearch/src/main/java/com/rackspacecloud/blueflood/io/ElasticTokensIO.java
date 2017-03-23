@@ -143,6 +143,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
         return Arrays.stream(response.getHits().getHits())
                      .map(this::convertHitToMetricNameResult)
+                     .distinct()
                      .collect(toList());
     }
 
@@ -254,7 +255,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
             return queryRegex.replaceAll("\\.\\*", "[^.]*");
     }
 
-    private static XContentBuilder createSourceContent(Token token) throws IOException {
+    protected static XContentBuilder createSourceContent(Token token) throws IOException {
         XContentBuilder json;
 
         json = XContentFactory.jsonBuilder().startObject()
