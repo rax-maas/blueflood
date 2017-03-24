@@ -122,9 +122,9 @@ public class HttpMetricsIngestionServer {
                 new HttpMetricsIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
         router.post("/v2.0/:tenantId/ingest/aggregated",
                 new HttpAggregatedIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
-        router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
         router.post("/v2.0/:tenantId/ingest/aggregated/multi",
-                new HttpAggregatedMultiIngestionHandler(processor, timeout));
+                new HttpAggregatedMultiIngestionHandler(processor, timeout, ENABLE_PER_TENANT_METRICS));
+        router.post("/v2.0/:tenantId/events", getHttpEventsIngestionHandler());
         final RouteMatcher finalRouter = router;
 
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
