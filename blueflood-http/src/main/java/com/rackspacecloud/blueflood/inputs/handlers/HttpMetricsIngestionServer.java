@@ -35,8 +35,6 @@ import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -88,8 +86,8 @@ public class HttpMetricsIngestionServer {
 
         int acceptThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_ACCEPT_THREADS);
         int workerThreads = Configuration.getInstance().getIntegerProperty(HttpConfig.MAX_WRITE_WORKER_THREADS);
-        acceptorGroup = new EpollEventLoopGroup(acceptThreads); // acceptor threads
-        workerGroup = new EpollEventLoopGroup(workerThreads);   // client connections threads
+        acceptorGroup = new NioEventLoopGroup(acceptThreads); // acceptor threads
+        workerGroup = new NioEventLoopGroup(workerThreads);   // client connections threads
     }
 
     /**
@@ -116,7 +114,7 @@ public class HttpMetricsIngestionServer {
         log.info("Starting metrics listener HTTP server on port {}", httpIngestPort);
         ServerBootstrap server = new ServerBootstrap();
         server.group(acceptorGroup, workerGroup)
-                .channel(EpollServerSocketChannel.class)
+                .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel channel) throws Exception {
