@@ -74,9 +74,7 @@ public class DShardStateIO implements ShardStateIO {
                 .value( VALUE, bindMarker() );
 
         putShardState = DatastaxIO.getSession().prepare( insert );
-        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
-        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
-        putShardState.setConsistencyLevel( ConsistencyLevel.ONE );
+        putShardState.setConsistencyLevel( ConsistencyLevel.LOCAL_ONE );
     }
 
     @Override

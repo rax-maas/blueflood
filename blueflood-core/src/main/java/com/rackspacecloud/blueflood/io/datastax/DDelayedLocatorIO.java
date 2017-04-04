@@ -53,8 +53,7 @@ public class DDelayedLocatorIO implements DelayedLocatorIO {
                 .value(VALUE, bindMarker());
         putValue = DatastaxIO.getSession()
                 .prepare(insert)
-                .setConsistencyLevel( ConsistencyLevel.ONE );  // TODO: remove later; required by the cassandra-maven-plugin 2.0.0-1
-        // (see https://issues.apache.org/jira/browse/CASSANDRA-6238)
+                .setConsistencyLevel( ConsistencyLevel.LOCAL_ONE );
     }
 
 

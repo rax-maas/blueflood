@@ -10,7 +10,6 @@ import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.Clock;
-import com.rackspacecloud.blueflood.utils.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,16 +17,15 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * This class deals with reading/writing metrics to the basic metrics_* and metrics_string column families
+ * This class deals with reading/writing metrics to the basic metrics_* column families
  * using Datastax driver
  */
 public class DBasicMetricsRW extends DAbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger(DBasicMetricsRW.class);
-    private static final Timer waitResultsTimer = Metrics.timer(DBasicMetricsRW.class, "Basic Metrics Wait Write Results");
 
     private DRawIO rawIO = new DRawIO();
-    private DSimpleNumberIO simpleIO = new DSimpleNumberIO();
+    private DSimpleNumberIO simpleNumberIO = new DSimpleNumberIO();
     private final DBasicNumericIO basicIO = new DBasicNumericIO();
 
     /**
@@ -42,7 +40,9 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
     /**
      * This method inserts a collection of {@link com.rackspacecloud.blueflood.types.IMetric} objects
-     * to the appropriate Cassandra column family.
+     * to the appropriate Cassandra column family. Effectively, this method is only called to write
+     * the raw metrics received during Ingest requests. Another method, insertRollups, is used by
+     * the Rollup processes to write rolled up metrics.
      *
      * @param metrics
      *
@@ -72,7 +72,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
                     insertLocatorIfDelayed(metric);
                 }
 
-                futures.put( locator, rawIO.insertAsync( metric ) );
+                futures.put(locator, rawIO.insertAsync(metric));
 
                 // this is marking  metrics_strings & metrics_full together.
                 Instrumentation.markFullResMetricWritten();
@@ -135,7 +135,7 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
     public DAbstractMetricIO getIO( String rollupType, Granularity granularity ) {
 
       if( granularity == Granularity.FULL )
-        return simpleIO;
+        return simpleNumberIO;
       else
         return basicIO;
     }

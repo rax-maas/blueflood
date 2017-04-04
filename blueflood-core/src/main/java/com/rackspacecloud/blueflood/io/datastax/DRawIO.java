@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 /**
- * This class deals with writing boolean, numeric and string values to the metrics_full & metrics_string column
+ * This class deals with writing boolean, numeric and string values to the metrics_full column
  * families using the Datastax driver.
  *
  * This class does not subclass the {@link com.rackspacecloud.blueflood.io.datastax.DAbstractMetricIO} as serializes
@@ -42,10 +42,7 @@ public class DRawIO {
                 .using( ttl( bindMarker() ) );
 
         putNumeric = session.prepare( insertNumeric );
-
-        // TODO: This is required by the cassandra-maven-plugin 2.0.0-1, but not by cassandra 2.0.11, which we run.
-        // I believe its due to the bug https://issues.apache.org/jira/browse/CASSANDRA-6238
-        putNumeric.setConsistencyLevel( ConsistencyLevel.ONE );
+        putNumeric.setConsistencyLevel( ConsistencyLevel.LOCAL_ONE );
     }
 
     public ResultSetFuture insertAsync( IMetric metric ) {
@@ -57,5 +54,4 @@ public class DRawIO {
 
         return DatastaxIO.getSession().executeAsync( bound );
     }
-
 }
