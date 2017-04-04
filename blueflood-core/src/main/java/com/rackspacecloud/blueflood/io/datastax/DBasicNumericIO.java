@@ -1,6 +1,5 @@
 package com.rackspacecloud.blueflood.io.datastax;
 
-
 import com.rackspacecloud.blueflood.io.serializers.metrics.BasicRollupSerDes;
 import com.rackspacecloud.blueflood.types.*;
 
@@ -8,8 +7,8 @@ import java.nio.ByteBuffer;
 
 
 /**
- * This class holds the utility methods to read/write rolled up basic numeric values using
- * {@link com.rackspacecloud.blueflood.types.BasicRollup}.
+ * This class holds the utility methods to read/write rolled up basic numeric values in
+ * {@link com.rackspacecloud.blueflood.types.BasicRollup} using {@link BasicRollupSerDes}
  */
 public class DBasicNumericIO extends DAbstractMetricIO {
 

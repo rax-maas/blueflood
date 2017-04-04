@@ -56,14 +56,14 @@ public class Instrumentation implements InstrumentationMBean {
         metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
         metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
 
-            try {
-                final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-                final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", Instrumentation.class.getSimpleName());
-                final ObjectName nameObj = new ObjectName(name);
-                mbs.registerMBean(new Instrumentation() { }, nameObj);
-            } catch (Exception exc) {
-                log.error("Unable to register mbean for " + Instrumentation.class.getSimpleName(), exc);
-            }
+        try {
+            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            final String name = String.format("com.rackspacecloud.blueflood.io:type=%s", Instrumentation.class.getSimpleName());
+            final ObjectName nameObj = new ObjectName(name);
+            mbs.registerMBean(new Instrumentation() { }, nameObj);
+        } catch (Exception exc) {
+            log.error("Unable to register mbean for " + Instrumentation.class.getSimpleName(), exc);
+        }
     }
 
     private Instrumentation() {/* Used for JMX exposure */}

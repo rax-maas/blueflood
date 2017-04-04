@@ -83,7 +83,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
         }
 
         Timer.Context ctx = Instrumentation.getWriteTimerContext( writeContexts.get( 0 ).getDestinationCF().getName() );
-
         try {
 
             BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
