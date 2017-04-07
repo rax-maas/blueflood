@@ -25,8 +25,6 @@ import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * This class holds the necessary IO classes for a particular driver type.
  */
@@ -40,8 +38,6 @@ public class IOContainer {
     private static final Configuration configuration = Configuration.getInstance();
     private static final Logger LOG = LoggerFactory.getLogger(IOContainer.class);
     private static IOContainer FROM_CONFIG_INSTANCE = null;
-
-
 
     private ShardStateIO shardStateIO;
     private MetadataIO metadataIO;
@@ -93,9 +89,9 @@ public class IOContainer {
             shardStateIO = new DShardStateIO();
             locatorIO = new DLocatorIO();
             delayedLocatorIO = new DDelayedLocatorIO();
-            basicMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO,
+            basicMetricsRW = new DBasicMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
                     isRecordingDelayedMetrics, new DefaultClockImpl());
-            preAggregatedMetricsRW = new DPreaggregatedMetricsRW(locatorIO, delayedLocatorIO,
+            preAggregatedMetricsRW = new DPreaggregatedMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
                     isRecordingDelayedMetrics, new DefaultClockImpl());
 
         } else {

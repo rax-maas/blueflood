@@ -35,8 +35,8 @@ import java.util.Set;
  */
 public class DBasicMetricsRWIntegrationTest extends IntegrationTestBase {
 
-    protected LocatorIO locatorIO = new DLocatorIO();
-    protected DelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
+    protected DLocatorIO locatorIO = new DLocatorIO();
+    protected DDelayedLocatorIO delayedLocatorIO = new DDelayedLocatorIO();
 
     @Test
     //Numeric value is always persisted.

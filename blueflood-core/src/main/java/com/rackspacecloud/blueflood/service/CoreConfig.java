@@ -185,6 +185,8 @@ public enum CoreConfig implements ConfigDefaults {
     //Count raw metrics ingested per tenant
     ENABLE_PER_TENANT_METRICS("false"),
 
+    ENABLE_DTX_INGEST_BATCH("false"),
+
     // Cross-Origin Resource Sharing
     CORS_ENABLED("false"),
     CORS_ALLOWED_ORIGINS("*"),

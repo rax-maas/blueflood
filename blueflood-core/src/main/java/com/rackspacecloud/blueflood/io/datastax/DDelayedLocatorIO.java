@@ -59,18 +59,22 @@ public class DDelayedLocatorIO implements DelayedLocatorIO {
 
     @Override
     public void insertLocator(Granularity g, int slot, Locator locator) throws IOException {
-        int shard = Util.getShard(locator.toString());
-
         Session session = DatastaxIO.getSession();
 
         Timer.Context timer = Instrumentation.getWriteTimerContext(CassandraModel.CF_METRICS_DELAYED_LOCATOR_NAME);
         try {
             // bound values and execute
-            BoundStatement bs = putValue.bind(SlotKey.of(g, slot, shard).toString(), locator.toString(), "");
+            BoundStatement bs = getBoundStatementForLocator(g, slot, locator);
             session.execute(bs);
         } finally {
             timer.stop();
         }
+    }
+
+    // package protect so other classes in this package can call it
+    BoundStatement getBoundStatementForLocator(Granularity granularity, int slot, Locator locator) {
+        int shard = Util.getShard(locator.toString());
+        return putValue.bind(SlotKey.of(granularity, slot, shard).toString(), locator.toString(), "");
     }
 
     @Override

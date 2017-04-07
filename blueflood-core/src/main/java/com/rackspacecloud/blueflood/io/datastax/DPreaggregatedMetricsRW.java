@@ -58,9 +58,26 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
      * @param locatorIO
      * @param isRecordingDelayedMetrics
      */
-    public DPreaggregatedMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
-                                   boolean isRecordingDelayedMetrics, Clock clock) {
+    public DPreaggregatedMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                                   boolean isRecordingDelayedMetrics,
+                                   Clock clock) {
         super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
+        rollupTypeToIO.put(RollupType.COUNTER, counterIO);
+        rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
+        rollupTypeToIO.put(RollupType.SET, setIO);
+        rollupTypeToIO.put(RollupType.TIMER, timerIO);
+    }
+
+    /**
+     * Constructor
+     * @param locatorIO
+     * @param isRecordingDelayedMetrics
+     */
+    @VisibleForTesting
+    public DPreaggregatedMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                                   boolean isRecordingDelayedMetrics,
+                                   boolean isBatchIngestEnabled, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, isBatchIngestEnabled, clock);
         rollupTypeToIO.put(RollupType.COUNTER, counterIO);
         rollupTypeToIO.put(RollupType.GAUGE, gaugeIO);
         rollupTypeToIO.put(RollupType.SET, setIO);
@@ -94,57 +111,12 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
         Timer.Context ctx = Instrumentation.getWriteTimerContext(
                 CassandraModel.getPreaggregatedColumnFamilyName(granularity));
         try {
-            Map<ResultSetFuture, Locator> futureLocatorMap = new HashMap<ResultSetFuture, Locator>();
             Multimap<Locator, IMetric> map = asMultimap(metrics);
-            for (Locator locator : map.keySet()) {
-                for (IMetric metric : map.get(locator)) {
-                    RollupType rollupType = metric.getRollupType();
 
-                    // lookup the right io object
-                    DAbstractMetricIO io = rollupTypeToIO.get(rollupType);
-                    if ( io == null ) {
-                        throw new InvalidDataException(
-                                String.format("insertMetrics(locator=%s, granularity=%s): unsupported preaggregated rollupType=%s",
-                                        locator, granularity, rollupType.name()));
-                    }
-
-                    if (!(metric.getMetricValue() instanceof Rollup)) {
-                        throw new InvalidDataException(
-                                String.format("insertMetrics(locator=%s, granularity=%s): metric value %s is not type Rollup",
-                                        locator, granularity, metric.getMetricValue().getClass().getSimpleName())
-                        );
-                    }
-                    ResultSetFuture future = io.putAsync(locator, metric.getCollectionTime(),
-                            (Rollup) metric.getMetricValue(),
-                            granularity, metric.getTtlInSeconds());
-
-                    futureLocatorMap.put(future, locator);
-                    if (granularity == Granularity.FULL) {
-                        Instrumentation.markFullResPreaggregatedMetricWritten();
-                    }
-
-                    if ( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
-                        locatorIO.insertLocator(locator);
-                        LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
-                    }  else {
-                        LOG.trace("insertMetrics(): not inserting locator " + locator);
-                    }
-
-                    if (isRecordingDelayedMetrics) {
-                        insertLocatorIfDelayed(metric);
-                    }
-
-                }
-            }
-
-            for (ResultSetFuture future : futureLocatorMap.keySet()) {
-                try {
-                    future.getUninterruptibly().all();  
-                } catch (Exception ex) {
-                    Instrumentation.markWriteError();
-                    LOG.error(String.format("error writing preaggregated metric for locator %s, granularity %s",
-                            futureLocatorMap.get(future), granularity), ex);
-                }
+            if ( isBatchIngestEnabled ) {
+                insertMetricsInBatch(map, granularity);
+            } else {
+                insertMetricsIndividually(map, granularity);
             }
         } finally {
             ctx.stop();
@@ -197,6 +169,98 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
         }
 
         return io;
+    }
+
+    private void insertMetricsIndividually(Multimap<Locator, IMetric> map, Granularity granularity)
+        throws IOException
+    {
+        Map<ResultSetFuture, Locator> futureLocatorMap = new HashMap<ResultSetFuture, Locator>();
+        for (Locator locator : map.keySet()) {
+            for (IMetric metric : map.get(locator)) {
+                RollupType rollupType = metric.getRollupType();
+
+                // lookup the right io object
+                DAbstractMetricIO io = rollupTypeToIO.get(rollupType);
+                if ( io == null ) {
+                    throw new InvalidDataException(
+                            String.format("insertMetrics(locator=%s, granularity=%s): unsupported preaggregated rollupType=%s",
+                                    locator, granularity, rollupType.name()));
+                }
+
+                if (!(metric.getMetricValue() instanceof Rollup)) {
+                    throw new InvalidDataException(
+                            String.format("insertMetrics(locator=%s, granularity=%s): metric value %s is not type Rollup",
+                                    locator, granularity, metric.getMetricValue().getClass().getSimpleName())
+                    );
+                }
+                ResultSetFuture future = io.putAsync(locator, metric.getCollectionTime(),
+                        (Rollup) metric.getMetricValue(),
+                        granularity, metric.getTtlInSeconds());
+
+                futureLocatorMap.put(future, locator);
+                if (granularity == Granularity.FULL) {
+                    Instrumentation.markFullResPreaggregatedMetricWritten();
+                }
+
+                if ( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
+                    locatorIO.insertLocator(locator);
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
+                }  else {
+                    LOG.trace("insertMetrics(): not inserting locator " + locator);
+                }
+
+                if (isRecordingDelayedMetrics) {
+                    insertLocatorIfDelayed(metric);
+                }
+
+            }
+        }
+
+        for (ResultSetFuture future : futureLocatorMap.keySet()) {
+            try {
+                future.getUninterruptibly().all();
+            } catch (Exception ex) {
+                Instrumentation.markWriteError();
+                LOG.error(String.format("error writing preaggregated metric for locator %s, granularity %s",
+                        futureLocatorMap.get(future), granularity), ex);
+            }
+        }
+    }
+
+    private void insertMetricsInBatch(Multimap<Locator, IMetric> map, Granularity granularity) {
+        BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+
+        for (Locator locator : map.keySet()) {
+            for (IMetric metric : map.get(locator)) {
+                RollupType rollupType = metric.getRollupType();
+
+                DAbstractMetricIO io = rollupTypeToIO.get(rollupType);
+                BoundStatement boundStatement = io.getBoundStatementForMetric(metric, granularity);
+                batch.add(boundStatement);
+
+                if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
+                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
+                    batch.add(locatorIO.getBoundStatementForLocator( locator ));
+                }
+
+                // if we are recording delayed metrics, we may need to do an
+                // extra insert
+                if ( isRecordingDelayedMetrics ) {
+                    BoundStatement bs = getBoundStatementForMetricIfDelayed(metric);
+                    if ( bs != null ) {
+                        batch.add(bs);
+                    }
+                }
+            }
+        }
+        LOG.trace(String.format("insert preaggregated batch statement size=%d", batch.size()));
+
+        try {
+            DatastaxIO.getSession().execute(batch);
+        } catch ( Exception ex ) {
+            Instrumentation.markWriteError();
+            LOG.error(String.format("error writing batch of %d preaggregated metrics", batch.size()), ex );
+        }
     }
 }
 

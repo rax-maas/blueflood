@@ -1,6 +1,8 @@
 package com.rackspacecloud.blueflood.io.datastax;
 
 import com.codahale.metrics.Timer;
+import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.annotations.VisibleForTesting;
@@ -24,18 +26,30 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
 
     private static final Logger LOG = LoggerFactory.getLogger(DBasicMetricsRW.class);
 
-    private DRawIO rawIO = new DRawIO();
     private DSimpleNumberIO simpleNumberIO = new DSimpleNumberIO();
     private final DBasicNumericIO basicIO = new DBasicNumericIO();
 
     /**
      * Constructor
+     * @param isRecordingDelayedMetrics if true, delayed metrics are recorded in metrics_delayed_locator
+     * @param isBatchIngestEnabled  if true, metrics are inserted using batch statement
+     */
+    @VisibleForTesting
+    public DBasicMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                           boolean isRecordingDelayedMetrics,
+                           boolean isBatchIngestEnabled, Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, isBatchIngestEnabled, clock);
+    }
+
+    /**
+     * Constructor. Using this, batch Ingest is NOT enabled.
      * @param isRecordingDelayedMetrics
      */
     @VisibleForTesting
-    public DBasicMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
-                           boolean isRecordingDelayedMetrics, Clock clock) {
-        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, clock);
+    public DBasicMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                           boolean isRecordingDelayedMetrics,
+                           Clock clock) {
+        super(locatorIO, delayedLocatorIO, isRecordingDelayedMetrics, false, clock);
     }
 
     /**
@@ -50,50 +64,16 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
      */
     @Override
     public void insertMetrics( Collection<IMetric> metrics ) throws IOException {
-        // if there are strings & booleans in this request, they will be tracked as numeric metrics.
-        // not sure how we want to get around that.
+
         Timer.Context ctx = Instrumentation.getWriteTimerContext( CassandraModel.CF_METRICS_FULL_NAME );
-
-        Map<Locator, ResultSetFuture> futures = new HashMap<Locator, ResultSetFuture>();
-
         try {
-
-            for( IMetric metric : metrics ) {
-
-                Locator locator = metric.getLocator();
-
-                if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
-
-                    LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
-                    locatorIO.insertLocator( locator );
-                }
-
-                if (isRecordingDelayedMetrics) {
-                    insertLocatorIfDelayed(metric);
-                }
-
-                futures.put(locator, rawIO.insertAsync(metric));
-
-                // this is marking  metrics_strings & metrics_full together.
-                Instrumentation.markFullResMetricWritten();
-            }
-
-            for( Map.Entry<Locator, ResultSetFuture> f : futures.entrySet() ) {
-
-                try {
-                    ResultSet result = f.getValue().getUninterruptibly();
-
-                    LOG.trace( "result.size=" + result.all().size() );
-                }
-                catch ( Exception e ) {
-                    Instrumentation.markWriteError();
-                    LOG.error(String.format("error writing metric for locator %s",
-                            f.getKey()), e );
-                }
+            if ( isBatchIngestEnabled ) {
+                insertMetricsInBatch(metrics);
+            } else {
+                insertMetricsIndividually(metrics);
             }
         }
         finally {
-
             ctx.stop();
         }
     }
@@ -138,5 +118,83 @@ public class DBasicMetricsRW extends DAbstractMetricsRW {
         return simpleNumberIO;
       else
         return basicIO;
+    }
+
+    private void insertMetricsIndividually(Collection<IMetric> metrics) throws IOException {
+
+        Map<Locator, ResultSetFuture> futures = new HashMap<Locator, ResultSetFuture>();
+        for( IMetric metric : metrics ) {
+
+            Locator locator = metric.getLocator();
+
+            if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
+
+                LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
+                locatorIO.insertLocator( locator );
+            }
+
+            if (isRecordingDelayedMetrics) {
+                insertLocatorIfDelayed(metric);
+            }
+
+            futures.put(locator, simpleNumberIO.insertRawAsync(metric));
+
+            Instrumentation.markFullResMetricWritten();
+        }
+
+        for( Map.Entry<Locator, ResultSetFuture> f : futures.entrySet() ) {
+
+            try {
+                ResultSet result = f.getValue().getUninterruptibly();
+
+                LOG.trace( "result.size=" + result.all().size() );
+            }
+            catch ( Exception e ) {
+                Instrumentation.markWriteError();
+                LOG.error(String.format("error writing metric for locator %s",
+                        f.getKey()), e );
+            }
+        }
+    }
+
+    /**
+     * Inserts a collection of metrics in a batch using an unlogged
+     * {@link BatchStatement}
+     *
+     * @param metrics
+     * @return
+     */
+    private void insertMetricsInBatch(Collection<IMetric> metrics) throws IOException {
+
+        BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+
+        for (IMetric metric : metrics) {
+            BoundStatement bound = simpleNumberIO.getBoundStatementForMetric(metric);
+            batch.add(bound);
+            Instrumentation.markFullResMetricWritten();
+
+            Locator locator = metric.getLocator();
+            if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
+                LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
+                batch.add(locatorIO.getBoundStatementForLocator( locator ));
+            }
+
+            // if we are recording delayed metrics, we may need to do an
+            // extra insert
+            if ( isRecordingDelayedMetrics ) {
+                BoundStatement bs = getBoundStatementForMetricIfDelayed(metric);
+                if ( bs != null ) {
+                    batch.add(bs);
+                }
+            }
+        }
+        LOG.trace(String.format("insert batch statement size=%d", batch.size()));
+
+        try {
+            DatastaxIO.getSession().execute(batch);
+        } catch ( Exception ex ) {
+            Instrumentation.markWriteError();
+            LOG.error(String.format("error writing batch of %d metrics", batch.size()), ex );
+        }
     }
 }

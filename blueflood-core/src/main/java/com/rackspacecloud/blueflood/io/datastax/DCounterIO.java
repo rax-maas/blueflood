@@ -16,7 +16,11 @@
 
 package com.rackspacecloud.blueflood.io.datastax;
 
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.rackspacecloud.blueflood.exceptions.InvalidDataException;
 import com.rackspacecloud.blueflood.io.serializers.metrics.CounterSerDes;
+import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
 
 import java.nio.ByteBuffer;
@@ -57,4 +61,26 @@ public class DCounterIO extends DAbstractMetricIO {
         return serDes.deserialize(byteBuffer);
     }
 
+    /**
+     * Retrieves the {@link BoundStatement} for a particular counter metric
+     * @param metric
+     * @param granularity
+     * @return
+     */
+    @Override
+    protected BoundStatement getBoundStatementForMetric(IMetric metric, Granularity granularity) {
+        Object metricValue = metric.getMetricValue();
+        if (!(metricValue instanceof BluefloodCounterRollup)) {
+            throw new InvalidDataException(
+                    String.format("getBoundStatementForMetric(locator=%s, granularity=%s): metric value %s is not type BfCounterRollup",
+                            metric.getLocator(), granularity, metric.getMetricValue().getClass().getSimpleName())
+            );
+        }
+        PreparedStatement statement = metricsCFPreparedStatements.preaggrGranToInsertStatement.get(granularity);
+        return statement.bind(
+                metric.getLocator().toString(),
+                metric.getCollectionTime(),
+                serDes.serialize( (BluefloodCounterRollup) metricValue ),
+                metric.getTtlInSeconds() );
+    }
 }
