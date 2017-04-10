@@ -63,7 +63,12 @@ public class IOContainer {
             boolean isRecordingDelayedMetrics = configuration.getBooleanProperty(CoreConfig.RECORD_DELAYED_METRICS);
             LOG.info(String.format("Recording delayed metrics: %s", isRecordingDelayedMetrics));
 
-            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver), isRecordingDelayedMetrics);
+            boolean isDtxIngestBatchEnabled = configuration.getBooleanProperty(CoreConfig.ENABLE_DTX_INGEST_BATCH);
+            LOG.info(String.format("Datastax Ingest batch enabled: %s", isDtxIngestBatchEnabled));
+
+            FROM_CONFIG_INSTANCE = new IOContainer(DriverType.getDriverType(driver),
+                                            isRecordingDelayedMetrics,
+                                            isDtxIngestBatchEnabled);
         }
 
         return FROM_CONFIG_INSTANCE;
@@ -81,7 +86,9 @@ public class IOContainer {
      * @param driver
      * @param isRecordingDelayedMetrics
      */
-    private IOContainer(DriverType driver, boolean isRecordingDelayedMetrics) {
+    private IOContainer(DriverType driver,
+                        boolean isRecordingDelayedMetrics,
+                        boolean isDtxIngestBatchEnabled) {
 
         if ( driver == DriverType.DATASTAX ) {
 
@@ -90,9 +97,9 @@ public class IOContainer {
             locatorIO = new DLocatorIO();
             delayedLocatorIO = new DDelayedLocatorIO();
             basicMetricsRW = new DBasicMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
-                    isRecordingDelayedMetrics, new DefaultClockImpl());
+                    isRecordingDelayedMetrics, isDtxIngestBatchEnabled, new DefaultClockImpl());
             preAggregatedMetricsRW = new DPreaggregatedMetricsRW((DLocatorIO)locatorIO, (DDelayedLocatorIO) delayedLocatorIO,
-                    isRecordingDelayedMetrics, new DefaultClockImpl());
+                    isRecordingDelayedMetrics, isDtxIngestBatchEnabled, new DefaultClockImpl());
 
         } else {
 
