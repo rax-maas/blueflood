@@ -75,7 +75,7 @@ public class DGagueIO extends DAbstractMetricIO {
         Object metricValue = metric.getMetricValue();
         if (!(metricValue instanceof BluefloodGaugeRollup)) {
             throw new InvalidDataException(
-                    String.format("getBoundStatementForMetric(locator=%s, granularity=%s): metric value %s is not type BfGaugeRollup",
+                    String.format("getBoundStatementForMetric(locator=%s, granularity=%s): metric value %s is not type BluefloodGaugeRollup",
                             metric.getLocator(), granularity, metric.getMetricValue().getClass().getSimpleName())
             );
         }

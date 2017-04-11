@@ -75,7 +75,7 @@ public class DSetIO extends DAbstractMetricIO {
         Object metricValue = metric.getMetricValue();
         if (!(metricValue instanceof BluefloodSetRollup)) {
             throw new InvalidDataException(
-                    String.format("getBoundStatementForMetric(locator=%s, granularity=%s): metric value %s is not type BfSetRollup",
+                    String.format("getBoundStatementForMetric(locator=%s, granularity=%s): metric value %s is not type BluefloodSetRollup",
                             metric.getLocator(), granularity, metric.getMetricValue().getClass().getSimpleName())
             );
         }

@@ -238,6 +238,10 @@ public class DPreaggregatedMetricsRW extends DAbstractMetricsRW implements Preag
                 BoundStatement boundStatement = io.getBoundStatementForMetric(metric, granularity);
                 batch.add(boundStatement);
 
+                if (granularity == Granularity.FULL) {
+                    Instrumentation.markFullResPreaggregatedMetricWritten();
+                }
+
                 if( !LocatorCache.getInstance().isLocatorCurrentInBatchLayer(locator) ) {
                     LocatorCache.getInstance().setLocatorCurrentInBatchLayer(locator);
                     batch.add(locatorIO.getBoundStatementForLocator( locator ));
