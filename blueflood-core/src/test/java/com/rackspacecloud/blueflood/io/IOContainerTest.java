@@ -6,7 +6,6 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
 import com.rackspacecloud.blueflood.io.astyanax.AMetadataIO;
 import com.rackspacecloud.blueflood.io.astyanax.AShardStateIO;
-import com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW;
 import com.rackspacecloud.blueflood.io.datastax.DatastaxIO;
 import com.rackspacecloud.blueflood.io.datastax.DMetadataIO;
 import com.rackspacecloud.blueflood.io.datastax.DShardStateIO;
@@ -14,7 +13,6 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
@@ -22,8 +20,6 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.util.ArrayList;
 
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
@@ -41,7 +37,8 @@ import static org.junit.Assert.*;
 @SuppressStaticInitializationFor( {
         "com.rackspacecloud.blueflood.io.datastax.DatastaxIO",
         "com.rackspacecloud.blueflood.cache.MetadataCache",
-        "com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW"} )
+        "com.rackspacecloud.blueflood.io.datastax.DAbstractMetricsRW",
+        "com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW"} )
 @RunWith(PowerMockRunner.class)
 public class IOContainerTest {
 

@@ -254,4 +254,14 @@ public abstract class DAbstractMetricIO {
         }
         return locatorTimestampRollup;
     }
+
+    /**
+     * Retrieves the {@link BoundStatement} for a particular metric and granularity.
+     * Subclasses will implement this.
+     *
+     * @param metric
+     * @param granularity
+     * @return
+     */
+    protected abstract BoundStatement getBoundStatementForMetric(IMetric metric, Granularity granularity);
 }

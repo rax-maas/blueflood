@@ -1,7 +1,5 @@
 package com.rackspacecloud.blueflood.io;
 
-import java.util.Map;
-
 import com.rackspacecloud.blueflood.io.datastax.DBasicMetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
@@ -29,12 +27,13 @@ import static org.mockito.Mockito.when;
  * Astyanax is reading.
  */
 @RunWith( JUnitParamsRunner.class )
-public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIntegrationTest {
+public class BasicMetricsRWBatchDatastaxWriteIntegrationTest extends BasicMetricsRWIntegrationTest {
 
     @Test
     public void testNumericMultiMetricsDatapointsRangeFull() throws IOException {
 
         // write with datastax
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertMetrics( numericMap.values() );
 
         // read with astyanaxRW.getDatapointsForRange()
@@ -72,7 +71,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     @Test
     public void testNumericMultiMetricsDatapointsRangeFullWithDelayedMetrics() throws IOException {
 
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, new DefaultClockImpl());
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, true, new DefaultClockImpl());
 
         //making one metric delayed
         final Locator delayedLocator = numericMap.keySet().iterator().next();
@@ -133,7 +132,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
         final Locator locator1 = numericMap.keySet().iterator().next();
         when(clock.now()).thenReturn(new Instant(numericMap.get(locator1).getCollectionTime() + MAX_AGE_ALLOWED + 1000));
 
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, clock);
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, true, clock);
 
         // write with datastax
         datastaxMetricsRW1.insertMetrics( numericMap.values() );
@@ -184,6 +183,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // write with datastax
         List<SingleRollupWriteContext> writeContexts = toWriteContext(numericMap.values(), granularity);
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertRollups(writeContexts);
 
         // read with astyanaxRW.getDatapointsForRange()
@@ -237,6 +237,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // insertMetrics
         // write with datastax
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertMetrics( numericMap.values() );
 
         MetricData result = astyanaxMetricsRW.getDatapointsForRange(
@@ -278,7 +279,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // insertMetrics
         // write with datastax
-        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, false, clock);
+        MetricsRW datastaxMetricsRW1 = new DBasicMetricsRW(locatorIO, delayedLocatorIO, true, true, clock);
         datastaxMetricsRW1.insertMetrics( numericMap.values() );
 
         MetricData result = astyanaxMetricsRW.getDatapointsForRange(
@@ -321,6 +322,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // write with datastax
         List<SingleRollupWriteContext> writeContexts = toWriteContext( numericMap.values(), granularity);
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertRollups( writeContexts );
 
         Locator locator = numericMap.keySet().iterator().next();
@@ -360,6 +362,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
     @Test
     public void testSingleNumericMetricDataToRollup() throws IOException {
 
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertMetrics( numericMap.values() );
 
         // pick first locator from input metrics, read with astyanaxMetricsRW.getDataToRollup
@@ -394,6 +397,7 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
 
         // write with datastax
         List<SingleRollupWriteContext> writeContexts = toWriteContext( numericMap.values(), granularity);
+        DBasicMetricsRW datastaxMetricsRW = new DBasicMetricsRW(locatorIO, delayedLocatorIO, false, true, new DefaultClockImpl());
         datastaxMetricsRW.insertRollups( writeContexts );
 
         List<Locator> locators = new ArrayList<Locator>() {{
@@ -436,7 +440,4 @@ public class BasicMetricsRWDatastaxWriteIntegrationTest extends BasicMetricsRWIn
                     rollup.getSum(), EPSILON );
         }
     }
-
-    // no insertRollups for strings & booleans
-
 }

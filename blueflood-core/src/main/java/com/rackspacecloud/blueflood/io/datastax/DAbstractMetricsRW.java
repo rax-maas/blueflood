@@ -1,10 +1,8 @@
 package com.rackspacecloud.blueflood.io.datastax;
 
 import com.codahale.metrics.Timer;
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.*;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
@@ -36,17 +34,36 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
-    protected final LocatorIO locatorIO;
-    protected final DelayedLocatorIO delayedLocatorIO;
+    protected final DLocatorIO locatorIO;
+    protected final DDelayedLocatorIO delayedLocatorIO;
+    protected final boolean isBatchIngestEnabled;
 
     /**
      * Constructor
      * @param locatorIO
      * @param isRecordingDelayedMetrics
      */
-    protected DAbstractMetricsRW(LocatorIO locatorIO, DelayedLocatorIO delayedLocatorIO,
-                                 boolean isRecordingDelayedMetrics, Clock clock) {
+    protected DAbstractMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                                 boolean isRecordingDelayedMetrics,
+                                 Clock clock) {
         this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
+        this.isBatchIngestEnabled = false;
+        this.locatorIO = locatorIO;
+        this.delayedLocatorIO = delayedLocatorIO;
+        this.clock = clock;
+    }
+
+    /**
+     * Constructor
+     * @param locatorIO
+     * @param isRecordingDelayedMetrics
+     */
+    @VisibleForTesting
+    protected DAbstractMetricsRW(DLocatorIO locatorIO, DDelayedLocatorIO delayedLocatorIO,
+                                 boolean isRecordingDelayedMetrics,
+                                 boolean isBatchIngestEnabled, Clock clock) {
+        this.isRecordingDelayedMetrics = isRecordingDelayedMetrics;
+        this.isBatchIngestEnabled = isBatchIngestEnabled;
         this.locatorIO = locatorIO;
         this.delayedLocatorIO = delayedLocatorIO;
         this.clock = clock;
@@ -296,6 +313,28 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     }
 
     /**
+     * Determines if the metric is considered delayed or not
+     *
+     * @param metric
+     * @return
+     */
+    protected boolean isDelayed(IMetric metric) {
+        long delay = clock.now().getMillis() - metric.getCollectionTime();
+        return delay > MAX_AGE_ALLOWED;
+    }
+
+    /**
+     * Returns the delayed slot for a metric
+     *
+     * @param metric
+     * @return
+     */
+    protected int getDelayedSlot(IMetric metric) {
+        //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
+        return DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+    }
+
+    /**
      * This method inserts the locator into the metric_delayed_locator column family, if the metric is delayed.
      *
      * @param metric
@@ -303,15 +342,31 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      */
     protected void insertLocatorIfDelayed(IMetric metric) throws IOException {
         Locator locator = metric.getLocator();
-        long delay = clock.now().getMillis() - metric.getCollectionTime();
-        if (delay > MAX_AGE_ALLOWED) {
-
-            //track locator for configured granularity level. to re-roll only the delayed locator's for that slot
-            int slot = DELAYED_METRICS_STORAGE_GRANULARITY.slot(metric.getCollectionTime());
+        if ( isDelayed(metric) ) {
+            int slot = getDelayedSlot(metric);
             if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
                 delayedLocatorIO.insertLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
                 LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
             }
         }
+    }
+
+    /**
+     * Returns a BoundStatement if a metric needs to be inserted to the metrics_delayed_locator
+     * Column Family. Returns null otherwise.
+     *
+     * @param metric
+     * @return
+     */
+    protected BoundStatement getBoundStatementForMetricIfDelayed(IMetric metric) {
+        Locator locator = metric.getLocator();
+        if ( isDelayed(metric) ) {
+            int slot = getDelayedSlot(metric);
+            if (!LocatorCache.getInstance().isDelayedLocatorForASlotCurrent(slot, locator)) {
+                LocatorCache.getInstance().setDelayedLocatorForASlotCurrent(slot, locator);
+                return delayedLocatorIO.getBoundStatementForLocator(DELAYED_METRICS_STORAGE_GRANULARITY, slot, locator);
+            }
+        }
+        return null;
     }
 }
