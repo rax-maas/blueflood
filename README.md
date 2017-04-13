@@ -2,12 +2,12 @@
  <img src="http://blueflood.io/images/bf-bg-color.png" width="220" height="232" align=center>
 </p>
 
-# Blueflood 
+# Blueflood
 
-[travis](http://travis-ci.org/rackerlabs/blueflood) ![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master)
-[coveralls](https://coveralls.io/github/rackerlabs/blueflood) ![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master)
-[releases](https://github.com/rackerlabs/blueflood/releases) ![Release](http://img.shields.io/badge/rax-release-v1.0.1956.svg) 
-[license](http://www.apache.org/licenses/LICENSE-2.0) ![License](https://img.shields.io/badge/license-Apache%202-blue.svg)
+[![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master)](https://travis-ci.org/rackerlabs/blueflood)
+[![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master)](https://github.com/rackerlabs/blueflood/releases)
+[![Releases](http://img.shields.io/badge/rax-release-v1.0.1956.svg)](https://coveralls.io/github/mmi-cookbooks/metrics-repose?branch=master)
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
