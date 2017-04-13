@@ -83,9 +83,9 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-[travis-image]: https://img.shields.io/travis/rackerlabs/blueflood/master.svg
+[travis-image]: https://travis-ci.org/rackerlabs/blueflood.svg?branch=master
 [travis]: http://travis-ci.org/rackerlabs/blueflood
-[coveralls-image]: https://img.shields.io/coveralls/rackerlabs/blueflood/master.svg
+[coveralls-image]: https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master
 [coveralls]: https://coveralls.io/github/rackerlabs/blueflood
 [release-image]: http://img.shields.io/badge/rax-release-v1.0.1956.svg
 [releases]: https://github.com/rackerlabs/blueflood/releases
