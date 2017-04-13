@@ -4,7 +4,10 @@
 
 # Blueflood 
 
-| [travis](http://travis-ci.org/rackerlabs/blueflood) ![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master) | [coveralls](https://coveralls.io/github/rackerlabs/blueflood) ![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master) | [releases](https://github.com/rackerlabs/blueflood/releases) ![Release](http://img.shields.io/badge/rax-release-v1.0.1956.svg) | [license](http://www.apache.org/licenses/LICENSE-2.0) ![License](https://img.shields.io/badge/license-Apache%202-blue.svg) |
+[travis](http://travis-ci.org/rackerlabs/blueflood) ![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master)
+[coveralls](https://coveralls.io/github/rackerlabs/blueflood) ![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master)
+[releases](https://github.com/rackerlabs/blueflood/releases) ![Release](http://img.shields.io/badge/rax-release-v1.0.1956.svg) 
+[license](http://www.apache.org/licenses/LICENSE-2.0) ![License](https://img.shields.io/badge/license-Apache%202-blue.svg)
 
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
@@ -73,7 +76,7 @@ If you prefer IRC, most of the Blueflood developers are in #blueflood on Freenod
 
 ## License
 
-Copyright 2013-2015 Rackspace
+Copyright 2013-2017 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
