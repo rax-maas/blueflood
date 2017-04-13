@@ -84,7 +84,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-[release-image]: http://img.shields.io/badge/rax-release-v1.0.1956.svg
-[releases]: https://github.com/rackerlabs/blueflood/releases
-[license-image]: https://img.shields.io/badge/license-Apache%202-blue.svg
-[license]: http://www.apache.org/licenses/LICENSE-2.0
