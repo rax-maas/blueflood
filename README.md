@@ -3,15 +3,11 @@
 </p>
 
 # Blueflood 
-![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master) [travis](http://travis-ci.org/rackerlabs/blueflood)
-![Coveralls] [coveralls-image]  [coveralls]
-![Release] [release-image]  [releases]
-![License] [license-image]  [license]
 
-[travis-image]: https://travis-ci.org/rackerlabs/blueflood.svg?branch=master
-[travis]: http://travis-ci.org/rackerlabs/blueflood
-[coveralls-image]: https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master
-[coveralls]: https://coveralls.io/github/rackerlabs/blueflood
+|![Build Status](https://travis-ci.org/rackerlabs/blueflood.svg?branch=master) [travis](http://travis-ci.org/rackerlabs/blueflood)|![Coveralls](https://coveralls.io/repos/github/rackerlabs/blueflood/badge.svg?branch=master) [coveralls](https://coveralls.io/github/rackerlabs/blueflood)|
+![Release](http://img.shields.io/badge/rax-release-v1.0.1956.svg) [releases](https://github.com/rackerlabs/blueflood/releases)|
+![License](https://img.shields.io/badge/license-Apache%202-blue.svg) [license](http://www.apache.org/licenses/LICENSE-2.0)|
+
 [Discuss](https://groups.google.com/forum/#!forum/blueflood-discuss) - [Code](http://github.com/rackerlabs/blueflood) - [Site](http://blueflood.io)
 
 ## Introduction
