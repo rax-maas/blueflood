@@ -1,0 +1,1754 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qaplugProfile>
+  <codingRulesProvider exportName="PMD">
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/AvoidDecimalLiteralsInBigDecimalConstructor">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/BigIntegerInstantiation">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/BooleanInstantiation">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/BrokenNullCheck">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/ClassCastExceptionWithToArray">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/CollapsibleIfStatements">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/basic.xml/UnconditionalIfStatement">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/braces.xml/ForLoopsMustUseBraces">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/braces.xml/IfElseStmtsMustUseBraces">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/braces.xml/IfStmtsMustUseBraces">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/braces.xml/WhileLoopsMustUseBraces">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/clone.xml/CloneThrowsCloneNotSupportedException">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/codesize.xml/NcssMethodCount">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/codesize.xml/NcssTypeCount">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/controversial.xml/DontImportSun">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/coupling.xml/LooseCoupling">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/AvoidInstanceofChecksInCatchClause">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/CloseResource">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/CompareObjectsWithEquals">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/ConstructorCallsOverridableMethod">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/EqualsNull">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/FinalFieldCouldBeStatic">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/IdempotentOperations">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/InstantiationToGetClass">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/MissingStaticMethodInNonInstantiatableClass">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/PreserveStackTrace">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/SimplifyConditional">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/SingularField">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/design.xml/UnnecessaryLocalBeforeReturn">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptyFinallyBlock">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptyIfStmt">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptyStaticInitializer">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptySwitchStatements">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptySynchronizedBlock">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptyTryBlock">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/empty.xml/EmptyWhileStmt">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/finalizers.xml/AvoidCallingFinalize">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/finalizers.xml/EmptyFinalizer">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/finalizers.xml/FinalizeDoesNotCallSuperFinalize">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/finalizers.xml/FinalizeOverloaded">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/imports.xml/DontImportJavaLang">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/logging-jakarta-commons.xml/UseCorrectExceptionLogging">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/logging-java.xml/SystemPrintln">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/AvoidAssertAsIdentifier">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/AvoidEnumAsIdentifier">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/35.xml/IntegerInstantiation">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/ReplaceEnumerationWithIterator">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/ReplaceHashtableWithMap">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/ReplaceVectorWithList">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/AvoidDollarSigns">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/ClassNamingConventions">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/MethodWithSameNameAsEnclosingClass">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/SuspiciousConstantFieldName">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/SuspiciousEqualsMethodName">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/naming.xml/SuspiciousHashcodeMethodName">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/optimizations.xml/AvoidArrayLoops">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/optimizations.xml/UseArrayListInsteadOfVector">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/optimizations.xml/UseArraysAsList">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/sunsecure.xml/ArrayIsStoredDirectly">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/AvoidCatchingNPE">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/AvoidCatchingThrowable">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/AvoidRethrowingException">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/AvoidThrowingNullPointerException">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/AvoidThrowingRawExceptionTypes">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/ExceptionAsFlowControl">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strictexception.xml/SignatureDeclareThrowsException">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/AvoidDuplicateLiterals">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/InefficientStringBuffering">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/39.xml/StringBufferInstantiationWithChar">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/StringInstantiation">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/StringToString">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/UnnecessaryCaseChange">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/strings.xml/UseIndexOfChar">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/34.xml/UseStringBufferLength">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/releases/38.xml/UselessStringValueOf">
+      <priority>4</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/typeresolution.xml/LooseCoupling">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/typeresolution.xml/SignatureDeclareThrowsException">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unnecessary.xml/UnusedNullCheckInEquals">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unnecessary.xml/UselessOperationOnImmutable">
+      <priority>2</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unnecessary.xml/UselessOverridingMethod">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unusedcode.xml/UnusedFormalParameter">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unusedcode.xml/UnusedLocalVariable">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unusedcode.xml/UnusedModifier">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unusedcode.xml/UnusedPrivateField">
+      <priority>3</priority>
+    </rule>
+    <rule xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" ref="rulesets/java/unusedcode.xml/UnusedPrivateMethod">
+      <priority>3</priority>
+    </rule>
+  </codingRulesProvider>
+  <codingRulesProvider exportName="FindBugs">
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="AM_CREATES_EMPTY_JAR_FILE_ENTRY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="AM_CREATES_EMPTY_ZIP_FILE_ENTRY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BC_BAD_CAST_TO_CONCRETE_COLLECTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BC_EQUALS_METHOD_SHOULD_WORK_FOR_ALL_OBJECTS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="BC_IMPOSSIBLE_CAST" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BC_IMPOSSIBLE_INSTANCEOF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BC_UNCONFIRMED_CAST" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BC_VACUOUS_INSTANCEOF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_ADD_OF_SIGNED_BYTE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_AND" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_AND_ZZ" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_IOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_IOR_OF_SIGNED_BYTE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_SIGNED_CHECK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BIT_SIGNED_CHECK_HIGH_BIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="BOA_BADLY_OVERRIDDEN_ADAPTER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="BX_BOXING_IMMEDIATELY_UNBOXED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="BX_BOXING_IMMEDIATELY_UNBOXED_TO_PERFORM_COERCION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="BX_UNBOXED_AND_COERCED_FOR_TERNARY_OPERATOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="CI_CONFUSED_INHERITANCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="CN_IDIOM" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="CN_IDIOM_NO_SUPER_CALL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="CO_ABSTRACT_SELF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="CO_SELF_NO_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DB_DUPLICATE_BRANCHES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DB_DUPLICATE_SWITCH_CLAUSES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DC_DOUBLECHECK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DE_MIGHT_DROP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DE_MIGHT_IGNORE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DLS_DEAD_LOCAL_STORE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DLS_DEAD_LOCAL_STORE_IN_RETURN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DLS_DEAD_LOCAL_STORE_OF_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DLS_DEAD_STORE_OF_CLASS_LITERAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DLS_OVERWRITTEN_INCREMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DL_SYNCHRONIZATION_ON_BOOLEAN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DL_SYNCHRONIZATION_ON_BOXED_PRIMITIVE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DL_SYNCHRONIZATION_ON_SHARED_CONSTANT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DL_SYNCHRONIZATION_ON_UNSHARED_BOXED_PRIMITIVE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DMI_ANNOTATION_IS_NOT_VISIBLE_TO_REFLECTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_BAD_MONTH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="DMI_BLOCKING_METHODS_ON_URL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_CALLING_NEXT_FROM_HASNEXT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_COLLECTIONS_SHOULD_NOT_CONTAIN_THEMSELVES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="DMI_COLLECTION_OF_URLS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="DMI_CONSTANT_DB_PASSWORD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_EMPTY_DB_PASSWORD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="DMI_FUTILE_ATTEMPT_TO_CHANGE_MAXPOOL_SIZE_OF_SCHEDULED_THREAD_POOL_EXECUTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_INVOKING_HASHCODE_ON_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_INVOKING_TOSTRING_ON_ANONYMOUS_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_INVOKING_TOSTRING_ON_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_LONG_BITS_TO_DOUBLE_INVOKED_ON_INT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_NONSERIALIZABLE_OBJECT_WRITTEN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="DMI_SCHEDULED_THREAD_POOL_EXECUTOR_WITH_ZERO_CORE_THREADS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DMI_THREAD_PASSED_WHERE_RUNNABLE_EXPECTED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DMI_UNSUPPORTED_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_USELESS_SUBSTRING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_USING_REMOVEALL_TO_CLEAR_COLLECTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="DMI_VACUOUS_CALL_TO_EASYMOCK_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DMI_VACUOUS_SELF_COLLECTION_CALL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_BOOLEAN_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_BOXED_PRIMITIVE_TOSTRING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=info-->
+      <Bug pattern="DM_CONVERT_CASE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_EXIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_FP_NUMBER_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_GC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_MONITOR_WAIT_ON_CONDITION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_NEW_FOR_GETCLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_NEXTINT_VIA_NEXTDOUBLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="DM_NUMBER_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_RUN_FINALIZERS_ON_EXIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_STRING_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=info-->
+      <Bug pattern="DM_STRING_TOSTRING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_STRING_VOID_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DM_USELESS_THREAD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DP_CREATE_CLASSLOADER_INSIDE_DO_PRIVILEGED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="DP_DO_INSIDE_DO_PRIVILEGED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_ARRAY_AND_NONARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_BAD_ARRAY_COMPARE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_NULL_ARG" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_UNRELATED_CLASS_AND_INTERFACE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_UNRELATED_INTERFACES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_UNRELATED_TYPES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EC_UNRELATED_TYPES_USING_POINTER_EQUALITY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EI_EXPOSE_STATIC_REP2" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_ABSTRACT_SELF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="EQ_ALWAYS_FALSE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="EQ_ALWAYS_TRUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_COMPARING_CLASS_NAMES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_DONT_DEFINE_EQUALS_FOR_ENUM" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="EQ_GETCLASS_AND_CLASS_CONSTANT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_OTHER_NO_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_OTHER_USE_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_OVERRIDING_EQUALS_NOT_SYMMETRIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_SELF_NO_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="EQ_SELF_USE_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="EQ_UNUSUAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ES_COMPARING_STRINGS_WITH_EQ" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ESync_EMPTY_SYNC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="FE_FLOATING_POINT_EQUALITY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="FE_TEST_IF_EQUAL_TO_NOT_A_NUMBER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_EMPTY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_EXPLICIT_INVOCATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_FINALIZER_NULLS_FIELDS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_FINALIZER_ONLY_NULLS_FIELDS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_MISSING_SUPER_CALL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="FI_NULLIFY_SUPER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="FI_PUBLIC_SHOULD_BE_PROTECTED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="FI_USELESS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="FL_MATH_USING_FLOAT_PRECISION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="GC_UNCHECKED_TYPE_IN_GENERIC_CALL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="GC_UNRELATED_TYPES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="HE_EQUALS_NO_HASHCODE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_EQUALS_USE_HASHCODE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_HASHCODE_NO_EQUALS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_HASHCODE_USE_OBJECT_EQUALS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_INHERITS_EQUALS_USE_HASHCODE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_SIGNATURE_DECLARES_HASHING_OF_UNHASHABLE_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HE_USE_OF_UNHASHABLE_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="HRS_REQUEST_PARAMETER_TO_COOKIE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="HRS_REQUEST_PARAMETER_TO_HTTP_HEADER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="HSC_HUGE_SHARED_STRING_CONSTANT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="IA_AMBIGUOUS_INVOCATION_OF_INHERITED_OR_OUTER_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_BAD_SHIFT_AMOUNT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_IDIV_CAST_TO_DOUBLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_INTEGER_MULTIPLY_CAST_TO_LONG" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_INT_CAST_TO_DOUBLE_PASSED_TO_CEIL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_INT_CAST_TO_FLOAT_PASSED_TO_ROUND" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ICAST_QUESTIONABLE_UNSIGNED_RIGHT_SHIFT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IC_INIT_CIRCULARITY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="IC_SUPERCLASS_USES_SUBCLASS_DURING_INITIALIZATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_ASSERT_METHOD_INVOKED_FROM_RUN_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_BAD_SUITE_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_NO_TESTS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_SETUP_NO_SUPER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_SUITE_NOT_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IJU_TEARDOWN_NO_SUPER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IL_CONTAINER_ADDED_TO_ITSELF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IL_INFINITE_LOOP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IL_INFINITE_RECURSIVE_LOOP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="IMSE_DONT_CATCH_IMSE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IM_AVERAGE_COMPUTATION_COULD_OVERFLOW" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IM_BAD_CHECK_FOR_ODD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IM_MULTIPLYING_RESULT_OF_IREM" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="INT_BAD_COMPARISON_WITH_NONNEGATIVE_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="INT_BAD_COMPARISON_WITH_SIGNED_BYTE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="INT_BAD_REM_BY_1" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="INT_VACUOUS_BIT_OPERATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="INT_VACUOUS_COMPARISON" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IO_APPENDING_TO_OBJECT_OUTPUT_STREAM" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ISC_INSTANTIATE_STATIC_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="IS_FIELD_NOT_GUARDED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ITA_INEFFICIENT_TO_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="IT_NO_SUCH_ELEMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="J2EE_STORE_OF_NON_SERIALIZABLE_OBJECT_INTO_SESSION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="JCIP_FIELD_ISNT_FINAL_IN_IMMUTABLE_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="JLM_JSR166_LOCK_MONITORENTER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="LI_LAZY_INIT_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="LI_LAZY_INIT_UPDATE_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MF_CLASS_MASKS_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MF_METHOD_MASKS_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ML_SYNC_ON_FIELD_TO_GUARD_CHANGING_THAT_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="ML_SYNC_ON_UPDATED_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MSF_MUTABLE_SERVLET_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_CANNOT_BE_FINAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="MS_EXPOSE_REP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_FINAL_PKGPROTECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_MUTABLE_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_MUTABLE_HASHTABLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_OOI_PKGPROTECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_PKGPROTECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="MS_SHOULD_BE_FINAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="MTIA_SUSPECT_SERVLET_INSTANCE_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="MTIA_SUSPECT_STRUTS_INSTANCE_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="MWN_MISMATCHED_NOTIFY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="MWN_MISMATCHED_WAIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_CLASS_NOT_EXCEPTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_CONFUSING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_FUTURE_KEYWORD_USED_AS_IDENTIFIER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_FUTURE_KEYWORD_USED_AS_MEMBER_IDENTIFIER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_METHOD_CONSTRUCTOR_CONFUSION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_VERY_CONFUSING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_VERY_CONFUSING_INTENTIONAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_WRONG_PACKAGE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NM_WRONG_PACKAGE_INTENTIONAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NN_NAKED_NOTIFY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NO_NOTIFY_NOT_NOTIFYALL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_ALWAYS_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_ALWAYS_NULL_EXCEPTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NP_ARGUMENT_MIGHT_BE_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NP_BOOLEAN_RETURN_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_CLONE_COULD_RETURN_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_DEREFERENCE_OF_READLINE_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_EQUALS_SHOULD_HANDLE_NULL_ARGUMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="NP_GUARANTEED_DEREF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_GUARANTEED_DEREF_ON_EXCEPTION_PATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_IMMEDIATE_DEREFERENCE_OF_READLINE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NONNULL_PARAM_VIOLATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NONNULL_RETURN_VIOLATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=blocker-->
+      <Bug pattern="NP_NULL_INSTANCEOF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_ON_SOME_PATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_ON_SOME_PATH_EXCEPTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_ON_SOME_PATH_MIGHT_BE_INFEASIBLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_PARAM_DEREF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_NULL_PARAM_DEREF_NONVIRTUAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_STORE_INTO_NONNULL_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NP_SYNC_AND_NULL_CHECK_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NP_TOSTRING_COULD_RETURN_NULL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="NS_DANGEROUS_NON_SHORT_CIRCUIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="NS_NON_SHORT_CIRCUIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ODR_OPEN_DATABASE_RESOURCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ODR_OPEN_DATABASE_RESOURCE_EXCEPTION_PATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="OS_OPEN_STREAM" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="OS_OPEN_STREAM_EXCEPTION_PATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="PS_PUBLIC_SEMAPHORES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="QBA_QUESTIONABLE_BOOLEAN_ASSIGNMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="QF_QUESTIONABLE_FOR_LOOP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RCN_REDUNDANT_COMPARISON_OF_NULL_AND_NONNULL_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RCN_REDUNDANT_COMPARISON_TWO_NULL_VALUES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RC_REF_COMPARISON" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="REC_CATCH_EXCEPTION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RE_BAD_SYNTAX_FOR_REGULAR_EXPRESSION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RE_CANT_USE_FILE_SEPARATOR_AS_REGULAR_EXPRESSION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RE_POSSIBLE_UNINTENDED_PATTERN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RI_REDUNDANT_INTERFACES" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RR_NOT_CHECKED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RS_READOBJECT_SYNC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RU_INVOKE_RUN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RV_01_TO_INT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RV_ABSOLUTE_VALUE_OF_HASHCODE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RV_ABSOLUTE_VALUE_OF_RANDOM_INT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="RV_CHECK_FOR_POSITIVE_INDEXOF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RV_DONT_JUST_NULL_CHECK_READLINE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RV_EXCEPTION_NOT_THROWN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RV_REM_OF_HASHCODE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="RV_REM_OF_RANDOM_INT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="RV_RETURN_VALUE_IGNORED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="RpC_REPEATED_CONDITIONAL_TEST" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_FIELD_DOUBLE_ASSIGNMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_FIELD_SELF_ASSIGNMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_FIELD_SELF_COMPARISON" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_FIELD_SELF_COMPUTATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_LOCAL_DOUBLE_ASSIGNMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_LOCAL_SELF_COMPARISON" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SA_LOCAL_SELF_COMPUTATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SBSC_USE_STRINGBUFFER_CONCATENATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SC_START_IN_CTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=minor-->
+      <Bug pattern="SE_BAD_FIELD_INNER_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SE_BAD_FIELD_STORE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_COMPARATOR_SHOULD_BE_SERIALIZABLE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_INNER_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_METHOD_MUST_BE_PRIVATE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SE_NONFINAL_SERIALVERSIONID" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_NONLONG_SERIALVERSIONID" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_NONSTATIC_SERIALVERSIONID" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_NO_SERIALVERSIONID" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_NO_SUITABLE_CONSTRUCTOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_NO_SUITABLE_CONSTRUCTOR_FOR_EXTERNALIZATION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_PRIVATE_READ_RESOLVE_NOT_INHERITED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_READ_RESOLVE_IS_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_READ_RESOLVE_MUST_RETURN_OBJECT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SE_TRANSIENT_FIELD_OF_NONSERIALIZABLE_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SIC_INNER_SHOULD_BE_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_NEEDS_THIS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SIO_SUPERFLUOUS_INSTANCEOF" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SI_INSTANCE_BEFORE_FINALS_ASSIGNED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SP_SPIN_ON_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SQL_BAD_PREPARED_STATEMENT_ACCESS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SQL_BAD_RESULTSET_ACCESS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SR_NOT_CHECKED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SS_SHOULD_BE_STATIC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STCAL_INVOKE_ON_STATIC_CALENDAR_INSTANCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STCAL_INVOKE_ON_STATIC_DATE_FORMAT_INSTANCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STCAL_STATIC_CALENDAR_INSTANCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STCAL_STATIC_SIMPLE_DATE_FORMAT_INSTANCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STI_INTERRUPTED_ON_CURRENTTHREAD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="STI_INTERRUPTED_ON_UNKNOWNTHREAD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="SWL_SLEEP_WITH_LOCK_HELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="SW_SWING_METHODS_INVOKED_IN_SWING_THREAD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="TLW_TWO_LOCK_WAIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_ALWAYS_VALUE_USED_WHERE_NEVER_REQUIRED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_EXPLICIT_UNKNOWN_SOURCE_VALUE_REACHES_ALWAYS_SINK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_EXPLICIT_UNKNOWN_SOURCE_VALUE_REACHES_NEVER_SINK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_MAYBE_SOURCE_VALUE_REACHES_ALWAYS_SINK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_MAYBE_SOURCE_VALUE_REACHES_NEVER_SINK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="TQ_NEVER_VALUE_USED_WHERE_ALWAYS_REQUIRED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UCF_USELESS_CONTROL_FLOW" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UCF_USELESS_CONTROL_FLOW_NEXT_LINE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="UG_SYNC_SET_UNSYNC_GET" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="UI_INHERITANCE_UNSAFE_GETRESOURCE" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UL_UNRELEASED_LOCK" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UL_UNRELEASED_LOCK_EXCEPTION_PATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UMAC_UNCALLABLE_METHOD_OF_ANONYMOUS_CLASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UM_UNNECESSARY_MATH" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="URF_UNREAD_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="UR_UNINIT_READ" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="UUF_UNUSED_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="UWF_NULL_FIELD" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="UW_UNCOND_WAIT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_FORMAT_STRING_BAD_ARGUMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_FORMAT_STRING_BAD_CONVERSION" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="VA_FORMAT_STRING_BAD_CONVERSION_FROM_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="VA_FORMAT_STRING_BAD_CONVERSION_TO_BOOLEAN" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="VA_FORMAT_STRING_EXTRA_ARGUMENTS_PASSED" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_FORMAT_STRING_ILLEGAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_FORMAT_STRING_MISSING_ARGUMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_FORMAT_STRING_NO_PREVIOUS_ARGUMENT" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="VA_PRIMITIVE_ARRAY_PASSED_TO_OBJECT_VARARG" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=major-->
+      <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="WA_AWAIT_NOT_IN_LOOP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="WA_NOT_IN_LOOP" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="WL_USING_GETCLASS_RATHER_THAN_CLASS_LITERAL" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="WS_WRITEOBJECT_SYNC" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="XFB_XML_FACTORY_BYPASS" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="XSS_REQUEST_PARAMETER_TO_JSP_WRITER" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="XSS_REQUEST_PARAMETER_TO_SEND_ERROR" />
+    </Match>
+    <Match>
+      <!--QAPlug severity=critical-->
+      <Bug pattern="XSS_REQUEST_PARAMETER_TO_SERVLET_WRITER" />
+    </Match>
+  </codingRulesProvider>
+  <codingRulesProvider exportName="Checkstyle">
+    <module name="NewlineAtEndOfFile">
+      <property name="severity" value="info" QAPlugSeverity="info" />
+    </module>
+    <module name="TreeWalker">
+      <property name="tabWidth" value="1" />
+      <module name="AnonInnerLength">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="BooleanExpressionComplexity">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="ConstantName">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="CyclomaticComplexity">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="DefaultComesLast">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="DesignForExtension">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="EmptyStatement">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="EqualsHashCode">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="FinalClass">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="HiddenField">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="HideUtilityClassConstructor">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="IllegalThrows">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="InnerAssignment">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="InnerTypeLast">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="LocalFinalVariableName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="LocalVariableName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="MagicNumber">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+        <property name="ignoreHashCodeMethod" value="false" />
+        <property name="ignoreAnnotation" value="false" />
+      </module>
+      <module name="MemberName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="MethodName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="ModifierOrder">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="PackageName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="ParameterAssignment">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="ParameterName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="RedundantModifier">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="RedundantThrows">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+      </module>
+      <module name="SimplifyBooleanExpression">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="SimplifyBooleanReturn">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="StaticVariableName">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="StringLiteralEquality">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+      <module name="UnusedImports">
+        <property name="severity" value="info" QAPlugSeverity="info" />
+        <property name="processJavadoc" value="false" />
+      </module>
+      <module name="VisibilityModifier">
+        <property name="severity" value="warning" QAPlugSeverity="major" />
+      </module>
+    </module>
+  </codingRulesProvider>
+</qaplugProfile>
+
