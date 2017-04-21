@@ -18,6 +18,7 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.http.*;
+import com.rackspacecloud.blueflood.inputs.handlers.UserDefinedEventHandler;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -30,6 +31,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 public class HttpMetricDataQueryServer {
     private static final Logger log = LoggerFactory.getLogger(HttpMetricDataQueryServer.class);
+
     private final int httpQueryPort;
     private final String httpQueryHost;
     private final int httpMaxContentLength;
@@ -45,6 +50,8 @@ public class HttpMetricDataQueryServer {
     private EventsIO eventsIO;
     private EventLoopGroup acceptorGroup;
     private EventLoopGroup workerGroup;
+    private int HTTP_CONNECTION_READ_IDLE_TIME_SECONDS =
+            Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_CONNECTION_READ_IDLE_TIME_SECONDS);
 
     public HttpMetricDataQueryServer() {
         this.httpQueryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
@@ -100,6 +107,9 @@ public class HttpMetricDataQueryServer {
     private void setupPipeline(SocketChannel channel, RouteMatcher router) {
         final ChannelPipeline pipeline = channel.pipeline();
 
+        pipeline.addLast("logging", new LoggingHandler(LogLevel.TRACE)); //duplex handler
+        pipeline.addLast("idleStateHandler", new IdleStateHandler(HTTP_CONNECTION_READ_IDLE_TIME_SECONDS, 0, 0)); //duplex handler
+        pipeline.addLast("eventHandler", new UserDefinedEventHandler()); //duplex handler
         pipeline.addLast("encoder", new HttpResponseEncoder());
         pipeline.addLast("decoder", new HttpRequestDecoder() {
             @Override
