@@ -140,7 +140,9 @@ public abstract class DAbstractMetricIO {
             Locator locator = entry.getKey();
             List<ResultSetFuture> futures = entry.getValue();
 
-            Table<Locator, Long, T> result = toLocatorTimestampValue( futures, locator, CassandraModel.getGranularity( columnFamily ) );
+            Table<Locator, Long, T> result = toLocatorTimestampValue(futures, locator,
+                                                    CassandraModel.getGranularity(columnFamily),
+                                                    range);
             locatorTimestampRollup.putAll(result);
         }
         return locatorTimestampRollup;
@@ -235,11 +237,13 @@ public abstract class DAbstractMetricIO {
      */
     public <T extends Object> Table<Locator, Long, T> toLocatorTimestampValue( List<ResultSetFuture> futures,
                                                                                Locator locator,
-                                                                               Granularity granularity ) {
+                                                                               Granularity granularity,
+                                                                               Range range) {
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         for ( ResultSetFuture future : futures ) {
             try {
                 List<Row> rows = future.getUninterruptibly().all();
+
                 for (Row row : rows) {
                     String key = row.getString(DMetricsCFPreparedStatements.KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
@@ -248,8 +252,8 @@ public abstract class DAbstractMetricIO {
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();
-                LOG.error(String.format("error reading metric for locator %s, granularity %s",
-                        locator, granularity), ex);
+                LOG.error(String.format("error reading metric for locator %s, granularity %s, range %s",
+                        locator, granularity, range.toString()), ex);
             }
         }
         return locatorTimestampRollup;

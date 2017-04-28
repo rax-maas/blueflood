@@ -105,8 +105,16 @@ public class IOConfig {
         return maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
     }
 
-    public int getInitialConn() {
-        return config.getIntegerProperty(CoreConfig.INITIAL_CASSANDRA_CONNECTIONS);
+    public int getDatastaxCoreConnectionsPerHost() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_CORE_CONNECTIONS_PER_HOST);
+    }
+
+    public int getDatastaxMaxConnectionsPerHost() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_MAX_CONNECTIONS_PER_HOST);
+    }
+
+    public int getDatastaxMaxRequestsPerConnection() {
+        return config.getIntegerProperty(CoreConfig.DATASTAX_MAX_REQUESTS_PER_CONNECTION);
     }
 
     /**
