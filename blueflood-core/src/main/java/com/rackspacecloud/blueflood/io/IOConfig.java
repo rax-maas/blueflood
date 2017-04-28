@@ -105,11 +105,11 @@ public class IOConfig {
         return maxConns / numHosts + (maxConns % numHosts == 0 ? 0 : 1);
     }
 
-    public int getDatastaxInitialConnectionPerHost() {
+    public int getDatastaxCoreConnectionsPerHost() {
         return config.getIntegerProperty(CoreConfig.DATASTAX_CORE_CONNECTIONS_PER_HOST);
     }
 
-    public int getDatastaxMaxConnectionPerHost() {
+    public int getDatastaxMaxConnectionsPerHost() {
         return config.getIntegerProperty(CoreConfig.DATASTAX_MAX_CONNECTIONS_PER_HOST);
     }
 

@@ -1,7 +1,12 @@
 package com.rackspacecloud.blueflood.io.datastax;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Table;
 import com.rackspacecloud.blueflood.cache.LocatorCache;
@@ -14,7 +19,7 @@ import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.SingleRollupWriteContext;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.Clock;
+import com.rackspacecloud.blueflood.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +36,10 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
 
     private static final long MAX_AGE_ALLOWED = Configuration.getInstance().getLongProperty(CoreConfig.ROLLUP_DELAY_MILLIS);
 
-    private static Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
+    private static final Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
+
+    private static final Meter metricsFullQueryResultSize = Metrics.meter(DAbstractMetricsRW.class, "reads", "metricsFullQueryResultSize");
 
     protected final DLocatorIO locatorIO;
     protected final DDelayedLocatorIO delayedLocatorIO;
@@ -207,7 +214,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                     LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
                 }
             }
-            return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity);
+            return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity, range);
         }
         finally {
 
@@ -268,7 +275,8 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      */
     protected Map<Locator, MetricData> resultSetsToMetricData(Map<Locator, List<ResultSetFuture>> resultSets,
                                                               Map<Locator, DAbstractMetricIO> locatorIO,
-                                                              Granularity granularity) {
+                                                              Granularity granularity,
+                                                              Range range) {
 
         MetadataCache metadataCache = MetadataCache.getInstance();
 
@@ -281,7 +289,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             DAbstractMetricIO io = locatorIO.get(locator);
 
             // get ResultSets to a Table of locator, timestamp, rollup
-            Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue( futures, locator, granularity );
+            Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue(futures, locator, granularity, range);
 
             Map<Long, Object> tsRollupMap = locatorTimestampRollup.row( locator );
 

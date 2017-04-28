@@ -106,8 +106,8 @@ public class DatastaxIO {
 
         final PoolingOptions poolingOptions = new PoolingOptions();
         poolingOptions
-                .setCoreConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxInitialConnectionPerHost())
-                .setMaxConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxMaxConnectionPerHost())
+                .setCoreConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxCoreConnectionsPerHost())
+                .setMaxConnectionsPerHost(HostDistance.LOCAL, ioconfig.getDatastaxMaxConnectionsPerHost())
                 .setMaxRequestsPerConnection(HostDistance.LOCAL, ioconfig.getDatastaxMaxRequestsPerConnection());
         return poolingOptions;
     }
