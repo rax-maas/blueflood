@@ -39,8 +39,6 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
     private static final Granularity DELAYED_METRICS_STORAGE_GRANULARITY =
             Granularity.getRollupGranularity(Configuration.getInstance().getStringProperty(CoreConfig.DELAYED_METRICS_STORAGE_GRANULARITY));
 
-    private static final Meter metricsFullQueryResultSize = Metrics.meter(DAbstractMetricsRW.class, "reads", "metricsFullQueryResultSize");
-
     protected final DLocatorIO locatorIO;
     protected final DDelayedLocatorIO delayedLocatorIO;
     protected final boolean isBatchIngestEnabled;
