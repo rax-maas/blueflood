@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -44,6 +45,7 @@ public class Instrumentation implements InstrumentationMBean {
     private static final Meter fullResPreaggregatedMetricWritten;
     private static final Meter metricsWithShortDelayReceived;
     private static final Meter metricsWithLongDelayReceived;
+    private static final Histogram rawPointsIn5Min;
 
     static {
         Class kls = Instrumentation.class;
@@ -55,6 +57,7 @@ public class Instrumentation implements InstrumentationMBean {
         fullResPreaggregatedMetricWritten = Metrics.meter(kls, "Full Resolution Preaggregated Metrics Written");
         metricsWithShortDelayReceived = Metrics.meter(kls, "Metrics with short delay received");
         metricsWithLongDelayReceived = Metrics.meter(kls, "Metrics with long delay received");
+        rawPointsIn5Min = Metrics.histogram(kls, "Raw points in 5 min");
 
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -181,5 +184,9 @@ public class Instrumentation implements InstrumentationMBean {
             return null;
         }
         return Metrics.meter(Instrumentation.class, "tenants", tenantId, "Delayed Data Points Ingested");
+    }
+
+    public static Histogram getRawPointsIn5MinHistogram() {
+        return rawPointsIn5Min;
     }
 }

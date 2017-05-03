@@ -244,6 +244,12 @@ public abstract class DAbstractMetricIO {
             try {
                 List<Row> rows = future.getUninterruptibly().all();
 
+                // we only want to count the number of points we
+                // get when we're querying the metrics_full
+                if ( granularity == Granularity.FULL ) {
+                    Instrumentation.getRawPointsIn5MinHistogram().update(rows.size());
+                }
+
                 for (Row row : rows) {
                     String key = row.getString(DMetricsCFPreparedStatements.KEY);
                     Locator loc = Locator.createLocatorFromDbKey(key);
