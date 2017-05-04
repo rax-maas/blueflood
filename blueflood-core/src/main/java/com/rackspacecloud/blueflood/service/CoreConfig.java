@@ -30,15 +30,17 @@ public enum CoreConfig implements ConfigDefaults {
     // is evenly divisible by number of hosts. For its connection
     // pool, the driver class calculate the max number of
     // connections per host, by dividing this number with
-    // the number of hosts.
+    // the number of hosts. This is only being used by Astyanax
+    // driver.
     MAX_CASSANDRA_CONNECTIONS("75"),
 
-    // This is the number of initial connections
-    // to be created by the connection pool of the
-    // datastax driver
-    INITIAL_CASSANDRA_CONNECTIONS("15"),
-
     CASSANDRA_DRIVER("astyanax"),
+
+    // Datastax related connection pool settings
+    // http://docs.datastax.com/en/developer/java-driver/3.2/manual/pooling/
+    DATASTAX_CORE_CONNECTIONS_PER_HOST("5"),
+    DATASTAX_MAX_CONNECTIONS_PER_HOST("10"),
+    DATASTAX_MAX_REQUESTS_PER_CONNECTION("1024"),
 
     ROLLUP_KEYSPACE("DATA"),
     CLUSTER_NAME("Test Cluster"),
