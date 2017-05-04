@@ -200,7 +200,8 @@ public class AstyanaxReader extends AstyanaxIO {
 
             // we only want to count the number of points we
             // get when we're querying the metrics_full
-            if ( cf == CassandraModel.CF_METRICS_FULL || cf == CassandraModel.CF_METRICS_PREAGGREGATED_FULL ) {
+            // we don't do for aggregated or other granularities
+            if ( cf == CassandraModel.CF_METRICS_FULL ) {
                 Instrumentation.getRawPointsIn5MinHistogram().update(points.getPoints().size());
             }
         } catch (RuntimeException ex) {
