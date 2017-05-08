@@ -23,6 +23,7 @@ import com.rackspacecloud.blueflood.io.CassandraModel;
 import com.rackspacecloud.blueflood.io.Instrumentation;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.types.*;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +142,7 @@ public abstract class DAbstractMetricIO {
             List<ResultSetFuture> futures = entry.getValue();
 
             Table<Locator, Long, T> result = toLocatorTimestampValue(futures, locator,
-                                                    CassandraModel.getGranularity(columnFamily),
+                                                    columnFamily,
                                                     range);
             locatorTimestampRollup.putAll(result);
         }
@@ -237,12 +238,18 @@ public abstract class DAbstractMetricIO {
      */
     public <T extends Object> Table<Locator, Long, T> toLocatorTimestampValue( List<ResultSetFuture> futures,
                                                                                Locator locator,
-                                                                               Granularity granularity,
+                                                                               String columnFamily,
                                                                                Range range) {
         Table<Locator, Long, T> locatorTimestampRollup = HashBasedTable.create();
         for ( ResultSetFuture future : futures ) {
             try {
                 List<Row> rows = future.getUninterruptibly().all();
+
+                // we only want to count the number of points we
+                // get when we're querying the metrics_full
+                if ( StringUtils.isNotEmpty(columnFamily) && columnFamily.equals(CassandraModel.CF_METRICS_FULL_NAME) ) {
+                    Instrumentation.getRawPointsIn5MinHistogram().update(rows.size());
+                }
 
                 for (Row row : rows) {
                     String key = row.getString(DMetricsCFPreparedStatements.KEY);
@@ -252,8 +259,8 @@ public abstract class DAbstractMetricIO {
                 }
             } catch (Exception ex) {
                 Instrumentation.markReadError();
-                LOG.error(String.format("error reading metric for locator %s, granularity %s, range %s",
-                        locator, granularity, range.toString()), ex);
+                LOG.error(String.format("error reading metric for locator %s, column family '%s', range %s",
+                        locator, columnFamily, range.toString()), ex);
             }
         }
         return locatorTimestampRollup;
