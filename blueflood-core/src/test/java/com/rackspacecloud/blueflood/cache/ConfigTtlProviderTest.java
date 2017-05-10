@@ -39,6 +39,14 @@ public class ConfigTtlProviderTest {
         System.setProperty(RAW_METRICS_TTL, "5");
         System.setProperty(TTL_CONFIG_CONST, "5");
 
+        // We can't use ConfigTtlProvider.getInstance() because
+        // that instance can be initialized by other previously
+        // run tests (thus we have not gotten to make the
+        // System.setProperty() calls above, and ttlMapper
+        // wont be initialized properly). Since this is a
+        // test class testing the ConfigTtlProvider, it is
+        // ok to call the constructor directly, to ensure
+        // we get a fresh instance for this test.
         this.ttlProvider = new ConfigTtlProvider();
     }
 
