@@ -19,7 +19,6 @@ package com.rackspacecloud.blueflood.cache;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.TtlConfig;
-import com.rackspacecloud.blueflood.types.Rollup;
 import com.rackspacecloud.blueflood.types.RollupType;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.junit.After;
