@@ -100,9 +100,6 @@ public class ConfigTtlProvider implements TenantTtlProvider {
         int value;
         try {
             value = config.getIntegerProperty(configKey);
-            if ( configKey != null && configKey.equals(TtlConfig.RAW_METRICS_TTL) ) {
-                System.out.println("Gran=" + gran + ", rollupType=" + rollupType + "configKey=" + configKey.toString() + "=" + value);
-            }
             if (value < 0) return false;
         } catch (NumberFormatException ex) {
             log.trace(String.format("No valid TTL config set for granularity: %s, rollup type: %s",
