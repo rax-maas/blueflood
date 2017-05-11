@@ -57,6 +57,9 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
         httpHandler = new HttpRollupsQueryHandler();

@@ -18,14 +18,15 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.common.net.HttpHeaders;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
+import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.MetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
-import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -41,17 +42,11 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
 import static com.rackspacecloud.blueflood.TestUtils.*;
-import static java.util.stream.Collectors.toList;
 import static org.mockito.Mockito.*;
 
 /**
@@ -71,24 +66,7 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     @Before
     public void setup() throws Exception {
-        // setup elasticsearch test clusters with blueflood mappings
-        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
-                              "graphite_event",
-                              getEventsMapping());
-
-        // setup elasticsearch test clusters with blueflood mappings
-        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
-                              ElasticIO.ES_DOCUMENT_TYPE,
-                              getMetricsMapping());
-
-        createIndexAndMapping(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE,
-                              ElasticTokensIO.ES_DOCUMENT_TYPE,
-                              getTokensMapping());
-
-        refreshChanges();
-
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(getClient());
-        ((ElasticTokensIO) ModuleLoader.getInstance(TokenDiscoveryIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES)).setClient(getClient());
+        super.esSetup();
         ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
     }
 

@@ -1,13 +1,11 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
@@ -38,10 +36,7 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
 
     @Before
     public void setup() throws ExecutionException, InterruptedException {
-        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
-                              "graphite_event",
-                              getEventsMapping());
-
+        super.esSetup();
         ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
     }
 

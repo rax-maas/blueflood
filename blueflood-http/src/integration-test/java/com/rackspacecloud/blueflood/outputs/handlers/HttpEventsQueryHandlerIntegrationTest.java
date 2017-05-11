@@ -17,15 +17,8 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
-import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
-import com.rackspacecloud.blueflood.io.EventsIO;
-import com.rackspacecloud.blueflood.service.CoreConfig;
-import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
@@ -55,11 +48,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Before
     public void setup() throws Exception {
-        // setup elasticsearch test clusters with blueflood mappings
-        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
-                              "graphite_event",
-                              getEventsMapping());
-
+        super.esSetup();
         ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
 
         createAndInsertTestEvents(tenantId, 5);

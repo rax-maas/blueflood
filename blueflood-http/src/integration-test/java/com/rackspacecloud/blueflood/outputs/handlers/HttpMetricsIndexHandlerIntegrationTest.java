@@ -17,16 +17,14 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.io.DiscoveryIO;
 import com.rackspacecloud.blueflood.io.ElasticIO;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.MetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
@@ -63,10 +61,8 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
     @Before
     public void setup() throws Exception {
 
-        // setup elasticsearch test clusters with blueflood mappings
-        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
-                              ElasticIO.ES_DOCUMENT_TYPE,
-                              getMetricsMapping());
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
 
         // setup metrics to be searchable
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
@@ -81,7 +77,6 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
 
         // create elasticsearch client and link it to ModuleLoader
         elasticIO = new ElasticIO(getClient());
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(getClient());
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
         refreshChanges();

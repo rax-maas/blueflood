@@ -21,10 +21,8 @@ import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -61,10 +59,8 @@ public class HttpRollupHandlerWithESIntegrationTest extends HttpIntegrationTestB
     @Before
     public void setup() throws Exception {
 
-        // setup elasticsearch test clusters with blueflood mappings
-        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
-                              ElasticIO.ES_DOCUMENT_TYPE,
-                              getMetricsMapping());
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
 
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
@@ -77,7 +73,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends HttpIntegrationTestB
         }
 
         elasticIO = new ElasticIO(getClient());
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(getClient());
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
         refreshChanges();
