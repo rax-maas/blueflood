@@ -27,6 +27,4 @@ public interface TenantTtlProvider {
     public static final int DELAYED_LOCATOR_TTL = 259200;   // ttl for delayed locators in seconds, 259200s = 3 days
 
     public Optional<TimeValue> getTTL(String tenantId, Granularity gran, RollupType rollupType);
-
-    public Optional<TimeValue> getTTLForStrings(String tenantId);
 }

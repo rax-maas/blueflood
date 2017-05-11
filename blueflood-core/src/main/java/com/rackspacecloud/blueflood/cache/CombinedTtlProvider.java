@@ -51,13 +51,6 @@ public class CombinedTtlProvider implements TenantTtlProvider {
         return getTimeValue(primaryValue, safetyValue);
     }
 
-    @Override
-    public Optional<TimeValue> getTTLForStrings(String tenantId) {
-        Optional<TimeValue> primaryValue = primary.getTTLForStrings(tenantId);
-        Optional<TimeValue> safetyValue = safety.getTTLForStrings(tenantId);
-        return getTimeValue(primaryValue, safetyValue);
-    }
-
     public long getFinalTTL(String tenantid, Granularity gran) {
         long ttl;
         if (gran == Granularity.FULL && primary.areTTLsForced()) {
