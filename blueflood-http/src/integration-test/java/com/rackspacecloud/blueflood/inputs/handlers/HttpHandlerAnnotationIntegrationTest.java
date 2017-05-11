@@ -1,26 +1,33 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Pattern;
+import java.util.concurrent.ExecutionException;
+
+import static com.rackspacecloud.blueflood.TestUtils.ERROR_TITLE;
 
 /**
  * Testing posting annotations to blueflood.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
  */
 public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBase {
 
@@ -28,6 +35,15 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
 
     //A time stamp 2 days ago
     private final long baseMillis = System.currentTimeMillis() - 172800000;
+
+    @Before
+    public void setup() throws ExecutionException, InterruptedException {
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
+                              "graphite_event",
+                              getEventsMapping());
+
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpAnnotationsIngestionHappyCase() throws Exception {
@@ -77,7 +93,7 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
         String tenant_id = "444444";
 
         createAndInsertTestEvents(tenant_id, batchSize);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
 
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("deployment"));

@@ -103,11 +103,17 @@
                 <CASSANDRA_BINXPORT_PORT>${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_PORT>
                 <CASSANDRA_BINXPORT_HOSTS>${cassandra.listenAddress}:${cassandra.nativeTransportPort}</CASSANDRA_BINXPORT_HOSTS>
                 <CASSANDRA_DRIVER>datastax</CASSANDRA_DRIVER>
+                <tests.jarhell.check>false</tests.jarhell.check>
+                <tests.security.manager>false</tests.security.manager>
+                <tests.locale>en-US</tests.locale>
               </systemPropertyVariables>
+              <forkCount>1</forkCount>
+              <reuseForks>false</reuseForks>
               <testSourceDirectory>src/integration-test/java</testSourceDirectory>
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties ${jacoco.agent.it.argLine} -Xmx1024m -XX:MaxPermSize=256m</argLine>
+              <argLine>-Duser.language=en</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
@@ -198,7 +204,8 @@
 
     <dependency>
       <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-core</artifactId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>1.3</version>
       <scope>test</scope>
     </dependency>
 
@@ -229,6 +236,22 @@
       <scope>test</scope>
       <optional>true</optional>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${lucene.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>${elasticsearch.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
   </dependencies>
 
 </project>

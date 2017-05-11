@@ -1,13 +1,11 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Token;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,28 +14,40 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
 
+
+/**
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
 public class ElasticTokensIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticTokensIO elasticTokensIO;
 
-    @Before
-    public void setup() throws IOException {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
 
-        esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
+    @Before
+    public void setup() throws IOException, ExecutionException, InterruptedException {
+
+        createIndexAndMapping(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE,
+                              ElasticTokensIO.ES_DOCUMENT_TYPE,
+                              getTokensMapping());
 
         String TOKEN_INDEX_NAME_OLD = ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE + "_v1";
-        esSetup.execute(EsSetup.createIndex(TOKEN_INDEX_NAME_OLD)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
 
-        elasticTokensIO = new ElasticTokensIO(esSetup.client()) {
+        createIndexAndMapping(TOKEN_INDEX_NAME_OLD,
+                              ElasticTokensIO.ES_DOCUMENT_TYPE,
+                              getTokensMapping());
+
+        elasticTokensIO = new ElasticTokensIO(getClient()) {
             @Override
             protected String[] getIndexesToSearch() {
                 return new String[] {ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_READ,
@@ -51,11 +61,11 @@ public class ElasticTokensIOIntegrationTest extends BaseElasticTest {
         elasticTokensIO.insertDiscovery(createTestTokens(TENANT_C));
 
         //inserting same tokens to old version of metric_tokens
-        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, esSetup.client());
+        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, getClient());
+        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, getClient());
+        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, getClient());
 
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
     }
 
     private List<Token> createTestTokens(String tenantId) {
@@ -83,12 +93,6 @@ public class ElasticTokensIOIntegrationTest extends BaseElasticTest {
                        .setSource(ElasticTokensIO.createSourceContent(token))
                        .setCreate(true)
                        .setRouting(token.getLocator().getTenantId());
-    }
-
-
-    @After
-    public void tearDown() {
-        esSetup.terminate();
     }
 
     @Override

@@ -17,16 +17,37 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.ElasticIO;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
+import com.rackspacecloud.blueflood.service.CoreConfig;
+import com.rackspacecloud.blueflood.service.HttpIngestionService;
 import com.rackspacecloud.blueflood.types.Event;
-import org.apache.http.util.EntityUtils;
-import org.junit.*;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Integration Tests for GET .../events/getEvents
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
  */
 public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
@@ -34,8 +55,15 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Before
     public void setup() throws Exception {
+        // setup elasticsearch test clusters with blueflood mappings
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
+                              "graphite_event",
+                              getEventsMapping());
+
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
         createAndInsertTestEvents(tenantId, 5);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
     }
 
     @Test

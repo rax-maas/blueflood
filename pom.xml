@@ -53,6 +53,8 @@
     <skip.integration.tests>false</skip.integration.tests>
     <skip.unit.tests>false</skip.unit.tests>
     <slf4j.version>1.7.6</slf4j.version>
+    <elasticsearch.version>2.4.4</elasticsearch.version>
+    <lucene.version>5.5.2</lucene.version>
     <jodatime.version>2.9</jodatime.version>
     <maven.build.timestamp.format>yyyyMMdd-HHmmss</maven.build.timestamp.format>
   </properties>

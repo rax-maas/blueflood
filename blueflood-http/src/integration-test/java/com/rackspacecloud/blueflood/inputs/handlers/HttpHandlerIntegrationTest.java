@@ -21,8 +21,11 @@ import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -32,17 +35,31 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
-import static junit.framework.Assert.assertEquals;
-import static org.mockito.Mockito.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
+import static java.util.stream.Collectors.toList;
+import static org.mockito.Mockito.*;
 
+/**
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ */
 public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     static private final String TENANT_ID = "acTEST";
@@ -51,6 +68,29 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
+
+    @Before
+    public void setup() throws Exception {
+        // setup elasticsearch test clusters with blueflood mappings
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
+                              "graphite_event",
+                              getEventsMapping());
+
+        // setup elasticsearch test clusters with blueflood mappings
+        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
+
+        createIndexAndMapping(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE,
+                              ElasticTokensIO.ES_DOCUMENT_TYPE,
+                              getTokensMapping());
+
+        refreshChanges();
+
+        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(getClient());
+        ((ElasticTokensIO) ModuleLoader.getInstance(TokenDiscoveryIO.class, CoreConfig.TOKEN_DISCOVERY_MODULES)).setClient(getClient());
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpIngestionHappyCase() throws Exception {

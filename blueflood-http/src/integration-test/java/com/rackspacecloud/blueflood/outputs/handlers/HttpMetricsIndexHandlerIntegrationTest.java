@@ -17,12 +17,16 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.DiscoveryIO;
+import com.rackspacecloud.blueflood.io.ElasticIO;
 import com.rackspacecloud.blueflood.io.IOContainer;
 import com.rackspacecloud.blueflood.io.MetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
@@ -34,16 +38,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static junit.framework.Assert.assertEquals;
-
 /**
  * Integration Tests for GET .../metrics/search
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
  */
 public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestBase {
 
@@ -54,7 +63,10 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
     @Before
     public void setup() throws Exception {
 
-        super.setUp();
+        // setup elasticsearch test clusters with blueflood mappings
+        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
 
         // setup metrics to be searchable
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
@@ -63,12 +75,16 @@ public class HttpMetricsIndexHandlerIntegrationTest extends HttpIntegrationTestB
         for (int i = 0; i < numMetrics; i++) {
             long curMillis = baseMillis + i;
             Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricPrefix + "." + i);
-            Metric metric = new Metric(locator, getRandomIntMetricValue(), curMillis, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
+            Metric metric = new Metric(locator, getRandomIntMetricValue(), curMillis, new TimeValue(1, TimeUnit.DAYS), getLocatorToUnitMap().get(locator));
             metrics.add(metric);
         }
 
+        // create elasticsearch client and link it to ModuleLoader
+        elasticIO = new ElasticIO(getClient());
+        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(getClient());
+
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
 
         metricsRW.insertMetrics(metrics);
     }

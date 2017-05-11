@@ -1,7 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.rackspacecloud.blueflood.types.Locator;
-import org.elasticsearch.common.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
 import java.util.*;

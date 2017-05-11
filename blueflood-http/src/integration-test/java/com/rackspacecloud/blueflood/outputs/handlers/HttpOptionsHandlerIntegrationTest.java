@@ -39,7 +39,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     private String allowedMaxAge;
 
     @Before
-    public void setUp() {
+    public void setUp1() {
         parameterMap = new HashMap<String, String>();
         allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
         allowedHeaders = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS).split(",");

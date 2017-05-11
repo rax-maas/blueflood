@@ -68,7 +68,7 @@ public class TestUtils {
      * @throws Exception
      */
     public static String generateJSONMetricsData() throws Exception {
-        return generateJSONMetricsData( System.currentTimeMillis() );
+        return generateJSONMetricsData(System.currentTimeMillis());
     }
 
     /**
@@ -99,7 +99,7 @@ public class TestUtils {
      * @throws Exception
      */
     public static String generateJSONMetricsData( String metricPostfix ) throws Exception {
-        return generateJSONMetricsData( metricPostfix, System.currentTimeMillis() );
+        return generateJSONMetricsData(metricPostfix, System.currentTimeMillis());
     }
 
     /**

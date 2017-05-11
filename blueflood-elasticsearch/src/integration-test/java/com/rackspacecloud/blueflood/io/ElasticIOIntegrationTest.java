@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -26,41 +25,44 @@ import com.rackspacecloud.blueflood.utils.TimeValue;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
-
+/**
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
 
     @Before
-    public void setup() throws IOException {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+    public void setup() throws IOException, ExecutionException, InterruptedException {
 
-        elasticIO = new ElasticIO(esSetup.client());
+        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
+
+        elasticIO = new ElasticIO(getClient());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
-
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
     }
 
     public void insertTokenDiscovery(List<Token> tokens, String indexName, Client esClient) throws IOException {
@@ -85,11 +87,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
                      .setRouting(token.getLocator().getTenantId());
     }
 
-
-    @After
-    public void tearDown() {
-        esSetup.terminate();
-    }
 
     @Override
     protected void insertDiscovery(List<IMetric> metrics) throws IOException {
@@ -253,18 +250,20 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
         // Actually create the new index
-        esSetup.execute(EsSetup.createIndex(ES_DUP)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        createIndexAndMapping(ES_DUP,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
+
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
         ArrayList metricList = new ArrayList();
         metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
         elasticIO.insertDiscovery(metricList);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
         // Set up aliases
-        esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
-                .addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+        addAlias(ES_DUP, "metric_metadata_read");
+        addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read");
+
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result

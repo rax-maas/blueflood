@@ -122,6 +122,7 @@
               <!-- do not require zookeeper for these tests. -->
               <argLine>-DZOOKEEPER_CLUSTER=NONE</argLine>
               <argLine>-Dlog4j.configuration=file://${basedir}/src/test/resources/log4j-test.properties ${jacoco.agent.it.argLine} -Xmx1024m -XX:MaxPermSize=256m</argLine>
+              <argLine>-Duser.language=en</argLine>
               <!-- Skips integration tests if the value of skip.integration.tests property is true -->
               <skipTests>${skip.integration.tests}</skipTests>
               <includes>
