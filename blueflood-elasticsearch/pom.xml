@@ -35,7 +35,7 @@
   <build>
     <testResources>
       <testResource>
-        <directory>src/integration-test/java</directory>
+        <directory>src/integration-test/resources</directory>
       </testResource>
     </testResources>
 
