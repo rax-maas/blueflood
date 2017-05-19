@@ -124,6 +124,13 @@ public class IOConfig {
         return config.getIntegerProperty(CoreConfig.CASSANDRA_REQUEST_TIMEOUT);
     }
 
+    public int getReadTimeoutMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_READ_TIMEOUT_MAX_RETRIES); }
+
+    public int getWriteTimeoutMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_WRITE_TIMEOUT_MAX_RETRIES); }
+
+    public int getUnavailableMaxRetries() { return config.getIntegerProperty(CoreConfig.DATASTAX_UNAVAILABLE_MAX_RETRIES); }
+
+
     // prevent people from instantiating directly
     private IOConfig() {
     }
