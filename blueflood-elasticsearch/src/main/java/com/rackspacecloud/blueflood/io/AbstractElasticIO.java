@@ -35,6 +35,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
     protected Meter classCastExceptionMeter = Metrics.meter(getClass(), "Failed Cast to IMetric");
     protected Histogram queryBatchHistogram = Metrics.histogram(getClass(), "Query Batch Size");
+    private final Histogram searchResultsSizeHistogram = Metrics.histogram(getClass(), "Metrics search results size");
 
     public static String METRICS_TOKENS_AGGREGATE = "metric_tokens";
     public static String ELASTICSEARCH_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
@@ -91,7 +92,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             multiSearchCtx.stop();
         }
 
-
+        searchResultsSizeHistogram.update(response.getHits().getHits().length);
         for (SearchHit hit : response.getHits().getHits()) {
             SearchResult result = convertHitToMetricDiscoveryResult(hit);
             results.add(result);
