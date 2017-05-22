@@ -20,8 +20,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,6 +40,12 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
     private final String tenant_id = "333333";
     private long start = System.currentTimeMillis() - TIME_DIFF;
     private long end = System.currentTimeMillis() + TIME_DIFF;
+
+    @Before
+    public void setup() throws Exception {
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpMultiRollupsQueryHandler() throws Exception {
