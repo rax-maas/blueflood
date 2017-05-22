@@ -130,7 +130,7 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest extends HttpESInt
             // the port is no longer open) is to catch the exception object and
             // check its message. Hence, this try/catch.
 
-            Assert.assertTrue(ex.getMessage().contains("Connection refused"));
+            Assert.assertTrue("Connection refused", ex.getMessage().contains("Connection refused"));
         }
     }
 

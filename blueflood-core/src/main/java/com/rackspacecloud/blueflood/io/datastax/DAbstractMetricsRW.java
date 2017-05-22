@@ -212,7 +212,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
                     LOG.error(String.format("Error looking up locator %s in cache", locator), ex);
                 }
             }
-            return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, granularity, range);
+            return resultSetsToMetricData(locatorToFuturesMap, locatorIOMap, columnFamily, range);
         }
         finally {
 
@@ -268,12 +268,12 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
      *
      * @param resultSets
      * @param locatorIO
-     * @param granularity
+     * @param columnFamily
      * @return
      */
     protected Map<Locator, MetricData> resultSetsToMetricData(Map<Locator, List<ResultSetFuture>> resultSets,
                                                               Map<Locator, DAbstractMetricIO> locatorIO,
-                                                              Granularity granularity,
+                                                              String columnFamily,
                                                               Range range) {
 
         MetadataCache metadataCache = MetadataCache.getInstance();
@@ -287,7 +287,7 @@ public abstract class DAbstractMetricsRW extends AbstractMetricsRW {
             DAbstractMetricIO io = locatorIO.get(locator);
 
             // get ResultSets to a Table of locator, timestamp, rollup
-            Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue(futures, locator, granularity, range);
+            Table<Locator, Long, Object> locatorTimestampRollup = io.toLocatorTimestampValue(futures, locator, columnFamily, range);
 
             Map<Long, Object> tsRollupMap = locatorTimestampRollup.row( locator );
 

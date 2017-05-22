@@ -54,11 +54,16 @@ public class DatastaxIO {
     private static void connect() {
         Set<InetSocketAddress> dbHosts = ioconfig.getUniqueBinaryTransportHostsAsInetSocketAddresses();
 
+        int readTimeoutMaxRetries = ioconfig.getReadTimeoutMaxRetries();
+        int writeTimeoutMaxRetries = ioconfig.getWriteTimeoutMaxRetries();
+        int unavailableMaxRetries = ioconfig.getUnavailableMaxRetries();
+
         CodecRegistry codecRegistry = new CodecRegistry();
 
         cluster = Cluster.builder()
                 .withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().withLocalDc(ioconfig.getDatacenterName()).build(), false))
                 .withPoolingOptions(getPoolingOptions())
+                .withRetryPolicy(new RetryNTimes(readTimeoutMaxRetries, writeTimeoutMaxRetries, unavailableMaxRetries))
                 .withCodecRegistry(codecRegistry)
                 .withSocketOptions(getSocketOptions())
                 .addContactPointsWithPorts(dbHosts)

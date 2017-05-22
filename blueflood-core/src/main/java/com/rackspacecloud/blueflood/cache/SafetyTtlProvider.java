@@ -71,9 +71,4 @@ public class SafetyTtlProvider implements TenantTtlProvider {
     public Optional<TimeValue> getSafeTTL(Granularity gran, RollupType rollupType) {
         return Optional.of(MoreObjects.firstNonNull(SAFETY_TTLS.get(gran, rollupType), DAY));
     }
-
-    @Override
-    public Optional<TimeValue> getTTLForStrings(String tenantId) {
-        return Optional.of(STRING_TTL);
-    }
 }
