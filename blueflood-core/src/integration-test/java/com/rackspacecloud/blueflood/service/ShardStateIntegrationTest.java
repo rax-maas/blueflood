@@ -54,12 +54,14 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     private final long LONG_DELAY_METRICS_ROLLUP_WAIT_MILLIS = 500000;
     
     public ShardStateIntegrationTest(ShardStateIO io, List<Integer> shardsToTest) {
+        System.out.println("xxx constructor");
         this.io = io;
         shards = shardsToTest;
     }
 
     @Test
     public void testSingleShardManager() {
+        System.out.println("xxx testSingleShardManager");
         long time = 1234000L;
         ScheduleContext ctx = new ScheduleContext(time, shards);
         ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), this.io);
@@ -96,6 +98,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testRollupFailureForDelayedMetrics() {
+        System.out.println("xxx testRollupFailureForDelayedMetrics");
         long time = 1234000L;
         final Clock mockClock = Mockito.mock(Clock.class);
 
@@ -202,6 +205,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testReRollOfDelayedSlotsBeforeRolledStateGetsPersisted() {
+        System.out.println("xxx testReRollOfDelayedSlotsBeforeRolledStateGetsPersisted");
         long time = 1234000L;
         Collection<Integer> managedShards = Lists.newArrayList(0);
         ScheduleContext ingestionCtx = new ScheduleContext(time, managedShards);
@@ -240,6 +244,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testSetAllCoarserSlotsDirtyForFinerSlot() {
+        System.out.println("xxx testSetAllCoarserSlotsDirtyForFinerSlot");
         // Tests that the correct coarser slots are set dirty for a finer slot which was seen out-of-order.
         // Prior to a bug fix, clearFromRunning would throw NPE because we were looking up coarser slots
         // based on the timestamp on the finer slot's UpdateStamp, not based on the relative courser slot from the finer slot
@@ -258,6 +263,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testConcurrentShardManagers() {
+        System.out.println("xxx testConcurrentShardManagers");
         long time = 1234000L;
         // notice how they share shard 5.
         final int commonShard = 5;
@@ -350,6 +356,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     // this test illustrates how loading shard state clobbered the knowledge that a shard,slot had already been 
     // rolled up.
     public void testUpdateClobbering() {
+        System.out.println("xxx testUpdateClobbering");
         long time = 1234L;
         final Collection<Integer> shardsA = Lists.newArrayList(1);
         final Collection<Integer> shardsB = Lists.newArrayList(2);
@@ -391,6 +398,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testShardOperationsConcurrency() throws InterruptedException {
+        System.out.println("xxx testShardOperationsConcurrency");
         final long tryFor = 15000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
@@ -444,6 +452,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testConvergenceForMultipleIngestors() throws InterruptedException {
+        System.out.println("xxx testConvergenceForMultipleIngestors");
         final long tryFor = 1000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
@@ -500,6 +509,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testSlotStateConvergence() throws InterruptedException {
+        System.out.println("xxx testSlotStateConvergence");
         int shard = 0;
         long time = 1234000L;
         long metricTimeUpdate1 = time + 30000;
