@@ -405,6 +405,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
         final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
         final CountDownLatch latch = new CountDownLatch(2);
         final Throwable[] errBucket = new Throwable[2];
+        System.out.println("xxx before push pull");
         Thread pushPull = new Thread() { public void run() {
             ShardStateWorker push = new ShardStatePusher(shards, ctx.getShardStateManager(), ShardStateIntegrationTest.this.io);
             ShardStateWorker pull = new ShardStatePuller(shards, ctx.getShardStateManager(), ShardStateIntegrationTest.this.io);
@@ -413,6 +414,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();
             while (System.currentTimeMillis() - startTime < tryFor) {
+                System.out.println("yyy=" + (System.currentTimeMillis() - startTime) + " tryfor=" + tryFor);
                 try {
                     push.performOperation();
                     pull.performOperation();
@@ -424,9 +426,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             }
             latch.countDown();
         }};
+        System.out.println("xxx before updateIterator");
         Thread updateIterator = new Thread() { public void run() {
             long start = System.currentTimeMillis();
             outer: while (System.currentTimeMillis() - start < tryFor) {
+                System.out.println("zzz=" + (System.currentTimeMillis() - start) + " tryfor=" + tryFor);
                 for (int shard : shards) {
                     time.set(time.get() + 30000);
                     ctx.setCurrentTimeMillis(time.get());
@@ -441,10 +445,11 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             }
             latch.countDown();
         }};
-
+        System.out.println("xxx after iterators");
         pushPull.start();
         updateIterator.start();
         latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);
+        System.out.println("xxx after latch await");
         Assert.assertNull(errBucket[0]);
         Assert.assertNull(errBucket[1]);
     }
