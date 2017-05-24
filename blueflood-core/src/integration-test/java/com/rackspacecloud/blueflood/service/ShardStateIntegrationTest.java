@@ -413,8 +413,9 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             push.setPeriod(1);
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < tryFor) {
-                System.out.println("yyy=" + (System.currentTimeMillis() - startTime) + " tryfor=" + tryFor);
+            long currentTime = System.currentTimeMillis();
+            while (currentTime - startTime < tryFor) {
+                System.out.println("yyy=" + (currentTime - startTime) + " tryfor=" + tryFor);
                 try {
                     push.performOperation();
                     pull.performOperation();
@@ -423,14 +424,16 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                     errBucket[0] = th;
                     break;
                 }
+                currentTime = System.currentTimeMillis();
             }
             latch.countDown();
         }};
         System.out.println("xxx before updateIterator");
         Thread updateIterator = new Thread() { public void run() {
             long start = System.currentTimeMillis();
-            outer: while (System.currentTimeMillis() - start < tryFor) {
-                System.out.println("zzz=" + (System.currentTimeMillis() - start) + " tryfor=" + tryFor);
+            long currentTime = System.currentTimeMillis();
+            outer: while (currentTime - start < tryFor) {
+                System.out.println("zzz=" + (currentTime - start) + " tryfor=" + tryFor);
                 for (int shard : shards) {
                     time.set(time.get() + 30000);
                     ctx.setCurrentTimeMillis(time.get());
@@ -442,6 +445,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                         break outer;
                     }
                 }
+                currentTime = System.currentTimeMillis();
             }
             latch.countDown();
         }};
