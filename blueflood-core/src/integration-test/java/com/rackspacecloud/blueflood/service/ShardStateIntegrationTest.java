@@ -399,7 +399,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
     @Test
     public void testShardOperationsConcurrency() throws InterruptedException {
         System.out.println("xxx testShardOperationsConcurrency");
-        final long tryFor = 15000;
+        final long tryFor = 5000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
         final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
