@@ -41,7 +41,6 @@ public class IntegrationTestBase {
 
     @Before
     public void setUp() throws Exception {
-        System.out.println("xxx setUp");
         // really short lived connections for tests!
         CassandraUtilsIO cassandraUtilsIO = new DCassandraUtilsIO();
         for (String cf : CassandraModel.getAllColumnFamiliesNames())
@@ -50,7 +49,6 @@ public class IntegrationTestBase {
     
     @After
     public void clearInterruptedThreads() throws Exception {
-        System.out.println("xxx clearInterruptedThreads");
         // clear all interrupts! Why do we do this? The best I can come up with is that the test harness (junit) is
         // interrupting threads. One test in particular is very bad about this: RollupRunnableIntegrationTest.
         // Nothing in that test looks particularly condemnable other than the use of Metrics timers in the rollup
