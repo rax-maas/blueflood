@@ -305,7 +305,7 @@ public class BluefloodServiceStarter {
                 new ScheduleContext(System.currentTimeMillis(), shards, zkCluster) :
                 new ScheduleContext(System.currentTimeMillis(), shards);
 
-        log.info("George is Starting blueflood services");
+        log.info("Starting blueflood services");
         startShardStateServices(rollupContext);
         startIngestServices(rollupContext);
         startQueryServices();
