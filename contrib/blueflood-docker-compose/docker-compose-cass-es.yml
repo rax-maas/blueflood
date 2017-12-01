@@ -37,7 +37,7 @@ services:
     # across clusters. We are also declaring that 'cassandra' is a seed node.
     environment:
       - CASSANDRA_CLUSTER_NAME=dev_cluster
-          - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_SEEDS=cassandra
 
     # Cassandra ulimt recommended settings
     ulimits:
