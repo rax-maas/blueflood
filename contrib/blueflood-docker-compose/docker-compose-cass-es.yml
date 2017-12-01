@@ -28,13 +28,13 @@ services:
       - dc1ring
 
     # Maps cassandra data to a local folder. This preserves data across
-    # container restarts. Note a folder n1data get created locally
+    # container restarts. Note a folder 'cassdata' gets created locally in HOME directory.
     volumes:
       - ${HOME}/cassdata:/var/lib/cassandra
 
     # Docker container environment variable. We are using the
     # CASSANDRA_CLUSTER_NAME to name the cluster. This needs to be the same
-    # across clusters. We are also declaring that DC1N1 is a seed node.
+    # across clusters. We are also declaring that 'cassandra' is a seed node.
     environment:
       - CASSANDRA_CLUSTER_NAME=dev_cluster
           - CASSANDRA_SEEDS=cassandra
