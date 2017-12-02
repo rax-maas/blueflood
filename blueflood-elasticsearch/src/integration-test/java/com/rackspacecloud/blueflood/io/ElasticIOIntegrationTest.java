@@ -16,85 +16,53 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-
-@RunWith( JUnitParamsRunner.class )
+/**
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected ElasticIO elasticIO;
-    protected ElasticTokensIO elasticTokensIO;
 
     @Before
-    public void setup() throws IOException {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+    public void setup() throws IOException, ExecutionException, InterruptedException {
 
-        elasticIO = new ElasticIO(esSetup.client());
+        createIndexAndMapping(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
+
+        elasticIO = new ElasticIO(getClient());
 
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        esSetup.execute(EsSetup.createIndex(ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
-
-        String TOKEN_INDEX_NAME_OLD = ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE + "_v1";
-        esSetup.execute(EsSetup.createIndex(TOKEN_INDEX_NAME_OLD)
-                               .withMapping("tokens", EsSetup.fromClassPath("tokens_mapping.json")));
-
-        elasticTokensIO = new ElasticTokensIO(esSetup.client()) {
-            @Override
-            protected String[] getIndexesToSearch() {
-                return new String[] {ElasticTokensIO.ELASTICSEARCH_TOKEN_INDEX_NAME_READ,
-                                     TOKEN_INDEX_NAME_OLD};
-            }
-        };
-
-        //inserting to metric_tokens
-        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_A));
-        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_B));
-        elasticTokensIO.insertDiscovery(createTestTokens(TENANT_C));
-
-        //inserting same tokens to old version of metric_tokens
-        this.insertTokenDiscovery(createTestTokens(TENANT_A), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_B), TOKEN_INDEX_NAME_OLD, esSetup.client());
-        this.insertTokenDiscovery(createTestTokens(TENANT_C), TOKEN_INDEX_NAME_OLD, esSetup.client());
-
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
-    }
-
-    private List<Token> createTestTokens(String tenantId) {
-        return Token.getUniqueTokens(createComplexTestLocators(tenantId).stream())
-                    .collect(toList());
+        refreshChanges();
     }
 
     public void insertTokenDiscovery(List<Token> tokens, String indexName, Client esClient) throws IOException {
@@ -120,18 +88,9 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
 
-    @After
-    public void tearDown() {
-        esSetup.terminate();
-    }
-
     @Override
     protected void insertDiscovery(List<IMetric> metrics) throws IOException {
         elasticIO.insertDiscovery(metrics);
-
-        Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
-        elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators)
-                                             .collect(toList()));
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -291,18 +250,20 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
         // Actually create the new index
-        esSetup.execute(EsSetup.createIndex(ES_DUP)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
+        createIndexAndMapping(ES_DUP,
+                              ElasticIO.ES_DOCUMENT_TYPE,
+                              getMetricsMapping());
+
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
         ArrayList metricList = new ArrayList();
         metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
         elasticIO.insertDiscovery(metricList);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
         // Set up aliases
-        esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
-                .addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+        addAlias(ES_DUP, "metric_metadata_read");
+        addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read");
+
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
@@ -312,22 +273,13 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.setINDEX_NAME_WRITE(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE.getDefaultValue());
     }
 
-    private MetricNameSearchIO getDiscoveryIO(String type) {
-        if (type.equalsIgnoreCase("elasticTokensIO")) {
-            return elasticTokensIO;
-        } else {
-            return elasticIO;
-        }
-    }
-
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNames(String type) throws Exception {
+    public void testGetMetricNames() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
 
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         assertEquals("Invalid total number of results", 1, results.size());
         assertEquals("Next token mismatch", "one", results.get(0).getName());
@@ -335,8 +287,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesMultipleMetrics(String type) throws Exception {
+    public void testGetMetricNamesMultipleMetrics() throws Exception {
         String tenantId = TENANT_A;
         String query = "*";
 
@@ -344,7 +295,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one|false");
@@ -356,12 +307,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesSingleLevelPrefix(String type) throws Exception {
+    public void testGetMetricNamesSingleLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.*";
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         assertEquals("Invalid total number of results", 1, results.size());
         assertEquals("Next token mismatch", "one.two", results.get(0).getName());
@@ -369,8 +319,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithWildCardPrefixMultipleLevels(String type) throws Exception {
+    public void testGetMetricNamesWithWildCardPrefixMultipleLevels() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*";
 
@@ -378,7 +327,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             add("foo.bar.baz");
         }});
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two|false");
@@ -390,12 +339,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithMultiLevelPrefix(String type) throws Exception {
+    public void testGetMetricNamesWithMultiLevelPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.*";
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
         for (MetricName metricName : results) {
@@ -404,12 +352,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithWildCardPrefixAtTheEnd(String type) throws Exception {
+    public void testGetMetricNamesWithWildCardPrefixAtTheEnd() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.two.three*.*";
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS * CHILD_ELEMENTS.size(), results.size());
         for (MetricName metricName : results) {
@@ -418,8 +365,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithWildCardAndBracketsPrefix(String type) throws Exception {
+    public void testGetMetricNamesWithWildCardAndBracketsPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.{two,foo}.[ta]hree00.*";
 
@@ -427,7 +373,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             add("one.foo.three00.bar.baz");
         }});
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.two.three00.fourA|false");
@@ -441,12 +387,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithMultiWildCardPrefix(String type) throws Exception {
+    public void testGetMetricNamesWithMultiWildCardPrefix() throws Exception {
         String tenantId = TENANT_A;
         String query = "*.*.*";
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         assertEquals("Invalid total number of results", NUM_PARENT_ELEMENTS, results.size());
         for (MetricName metricName : results) {
@@ -455,8 +400,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     }
 
     @Test
-    @Parameters({"elasticIO", "elasticTokensIO"})
-    public void testGetMetricNamesWithoutWildCard(String type) throws Exception {
+    public void testGetMetricNamesWithoutWildCard() throws Exception {
         String tenantId = TENANT_A;
         String query = "one.foo.three00.bar.baz";
 
@@ -464,7 +408,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             add("one.foo.three00.bar.baz");
         }});
 
-        List<MetricName> results = getDiscoveryIO(type).getMetricNames(tenantId, query);
+        List<MetricName> results = elasticIO.getMetricNames(tenantId, query);
 
         Set<String> expectedResults = new HashSet<String>() {{
             add("one.foo.three00.bar.baz|true");

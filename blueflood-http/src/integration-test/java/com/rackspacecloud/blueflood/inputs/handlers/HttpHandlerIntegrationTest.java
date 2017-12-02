@@ -18,10 +18,14 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.google.common.net.HttpHeaders;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.io.CassandraModel;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
+import com.rackspacecloud.blueflood.io.IOContainer;
+import com.rackspacecloud.blueflood.io.MetricsRW;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -30,19 +34,27 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 
-import static junit.framework.Assert.assertEquals;
-import static org.mockito.Mockito.*;
 import static com.rackspacecloud.blueflood.TestUtils.*;
+import static org.mockito.Mockito.*;
 
+/**
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ */
 public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     static private final String TENANT_ID = "acTEST";
@@ -51,6 +63,12 @@ public class HttpHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
+
+    @Before
+    public void setup() throws Exception {
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpIngestionHappyCase() throws Exception {

@@ -16,6 +16,7 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import org.apache.http.Header;
@@ -39,7 +40,10 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     private String allowedMaxAge;
 
     @Before
-    public void setUp() {
+    public void setUp1() throws Exception {
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
         parameterMap = new HashMap<String, String>();
         allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
         allowedHeaders = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS).split(",");

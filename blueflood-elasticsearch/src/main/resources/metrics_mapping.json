@@ -13,7 +13,7 @@
                 "index": "not_analyzed"
             },
             "metric_name": {
-                "index_analyzer": "prefix-test-analyzer",
+                "analyzer": "prefix-test-analyzer",
                 "search_analyzer": "keyword",
                 "type": "string"
             }

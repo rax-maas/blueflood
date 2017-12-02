@@ -17,8 +17,8 @@
 package com.rackspacecloud.blueflood.outputs.serializers.helpers;
 
 import com.rackspacecloud.blueflood.types.*;
-import org.codehaus.jackson.node.JsonNodeFactory;
-import org.codehaus.jackson.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -25,6 +25,7 @@ import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -48,27 +49,17 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
             Locator.createLocatorFromPathComponents(tenantId, metricName),
             Locator.createLocatorFromPathComponents(tenantId, anotherMetricName)
     };
-    private static int queryPort = 20000;
-    private static HttpQueryService httpQueryService;
-    private static HttpClientVendor vendor;
-    private static DefaultHttpClient client;
+    private static int queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
 
     private HttpRollupsQueryHandler httpHandler;
     private final Map<Locator, Map<Granularity, Integer>> locatorToPoints = new HashMap<Locator, Map<Granularity,Integer>>();
 
-    @BeforeClass
-    public static void setUpHttp() throws Exception {
-        // this method suppress the @BeforeClass method of the parent
-        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
-        httpQueryService = new HttpQueryService();
-        httpQueryService.startService();
-        vendor = new HttpClientVendor();
-        client = vendor.getClient();
-    }
-
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
         httpHandler = new HttpRollupsQueryHandler();
@@ -133,25 +124,25 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
         testHappyCaseMultiFetchHTTPRequest(Arrays.asList(locators), tenantId, client);
     }
 
-    public static void testHappyCaseHTTPRequest(String metricName, String tenantId, DefaultHttpClient client) throws Exception {
+    public static void testHappyCaseHTTPRequest(String metricName, String tenantId, HttpClient client) throws Exception {
         HttpGet get = new HttpGet(getMetricsQueryURI(metricName, tenantId));
         HttpResponse response = client.execute(get);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
 
-    public static void testBadRequest(String metricName, String tenantId, DefaultHttpClient client) throws Exception {
+    public static void testBadRequest(String metricName, String tenantId, HttpClient client) throws Exception {
         HttpGet get = new HttpGet(getInvalidMetricsQueryURI(metricName, tenantId));
         HttpResponse response = client.execute(get);
         Assert.assertEquals(400, response.getStatusLine().getStatusCode());
     }
 
-    public static void testBadMethod(String metricName, String tenantId, DefaultHttpClient client) throws Exception {
+    public static void testBadMethod(String metricName, String tenantId, HttpClient client) throws Exception {
         HttpPost post = new HttpPost(getMetricsQueryURI(metricName, tenantId));
         HttpResponse response = client.execute(post);
         Assert.assertEquals(405, response.getStatusLine().getStatusCode());
     }
 
-    public static void testHappyCaseMultiFetchHTTPRequest(List<Locator> locators, String tenantId, DefaultHttpClient client) throws Exception {
+    public static void testHappyCaseMultiFetchHTTPRequest(List<Locator> locators, String tenantId, HttpClient client) throws Exception {
         HttpPost post = new HttpPost(getBatchMetricsQueryURI(tenantId));
         JSONArray metricsToGet = new JSONArray();
         for (Locator locator : locators) {
@@ -187,16 +178,5 @@ public class HttpRollupHandlerIntegrationTest extends HttpIntegrationTestBase {
                 .setParameter("from", String.valueOf(baseMillis))
                 .setParameter("resolution", "full");  // Misses parameter 'to'
         return builder.build();
-    }
-
-    @AfterClass
-    public static void shutdown() {
-        if (vendor != null) {
-            vendor.shutdown();
-        }
-
-        if (httpQueryService != null) {
-            httpQueryService.stopService();
-        }
     }
 }

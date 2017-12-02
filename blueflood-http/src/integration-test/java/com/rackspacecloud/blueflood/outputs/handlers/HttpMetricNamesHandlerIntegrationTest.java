@@ -17,18 +17,18 @@
 package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
-import com.rackspacecloud.blueflood.io.IOContainer;
-import com.rackspacecloud.blueflood.io.MetricsRW;
+import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
+import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,11 +38,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
-import static junit.framework.Assert.assertEquals;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Integration Tests for GET .../metric_name/search
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
  */
 public class HttpMetricNamesHandlerIntegrationTest extends HttpIntegrationTestBase {
 
@@ -54,7 +63,12 @@ public class HttpMetricNamesHandlerIntegrationTest extends HttpIntegrationTestBa
     @Before
     public void setup() throws Exception {
 
-        super.setUp();
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
+        // create elasticsearch client and link it to ModuleLoader
+        elasticIO = new ElasticIO(getClient());
+        elasticTokensIO = new ElasticTokensIO(getClient());
 
         // setup metrics to be searchable
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
@@ -63,12 +77,15 @@ public class HttpMetricNamesHandlerIntegrationTest extends HttpIntegrationTestBa
         for (int i = 0; i < numMetrics; i++) {
             long curMillis = baseMillis + i;
             Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricPrefix + "." + i);
-            Metric metric = new Metric(locator, getRandomIntMetricValue(), curMillis, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
+            Metric metric = new Metric(locator, getRandomIntMetricValue(), curMillis, new TimeValue(1, TimeUnit.DAYS), getLocatorToUnitMap().get(locator));
             metrics.add(metric);
         }
 
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+
+        Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
+        elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators).collect(toList()));
+        refreshChanges();
 
         metricsRW.insertMetrics(metrics);
     }
