@@ -391,7 +391,7 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
 
     @Test
     public void testShardOperationsConcurrency() throws InterruptedException {
-        final long tryFor = 15000;
+        final long tryFor = 5000;
         final AtomicLong time = new AtomicLong(1234L);
         final Collection<Integer> shards = Collections.unmodifiableCollection(Util.parseShards("ALL"));
         final ScheduleContext ctx = new ScheduleContext(time.get(), shards);
@@ -404,7 +404,8 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
             push.setPeriod(1);
             pull.setPeriod(1);
             long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < tryFor) {
+            long currentTime = System.currentTimeMillis();
+            while (currentTime - startTime < tryFor) {
                 try {
                     push.performOperation();
                     pull.performOperation();
@@ -413,12 +414,14 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                     errBucket[0] = th;
                     break;
                 }
+                currentTime = System.currentTimeMillis();
             }
             latch.countDown();
         }};
         Thread updateIterator = new Thread() { public void run() {
             long start = System.currentTimeMillis();
-            outer: while (System.currentTimeMillis() - start < tryFor) {
+            long currentTime = System.currentTimeMillis();
+            outer: while (currentTime - start < tryFor) {
                 for (int shard : shards) {
                     time.set(time.get() + 30000);
                     ctx.setCurrentTimeMillis(time.get());
@@ -430,10 +433,10 @@ public class ShardStateIntegrationTest extends IntegrationTestBase {
                         break outer;
                     }
                 }
+                currentTime = System.currentTimeMillis();
             }
             latch.countDown();
         }};
-
         pushPull.start();
         updateIterator.start();
         latch.await(tryFor + 2000, TimeUnit.MILLISECONDS);

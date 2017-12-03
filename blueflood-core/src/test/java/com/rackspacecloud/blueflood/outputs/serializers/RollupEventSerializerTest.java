@@ -19,7 +19,7 @@ package com.rackspacecloud.blueflood.outputs.serializers;
 import com.rackspacecloud.blueflood.outputs.serializers.helpers.RollupSerializationHelper;
 import com.rackspacecloud.blueflood.types.*;
 import junit.framework.Assert;
-import org.codehaus.jackson.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Test;
 
 import java.io.IOError;

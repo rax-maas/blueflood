@@ -19,8 +19,8 @@ package com.rackspacecloud.blueflood.inputs.handlers;
 import com.rackspacecloud.blueflood.inputs.formats.*;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 import javax.validation.ConstraintViolation;
 import java.io.IOException;

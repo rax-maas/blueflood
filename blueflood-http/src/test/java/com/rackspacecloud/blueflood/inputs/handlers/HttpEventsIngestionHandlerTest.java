@@ -25,7 +25,7 @@ import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.utils.DefaultClockImpl;
 import io.netty.buffer.Unpooled;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import org.junit.Test;

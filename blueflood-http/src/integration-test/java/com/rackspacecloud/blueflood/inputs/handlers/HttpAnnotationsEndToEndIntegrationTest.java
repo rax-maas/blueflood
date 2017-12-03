@@ -15,8 +15,8 @@
  */
 package com.rackspacecloud.blueflood.inputs.handlers;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.http.HttpESIntegrationBase;
 import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
@@ -32,10 +32,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
@@ -44,7 +44,17 @@ import java.util.*;
 
 import static org.mockito.Mockito.spy;
 
-public class HttpAnnotationsEndToEndTest {
+
+/**
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
+public class HttpAnnotationsEndToEndIntegrationTest extends HttpESIntegrationBase {
     private static HttpIngestionService httpIngestionService;
     private static HttpClientVendor vendor;
     private static DefaultHttpClient client;
@@ -55,12 +65,11 @@ public class HttpAnnotationsEndToEndTest {
     private static EventsIO eventsSearchIO;
     private static HttpQueryService httpQueryService;
     private final String tenant_id = "333333";
-    private static EsSetup esSetup;
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
-    @BeforeClass
-    public static void setUp() throws Exception {
+    @Before
+    public void setup() throws Exception {
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
         Configuration.getInstance().init();
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
@@ -68,12 +77,11 @@ public class HttpAnnotationsEndToEndTest {
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
+                              "graphite_event",
+                              getEventsMapping());
+
+        eventsSearchIO = new EventElasticSearchIO(getClient());
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 
@@ -154,10 +162,6 @@ public class HttpAnnotationsEndToEndTest {
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
-
         if (vendor != null) {
             vendor.shutdown();
         }

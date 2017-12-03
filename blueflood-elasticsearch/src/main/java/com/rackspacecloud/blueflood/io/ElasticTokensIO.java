@@ -3,10 +3,8 @@ package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.rackspacecloud.blueflood.service.Configuration;
-import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.ElasticIOConfig;
-import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
+import com.google.common.annotations.VisibleForTesting;
+import com.rackspacecloud.blueflood.service.*;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
@@ -51,6 +49,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
     public static String ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_TOKEN_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_TOKEN_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_TOKEN_INDEX_NAME_READ);
+    public static int MAX_DISCOVERY_RESULT_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
     private Client client;
 
@@ -132,7 +131,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
         try {
             response = client.prepareSearch(indexes)
                              .setRouting(tenantId)
-                             .setSize(AbstractElasticIO.MAX_RESULT_LIMIT)
+                             .setSize(MAX_DISCOVERY_RESULT_SIZE)
                              .setVersion(true)
                              .setQuery(bqb)
                              .execute()
@@ -285,5 +284,10 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
 
     protected String[] getIndexesToSearch() {
         return new String[] {ELASTICSEARCH_TOKEN_INDEX_NAME_READ};
+    }
+
+    @VisibleForTesting
+    public void setClient(Client client) {
+        this.client = client;
     }
 }

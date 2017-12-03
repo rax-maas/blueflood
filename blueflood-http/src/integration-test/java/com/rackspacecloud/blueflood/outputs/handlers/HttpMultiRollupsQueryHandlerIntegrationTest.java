@@ -20,37 +20,53 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
-
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Integration Tests for POST .../views (aka Multiplot views)
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
  */
 public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    private final long TIME_DIFF = 2000;
-    private final String tenant_id = "333333";
-    private long start = System.currentTimeMillis() - TIME_DIFF;
-    private long end = System.currentTimeMillis() + TIME_DIFF;
+    private static final String tenant_id = "333333";
+
+    @Before
+    public void setup() throws Exception {
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpMultiRollupsQueryHandler() throws Exception {
         // ingest and rollup metrics and verify CF points and elastic search indexes
         String postfix = getPostfix();
 
+        long currentTime = System.currentTimeMillis();
+
         // post multi metrics for ingestion and verify
-        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", postfix);
-        assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
+        HttpResponse response = postMetric(tenant_id, postAggregatedPath, "sample_payload.json", currentTime, postfix);
+        assertEquals("Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode());
         EntityUtils.consume(response.getEntity());
+
+        final long TIME_DIFF = 5000;
+        final long start = currentTime - TIME_DIFF;
+        final long end = currentTime + TIME_DIFF;
 
         JsonObject responseObject = getMultiMetricRetry( tenant_id, start, end, "200", "FULL", "",
                 "['3333333.G1s" + postfix + "','3333333.G10s" + postfix + "']", 2 );
