@@ -40,7 +40,7 @@ done
 export CASSANDRA_HOSTS="$CASSANDRA_HOST:9160"
 export CASSANDRA_BINXPORT_HOSTS="$CASSANDRA_HOST:9042"
 
-if [ $ROLLUP_KEYSPACE != "DATA" ]
+if [ "$ROLLUP_KEYSPACE" != "DATA" ] && [ -n "$ROLLUP_KEYSPACE" ]
 then
     sed -i "s/\"DATA\"/\"$ROLLUP_KEYSPACE\"/g" blueflood.cdl
 fi
