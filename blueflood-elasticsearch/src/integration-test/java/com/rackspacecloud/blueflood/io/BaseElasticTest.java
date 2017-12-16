@@ -50,7 +50,7 @@ public abstract class BaseElasticTest extends ESIntegTestCase {
 
     protected List<Locator> createComplexTestLocators(String tenantId) {
         Locator locator;
-        List<Locator> locators = new ArrayList<Locator>();
+        List<Locator> locators = new ArrayList<>();
         locatorMap.put(tenantId, locators);
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (String y : CHILD_ELEMENTS) {

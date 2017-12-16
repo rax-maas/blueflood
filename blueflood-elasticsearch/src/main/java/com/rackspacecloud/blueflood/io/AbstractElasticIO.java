@@ -54,13 +54,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
 
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
+        // TODO: Add input validation for null, empty and all whitespaces.
         String[] indexes = getIndexesToSearch();
 
         return searchESByIndexes(tenant, queries, indexes);
     }
 
     private List<SearchResult> searchESByIndexes(String tenant, List<String> queries, String[] indexes) {
-        List<SearchResult> results = new ArrayList<SearchResult>();
+        List<SearchResult> results = new ArrayList<>();
         Timer.Context multiSearchCtx = searchTimer.time();
         SearchResponse response;
         try {

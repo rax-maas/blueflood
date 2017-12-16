@@ -163,21 +163,21 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>com.netflix.astyanax</groupId>
-      <artifactId>astyanax-core</artifactId>
-      <version>1.56.34</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.codehaus.jackson</groupId>
-          <artifactId>jackson-mapper-asl</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.codehaus.jackson</groupId>
-          <artifactId>jackson-core-asl</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.netflix.astyanax</groupId>-->
+      <!--<artifactId>astyanax-core</artifactId>-->
+      <!--<version>1.56.34</version>-->
+      <!--<exclusions>-->
+        <!--<exclusion>-->
+          <!--<groupId>org.codehaus.jackson</groupId>-->
+          <!--<artifactId>jackson-mapper-asl</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<groupId>org.codehaus.jackson</groupId>-->
+          <!--<artifactId>jackson-core-asl</artifactId>-->
+        <!--</exclusion>-->
+      <!--</exclusions>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>com.netflix.astyanax</groupId>
@@ -191,6 +191,15 @@
         <exclusion>
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-core-asl</artifactId>
+        </exclusion>
+
+        <exclusion>
+          <groupId>org.apache.cassandra</groupId>
+          <artifactId>cassandra-thrift</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.netflix.astyanax</groupId>
+          <artifactId>astyanax-cassandra</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -216,6 +225,19 @@
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-core-asl</artifactId>
         </exclusion>
+
+        <exclusion>
+          <groupId>org.apache.thrift</groupId>
+          <artifactId>libthrift</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty</artifactId>
+        </exclusion>
+        <!--<exclusion>-->
+          <!--<groupId>org.apache.cassandra</groupId>-->
+          <!--<artifactId>cassandra-thrift</artifactId>-->
+        <!--</exclusion>-->
       </exclusions>
     </dependency>
 
@@ -232,17 +254,21 @@
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-core-asl</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>com.netflix.astyanax</groupId>
+          <artifactId>astyanax-cassandra</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.fasterxml.jackson.core</groupId>-->
+      <!--<artifactId>jackson-annotations</artifactId>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>com.fasterxml.jackson.core</groupId>-->
+      <!--<artifactId>jackson-core</artifactId>-->
+    <!--</dependency>-->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -295,23 +321,23 @@
       <version>19.0</version>
     </dependency>
 
-    <dependency>
-      <groupId>commons-cli</groupId>
-      <artifactId>commons-cli</artifactId>
-      <version>1.2</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>commons-cli</groupId>-->
+      <!--<artifactId>commons-cli</artifactId>-->
+      <!--<version>1.2</version>-->
+    <!--</dependency>-->
 
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.16</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>log4j</groupId>-->
+      <!--<artifactId>log4j</artifactId>-->
+      <!--<version>1.2.16</version>-->
+    <!--</dependency>-->
 
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-      <version>3.1.2</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>io.dropwizard.metrics</groupId>-->
+      <!--<artifactId>metrics-core</artifactId>-->
+      <!--<version>3.1.2</version>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
@@ -348,11 +374,11 @@
     </dependency>
 
     <!-- todo: get off alpha version! -->
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>2.5.0</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.google.protobuf</groupId>-->
+      <!--<artifactId>protobuf-java</artifactId>-->
+      <!--<version>2.5.0</version>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -372,11 +398,11 @@
       <version>5.2.4.Final</version>
     </dependency>
 
-    <dependency>
-      <groupId>javax.el</groupId>
-      <artifactId>javax.el-api</artifactId>
-      <version>2.2.4</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>javax.el</groupId>-->
+      <!--<artifactId>javax.el-api</artifactId>-->
+      <!--<version>2.2.4</version>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>org.glassfish.web</groupId>
@@ -385,11 +411,11 @@
     </dependency>
 
     <!-- testing dependencies -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>junit</groupId>-->
+      <!--<artifactId>junit</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>pl.pragmatists</groupId>
@@ -420,12 +446,12 @@
       <version>${powermock.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-        <groupId>org.javassist</groupId>
-        <artifactId>javassist</artifactId>
-        <version>3.18.2-GA</version>
-        <scope>test</scope>
-    </dependency>
+    <!--<dependency>-->
+        <!--<groupId>org.javassist</groupId>-->
+        <!--<artifactId>javassist</artifactId>-->
+        <!--<version>3.18.2-GA</version>-->
+        <!--<scope>test</scope>-->
+    <!--</dependency>-->
 
   </dependencies>
 

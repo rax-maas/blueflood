@@ -140,6 +140,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${lucene.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
       <version>${elasticsearch.version}</version>
@@ -171,7 +177,6 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>org.hamcrest</groupId>
