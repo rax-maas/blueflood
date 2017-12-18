@@ -47,7 +47,7 @@ services:
 
   elasticsearch:
     container_name: elasticsearch-node
-    image: elasticsearch:2.4.6
+    image: elasticsearch:2.4.1
     ports:
       - "9200:9200"
       - "9300:9300"
