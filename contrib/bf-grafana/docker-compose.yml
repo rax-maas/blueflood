@@ -7,16 +7,16 @@ services:
       CASSANDRA_HOST: cassandra
       ELASTICSEARCH_HOST: elasticsearch
     ports:
-          - "19000:19000"
-          - "20000:20000"
-          - "9180:9180"
+      - 19000:19000
+      - 20000:20000
+      - 9180:9180
 
   cassandra:
     image: cassandra:2.1
     ports:
-          - "9042:9042"
-          - "9160:9160"
-          - "7199:7199"
+      - 9042:9042
+      - 9160:9160
+      - 7199:7199
 
   cassandran:
     image: cassandra:2.1
