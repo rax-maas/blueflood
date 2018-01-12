@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
@@ -25,15 +26,22 @@ import java.util.Map;
 
 public class Discovery {
 
-    protected final static String SEPARATOR = ":";
+    private final static String SEPARATOR = ":";
 
-    private Map<String, Object> fields = new HashMap<String, Object>();
+    private Map<String, Object> fields;
     private final String metricName;
     private final String tenantId;
 
     public Discovery(String tenantId, String metricName) {
+        if(StringUtils.isBlank(tenantId))
+            throw new IllegalArgumentException("tenantId is null or empty.");
+
+        if(StringUtils.isBlank(metricName))
+            throw new IllegalArgumentException("metricName is null or empty.");
+
         this.tenantId = tenantId;
         this.metricName = metricName;
+        this.fields = new HashMap<>();
     }
 
     public Map<String, Object> getFields() {

@@ -65,6 +65,8 @@ public enum CoreConfig implements ConfigDefaults {
     TOKEN_DISCOVERY_WRITER_MIN_THREADS("5"),
     TOKEN_DISCOVERY_WRITER_MAX_THREADS("10"),
 
+    MAX_DISCOVERY_RESULT_SIZE("10000"),
+
     // Maximum threads that would access the cache concurrently
     META_CACHE_MAX_CONCURRENCY("50"),
 

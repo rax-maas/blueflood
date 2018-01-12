@@ -16,8 +16,8 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import junit.framework.Assert;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,17 +30,74 @@ public class DiscoveryTest {
     final String METRIC_NAME_A = "metric.a.b.c.d.1";
 
     @Test
-    public void testCreateDiscovery() {
+    public void Discovery_BothParametersValid_CreateInstance() {
         Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A);
-        Assert.assertEquals(METRIC_NAME_A, discovery.getMetricName());
-        Assert.assertEquals(TENANT_1, discovery.getTenantId());
-        Assert.assertEquals(TENANT_1 + ":" + METRIC_NAME_A, discovery.getDocumentId());
-        Assert.assertNotNull(discovery.toString());
+        Assert.assertNotNull("Discovery object is null.", discovery);
+        Assert.assertEquals("metricName did not match.", METRIC_NAME_A, discovery.getMetricName());
+        Assert.assertEquals("tenantId did not match.", TENANT_1, discovery.getTenantId());
+        Assert.assertNotNull(discovery.getFields());
+
+        //Assert.assertEquals(TENANT_1 + ":" + METRIC_NAME_A, discovery.getDocumentId());
+        //Assert.assertNotNull(discovery.toString());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_NullTenantId_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery(null, METRIC_NAME_A);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_EmptyTenantId_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery("", METRIC_NAME_A);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_WhiteSpacedTenantId_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery("   ", METRIC_NAME_A);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_NullMetricName_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery(TENANT_1, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_EmptyMetricName_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery(TENANT_1,"");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void Discovery_WhiteSpacedMetricName_IllegalArgumentExceptionThrown(){
+        Discovery discovery = new Discovery(TENANT_1,"   ");
     }
 
     @Test
-    public void testWithAnnotation() {
-        Map<String, Object> fields = new HashMap<String, Object>();
+    public void getDocumentId_returns_validDocumentId(){
+        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A);
+        Assert.assertEquals(TENANT_1 + ":" + METRIC_NAME_A, discovery.getDocumentId());
+    }
+
+    @Test
+    public void toString_returnsExpectedString(){
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("a_1", "a1");
+        fields.put("a_2", "a2");
+        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withSourceFields(fields);
+
+        String actualValue = discovery.toString();
+        Assert.assertNotNull(actualValue);
+
+        String expectedString = "ElasticMetricDiscovery " +
+                "[tenantId=" + TENANT_1 +
+                ", metricName=" + METRIC_NAME_A +
+                ", fields={a_1=a1, a_2=a2}]";
+        Assert.assertEquals(expectedString, actualValue);
+    }
+
+
+    @Test
+    public void getFields_returnsExpectedKeyValuePairs() {
+        Map<String, Object> fields = new HashMap<>();
         fields.put("a_1", "a1");
         fields.put("a_2", "a2");
         fields.put("a_3", "a3");

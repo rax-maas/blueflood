@@ -16,19 +16,18 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.google.common.base.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-
-import static org.junit.Assert.*;
 
 /**
  * Integration Tests for GET .../views/:metricName (aka Singleplot views)
@@ -39,6 +38,12 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     private final long now = System.currentTimeMillis();
     private final long start = now - TIME_DIFF_MS;
     private final long end = now + TIME_DIFF_MS;
+
+    @Before
+    public void setup() throws Exception {
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+    }
 
     @Test
     public void testHttpRollupsQueryHandler() throws Exception {

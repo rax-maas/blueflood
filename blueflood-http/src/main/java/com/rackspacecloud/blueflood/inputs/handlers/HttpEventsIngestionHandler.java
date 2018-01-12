@@ -28,9 +28,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +93,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
                 return;
             }
 
-            searchIO.insert(tenantId, Arrays.asList(event.toMap()));
+            searchIO.insert(tenantId, event.toMap());
             DefaultHandler.sendResponse(ctx, request, response, HttpResponseStatus.OK);
         } catch (JsonMappingException e) {
             log.debug(String.format("Exception %s", e.toString()));

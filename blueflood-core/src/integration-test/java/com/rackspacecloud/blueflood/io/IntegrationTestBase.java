@@ -37,7 +37,7 @@ public class IntegrationTestBase {
 
     private static final char[] STRING_SEEDS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_".toCharArray();
     protected static final Random RAND = new Random(System.currentTimeMillis());
-    protected static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
+    public static final ConcurrentHashMap<Locator, String> locatorToUnitMap = new ConcurrentHashMap<Locator, String>();
 
     @Before
     public void setUp() throws Exception {
@@ -106,7 +106,7 @@ public class IntegrationTestBase {
         return metric;
     }
 
-    protected PreaggregatedMetric getGaugeMetric(String name, String tenantid, long timestamp) {
+    public PreaggregatedMetric getGaugeMetric(String name, String tenantid, long timestamp) {
         final Locator locator = Locator.createLocatorFromPathComponents(tenantid, name);
         return getGaugeMetric(locator, timestamp);
     }
@@ -130,14 +130,14 @@ public class IntegrationTestBase {
         return metrics;
     }
 
-    protected static String randString(int length) {
+    public static String randString(int length) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++)
             sb.append( STRING_SEEDS[ RAND.nextInt( STRING_SEEDS.length ) ] );
         return sb.toString();
     }
 
-    protected int getRandomIntMetricValue() {
+    public int getRandomIntMetricValue() {
         return RAND.nextInt();
     }
 
@@ -145,7 +145,7 @@ public class IntegrationTestBase {
         return "str" + String.valueOf(getRandomIntMetricValue());
     }
 
-    protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
+    public Metric getRandomIntMetric(final Locator locator, long timestamp) {
         locatorToUnitMap.putIfAbsent(locator, UNIT_ENUM.values()[new Random().nextInt(UNIT_ENUM.values().length)].unit);
         return new Metric(locator, getRandomIntMetricValue(), timestamp, new TimeValue(1, TimeUnit.DAYS), locatorToUnitMap.get(locator));
     }
@@ -182,7 +182,7 @@ public class IntegrationTestBase {
         }
     }
 
-    protected void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
+    public void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
         if (destGranularity == Granularity.FULL) {
             throw new Exception("Can't roll up to FULL");
         }

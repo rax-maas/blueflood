@@ -37,7 +37,7 @@ public class HttpIngestionService implements IngestionService {
         this.server = server;
     }
 
-    private HttpMetricsIngestionServer getHttpMetricsIngestionServer() {
+    protected HttpMetricsIngestionServer getHttpMetricsIngestionServer() {
         if (this.server == null) {
             this.server = new HttpMetricsIngestionServer(this.context);
         }

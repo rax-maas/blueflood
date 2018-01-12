@@ -47,11 +47,13 @@ services:
 
   elasticsearch:
     container_name: elasticsearch-node
-    image: elasticsearch:1.7
+    #image: elasticsearch:2.4.1
+    image: elasticsearch:5.6.5
     ports:
       - "9200:9200"
       - "9300:9300"
-    command: elasticsearch -Des.cluster.name="elasticsearch"
+    #command: elasticsearch -Des.cluster.name="elasticsearch"
+    command: elasticsearch -Ecluster.name="elasticsearch"
     volumes:
       - ${HOME}/esdata:/usr/share/elasticsearch/data
     environment:
