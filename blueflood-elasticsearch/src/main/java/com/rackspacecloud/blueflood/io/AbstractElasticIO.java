@@ -4,12 +4,13 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -41,7 +42,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     public static String ELASTICSEARCH_INDEX_NAME_WRITE = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_WRITE);
     public static String ELASTICSEARCH_INDEX_NAME_READ = Configuration.getInstance().getStringProperty(ElasticIOConfig.ELASTICSEARCH_INDEX_NAME_READ);
 
-    public static int MAX_RESULT_LIMIT = 100000;
+    public static int MAX_DISCOVERY_RESULT_SIZE = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
     //grabs chars until the next "." which is basically a token
     protected static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
@@ -53,13 +54,14 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
 
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
+        // TODO: Add input validation for null, empty and all whitespaces.
         String[] indexes = getIndexesToSearch();
 
         return searchESByIndexes(tenant, queries, indexes);
     }
 
     private List<SearchResult> searchESByIndexes(String tenant, List<String> queries, String[] indexes) {
-        List<SearchResult> results = new ArrayList<SearchResult>();
+        List<SearchResult> results = new ArrayList<>();
         Timer.Context multiSearchCtx = searchTimer.time();
         SearchResponse response;
         try {
@@ -83,7 +85,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
             response = client.prepareSearch(indexes)
                     .setRouting(tenant)
-                    .setSize(MAX_RESULT_LIMIT)
+                    .setSize(MAX_DISCOVERY_RESULT_SIZE)
                     .setVersion(true)
                     .setQuery(bqb)
                     .execute()
@@ -230,7 +232,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         Terms aggregateTerms = response.getAggregations().get(METRICS_TOKENS_AGGREGATE);
 
         for (Terms.Bucket bucket: aggregateTerms.getBuckets()) {
-            metricIndexData.add(bucket.getKey(), bucket.getDocCount());
+            metricIndexData.add(bucket.getKeyAsString(), bucket.getDocCount());
         }
 
         return metricIndexData;

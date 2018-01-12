@@ -16,17 +16,14 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
-
-import com.codahale.metrics.Timer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
@@ -35,39 +32,57 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ElasticIO extends AbstractElasticIO {
 
     public static final String ES_DOCUMENT_TYPE = "metrics";
 
-    private static final Logger log = LoggerFactory.getLogger(DiscoveryIO.class);;
+    private static final Logger logger = LoggerFactory.getLogger(ElasticIO.class);
 
+    //TODO: Refactor candidate?
     public ElasticIO() {
         this(RemoteElasticSearchServer.getInstance());
     }
 
+    //TODO: Refactor candidate?
     public ElasticIO(Client client) {
         this.client = client;
     }
 
+    //TODO: Refactor candidate?
     public ElasticIO(ElasticClientManager manager) {
         this(manager.getClient());
     }
 
 
+    /**
+     * Insert single metric document.
+     * @param metric
+     * @throws IOException
+     */
     public void insertDiscovery(IMetric metric) throws IOException {
-        List<IMetric> batch = new ArrayList<IMetric>();
+        //TODO: why there is no input validation for metric parameter? What will happen when it's null?
+        List<IMetric> batch = new ArrayList<>();
         batch.add(metric);
         insertDiscovery(batch);
     }
 
+    /**
+     * Insert multiple metric documents.
+     * @param batch
+     * @throws IOException
+     */
     public void insertDiscovery(List<IMetric> batch) throws IOException {
+        //TODO: why this update is called even for batch size of zero?
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
         }
-        
+
         // TODO: check bulk insert result and retry
         Timer.Context ctx = writeTimer.time();
         try {
@@ -82,7 +97,7 @@ public class ElasticIO extends AbstractElasticIO {
                 Locator locator = metric.getLocator();
                 Discovery discovery = new Discovery(locator.getTenantId(), locator.getMetricName());
 
-                Map<String, Object> fields = new HashMap<String, Object>();
+                Map<String, Object> fields = new HashMap<>();
 
 
                 if (obj instanceof  Metric && getUnit((Metric)metric) != null) { // metric units may be null
@@ -141,7 +156,7 @@ public class ElasticIO extends AbstractElasticIO {
 
     @Override
     protected List<SearchResult> dedupResults(List<SearchResult> results) {
-        HashMap<String, SearchResult> dedupedResults = new HashMap<String, SearchResult>();
+        HashMap<String, SearchResult> dedupedResults = new HashMap<>();
         for (SearchResult result : results)
             dedupedResults.put(result.getMetricName(), result);
         return Lists.newArrayList(dedupedResults.values());

@@ -16,7 +16,6 @@
 
 package com.rackspacecloud.blueflood.http;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpEventsIngestionHandler;
 import com.rackspacecloud.blueflood.inputs.handlers.HttpMetricsIngestionServer;
 import com.rackspacecloud.blueflood.io.*;
@@ -25,10 +24,7 @@ import com.rackspacecloud.blueflood.outputs.handlers.HttpMetricDataQueryServer;
 import com.rackspacecloud.blueflood.outputs.handlers.HttpRollupsQueryHandler;
 import com.rackspacecloud.blueflood.rollup.Granularity;
 import com.rackspacecloud.blueflood.service.*;
-import com.rackspacecloud.blueflood.types.Event;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Resolution;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
+import com.rackspacecloud.blueflood.types.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -40,18 +36,22 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsData;
+import static com.rackspacecloud.blueflood.TestUtils.getJsonFromFile;
 import static org.mockito.Mockito.spy;
-import static com.rackspacecloud.blueflood.TestUtils.*;
 
-public class HttpIntegrationTestBase extends IntegrationTestBase {
+public class HttpIntegrationTestBase extends HttpESIntegrationBase {
 
     protected static final long TIME_DIFF_MS = 40000;
 
@@ -62,15 +62,15 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     protected static ScheduleContext context;
     protected static  Map <String, String> parameterMap;
     protected static ElasticIO elasticIO;
+    protected static ElasticTokensIO elasticTokensIO;
     protected static EventsIO eventsSearchIO;
-    protected static EsSetup esSetup;
 
     protected static String configAllowedOrigins = "test.domain1.com, test.domain2.com, test.domain3.com";
     protected static String configAllowedHeaders = "XYZ, ABC";
     protected static String configAllowedMethods = "GET, POST, PUT";
     protected static String configAllowedMaxAge = "6000";
 
-    private static HttpIngestionService httpIngestionService;
+    protected static HttpIngestionService httpIngestionService;
     private static HttpQueryService httpQueryService;
     private static HttpClientVendor vendor;
     private static Collection<Integer> manageShards = new HashSet<Integer>();
@@ -89,6 +89,35 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     public final String getViewsPath = "/v2.0/%s/views";
 
     private Random random = new Random( System.currentTimeMillis() );
+    private IntegrationTestBase integrationTestBase;
+
+    public HttpIntegrationTestBase() {
+        this.integrationTestBase = new IntegrationTestBase();
+    }
+
+    protected String randString(int length) {
+        return IntegrationTestBase.randString(length);
+    }
+
+    protected int getRandomIntMetricValue() {
+        return integrationTestBase.getRandomIntMetricValue();
+    }
+
+    protected Map<Locator, String> getLocatorToUnitMap() {
+        return IntegrationTestBase.locatorToUnitMap;
+    }
+
+    protected Metric getRandomIntMetric(final Locator locator, long timestamp) {
+        return integrationTestBase.getRandomIntMetric(locator, timestamp);
+    }
+
+    protected void generateRollups(Locator locator, long from, long to, Granularity destGranularity) throws Exception {
+        integrationTestBase.generateRollups(locator, from, to, destGranularity);
+    }
+
+    protected PreaggregatedMetric getGaugeMetric(String name, String tenantid, long timestamp) {
+        return integrationTestBase.getGaugeMetric(name, tenantid, timestamp);
+    }
 
     @BeforeClass
     public static void setUpHttp() throws Exception {
@@ -106,11 +135,16 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         // RollupHandler is instantiated.
         Configuration.getInstance().setProperty(CoreConfig.ROLLUP_ON_READ_TIMEOUT_IN_SECONDS, "20");
 
-        setupElasticSearch();
+        // setup config for elastic search
+        Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
+        Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
+        Configuration.getInstance().setProperty(CoreConfig.TOKEN_DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticTokensIO");
+        Configuration.getInstance().setProperty(CoreConfig.ENABLE_TOKEN_SEARCH_IMPROVEMENTS.name(), "true");
 
         setupIngestionServer();
 
         setupQueryServer();
+
 
         // setup vendor and client
         vendor = new HttpClientVendor();
@@ -133,33 +167,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         if (httpIngestionService != null) {
             httpIngestionService.shutdownService();
         }
-
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
-    }
-
-    private static void setupElasticSearch() {
-        // setup elasticsearch
-
-        // setup config
-        System.setProperty(CoreConfig.DISCOVERY_MODULES.name(), "com.rackspacecloud.blueflood.io.ElasticIO");
-        System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
-
-        // setup elasticsearch test clusters with blueflood mappings
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-
-        // create elaticsearch client and link it to ModuleLoader
-        elasticIO = new ElasticIO(esSetup.client());
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
     }
 
     private static void setupIngestionServer() throws Exception {
@@ -168,6 +175,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
         httpPortIngest = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         HttpMetricsIngestionServer server = new HttpMetricsIngestionServer(context);
+        eventsSearchIO = new EventElasticSearchIO();
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
         httpIngestionService = new HttpIngestionService();
         httpIngestionService.setMetricsIngestionServer(server);
@@ -187,7 +195,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     public URI getQueryURI(String queryPath) throws URISyntaxException {
         // build and return a query path with query port and parameters set from the parameters
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPortQuery).setPath(queryPath);
+                                             .setPort(httpPortQuery).setPath(queryPath);
 
         Set<String> parameters = parameterMap.keySet();
         Iterator<String> setIterator = parameters.iterator();
@@ -331,20 +339,20 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
 
     public URIBuilder getMetricsURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPortIngest).setPath("/v2.0/tenantId/ingest");
+                               .setPort(httpPortIngest).setPath("/v2.0/tenantId/ingest");
     }
 
     public URIBuilder getMetricDataQueryURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPortQuery).setPath(getSearchPath)
-                .setParameter("query", "call*");
+                               .setPort(httpPortQuery).setPath(getSearchPath)
+                               .setParameter("query", "call*");
     }
 
     public URIBuilder getRollupsQueryURIBuilder() throws URISyntaxException {
         return new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(httpPortQuery).setPath("/v2.0/tenantId/views")
-                .setParameter("from", "100000000")
-                .setParameter("to", "200000000");
+                               .setPort(httpPortQuery).setPath("/v2.0/tenantId/views")
+                               .setParameter("from", "100000000")
+                               .setParameter("to", "200000000");
     }
 
     protected String[] getBodyArray( HttpResponse response ) throws IOException {
@@ -387,7 +395,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
             for (Resolution resolution : Resolution.values()) {
                 Granularity g = Granularity.granularities()[resolution.getValue()];
                 checkHttpHandlersGetByResolution(locator, resolution, baseMillis, baseMillis + 86400000,
-                        answers.get(locator).get(g), httpHandler);
+                                                 answers.get(locator).get(g), httpHandler);
             }
         }
     }
@@ -395,18 +403,18 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     protected void checkHttpHandlersGetByResolution(Locator locator, Resolution resolution, long from, long to,
                                                     int expectedPoints, HttpRollupsQueryHandler handler) throws Exception {
         int currentPoints = getNumberOfPointsViaHTTPHandler(handler, locator,
-                from, to, resolution);
+                                                            from, to, resolution);
 
         Assert.assertEquals(String.format("locator=%s, resolution=%s, from=%d, to=%d, expectedPoints=%d and currentPoints=%d should be the same",
-                locator, resolution.toString(), from, to, expectedPoints, currentPoints),
-                expectedPoints, currentPoints);
+                                          locator, resolution.toString(), from, to, expectedPoints, currentPoints),
+                            expectedPoints, currentPoints);
     }
 
     protected int getNumberOfPointsViaHTTPHandler(HttpRollupsQueryHandler handler,
                                                   Locator locator, long from, long to,
                                                   Resolution resolution) throws Exception {
         final MetricData values = handler.GetDataByResolution(locator.getTenantId(),
-                locator.getMetricName(), from, to, resolution);
+                                                              locator.getMetricName(), from, to, resolution);
         return values.getData().getPoints().size();
     }
 
@@ -421,8 +429,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
                         to,
                         points.get(g2));
                 Assert.assertEquals(String.format("locator=%s, from=%d, to=%d, expectedPoints=%d and currentPoints=%d should be the same",
-                        locator, from, to, answers.get(locator).get(g2), data.getData().getPoints().size()),
-                        (int)answers.get(locator).get(g2), data.getData().getPoints().size());
+                                                  locator, from, to, answers.get(locator).get(g2), data.getData().getPoints().size()),
+                                    (int)answers.get(locator).get(g2), data.getData().getPoints().size());
                 // Disabling test that fail on ES
                 // Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
             }

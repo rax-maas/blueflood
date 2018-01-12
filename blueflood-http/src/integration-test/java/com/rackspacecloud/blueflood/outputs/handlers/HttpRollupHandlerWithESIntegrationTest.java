@@ -16,64 +16,52 @@
 
 package com.rackspacecloud.blueflood.outputs.handlers;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.cache.MetadataCache;
-import com.rackspacecloud.blueflood.http.HttpClientVendor;
+import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.io.*;
 import com.rackspacecloud.blueflood.outputs.formats.MetricData;
 import com.rackspacecloud.blueflood.rollup.Granularity;
-import com.rackspacecloud.blueflood.service.*;
+import com.rackspacecloud.blueflood.service.IncomingMetricMetadataAnalyzer;
 import com.rackspacecloud.blueflood.types.*;
-import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import com.rackspacecloud.blueflood.utils.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase {
+/**
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
+public class HttpRollupHandlerWithESIntegrationTest extends HttpIntegrationTestBase {
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
     private final String tenantId = "ac" + IntegrationTestBase.randString(8);
     private final String metricName = "met_" + IntegrationTestBase.randString(8);
     private final Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
-    private static int queryPort;
     private Map<Granularity, Integer> granToPoints = new HashMap<Granularity,Integer>();
     private HttpRollupsQueryHandler httpHandler;
     private static ElasticIO elasticIO;
-    private static EsSetup esSetup;
-    private static HttpQueryService httpQueryService;
-    private static HttpClientVendor vendor;
-    private static DefaultHttpClient client;
     IMetric metric;
-
-    @BeforeClass
-    public static void setUpHttp() throws Exception {
-        Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(),
-                "com.rackspacecloud.blueflood.io.ElasticIO");
-        Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "true");
-        queryPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_METRIC_DATA_QUERY_PORT);
-        httpQueryService = new HttpQueryService();
-        httpQueryService.startService();
-        vendor = new HttpClientVendor();
-        client = vendor.getClient();
-
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        elasticIO = new ElasticIO(esSetup.client());
-    }
 
     @Before
     public void setup() throws Exception {
-        super.setUp();
+
+        super.esSetup();
+        ((EventElasticSearchIO) eventsSearchIO).setClient(getClient());
+
         MetricsRW metricsRW = IOContainer.fromConfig().getBasicMetricsRW();
         IncomingMetricMetadataAnalyzer analyzer = new IncomingMetricMetadataAnalyzer(MetadataCache.getInstance());
 
@@ -84,14 +72,15 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             metrics.add(metric);
         }
 
+        elasticIO = new ElasticIO(getClient());
+
         elasticIO.insertDiscovery(new ArrayList<IMetric>(metrics));
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
 
         analyzer.scanMetrics(new ArrayList<IMetric>(metrics));
         metricsRW.insertMetrics(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;
@@ -147,7 +136,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
             //than 'gran'. Therefore the points returned will always be slightly less
             //than the points asked for.
             Assert.assertTrue((int) granToPoints.get(gran) > data.getData().getPoints().size());
-            Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
+            Assert.assertEquals(getLocatorToUnitMap().get(locator), data.getUnit());
 
             i++;
         }
@@ -171,7 +160,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
                     baseMillis + 86400000,
                     points.get(gran));
             Assert.assertEquals((int) granToPoints.get(gran), data.getData().getPoints().size());
-            Assert.assertEquals(locatorToUnitMap.get(locator), data.getUnit());
+            Assert.assertEquals(getLocatorToUnitMap().get(locator), data.getUnit());
         }
         Assert.assertFalse(MetadataCache.getInstance().containsKey(locator, MetricMetadata.UNIT.name()));
     }
@@ -198,7 +187,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
 
     private URI getMetricsQueryURI(String metricName, String tenantid, long fromTimestamp) throws URISyntaxException {
         URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1")
-                .setPort(queryPort).setPath("/v2.0/" + tenantid + "/views/" + metricName)
+                .setPort(httpPortQuery).setPath("/v2.0/" + tenantid + "/views/" + metricName)
                 .setParameter("from", String.valueOf(fromTimestamp))
                 .setParameter("to", String.valueOf(fromTimestamp + 86400000))
                 .setParameter("resolution", "full");
@@ -213,23 +202,5 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         metricsRW.insertMetrics(metrics);
 
         return metric;
-    }
-
-    @AfterClass
-    public static void tearDownClass() throws Exception{
-        Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
-        Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "false");
-
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
-
-        if (vendor != null) {
-            vendor.shutdown();
-        }
-
-        if (httpQueryService != null) {
-            httpQueryService.stopService();
-        }
     }
 }

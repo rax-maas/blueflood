@@ -17,6 +17,7 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
 import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Event;
@@ -41,7 +42,7 @@ public class EventElasticSearchIO implements EventsIO {
             "Insertion time for events");
     public static final String EVENT_INDEX = "events";
     public static final String ES_TYPE = "graphite_event";
-    private final Client client;
+    private Client client;
 
     public EventElasticSearchIO() {
         this(RemoteElasticSearchServer.getInstance());
@@ -81,7 +82,7 @@ public class EventElasticSearchIO implements EventsIO {
 
         SearchResponse response = client.prepareSearch(EVENT_INDEX)
                 .setRouting(tenant)
-                .setSize(100000)
+                .setSize(10000)
                 .setVersion(true)
                 .setQuery(qb)
                 .execute()
@@ -129,5 +130,10 @@ public class EventElasticSearchIO implements EventsIO {
             }
         }
         return result;
+    }
+
+    @VisibleForTesting
+    public void setClient(Client client) {
+        this.client = client;
     }
 }
