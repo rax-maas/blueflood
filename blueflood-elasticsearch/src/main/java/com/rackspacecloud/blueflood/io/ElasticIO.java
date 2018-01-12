@@ -19,15 +19,8 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.IMetric;
-import com.rackspacecloud.blueflood.types.Locator;
-import com.rackspacecloud.blueflood.types.Metric;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,29 +28,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ElasticIO extends AbstractElasticIO {
-
-    public static final String ES_DOCUMENT_TYPE = "metrics";
-
     private static final Logger logger = LoggerFactory.getLogger(ElasticIO.class);
 
-    //TODO: Refactor candidate?
     public ElasticIO() {
-        this(RemoteElasticSearchServer.getInstance());
+        this.elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
     }
 
-    //TODO: Refactor candidate?
     public ElasticIO(Client client) {
         this.client = client;
     }
-
-    //TODO: Refactor candidate?
-    public ElasticIO(ElasticClientManager manager) {
-        this(manager.getClient());
-    }
-
 
     /**
      * Insert single metric document.
@@ -71,61 +52,27 @@ public class ElasticIO extends AbstractElasticIO {
         insertDiscovery(batch);
     }
 
-    /**
-     * Insert multiple metric documents.
-     * @param batch
-     * @throws IOException
-     */
-    public void insertDiscovery(List<IMetric> batch) throws IOException {
-        //TODO: why this update is called even for batch size of zero?
+    // REST call to index into ES
+    public void insertDiscovery(List<IMetric> batch) {
         batchHistogram.update(batch.size());
         if (batch.size() == 0) {
             return;
         }
 
-        // TODO: check bulk insert result and retry
         Timer.Context ctx = writeTimer.time();
         try {
-            BulkRequestBuilder bulk = client.prepareBulk();
             for (Object obj : batch) {
                 if (!(obj instanceof IMetric)) {
                     classCastExceptionMeter.mark();
                     continue;
                 }
-
-                IMetric metric = (IMetric)obj;
-                Locator locator = metric.getLocator();
-                Discovery discovery = new Discovery(locator.getTenantId(), locator.getMetricName());
-
-                Map<String, Object> fields = new HashMap<>();
-
-
-                if (obj instanceof  Metric && getUnit((Metric)metric) != null) { // metric units may be null
-                    fields.put(ESFieldLabel.unit.toString(), getUnit((Metric) metric));
-                }
-
-                discovery.withSourceFields(fields);
-                bulk.add(createSingleRequest(discovery));
             }
-            bulk.execute().actionGet();
+            elasticsearchRestHelper.indexMetrics(batch);
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             ctx.stop();
         }
-    }
-
-    private String getUnit(Metric metric) {
-        return metric.getUnit();
-    }
-
-    IndexRequestBuilder createSingleRequest(Discovery md) throws IOException {
-        if (md.getMetricName() == null) {
-            throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
-        }
-        return client.prepareIndex(ELASTICSEARCH_INDEX_NAME_WRITE, ES_DOCUMENT_TYPE)
-                .setId(md.getDocumentId())
-                .setSource(md.createSourceContent())
-                .setCreate(true)
-                .setRouting(md.getTenantId());
     }
 
     @VisibleForTesting
@@ -141,17 +88,6 @@ public class ElasticIO extends AbstractElasticIO {
     @Override
     protected String[] getIndexesToSearch() {
         return new String[] {ELASTICSEARCH_INDEX_NAME_READ};
-    }
-
-    @Override
-    protected SearchResult convertHitToMetricDiscoveryResult(SearchHit hit) {
-        Map<String, Object> source = hit.getSource();
-        String metricName = (String)source.get(ESFieldLabel.metric_name.toString());
-        String tenantId = (String)source.get(ESFieldLabel.tenantId.toString());
-        String unit = (String)source.get(ESFieldLabel.unit.toString());
-        SearchResult result = new SearchResult(tenantId, metricName, unit);
-
-        return result;
     }
 
     @Override

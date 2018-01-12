@@ -93,7 +93,7 @@ public class HttpEventsIngestionHandler implements HttpRequestHandler {
                 return;
             }
 
-            searchIO.insert(tenantId, Arrays.asList(event.toMap()));
+            searchIO.insert(tenantId, event.toMap());
             DefaultHandler.sendResponse(ctx, request, response, HttpResponseStatus.OK);
         } catch (JsonMappingException e) {
             log.debug(String.format("Exception %s", e.toString()));

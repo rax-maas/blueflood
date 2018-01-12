@@ -54,7 +54,7 @@ public class ElasticTokensIO implements TokenDiscoveryIO {
     private Client client;
 
     public ElasticTokensIO() {
-        this(RemoteElasticSearchServer.getInstance());
+        //this(RemoteElasticSearchServer.getInstance());
     }
 
     public ElasticTokensIO(Client client) {
