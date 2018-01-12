@@ -9,7 +9,7 @@ import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.tracker.Tracker;
 import com.rackspacecloud.blueflood.utils.DateTimeParser;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import org.joda.time.DateTime;

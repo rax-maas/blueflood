@@ -17,13 +17,16 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.rackspacecloud.blueflood.http.HttpClientVendor;
-import com.rackspacecloud.blueflood.io.*;
+import com.rackspacecloud.blueflood.http.HttpESIntegrationBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
+import com.rackspacecloud.blueflood.io.EventsIO;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.HttpConfig;
 import com.rackspacecloud.blueflood.service.ScheduleContext;
+import com.rackspacecloud.blueflood.utils.ModuleLoader;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -40,10 +43,20 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static org.mockito.Mockito.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
+import static com.rackspacecloud.blueflood.TestUtils.generateJSONMetricsData;
+import static org.mockito.Mockito.spy;
 
-public class HttpMetricsIngestionServerShutdownIntegrationTest {
+/**
+ *
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
+public class HttpMetricsIngestionServerShutdownIntegrationTest extends HttpESIntegrationBase {
 
     private static HttpMetricsIngestionServer server;
     private static HttpClientVendor vendor;
@@ -52,32 +65,37 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     private static int httpPort;
     private static ScheduleContext context;
     private static EventsIO eventsSearchIO;
-    private static EsSetup esSetup;
     //A time stamp 2 days ago
     private final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
 
     @BeforeClass
-    public static void setUp() throws Exception{
+    public static void setUpHttpService() throws Exception{
         System.setProperty(CoreConfig.EVENTS_MODULES.name(), "com.rackspacecloud.blueflood.io.EventElasticSearchIO");
         Configuration.getInstance().init();
         httpPort = Configuration.getInstance().getIntegerProperty(HttpConfig.HTTP_INGESTION_PORT);
         manageShards.add(1); manageShards.add(5); manageShards.add(6);
         context = spy(new ScheduleContext(System.currentTimeMillis(), manageShards));
 
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        server = new HttpMetricsIngestionServer(context);
-        server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
-
-        server.startServer();
-
         vendor = new HttpClientVendor();
         client = vendor.getClient();
+    }
+
+    @Before
+    public void setup() throws Exception {
+        // setup elasticsearch test clusters with blueflood mappings
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX,
+                              "graphite_event",
+                              getEventsMapping());
+
+        eventsSearchIO = new EventElasticSearchIO(getClient());
+        ((EventElasticSearchIO) ModuleLoader.getInstance(EventElasticSearchIO.class, CoreConfig.EVENTS_MODULES)).setClient(getClient());
+
+        server = new HttpMetricsIngestionServer(context);
+        server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
+        server.startServer();
+
+        refreshChanges();
     }
 
     @Test
@@ -129,9 +147,6 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
     public static void shutdown() {
         Configuration.getInstance().setProperty(CoreConfig.EVENTS_MODULES.name(), "");
         System.clearProperty(CoreConfig.EVENTS_MODULES.name());
-        if (esSetup != null) {
-            esSetup.terminate();
-        }
 
         if (vendor != null) {
             vendor.shutdown();

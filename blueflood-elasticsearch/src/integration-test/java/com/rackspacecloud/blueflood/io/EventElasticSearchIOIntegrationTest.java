@@ -16,19 +16,27 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.types.Event;
-import junit.framework.Assert;
+import com.rackspacecloud.blueflood.types.IMetric;
 import org.joda.time.DateTime;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.*;
 
-public class EventElasticSearchIOTest {
+
+/**
+ * The current scope gives us one cluster for all test methods in the test.
+ * All indices and templates are deleted between each test.
+ *
+ * The following flags have to be set while running this test
+ * -Dtests.jarhell.check=false (to handle some bug in intellij https://github.com/elastic/elasticsearch/issues/14348)
+ * -Dtests.security.manager=false (https://github.com/elastic/elasticsearch/issues/16459)
+ *
+ */
+public class EventElasticSearchIOIntegrationTest extends BaseElasticTest {
     private EventElasticSearchIO searchIO;
-    private EsSetup esSetup;
 
     private static final String TENANT_1 = "tenant1";
     private static final String TENANT_2 = "otheruser2";
@@ -40,22 +48,21 @@ public class EventElasticSearchIOTest {
     private static final int TENANT_RANGE_EVENTS_NUM = 10;
     private static final int RANGE_STEP_IN_SECONDS = 15 * 60;
 
-
     @Test
     public void testNonCrossTenantSearch() throws Exception {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("event"));
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
-        Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
+        assertEquals(TENANT_1_EVENTS_NUM, results.size());
 
         results = searchIO.search(TENANT_2, query);
-        Assert.assertEquals(TENANT_2_EVENTS_NUM, results.size());
+        assertEquals(TENANT_2_EVENTS_NUM, results.size());
 
         results = searchIO.search(TENANT_RANGE, query);
-        Assert.assertEquals(TENANT_RANGE_EVENTS_NUM, results.size());
+        assertEquals(TENANT_RANGE_EVENTS_NUM, results.size());
 
         results = searchIO.search(TENANT_WITH_SYMBOLS, query);
-        Assert.assertEquals(TENANT_WITH_SYMBOLS_NUM, results.size());
+        assertEquals(TENANT_WITH_SYMBOLS_NUM, results.size());
     }
 
     @Test
@@ -66,7 +73,7 @@ public class EventElasticSearchIOTest {
         query.put(Event.untilParameterName, new ArrayList<String>());
 
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
-        Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
+        assertEquals(TENANT_1_EVENTS_NUM, results.size());
     }
 
     @Test
@@ -74,21 +81,21 @@ public class EventElasticSearchIOTest {
         Map<String, List<String>> query = new HashMap<String, List<String>>();
         query.put(Event.tagsParameterName, Arrays.asList("sample"));
         List<Map<String, Object>> results = searchIO.search(TENANT_1, query);
-        Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
+        assertEquals(TENANT_1_EVENTS_NUM, results.size());
 
         query.put(Event.tagsParameterName, Arrays.asList("1"));
         results = searchIO.search(TENANT_1, query);
-        Assert.assertEquals(1, results.size());
+        assertEquals(1, results.size());
 
         query.put(Event.tagsParameterName, Arrays.asList("database"));
         results = searchIO.search(TENANT_1, query);
-        Assert.assertEquals(0, results.size());
+        assertEquals(0, results.size());
     }
 
     @Test
     public void testEmptyQuery() throws Exception {
         List<Map<String, Object>> results = searchIO.search(TENANT_1, null);
-        Assert.assertEquals(TENANT_1_EVENTS_NUM, results.size());
+        assertEquals(TENANT_1_EVENTS_NUM, results.size());
     }
 
     @Test
@@ -99,13 +106,13 @@ public class EventElasticSearchIOTest {
         DateTime fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
         query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
         List<Map<String, Object>> results = searchIO.search(TENANT_RANGE, query);
-        Assert.assertEquals(eventCountToCapture, results.size());
+        assertEquals(eventCountToCapture, results.size());
 
         DateTime untilDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * eventCountToCapture - secondsDelta);
         query.clear();
         query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
-        Assert.assertEquals(eventCountToCapture, results.size());
+        assertEquals(eventCountToCapture, results.size());
 
         query.clear();
         fromDateTime = new DateTime().minusSeconds(RANGE_STEP_IN_SECONDS * 2 - secondsDelta);
@@ -113,24 +120,22 @@ public class EventElasticSearchIOTest {
         query.put(Event.fromParameterName, Arrays.asList(Long.toString(fromDateTime.getMillis())));
         query.put(Event.untilParameterName, Arrays.asList(Long.toString(untilDateTime.getMillis())));
         results = searchIO.search(TENANT_RANGE, query);
-        Assert.assertEquals(1, results.size());
+        assertEquals(1, results.size());
     }
 
     @Before
     public void setup() throws Exception {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup
-                .createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withMapping(EventElasticSearchIO.ES_TYPE, EsSetup.fromClassPath("events_mapping.json")));
-        searchIO = new EventElasticSearchIO(esSetup.client());
+
+        createIndexAndMapping(EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, getEventsMapping());
+
+        searchIO = new EventElasticSearchIO(getClient());
 
         createTestEvents(TENANT_1, TENANT_1_EVENTS_NUM);
         createTestEvents(TENANT_2, TENANT_2_EVENTS_NUM);
         createTestEvents(TENANT_WITH_SYMBOLS, TENANT_WITH_SYMBOLS_NUM);
         createRangeEvents(TENANT_RANGE, TENANT_RANGE_EVENTS_NUM, RANGE_STEP_IN_SECONDS);
 
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+        refreshChanges();
     }
 
     private void createTestEvents(final String tenant, int eventCount) throws Exception {
@@ -165,8 +170,8 @@ public class EventElasticSearchIOTest {
         searchIO.insert(tenant, eventList);
     }
 
-    @After
-    public void tearDown() {
-        esSetup.terminate();
+    @Override
+    protected void insertDiscovery(List<IMetric> metrics) throws IOException {
+        //dummy implmentation. We dont need to insert any metrics as we are only inserting events.
     }
 }
