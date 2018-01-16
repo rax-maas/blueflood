@@ -18,7 +18,7 @@ package com.rackspacecloud.blueflood.service;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
+//import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 
@@ -38,17 +38,17 @@ public class RemoteElasticSearchServer implements ElasticClientManager {
         Configuration config = Configuration.getInstance();
         List<String> hosts = config.getListProperty(ElasticIOConfig.ELASTICSEARCH_HOSTS);
         String clusterName = config.getStringProperty(ElasticIOConfig.ELASTICSEARCH_CLUSTERNAME);
-        Settings settings = ImmutableSettings.settingsBuilder()
-                .put("cluster.name", clusterName)
-                .build();
-        TransportClient tc = new TransportClient(settings);
+//        Settings settings = ImmutableSettings.settingsBuilder()
+//                .put("cluster.name", clusterName)
+//                .build();
+//        TransportClient tc = new TransportClient(settings);
         for (String host : hosts) {
             String[] parts = host.split(":");
             String address = parts[0];
             Integer port = Integer.parseInt(parts[1]);
-            tc.addTransportAddress(new InetSocketTransportAddress(address, port));
+//            tc.addTransportAddress(new InetSocketTransportAddress(address, port));
         }
-        client = tc;
+//        client = tc;
     }
 
     public Client getClient() {

@@ -150,7 +150,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         final String expectedIndex =
                 "index {" +
                         "[" + ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "]" +
-                        "[" + ElasticIO.ES_DOCUMENT_TYPE + "]" +
+                        "[" + ElasticIO.ELASTICSEARCH_DOCUMENT_TYPE + "]" +
                         "["+ TENANT_A + ":" + METRIC_NAME + "], " +
                         "source[{" +
                         "\"tenantId\":\"" + TENANT_A + "\"," +

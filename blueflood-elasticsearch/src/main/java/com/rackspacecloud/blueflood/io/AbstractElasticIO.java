@@ -3,21 +3,26 @@ package com.rackspacecloud.blueflood.io;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import com.rackspacecloud.blueflood.utils.Metrics;
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.lang3.StringUtils;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
@@ -27,8 +32,9 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 public abstract class AbstractElasticIO implements DiscoveryIO {
 
     protected Client client;
+    protected ElasticsearchRestHelper elasticsearchRestHelper;
+    protected static final String ELASTICSEARCH_DOCUMENT_TYPE = "metrics";
 
-    // todo: these should be instances per client.
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
     protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
@@ -51,11 +57,63 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         return search(tenant, Arrays.asList(query));
     }
 
-
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
+        // TODO: Add input validation for null, empty and all whitespaces.
         String[] indexes = getIndexesToSearch();
 
-        return searchESByIndexes(tenant, queries, indexes);
+        /*
+        Here I am changing the way we are searching ES. Native client call is commented out, and
+        instead I am enabling REST call to ES. This is done to remove dependency of BF code on ES version.
+         */
+        //return searchESByIndexes(tenant, queries, indexes);
+        return searchUsingRestApi(tenant, queries);
+    }
+
+    private List<SearchResult> searchUsingRestApi(String tenant, List<String> queries) {
+        List<SearchResult> results = new ArrayList<>();
+        Timer.Context multiSearchCtx = searchTimer.time();
+        int hitsCount = 0;
+
+        try {
+            queryBatchHistogram.update(queries.size());
+            String response = elasticsearchRestHelper.fetch(
+                    ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, tenant, queries.get(0));
+
+            List<SearchResult> searchResults = getSearchResults(response);
+            hitsCount = searchResults.size();
+            results.addAll(searchResults);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            multiSearchCtx.stop();
+        }
+
+        searchResultsSizeHistogram.update(hitsCount);
+
+        return dedupResults(results);
+    }
+
+    private List<SearchResult> getSearchResults(String response) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        Iterator<JsonNode> iter = root.get("hits").get("hits").elements();
+
+        List<SearchResult> searchResults = new ArrayList<>();
+        while(iter.hasNext()){
+            JsonNode source = iter.next().get("_source");
+            String metricName = source.get(ESFieldLabel.metric_name.toString()).asText();
+            String tenantId = source.get(ESFieldLabel.tenantId.toString()).asText();
+            String unit = null;
+            if(source.has(ESFieldLabel.unit.toString()))
+                unit = source.get(ESFieldLabel.unit.toString()).asText();
+
+            SearchResult result = new SearchResult(tenantId, metricName, unit);
+            searchResults.add(result);
+        }
+        return searchResults;
     }
 
     private List<SearchResult> searchESByIndexes(String tenant, List<String> queries, String[] indexes) {

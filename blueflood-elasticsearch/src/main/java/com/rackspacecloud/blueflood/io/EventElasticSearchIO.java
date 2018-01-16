@@ -17,20 +17,17 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspacecloud.blueflood.service.ElasticClientManager;
-import com.rackspacecloud.blueflood.service.RemoteElasticSearchServer;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.utils.Metrics;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
+import java.io.IOException;
+import java.util.*;
+
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -43,9 +40,16 @@ public class EventElasticSearchIO implements EventsIO {
     public static final String ES_TYPE = "graphite_event";
     private final Client client;
 
+    private ElasticsearchRestHelper elasticsearchRestHelper;
+
     public EventElasticSearchIO() {
-        this(RemoteElasticSearchServer.getInstance());
+        this.client = null;
+        this.elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
     }
+
+//    public EventElasticSearchIO() {
+//        this(RemoteElasticSearchServer.getInstance());
+//    }
     public EventElasticSearchIO(Client client) {
         this.client = client;
     }
@@ -54,48 +58,88 @@ public class EventElasticSearchIO implements EventsIO {
     }
 
     @Override
-    public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
+    public void insert(String tenantId, Map<String, Object> event) throws Exception {
         final Timer.Context eventInsertTimerContext = eventInsertTimer.time();
-        BulkRequestBuilder bulk = client.prepareBulk();
+        event.put(Event.FieldLabels.tenantId.toString(), tenantId);
 
-        for (Map<String, Object> event : events) {
-            event.put(Event.FieldLabels.tenantId.toString(), tenant);
-            IndexRequestBuilder requestBuilder = client.prepareIndex(EVENT_INDEX, ES_TYPE)
-                    .setSource(event)
-                    .setRouting(tenant);
-            bulk.add(requestBuilder);
-        }
-        bulk.execute().actionGet();
+        elasticsearchRestHelper.indexEvent(event);
         eventInsertTimerContext.stop();
     }
+
+//    @Override
+//    public void insert(String tenant, List<Map<String, Object>> events) throws Exception {
+//        final Timer.Context eventInsertTimerContext = eventInsertTimer.time();
+//        BulkRequestBuilder bulk = client.prepareBulk();
+//
+//        for (Map<String, Object> event : events) {
+//            event.put(Event.FieldLabels.tenantId.toString(), tenant);
+//            IndexRequestBuilder requestBuilder = client.prepareIndex(EVENT_INDEX, ES_TYPE)
+//                    .setSource(event)
+//                    .setRouting(tenant);
+//            bulk.add(requestBuilder);
+//        }
+//        bulk.execute().actionGet();
+//        eventInsertTimerContext.stop();
+//    }
 
     @Override
     public List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception {
         final Timer.Context eventSearchTimerContext = eventSearchTimer.time();
-        BoolQueryBuilder qb = boolQuery()
-                .must(termQuery(Event.FieldLabels.tenantId.toString(), tenant));
-
-        if (query != null) {
-            qb = extractQueryParameters(query, qb);
-        }
-
-        SearchResponse response = client.prepareSearch(EVENT_INDEX)
-                .setRouting(tenant)
-                .setSize(100000)
-                .setVersion(true)
-                .setQuery(qb)
-                .execute()
-                .actionGet();
-
+        String result = elasticsearchRestHelper.fetchEvents(tenant, query);
         eventSearchTimerContext.stop();
 
-        List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
-        for (SearchHit hit : response.getHits().getHits()) {
-            events.add(hit.getSource());
-        }
-
-        return events;
+        return getEventResults(result);
     }
+
+    private List<Map<String, Object>> getEventResults(String response) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        List<Map<String, Object>> eventResults = new ArrayList<>();
+
+        Iterator<JsonNode> iter = root.get("hits").get("hits").elements();
+        while(iter.hasNext()){
+            JsonNode source = iter.next().get("_source");
+
+            Map<String, Object> map = new HashMap<>();
+            if(source.has("what")) map.put("what", source.get("what").asText());
+            if(source.has("when")) map.put("when", source.get("when").asLong());
+            if(source.has("data")) map.put("data", source.get("data").asText());
+            if(source.has("tenantId")) map.put("tenantId", source.get("tenantId").asText());
+            if(source.has("tags")) map.put("tags", source.get("tags").asText());
+
+            eventResults.add(map);
+        }
+        return eventResults;
+    }
+
+//    @Override
+//    public List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception {
+//        final Timer.Context eventSearchTimerContext = eventSearchTimer.time();
+//        BoolQueryBuilder qb = boolQuery()
+//                .must(termQuery(Event.FieldLabels.tenantId.toString(), tenant));
+//
+//        if (query != null) {
+//            qb = extractQueryParameters(query, qb);
+//        }
+//
+//        SearchResponse response = client.prepareSearch(EVENT_INDEX)
+//                .setRouting(tenant)
+//                .setSize(100000)
+//                .setVersion(true)
+//                .setQuery(qb)
+//                .execute()
+//                .actionGet();
+//
+//        eventSearchTimerContext.stop();
+//
+//        List<Map<String, Object>> events = new ArrayList<Map<String, Object>>();
+//        for (SearchHit hit : response.getHits().getHits()) {
+//            events.add(hit.getSource());
+//        }
+//
+//        return events;
+//    }
 
     private BoolQueryBuilder extractQueryParameters(Map<String, List<String>> query, BoolQueryBuilder qb) {
         String tagsQuery = extractFieldFromQuery(Event.FieldLabels.tags.toString(), query);
