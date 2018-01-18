@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+//import com.github.tlrx.elasticsearch.test.EsSetup;
+
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
 import junit.framework.Assert;
@@ -24,7 +25,7 @@ public abstract class BaseElasticTest {
 
     protected static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
 
-    protected EsSetup esSetup;
+//    protected EsSetup esSetup;
 
     protected SearchResult createExpectedResult(String tenantId, int x, String y, int z, String unit) {
         Locator locator = createTestLocator(tenantId, x, y, z);
@@ -78,7 +79,7 @@ public abstract class BaseElasticTest {
 
     protected void createTestMetrics(List<IMetric> metrics) throws IOException {
         insertDiscovery(metrics);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+//        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
 

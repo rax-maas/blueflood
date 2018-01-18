@@ -65,10 +65,12 @@ public class ElasticsearchRestHelper {
             return str;
         }
         catch(Exception e){
-            if((e instanceof HttpResponseException) && (response != null))
-                logger.error("Status code: " + response.getStatusLine().getStatusCode() + " with msg: " + e.getMessage());
+            if((e instanceof HttpResponseException) && (response != null)) {
+                logger.error("fetchEvents failed with status code: {} and exception message: {}",
+                        response.getStatusLine().getStatusCode(), e.getMessage());
+            }
 
-            throw new RuntimeException(e.getMessage(), e);
+            throw new RuntimeException(String.format("fetchEvents failed with message: %s", e.getMessage()), e);
         }
         finally {
             response.close();
@@ -95,8 +97,7 @@ public class ElasticsearchRestHelper {
         } else if (StringUtils.isNotEmpty(fromValue)) {
             rangeQueryString = String.format("{\"range\":{\"when\":{\"from\":%d}}}", Long.parseLong(fromValue));
         } else {
-            // TODO: LOG THIS INVALID CASE
-            System.out.println("This is an error case.");
+            logger.error("Cannot create Query DSL. Both 'from' and 'to' parameters are empty.");
             return "";
         }
 
@@ -117,7 +118,7 @@ public class ElasticsearchRestHelper {
         if (query.containsKey(name)) {
             List<String> temp = query.get(name);
             if(temp == null || temp.size() == 0) return result;
-            result = temp.get(0); // TODO: why do we have list if we have to get only first item?
+            result = temp.get(0);
         }
         return result;
     }
@@ -145,10 +146,12 @@ public class ElasticsearchRestHelper {
             return str;
         }
         catch(Exception e){
-            if((e instanceof HttpResponseException) && (response != null))
-                logger.error("Status code: " + response.getStatusLine().getStatusCode() + " with msg: " + e.getMessage());
+            if((e instanceof HttpResponseException) && (response != null)) {
+                logger.error("fetch failed with status code: {} and exception message: {}",
+                        response.getStatusLine().getStatusCode(), e.getMessage());
+            }
 
-            throw new RuntimeException(e.getMessage(), e);
+            throw new RuntimeException(String.format("fetch failed with message: %s", e.getMessage()), e);
         }
         finally {
             response.close();
@@ -236,10 +239,12 @@ public class ElasticsearchRestHelper {
             logger.info("Status: " + response.getStatusLine().getStatusCode());
         }
         catch (Exception e){
-            if((e instanceof HttpResponseException) && (response != null))
-                logger.error("Status code: " + response.getStatusLine().getStatusCode() + " with msg: " + e.getMessage());
+            if((e instanceof HttpResponseException) && (response != null)) {
+                logger.error("index method failed with status code: {} and exception message: {}",
+                        response.getStatusLine().getStatusCode(), e.getMessage());
+            }
 
-            throw new RuntimeException(e.getMessage(), e);
+            throw new RuntimeException(String.format("index method failed with message: %s", e.getMessage()), e);
         }
         finally {
             response.close();

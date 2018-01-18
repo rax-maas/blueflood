@@ -16,10 +16,6 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,19 +59,5 @@ public class Discovery {
     public Discovery withSourceFields(Map<String, Object> fields) {
         this.fields = fields;
         return this;
-    }
-
-    XContentBuilder createSourceContent() throws IOException {
-        XContentBuilder json;
-
-        json = XContentFactory.jsonBuilder().startObject()
-                .field(ESFieldLabel.tenantId.toString(), tenantId)
-                .field(ESFieldLabel.metric_name.toString(), metricName);
-
-        for (Map.Entry<String, Object> entry : fields.entrySet()) {
-            json = json.field(entry.getKey(), entry.getValue());
-        }
-        json = json.endObject();
-        return json;
     }
 }

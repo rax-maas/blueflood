@@ -16,7 +16,8 @@
 
 package com.rackspacecloud.blueflood.io;
 
-import com.github.tlrx.elasticsearch.test.EsSetup;
+//import com.github.tlrx.elasticsearch.test.EsSetup;
+
 import com.rackspacecloud.blueflood.types.Event;
 import junit.framework.Assert;
 import org.joda.time.DateTime;
@@ -28,7 +29,7 @@ import java.util.*;
 
 public class EventElasticSearchIOTest {
     private EventElasticSearchIO searchIO;
-    private EsSetup esSetup;
+//    private EsSetup esSetup;
 
     private static final String TENANT_1 = "tenant1";
     private static final String TENANT_2 = "otheruser2";
@@ -118,23 +119,23 @@ public class EventElasticSearchIOTest {
 
     @Before
     public void setup() throws Exception {
-        esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-        esSetup.execute(EsSetup
-                .createIndex(EventElasticSearchIO.EVENT_INDEX)
-                .withMapping(EventElasticSearchIO.ES_TYPE, EsSetup.fromClassPath("events_mapping.json")));
-        searchIO = new EventElasticSearchIO(esSetup.client());
-
-        createTestEvents(TENANT_1, TENANT_1_EVENTS_NUM);
-        createTestEvents(TENANT_2, TENANT_2_EVENTS_NUM);
-        createTestEvents(TENANT_WITH_SYMBOLS, TENANT_WITH_SYMBOLS_NUM);
-        createRangeEvents(TENANT_RANGE, TENANT_RANGE_EVENTS_NUM, RANGE_STEP_IN_SECONDS);
-
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
+//        esSetup = new EsSetup();
+//        esSetup.execute(EsSetup.deleteAll());
+//        esSetup.execute(EsSetup
+//                .createIndex(EventElasticSearchIO.EVENT_INDEX)
+//                .withMapping(EventElasticSearchIO.ES_TYPE, EsSetup.fromClassPath("events_mapping.json")));
+//        searchIO = new EventElasticSearchIO(esSetup.client());
+//
+//        createTestEvents(TENANT_1, TENANT_1_EVENTS_NUM);
+//        createTestEvents(TENANT_2, TENANT_2_EVENTS_NUM);
+//        createTestEvents(TENANT_WITH_SYMBOLS, TENANT_WITH_SYMBOLS_NUM);
+//        createRangeEvents(TENANT_RANGE, TENANT_RANGE_EVENTS_NUM, RANGE_STEP_IN_SECONDS);
+//
+//        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     private void createTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
+        Map<String, Object> eventMap = new HashMap<>();
         final DateTime date = new DateTime();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
@@ -143,14 +144,14 @@ public class EventElasticSearchIOTest {
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
 
-            eventList.add(event.toMap());
+            eventMap = event.toMap();
         }
 
-        searchIO.insert(tenant, eventList);
+        searchIO.insert(tenant, eventMap);
     }
 
     private void createRangeEvents(String tenant, int eventCount, int stepInSeconds) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
+        Map<String, Object> eventMap = new HashMap<>();
         DateTime date = new DateTime();
         for (int i=0;i<eventCount; i++) {
             Event event = new Event();
@@ -158,15 +159,15 @@ public class EventElasticSearchIOTest {
             event.setWhen(date.getMillis());
             event.setData("2");
             event.setTags("event");
-            eventList.add(event.toMap());
+            eventMap = event.toMap();
 
             date = date.minusSeconds(stepInSeconds);
         }
-        searchIO.insert(tenant, eventList);
+        searchIO.insert(tenant, eventMap);
     }
 
     @After
     public void tearDown() {
-        esSetup.terminate();
+//        esSetup.terminate();
     }
 }

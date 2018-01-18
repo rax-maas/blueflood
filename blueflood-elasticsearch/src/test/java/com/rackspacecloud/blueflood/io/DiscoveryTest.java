@@ -17,10 +17,8 @@
 package com.rackspacecloud.blueflood.io;
 
 import junit.framework.Assert;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,24 +49,5 @@ public class DiscoveryTest {
         Assert.assertEquals("a1", actualFields.get("a_1").toString());
         Assert.assertEquals("a2", actualFields.get("a_2").toString());
         Assert.assertEquals("a3", actualFields.get("a_3").toString());
-    }
-
-    @Test
-    public void testCreateSourceContent() throws IOException {
-
-        Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put(ESFieldLabel.unit.toString(), "quantum");
-
-        Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A).withSourceFields(fields);
-        XContentBuilder builder = discovery.createSourceContent();
-
-        final String expectedString =
-                "{" +
-                    "\"tenantId\":\"" + TENANT_1 + "\"," +
-                    "\"metric_name\":\"" + METRIC_NAME_A + "\"," +
-                    "\"unit\":\"quantum\"" +
-                "}";
-
-        Assert.assertEquals(expectedString, builder.string());
     }
 }

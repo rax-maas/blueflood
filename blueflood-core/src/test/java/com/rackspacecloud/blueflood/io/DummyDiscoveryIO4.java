@@ -9,9 +9,6 @@ import java.util.List;
  */
 public class DummyDiscoveryIO4 implements DiscoveryIO {
 
-    public DummyDiscoveryIO4(String parameter) {
-    }
-
     @Override
     public void insertDiscovery(IMetric metric) throws Exception {
 
@@ -29,11 +26,6 @@ public class DummyDiscoveryIO4 implements DiscoveryIO {
 
     @Override
     public List<SearchResult> search(String tenant, List<String> queries) throws Exception {
-        return null;
-    }
-
-    @Override
-    public List<MetricName> getMetricNames(String tenant, String query) throws Exception {
         return null;
     }
 }

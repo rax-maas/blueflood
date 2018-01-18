@@ -17,8 +17,6 @@
 package com.rackspacecloud.blueflood.service;
 
 public enum ElasticIOConfig implements ConfigDefaults {
-
-    ELASTICSEARCH_HOSTS("127.0.0.1:9300"),
     ELASTICSEARCH_HOST_FOR_REST_CLIENT("127.0.0.1:9200"),
     ELASTICSEARCH_CLUSTERNAME("elasticsearch"),
     ELASTICSEARCH_INDEX_NAME_WRITE("metric_metadata"),

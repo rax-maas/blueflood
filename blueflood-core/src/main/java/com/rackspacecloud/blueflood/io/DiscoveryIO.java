@@ -3,7 +3,7 @@ package com.rackspacecloud.blueflood.io;
 import com.rackspacecloud.blueflood.types.IMetric;
 import java.util.List;
 
-public interface DiscoveryIO extends MetricNameSearchIO {
+public interface DiscoveryIO {
 
     public void insertDiscovery(IMetric metric) throws Exception;
     public void insertDiscovery(List<IMetric> metrics) throws Exception;

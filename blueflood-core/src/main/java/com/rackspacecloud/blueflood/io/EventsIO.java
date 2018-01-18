@@ -21,5 +21,5 @@ import java.util.Map;
 
 public interface EventsIO {
     void insert(String tenantId, Map<String, Object> event) throws Exception;
-    List<Map<String, Object>> search(String tenant, Map<String, List<String>> query) throws Exception;
+    List<Map<String, Object>> search(String tenantId, Map<String, List<String>> query) throws Exception;
 }
