@@ -1,6 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
-//import com.github.tlrx.elasticsearch.test.EsSetup;
+import com.github.tlrx.elasticsearch.test.EsSetup;
 
 import com.rackspacecloud.blueflood.types.*;
 import com.rackspacecloud.blueflood.utils.TimeValue;
@@ -25,7 +25,7 @@ public abstract class BaseElasticTest {
 
     protected static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
 
-//    protected EsSetup esSetup;
+    protected static EsSetup esSetup;
 
     protected SearchResult createExpectedResult(String tenantId, int x, String y, int z, String unit) {
         Locator locator = createTestLocator(tenantId, x, y, z);
@@ -43,7 +43,7 @@ public abstract class BaseElasticTest {
      *      one.two.three29.fourC.five2
      *
      */
-    protected Locator createTestLocator(String tenantId, int x, String y, int z) {
+    protected static Locator createTestLocator(String tenantId, int x, String y, int z) {
         String xs = (x < 10 ? "0" : "") + String.valueOf(x);
         return Locator.createLocatorFromPathComponents(
                 tenantId, "one", "two", "three" + xs,
@@ -51,7 +51,7 @@ public abstract class BaseElasticTest {
                 "five" + String.valueOf(z));
     }
 
-    protected List<Locator> createComplexTestLocators(String tenantId) {
+    protected static List<Locator> createComplexTestLocators(String tenantId) {
         Locator locator;
         List<Locator> locators = new ArrayList<Locator>();
         locatorMap.put(tenantId, locators);
@@ -85,7 +85,7 @@ public abstract class BaseElasticTest {
 
     protected abstract void insertDiscovery(List<IMetric> metrics) throws IOException;
 
-    protected List<IMetric> createTestMetrics(String tenantId) {
+    protected static List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;
         List<IMetric> metrics = new ArrayList<IMetric>();
         List<Locator> locators = createComplexTestLocators(tenantId);
@@ -96,7 +96,7 @@ public abstract class BaseElasticTest {
         return metrics;
     }
 
-    protected List<IMetric> createTestMetricsFromInterface(String tenantId) {
+    protected static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
         List<IMetric> metrics = new ArrayList<IMetric>();
         BluefloodCounterRollup counter = new BluefloodCounterRollup();

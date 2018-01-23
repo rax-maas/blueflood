@@ -15,8 +15,7 @@
  */
 
 package com.rackspacecloud.blueflood.io;
-
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -30,6 +29,7 @@ public class DiscoveryTest {
     @Test
     public void testCreateDiscovery() {
         Discovery discovery = new Discovery(TENANT_1, METRIC_NAME_A);
+
         Assert.assertEquals(METRIC_NAME_A, discovery.getMetricName());
         Assert.assertEquals(TENANT_1, discovery.getTenantId());
         Assert.assertEquals(TENANT_1 + ":" + METRIC_NAME_A, discovery.getDocumentId());
@@ -38,7 +38,7 @@ public class DiscoveryTest {
 
     @Test
     public void testWithAnnotation() {
-        Map<String, Object> fields = new HashMap<String, Object>();
+        Map<String, Object> fields = new HashMap<>();
         fields.put("a_1", "a1");
         fields.put("a_2", "a2");
         fields.put("a_3", "a3");

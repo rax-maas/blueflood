@@ -66,8 +66,9 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>com.github.tlrx</groupId>
+      <artifactId>elasticsearch-test</artifactId>
+      <version>1.2.1</version>
       <scope>test</scope>
       <optional>true</optional>
     </dependency>

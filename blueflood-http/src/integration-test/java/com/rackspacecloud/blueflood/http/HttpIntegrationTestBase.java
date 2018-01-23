@@ -157,9 +157,9 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
 
         // create elaticsearch client and link it to ModuleLoader
-        elasticIO = new ElasticIO(esSetup.client());
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
+        elasticIO = new ElasticIO();
+        eventsSearchIO = new EventElasticSearchIO();
+        //((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
     }
 
     private static void setupIngestionServer() throws Exception {

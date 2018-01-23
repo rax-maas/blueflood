@@ -70,7 +70,7 @@ public class HttpMetricsIngestionServerShutdownIntegrationTest {
         esSetup.execute(EsSetup.createIndex(EventElasticSearchIO.EVENT_INDEX)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
+        eventsSearchIO = new EventElasticSearchIO();
         server = new HttpMetricsIngestionServer(context);
         server.setHttpEventsIngestionHandler(new HttpEventsIngestionHandler(eventsSearchIO));
 

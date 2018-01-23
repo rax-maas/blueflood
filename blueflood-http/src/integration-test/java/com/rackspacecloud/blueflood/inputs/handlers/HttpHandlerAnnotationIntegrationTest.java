@@ -164,17 +164,14 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
 
 
     private void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat("deployment");
             event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData("deploying prod");
             event.setTags("deployment");
-
-            eventList.add(event.toMap());
+            eventsSearchIO.insert(tenant, event.toMap());
         }
-        eventsSearchIO.insert(tenant, eventList);
     }
 
     private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {

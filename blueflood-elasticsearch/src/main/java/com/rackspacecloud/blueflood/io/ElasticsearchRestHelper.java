@@ -5,10 +5,12 @@ import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
+import com.rackspacecloud.blueflood.types.Metric;
 import com.rackspacecloud.blueflood.utils.GlobPattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
@@ -29,6 +31,7 @@ public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
     private final String baseUrl;
+    private static int MAX_RESULT_LIMIT = 100000;
 
     private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
 
@@ -45,14 +48,13 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        //Example URL: localhost:9200/metric_metadata/metrics/_search";
-        String url = String.format("%s/%s/%s/_search?routing=%s", baseUrl,
-                EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId);
+        String url = String.format("%s/%s/%s/_search?routing=%s&size=%d", baseUrl,
+                EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
-        String queryDslString = getDslString(query);
+        String queryDslString = getDslString(tenantId, query);
         CloseableHttpResponse response = null;
 
         try {
@@ -77,7 +79,13 @@ public class ElasticsearchRestHelper {
         }
     }
 
-    private String getDslString(Map<String, List<String>> query) {
+    private String getDslString(String tenantId, Map<String, List<String>> query) {
+        String tenantIdQ = String.format("{\"term\":{\"%s\":\"%s\"}}", ESFieldLabel.tenantId.toString(), tenantId);
+
+        if(query == null){
+            return "{\"query\":{\"bool\" : {\"must\": [" + tenantIdQ + "]}}}";
+        }
+
         String tagsValue = extractFieldFromQuery(Event.FieldLabels.tags.toString(), query);
         String untilValue = extractFieldFromQuery(Event.untilParameterName, query);
         String fromValue = extractFieldFromQuery(Event.fromParameterName, query);
@@ -97,18 +105,19 @@ public class ElasticsearchRestHelper {
         } else if (StringUtils.isNotEmpty(fromValue)) {
             rangeQueryString = String.format("{\"range\":{\"when\":{\"from\":%d}}}", Long.parseLong(fromValue));
         } else {
+            /*
+            TODO: Find out if following statement (for logger) is true from Richard and George.
+             */
             logger.error("Cannot create Query DSL. Both 'from' and 'to' parameters are empty.");
-            return "";
+            rangeQueryString = "";
         }
 
-        String dslString;
+        StringBuilder sb = new StringBuilder(tenantIdQ);
 
-        if(StringUtils.isEmpty(tagsQString)) {
-            dslString = "{\"query\":{\"bool\" : {\"must\": [" + rangeQueryString + "]}}}";
-        }
-        else{
-            dslString = "{\"query\":{\"bool\" : {\"must\": [" + tagsQString + "," + rangeQueryString + "]}}}";
-        }
+        if(StringUtils.isNotEmpty(tagsQString)) sb.append("," + tagsQString);
+        if(StringUtils.isNotEmpty(rangeQueryString)) sb.append("," + rangeQueryString);
+
+        String dslString = "{\"query\":{\"bool\" : {\"must\": [" + sb.toString() + "]}}}";
 
         return dslString;
     }
@@ -124,14 +133,17 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetch(String indexName, String documentType, String tenantId, String query) throws IOException {
-        //Example URL: localhost:9200/metric_metadata/metrics/_search";
-        String url = String.format("%s/%s/%s/_search", baseUrl, indexName, documentType);
+        //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
+        String url = String.format("%s/%s/%s/_search?size=%d", baseUrl, indexName, documentType, MAX_RESULT_LIMIT);
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
         GlobPattern pattern = new GlobPattern(query);
-        String queryDslString = getQueryDslString(tenantId, query, pattern.hasWildcard());
+        String compiledString = pattern.compiled().toString();
+        // replace one '\' char with two '\\'
+        compiledString = compiledString.replaceAll("\\\\", "\\\\\\\\");
+        String queryDslString = getQueryDslString(tenantId, compiledString, pattern.hasWildcard());
 
         CloseableHttpResponse response = null;
 
@@ -165,7 +177,7 @@ public class ElasticsearchRestHelper {
         String metricNameQ;
 
         if(isWild){
-            metricNameQ = String.format("{\"wildcard\":{\"%s\":\"%s\"}}", ESFieldLabel.metric_name.toString(), queryString);
+            metricNameQ = String.format("{\"regexp\":{\"%s\":\"%s\"}}", ESFieldLabel.metric_name.toString(), queryString);
         }
         else{
             metricNameQ = String.format("{\"term\":{\"%s\":\"%s\"}}", ESFieldLabel.metric_name.toString(), queryString);
@@ -201,10 +213,11 @@ public class ElasticsearchRestHelper {
     private String stringifyEvent(Map<String, Object> event){
         StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format("{\"what\": \"%s\",", event.get("what")));
-        sb.append(String.format("\"when\": \"%d\",", (long) event.get("when")));
-        sb.append(String.format("\"tags\": \"%s\",", event.get("tags")));
-        sb.append(String.format("\"data\": \"%s\"}", event.get("data")));
+        sb.append(String.format("{\"what\": \"%s\",", event.get(Event.FieldLabels.what.toString())));
+        sb.append(String.format("\"when\": \"%d\",", (long) event.get(Event.FieldLabels.when.toString())));
+        sb.append(String.format("\"tags\": \"%s\",", event.get(Event.FieldLabels.tags.toString())));
+        sb.append(String.format("\"tenantId\": \"%s\",", event.get(Event.FieldLabels.tenantId.toString())));
+        sb.append(String.format("\"data\": \"%s\"}", event.get(Event.FieldLabels.data.toString())));
 
         return sb.toString();
     }
@@ -216,16 +229,30 @@ public class ElasticsearchRestHelper {
             Locator locator = metric.getLocator();
 
             sb.append(String.format(
-                    "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : %s } }%n",
+                    "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
                     AbstractElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, AbstractElasticIO.ELASTICSEARCH_DOCUMENT_TYPE,
                     locator.getTenantId() + ":" + locator.getMetricName(), locator.getTenantId()));
 
-            sb.append(String.format(
-                    "{ \"tenantId\" : \"%s\", \"metric_name\" : \"%s\" }%n",
-                    locator.getTenantId(), locator.getMetricName()));
+            if(metric instanceof Metric && getUnit((Metric) metric) != null){
+                sb.append(String.format(
+                        "{ \"%s\" : \"%s\", \"%s\" : \"%s\", \"%s\" : \"%s\" }%n",
+                        ESFieldLabel.tenantId.toString(), locator.getTenantId(),
+                        ESFieldLabel.metric_name.toString(), locator.getMetricName(),
+                        ESFieldLabel.unit.toString(), getUnit((Metric) metric)));
+            }
+            else {
+                sb.append(String.format(
+                        "{ \"%s\" : \"%s\", \"%s\" : \"%s\" }%n",
+                        ESFieldLabel.tenantId.toString(), locator.getTenantId(),
+                        ESFieldLabel.metric_name.toString(), locator.getMetricName()));
+            }
         }
 
         return sb.toString();
+    }
+
+    private String getUnit(Metric metric) {
+        return metric.getUnit();
     }
 
     private void index(HttpPost httpPost, String bulkString) throws IOException {
@@ -236,7 +263,14 @@ public class ElasticsearchRestHelper {
             httpPost.setEntity(entity);
             response = closeableHttpClient.execute(httpPost);
 
-            logger.info("Status: " + response.getStatusLine().getStatusCode());
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            if(statusCode != HttpStatus.SC_OK){
+                logger.error("index method failed with status code: {} and error: {}",
+                        response.getStatusLine().getStatusCode(),
+                        EntityUtils.toString(response.getEntity()));
+                System.out.println(EntityUtils.toString(response.getEntity()));
+            }
         }
         catch (Exception e){
             if((e instanceof HttpResponseException) && (response != null)) {

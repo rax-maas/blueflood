@@ -117,7 +117,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_WildcardTagReturnNothing() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "sample*");
 
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
@@ -131,7 +131,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_NoParams() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
@@ -142,16 +142,14 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
     }
 
     private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
             event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
-            eventList.add(event.toMap());
+            eventsSearchIO.insert(tenant, event.toMap());
         }
-        eventsSearchIO.insert(tenant, eventList);
     }
 
 }
