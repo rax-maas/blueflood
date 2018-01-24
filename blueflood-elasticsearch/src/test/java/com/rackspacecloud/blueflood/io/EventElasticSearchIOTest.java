@@ -19,9 +19,15 @@ package com.rackspacecloud.blueflood.io;
 import com.github.tlrx.elasticsearch.test.EsSetup;
 
 import com.rackspacecloud.blueflood.types.Event;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.joda.time.DateTime;
 import org.junit.*;
 
+import java.io.IOException;
 import java.util.*;
 
 public class EventElasticSearchIOTest {
@@ -175,7 +181,17 @@ public class EventElasticSearchIOTest {
     }
 
     @AfterClass
-    public static void tearDown() {
-        esSetup.terminate();
+    public static void tearDownClass() throws Exception{
+        HttpClient client = HttpClientBuilder.create().build();
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
+        HttpDelete delete = new HttpDelete(builder.build());
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete 'events' index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted 'events' index after running tests.");
+        }
     }
 }

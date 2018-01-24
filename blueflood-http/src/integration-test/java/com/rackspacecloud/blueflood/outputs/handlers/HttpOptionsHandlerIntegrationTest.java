@@ -40,7 +40,7 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
 
     @Before
     public void setUp() {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         allowedOrigins = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_ORIGINS).split(",");
         allowedHeaders = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_HEADERS).split(",");
         allowedMethods = Configuration.getInstance().getStringProperty(CoreConfig.CORS_ALLOWED_METHODS).split(",");
@@ -59,14 +59,6 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     public void testHttpMetricsIndexHandlerOptions() throws Exception {
         // test query .../metrics/search for CORS support
         HttpOptions httpOptions = new HttpOptions(getQuerySearchURI(tenantId));
-        HttpResponse response = client.execute(httpOptions);
-        assertCorsResponseHeaders(response, allowedOrigins, allowedHeaders, allowedMethods, allowedMaxAge);
-    }
-
-    @Test
-    public void testHttpMetricNamesHandlerOptions() throws Exception {
-        // test query .../metric_name/search for CORS support
-        HttpOptions httpOptions = new HttpOptions(getMetricNameSearchURI(tenantId));
         HttpResponse response = client.execute(httpOptions);
         assertCorsResponseHeaders(response, allowedOrigins, allowedHeaders, allowedMethods, allowedMaxAge);
     }

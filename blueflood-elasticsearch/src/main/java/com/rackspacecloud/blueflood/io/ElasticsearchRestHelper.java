@@ -265,7 +265,7 @@ public class ElasticsearchRestHelper {
 
             int statusCode = response.getStatusLine().getStatusCode();
 
-            if(statusCode != HttpStatus.SC_OK){
+            if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
                 logger.error("index method failed with status code: {} and error: {}",
                         response.getStatusLine().getStatusCode(),
                         EntityUtils.toString(response.getEntity()));

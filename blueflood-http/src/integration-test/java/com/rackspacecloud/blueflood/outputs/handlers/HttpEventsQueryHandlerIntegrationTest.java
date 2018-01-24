@@ -18,6 +18,8 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Event;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.*;
 import org.apache.http.HttpResponse;
@@ -30,12 +32,11 @@ import java.util.*;
  */
 public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    private final String tenantId = "540123";
+    private static final String tenantId = "540123";
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeClass
+    public static void setup() throws Exception {
         createAndInsertTestEvents(tenantId, 5);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
@@ -68,7 +69,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_ByTagName() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "1");
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
@@ -89,7 +90,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_MultipleTagsReturnNothing() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "0,1");
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
@@ -152,4 +153,17 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
         }
     }
 
+    @AfterClass
+    public static void tearDownClass() throws Exception{
+        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
+        HttpDelete delete = new HttpDelete(builder.build());
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete 'events' index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted 'events' index after running tests.");
+        }
+    }
 }
