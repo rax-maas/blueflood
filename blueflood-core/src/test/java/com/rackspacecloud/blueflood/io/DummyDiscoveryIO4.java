@@ -9,6 +9,10 @@ import java.util.List;
  */
 public class DummyDiscoveryIO4 implements DiscoveryIO {
 
+    public DummyDiscoveryIO4(String parameter) {
+
+    }
+
     @Override
     public void insertDiscovery(IMetric metric) throws Exception {
 
