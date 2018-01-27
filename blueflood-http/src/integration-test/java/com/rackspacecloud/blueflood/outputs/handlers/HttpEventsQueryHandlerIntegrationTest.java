@@ -18,14 +18,23 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Event;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.util.EntityUtils;
-import org.junit.*;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
 
 /**
  * Integration Tests for GET .../events/getEvents
@@ -153,17 +162,36 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
         }
     }
 
+    /*
+    Once done testing, delete all of the records of the given type and index.
+    NOTE: Don't delete the index or the type, because that messes up the ES settings.
+     */
     @AfterClass
-    public static void tearDownClass() throws Exception{
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
-        HttpDelete delete = new HttpDelete(builder.build());
+    public static void tearDownClass() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http")
+                .setHost("127.0.0.1").setPort(9200)
+                .setPath("/events/graphite_event/_query");
+
+        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
+            @Override
+            public String getMethod() {
+                return "DELETE";
+            }
+        };
+        delete.setURI(builder.build());
+
+        String deletePayload = "{\"query\":{\"match_all\":{}}}";
+        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
+        delete.setEntity(entity);
+
+        HttpClient client = HttpClientBuilder.create().build();
         HttpResponse response = client.execute(delete);
         if(response.getStatusLine().getStatusCode() != 200)
         {
-            System.out.println("Couldn't delete 'events' index after running tests.");
+            System.out.println("Couldn't delete index after running tests.");
         }
         else {
-            System.out.println("Successfully deleted 'events' index after running tests.");
+            System.out.println("Successfully deleted index after running tests.");
         }
     }
 }

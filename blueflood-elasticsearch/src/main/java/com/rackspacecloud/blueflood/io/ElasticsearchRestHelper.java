@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.Event;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +32,7 @@ import java.util.Map;
 public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
-    private final String baseUrl;
+    private String baseUrl;
     private static int MAX_RESULT_LIMIT = 100000;
 
     private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
@@ -80,7 +82,7 @@ public class ElasticsearchRestHelper {
     }
 
     private String getDslString(String tenantId, Map<String, List<String>> query) {
-        String tenantIdQ = String.format("{\"term\":{\"%s\":\"%s\"}}", ESFieldLabel.tenantId.toString(), tenantId);
+        String tenantIdQ = getTermQueryString(ESFieldLabel.tenantId.toString(), tenantId);
 
         if(query == null){
             return "{\"query\":{\"bool\" : {\"must\": [" + tenantIdQ + "]}}}";
@@ -93,7 +95,7 @@ public class ElasticsearchRestHelper {
         String tagsQString = "";
 
         if (StringUtils.isNotEmpty(tagsValue))
-            tagsQString = String.format("{\"term\":{\"%s\":\"%s\"}}", Event.FieldLabels.tags.toString(), tagsValue);
+            tagsQString = getTermQueryString(Event.FieldLabels.tags.toString(), tagsValue);
 
         String rangeQueryString;
 
@@ -105,10 +107,7 @@ public class ElasticsearchRestHelper {
         } else if (StringUtils.isNotEmpty(fromValue)) {
             rangeQueryString = String.format("{\"range\":{\"when\":{\"from\":%d}}}", Long.parseLong(fromValue));
         } else {
-            /*
-            TODO: Find out if following statement (for logger) is true from Richard and George.
-             */
-            logger.error("Cannot create Query DSL. Both 'from' and 'to' parameters are empty.");
+            logger.info("In query DSL, both 'from' and 'to' parameters are empty.");
             rangeQueryString = "";
         }
 
@@ -117,7 +116,10 @@ public class ElasticsearchRestHelper {
         if(StringUtils.isNotEmpty(tagsQString)) sb.append("," + tagsQString);
         if(StringUtils.isNotEmpty(rangeQueryString)) sb.append("," + rangeQueryString);
 
-        String dslString = "{\"query\":{\"bool\" : {\"must\": [" + sb.toString() + "]}}}";
+        List<String> strings = new ArrayList<>();
+        strings.add(sb.toString());
+
+        String dslString = getBoolQueryString(getMustQueryString(strings));
 
         return dslString;
     }
@@ -132,18 +134,14 @@ public class ElasticsearchRestHelper {
         return result;
     }
 
-    public String fetch(String indexName, String documentType, String tenantId, String query) throws IOException {
+    public String fetch(String indexName, String documentType, String tenantId, List<String> queries) throws IOException {
         //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
         String url = String.format("%s/%s/%s/_search?size=%d", baseUrl, indexName, documentType, MAX_RESULT_LIMIT);
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
-        GlobPattern pattern = new GlobPattern(query);
-        String compiledString = pattern.compiled().toString();
-        // replace one '\' char with two '\\'
-        compiledString = compiledString.replaceAll("\\\\", "\\\\\\\\");
-        String queryDslString = getQueryDslString(tenantId, compiledString, pattern.hasWildcard());
+        String queryDslString = getQueryDslString(tenantId, queries);
 
         CloseableHttpResponse response = null;
 
@@ -170,21 +168,32 @@ public class ElasticsearchRestHelper {
         }
     }
 
-    private String getQueryDslString(String tenantId, String queryString, boolean isWild){
-        String dslString;
+    private String getQueryDslString(String tenantId, List<String> queries){
+        List<String> mustStrings = new ArrayList<>();
+        String tenantIdQString = getTermQueryString(ESFieldLabel.tenantId.toString(), tenantId);
+        mustStrings.add(tenantIdQString);
+        String mustValueString = getMustValueString(mustStrings);
 
-        String tenantIdQ = String.format("{\"term\":{\"%s\":\"%s\"}}", ESFieldLabel.tenantId.toString(), tenantId);
-        String metricNameQ;
+        List<String> shouldStrings = new ArrayList<>();
+        for(String query : queries) {
+            String metricNameQString;
+            GlobPattern pattern = new GlobPattern(query);
 
-        if(isWild){
-            metricNameQ = String.format("{\"regexp\":{\"%s\":\"%s\"}}", ESFieldLabel.metric_name.toString(), queryString);
+            if (pattern.hasWildcard()) {
+                String compiledString = pattern.compiled().toString();
+                // replace one '\' char with two '\\'
+                compiledString = compiledString.replaceAll("\\\\", "\\\\\\\\");
+                metricNameQString = getRegexpQueryString(ESFieldLabel.metric_name.toString(), compiledString);
+            }
+            else {
+                metricNameQString = getTermQueryString(ESFieldLabel.metric_name.toString(), query);
+            }
+            shouldStrings.add(metricNameQString);
         }
-        else{
-            metricNameQ = String.format("{\"term\":{\"%s\":\"%s\"}}", ESFieldLabel.metric_name.toString(), queryString);
-        }
 
-        dslString = "{\"query\":{\"bool\" : {\"must\": [" + tenantIdQ + "," + metricNameQ + "]}}}";
+        String shouldValueString = getShouldValueString(shouldStrings);
 
+        String dslString = getBoolQueryString(mustValueString, shouldValueString);
         return dslString;
     }
 
@@ -228,6 +237,9 @@ public class ElasticsearchRestHelper {
         for(IMetric metric : metrics){
             Locator locator = metric.getLocator();
 
+            if(locator.getMetricName() == null)
+                throw new IllegalArgumentException("trying to insert metric discovery without a metricName");
+
             sb.append(String.format(
                     "{ \"index\" : { \"_index\" : \"%s\", \"_type\" : \"%s\", \"_id\" : \"%s\", \"routing\" : \"%s\" } }%n",
                     AbstractElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, AbstractElasticIO.ELASTICSEARCH_DOCUMENT_TYPE,
@@ -255,7 +267,7 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    private void index(HttpPost httpPost, String bulkString) throws IOException {
+    protected void index(HttpPost httpPost, String bulkString) throws IOException {
         CloseableHttpResponse response = null;
 
         try{
@@ -285,6 +297,37 @@ public class ElasticsearchRestHelper {
         }
     }
 
+    private String getTermQueryString(String key, String value){
+        return String.format("{\"term\":{\"%s\":\"%s\"}}", key, value);
+    }
+
+    private String getRegexpQueryString(String key, String value){
+        return String.format("{\"regexp\":{\"%s\":\"%s\"}}", key, value);
+    }
+
+    private String getMustQueryString(List<String> termStrings){
+        return String.format("{\"must\":%s}", getMustValueString(termStrings));
+    }
+
+    private String getMustValueString(List<String> termStrings){
+        String termsString = String.join(",", termStrings);
+        return String.format("[%s]", termsString);
+    }
+
+    private String getShouldValueString(List<String> termStrings){
+        String termsString = String.join(",", termStrings);
+        return String.format("[%s]", termsString);
+    }
+
+    private String getBoolQueryString(String mustString){
+        return String.format("{\"query\":{\"bool\":%s}}", mustString);
+    }
+
+    private String getBoolQueryString(String mustValueString, String shouldValueString){
+        return String.format("{\"query\":{\"bool\":{\"must\":%s,\"should\":%s,\"minimum_should_match\": 1}}}",
+                mustValueString, shouldValueString);
+    }
+
     private Header[] getHeaders(){
         Map<String, String> headersMap = new HashMap<>();
         headersMap.put("Accept", "application/json");
@@ -296,5 +339,10 @@ public class ElasticsearchRestHelper {
             headers[i++] = new BasicHeader(key, headersMap.get(key));
         }
         return headers;
+    }
+
+    @VisibleForTesting
+    public void setBaseUrlForTestOnly(String url) {
+        baseUrl = url;
     }
 }

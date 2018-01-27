@@ -17,17 +17,21 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-
 import com.rackspacecloud.blueflood.types.Event;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.nio.entity.NStringEntity;
 import org.joda.time.DateTime;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
 
 public class EventElasticSearchIOTest {
@@ -58,21 +62,8 @@ public class EventElasticSearchIOTest {
         results = searchIO.search(TENANT_RANGE, query);
         Assert.assertEquals(TENANT_RANGE_EVENTS_NUM, results.size());
 
-        /*
-        It's failing because tenantId contains symbols "-" and "#"
-        URL used: http://127.0.0.1:9200/events/graphite_event/_search?routing=tenant-id_id#id
-        Following two queries works
-        {"query":{"bool" : {"must": [{"term":{"tenantId":"tenant"}},{"term":{"tags":"event"}}]}}}
-        {"query":{"bool" : {"must": [{"term":{"tenantId":"id_id"}},{"term":{"tags":"event"}}]}}}
-
-        Following does not work:
-        {"query":{"bool" : {"must": [{"term":{"tenantId":"id#id"}},{"term":{"tags":"event"}}]}}}
-        {"query":{"bool" : {"must": [{"term":{"tenantId":"tenant-id"}},{"term":{"tags":"event"}}]}}}
-
-        TODO: find out if it worked earlier.
-         */
-//        results = searchIO.search(TENANT_WITH_SYMBOLS, query);
-//        Assert.assertEquals(TENANT_WITH_SYMBOLS_NUM, results.size());
+        results = searchIO.search(TENANT_WITH_SYMBOLS, query);
+        Assert.assertEquals(TENANT_WITH_SYMBOLS_NUM, results.size());
     }
 
     @Test
@@ -180,18 +171,36 @@ public class EventElasticSearchIOTest {
         }
     }
 
+    /*
+    Once done testing, delete all of the records of the given type and index.
+    NOTE: Don't delete the index or the type, because that messes up the ES settings.
+     */
     @AfterClass
-    public static void tearDownClass() throws Exception{
+    public static void tearDownClass() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http")
+                .setHost("127.0.0.1").setPort(9200)
+                .setPath("/events/graphite_event/_query");
+
+        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
+            @Override
+            public String getMethod() {
+                return "DELETE";
+            }
+        };
+        delete.setURI(builder.build());
+
+        String deletePayload = "{\"query\":{\"match_all\":{}}}";
+        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
+        delete.setEntity(entity);
+
         HttpClient client = HttpClientBuilder.create().build();
-        URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/events");
-        HttpDelete delete = new HttpDelete(builder.build());
         HttpResponse response = client.execute(delete);
         if(response.getStatusLine().getStatusCode() != 200)
         {
-            System.out.println("Couldn't delete 'events' index after running tests.");
+            System.out.println("Couldn't delete index after running tests.");
         }
         else {
-            System.out.println("Successfully deleted 'events' index after running tests.");
+            System.out.println("Successfully deleted index after running tests.");
         }
     }
 }

@@ -23,7 +23,7 @@ public abstract class BaseElasticTest {
     protected static final String TENANT_C = "someothergal";
     protected static final String UNIT = "horse length";
 
-    protected static final Map<String, List<Locator>> locatorMap = new HashMap<String, List<Locator>>();
+    protected static final Map<String, List<Locator>> locatorMap = new HashMap<>();
 
     protected static EsSetup esSetup;
 
@@ -53,7 +53,7 @@ public abstract class BaseElasticTest {
 
     protected static List<Locator> createComplexTestLocators(String tenantId) {
         Locator locator;
-        List<Locator> locators = new ArrayList<Locator>();
+        List<Locator> locators = new ArrayList<>();
         locatorMap.put(tenantId, locators);
         for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
             for (String y : CHILD_ELEMENTS) {
@@ -68,7 +68,7 @@ public abstract class BaseElasticTest {
 
     protected void createTestMetrics(String tenantId, Set<String> fullyQualifiedMetricNames) throws Exception {
 
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<IMetric> metrics = new ArrayList<>();
         for (String metricName: fullyQualifiedMetricNames) {
             metrics.add(new Metric(Locator.createLocatorFromPathComponents(tenantId, metricName),
                     5647382910L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
@@ -79,7 +79,6 @@ public abstract class BaseElasticTest {
 
     protected void createTestMetrics(List<IMetric> metrics) throws IOException {
         insertDiscovery(metrics);
-//        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
 
@@ -87,7 +86,7 @@ public abstract class BaseElasticTest {
 
     protected static List<IMetric> createTestMetrics(String tenantId) {
         Metric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<IMetric> metrics = new ArrayList<>();
         List<Locator> locators = createComplexTestLocators(tenantId);
         for (Locator locator : locators) {
             metric = new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
@@ -98,7 +97,7 @@ public abstract class BaseElasticTest {
 
     protected static List<IMetric> createTestMetricsFromInterface(String tenantId) {
         IMetric metric;
-        List<IMetric> metrics = new ArrayList<IMetric>();
+        List<IMetric> metrics = new ArrayList<>();
         BluefloodCounterRollup counter = new BluefloodCounterRollup();
 
         List<Locator> locators = createComplexTestLocators(tenantId);

@@ -58,7 +58,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
         try {
             queryBatchHistogram.update(queries.size());
             String response = elasticsearchRestHelper.fetch(
-                    ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, tenant, queries.get(0));
+                    ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, tenant, queries);
 
             List<SearchResult> searchResults = getSearchResults(response);
             hitsCount = searchResults.size();

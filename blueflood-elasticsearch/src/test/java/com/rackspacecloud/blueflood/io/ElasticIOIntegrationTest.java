@@ -17,35 +17,35 @@
 package com.rackspacecloud.blueflood.io;
 
 import com.github.tlrx.elasticsearch.test.EsSetup;
-
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
 import com.rackspacecloud.blueflood.types.Metric;
-import com.rackspacecloud.blueflood.types.Token;
 import com.rackspacecloud.blueflood.utils.TimeValue;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
-//import org.elasticsearch.action.bulk.BulkRequestBuilder;
-//import org.elasticsearch.action.index.IndexRequestBuilder;
-//import org.elasticsearch.client.Client;
-
 import org.apache.commons.lang.StringUtils;
-import org.junit.*;
-import org.junit.runner.RunWith;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.nio.entity.NStringEntity;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
-//@RunWith( JUnitParamsRunner.class )
 public class ElasticIOIntegrationTest extends BaseElasticTest {
 
     protected static ElasticIO elasticIO;
@@ -53,61 +53,124 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
     @BeforeClass
     public static void setup() throws Exception {
         esSetup = new EsSetup();
-        esSetup.execute(EsSetup.deleteAll());
-
-        esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
-                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-                .withMapping(ElasticIO.ELASTICSEARCH_DOCUMENT_TYPE, EsSetup.fromClassPath("metrics_mapping.json")));
 
         elasticIO = new ElasticIO();
         elasticIO.insertDiscovery(createTestMetrics(TENANT_A));
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        Thread.sleep(3*1000);
+        Thread.sleep(3*1000); // Sleep a few seconds to make sure data is indexed.
     }
 
-
-
+    /*
+    Once done testing, delete all of the records of the given type and index.
+    NOTE: Don't delete the index or the type, because that messes up the ES settings.
+     */
     @AfterClass
-    public static void tearDown() {
-        esSetup.terminate();
+    public static void tearDownClass() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http")
+                .setHost("127.0.0.1").setPort(9200)
+                .setPath("/metric_metadata/metrics/_query");
+
+        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
+            @Override
+            public String getMethod() {
+                return "DELETE";
+            }
+        };
+        delete.setURI(builder.build());
+
+        String deletePayload = "{\"query\":{\"match_all\":{}}}";
+        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
+        delete.setEntity(entity);
+
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted index after running tests.");
+        }
     }
 
     @Override
     protected void insertDiscovery(List<IMetric> metrics) throws IOException {
         elasticIO.insertDiscovery(metrics);
-
-        Stream<Locator> locators = metrics.stream().map(IMetric::getLocator);
-//        elasticTokensIO.insertDiscovery(Token.getUniqueTokens(locators)
-//                                             .collect(toList()));
     }
 
     @Test(expected=IllegalArgumentException.class)
     public void testCreateSingleRequest_WithNullMetricName() throws IOException {
-        Discovery discovery = new Discovery(TENANT_A, null);
-        //elasticIO.createSingleRequest(discovery);
+        Locator locator = Locator.createLocatorFromPathComponents("tenantId", null);
+        Metric metric =
+                new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+        elasticIO.insertDiscovery(metric);
     }
 
-//    @Test
-//    public void testCreateSingleRequest() throws IOException {
-//        final String METRIC_NAME = "a.b.c.m1";
-//        Discovery discovery = new Discovery(TENANT_A, METRIC_NAME);
-////        IndexRequestBuilder builder = elasticIO.createSingleRequest(discovery);
-////        Assert.assertNotNull(builder);
-////        assertEquals(TENANT_A + ":" + METRIC_NAME, builder.request().id());
-//        final String expectedIndex =
-//                "index {" +
-//                        "[" + ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "]" +
-//                        "[" + ElasticIO.ELASTICSEARCH_DOCUMENT_TYPE + "]" +
-//                        "["+ TENANT_A + ":" + METRIC_NAME + "], " +
-//                        "source[{" +
-//                        "\"tenantId\":\"" + TENANT_A + "\"," +
-//                        "\"metric_name\":\"" + METRIC_NAME + "\"" +
-//                        "}]}";
-////        assertEquals(expectedIndex, builder.request().toString());
-////        assertEquals(builder.request().routing(), TENANT_A);
-//    }
+    @Test(expected=NullPointerException.class)
+    public void testElasticsearchRestHelperIndex() throws IOException {
+        ElasticsearchRestHelper elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
+        elasticsearchRestHelper.index(null, null);
+    }
+
+    @Test(expected=RuntimeException.class)
+    public void testElasticsearchRestHelperInvalidUrlForEventIndex() throws IOException {
+
+        String tenantId = "test1";
+        String metricName = "one.two.three.four.five";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
+        locatorMap.put(tenantId, new ArrayList<>());
+        locatorMap.get(tenantId).add(locator);
+
+        Metric metric =
+                new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+
+        ElasticsearchRestHelper elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();
+        elasticsearchRestHelper.setBaseUrlForTestOnly("http://www.google.com");
+        List<IMetric> metrics = new ArrayList<>();
+        metrics.add(metric);
+
+        try {
+            elasticsearchRestHelper.indexMetrics(metrics);
+        }
+        catch(RuntimeException ex) {
+            elasticsearchRestHelper.setBaseUrlForTestOnly("http://127.0.0.1:9200");
+            throw ex;
+        }
+    }
+
+    @Test
+    public void testCreateSingleRequest_WithNotNullMetricName() throws Exception {
+        String tenantId = "test1";
+        String metricName = "one.two.three.four.five";
+        Locator locator = Locator.createLocatorFromPathComponents(tenantId, metricName);
+        locatorMap.put(tenantId, new ArrayList<>());
+        locatorMap.get(tenantId).add(locator);
+
+        Metric metric =
+                new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
+        elasticIO.insertDiscovery(metric);
+        Thread.sleep(3*1000); // Wait for data to get indexed.
+
+        List<SearchResult> results;
+        results = elasticIO.search(tenantId, metricName);
+        List<Locator> locators = locatorMap.get(tenantId);
+        assertEquals(locators.size(), results.size());
+        for (Locator l : locators) {
+            SearchResult entry =  new SearchResult(tenantId, l.getMetricName(), "");
+
+            boolean isFound = false;
+            for(SearchResult item : results){
+                if((StringUtils.isNotEmpty(item.getMetricName()) && item.getMetricName().equalsIgnoreCase(entry.getMetricName())) &&
+                        (StringUtils.isNotEmpty(item.getTenantId()) && item.getTenantId().equalsIgnoreCase(entry.getTenantId()))){
+                    isFound = true;
+                    break;
+                }
+            }
+            Assert.assertTrue(isFound);
+        }
+    }
 
     @Test
     public void testNoCrossTenantResults() throws Exception {
@@ -135,7 +198,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         String query1 = "one.two.three00.fourA.five1";
         String query2 = "one.two.three01.fourA.five2";
         List<SearchResult> results;
-        ArrayList<String> queries = new ArrayList<String>();
+        ArrayList<String> queries = new ArrayList<>();
         queries.add(query1);
         queries.add(query2);
         results = elasticIO.search(tenantId, queries);
@@ -191,15 +254,14 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
             Assert.assertTrue(isFound);
         }
 
-//        //TODO: "*.fourA.*" is failing at this time.
-//        results = elasticIO.search(tenantId, "*.fourA.*");
-//        assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
-//        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
-//            for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
-//                entry = createExpectedResult(tenantId, x, "A", z, unit);
-//                Assert.assertTrue(results.contains(entry));
-//            }
-//        }
+        results = elasticIO.search(tenantId, "*.fourA.*");
+        assertEquals(NUM_PARENT_ELEMENTS * NUM_GRANDCHILD_ELEMENTS, results.size());
+        for (int x = 0; x < NUM_PARENT_ELEMENTS; x++) {
+            for (int z = 0; z < NUM_GRANDCHILD_ELEMENTS; z++) {
+                entry = createExpectedResult(tenantId, x, "A", z, unit);
+                Assert.assertTrue(results.contains(entry));
+            }
+        }
 
         results = elasticIO.search(tenantId, "*.three1*.four*.five2");
         assertEquals(10 * CHILD_ELEMENTS.size(), results.size());
@@ -245,23 +307,18 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         // New index name and the locator to be written to it
         String ES_DUP = ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE + "_2";
         Locator testLocator = createTestLocator(TENANT_A, 0, "A", 0);
-        // Metric is aleady there in old
+        // Metric is already there in old
         List<SearchResult> results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getMetricName(), testLocator.getMetricName());
+
         // Actually create the new index
-//        esSetup.execute(EsSetup.createIndex(ES_DUP)
-//                .withSettings(EsSetup.fromClassPath("index_settings.json"))
-//                .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
         // Insert metric into the new index
         elasticIO.setINDEX_NAME_WRITE(ES_DUP);
         ArrayList metricList = new ArrayList();
         metricList.add(new Metric(createTestLocator(TENANT_A, 0, "A", 0), 987654321L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT));
         elasticIO.insertDiscovery(metricList);
-//        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
-        // Set up aliases
-//        esSetup.client().admin().indices().prepareAliases().addAlias(ES_DUP, "metric_metadata_read")
-//                .addAlias(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE, "metric_metadata_read").execute().actionGet();
+
         elasticIO.setINDEX_NAME_READ("metric_metadata_read");
         results = elasticIO.search(TENANT_A, testLocator.getMetricName());
         // Should just be one result
