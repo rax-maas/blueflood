@@ -53,7 +53,7 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
     private List<SearchResult> searchUsingRestApi(String tenant, List<String> queries) {
         List<SearchResult> results = new ArrayList<>();
         Timer.Context multiSearchCtx = searchTimer.time();
-        int hitsCount = 0;
+        int hitsCount;
 
         try {
             queryBatchHistogram.update(queries.size());
