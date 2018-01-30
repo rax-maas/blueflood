@@ -114,8 +114,8 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticsearchRestHelper.index(null, null);
     }
 
-    @Test(expected=RuntimeException.class)
-    public void testElasticsearchRestHelperInvalidUrlForEventIndex() throws IOException {
+    @Test
+    public void testElasticsearchRestHelperInvalidUrlReturns404() throws IOException {
 
         String tenantId = "test1";
         String metricName = "one.two.three.four.five";
@@ -131,13 +131,10 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         List<IMetric> metrics = new ArrayList<>();
         metrics.add(metric);
 
-        try {
-            elasticsearchRestHelper.indexMetrics(metrics);
-        }
-        catch(RuntimeException ex) {
-            elasticsearchRestHelper.setBaseUrlForTestOnly("http://127.0.0.1:9200");
-            throw ex;
-        }
+        int statusCode = elasticsearchRestHelper.indexMetrics(metrics);
+        elasticsearchRestHelper.setBaseUrlForTestOnly("http://127.0.0.1:9200");
+
+        Assert.assertEquals(404, statusCode);
     }
 
     @Test

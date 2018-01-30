@@ -197,17 +197,17 @@ public class ElasticsearchRestHelper {
         return dslString;
     }
 
-    public void indexMetrics(List<IMetric> metrics) throws IOException {
+    public int indexMetrics(List<IMetric> metrics) throws IOException {
         String bulkString = bulkStringify(metrics);
         String url = String.format("%s/_bulk", baseUrl);
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
-        index(httpPost, bulkString);
+        return index(httpPost, bulkString);
     }
 
-    public void indexEvent(Map<String, Object> event) throws IOException {
+    public int indexEvent(Map<String, Object> event) throws IOException {
         String eventString = stringifyEvent(event);
         String url = String.format("%s/%s/%s?routing=%s",
                 baseUrl, EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
@@ -216,7 +216,7 @@ public class ElasticsearchRestHelper {
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
 
-        index(httpPost, eventString);
+        return index(httpPost, eventString);
     }
 
     private String stringifyEvent(Map<String, Object> event){
@@ -267,15 +267,16 @@ public class ElasticsearchRestHelper {
         return metric.getUnit();
     }
 
-    protected void index(HttpPost httpPost, String bulkString) throws IOException {
+    protected int index(HttpPost httpPost, String bulkString) throws IOException {
         CloseableHttpResponse response = null;
+        int statusCode;
 
         try{
             HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
             httpPost.setEntity(entity);
             response = closeableHttpClient.execute(httpPost);
 
-            int statusCode = response.getStatusLine().getStatusCode();
+            statusCode = response.getStatusLine().getStatusCode();
 
             if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED){
                 logger.error("index method failed with status code: {} and error: {}",
@@ -294,6 +295,8 @@ public class ElasticsearchRestHelper {
         finally {
             response.close();
         }
+
+        return statusCode;
     }
 
     private String getTermQueryString(String key, String value){
