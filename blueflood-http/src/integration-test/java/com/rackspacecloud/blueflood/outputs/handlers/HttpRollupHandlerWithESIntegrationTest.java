@@ -91,7 +91,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         metricsRW.insertMetrics(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        //((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;

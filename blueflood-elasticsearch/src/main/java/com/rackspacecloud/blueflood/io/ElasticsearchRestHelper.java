@@ -281,7 +281,6 @@ public class ElasticsearchRestHelper {
                 logger.error("index method failed with status code: {} and error: {}",
                         response.getStatusLine().getStatusCode(),
                         EntityUtils.toString(response.getEntity()));
-                System.out.println(EntityUtils.toString(response.getEntity()));
             }
         }
         catch (Exception e){
