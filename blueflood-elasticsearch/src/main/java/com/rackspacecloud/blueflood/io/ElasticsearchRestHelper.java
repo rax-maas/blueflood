@@ -2,6 +2,7 @@ package com.rackspacecloud.blueflood.io;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
+import com.rackspacecloud.blueflood.service.CoreConfig;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.Event;
 import com.rackspacecloud.blueflood.types.IMetric;
@@ -33,7 +34,8 @@ public class ElasticsearchRestHelper {
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRestHelper.class);
     private final CloseableHttpClient closeableHttpClient;
     private String baseUrl;
-    private static int MAX_RESULT_LIMIT = 100000;
+    private static int MAX_RESULT_LIMIT =
+            Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
 
     private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
 
@@ -346,5 +348,23 @@ public class ElasticsearchRestHelper {
     @VisibleForTesting
     public void setBaseUrlForTestOnly(String url) {
         baseUrl = url;
+    }
+
+    @VisibleForTesting
+    public int refreshIndex(String indexName) throws IOException {
+        String url = String.format("%s/%s/_refresh", baseUrl, indexName);
+        HttpGet httpGet = new HttpGet(url);
+        CloseableHttpResponse response = null;
+        try {
+            response = closeableHttpClient.execute(httpGet);
+        } catch (IOException e) {
+            logger.error("Refresh for index {} failed with status code: {} and exception message: {}",
+                    indexName, response.getStatusLine().getStatusCode(), e.getMessage());
+        }
+        finally {
+            response.close();
+        }
+
+        return response.getStatusLine().getStatusCode();
     }
 }

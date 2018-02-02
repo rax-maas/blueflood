@@ -36,7 +36,7 @@ public class EventElasticSearchIO implements EventsIO {
     public static final String EVENT_INDEX = "events";
     public static final String ES_TYPE = "graphite_event";
 
-    private ElasticsearchRestHelper elasticsearchRestHelper;
+    public ElasticsearchRestHelper elasticsearchRestHelper;
 
     public EventElasticSearchIO() {
         this.elasticsearchRestHelper = ElasticsearchRestHelper.getInstance();

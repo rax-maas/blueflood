@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.rackspacecloud.blueflood.io.AbstractElasticIO.ELASTICSEARCH_INDEX_NAME_READ;
 import static org.junit.Assert.assertEquals;
 
 public class ElasticIOIntegrationTest extends BaseElasticTest {
@@ -59,7 +60,11 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         elasticIO.insertDiscovery(createTestMetrics(TENANT_B));
         elasticIO.insertDiscovery(createTestMetricsFromInterface(TENANT_C));
 
-        Thread.sleep(3*1000); // Sleep a few seconds to make sure data is indexed.
+        int statusCode = elasticIO.elasticsearchRestHelper.refreshIndex(ELASTICSEARCH_INDEX_NAME_READ);
+        if(statusCode != 200) {
+            System.out.println(String.format("Refresh for %s failed with status code: %d",
+                    ELASTICSEARCH_INDEX_NAME_READ, statusCode));
+        }
     }
 
     /*
@@ -148,7 +153,13 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
         Metric metric =
                 new Metric(locator, 123456789L, 0, new TimeValue(1, TimeUnit.DAYS), UNIT);
         elasticIO.insertDiscovery(metric);
-        Thread.sleep(3*1000); // Wait for data to get indexed.
+
+        int statusCode = elasticIO.elasticsearchRestHelper.refreshIndex(ELASTICSEARCH_INDEX_NAME_READ);
+
+        if(statusCode != 200) {
+            System.out.println(String.format("Refresh for %s failed with status code: %d",
+                    ELASTICSEARCH_INDEX_NAME_READ, statusCode));
+        }
 
         List<SearchResult> results;
         results = elasticIO.search(tenantId, metricName);

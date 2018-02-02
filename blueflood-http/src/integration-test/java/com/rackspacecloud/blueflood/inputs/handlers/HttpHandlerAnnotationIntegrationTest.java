@@ -1,6 +1,7 @@
 package com.rackspacecloud.blueflood.inputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
+import com.rackspacecloud.blueflood.io.EventElasticSearchIO;
 import com.rackspacecloud.blueflood.outputs.formats.ErrorResponse;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -16,11 +17,9 @@ import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.*;
-import static com.rackspacecloud.blueflood.TestUtils.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Testing posting annotations to blueflood.
@@ -173,7 +172,7 @@ public class HttpHandlerAnnotationIntegrationTest extends HttpIntegrationTestBas
             eventsSearchIO.insert(tenant, event.toMap());
         }
 
-        Thread.sleep(3*1000); // Sleep to make sure Elasticsearch indexing has happened before we test.
+        ((EventElasticSearchIO)eventsSearchIO).elasticsearchRestHelper.refreshIndex(EventElasticSearchIO.EVENT_INDEX);
     }
 
     private ErrorResponse getErrorResponse(HttpResponse response) throws IOException {

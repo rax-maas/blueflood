@@ -137,7 +137,12 @@ public class EventElasticSearchIOTest {
         createTestEvents(TENANT_2, TENANT_2_EVENTS_NUM);
         createTestEvents(TENANT_WITH_SYMBOLS, TENANT_WITH_SYMBOLS_NUM);
         createRangeEvents(TENANT_RANGE, TENANT_RANGE_EVENTS_NUM, RANGE_STEP_IN_SECONDS);
-        Thread.sleep(3*1000);
+
+        int statusCode = searchIO.elasticsearchRestHelper.refreshIndex(EventElasticSearchIO.EVENT_INDEX);
+        if(statusCode != 200) {
+            System.out.println(String.format("Refresh for %s failed with status code: %d",
+                    EventElasticSearchIO.EVENT_INDEX, statusCode));
+        }
     }
 
     private static void createTestEvents(final String tenant, int eventCount) throws Exception {
