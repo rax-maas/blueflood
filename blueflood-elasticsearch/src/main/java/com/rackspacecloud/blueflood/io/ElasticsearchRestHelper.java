@@ -137,13 +137,16 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetch(String indexName, String documentType, String tenantId, List<String> queries) throws IOException {
+        String queryDslString = getQueryDslString(tenantId, queries);
+        return fetchDocuments(indexName, documentType, queryDslString);
+    }
+
+    public String fetchDocuments(String indexName, String documentType, String queryDslString) throws IOException {
         //Example URL: localhost:9200/metric_metadata/metrics/_search&size=50";
         String url = String.format("%s/%s/%s/_search?size=%d", baseUrl, indexName, documentType, MAX_RESULT_LIMIT);
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeaders(getHeaders());
-
-        String queryDslString = getQueryDslString(tenantId, queries);
 
         CloseableHttpResponse response = null;
 

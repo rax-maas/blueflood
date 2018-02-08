@@ -9,4 +9,4 @@ cd $BASE_DIR/blueflood-elasticsearch/src/main/resources
 cd $BASE_DIR
 
 # Run test
-mvn clean package -P all-modules
+mvn clean package -Pall-modules

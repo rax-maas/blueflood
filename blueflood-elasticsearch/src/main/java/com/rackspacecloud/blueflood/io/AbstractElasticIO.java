@@ -21,14 +21,16 @@ import java.util.Iterator;
 import java.util.List;
 
 import static com.rackspacecloud.blueflood.types.Locator.METRIC_TOKEN_SEPARATOR_REGEX;
+import static java.util.stream.Collectors.toSet;
 
 public abstract class AbstractElasticIO implements DiscoveryIO {
     private static final Logger log = LoggerFactory.getLogger(AbstractElasticIO.class);
 
-    protected ElasticsearchRestHelper elasticsearchRestHelper;
+    public ElasticsearchRestHelper elasticsearchRestHelper;
     protected static final String ELASTICSEARCH_DOCUMENT_TYPE = "metrics";
 
     protected final Timer searchTimer = Metrics.timer(getClass(), "Search Duration");
+    protected final Timer esMetricNamesQueryTimer = Metrics.timer(getClass(), "ES Metric Names Query Duration");
     protected final Timer writeTimer = Metrics.timer(getClass(), "Write Duration");
     protected final Histogram batchHistogram = Metrics.histogram(getClass(), "Batch Sizes");
     protected Meter classCastExceptionMeter = Metrics.meter(getClass(), "Failed Cast to IMetric");
@@ -40,6 +42,38 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
 
     //grabs chars until the next "." which is basically a token
     protected static final String REGEX_TO_GRAB_SINGLE_TOKEN = "[^.]*";
+
+    private String queryToFetchMetricNamesFromElasticsearchFormat = "{\n" +
+            "  \"size\": 0,\n" +
+            "  \"query\": {\n" +
+            "    \"bool\": {\n" +
+            "      \"must\": [\n" +
+            "        {\n" +
+            "          \"term\": {\n" +
+            "            \"tenantId\": \"%s\"\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"regexp\": {\n" +
+            "            \"metric_name\": {\n" +
+            "              \"value\": \"%s\"\n" +
+            "            }\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"aggs\": {\n" +
+            "    \"metric_name_tokens\": {\n" +
+            "      \"terms\": {\n" +
+            "        \"field\": \"metric_name\",\n" +
+            "        \"include\": \"%s\",\n" +
+            "        \"execution_hint\": \"map\",\n" +
+            "        \"size\": 0\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
 
 
     public List<SearchResult> search(String tenant, String query) throws Exception {
@@ -97,6 +131,128 @@ public abstract class AbstractElasticIO implements DiscoveryIO {
             searchResults.add(result);
         }
         return searchResults;
+    }
+
+    /**
+     * This method returns a list of {@link MetricName}'s matching the given glob query.
+     *
+     * for metrics: foo.bar.xxx,
+     *              foo.bar.baz.qux,
+     *
+     * for query=foo.bar.*, returns the below list of metric names
+     *
+     * new MetricName("foo.bar.xxx", true)   <- From metric foo.bar.xxx
+     * new MetricName("foo.bar.baz", false)  <- From metric foo.bar.baz.qux
+     *
+     * @param tenant
+     * @param query is glob representation of hierarchical levels of token. Ex: foo.bar.*
+     * @return
+     * @throws Exception
+     */
+    public List<MetricName> getMetricNames(final String tenant, final String query) throws Exception {
+
+        Timer.Context esMetricNamesQueryTimerCtx = esMetricNamesQueryTimer.time();
+        String response;
+
+        try {
+            String regexString = regexToGrabCurrentAndNextLevel(query);
+            // replace one '\' char with two '\\'
+            regexString = regexString.replaceAll("\\\\", "\\\\\\\\");
+            response = getMetricNamesFromES(tenant, regexString);
+        } finally {
+            esMetricNamesQueryTimerCtx.stop();
+        }
+
+        // For example, if query = foo.bar.*, base level is 3 which is equal to the number of tokens in the query.
+        int baseLevel = getTotalTokens(query);
+        MetricIndexData metricIndexData = getMetricIndexData(response, baseLevel);
+
+        List<MetricName> metricNames = new ArrayList<>();
+
+        //Metric Names matching query which have next level
+        metricNames.addAll(metricIndexData.getMetricNamesWithNextLevel()
+                .stream()
+                .map(x -> new MetricName(x, false))
+                .collect(toSet()));
+
+        //complete metric names matching query
+        metricNames.addAll(metricIndexData.getCompleteMetricNamesAtBaseLevel()
+                .stream()
+                .map(x -> new MetricName(x, true))
+                .collect(toSet()));
+
+        return metricNames;
+    }
+
+    /**
+     * Performs terms aggregation by metric_name which returns doc_count by
+     * metric_name index that matches the given regex.
+     *
+     *  Sample request body:
+     *
+     *  {
+     *      "size": 0,
+     *      "query": {
+     *          "bool" : {
+     *              "must" : [ {
+     *                  "term" : {
+     *                      "tenantId" : "ratanasv"
+     *                  }
+     *              }, {
+     *                  "regexp" : {
+     *                      "metric_name" : {
+     *                         "value" : "<regex>"
+     *                      }
+     *                  }
+     *              } ]
+     *          }
+     *      },
+     *      "aggs": {
+     *          "metric_name_tokens": {
+     *              "terms": {
+     *                  "field" : "metric_name",
+     *                  "include": "<regex>",
+     *                  "execution_hint": "map",
+     *                  "size": 0
+     *              }
+     *          }
+     *      }
+     *  }
+     *
+     * The two regex expressions used in the query above would be same, one to filter
+     * at query level and another to filter the aggregation buckets.
+     *
+     * Execution hint of "map" works by using field values directly instead of ordinals
+     * in order to aggregate data per-bucket
+     *
+     * @param tenant
+     * @param regexMetricName
+     * @return
+     */
+    private String getMetricNamesFromES(final String tenant, final String regexMetricName) throws IOException {
+        String metricNamesFromElasticsearchQueryString = String.format(queryToFetchMetricNamesFromElasticsearchFormat,
+                tenant, regexMetricName, regexMetricName);
+
+        return elasticsearchRestHelper.fetchDocuments(
+                ELASTICSEARCH_INDEX_NAME_READ, ELASTICSEARCH_DOCUMENT_TYPE, metricNamesFromElasticsearchQueryString);
+    }
+
+    private MetricIndexData getMetricIndexData(final String response, final int baseLevel) throws IOException {
+        MetricIndexData metricIndexData = new MetricIndexData(baseLevel);
+
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        Iterator<JsonNode> iter = root.get("aggregations").get("metric_name_tokens").get("buckets").elements();
+
+        while(iter.hasNext()){
+            JsonNode node = iter.next();
+            String key = node.get("key").asText();
+            long docCount = node.get("doc_count").asInt();
+            metricIndexData.add(key, docCount);
+        }
+        return metricIndexData;
     }
 
     private int getTotalTokens(String query) {

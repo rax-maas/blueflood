@@ -64,6 +64,14 @@ public class HttpOptionsHandlerIntegrationTest extends HttpIntegrationTestBase {
     }
 
     @Test
+    public void testHttpMetricNamesHandlerOptions() throws Exception {
+        // test query .../metric_name/search for CORS support
+        HttpOptions httpOptions = new HttpOptions(getMetricNameSearchURI(tenantId));
+        HttpResponse response = client.execute(httpOptions);
+        assertCorsResponseHeaders(response, allowedOrigins, allowedHeaders, allowedMethods, allowedMaxAge);
+    }
+
+    @Test
     public void testHttpMultiRollupsQueryHandlerOptions() throws Exception {
         // test query .../views for CORS support
         HttpOptions httpOptions = new HttpOptions(getQueryViewsURI(tenantId));
