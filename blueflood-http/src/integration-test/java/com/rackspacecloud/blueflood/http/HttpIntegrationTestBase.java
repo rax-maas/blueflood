@@ -56,7 +56,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     protected static final long TIME_DIFF_MS = 40000;
 
     //A time stamp 2 days ago
-    protected final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
+    protected static final long baseMillis = Calendar.getInstance().getTimeInMillis() - 172800000;
 
     protected static HttpClient client;
     protected static ScheduleContext context;
@@ -157,9 +157,8 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
                 .withMapping("graphite_event", EsSetup.fromClassPath("events_mapping.json")));
 
         // create elaticsearch client and link it to ModuleLoader
-        elasticIO = new ElasticIO(esSetup.client());
-        eventsSearchIO = new EventElasticSearchIO(esSetup.client());
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
+        elasticIO = new ElasticIO();
+        eventsSearchIO = new EventElasticSearchIO();
     }
 
     private static void setupIngestionServer() throws Exception {

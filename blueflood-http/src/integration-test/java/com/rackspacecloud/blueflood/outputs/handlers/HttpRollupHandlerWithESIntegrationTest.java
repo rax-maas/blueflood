@@ -68,7 +68,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         esSetup.execute(EsSetup.createIndex(ElasticIO.ELASTICSEARCH_INDEX_NAME_WRITE)
                 .withSettings(EsSetup.fromClassPath("index_settings.json"))
                 .withMapping("metrics", EsSetup.fromClassPath("metrics_mapping.json")));
-        elasticIO = new ElasticIO(esSetup.client());
+        elasticIO = new ElasticIO();
     }
 
     @Before
@@ -91,7 +91,6 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         metricsRW.insertMetrics(metrics);
 
         httpHandler = new HttpRollupsQueryHandler();
-        ((ElasticIO) ModuleLoader.getInstance(DiscoveryIO.class, CoreConfig.DISCOVERY_MODULES)).setClient(esSetup.client());
 
         // generate every level of rollup for the raw data
         Granularity g = Granularity.FULL;

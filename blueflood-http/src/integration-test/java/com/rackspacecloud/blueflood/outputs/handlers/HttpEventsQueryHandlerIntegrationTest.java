@@ -18,24 +18,34 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Event;
-import org.apache.http.util.EntityUtils;
-import org.junit.*;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
 
 /**
  * Integration Tests for GET .../events/getEvents
  */
 public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBase {
 
-    private final String tenantId = "540123";
+    private static final String tenantId = "540123";
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeClass
+    public static void setup() throws Exception {
         createAndInsertTestEvents(tenantId, 5);
-        esSetup.client().admin().indices().prepareRefresh().execute().actionGet();
     }
 
     @Test
@@ -68,7 +78,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_ByTagName() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "1");
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
@@ -89,7 +99,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_MultipleTagsReturnNothing() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "0,1");
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
@@ -117,7 +127,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_WildcardTagReturnNothing() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         parameterMap.put(Event.tagsParameterName, "sample*");
 
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
@@ -131,7 +141,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
 
     @Test
     public void testHttpEventsQueryHandler_NoParams() throws Exception {
-        parameterMap = new HashMap<String, String>();
+        parameterMap = new HashMap<>();
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
         String responseString = EntityUtils.toString(response.getEntity());
@@ -142,16 +152,46 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
     }
 
     private static void createAndInsertTestEvents(final String tenant, int eventCount) throws Exception {
-        ArrayList<Map<String, Object>> eventList = new ArrayList<Map<String, Object>>();
         for (int i=0; i<eventCount; i++) {
             Event event = new Event();
             event.setWhat(String.format("[%s] %s %d", tenant, "Event title sample", i));
             event.setWhen(Calendar.getInstance().getTimeInMillis());
             event.setData(String.format("[%s] %s %d", tenant, "Event data sample", i));
             event.setTags(String.format("[%s] %s %d", tenant, "Event tags sample", i));
-            eventList.add(event.toMap());
+            eventsSearchIO.insert(tenant, event.toMap());
         }
-        eventsSearchIO.insert(tenant, eventList);
     }
 
+    /*
+    Once done testing, delete all of the records of the given type and index.
+    NOTE: Don't delete the index or the type, because that messes up the ES settings.
+     */
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        URIBuilder builder = new URIBuilder().setScheme("http")
+                .setHost("127.0.0.1").setPort(9200)
+                .setPath("/events/graphite_event/_query");
+
+        HttpEntityEnclosingRequestBase delete = new HttpEntityEnclosingRequestBase() {
+            @Override
+            public String getMethod() {
+                return "DELETE";
+            }
+        };
+        delete.setURI(builder.build());
+
+        String deletePayload = "{\"query\":{\"match_all\":{}}}";
+        HttpEntity entity = new NStringEntity(deletePayload, ContentType.APPLICATION_JSON);
+        delete.setEntity(entity);
+
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute(delete);
+        if(response.getStatusLine().getStatusCode() != 200)
+        {
+            System.out.println("Couldn't delete index after running tests.");
+        }
+        else {
+            System.out.println("Successfully deleted index after running tests.");
+        }
+    }
 }
